@@ -44,10 +44,10 @@ function TeamChooserComponent(props) {
     searched === ''
       ? teams
       : teams.filter((team) => {
-        if (team.name.toLowerCase().indexOf(searched) > -1) {
-          return true;
-        } else return team.description.toLowerCase().indexOf(searched) > -1;
-      });
+          if (team.name.toLowerCase().indexOf(searched) > -1) {
+            return true;
+          } else return team.description.toLowerCase().indexOf(searched) > -1;
+        });
   const paginateTeams = filteredTeams.slice(state.offset, state.offset + state.pageNumber);
 
   return (

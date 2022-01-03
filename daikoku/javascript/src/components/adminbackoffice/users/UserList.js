@@ -14,7 +14,7 @@ function UserListComponent(props) {
   const [state, setState] = useState({
     users: [],
   });
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     updateUsers();
@@ -42,7 +42,7 @@ function UserListComponent(props) {
     navigate(`/settings/users/${user._id}`, {
       state: {
         newUser: user,
-      }
+      },
     });
   };
 
@@ -78,8 +78,8 @@ function UserListComponent(props) {
 
   const filteredUsers = state.search
     ? state.users.filter(({ name, email }) =>
-      [name, email].some((item) => item.toLowerCase().includes(state.search))
-    )
+        [name, email].some((item) => item.toLowerCase().includes(state.search))
+      )
     : state.users;
   return (
     <UserBackOffice tab="Users">
@@ -96,7 +96,8 @@ function UserListComponent(props) {
                   onClick={(e) => {
                     e.preventDefault();
                     createNewUser();
-                  }}>
+                  }}
+                >
                   <i className="fas fa-user-plus" />
                 </a>
               </h1>
@@ -133,8 +134,7 @@ function UserListComponent(props) {
                         tooltip: translateMethod('Remove user'),
                       },
                       {
-                        redirect: () =>
-                          navigate(`/settings/users/${user._humanReadableId}`),
+                        redirect: () => navigate(`/settings/users/${user._humanReadableId}`),
                         iconClass: 'fas fa-pen',
                         tooltip: translateMethod('Edit user'),
                       },
@@ -145,8 +145,9 @@ function UserListComponent(props) {
                       },
                       {
                         action: () => toggleAdmin(user),
-                        iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
-                          }`,
+                        iconClass: `fas fa-shield-alt ${
+                          user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
+                        }`,
                         tooltip: translateMethod('toggle admin status'),
                       },
                     ]}

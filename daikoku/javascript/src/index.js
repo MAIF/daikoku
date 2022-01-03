@@ -26,6 +26,7 @@ import { I18nProvider } from './locales/i18n-context';
 import { DaikokuApp, DaikokuHomeApp } from './apps';
 
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
+import { SessionModal } from './components/frontend/modals/SessionModal';
 
 const client = new ApolloClient({
   uri: '/api/search',
@@ -57,83 +58,28 @@ export function init(
     apiCreationPermitted,
   });
 
-  // history.listen(location => console.log(location))
   customizeFetch(storeInst);
 
   ReactDOM.render(
     <Provider store={storeInst}>
       <ApolloProvider client={client}>
-        <I18nProvider tenant={tenant}>
-          <DaikokuApp
-            user={user}
-            tenant={tenant}
-            impersonator={impersonator}
-            loginProvider={tenant.authProvider}
-            loginAction={loginCallback}
-          />
+        <I18nProvider tenant={tenant} user={user}>
+          <>
+            <SessionModal session={session} />
+            <DaikokuApp
+              user={user}
+              tenant={tenant}
+              impersonator={impersonator}
+              loginProvider={tenant.authProvider}
+              loginAction={loginCallback}
+            />
+          </>
         </I18nProvider>
       </ApolloProvider>
     </Provider>,
     document.getElementById('app')
   );
   if (session) {
-    let reloadTimeout = null;
-
-    const extendSession = (close) => {
-      return fetch('/api/session/_renew', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: '',
-      })
-        .then((r) => r.json())
-        .then((sess) => {
-          clearTimeout(reloadTimeout);
-          setupTimeouts(sess);
-          close();
-        });
-    };
-
-    const setupTimeouts = (_session) => {
-      const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
-      const secondPing = _session.expires - Date.now() + 2000;
-      setTimeout(() => {
-        window.alert(
-          (close) => (
-            <div style={{ width: '100%' }}>
-              <p>
-                <Translation i18nkey="session.expire.info">
-                  Your session is about to expire in less than 2 minutes. Do you want to extend it ?
-                </Translation>
-              </p>
-              <div
-                style={{
-                  width: '100%',
-                  disllay: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}>
-                <button
-                  type="button"
-                  className="btn btn-success"
-                  onClick={() => extendSession(close)}>
-                  <Translation i18nkey="session.extend">Yes, extend my session</Translation>
-                </button>
-              </div>
-            </div>
-          ),
-          'Your session is expiring'
-        );
-      }, firstPing);
-      reloadTimeout = setTimeout(() => {
-        window.location = '/';
-      }, secondPing);
-    };
-
-    setupTimeouts(session);
     registerAlert(storeInst); // Hell Yeah !!!!
     registerConfirm(storeInst);
     registerPrompt(storeInst);

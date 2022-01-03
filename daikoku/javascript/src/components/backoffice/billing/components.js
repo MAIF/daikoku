@@ -23,7 +23,8 @@ export const PriceCartridge = ({ label, total, currency, handleClick, ...props }
     <div
       className={classNames('price__cartridge', { clickable: !!handleClick })}
       onClick={() => (handleClick ? handleClick() : {})}
-      {...props}>
+      {...props}
+    >
       <span className="price__cartridge__label">{label}</span>
       <span className="price__cartridge__total currency">
         {formatCurrency(total)}

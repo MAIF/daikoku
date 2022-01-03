@@ -5,7 +5,7 @@ import { I18nContext } from '../../../core';
 
 export function ApiRedoc(props) {
   const [error, setError] = useState();
-  const params = useParams()
+  const params = useParams();
 
   const { translateMethod } = useContext(I18nContext);
 

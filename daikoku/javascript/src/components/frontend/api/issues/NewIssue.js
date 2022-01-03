@@ -126,7 +126,8 @@ export function NewIssue({ user, api, ...props }) {
             borderBottomLeftRadius: '8px',
             borderBottomRightRadius: '8px',
             backgroundColor: '#fff',
-          }}>
+          }}
+        >
           <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
               fullWidth

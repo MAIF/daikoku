@@ -215,7 +215,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                                        env,
                                        ctx.tenant)
           case Some(form) =>
-            (form.get("username").map(_.last), form.get("password").map(_.last)) match {
+            (form.get("username").map(_.last).map(_.toLowerCase),
+             form.get("password").map(_.last)) match {
               case (Some(username), Some(password)) =>
                 p match {
                   case AuthProvider.Local =>
@@ -495,7 +496,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                     def getUser() = User(
                       id = userId,
                       tenants = Set(ctx.tenant.id),
-                      origins = Set(AuthProvider.Otoroshi),
+                      origins = Set(ctx.tenant.authProvider),
                       name = accountCreation.name,
                       email = accountCreation.email,
                       picture = accountCreation.avatar,

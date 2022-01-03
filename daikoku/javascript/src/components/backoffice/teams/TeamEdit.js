@@ -24,6 +24,7 @@ export function TeamEditForm(props) {
       type: 'select',
       props: {
         label: translateMethod('Tenant'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
         valuesFrom: '/api/tenants',
         transformer: (tenant) => ({ label: tenant.name, value: tenant._id }),
       },
@@ -32,6 +33,7 @@ export function TeamEditForm(props) {
       type: 'select',
       props: {
         label: translateMethod('Type'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
         possibleValues: [
           { label: translateMethod('Personal'), value: 'Personal' },
           {
@@ -43,30 +45,44 @@ export function TeamEditForm(props) {
     },
     name: {
       type: 'string',
-      props: { label: translateMethod('Name') },
+      props: {
+        label: translateMethod('Name'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
+      },
     },
     description: {
       type: 'string',
-      props: { label: translateMethod('Description') },
+      props: {
+        label: translateMethod('Description'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
+      },
     },
     contact: {
       type: 'string',
-      props: { label: translateMethod('Team contact') },
+      props: {
+        label: translateMethod('Team contact'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
+      },
     },
     avatar: {
       type: 'string',
-      props: { label: translateMethod('Team avatar') },
+      props: {
+        label: translateMethod('Team avatar'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
+      },
     },
     avatarFrom: {
       type: AvatarChooser,
       props: {
         team: () => props.team,
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
       },
     },
     apiKeyVisibility: {
       type: 'select',
       props: {
         label: translateMethod('apikey visibility'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
         possibleValues: [
           { label: translateMethod('Administrator'), value: 'Administrator' },
           { label: translateMethod('ApiEditor'), value: 'ApiEditor' },
@@ -81,8 +97,8 @@ export function TeamEditForm(props) {
   }
 
   useEffect(() => {
-    document.title = `${props.team.name} - ${translateMethod('Edition')}`
-  }, [])
+    document.title = `${props.team.name} - ${translateMethod('Edition')}`;
+  }, []);
 
   return (
     <>
@@ -110,7 +126,7 @@ export function TeamEditForm(props) {
 
 const TeamEditComponent = ({ currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -138,6 +154,7 @@ const TeamEditComponent = ({ currentTeam }) => {
     <>
       <TeamEditForm team={team} updateTeam={setTeam} />
       <div className="row form-back-fixedBtns">
+<<<<<<< HEAD
         <div className="d-flex justify-content-end">
           <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
             <i className="fas fa-chevron-left me-1" />
@@ -164,6 +181,36 @@ const TeamEditComponent = ({ currentTeam }) => {
             </span>
           </button>
         </div>
+=======
+        <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
+          <i className="fas fa-chevron-left mr-1" />
+          <Translation i18nkey="Back">Back</Translation>
+        </Link>
+        {team && team.type !== 'Personal' && (
+          <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={members}
+          >
+            <span>
+              <i className="fas fa-users mr-1" />
+              <Translation i18nkey="Members">Members</Translation>
+            </span>
+          </button>
+        )}
+        <button
+          style={{ marginLeft: 5 }}
+          type="button"
+          className="btn btn-outline-success"
+          onClick={save}
+        >
+          <span>
+            <i className="fas fa-save mr-1" />
+            <Translation i18nkey="Save">Save</Translation>
+          </span>
+        </button>
+>>>>>>> master
       </div>
     </>
   );

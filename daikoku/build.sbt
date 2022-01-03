@@ -85,7 +85,7 @@ libraryDependencies ++= Seq(
     organization = "com.typesafe.play"
   ),
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2",
-  "org.apache.logging.log4j" % "log4j-api" % "2.15.0"
+  "org.apache.logging.log4j" % "log4j-api" % "2.16.0"
 )
 
 dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"

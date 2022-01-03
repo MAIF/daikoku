@@ -67,8 +67,10 @@ function TeamApiComponent(props) {
   }, [state.changed]);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${state.api ? state.api.name : translateMethod('API')}`
-  }, [state])
+    document.title = `${props.currentTeam.name} - ${
+      state.api ? state.api.name : translateMethod('API')
+    }`;
+  }, [state]);
 
   function reloadState() {
     Promise.all([
@@ -249,7 +251,8 @@ function TeamApiComponent(props) {
       else {
         toastr.success('New version of api created');
         navigate(
-          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'
+          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${
+            params.tab ? params.tab : 'infos'
           }`
         );
       }
@@ -262,7 +265,7 @@ function TeamApiComponent(props) {
   const editedApi = transformPossiblePlans(state.api);
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-    props.setError({ error: { status: 403, message: 'unauthorized' } });
+    props.setError({ error: { status: 403, message: 'Creation security enabled' } });
   }
 
   return (
@@ -272,16 +275,19 @@ function TeamApiComponent(props) {
         <>
           <div className="row">
             {state.create ? (
-              <h2>
-                {editedApi.name}
-              </h2>
+              <h2>{editedApi.name}</h2>
             ) : (
+<<<<<<< HEAD
               <div
                 className="d-flex align-items-center"
                 style={{ flex: 1 }}>
                 <h2 className='me-2'>
                   {editedApi.name}
                 </h2>
+=======
+              <div className="d-flex align-items-center" style={{ flex: 1 }}>
+                <h2 className="mr-2">{editedApi.name}</h2>
+>>>>>>> master
               </div>
             )}
           </div>
@@ -328,11 +334,9 @@ function TeamApiComponent(props) {
                     onChange={(api) => setState({ ...state, api })}
                     tenant={props.tenant}
                     reload={() =>
-                      Services.teamApi(
-                        props.currentTeam._id,
-                        params.apiId,
-                        params.versionId
-                      ).then((api) => setState({ ...state, api }))
+                      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId).then(
+                        (api) => setState({ ...state, api })
+                      )
                     }
                     params={params}
                   />
@@ -397,7 +401,8 @@ function TeamApiComponent(props) {
                 type="button"
                 className="btn btn-outline-success ms-1"
                 {...disabled}
-                onClick={save}>
+                onClick={save}
+              >
                 {!state.create && (
                   <span>
                     <i className="fas fa-save me-1" />

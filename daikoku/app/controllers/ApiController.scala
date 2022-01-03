@@ -1087,9 +1087,9 @@ class ApiController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(s"@{user.name} has made unique aggregate api subscription @{subscription.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
-        if (subscription.parent.isEmpty)
+        /*if (subscription.parent.isEmpty)
             FastFuture.successful(Left(MissingParentSubscription))
-        else
+        else*/
           plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
             ctx.tenant.otoroshiSettings.find(_.id == id)
           } match {

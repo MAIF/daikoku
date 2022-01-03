@@ -31,19 +31,22 @@ export function ApiFilter({
         <button
           className={`btn btn-${filter !== 'all' ? 'outline-' : ''}primary`}
           style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
-          onClick={() => handleFilter('all')}>
+          onClick={() => handleFilter('all')}
+        >
           {translateMethod('All')}
         </button>
         <button
           className={`btn btn-${filter !== 'open' ? 'outline-' : ''}primary`}
           style={{ borderRadius: 0 }}
-          onClick={() => handleFilter('open')}>
+          onClick={() => handleFilter('open')}
+        >
           {translateMethod('issues.open')}
         </button>
         <button
           className={`btn btn-${filter !== 'closed' ? 'outline-' : ''}primary`}
           style={{ borderLeft: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-          onClick={() => handleFilter('closed')}>
+          onClick={() => handleFilter('closed')}
+        >
           {translateMethod('issues.closed')}
         </button>
         <Select

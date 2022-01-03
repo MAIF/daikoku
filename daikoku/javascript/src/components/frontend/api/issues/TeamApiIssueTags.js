@@ -48,7 +48,8 @@ export function TeamApiIssueTags({ value, onChange }) {
                   backgroundColor: issueTag.color,
                   color: '#fff',
                   borderRadius: '12px',
-                }}>
+                }}
+              >
                 {issueTag.name}
               </span>
               <input
@@ -83,7 +84,8 @@ export function TeamApiIssueTags({ value, onChange }) {
                 <button
                   className="btn btn-sm btn-outline-danger"
                   type="button"
-                  onClick={() => deleteTag(issueTag.id)}>
+                  onClick={() => deleteTag(issueTag.id)}
+                >
                   {translateMethod('Delete')}
                 </button>
               </div>

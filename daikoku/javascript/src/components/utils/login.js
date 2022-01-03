@@ -58,7 +58,8 @@ export function LoginPage(props) {
           className="form-horizontal text-start mx-auto"
           method={props.method}
           onSubmit={submit}
-          style={{ maxWidth: '448px' }}>
+          style={{ maxWidth: '448px' }}
+        >
           <input type="hidden" name="token" className="form-control" value={props.token} />
           {loginError && (
             <span className="alert alert-danger d-flex justify-content-center">
@@ -102,7 +103,8 @@ export function LoginPage(props) {
               style={{
                 border: '1px solid var(--form-border-color, #586069)',
                 borderRadius: '6px',
-              }}>
+              }}
+            >
               <Translation
                 i18nkey="login_page.register_message"
                 replacements={[props.tenant.name]}

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 
@@ -8,6 +8,7 @@ import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
 import { I18nContext } from '../../../core';
 
 export function TeamApiKeysComponent(props) {
+  const tableRef = useRef();
   const [showApiKey, setShowApiKey] = useState(false);
 
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -17,14 +18,14 @@ export function TeamApiKeysComponent(props) {
   useEffect(() => {
     setShowApiKey(
       props.connectedUser.isDaikokuAdmin ||
-      !props.currentTeam.showApiKeyOnlyToAdmins ||
-      isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
+        !props.currentTeam.showApiKeyOnlyToAdmins ||
+        isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
     );
   }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins]);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translateMethod('API key')}`
-  }, [])
+    document.title = `${props.currentTeam.name} - ${translateMethod('API key')}`;
+  }, []);
 
   const columns = [
     {
@@ -54,8 +55,14 @@ export function TeamApiKeysComponent(props) {
             <div style={{ minWidth: 100 }}>
               <Link
                 to={`/${props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
+<<<<<<< HEAD
                 className="btn btn-sm btn-access-negative">
                 <i className="fas fa-eye me-1" />
+=======
+                className="btn btn-sm btn-access-negative"
+              >
+                <i className="fas fa-eye mr-1" />
+>>>>>>> master
                 <Translation i18nkey="Api keys">Api keys</Translation>
               </Link>
             </div>
@@ -76,12 +83,14 @@ export function TeamApiKeysComponent(props) {
       )
       .then((ok) => {
         if (ok) {
-          Services.cleanArchivedSubscriptions(props.currentTeam._id).then(() => table.update());
+          Services.cleanArchivedSubscriptions(props.currentTeam._id).then(() =>
+            tableRef?.current?.update()
+          );
         }
       });
   };
 
-  const params = useParams()
+  const params = useParams();
 
   return (
     <Can I={manage} a={apikey} team={props.currentTeam} dispatchError={true}>
@@ -92,8 +101,14 @@ export function TeamApiKeysComponent(props) {
           </h1>
           <Link
             to={`/${props.currentTeam._humanReadableId}/settings/consumption`}
+<<<<<<< HEAD
             className="btn btn-sm btn-access-negative mb-2">
             <i className="fas fa-chart-bar me-1" />
+=======
+            className="btn btn-sm btn-access-negative mb-2"
+          >
+            <i className="fas fa-chart-bar mr-1" />
+>>>>>>> master
             <Translation i18nkey="See Stats">See Stats</Translation>
           </Link>
           <div className="section p-2">
@@ -108,7 +123,8 @@ export function TeamApiKeysComponent(props) {
               showActions={false}
               showLink={false}
               extractKey={(item) => item._id}
-              injectTable={(t) => (table = t)}
+              // injectTable={(t) => (table = t)}
+              ref={tableRef}
             />
             <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
               <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>

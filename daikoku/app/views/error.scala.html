@@ -35,7 +35,11 @@
       <div class="jumbotron col-12 text-center mt-5">
         @tenant.tenantMode.toString match {
           case "Some(Maintenance)" | "Some(Construction)" => {<h1 class="mb-5">@message</h1>}
-          case _ => {<h1 class="mb-5">Error - @message</h1>}
+          case _ => {
+            @message.split("#").map { error =>
+              <h1 class="mb-2">@error</h1>
+            }
+          }
         }
         <div class="col-6 offset-3">
           <img src="/assets/images/daikoku.svg" alt="logo Daikoku" class="img-fluid" />

@@ -6,13 +6,13 @@ import { converter } from '../../services/showdown';
 export const MaybeHomePage = ({ tenant }) => {
   const connectedUser = useSelector((state) => state.connectedUser);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
-      navigate("/apis")
+      navigate('/apis');
     }
-  }, [])
+  }, []);
 
   return (
     <div className="row">

@@ -175,8 +175,7 @@ function ThemeUpdatorFromUI(props) {
         type="button"
         className="btn btn-access-negative"
         onClick={(e) => {
-          const RedirectToUI = () =>
-            navigate(`/settings/tenants/${props.tenant()._id}/style`);
+          const RedirectToUI = () => navigate(`/settings/tenants/${props.tenant()._id}/style`);
           if (props.isTenantUpdated()) {
             props.openModal({
               open: true,
@@ -192,7 +191,8 @@ function ThemeUpdatorFromUI(props) {
           } else {
             RedirectToUI();
           }
-        }}>
+        }}
+      >
         <Translation i18nkey="Set Color Theme from UI">Set Color Theme from UI</Translation>
       </button>
     </div>
@@ -217,8 +217,8 @@ export function TenantEditComponent(props) {
   const { translateMethod, language, Translation, languages, setTranslationMode } =
     useContext(I18nContext);
 
-  const params = useParams()
-  const location = useLocation()
+  const params = useParams();
+  const location = useLocation();
 
   const [state, setState] = useState({
     tenant: null,
@@ -856,11 +856,15 @@ export function TenantEditComponent(props) {
               <div className="avatar__container">
                 <img
                   style={{ width: '100%', height: 'auto' }}
-                  src={state.tenant.style.logo}
+                  src={state.tenant?.style?.logo}
                   alt="avatar"
                 />
               </div>
+<<<<<<< HEAD
               <h1 className="h1-rwd-reduce ms-2">{state.tenant.name}</h1>
+=======
+              <h1 className="h1-rwd-reduce ml-2">{state.tenant?.name}</h1>
+>>>>>>> master
             </div>
             <React.Suspense fallback={<Spinner />}>
               <LazyForm
@@ -873,11 +877,33 @@ export function TenantEditComponent(props) {
             </React.Suspense>
             <div style={{ height: 60 }} />
             <div className="row form-back-fixedBtns">
+<<<<<<< HEAD
               <div className="d-flex justify-content-end">
                 <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
                   <i className="fas fa-chevron-left me-1" />
                   <Translation i18nkey="Back">Back</Translation>
                 </Link>
+=======
+              <Link className="btn btn-outline-primary mr-1" to={'/settings/tenants'}>
+                <i className="fas fa-chevron-left mr-1" />
+                <Translation i18nkey="Back">Back</Translation>
+              </Link>
+              {!state.create && (
+                <Link
+                  className="btn btn-outline-primary mr-1"
+                  to={`/settings/tenants/${state.tenant?._humanReadableId}/admins`}
+                >
+                  <i className="fas fa-user-shield mr-1" />
+                  <Translation i18nkey="Admins">Admins</Translation>
+                </Link>
+              )}
+              <button
+                type="button"
+                className="btn btn-outline-success"
+                {...disabled}
+                onClick={save}
+              >
+>>>>>>> master
                 {!state.create && (
                   <Link
                     className="btn btn-outline-primary me-1"

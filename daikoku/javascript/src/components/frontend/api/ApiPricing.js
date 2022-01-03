@@ -48,7 +48,8 @@ function ApiPricingCardComponent(props) {
     <span>
       <Translation
         i18nkey="quotas.with.limits.desc"
-        replacements={[props.plan.costPerMonth, currency(props.plan), props.plan.maxPerMonth]}>
+        replacements={[props.plan.costPerMonth, currency(props.plan), props.plan.maxPerMonth]}
+      >
         You'll pay {props.plan.costPerMonth}
         <Curreny plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
         per month
@@ -66,7 +67,8 @@ function ApiPricingCardComponent(props) {
           props.plan.maxPerMonth,
           props.plan.costPerAdditionalRequest,
           currency(props.plan),
-        ]}>
+        ]}
+      >
         You'll pay {props.plan.costPerMonth}
         <Curreny plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
         you'll be charged {props.plan.costPerAdditionalRequest}
@@ -86,7 +88,8 @@ function ApiPricingCardComponent(props) {
               currency(props.plan),
               props.plan.costPerRequest,
               currency(props.plan),
-            ]}>
+            ]}
+          >
             You'll pay {props.plan.costPerMonth}
             <Curreny plan={props.plan} /> per month and you'll be charged{' '}
             {props.plan.costPerRequest}
@@ -99,7 +102,8 @@ function ApiPricingCardComponent(props) {
         <span>
           <Translation
             i18nkey="pay.per.use.desc.default"
-            replacements={[props.plan.costPerRequest, currency(props.plan)]}>
+            replacements={[props.plan.costPerRequest, currency(props.plan)]}
+          >
             You'll be charged {props.plan.costPerRequest}
             <Curreny plan={props.plan} /> per request
           </Translation>
@@ -126,6 +130,7 @@ function ApiPricingCardComponent(props) {
   const plan = props.plan;
   const type = plan.type;
   const customDescription = plan.customDescription;
+
   const authorizedTeams = props.myTeams
     .filter((t) => !props.tenant.subscriptionSecurity || t.type !== 'Personal')
     .filter(
@@ -193,7 +198,8 @@ function ApiPricingCardComponent(props) {
                 <div>
                   <Translation
                     i18nkey="plan.limits"
-                    replacements={[plan.maxPerSecond, plan.maxPerMonth]}>
+                    replacements={[plan.maxPerSecond, plan.maxPerMonth]}
+                  >
                     Limits: {plan.maxPerSecond} req./sec, {plan.maxPerMonth} req./month
                   </Translation>
                 </div>
@@ -218,12 +224,14 @@ function ApiPricingCardComponent(props) {
               a={apikey}
               teams={authorizedTeams.filter(
                 (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
-              )}>
+              )}
+            >
               {props.api.visibility !== 'AdminOnly' && (
                 <Can
                   I={manage}
                   a={apikey}
-                  teams={authorizedTeams.filter((team) => team._id === props.ownerTeam._id)}>
+                  teams={authorizedTeams.filter((team) => team._id === props.ownerTeam._id)}
+                >
                   {!plan.otoroshiTarget && (
                     <span className="badge bg-danger">Missing otoroshi target</span>
                   )}
@@ -252,12 +260,14 @@ function ApiPricingCardComponent(props) {
                     .map((subs) => subs.team)}
                   allowMultipleDemand={plan.allowMultipleKeys}
                   withAllTeamSelector={false}
-                  action={(teams) => showApiKeySelectModal(teams)}>
+                  action={(teams) => showApiKeySelectModal(teams)}
+                >
                   <button type="button" className="btn btn-sm btn-access-negative col-12">
                     <Translation
                       i18nkey={
                         plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
-                      }>
+                      }
+                    >
                       {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
                     </Translation>
                   </button>
@@ -269,7 +279,8 @@ function ApiPricingCardComponent(props) {
             <button
               type="button"
               className="btn btn-sm btn-access-negative mx-auto mt-3"
-              onClick={() => props.openLoginOrRegisterModal({ ...props })}>
+              onClick={() => props.openLoginOrRegisterModal({ ...props })}
+            >
               <Translation i18nkey="Get API key">Get API key</Translation>
             </button>
           )}

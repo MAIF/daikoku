@@ -59,9 +59,14 @@ export function ApiCartidge(props) {
       <span>
         <Translation i18nkey="Visibility">Visibility</Translation>
         <span
+<<<<<<< HEAD
           className={`badge ms-1 ${
             api.visibility === 'Public' ? 'bg-success' : 'bg-danger'
           }`}>
+=======
+          className={`badge ml-1 ${api.visibility === 'Public' ? 'badge-success' : 'badge-danger'}`}
+        >
+>>>>>>> master
           {translateMethod(api.visibility)}
         </span>
       </span>
@@ -96,7 +101,8 @@ export function ApiCartidge(props) {
             action={(teams) => {
               props.redirectToApiKeysPage(props.myTeams.find((t) => teams.includes(t._id)));
             }}
-            withAllTeamSelector={false}>
+            withAllTeamSelector={false}
+          >
             <button className="btn btn-sm btn-access-negative mt-2">
               <Translation i18nkey="View your api keys">View your api keys</Translation>
             </button>

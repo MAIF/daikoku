@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Routes, useParams, Route, Navigate } from 'react-router-dom';
+import { Routes, useParams, Route, Navigate, useLocation } from 'react-router-dom';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
@@ -12,7 +12,8 @@ import { I18nContext } from '../../../../core';
 
 export function ApiIssue({ ownerTeam, ...props }) {
   const { issueId, versionId, apiId } = useParams();
-  const [api, setRootApi] = useState({});
+  const [api, setRootApi] = useState();
+  const location = useLocation();
 
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
@@ -40,33 +41,28 @@ export function ApiIssue({ ownerTeam, ...props }) {
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
 
-  if (!api)
-    return null
+  const showLabels = location.pathname.endsWith('labels');
 
+  if (!api) return null;
+
+  if (showLabels)
+    return (
+      <div className="container-fluid">
+        <Can I={manage} a={API} team={ownerTeam} orElse={<Navigate to="/" />}>
+          <TeamApiIssueTags value={api} onChange={onChange} />
+        </Can>
+      </div>
+    );
 
   return (
     <div className="container-fluid">
       <Routes>
         <Route
-          path={`${basePath}/labels`}
-          element={
-            <Can
-              I={manage}
-              a={API}
-              team={ownerTeam}
-              orElse={<Navigate to={`${basePath}/issues`} />}>
-              <TeamApiIssueTags value={api} onChange={onChange} />
-            </Can>
-          }
+          path="/new"
+          element={<NewIssue api={api} user={props.connectedUser} basePath={basePath} {...props} />}
         />
         <Route
-          path={`${basePath}/issues/new`}
-          element={
-            <NewIssue api={api} user={props.connectedUser} basePath={basePath} {...props} />
-          }
-        />
-        <Route
-          path={`${basePath}/issues/:issueId`}
+          path="/issues/:issueId"
           element={
             <ApiTimelineIssue
               issueId={issueId}
@@ -78,7 +74,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
           }
         />
         <Route
-          path={`${basePath}/issues`}
+          path="/"
           element={
             <>
               <ApiFilter

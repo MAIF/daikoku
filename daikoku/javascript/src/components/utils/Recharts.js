@@ -76,7 +76,8 @@ export function Histogram(props) {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-      }}>
+      }}
+    >
       <h4 className="recharts">{props.title}</h4>
       <ResponsiveContainer height={props.height || 200}>
         <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -125,7 +126,8 @@ export function RoundChart(props) {
         fill="var(--section-text-color)"
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
-        style={{ padding: 5 }}>
+        style={{ padding: 5 }}
+      >
         {props.name.replace(/"/g, '')}: {(props.percent * 100).toFixed(0)}% ({props.value})
       </text>
     );
@@ -139,7 +141,8 @@ export function RoundChart(props) {
         justifyContent: 'center',
         alignItems: 'center',
       }}
-      className="recharts">
+      className="recharts"
+    >
       <h4 className="recharts">{props.title}</h4>
       <ResponsiveContainer height={props.size ? props.size + 150 : 200}>
         <PieChart>
@@ -148,7 +151,8 @@ export function RoundChart(props) {
             fill="#8884d8"
             outerRadius={props.size ? props.size / 2 : 100}
             dataKey={props.dataKey || 'value'}
-            label={!props.series2 && !props.noLabel && renderCustomizedLabel}>
+            label={!props.series2 && !props.noLabel && renderCustomizedLabel}
+          >
             {props.series.map((entry, index) => (
               <Cell key={entry.name} fill={colors[index % colors.length]} />
             ))}
@@ -160,7 +164,8 @@ export function RoundChart(props) {
               innerRadius={props.size ? props.size / 2 + 10 : 110}
               outerRadius={props.size ? props.size / 2 + 30 : 130}
               dataKey={props.dataKey || 'value'}
-              label={renderCustomizedLabel}>
+              label={renderCustomizedLabel}
+            >
               {props.series2.map((entry) => {
                 const parentIdx = [...new Set(props.series.map((item) => item.name))].indexOf(
                   entry[props.parentKey]

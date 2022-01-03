@@ -44,14 +44,7 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({
-  api,
-  ownerTeam,
-  editUrl,
-  connectedUser,
-  toggleStar,
-  tab,
-}) => {
+const ApiHeader = ({ api, ownerTeam, editUrl, connectedUser, toggleStar, tab }) => {
   const navigate = useNavigate();
   const params = useParams();
 
@@ -107,7 +100,8 @@ const ApiHeader = ({
             <EditButton />
             <div
               style={{ position: 'absolute', right: 0, bottom: 0 }}
-              className="d-flex align-items-center">
+              className="d-flex align-items-center"
+            >
               {versions.length > 1 && tab !== 'issues' && (
                 <div style={{ minWidth: '125px', fontSize: 'initial' }}>
                   <Select
@@ -226,11 +220,10 @@ const ApiHomeComponent = ({
           return toastr.error(translateMethod('Error'), results.error);
         }
         return results.forEach((result) => {
-          const team = myTeams.find((t) => t._id === result.subscription.team);
-
           if (result.error) {
             return toastr.error(translateMethod('Error'), result.error);
           } else if (result.creation === 'done') {
+            const team = myTeams.find((t) => t._id === result.subscription.team);
             return toastr.success(
               translateMethod('Done'),
               translateMethod(
@@ -242,6 +235,7 @@ const ApiHomeComponent = ({
               )
             );
           } else if (result.creation === 'waiting') {
+            const team = myTeams.find((t) => t._id === result.subscription.team);
             return toastr.info(
               translateMethod('Pending request'),
               translateMethod(
@@ -259,10 +253,20 @@ const ApiHomeComponent = ({
   };
 
   const editUrl = (api) => {
+    const matchingFrontAndBackOfficeRoutes = {
+      pricing: 'plans',
+      redoc: 'swagger',
+      swagger: 'testing',
+      news: 'news',
+      description: 'infos',
+    };
+
     return Option(myTeams.find((team) => api.team === team._id)).fold(
       () => '#',
       (adminTeam) =>
-        `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
+        `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${
+          api.currentVersion
+        }/${matchingFrontAndBackOfficeRoutes[tab] || tab}`
     );
   };
 
@@ -306,16 +310,17 @@ const ApiHomeComponent = ({
 
     return (
       <div className="mx-auto mt-3 d-flex flex-column justify-content-center">
-        <h1 style={{ margin: 0 }}>{showAccessModal.error}</h1>
+        <h1 style={{ margin: 0 }}>{translateMethod(showAccessModal.error)}</h1>
         {(teams.length === 1 &&
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
-          showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
+        showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
             <h2 className="text-center my-3">{translateMethod('request_already_pending')}</h2>
             <button
               className="btn btn-outline-info mx-auto"
               style={{ width: 'fit-content' }}
-              onClick={() => navigate(-1)}>
+              onClick={() => navigate(-1)}
+            >
               {translateMethod('go_back')}
             </button>
           </>
@@ -334,10 +339,14 @@ const ApiHomeComponent = ({
               authorizedTeams={authorizedTeams}
               teams={teams}
               action={(teams) => {
-                Services.askForApiAccess(teams, showAccessModal.api._id).then((_) =>
-                  updateSubscriptions(showAccessModal.api._id)
-                );
-              }}>
+                Services.askForApiAccess(teams, showAccessModal.api._id).then((_) => {
+                  toastr.info(
+                    translateMethod('ask.api.access.info', false, '', showAccessModal.api.name)
+                  );
+                  updateSubscriptions(showAccessModal.api._id);
+                });
+              }}
+            >
               <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
                 {translateMethod('notif.api.access', null, false, [params.apiId])}
               </button>
@@ -379,14 +388,16 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'description' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}`}>
+                  to={`/${params.teamId}/${apiId}/${versionId}`}
+                >
                   <Translation i18nkey="Description">Description</Translation>
                 </Link>
               </li>
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/pricing`}>
+                  to={`/${params.teamId}/${apiId}/${versionId}/pricing`}
+                >
                   <Translation i18nkey="Plan" isPlural={true}>
                     Plans
                   </Translation>
@@ -394,23 +405,27 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                    }`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/documentation`}>
+                  className={`nav-link ${
+                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                  }`}
+                  to={`/${params.teamId}/${apiId}/${versionId}/documentation`}
+                >
                   <Translation i18nkey="Documentation">Documentation</Translation>
                 </Link>
               </li>
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/redoc`}>
+                  to={`/${params.teamId}/${apiId}/${versionId}/redoc`}
+                >
                   <Translation i18nkey="Api Reference">Api Reference</Translation>
                 </Link>
               </li>
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/swagger`}>
+                  to={`/${params.teamId}/${apiId}/${versionId}/swagger`}
+                >
                   <Translation i18nkey="Try it !">Try it !</Translation>
                 </Link>
               </li>
@@ -418,7 +433,8 @@ const ApiHomeComponent = ({
                 <li className="nav-item">
                   <Link
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
-                    to={`/${params.teamId}/${apiId}/${versionId}/news`}>
+                    to={`/${params.teamId}/${apiId}/${versionId}/news`}
+                  >
                     <Translation i18nkey="News">News</Translation>
                   </Link>
                 </li>
@@ -426,7 +442,8 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/issues`}>
+                  to={`/${params.teamId}/${apiId}/${versionId}/issues`}
+                >
                   <Translation i18nkey="issues">Issues</Translation>
                 </Link>
               </li>
@@ -472,12 +489,8 @@ const ApiHomeComponent = ({
                 tenant={tenant}
               />
             )}
-            {tab === 'documentation' && (
-              <ApiDocumentation api={api} ownerTeam={ownerTeam} />
-            )}
-            {tab === 'documentation-page' && (
-              <ApiDocumentation api={api} ownerTeam={ownerTeam} />
-            )}
+            {tab === 'documentation' && <ApiDocumentation api={api} ownerTeam={ownerTeam} />}
+            {tab === 'documentation-page' && <ApiDocumentation api={api} ownerTeam={ownerTeam} />}
             {tab === 'swagger' && (
               <ApiSwagger
                 api={api}
@@ -507,11 +520,7 @@ const ApiHomeComponent = ({
               />
             )}
             {tab === 'news' && (
-              <ApiPost
-                api={api}
-                ownerTeam={ownerTeam}
-                versionId={params.versionId}
-              />
+              <ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />
             )}
             {tab === 'issues' && (
               <ApiIssue

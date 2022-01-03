@@ -40,8 +40,14 @@ const ApiPost = ({ publishPost, params, team }) => {
       </React.Suspense>
       <div className="d-flex justify-content-end my-3">
         <Link
+<<<<<<< HEAD
           className="btn btn-outline-danger me-1"
           to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}>
+=======
+          className="btn btn-outline-danger mr-1"
+          to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}
+        >
+>>>>>>> master
           {translateMethod('Cancel')}
         </Link>
         <button className="btn btn-outline-success" onClick={() => publishPost(selected)}>
@@ -164,24 +170,20 @@ export function TeamApiPost({ team, params, api, ...props }) {
 
   const { posts, pagination } = state;
 
-  const basePath = '/:teamId/settings/apis/:apiId/:versionId/news';
-
   return (
     <div>
       <Routes>
+        <Route path="/new" element={<ApiPost publishPost={publishPost} params={params} />} />
         <Route
-          path={`${basePath}/new`}
-          element={<ApiPost publishPost={publishPost} params={params} />}
-        />
-        <Route
-          path={basePath}
+          path="/"
           element={
             <div className="p-3">
               <div className="d-flex align-items-center justify-content-between">
                 <h2>{translateMethod('News')}</h2>
                 <Link
                   className="btn btn-outline-success"
-                  to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news/new`}>
+                  to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news/new`}
+                >
                   {translateMethod('team_api_post.new')}
                 </Link>
               </div>
@@ -204,14 +206,26 @@ export function TeamApiPost({ team, params, api, ...props }) {
                       <div>
                         {post.isOpen && (
                           <button
+<<<<<<< HEAD
                             className="btn btn-outline-success me-1"
                             onClick={() => savePost(i)}>
+=======
+                            className="btn btn-outline-success mr-1"
+                            onClick={() => savePost(i)}
+                          >
+>>>>>>> master
                             <i className="fas fa-save" />
                           </button>
                         )}
                         <button
+<<<<<<< HEAD
                           className="btn btn-outline-danger me-1"
                           onClick={() => removePost(post._id, i)}>
+=======
+                          className="btn btn-outline-danger mr-1"
+                          onClick={() => removePost(post._id, i)}
+                        >
+>>>>>>> master
                           <i className="fas fa-trash" />
                         </button>
                         <button className="btn btn-outline-info" onClick={() => togglePost(i)}>
@@ -237,7 +251,8 @@ export function TeamApiPost({ team, params, api, ...props }) {
                   {translateMethod('team_api_post.load_old_posts')}
                 </button>
               )}
-            </div>}
+            </div>
+          }
         />
       </Routes>
     </div>

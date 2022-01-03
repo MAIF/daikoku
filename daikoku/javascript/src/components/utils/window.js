@@ -117,7 +117,7 @@ function Prompt(props) {
 
   const defaultButton = (e) => {
     if (e.keyCode === 13) {
-      props.ok(state.text);
+      props.ok(text);
     }
   };
 
@@ -159,7 +159,8 @@ function Prompt(props) {
               <button
                 type="button"
                 className="btn btn-outline-success"
-                onClick={() => props.ok(text)}>
+                onClick={() => props.ok(text)}
+              >
                 Ok
               </button>
             </div>

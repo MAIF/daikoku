@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment';
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import _ from 'lodash';
 
@@ -116,14 +116,10 @@ function TeamApiConsumptionComponent(props) {
   useEffect(() => {
     Promise.all([
       Services.teams(),
-      Services.teamApi(
-        props.currentTeam._id,
-        params.apiId,
-        params.versionId
-      ),
+      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
     ]).then(([teams, api]) => setState({ ...state, teams, api }));
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('API consumption')}`
+    document.title = `${props.currentTeam.name} - ${translateMethod('API consumption')}`;
   }, []);
 
   return (
@@ -140,9 +136,7 @@ function TeamApiConsumptionComponent(props) {
             </div>
             <div className="col section p-2">
               <OtoroshiStatsVizualization
-                sync={() =>
-                  Services.syncApiConsumption(params.apiId, props.currentTeam._id)
-                }
+                sync={() => Services.syncApiConsumption(params.apiId, props.currentTeam._id)}
                 fetchData={(from, to) =>
                   Services.apiGlobalConsumption(
                     params.apiId,
@@ -221,7 +215,8 @@ function PlanLightConsumption(props) {
   return (
     <div
       className={classNames('card mb-3 shadow-sm consumptions-plan')}
-      onClick={props.handleClick}>
+      onClick={props.handleClick}
+    >
       <div className="card-img-top card-data" data-holder-rendered="true">
         <GlobalDataConsumption data={props.data} />
       </div>

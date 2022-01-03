@@ -26,8 +26,14 @@ function Gravatar(props) {
     <button
       type="button"
       className={'btn btn-access ' + (props.fullWidth ? 'btn-block' : '')}
+<<<<<<< HEAD
       onClick={setGravatarLink}>
       <i className="fas fa-user-circle me-1" />
+=======
+      onClick={setGravatarLink}
+    >
+      <i className="fas fa-user-circle mr-1" />
+>>>>>>> master
       <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
     </button>
   );
@@ -459,22 +465,35 @@ export function TwoFactorAuthentication({ title }) {
 export function DaikokuHomeApp(props) {
   const tenant = props.tenant;
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   return (
     <Router>
       <div role="root-container" className="container-fluid">
         <Routes>
-          <Route path="/"
-            element={<>
-              <UnauthenticatedTopBar tenant={tenant} />
-              <UnauthenticatedHome tenant={tenant} />
-            </>} />
+          <Route
+            path="*"
+            element={
+              <>
+                <UnauthenticatedTopBar tenant={tenant} />
+              </>
+            }
+          />
+        </Routes>
+        <Routes>
+          <Route path="/" element={<UnauthenticatedHome tenant={tenant} />} />
         </Routes>
         <Routes>
           <Route path="/signup" element={<Signup tenant={tenant} />} />
           <Route path="/reset" element={<ResetPassword />} />
-          <Route path="/2fa" element={<TwoFactorAuthentication title={`${tenant.name} - ${translateMethod('Verification code')}`} />} />
+          <Route
+            path="/2fa"
+            element={
+              <TwoFactorAuthentication
+                title={`${tenant.name} - ${translateMethod('Verification code')}`}
+              />
+            }
+          />
         </Routes>
       </div>
     </Router>

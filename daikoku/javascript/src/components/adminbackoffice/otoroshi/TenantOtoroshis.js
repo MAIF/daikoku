@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { v4 as uuid } from 'uuid';
@@ -14,6 +14,16 @@ import { I18nContext } from '../../../locales/i18n-context';
 export function TenantOtoroshisComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
+
+  const [isTenantAdmin, setIsTenantAdmin] = useState(props.connectedUser.isDaikokuAdmin);
+
+  useEffect(() => {
+    if (!isTenantAdmin)
+      Services.tenantAdmins(props.tenant._id).then((res) => {
+        if (res.admins)
+          setIsTenantAdmin(res.admins.find((admin) => admin._id === props.connectedUser._id));
+      });
+  }, []);
 
   let table;
 
@@ -42,22 +52,24 @@ export function TenantOtoroshisComponent(props) {
         const otoroshi = original;
         return (
           <div className="btn-group">
-            {isTenantAdmin() && (
+            {isTenantAdmin && (
               <Link to={`/settings/otoroshis/${otoroshi._id}`}>
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
-                  title={translateMethod('Edit this settings')}>
+                  title={translateMethod('Edit this settings')}
+                >
                   <i className="fas fa-edit" />
                 </button>
               </Link>
             )}
-            {isTenantAdmin() && (
+            {isTenantAdmin && (
               <button
                 type="button"
                 className="btn btn-sm btn-outline-danger"
                 title={translateMethod('Delete this settings')}
-                onClick={() => onDelete(otoroshi._id)}>
+                onClick={() => onDelete(otoroshi._id)}
+              >
                 <i className="fas fa-trash" />
               </button>
             )}
@@ -66,13 +78,6 @@ export function TenantOtoroshisComponent(props) {
       },
     },
   ];
-
-  const isTenantAdmin = () => {
-    if (props.connectedUser.isDaikokuAdmin) {
-      return true;
-    }
-    return props.tenant.admins.indexOf(props.connectedUser._id) > -1;
-  };
 
   const onDelete = (id) => {
     window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
@@ -95,8 +100,8 @@ export function TenantOtoroshisComponent(props) {
     };
     navigate(`/settings/otoroshis/${settings._id}`, {
       state: {
-        newSettings: settings
-      }
+        newSettings: settings,
+      },
     });
   };
 
@@ -114,7 +119,8 @@ export function TenantOtoroshisComponent(props) {
                 onClick={(e) => {
                   e.preventDefault();
                   createNewSettings();
-                }}>
+                }}
+              >
                 <i className="fas fa-plus-circle" />
               </a>
             </h1>

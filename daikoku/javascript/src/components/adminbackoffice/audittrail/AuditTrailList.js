@@ -64,7 +64,8 @@ export class AuditTrailList extends Component {
                 </pre>,
                 'Event details'
               );
-            }}>
+            }}
+          >
             Details
           </button>
         );

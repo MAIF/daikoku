@@ -16,7 +16,8 @@ export function TextInput(props) {
     <div className={`mb-3 ${isColmunFormat ? '' : 'row'}`}>
       <label
         htmlFor={`input-${props.label}`}
-        className={isColmunFormat ? '' : 'col-xs-12 col-sm-2 col-form-label'}>
+        className={isColmunFormat ? '' : 'col-xs-12 col-sm-2 col-form-label'}
+      >
         <Help text={props.help} label={props.label} />
       </label>
       <div className={isColmunFormat ? '' : 'col-sm-10'}>

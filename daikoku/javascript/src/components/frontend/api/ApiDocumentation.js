@@ -22,7 +22,8 @@ export function ApiDocumentationCartidge({ details }) {
           return (
             <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
               <Link
-                to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}>
+                to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}
+              >
                 {obj.title}
               </Link>
             </li>

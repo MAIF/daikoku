@@ -144,7 +144,8 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
         lastClosedDates,
         loading,
         createNewChat,
-      }}>
+      }}
+    >
       {children}
     </MessagesContext.Provider>
   );

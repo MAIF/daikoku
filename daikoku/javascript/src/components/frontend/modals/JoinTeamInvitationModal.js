@@ -8,7 +8,7 @@ export const JoinTeamInvitationModal = (props) => {
   const [error, setError] = useState(undefined);
   const [team, setTeam] = useState('');
   const [notificationId, setNotificationId] = useState('');
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -69,7 +69,8 @@ export const JoinTeamInvitationModal = (props) => {
             onClick={() => {
               props.closeModal();
               navigate('/apis');
-            }}>
+            }}
+          >
             {translateMethod('Home')}
           </button>
         ) : (

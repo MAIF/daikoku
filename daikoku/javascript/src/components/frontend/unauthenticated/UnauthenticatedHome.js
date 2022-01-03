@@ -50,7 +50,8 @@ export function UnauthenticatedHomeComponent(props) {
                   <div
                     dangerouslySetInnerHTML={{
                       __html: converter.makeHtml(props.tenant.description || ''),
-                    }}></div>
+                    }}
+                  ></div>
                 )}
                 <p>
                   {props.tenant.authProvider === 'Local' && (
@@ -74,9 +75,16 @@ export function UnauthenticatedHomeComponent(props) {
                   </a>
                   {props.tenant.authProvider !== 'Local' && (
                     <a
+<<<<<<< HEAD
                       className="btn btn-access-negative my-2 ms-2"
                       href={`/auth/${props.tenant.authProvider}/login`}>
                       <i className="fas fa-user me-1" />
+=======
+                      className="btn btn-access-negative my-2 ml-2"
+                      href={`/auth/${props.tenant.authProvider}/login`}
+                    >
+                      <i className="fas fa-user mr-1" />
+>>>>>>> master
                       <Translation i18nkey="Connect to your thrid party account">
                         Connect to your thrid party account
                       </Translation>

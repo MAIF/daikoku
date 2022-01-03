@@ -146,7 +146,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def updateTeam(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamAdminOnly(AuditTrailEvent(
+    TeamAdminOrTenantAdminOnly(AuditTrailEvent(
       "@{user.name} has updated team @{team.name} - @{team.id}"))(teamId, ctx) {
       _ =>
         json.TeamFormat.reads(ctx.request.body) match {
@@ -165,7 +165,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                   ctx.setCtxValue("team.id", team.id)
                   ctx.setCtxValue("team.name", team.name)
                   val teamToSave =
-                    if (ctx.user.isDaikokuAdmin) newTeam
+                    if (ctx.user.isDaikokuAdmin || ctx.isTenantAdmin) newTeam
                     else
                       newTeam.copy(metadata = team.metadata,
                                    apisCreationPermission =
@@ -187,9 +187,11 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def deleteTeam(teamId: String) = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(
+    TenantAdminOnly(
       AuditTrailEvent(
-        s"@{user.name} has deleted team @{team.name} - @{team.id}"))(ctx) {
+        s"@{user.name} has deleted team @{team.name} - @{team.id}"))(
+      ctx.tenant.id.value,
+      ctx) { (tenant, team) =>
       env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId) flatMap {
         case Some(team) if team.`type` == TeamType.Admin =>
           FastFuture.successful(

@@ -46,17 +46,16 @@ export function ImportExportComponent(props) {
         onSuccessMessage: '',
       },
     });
-    Services.migrateMongoToPostgres()
-      .then((res) => {
-        setState({
-          ...state,
-          migration: {
-            processing: false,
-            error: res.error || '',
-            onSuccessMessage: res.error ? '' : res.message,
-          },
-        });
+    Services.migrateMongoToPostgres().then((res) => {
+      setState({
+        ...state,
+        migration: {
+          processing: false,
+          error: res.error || '',
+          onSuccessMessage: res.error ? '' : res.message,
+        },
       });
+    });
   };
 
   const { processing, error, onSuccessMessage } = state.migration;
@@ -72,16 +71,28 @@ export function ImportExportComponent(props) {
               <a
                 href={`/api/state/export?download=true&export-audit-trail=${!!state.exportAuditTrail}`}
                 target="_blank"
+<<<<<<< HEAD
                 className="btn btn-outline-primary">
                 <i className="fas fa-download me-1" />
+=======
+                className="btn btn-outline-primary"
+              >
+                <i className="fas fa-download mr-1" />
+>>>>>>> master
                 <Translation i18nkey="download state">download state</Translation>
               </a>
               <button
                 type="button"
                 style={{ marginLeft: 10 }}
                 onClick={importState}
+<<<<<<< HEAD
                 className="btn btn-outline-primary">
                 <i className="fas fa-upload me-1" />
+=======
+                className="btn btn-outline-primary"
+              >
+                <i className="fas fa-upload mr-1" />
+>>>>>>> master
                 {state.uploading
                   ? translateMethod('importing ...')
                   : translateMethod('import state')}

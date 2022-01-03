@@ -29,7 +29,8 @@ export class Collapse extends Component {
                 type="button"
                 className="btn btn-access-negative pull-right btn-sm"
                 style={{ float: 'right' }}
-                onClick={this.toggle}>
+                onClick={this.toggle}
+              >
                 <i className="fas fa-eye" />
               </button>
             </div>
@@ -49,7 +50,8 @@ export class Collapse extends Component {
                 type="button"
                 className="btn btn-access-negative pull-right btn-sm"
                 style={{ float: 'right' }}
-                onClick={this.toggle}>
+                onClick={this.toggle}
+              >
                 <i className="fas fa-eye-slash" />
               </button>
             </div>

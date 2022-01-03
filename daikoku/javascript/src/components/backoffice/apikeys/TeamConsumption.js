@@ -10,8 +10,8 @@ const TeamConsumptionComponent = ({ currentTeam }) => {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translateMethod('Consumption')}`
-  }, [])
+    document.title = `${currentTeam.name} - ${translateMethod('Consumption')}`;
+  }, []);
 
   const mappers = [
     {

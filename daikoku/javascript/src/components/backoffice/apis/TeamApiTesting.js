@@ -141,7 +141,8 @@ export const TeamApiTesting = (props) => {
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'flex-start',
-            }}>
+            }}
+          >
             <p>
               <Translation i18nkey="otoroshi.test.key.modal.description">
                 In order to make everything work, you'll have to add a tags match (OneTageIn /
@@ -165,7 +166,8 @@ export const TeamApiTesting = (props) => {
                 marginBottom: 16,
                 display: 'flex',
                 justifyContent: 'center',
-              }}>
+              }}
+            >
               {testing.config.tag}
             </div>
           </div>

@@ -13,7 +13,7 @@ import { useParams } from 'react-router-dom';
 
 function NotificationListComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
-  const params = useParams()
+  const params = useParams();
 
   const [state, setState] = useState({
     notifications: [],
@@ -88,6 +88,11 @@ function NotificationListComponent(props) {
       }),
     });
     Services.acceptNotificationOfTeam(notificationId, values)
+      .then((res) => {
+        if (res.error)
+          window.alert(res.error, translateMethod('notification.accept.on_error.title'));
+        else return Promise.resolve();
+      })
       .then(() => Services.myNotifications(0, state.notifications.length))
       .then(({ notifications, count }) =>
         setState({
@@ -110,18 +115,15 @@ function NotificationListComponent(props) {
     });
     Services.rejectNotificationOfTeam(notificationId)
       .then(() => Services.myNotifications(0, state.notifications.length))
-      .then(({ notifications, count }) =>
-        setState(
-          {
-            ...state,
-            notifications,
-            count,
-            untreatedCount: count,
-            untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
-          },
-          () => props.updateNotifications(state.untreatedNotifications.length)
-        )
-      );
+      .then(({ notifications, count }) => {
+        setState({
+          ...state,
+          notifications,
+          count,
+          untreatedCount: count,
+          untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
+        });
+      });
   };
 
   useEffect(() => {
@@ -191,8 +193,9 @@ function NotificationListComponent(props) {
             className={classNames({
               'nav-item': true,
               active: state.tab === 'unread',
-            })}>
-            <a href="#" onClick={() => onSelectTab('unread')}>
+            })}
+          >
+            <a href="#unread" onClick={() => onSelectTab('unread')}>
               <Translation i18nkey="Untreated" count={state.untreatedCount}>
                 Untreated
               </Translation>
@@ -203,13 +206,15 @@ function NotificationListComponent(props) {
             className={classNames({
               'nav-item': true,
               active: state.tab === 'all',
-            })}>
-            <a href="#" onClick={() => onSelectTab('all')}>
+            })}
+          >
+            <a href="#all" onClick={() => onSelectTab('all')}>
               <Translation i18nkey="All notifications">All notifications</Translation>
             </a>
           </li>
         </ul>
-      }>
+      }
+    >
       <div className="row">
         <h1>
           <Translation i18nkey="Notifications" isPlural={true}>
@@ -261,8 +266,14 @@ function NotificationListComponent(props) {
             {state.nextIsPending && <Spinner />}
             {!state.nextIsPending && moreBtnIsDisplay() && (
               <button
+<<<<<<< HEAD
                 className="btn btn-access-negative my-2 ms-2"
                 onClick={() => getMoreNotifications()}>
+=======
+                className="btn btn-access-negative my-2 ml-2"
+                onClick={() => getMoreNotifications()}
+              >
+>>>>>>> master
                 <Translation i18nkey="more">more</Translation>
               </button>
             )}

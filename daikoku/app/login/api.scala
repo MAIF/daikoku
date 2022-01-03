@@ -182,6 +182,15 @@ object TenantHelper {
                                          tenant)
             case Some(tenant) => f(tenant)
           }
+          .recoverWith {
+            case _ =>
+              Errors.craftResponseResult(
+                "Failed to retrieve tenant # Try to reload your page",
+                Results.NotFound,
+                request,
+                None,
+                env)
+          }
     }
   }
 }
@@ -295,7 +304,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", path) if path.startsWith("/signup") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", path) if path.startsWith("/robot.txt") =>
+                  case ("get", path) if path.startsWith("/robots.txt") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case (_, r"/account") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))

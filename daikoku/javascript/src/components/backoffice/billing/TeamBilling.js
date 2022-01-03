@@ -23,7 +23,7 @@ function TeamBillingComponent(props) {
   useEffect(() => {
     getTeamBilling(props.currentTeam);
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('Billing')}`
+    document.title = `${props.currentTeam.name} - ${translateMethod('Billing')}`;
   }, []);
 
   const getTeamBilling = (team) => {
@@ -167,9 +167,7 @@ function TeamBillingComponent(props) {
                       return (
                         <PriceCartridge
                           key={idx}
-                          label={
-                            usagePlan.customName || formatPlanType(usagePlan, translateMethod)
-                          }
+                          label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)}
                           total={billing.total}
                           currency={usagePlan.currency}
                         />

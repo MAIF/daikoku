@@ -20,12 +20,14 @@ const GuestUserMenu = ({ loginProvider }) => {
     <>
       <a
         href={`/auth/${loginProvider}/login`}
-        className="btn btn-outline-success mx-1 login-button">
+        className="btn btn-outline-success mx-1 login-button"
+      >
         {translateMethod('Login')}
       </a>
       <a
         href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-        className="btn btn-success register-button">
+        className="btn btn-success register-button"
+      >
         {translateMethod('Register')}
       </a>
     </>
@@ -51,7 +53,8 @@ const DarkModeActivator = ({ initialDark }) => {
   return (
     <div
       className="cursor-pointer d-flex align-items-center darkmode"
-      onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
+      onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}
+    >
       {theme === DARK ? <Sun /> : <Moon />}
     </div>
   );
@@ -165,25 +168,29 @@ const TopBarComponent = (props) => {
   const isDefaultLogo = props.tenant.logo === '/assets/images/daikoku.svg';
   return (
     <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
-      { }
+      {}
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
             <div className="ps-1 pe-2">
               <Link
                 to="/apis"
+<<<<<<< HEAD
                 className="navbar-brand d-flex align-items-center me-4"
+=======
+                className="navbar-brand d-flex align-items-center mr-2"
+>>>>>>> master
                 title="Daikoku home"
                 style={{
-                  maxWidth: '59px',
                   maxHeight: '38px',
-                }}>
+                }}
+              >
                 {props.tenant.logo && !isDefaultLogo && (
                   <img
                     src={props.tenant.logo}
                     style={{
                       height: 'auto',
-                      maxWidth: '100%',
+                      maxWidth: '59px',
                     }}
                   />
                 )}
@@ -212,9 +219,19 @@ const TopBarComponent = (props) => {
           </div>
           <div className="d-flex flex-column flex-md-row mt-1 mt-xl-0">
             {props.impersonator && (
+<<<<<<< HEAD
               <a href="/api/me/_deimpersonate" className="btn btn-danger">
                 <i className="fas fa-user-ninja" /> {translateMethod('Quit impersonation')}
                 <b className="ms-1">{impersonator.email}</b>
+=======
+              <a
+                href="/api/me/_deimpersonate"
+                className="btn btn-sm btn-danger mr-2"
+                style={{ display: 'flex', alignItems: 'center' }}
+              >
+                <i className="fas fa-user-ninja mr-1" /> {translateMethod('Quit impersonation')}
+                <b className="ml-1">{impersonator.email}</b>
+>>>>>>> master
               </a>
             )}
             {!props.connectedUser._humanReadableId && (
@@ -236,7 +253,8 @@ const TopBarComponent = (props) => {
                   isTenantAdmin={
                     props.connectedUser.isDaikokuAdmin ||
                     (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1
-                  }>
+                  }
+                >
                   {isMaintenanceMode && (
                     <span className="badge bg-danger me-3">
                       {translateMethod('Global maintenance mode enabled')}
@@ -255,7 +273,8 @@ const TopBarComponent = (props) => {
                     'unread-notifications': !!unreadNotificationsCount,
                   })}
                   to="/notifications"
-                  title={translateMethod('Access to the notifications')}>
+                  title={translateMethod('Access to the notifications')}
+                >
                   <i className="fas fa-bell" />
                 </Link>
                 {(props.connectedUser.isDaikokuAdmin || props.isTenantAdmin) && (
@@ -271,9 +290,11 @@ const TopBarComponent = (props) => {
                     id="dropdownMenuButton1"
                     title={
                       impersonator
-                        ? `${props.connectedUser.name} (${props.connectedUser.email
-                        }) ${translateMethod('Impersonated by')} ${impersonator.name} (${impersonator.email
-                        })`
+                        ? `${props.connectedUser.name} (${
+                            props.connectedUser.email
+                          }) ${translateMethod('Impersonated by')} ${impersonator.name} (${
+                            impersonator.email
+                          })`
                         : props.connectedUser.name
                     }
                     alt="user menu"

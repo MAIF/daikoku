@@ -894,6 +894,7 @@ export const graphql = {
         _id
         type
         apiKeyVisibility
+        apisCreationPermission
         users {
           user {
             userId: id
@@ -917,6 +918,7 @@ export const graphql = {
           smallDescription
           isDefault
           visibility
+          image
           possibleUsagePlans {
             _id
             customName

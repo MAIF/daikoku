@@ -109,7 +109,7 @@ function AvatarChooser(props) {
 export function UserEditComponent() {
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
-  const location = useLocation()
+  const location = useLocation();
   const params = useParams();
 
   const [state, setState] = useState({
@@ -316,8 +316,14 @@ export function UserEditComponent() {
               style={{ marginLeft: 5 }}
               type="button"
               className="btn btn-outline-danger"
+<<<<<<< HEAD
               onClick={removeUser}>
               <i className="fas fa-trash me-1" />
+=======
+              onClick={removeUser}
+            >
+              <i className="fas fa-trash mr-1" />
+>>>>>>> master
               <Translation i18nkey="Delete">Delete</Translation>
             </button>
           )}
@@ -325,7 +331,8 @@ export function UserEditComponent() {
             style={{ marginLeft: 5 }}
             type="button"
             className="btn btn-outline-success"
-            onClick={save}>
+            onClick={save}
+          >
             {!state.create && (
               <span>
                 <i className="fas fa-save me-1" />

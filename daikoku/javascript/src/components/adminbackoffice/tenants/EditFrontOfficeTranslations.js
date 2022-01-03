@@ -44,7 +44,8 @@ const TranslationInput = ({ key, tsl, save }) => {
               onClick={() => {
                 save(values);
                 setEdited(false);
-              }}>
+              }}
+            >
               <i className="fas fa-save" />
             </button>
             <button
@@ -52,7 +53,8 @@ const TranslationInput = ({ key, tsl, save }) => {
               onClick={() => {
                 setValues(entryValues);
                 setEdited(false);
-              }}>
+              }}
+            >
               <i className="fas fa-times" />
             </button>
           </div>

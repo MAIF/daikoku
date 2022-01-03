@@ -8,7 +8,7 @@ import { I18nContext } from '../../../core';
 export function SimpleNotification(props) {
   const { translateMethod, language, Translation } = useContext(I18nContext);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const typeFormatter = (type) => {
     switch (type) {
@@ -132,8 +132,14 @@ export function SimpleNotification(props) {
         <div>
           <button
             type="button"
+<<<<<<< HEAD
             className="btn btn-outline-success btn-sm me-1"
             onClick={() => props.accept()}>
+=======
+            className="btn btn-outline-success btn-sm mr-1"
+            onClick={() => props.accept()}
+          >
+>>>>>>> master
             <i className="fas fa-check" />
           </button>
           <button
@@ -142,7 +148,8 @@ export function SimpleNotification(props) {
             onClick={() => {
               props.accept();
               navigate(notification.action.linkTo);
-            }}>
+            }}
+          >
             <i className="fas fa-eye" />
           </button>
         </div>
@@ -167,14 +174,16 @@ export function SimpleNotification(props) {
                         notification: props.notification,
                         creationMode: true,
                       })
-                    }>
+                    }
+                  >
                     <i className="fas fa-check" />
                   </a>
                   <a
                     className="btn btn-outline-danger btn-sm"
                     href="#"
                     title={translateMethod('Reject')}
-                    onClick={() => props.reject()}>
+                    onClick={() => props.reject()}
+                  >
                     <i className="fas fa-times" />
                   </a>
                 </div>
@@ -186,7 +195,8 @@ export function SimpleNotification(props) {
                     className="btn btn-outline-success btn-sm me-1"
                     href="#"
                     title={translateMethod('Accept')}
-                    onClick={() => props.accept()}>
+                    onClick={() => props.accept()}
+                  >
                     <i className="fas fa-check" />
                   </a>
                   {notificationType === 'AcceptOrReject' && (
@@ -194,7 +204,8 @@ export function SimpleNotification(props) {
                       className="btn btn-outline-danger btn-sm"
                       href="#"
                       title={translateMethod('Reject')}
-                      onClick={() => props.reject()}>
+                      onClick={() => props.reject()}
+                    >
                       <i className="fas fa-times" />
                     </a>
                   )}
@@ -208,7 +219,8 @@ export function SimpleNotification(props) {
               title={moment(date).format(
                 translateMethod('moment.date.format', 'DD MMM. YYYY à HH:mm z')
               )}
-              disabled>
+              disabled
+            >
               <i className="fas fa-check" />
             </a>
           );
@@ -219,7 +231,8 @@ export function SimpleNotification(props) {
               title={moment(date).format(
                 translateMethod('moment.date.format', 'DD MMM. YYYY à HH:mm z')
               )}
-              disabled>
+              disabled
+            >
               <i className="fas fa-times" />
             </a>
           );
@@ -306,7 +319,8 @@ export function SimpleNotification(props) {
                       Option(infos.plan.customName).getOrElse(
                         formatPlanType(infos.plan, translateMethod)
                       ),
-                    ]}>
+                    ]}
+                  >
                     Request subscription to {infos.api.name} for plan {infos.plan.type}
                   </Translation>
                 </div>
@@ -315,7 +329,8 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="notif.apikey.deletion"
-                    replacements={[notification.action.clientId, notification.action.api]}>
+                    replacements={[notification.action.clientId, notification.action.api]}
+                  >
                     Your apiKey with clientId {notification.action.clientId} for api{' '}
                     {notification.action.api} has been deleted
                   </Translation>
@@ -335,7 +350,8 @@ export function SimpleNotification(props) {
                       notification.action.clientId,
                       notification.action.api,
                       notification.action.plan,
-                    ]}>
+                    ]}
+                  >
                     Your apiKey with clientId {notification.action.clientId} (
                     {notification.action.api}/{notification.action.plan}) has started its rotation.
                     Its clientSecret hab been updated.
@@ -350,7 +366,8 @@ export function SimpleNotification(props) {
                       notification.action.clientId,
                       notification.action.api,
                       notification.action.plan,
-                    ]}>
+                    ]}
+                  >
                     Your apiKey with clientId {notification.action.clientId} (
                     {notification.action.api}/{notification.action.plan}) has ended its rotation.
                   </Translation>
@@ -364,7 +381,8 @@ export function SimpleNotification(props) {
                       notification.action.subscription,
                       notification.action.api,
                       notification.action.plan,
-                    ]}>
+                    ]}
+                  >
                     Your subscription {notification.action.subscription} ({notification.action.api}/
                     {notification.action.plan}) has been refreshed.
                   </Translation>
@@ -377,7 +395,8 @@ export function SimpleNotification(props) {
                     replacements={[
                       notification.sender.name,
                       props.getTeam(notification.action.team).name,
-                    ]}>
+                    ]}
+                  >
                     {notification.sender.name}, as admin of{' '}
                     {props.getTeam(notification.action.team).name}, invit you in his team.
                   </Translation>
@@ -390,7 +409,8 @@ export function SimpleNotification(props) {
                     replacements={[
                       notification.sender.name,
                       props.getTeam(notification.action.teamId).name,
-                    ]}>
+                    ]}
+                  >
                     {notification.sender.name}, as admin of{' '}
                     {props.getTeam(notification.action.teamId).name}, has published a new post on{' '}
                     {notification.action.apiName}.
@@ -401,7 +421,8 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="issues.notification"
-                    replacements={[notification.action.apiName]}>
+                    replacements={[notification.action.apiName]}
+                  >
                     {notification.sender.name} has published a new issue on{' '}
                     {notification.action.apiName}.
                   </Translation>
@@ -411,7 +432,8 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="issues.comment.notification"
-                    replacements={[notification.action.apiName]}>
+                    replacements={[notification.action.apiName]}
+                  >
                     {notification.sender.name} has published a new comment on issue of{' '}
                     {notification.action.apiName}.
                   </Translation>

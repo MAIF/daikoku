@@ -26,7 +26,8 @@ export class UnauthenticatedTopBar extends Component {
               <div className="dropdown">
                 <div
                   className="img__container d-flex align-items-cennter justify-content-center"
-                  style={{ width: 38, height: 38 }}>
+                  style={{ width: 38, height: 38 }}
+                >
                   <img
                     style={{ width: '100%', height: 'auto' }}
                     src={this.props.tenant.logo || '/assets/images/daikoku.svg'}

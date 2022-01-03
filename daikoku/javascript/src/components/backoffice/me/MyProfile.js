@@ -71,7 +71,8 @@ function TwoFactorAuthentication({ rawValue }) {
         height: '100%',
         zIndex: 3,
         backgroundColor: '#f6f7f7',
-      }}>
+      }}
+    >
       {backupCodes ? (
         <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
           <span className="my-3">{translateMethod('2fa.backup_codes_message')}</span>
@@ -83,14 +84,16 @@ function TwoFactorAuthentication({ rawValue }) {
               onClick={() => {
                 navigator.clipboard.writeText(backupCodes);
                 toastr.success('Copied');
-              }}>
+              }}
+            >
               <i className="fas fa-copy" />
             </button>
           </div>
           <button
             className="btn btn-outline-success"
             type="button"
-            onClick={() => window.location.reload()}>
+            onClick={() => window.location.reload()}
+          >
             {translateMethod('2fa.confirm')}
           </button>
         </div>
@@ -189,7 +192,8 @@ function TwoFactorAuthentication({ rawValue }) {
               <button
                 className="btn btn-outline-success ms-1"
                 type="button"
-                onClick={copyToClipboard}>
+                onClick={copyToClipboard}
+              >
                 <i className="fas fa-copy" />
               </button>
             </div>
@@ -304,8 +308,14 @@ const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
             type="button"
             className="btn btn-outline-primary"
             onClick={setPictureFromProvider}
+<<<<<<< HEAD
             disabled={rawValue.pictureFromProvider ? 'disabled' : null}>
             <i className="fas fa-user-circle me-1" />
+=======
+            disabled={rawValue.pictureFromProvider ? 'disabled' : null}
+          >
+            <i className="fas fa-user-circle mr-1" />
+>>>>>>> master
             <Translation i18nkey="Set avatar from auth. provider">
               Set avatar from auth. Provider
             </Translation>
@@ -368,7 +378,8 @@ function PictureUpload(props) {
         className="btn btn-outline-secondary"
         disabled={uploading}
         onClick={trigger}
-        style={{ width: 200, height: 200, borderRadius: '50%' }}>
+        style={{ width: 200, height: 200, borderRadius: '50%' }}
+      >
         {uploading && <i className="fas fa-spinner" />}
         {!uploading && (
           <div className="text-white">
@@ -582,6 +593,7 @@ function MyProfileComponent(props) {
           )}
         </div>
       </div>
+<<<<<<< HEAD
       <div className="row">
         <div className="d-flex justify-content-end">
           <a className="btn btn-outline-primary" href="#" onClick={() => navigate(-1)}>
@@ -607,6 +619,33 @@ function MyProfileComponent(props) {
             </span>
           </button>
         </div>
+=======
+      <div className="row" style={{ justifyContent: 'flex-end' }}>
+        <a className="btn btn-outline-primary" href="#" onClick={() => navigate(-1)}>
+          <i className="fas fa-chevron-left mr-1" />
+          <Translation i18nkey="Back">Back</Translation>
+        </a>
+        <button
+          type="button"
+          className="btn btn-outline-danger"
+          style={{ marginLeft: 5 }}
+          onClick={removeUser}
+        >
+          <i className="fas fa-trash mr-1" />
+          <Translation i18nkey="Delete my profile">Delete my profile</Translation>
+        </button>
+        <button
+          style={{ marginLeft: 5 }}
+          type="button"
+          className="btn btn-outline-success"
+          onClick={save}
+        >
+          <span>
+            <i className="fas fa-save mr-1" />
+            <Translation i18nkey="Save">Save</Translation>
+          </span>
+        </button>
+>>>>>>> master
       </div>
     </UserBackOffice>
   );

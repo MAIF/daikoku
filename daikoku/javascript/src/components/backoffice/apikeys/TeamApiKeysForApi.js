@@ -34,11 +34,7 @@ function TeamApiKeysForApiComponent(props) {
   useEffect(() => {
     Promise.all([
       Services.getTeamVisibleApi(props.currentTeam._id, params.apiId, params.versionId),
-      Services.getTeamSubscriptions(
-        params.apiId,
-        props.currentTeam._id,
-        params.versionId
-      ),
+      Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId),
     ]).then(([api, subscriptions]) => {
       setSubscriptions(subscriptions);
       setApi(api);
@@ -47,8 +43,8 @@ function TeamApiKeysForApiComponent(props) {
   }, [location]);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ApiKeys`
-  }, [])
+    document.title = `${props.currentTeam.name} - ApiKeys`;
+  }, []);
 
   const updateCustomName = (subscription, customName) => {
     return Services.updateSubscriptionCustomName(props.currentTeam, subscription, customName);
@@ -57,11 +53,7 @@ function TeamApiKeysForApiComponent(props) {
   const archiveApiKey = (subscription) => {
     return Services.archiveApiKey(props.currentTeam._id, subscription._id, !subscription.enabled)
       .then(() =>
-        Services.getTeamSubscriptions(
-          params.apiId,
-          props.currentTeam._id,
-          params.versionId
-        )
+        Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
       )
       .then((subs) => setSubscriptions(subs));
   };
@@ -70,11 +62,7 @@ function TeamApiKeysForApiComponent(props) {
     window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique')).then((ok) => {
       if (ok)
         Services.makeUniqueApiKey(props.currentTeam._id, subscription._id).then(() =>
-          Services.getTeamSubscriptions(
-            params.apiId,
-            props.currentTeam._id,
-            params.versionId
-          )
+          Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
         );
       then((subs) => setSubscriptions(subs));
     });
@@ -99,11 +87,7 @@ function TeamApiKeysForApiComponent(props) {
       gracePeriod
     )
       .then(() =>
-        Services.getTeamSubscriptions(
-          params.apiId,
-          props.currentTeam._id,
-          params.versionId
-        )
+        Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
       )
       .then((subs) => setSubscriptions(subs));
   };
@@ -121,11 +105,7 @@ function TeamApiKeysForApiComponent(props) {
         if (ok) {
           Services.regenerateApiKeySecret(props.currentTeam._id, subscription._id)
             .then(() =>
-              Services.getTeamSubscriptions(
-                params.apiId,
-                props.currentTeam._id,
-                params.versionId
-              )
+              Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
             )
             .then((subs) => setSubscriptions(subs))
             .then(() => toastr.success('secret reseted successfully'));
@@ -148,18 +128,18 @@ function TeamApiKeysForApiComponent(props) {
     search === ''
       ? subscriptions
       : subscriptions.filter((subs) => {
-        const plan = currentPlan(subs);
+          const plan = currentPlan(subs);
 
-        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
-          return true;
-        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
-          return true;
-        } else {
-          return formatPlanType(currentPlan(subs), translateMethod)
-            .toLowerCase()
-            .includes(search);
-        }
-      });
+          if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
+            return true;
+          } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
+            return true;
+          } else {
+            return formatPlanType(currentPlan(subs), translateMethod)
+              .toLowerCase()
+              .includes(search);
+          }
+        });
 
   const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
   const sortedApiKeys = sorted
@@ -168,9 +148,9 @@ function TeamApiKeysForApiComponent(props) {
       (acc, sub) => {
         return acc.find((a) => a._id === sub.parent)
           ? acc.map((a) => {
-            if (a._id === sub.parent) a.children.push(sub);
-            return a;
-          })
+              if (a._id === sub.parent) a.children.push(sub);
+              return a;
+            })
           : [...acc, { ...sub, children: [] }];
       },
       sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] }))
@@ -186,7 +166,8 @@ function TeamApiKeysForApiComponent(props) {
               &nbsp;
               <Link
                 to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
-                className="cursor-pointer underline-on-hover a-fake">
+                className="cursor-pointer underline-on-hover a-fake"
+              >
                 {api.name}
               </Link>
             </h1>
@@ -361,14 +342,21 @@ const ApiKeyCard = ({
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                     }}
-                    className="plan-name">
+                    className="plan-name"
+                  >
                     {customName}
                   </BeautifulTitle>
                   <button
                     disabled={!subscription.enabled}
                     type="button"
+<<<<<<< HEAD
                     className="btn btn-sm btn-access-negative ms-2"
                     onClick={() => setEditMode(true)}>
+=======
+                    className="btn btn-sm btn-access-negative ml-2"
+                    onClick={() => setEditMode(true)}
+                  >
+>>>>>>> master
                     <i className="fas fa-pen cursor-pointer a-fake" />
                   </button>
                 </>
@@ -384,7 +372,8 @@ const ApiKeyCard = ({
                   <div className="input-group-append">
                     <span
                       className="input-group-text cursor-pointer"
-                      onClick={handleCustomNameChange}>
+                      onClick={handleCustomNameChange}
+                    >
                       <i className="fas fa-check accept" />
                     </span>
                     <span className="input-group-text cursor-pointer" onClick={abortCustomNameEdit}>
@@ -399,8 +388,14 @@ const ApiKeyCard = ({
               </h3>
             ) : (
               <span
+<<<<<<< HEAD
                 className="badge bg-secondary"
                 style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}>
+=======
+                className="badge badge-secondary"
+                style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
+              >
+>>>>>>> master
                 {Option(plan.customName).getOrElse(formatPlanType(plan, translateMethod))}
               </span>
             )}
@@ -417,7 +412,8 @@ const ApiKeyCard = ({
                         type="button"
                         className="btn btn-sm btn-outline-danger ms-1"
                         disabled={!subscription.enabled}
-                        onClick={regenerateSecret}>
+                        onClick={regenerateSecret}
+                      >
                         <i className="fas fa-sync-alt" />
                       </button>
                     </BeautifulTitle>
@@ -438,7 +434,8 @@ const ApiKeyCard = ({
                         clipboard.current.select();
                         document.execCommand('Copy');
                         openInfoNotif(translateMethod('Credientials copied'));
-                      }}>
+                      }}
+                    >
                       <i className="fas fa-copy" />
                     </button>
                   </BeautifulTitle>
@@ -446,8 +443,14 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('Setup rotation')}>
                       <button
                         type="button"
+<<<<<<< HEAD
                         className="btn btn-sm btn-access-negative ms-1"
                         onClick={() => setSettingMode(true)}>
+=======
+                        className="btn btn-sm btn-access-negative ml-1"
+                        onClick={() => setSettingMode(true)}
+                      >
+>>>>>>> master
                         <i className="fas fa-history" />
                       </button>
                     </BeautifulTitle>
@@ -464,7 +467,8 @@ const ApiKeyCard = ({
                           !subscription.enabled &&
                           (subscription.parent ? subscription.parentUp : true),
                       })}
-                      onClick={archiveApiKey}>
+                      onClick={archiveApiKey}
+                    >
                       <i className="fas fa-power-off" />
                     </button>
                   </BeautifulTitle>
@@ -472,8 +476,14 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
                       <button
                         type="button"
+<<<<<<< HEAD
                         className="btn btn-sm ms-1 btn-outline-danger"
                         onClick={makeUniqueApiKey}>
+=======
+                        className="btn btn-sm ml-1 btn-outline-danger"
+                        onClick={makeUniqueApiKey}
+                      >
+>>>>>>> master
                         <i className="fas fa-share" />
                       </button>
                     </BeautifulTitle>
@@ -486,7 +496,8 @@ const ApiKeyCard = ({
                     <li className="nav-item cursor-pointer">
                       <span
                         className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('apikey')}>
+                        onClick={() => setActiveTab('apikey')}
+                      >
                         <Translation i18nkey="ApiKey">ApiKey</Translation>
                       </span>
                     </li>
@@ -494,7 +505,8 @@ const ApiKeyCard = ({
                       <li className="nav-item  cursor-pointer">
                         <span
                           className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
-                          onClick={() => setActiveTab('token')}>
+                          onClick={() => setActiveTab('token')}
+                        >
                           <Translation i18nkey="Integration token">Integration token</Translation>
                         </span>
                       </li>
@@ -543,7 +555,8 @@ const ApiKeyCard = ({
                             'cursor-pointer': subscription.enabled,
                             'cursor-forbidden': !subscription.enabled,
                           })}
-                          id={`client-secret-addon-${_id}`}>
+                          id={`client-secret-addon-${_id}`}
+                        >
                           {hide ? <i className="fas fa-eye" /> : <i className="fas fa-eye-slash" />}
                         </span>
                       </div>
@@ -579,7 +592,8 @@ const ApiKeyCard = ({
                         {subscription.children.map((aggregate) => (
                           <div key={aggregate._id}>
                             <Link
-                              to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}`}>
+                              to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}`}
+                            >
                               {`${aggregate.apiName}/${aggregate.customName || aggregate.planType}`}
                             </Link>
                           </div>
@@ -588,9 +602,11 @@ const ApiKeyCard = ({
                     </div>
                   )}
                   <button
-                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? 'mt-3' : ''
-                      }`}
-                    onClick={() => setAggregatePlan(!showAggregatePlan)}>
+                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${
+                      showAggregatePlan ? 'mt-3' : ''
+                    }`}
+                    onClick={() => setAggregatePlan(!showAggregatePlan)}
+                  >
                     {showAggregatePlan
                       ? translateMethod('team_apikey_for_api.hide_aggregate_sub')
                       : translateMethod('team_apikey_for_api.show_aggregate_sub')}
@@ -697,8 +713,14 @@ const ApiKeyCard = ({
                   disabled={
                     !subscription.enabled || Object.keys(error).length ? 'disabled' : undefined
                   }
+<<<<<<< HEAD
                   onClick={handleChanges}>
                   <i className="fas fa-save me-1"></i>
+=======
+                  onClick={handleChanges}
+                >
+                  <i className="fas fa-save mr-1"></i>
+>>>>>>> master
                   <Translation i18nkey="Save">Save</Translation>
                 </button>
               </div>

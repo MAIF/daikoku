@@ -58,11 +58,7 @@ function TeamPlanConsumptionComponent(props) {
   ];
 
   const getPlanInformation = () => {
-    return Services.teamApi(
-      props.currentTeam._id,
-      params.apiId,
-      params.versionId
-    ).then((api) => {
+    return Services.teamApi(props.currentTeam._id, params.apiId, params.versionId).then((api) => {
       if (api.error) {
         return null;
       }
@@ -94,7 +90,7 @@ function TeamPlanConsumptionComponent(props) {
   useEffect(() => {
     Services.teams().then((teams) => setState({ ...state, teams }));
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('Plan consumption')}`
+    document.title = `${props.currentTeam.name} - ${translateMethod('Plan consumption')}`;
   }, []);
 
   return (
@@ -107,7 +103,8 @@ function TeamPlanConsumptionComponent(props) {
         <p className="col">
           <Link
             to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${params.apiId}/${params.versionId}`}
-            className="btn my-2 btn-access-negative">
+            className="btn my-2 btn-access-negative"
+          >
             <i className="fas fa-angle-left" /> Back to plans
           </Link>
         </p>
