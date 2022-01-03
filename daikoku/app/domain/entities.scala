@@ -1790,7 +1790,8 @@ case class CmsPage(
   metadata: Map[String, String],
   contentType: String,
   body: String,
-  path: String
+  path: String, // TODO: multiple paths instead of forwardRef
+  // TODO: add a static tag ???
 ) extends CanJson[CmsPage] {
 
   /*
@@ -1875,8 +1876,9 @@ case class CmsPage(
             }
           }
         })
+        // TODO: include wrap
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
-        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "teams", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
+        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "team", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
         val context = Context
           .newBuilder(this)
           .combine("tenant", new JavaBeanTenant(ctx.tenant))
