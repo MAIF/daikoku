@@ -545,11 +545,11 @@ class TeamController(DaikokuAction: DaikokuAction,
                           s"Join ${team.name}",
                           Seq(email),
                           s"""
-                             | ${ctx.user.name} asked you to join ${team.name}
+                             |<p><b>${ctx.user.name}</b> asked you to join <b>${team.name}</b></p>
                              |
-                             |Please click on the following link to join this team.
+                             |<p>Please click on the following link to join this team.</p>
                              |
-                             |${ctx.request.theProtocol}://${ctx.request.theHost}/join?token=${invitedUser.invitation.get.token}
+                             |<a href="${ctx.request.theProtocol}://${ctx.request.theHost}/join?token=${invitedUser.invitation.get.token}">Click to join the team</a>
                              |
                           """.stripMargin,
                           tenant
