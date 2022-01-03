@@ -313,7 +313,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                   Map(
                     "user" -> ctx.user.name,
                     "teamName" -> team.name,
-                    "link" -> s"${ctx.tenant.domain}/notifications"
+                    "link" -> env.getDaikokuUrl(ctx.tenant, "/notifications")
                   ))
               } yield {
                 ctx.tenant.mailer
@@ -455,7 +455,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             ctx.tenant,
             Map("user" -> ctx.user.name,
                 "teamName" -> team.name,
-                "link" -> s"${ctx.tenant.domain}/notifications"))
+                "link" -> env.getDaikokuUrl(ctx.tenant, "/notifications")))
         } yield {
           ctx.tenant.mailer.send(title, Seq(user.email), body, ctx.tenant)
         }).flatten

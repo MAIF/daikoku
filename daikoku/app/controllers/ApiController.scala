@@ -51,12 +51,6 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   val logger = Logger("ApiController")
 
-  def getDaikokuUrl(tenant: Tenant, path: String) = env.config.exposedPort match {
-    case 80 => s"http://${tenant.domain}$path"
-    case 443 => s"https://${tenant.domain}$path"
-    case _ => s"http://${tenant.domain}:${env.config.exposedPort}$path"
-  }
-
   def me() = DaikokuAction.async { ctx =>
     authorizations.sync.PublicUserAccess(AuditTrailEvent("@{user.name} has accessed his own profile"))(ctx) {
         ctx.user.asJson
@@ -74,7 +68,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         api.swagger match {
           case Some(SwaggerAccess(_, Some(content), _)) => FastFuture.successful(Ok(content).as("application/json"))
           case Some(SwaggerAccess(url, None, headers)) => {
-            val finalUrl = if (url.startsWith("/")) getDaikokuUrl(ctx.tenant, url) else url
+            val finalUrl = if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url) else url
             Try {
               env.wsClient.url(finalUrl).withHttpHeaders(headers.toSeq: _*).get().map { resp =>
                 Ok(resp.body).as(resp.header("Content-Type").getOrElse("application/json"))
@@ -763,7 +757,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     )
 
     val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
-    val notificationUrl = getDaikokuUrl(tenant, "/notifications")
+    val notificationUrl = env.getDaikokuUrl(tenant, "/notifications")
     for {
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
@@ -1454,7 +1448,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                 "user" -> ctx.user.name,
                 "apiName" -> api.name,
                 "teamName" -> team.name,
-                "link" -> s"${ctx.tenant.domain}/notifications"
+                "link" -> env.getDaikokuUrl(ctx.tenant, "/notifications")
               ))
             } yield {
               ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
