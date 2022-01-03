@@ -17,7 +17,7 @@ You will have some informations to fill :
 * Possibly user's avatar. It could be an URl or an assets from the object manager
 * Activate / deactivate the admin status
 * User's password
-* User's personal token
+* User's personal token (usefull for integration apis)
 * The tenants which are accessible to the user
 * Metadata
 

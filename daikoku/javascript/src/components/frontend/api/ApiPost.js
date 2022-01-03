@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { t } from '../../../locales';
+import React, { useState, useEffect, useContext } from 'react';
+import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
 
-export function ApiPost({ api, currentLanguage }) {
+export function ApiPost({ api, versionId }) {
   const [posts, setPosts] = useState([]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   const [pagination, setPagination] = useState({
     limit: 1,
@@ -13,18 +15,20 @@ export function ApiPost({ api, currentLanguage }) {
   });
 
   useEffect(() => {
-    Services.getAPIPosts(api._id, pagination.offset, pagination.limit).then((data) => {
-      setPosts(
-        [...posts, ...data.posts].reduce((acc, post) => {
-          if (!acc.find((p) => p._id === post._id)) acc.push(post);
-          return acc;
-        }, [])
-      );
-      setPagination({
-        ...pagination,
-        total: data.total,
-      });
-    });
+    Services.getAPIPosts(api._humanReadableId, versionId, pagination.offset, pagination.limit).then(
+      (data) => {
+        setPosts(
+          [...posts, ...data.posts].reduce((acc, post) => {
+            if (!acc.find((p) => p._id === post._id)) acc.push(post);
+            return acc;
+          }, [])
+        );
+        setPagination({
+          ...pagination,
+          total: data.total,
+        });
+      }
+    );
   }, [pagination.offset, pagination.limit]);
 
   function formatDate(lastModificationAt) {
@@ -54,8 +58,9 @@ export function ApiPost({ api, currentLanguage }) {
               limit: 1,
               offset: pagination.offset + 1,
             });
-          }}>
-          {t('Load older posts', currentLanguage)}
+          }}
+        >
+          {translateMethod('Load older posts')}
         </button>
       )}
     </div>

@@ -1,53 +1,42 @@
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 
 import { Spinner } from '../../utils';
 import * as Services from '../../../services';
-import { t, Translation } from '../../../locales';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
+import { I18nContext } from '../../../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-class NameAlreadyExists extends Component {
-  state = { exists: false };
+function NameAlreadyExists(props) {
+  const [exists, setExists] = useState(false);
 
-  update = (props) => {
+  const update = () => {
     Services.checkIfApiNameIsUnique(props.rawValue.name, props.rawValue._id).then((r) =>
-      this.setState({ exists: r.exists })
+      setExists(r.exists)
     );
   };
 
-  UNSAFE_componentWillReceiveProps(np) {
-    if (np.rawValue.name !== this.props.rawValue.name) {
-      this.update(np);
-    }
-  }
+  const { Translation } = useContext(I18nContext);
 
-  componentDidMount() {
-    this.update(this.props);
-  }
+  useEffect(() => {
+    update(props);
+  }, [props.rawValue.name]);
 
-  render() {
-    if (this.state.exists) {
-      return (
-        <div className="form-group row">
-          <div
-            className="col-sm-12"
-            style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-            <span className="badge badge-danger">
-              <Translation
-                i18nkey="api.already.exists"
-                language={this.props.currentLanguage}
-                replacements={[this.props.rawValue.name]}>
-                api with name "{this.props.rawValue.name}" already exists
-              </Translation>
-            </span>
-          </div>
-        </div>
-      );
-    } else {
-      return null;
-    }
-  }
+  if (!exists) return null;
+
+  return (
+    <div className="mb-3 row">
+      <div
+        className="col-sm-12"
+        style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <span className="badge bg-danger">
+          <Translation i18nkey="api.already.exists" replacements={[props.rawValue.name]}>
+            api with name "{props.rawValue.name}" already exists
+          </Translation>
+        </span>
+      </div>
+    </div>
+  );
 }
 
 const StyleLogoAssetButton = (props) => {
@@ -55,50 +44,53 @@ const StyleLogoAssetButton = (props) => {
   const domain = tenant.domain;
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+
+  const { translateMethod } = useContext(I18nContext);
+
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.image}
         onlyPreview
         team={props.team}
         teamId={props.team._id}
-        label={t('Set api image from asset', props.currentLanguage)}
-        currentLanguage={props.currentLanguage}
+        label={translateMethod('Set api image from asset')}
         onSelect={(asset) => props.changeValue('image', origin + asset.link)}
       />
     </div>
   );
 };
 
-export class TeamApiInfo extends Component {
-  formSchema = {
-    _id: {
-      type: 'string',
-      disabled: true,
-      props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+export function TeamApiInfo(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const formSchema = {
+    isDefault: {
+      type: 'bool',
+      props: {
+        label: translateMethod('team_api_info.isDefault'),
+      },
     },
     name: {
       type: 'string',
-      props: { label: t('Name', this.props.currentLanguage), placeholder: 'New Api' },
+      props: { label: translateMethod('Name'), placeholder: 'New Api' },
     },
     nameAlreadyExists: {
       type: NameAlreadyExists,
       props: {
-        creating: this.props.creating,
-        currentLanguage: this.props.currentLanguage,
+        creating: props.creating,
       },
     },
     smallDescription: {
       type: 'text',
-      props: { label: t('Small desc.', this.props.currentLanguage) },
+      props: { label: translateMethod('Small desc.') },
     },
     header: {
       type: 'markdown',
       props: {
-        label: t('Custom header', this.props.currentLanguage),
-        help: t(
+        label: translateMethod('Custom header'),
+        help: translateMethod(
           'api.custom.header.help',
-          this.props.currentLanguage,
           false,
           `Use {{title}} to insert API title, {{ description }} to insert API small description.
          Add "btn-edit" class to link to admin API edition admin page.`
@@ -107,40 +99,39 @@ export class TeamApiInfo extends Component {
     },
     image: {
       type: 'string',
-      props: { label: t('Image', this.props.currentLanguage) },
+      props: { label: translateMethod('Image') },
     },
     imageFromAssets: {
       type: StyleLogoAssetButton,
       props: {
-        tenant: this.props.tenant,
-        team: this.props.team,
-        currentLanguage: this.props.currentLanguage,
+        tenant: props.tenant,
+        team: props.team,
       },
     },
     currentVersion: {
       type: 'string',
-      props: { label: t('Current version', this.props.currentLanguage) },
+      props: { label: translateMethod('Current version') },
     },
     supportedVersions: {
       type: 'array',
-      props: { label: t('Supported versions', this.props.currentLanguage) },
+      props: { label: translateMethod('Supported versions') },
     },
     published: {
       type: 'bool',
-      props: { label: t('Published', this.props.currentLanguage) },
+      props: { label: translateMethod('Published') },
     },
     testable: {
       type: 'bool',
-      props: { label: t('Testable', this.props.currentLanguage) },
+      props: { label: translateMethod('Testable') },
     },
     tags: {
       type: 'array',
-      props: { label: t('Tags', this.props.currentLanguage) },
+      props: { label: translateMethod('Tags') },
     },
     categories: {
       type: 'array',
       props: {
-        label: t('Categories', this.props.currentLanguage),
+        label: translateMethod('Categories'),
         creatable: true,
         valuesFrom: '/api/categories',
         transformer: (t) => ({ label: t, value: t }),
@@ -149,17 +140,12 @@ export class TeamApiInfo extends Component {
     visibility: {
       type: 'select',
       props: {
-        label: t('Visibility', this.props.currentLanguage),
+        label: translateMethod('Visibility'),
         possibleValues: [
-          { label: t('Public', this.props.currentLanguage, false, 'Public'), value: 'Public' },
-          { label: t('Private', this.props.currentLanguage, false, 'Private'), value: 'Private' },
+          { label: translateMethod('Public', false, 'Public'), value: 'Public' },
+          { label: translateMethod('Private', false, 'Private'), value: 'Private' },
           {
-            label: t(
-              'PublicWithAuthorizations',
-              this.props.currentLanguage,
-              false,
-              'Public with authorizations'
-            ),
+            label: translateMethod('PublicWithAuthorizations', false, 'Public with authorizations'),
             value: 'PublicWithAuthorizations',
           },
         ],
@@ -168,7 +154,7 @@ export class TeamApiInfo extends Component {
     authorizedTeams: {
       type: 'array',
       props: {
-        label: t('Authorized teams', this.props.currentLanguage),
+        label: translateMethod('Authorized teams'),
         valuesFrom: '/api/teams',
         selectClassName: 'full-width-select',
         transformer: (t) => ({ label: t.name, value: t._id }),
@@ -176,8 +162,8 @@ export class TeamApiInfo extends Component {
     },
   };
 
-  formFlow = [
-    '_id',
+  const formFlow = [
+    'isDefault',
     'published',
     'name',
     'nameAlreadyExists',
@@ -185,59 +171,47 @@ export class TeamApiInfo extends Component {
     'image',
     'imageFromAssets',
     'header',
-    `>>> ${t('Versions and tags', this.props.currentLanguage)}`,
+    `>>> ${translateMethod('Versions and tags')}`,
     'currentVersion',
     'supportedVersions',
     'tags',
     'categories',
-    `>>> ${t('Visibility', this.props.currentLanguage)}`,
+    `>>> ${translateMethod('Visibility')}`,
     'visibility',
-    `>>> ${t('Authorizations', this.props.currentLanguage)}`,
+    `>>> ${translateMethod('Authorizations')}`,
     'authorizedTeams',
   ];
 
-  adminFormFlow = ['_id', 'name', 'smallDescription'];
+  const adminFormFlow = ['_id', 'name', 'smallDescription'];
 
-  adminFormSchema = {
+  const adminFormSchema = {
     _id: {
       type: 'string',
       disabled: true,
-      props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+      props: { label: translateMethod('Id'), placeholder: '---' },
     },
     name: {
       type: 'string',
       disabled: true,
-      props: { label: t('Name', this.props.currentLanguage), placeholder: 'New Api' },
+      props: { label: translateMethod('Name'), placeholder: 'New Api' },
     },
     smallDescription: {
       type: 'text',
       disabled: true,
-      props: { label: t('Small desc.', this.props.currentLanguage) },
+      props: { label: translateMethod('Small desc.') },
     },
   };
 
-  render() {
-    if (this.props.value.visibility === 'AdminOnly') {
-      return (
-        <React.Suspense fallback={<Spinner />}>
-          <LazyForm
-            flow={this.adminFormFlow}
-            schema={this.adminFormSchema}
-            value={this.props.value}
-            onChange={this.props.onChange}
-          />
-        </React.Suspense>
-      );
-    }
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          flow={this.formFlow}
-          schema={this.formSchema}
-          value={this.props.value}
-          onChange={this.props.onChange}
-        />
-      </React.Suspense>
-    );
-  }
+  const isAdminOnly = props.value.visibility === 'AdminOnly';
+
+  return (
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        flow={isAdminOnly ? adminFormFlow : formFlow}
+        schema={isAdminOnly ? adminFormSchema : formSchema}
+        value={props.value}
+        onChange={props.onChange}
+      />
+    </React.Suspense>
+  );
 }

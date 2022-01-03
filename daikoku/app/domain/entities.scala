@@ -20,6 +20,7 @@ import play.api.mvc.Request
 import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
 import storage.{DataStore, Repo, TenantCapableRepo}
+import sangria.schema.ObjectType
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -115,11 +116,14 @@ object TenantMode {
   case object Default extends TenantMode {
     def name: String = "Default"
   }
-
+  case object Translation extends TenantMode {
+    def name: String = "Translation"
+  }
   def apply(name: String): Option[TenantMode] = name.toLowerCase() match {
     case "maintenance"  => Some(Maintenance)
     case "construction" => Some(Construction)
     case "default"      => Some(Default)
+    case "translation"  => Some(Translation)
     case _              => Some(Default)
   }
 }
@@ -130,7 +134,6 @@ case class Tenant(
     deleted: Boolean = false,
     name: String,
     domain: String,
-    exposedPort: Option[Int] = None,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
@@ -148,7 +151,9 @@ case class Tenant(
     apiReferenceHideForGuest: Option[Boolean] = Some(true),
     hideTeamsPage: Option[Boolean] = None,
     defaultMessage: Option[String] = None,
-    tenantMode: Option[TenantMode] = None
+    tenantMode: Option[TenantMode] = None,
+    aggregationApiKeysSecurity: Option[Boolean] = None,
+    robotTxt: Option[String] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -210,6 +215,10 @@ case class Tenant(
       "tenantMode" -> tenantMode
         .map(mode => JsString.apply(mode.name))
         .getOrElse(JsNull)
+        .as[JsValue],
+      "aggregationApiKeysSecurity" -> aggregationApiKeysSecurity
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(false))
         .as[JsValue]
     )
   }
@@ -227,7 +236,7 @@ case class Tenant(
       val moreFontFamily = s.fontFamilyUrl
         .map(u => s"""<style>
              |@font-face{
-             |font-family: "custom";
+             |font-family: "Custom";
              |src: url("$u")
              |}
              |</style>""".stripMargin)
@@ -274,15 +283,16 @@ sealed trait MailerSettings {
   def mailerType: String
   def mailer(implicit env: Env): Mailer
   def asJson: JsValue
+  def template: Option[String]
 }
 
-case class ConsoleMailerSettings()
+case class ConsoleMailerSettings(template: Option[String] = None)
     extends MailerSettings
     with CanJson[ConsoleMailerSettings] {
   def mailerType: String = "console"
-  def asJson: JsValue = Json.obj("type" -> "console")
+  def asJson: JsValue = json.ConsoleSettingsFormat.writes(this)
   def mailer(implicit env: Env): Mailer = {
-    new ConsoleMailer()
+    new ConsoleMailer(this)
   }
 }
 
@@ -424,7 +434,7 @@ object OtoroshiTarget {
 
 case class OtoroshiTarget(
     otoroshiSettings: OtoroshiSettingsId,
-    serviceGroup: OtoroshiServiceGroupId,
+    authorizedEntities: Option[AuthorizedEntities],
     apikeyCustomization: ApikeyCustomization = ApikeyCustomization()
 ) extends CanJson[OtoroshiTarget] {
   def asJson: JsValue = json.OtoroshiTargetFormat.writes(this)
@@ -722,6 +732,7 @@ sealed trait UsagePlan {
   def removeAllAuthorizedTeams(): UsagePlan
   def subscriptionProcess: SubscriptionProcess
   def integrationProcess: IntegrationProcess
+  def aggregationApiKeysSecurity: Option[Boolean]
 }
 
 case object UsagePlan {
@@ -730,6 +741,7 @@ case object UsagePlan {
       customName: Option[String] = Some("Administration plan"),
       customDescription: Option[String] = Some("access to admin api"),
       otoroshiTarget: Option[OtoroshiTarget],
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def costPerMonth: BigDecimal = BigDecimal(0)
@@ -769,6 +781,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -802,6 +815,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -837,6 +851,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -871,6 +886,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -903,6 +919,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -1048,7 +1065,8 @@ case class ApiIssue(id: ApiIssueId,
                     closedAt: Option[DateTime],
                     by: UserId,
                     comments: Seq[ApiIssueComment],
-                    lastModificationAt: DateTime)
+                    lastModificationAt: DateTime,
+                    apiVersion: Option[String] = Some("1.0.0"))
     extends CanJson[ApiIssue] {
   def humanReadableId: String = seqId.toString
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
@@ -1229,7 +1247,8 @@ case class Team(
     users: Set[UserWithPermission] = Set.empty,
     subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     authorizedOtoroshiGroups: Set[OtoroshiGroup] = Set.empty,
-    apiKeyVisibility: Option[TeamApiKeyVisibility] = None,
+    apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
+      TeamApiKeyVisibility.User),
     metadata: Map[String, String] = Map.empty,
     apisCreationPermission: Option[Boolean] = None,
 ) extends CanJson[User] {
@@ -1279,7 +1298,7 @@ object TestingAuth {
 
 case class TestingConfig(
     otoroshiSettings: OtoroshiSettingsId,
-    serviceGroup: OtoroshiServiceGroupId,
+    authorizedEntities: AuthorizedEntities,
     clientName: String,
     api: ApiId,
     tag: String,
@@ -1315,6 +1334,7 @@ case class Api(
     description: String,
     currentVersion: Version = Version("1.0.0"),
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
+    isDefault: Boolean = false,
     lastUpdate: DateTime,
     published: Boolean = false,
     testing: Testing = Testing(),
@@ -1330,7 +1350,8 @@ case class Api(
     posts: Seq[ApiPostId] = Seq.empty,
     issues: Seq[ApiIssueId] = Seq.empty,
     issuesTags: Set[ApiIssueTag] = Set.empty,
-    stars: Int = 0
+    stars: Int = 0,
+    parent: Option[ApiId] = None
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -1353,7 +1374,9 @@ case class Api(
     "posts" -> SeqPostIdFormat.writes(posts),
     "issues" -> SeqIssueIdFormat.writes(issues),
     "issuesTags" -> SetApiTagFormat.writes(issuesTags),
-    "stars" -> stars
+    "stars" -> stars,
+    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
+    "isDefault" -> isDefault
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
@@ -1370,6 +1393,23 @@ case class Api(
       "stars" -> stars
     )
   }
+  def asPublicWithAuthorizationsJson(): JsValue = Json.obj(
+    "_id" -> id.value,
+    "_humanReadableId" -> name.urlPathSegmentSanitized,
+    "tenant" -> tenant.asJson,
+    "team" -> team.value,
+    "name" -> name,
+    "smallDescription" -> smallDescription,
+    "description" -> description,
+    "currentVersion" -> currentVersion.asJson,
+    "isDefault" -> isDefault,
+    "published" -> published,
+    "tags" -> JsArray(tags.map(JsString.apply).toSeq),
+    "categories" -> JsArray(categories.map(JsString.apply).toSeq),
+    "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
+    "stars" -> stars,
+    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
+  )
 }
 
 case class ApiKeyRotation(
@@ -1404,7 +1444,8 @@ case class ApiSubscription(
     customMaxPerSecond: Option[Long] = None,
     customMaxPerDay: Option[Long] = None,
     customMaxPerMonth: Option[Long] = None,
-    customReadOnly: Option[Boolean] = None
+    customReadOnly: Option[Boolean] = None,
+    parent: Option[ApiSubscriptionId] = None
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(permission: TeamPermission,
@@ -1443,11 +1484,23 @@ object RemainingQuotas {
   val MaxValue: Long = 10000000L
 }
 
+case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
+                              groups: Set[OtoroshiServiceGroupId] = Set.empty)
+    extends CanJson[AuthorizedEntities] {
+  def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
+  def asOtoroshiJson: JsValue =
+    json.AuthorizedEntitiesOtoroshiFormat.writes(this)
+  def isEmpty: Boolean = services.isEmpty && groups.isEmpty
+  def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
+    services.forall(s => a.services.contains(s)) && groups.forall(g =>
+      a.groups.contains(g))
+}
+
 case class ActualOtoroshiApiKey(
     clientId: String = IdGenerator.token(16),
     clientSecret: String = IdGenerator.token(64),
     clientName: String,
-    authorizedGroup: String,
+    authorizedEntities: AuthorizedEntities,
     enabled: Boolean = true,
     allowClientIdOnly: Boolean = false,
     readOnly: Boolean = false,
@@ -1466,7 +1519,7 @@ case class ActualOtoroshiApiKey(
 sealed trait NotificationStatus
 
 object NotificationStatus {
-  case object Pending extends NotificationStatus with Product with Serializable
+  case class Pending() extends NotificationStatus with Product with Serializable
   case class Accepted(date: DateTime = DateTime.now())
       extends NotificationStatus
       with Product
@@ -1491,7 +1544,11 @@ object NotificationAction {
   case class TeamInvitation(team: TeamId, user: UserId)
       extends NotificationAction
 
-  case class ApiSubscriptionDemand(api: ApiId, plan: UsagePlanId, team: TeamId)
+  case class ApiSubscriptionDemand(
+      api: ApiId,
+      plan: UsagePlanId,
+      team: TeamId,
+      parentSubscriptionId: Option[ApiSubscriptionId] = None)
       extends NotificationAction
 
   case class OtoroshiSyncSubscriptionError(subscription: ApiSubscription,
@@ -1554,7 +1611,7 @@ case class Notification(
     sender: User,
     date: DateTime = DateTime.now(),
     notificationType: NotificationType = NotificationType.AcceptOrReject,
-    status: NotificationStatus = Pending,
+    status: NotificationStatus = Pending(),
     action: NotificationAction
 ) extends CanJson[Notification] {
   override def asJson: JsValue = json.NotificationFormat.writes(this)
@@ -1666,21 +1723,13 @@ case class AccountCreation(
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
-sealed trait TranslationElement
-
-object TranslationElement {
-  case class ApiTranslationElement(api: ApiId) extends TranslationElement
-  case class TenantTranslationElement(tenant: TenantId)
-      extends TranslationElement
-  case class TeamTranslationElement(team: TeamId) extends TranslationElement
-}
 
 case class Translation(id: DatastoreId,
                        tenant: TenantId,
-                       element: TranslationElement,
                        language: String,
                        key: String,
-                       value: String)
+                       value: String,
+                       lastModificationAt: Option[DateTime] = None)
     extends CanJson[Translation] {
   override def asJson: JsValue = json.TranslationFormat.writes(this)
   def asUiTranslationJson: JsValue = {
@@ -1688,6 +1737,14 @@ case class Translation(id: DatastoreId,
       key -> value,
     )
   }
+}
+
+case class Evolution(id: DatastoreId,
+                     version: String,
+                     applied: Boolean,
+                     date: DateTime = new DateTime())
+    extends CanJson[Evolution] {
+  override def asJson: JsValue = json.EvolutionFormat.writes(this)
 }
 
 sealed trait MessageType {

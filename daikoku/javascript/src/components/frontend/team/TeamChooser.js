@@ -1,128 +1,121 @@
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import Pagination from 'react-paginate';
-
+import { useNavigate } from 'react-router-dom';
 import * as Services from '../../../services';
 
 import { TeamCard } from '.';
-import { updateTeamPromise } from '../../../core/context';
-import { t, Translation } from '../../../locales';
+import { updateTeamPromise } from '../../../core';
+import { I18nContext } from '../../../locales/i18n-context';
 
-class TeamChooserComponent extends Component {
-  state = {
+function TeamChooserComponent(props) {
+  const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
+
+  const [state, setState] = useState({
     teams: [],
     searched: '',
     offset: 0,
     pageNumber: 10,
     selectedPage: 0,
-  };
+  });
 
-  componentDidMount() {
-    Services.allJoinableTeams().then((teams) => this.setState({ teams }));
-  }
+  useEffect(() => {
+    Services.allJoinableTeams().then((teams) => setState({ ...state, teams }));
+  }, []);
 
-  askToJoin = (e, team) => {
+  const askToJoin = (e, team) => {
     Services.askToJoinTeam(team._id)
       .then(() => Services.allJoinableTeams())
-      .then((teams) => this.setState({ teams }));
+      .then((teams) => setState({ ...state, teams }));
   };
 
-  redirectToTeamSettings = (team) => {
-    this.props
-      .updateTeam(team)
-      .then(() => this.props.history.push(`/${team._humanReadableId}/settings`));
+  const redirectToTeamSettings = (team) => {
+    props.updateTeam(team).then(() => navigate(`/${team._humanReadableId}/settings`));
   };
 
-  handlePageClick = (data) => {
-    this.setState({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected });
+  const handlePageClick = (data) => {
+    setState({ ...state, offset: data.selected * state.pageNumber, selectedPage: data.selected });
   };
 
-  render() {
-    const teams = this.state.teams;
-    const searched = this.state.searched.trim().toLowerCase();
-    const filteredTeams =
-      searched === ''
-        ? teams
-        : teams.filter((team) => {
-            if (team.name.toLowerCase().indexOf(searched) > -1) {
-              return true;
-            } else return team.description.toLowerCase().indexOf(searched) > -1;
-          });
-    const paginateTeams = filteredTeams.slice(
-      this.state.offset,
-      this.state.offset + this.state.pageNumber
-    );
+  const teams = state.teams;
+  const searched = state.searched.trim().toLowerCase();
+  const filteredTeams =
+    searched === ''
+      ? teams
+      : teams.filter((team) => {
+          if (team.name.toLowerCase().indexOf(searched) > -1) {
+            return true;
+          } else return team.description.toLowerCase().indexOf(searched) > -1;
+        });
+  const paginateTeams = filteredTeams.slice(state.offset, state.offset + state.pageNumber);
 
-    return (
-      <main role="main" className="row">
-        <section className="organisation__header col-12 mb-4 p-3">
-          <div className="container">
-            <div className="row text-center">
-              <div className="col-sm-4">
-                <img
-                  className="organisation__avatar"
-                  src={this.props.tenant ? this.props.tenant.logo : '/assets/images/daikoku.svg'}
-                  alt="avatar"
-                />
-              </div>
-              <div className="col-sm-8 d-flex flex-column justify-content-center">
-                <h1 className="jumbotron-heading">
-                  <Translation i18nkey="All teams" language={this.props.currentLanguage}>
-                    All teams
-                  </Translation>
-                </h1>
-              </div>
+  return (
+    <main role="main">
+      <section className="organisation__header col-12 mb-4 p-3">
+        <div className="container">
+          <div className="row text-center">
+            <div className="col-sm-4">
+              <img
+                className="organisation__avatar"
+                src={props.tenant ? props.tenant.logo : '/assets/images/daikoku.svg'}
+                alt="avatar"
+              />
+            </div>
+            <div className="col-sm-8 d-flex flex-column justify-content-center">
+              <h1 className="jumbotron-heading">
+                <Translation i18nkey="All teams">All teams</Translation>
+              </h1>
             </div>
           </div>
-        </section>
-        <section className="container">
-          <div className="row mb-2">
-            <div className="col-12 col-sm mb-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder={t('Search a team', this.props.currentLanguage)}
-                aria-label="Search a team"
-                value={this.state.searched}
-                onChange={(e) => this.setState({ searched: e.target.value })}
+        </div>
+      </section>
+      <section className="container">
+        <div className="row mb-2">
+          <div className="col-12 col-sm mb-2">
+            <input
+              type="text"
+              className="form-control"
+              placeholder={translateMethod('Search a team')}
+              aria-label="Search a team"
+              value={state.searched}
+              onChange={(e) => setState({ ...state, searched: e.target.value })}
+            />
+          </div>
+        </div>
+        <div className="row">
+          <div className="d-flex col flex-column p-3">
+            {paginateTeams.map((team) => (
+              <TeamCard
+                key={team._id}
+                user={props.connectedUser}
+                team={team}
+                askToJoin={(e) => askToJoin(e, team)}
+                redirectToTeamPage={() => navigate(`/${team._humanReadableId}`)}
+                redirectToTeamSettings={() => redirectToTeamSettings(team)}
+              />
+            ))}
+            <div className="apis__pagination">
+              <Pagination
+                previousLabel={translateMethod('Previous')}
+                nextLabel={translateMethod('Next')}
+                breakLabel="..."
+                breakClassName={'break'}
+                pageCount={Math.ceil(filteredTeams.length / state.pageNumber)}
+                marginPagesDisplayed={1}
+                pageRangeDisplayed={5}
+                onPageChange={handlePageClick}
+                containerClassName={'pagination'}
+                pageClassName={'page-selector'}
+                forcePage={state.selectedPage}
+                activeClassName={'active'}
               />
             </div>
           </div>
-          <div className="row">
-            <div className="d-flex col flex-column p-3">
-              {paginateTeams.map((team) => (
-                <TeamCard
-                  key={team._id}
-                  user={this.props.connectedUser}
-                  team={team}
-                  currentLanguage={this.props.currentLanguage}
-                  askToJoin={(e) => this.askToJoin(e, team)}
-                  redirectToTeamPage={() => this.props.history.push(`/${team._humanReadableId}`)}
-                  redirectToTeamSettings={() => this.redirectToTeamSettings(team)}
-                />
-              ))}
-              <div className="apis__pagination">
-                <Pagination
-                  previousLabel={t('Previous', this.props.currentLanguage)}
-                  nextLabel={t('Next', this.props.currentLanguage)}
-                  breakLabel="..."
-                  breakClassName={'break'}
-                  pageCount={Math.ceil(filteredTeams.length / this.state.pageNumber)}
-                  marginPagesDisplayed={1}
-                  pageRangeDisplayed={5}
-                  onPageChange={this.handlePageClick}
-                  containerClassName={'pagination'}
-                  pageClassName={'page-selector'}
-                  forcePage={this.state.selectedPage}
-                  activeClassName={'active'}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-    );
-  }
+        </div>
+      </section>
+    </main>
+  );
 }
 
 const mapStateToProps = (state) => ({

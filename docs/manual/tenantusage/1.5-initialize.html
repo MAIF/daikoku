@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.0.0-dev
+1.5.0
 </div>
 </div>
 <div class="nav-toc">
@@ -70,6 +70,7 @@
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
+    <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -83,7 +84,8 @@
   <ul>
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
-    <li><a href="../consumerusage/3-billing.html" class="page">Team billing</a></li>
+    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
+    <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
   <li><a href="../apis.html" class="page">Admin REST API</a></li>
@@ -121,7 +123,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.0.0-dev
+1.5.0
 </div>
 </div>
 <div class="nav-toc">
@@ -161,6 +163,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
+    <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -174,7 +177,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <ul>
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
-    <li><a href="../consumerusage/3-billing.html" class="page">Team billing</a></li>
+    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
+    <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
   <li><a href="../apis.html" class="page">Admin REST API</a></li>
@@ -214,14 +218,14 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>You can begin to import Otoroshi service groups or just Otoroshi apikeys</p>
 <h2><a href="#select-service-group-to-import" name="select-service-group-to-import" class="anchor"><span class="anchor-link"></span></a>Select Service group to import</h2>
 <p>You have to choose which services you want to import. It&rsquo;s completly possible to change the API name but no necessary. You have to choose a team to admin the crated API. If the team doesn&rsquo;t exist, you can create a team in this screen. Your action is just, for the moment, to tack the api to create, the creation will be effective later.<br/><em>notice: Every choice you make are saved on your local storage in case of problem.</em></p>
-<h2><a href="#recap-and-creation" name="recap-and-creation" class="anchor"><span class="anchor-link"></span></a>Recap and creation</h2>
+<h2><a href="#recap-and-creation" name="recap-and-creation" class="anchor"><span class="anchor-link"></span></a>[Services] Recap and creation</h2>
 <p>The next screen list all API to create. If your agree with this, you can click on the <code>create</code> button to launch the APIs creation.</p>
-<h2><a href="#select-service-group-to-import" name="select-service-group-to-import" class="anchor"><span class="anchor-link"></span></a>Select Service group to import</h2>
-<p>You have to choose which apikeys you want to import. You have to choose an api with a plan and a team for every apikeys. If the plan does&rsquo;t exists, you can create a plan in this screen (_notice: it will a FreePlan but you can change it after creation_).<br/>If the team doesn&rsquo;t exist, you can create a team in this screen. Your action is just, for the moment, to stack the apikey to create, the creation will be effective later.<br/><em>notice: Every choice you make are saved on your local storage in case of problem.</em></p>
-<h2><a href="#recap-and-creation" name="recap-and-creation" class="anchor"><span class="anchor-link"></span></a>Recap and creation</h2>
+<h2><a href="#select-api-keys-to-import" name="select-api-keys-to-import" class="anchor"><span class="anchor-link"></span></a>Select API keys to import</h2>
+<p>You have to choose which API keys you want to import. You have to choose an API with a plan and a team for every API keys. If the plan does&rsquo;t exists, you can create a plan in this screen (_notice: it will a FreePlan but you can change it after creation_).<br/>If the team doesn&rsquo;t exist, you can create a team in this screen. Your action is just, for the moment, to stack the API key to create, the creation will be effective later.<br/><em>notice: Every choice you make are saved on your local storage in case of problem.</em></p>
+<h2><a href="#recap-and-creation" name="recap-and-creation" class="anchor"><span class="anchor-link"></span></a>[Subscriptions] Recap and creation</h2>
 <p>The next screen list all subscriptions to create. If your agree with this, you can click on the create button to launch the subscriptios creation.</p>
 <h2><a href="#done" name="done" class="anchor"><span class="anchor-link"></span></a>Done</h2>
-<p>All the selected APIs and apikeys are created. You have certainly to go to API page to update some informations because APIs are just created with default informations, just name and plan. If you have created some teams, be aware that you are the only member of those teams. You can import APIS and apikeys from another Otorshi instance if you wish.</p>
+<p>All the selected APIs and API keys are created. You have certainly to go to API page to update some informations because APIs are just created with default informations, just name and plan. If you have created some teams, be aware that you are the only member of those teams. You can import APIS and API keys from another Otorshi instance if you wish.</p>
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../tenantusage/2-teams.html">Managing teams</a></p>
 </div>
@@ -237,9 +241,9 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../tenantusage/1.5-initialize.html#select-otoroshi-instance" class="header">Select Otoroshi instance</a></li>
     <li><a href="../tenantusage/1.5-initialize.html#select-the-step" class="header">Select the step</a></li>
     <li><a href="../tenantusage/1.5-initialize.html#select-service-group-to-import" class="header">Select Service group to import</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#recap-and-creation" class="header">Recap and creation</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#select-service-group-to-import" class="header">Select Service group to import</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#recap-and-creation" class="header">Recap and creation</a></li>
+    <li><a href="../tenantusage/1.5-initialize.html#recap-and-creation" class="header">[Services] Recap and creation</a></li>
+    <li><a href="../tenantusage/1.5-initialize.html#select-api-keys-to-import" class="header">Select API keys to import</a></li>
+    <li><a href="../tenantusage/1.5-initialize.html#recap-and-creation" class="header">[Subscriptions] Recap and creation</a></li>
     <li><a href="../tenantusage/1.5-initialize.html#done" class="header">Done</a></li>
   </ul></li>
 </ul>
@@ -308,7 +312,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-dev', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.5.0', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>

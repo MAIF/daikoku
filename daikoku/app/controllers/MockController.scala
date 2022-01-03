@@ -5,6 +5,7 @@ import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.AuthorizedEntitiesOtoroshiFormat
 import fr.maif.otoroshi.daikoku.env.{DaikokuMode, Env}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -312,8 +313,11 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(
+              AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -331,8 +335,11 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(AuthorizedEntities(
+              groups = Set(OtoroshiServiceGroupId("12345")))) //FIXME: [#119]
+          )
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -352,8 +359,11 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(
+              AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -374,8 +384,11 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(
+              AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -393,8 +406,11 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(
+              AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -603,6 +619,8 @@ class MockController(DaikokuAction: DaikokuAction,
       createUserAndTeam("philippe", "philippe@foo.bar", tenantId)
     val (user5, userTeam5) =
       createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
+    val (user6, userTeam6) =
+      createUserAndTeam("Etienne", "etienne@foo.bar", tenantId, false)
 
     val issuesTags = Seq(
       ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
@@ -707,7 +725,7 @@ class MockController(DaikokuAction: DaikokuAction,
         pages = Seq.empty[ApiDocumentationPageId],
         lastModificationAt = DateTime.now()
       ),
-      swagger = None,
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
       possibleUsagePlans = Seq(
         Admin(
           id = UsagePlanId("admin"),
@@ -729,6 +747,7 @@ class MockController(DaikokuAction: DaikokuAction,
       name = s"admin-api-tenant-${tenant2Id.value}",
       team = tenant2adminTeam.id,
       tags = Set("Administration"),
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = tenant2Id,
@@ -1103,11 +1122,13 @@ class MockController(DaikokuAction: DaikokuAction,
       _ <- env.dataStore.userRepo.save(user3)
       _ <- env.dataStore.userRepo.save(user4)
       _ <- env.dataStore.userRepo.save(user5)
+      _ <- env.dataStore.userRepo.save(user6)
       _ <- teamRepo1.save(userTeam1)
       _ <- teamRepo1.save(userTeam2)
       _ <- teamRepo1.save(userTeam3)
       _ <- teamRepo1.save(userTeam4)
       _ <- teamRepo1.save(userTeam5)
+      _ <- teamRepo1.save(userTeam6)
       _ <- teamRepo1.save(defaultAdminTeam)
       _ <- teamRepo1.save(tenant2adminTeam)
       ids <- saveApiDocPages(tenantId)
@@ -1211,7 +1232,7 @@ class MockController(DaikokuAction: DaikokuAction,
               team1Id,
               sender,
               DateTime.now().minusDays(3),
-              NotificationStatus.Pending,
+              NotificationStatus.Pending(),
               NotificationAction.ApiAccess(ApiId(notifApiId), TeamId(team2Id))
             )
           )
@@ -1376,10 +1397,25 @@ class MockController(DaikokuAction: DaikokuAction,
       "description" -> "A nice group (with prefix)"
     )
   )
+  val services: Seq[JsObject] = Seq(
+    Json.obj(
+      "id" -> "s_12345",
+      "name" -> "nice-service",
+      "description" -> "A nice servcie"
+    ),
+    Json.obj(
+      "id" -> "s_12346",
+      "name" -> "daikoku_nice-service",
+      "description" -> "A nice service (with prefix)"
+    )
+  )
   var apikeys: Seq[JsObject] = Seq()
 
   def fakeOtoroshiGroups() = Action {
     Ok(JsArray(groups))
+  }
+  def fakeOtoroshiServices() = Action {
+    Ok(JsArray(services))
   }
 
   def fakeOtoroshiGroup(groupId: String) = Action {
@@ -1392,35 +1428,41 @@ class MockController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def fakeOtoroshiApiKeys(groupId: String) = Action {
-    Ok(JsArray(apikeys.filter(ak =>
-      (ak \ "authorizedGroup").as[String] == groupId)))
+  def fakeOtoroshiApiKeys() = Action {
+    Ok(JsArray(apikeys))
   }
 
-  def fakeOtoroshiApiKey(groupId: String, clientId: String) = Action {
-    Ok(
-      ActualOtoroshiApiKey(
-        clientId = clientId,
-        clientSecret = "",
-        clientName = "",
-        authorizedGroup = groupId,
-        throttlingQuota = 10,
-        dailyQuota = 10000,
-        monthlyQuota = 300000,
-        constrainedServicesOnly = true,
-        tags = Seq(),
-        restrictions = ApiKeyRestrictions(),
-        metadata = Map(),
-        rotation = None
-      ).asJson)
+  def fakeOtoroshiApiKey(clientId: String) = Action.async {
+    env.dataStore.apiSubscriptionRepo
+      .forAllTenant()
+      .findOne(Json.obj("apiKey.clientId" -> clientId))
+      .map {
+        case Some(subscription) =>
+          Ok(
+            ActualOtoroshiApiKey(
+              clientId = clientId,
+              clientSecret = subscription.apiKey.clientSecret,
+              clientName = "",
+              authorizedEntities = AuthorizedEntities(),
+              throttlingQuota = 10,
+              dailyQuota = 10000,
+              monthlyQuota = 300000,
+              constrainedServicesOnly = true,
+              tags = Seq(),
+              restrictions = ApiKeyRestrictions(),
+              metadata = Map(),
+              rotation = None
+            ).asJson)
+        case _ => BadRequest(Json.obj("error" -> "Subscription not found"))
+      }
   }
 
-  def createFakeOtoroshiApiKey(groupId: String) = Action(parse.json) { req =>
+  def createFakeOtoroshiApiKey() = Action(parse.json) { req =>
     apikeys = apikeys :+ req.body.as[JsObject]
     Ok(req.body.as[JsObject])
   }
 
-  def updateFakeOtoroshiApiKey(groupId: String, clientId: String) =
+  def updateFakeOtoroshiApiKey(clientId: String) =
     Action(parse.json) { req =>
       json.ActualOtoroshiApiKeyFormat.reads(req.body).asOpt match {
         case Some(apiKey) => Ok(apiKey.asJson)
@@ -1428,7 +1470,7 @@ class MockController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def deleteFakeOtoroshiApiKey(groupId: String, clientId: String) =
+  def deleteFakeOtoroshiApiKey(clientId: String) =
     Action(parse.json) {
       Ok(Json.obj("deleted" -> true))
     }
@@ -1456,7 +1498,7 @@ class MockController(DaikokuAction: DaikokuAction,
         }
     }
 
-  def fakeOtoroshiQuotas(groupId: String, clientId: String) = Action.async {
+  def fakeOtoroshiQuotas(clientId: String) = Action.async {
     val r = scala.util.Random
 
     env.dataStore.apiSubscriptionRepo

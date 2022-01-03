@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { useParams } from 'react-router-dom';
 
-import { TeamBackOffice } from '../TeamBackOffice';
 import {
   Can,
   manage,
@@ -13,9 +13,8 @@ import {
   formatDate,
 } from '../../utils';
 import * as Services from '../../../services';
-import { Translation, t } from '../../../locales';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
-import { openSubMetadataModal } from '../../../core';
+import { I18nContext, openSubMetadataModal } from '../../../core';
 
 const TeamApiSubscriptionsComponent = (props) => {
   const [api, setApi] = useState(undefined);
@@ -24,15 +23,21 @@ const TeamApiSubscriptionsComponent = (props) => {
   const [loading, setLoading] = useState(true);
   const [table, setTable] = useState(undefined);
 
+  const params = useParams();
+
+  const { translateMethod, language, Translation } = useContext(I18nContext);
+
   useEffect(() => {
     Promise.all([
-      Services.teamApi(props.currentTeam._id, props.match.params.apiId),
+      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.teams(),
     ]).then(([api, teams]) => {
       setApi(api);
       setTeams(teams);
       setLoading(false);
     });
+
+    document.title = `${props.currentTeam.name} - ${translateMethod('Subscriptions')}`;
   }, []);
 
   useEffect(() => {
@@ -40,7 +45,7 @@ const TeamApiSubscriptionsComponent = (props) => {
       setColumns([
         {
           id: 'name',
-          Header: t('Name', props.currentLanguage),
+          Header: translateMethod('Name'),
           style: { textAlign: 'left' },
           accessor: (sub) =>
             sub.team === props.currentTeam._id
@@ -49,15 +54,15 @@ const TeamApiSubscriptionsComponent = (props) => {
           sortType: 'basic',
         },
         {
-          Header: t('Plan', props.currentLanguage),
+          Header: translateMethod('Plan'),
           style: { textAlign: 'left' },
           accessor: (sub) =>
             Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
-              .map((p) => p.customName || formatPlanType(p, props.currentLanguage))
+              .map((p) => p.customName || formatPlanType(p, translateMethod))
               .getOrNull(),
         },
         {
-          Header: t('Team', props.currentLanguage),
+          Header: translateMethod('Team'),
           style: { textAlign: 'left' },
           accessor: (sub) =>
             Option(teams.find((t) => t._id === sub.team))
@@ -65,7 +70,7 @@ const TeamApiSubscriptionsComponent = (props) => {
               .getOrElse('unknown team'),
         },
         {
-          Header: t('Enabled', props.currentLanguage),
+          Header: translateMethod('Enabled'),
           style: { textAlign: 'center' },
           accessor: (api) => api.enabled,
           disableSortBy: true,
@@ -95,12 +100,12 @@ const TeamApiSubscriptionsComponent = (props) => {
           },
         },
         {
-          Header: t('Created at', props.currentLanguage),
+          Header: translateMethod('Created at'),
           style: { textAlign: 'left' },
-          accessor: (sub) => formatDate(sub.createdAt, props.currentLanguage),
+          accessor: (sub) => formatDate(sub.createdAt, language),
         },
         {
-          Header: t('Actions', props.currentLanguage),
+          Header: translateMethod('Actions'),
           style: { textAlign: 'center' },
           disableSortBy: true,
           disableFilters: true,
@@ -114,21 +119,23 @@ const TeamApiSubscriptionsComponent = (props) => {
             const sub = original;
             return (
               <div className="btn-group">
-                <BeautifulTitle title={t('Update metadata', props.currentLanguage)}>
+                <BeautifulTitle title={translateMethod('Update metadata')}>
                   <button
                     key={`edit-meta-${sub._humanReadableId}`}
                     type="button"
                     className="btn btn-sm btn-access-negative"
-                    onClick={() => updateMeta(sub)}>
+                    onClick={() => updateMeta(sub)}
+                  >
                     <i className="fas fa-edit" />
                   </button>
                 </BeautifulTitle>
-                <BeautifulTitle title={t('Refresh secret', props.currentLanguage)}>
+                <BeautifulTitle title={translateMethod('Refresh secret')}>
                   <button
                     key={`edit-meta-${sub._humanReadableId}`}
                     type="button"
                     className="btn btn-sm btn-access-negative btn-danger"
-                    onClick={() => regenerateSecret(sub)}>
+                    onClick={() => regenerateSecret(sub)}
+                  >
                     <i className="fas fa-sync" />
                   </button>
                 </BeautifulTitle>
@@ -151,15 +158,13 @@ const TeamApiSubscriptionsComponent = (props) => {
       plan: sub.plan,
       team: teams.find((t) => t._id === sub.team),
       subscription: sub,
-      currentLanguage: props.currentLanguage,
     });
 
   const regenerateSecret = (sub) => {
     window
       .confirm(
-        t(
+        translateMethod(
           'secret.refresh.confirm',
-          props.currentLanguage,
           false,
           'Are you sure you want to refresh secret for this subscription ?'
         )
@@ -168,12 +173,7 @@ const TeamApiSubscriptionsComponent = (props) => {
         if (ok) {
           Services.regenerateApiKeySecret(props.currentTeam._id, sub._id).then(() => {
             toastr.success(
-              t(
-                'secret.refresh.success',
-                props.currentLanguage,
-                false,
-                'Secret is successfuly refreshed'
-              )
+              translateMethod('secret.refresh.success', false, 'Secret is successfuly refreshed')
             );
             table.update();
           });
@@ -182,44 +182,34 @@ const TeamApiSubscriptionsComponent = (props) => {
   };
 
   return (
-    <TeamBackOffice
-      tab="Apis"
-      apiId={props.match.params.apiId}
-      isLoading={loading}
-      title={`${props.currentTeam.name} - ${t('Subscriptions', props.currentLanguage)}`}>
-      <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
-        {!loading && (
-          <div className="row">
-            <div className="col-12">
-              <h1>
-                <Translation i18nkey="Api subscriptions" language={props.currentLanguage}>
-                  Api subscriptions
-                </Translation>{' '}
-                - {api.name}
-              </h1>
-            </div>
-            <div className="col-12">
-              <Table
-                currentLanguage={props.currentLanguage}
-                selfUrl="apis"
-                defaultTitle="Ai subscriptions"
-                defaultValue={() => ({})}
-                defaultSort="name"
-                itemName="sub"
-                columns={columns}
-                fetchItems={() =>
-                  Services.apiSubscriptions(props.match.params.apiId, props.currentTeam._id)
-                }
-                showActions={false}
-                showLink={false}
-                extractKey={(item) => item._id}
-                injectTable={(t) => setTable(t)}
-              />
-            </div>
+    <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
+      {!loading && (
+        <div className="row">
+          <div className="col-12">
+            <h1>
+              <Translation i18nkey="Api subscriptions">Api subscriptions</Translation> - {api.name}
+            </h1>
           </div>
-        )}
-      </Can>
-    </TeamBackOffice>
+          <div className="col-12">
+            <Table
+              selfUrl="apis"
+              defaultTitle="Ai subscriptions"
+              defaultValue={() => ({})}
+              defaultSort="name"
+              itemName="sub"
+              columns={columns}
+              fetchItems={() =>
+                Services.apiSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+              }
+              showActions={false}
+              showLink={false}
+              extractKey={(item) => item._id}
+              injectTable={(t) => setTable(t)}
+            />
+          </div>
+        </div>
+      )}
+    </Can>
   );
 };
 

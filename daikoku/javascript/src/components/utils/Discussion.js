@@ -7,7 +7,7 @@ import { converter } from '../../services/showdown';
 import { Option } from '../utils';
 import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
-import { t, Translation } from '../../locales';
+import { I18nContext } from '../../locales/i18n-context';
 
 const DiscussionComponent = (props) => {
   const {
@@ -29,6 +29,8 @@ const DiscussionComponent = (props) => {
       readMessages(messages[0].chat);
     }
   }, [opened, totalUnread]);
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleKeyDown = (event) => {
     if (!newMessage.trim()) return;
@@ -71,7 +73,8 @@ const DiscussionComponent = (props) => {
                     'discussion-messages--send': group.every(
                       (m) => m.sender === props.connectedUser._id
                     ),
-                  })}>
+                  })}
+                >
                   {group.map((mess, idx) => {
                     return (
                       <div key={`discussion-message-${idx}`} className="discussion-message">
@@ -85,7 +88,8 @@ const DiscussionComponent = (props) => {
             {props.tenant.defaultMessage && (
               <div
                 key="discussion-messages-default"
-                className="discussion-messages discussion-messages--received">
+                className="discussion-messages discussion-messages--received"
+              >
                 <div
                   key="discussion-message-default"
                   className="discussion-message"
@@ -102,10 +106,9 @@ const DiscussionComponent = (props) => {
                 <button
                   disabled={loading ? 'disabled' : null}
                   className="btn btn-sm btn-outline-primary"
-                  onClick={() => getPreviousMessages(props.connectedUser._id)}>
-                  <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
-                    Load previous messages
-                  </Translation>
+                  onClick={() => getPreviousMessages(props.connectedUser._id)}
+                >
+                  <Translation i18nkey="Load previous messages">Load previous messages</Translation>
                 </button>
               </div>
             )}
@@ -114,7 +117,7 @@ const DiscussionComponent = (props) => {
             <input
               disabled={loading ? 'disabled' : null}
               type="text"
-              placeholder={t('Your message', props.currentLanguage)}
+              placeholder={translateMethod('Your message')}
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={(e) => setNewMessage(e.target.value)}
@@ -122,7 +125,8 @@ const DiscussionComponent = (props) => {
             <button
               disabled={loading ? 'disabled' : null}
               className="send-button"
-              onClick={sendMessage}>
+              onClick={sendMessage}
+            >
               <Send />
             </button>
           </div>

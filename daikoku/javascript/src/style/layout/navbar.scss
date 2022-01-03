@@ -39,6 +39,10 @@ a.navbar-brand, #teamSelector:hover {
   width: 400px;
 }
 
+.add-member-select {
+  z-index: 100;
+}
+
 .period-select:hover>div,.general-search:hover>div,.add-member-select:hover>div{
   cursor: pointer !important;
 }

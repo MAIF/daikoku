@@ -9,6 +9,7 @@ const apikeyCustomization = {
   constrainedServicesOnly: false,
   readOnly: false,
   metadata: {},
+  customMetadata: [],
   tags: [],
   restrictions: {
     enabled: false,
@@ -52,9 +53,10 @@ export const theMachine = Machine({
             } else if (goto === 'apikeys') {
               Promise.all([
                 Services.getOtoroshiGroups(tenant, otoroshi),
+                Services.getOtoroshiServices(tenant, otoroshi),
                 Services.getOtoroshiApiKeys(tenant, otoroshi),
-              ]).then(([groups, apikeys]) => {
-                callBack({ type: 'DONE_APIKEYS', tenant, otoroshi, groups, apikeys });
+              ]).then(([groups, services, apikeys]) => {
+                callBack({ type: 'DONE_APIKEYS', tenant, otoroshi, groups, services, apikeys });
               });
             } else {
               callBack({ type: 'DONE' });
@@ -78,6 +80,7 @@ export const theMachine = Machine({
             tenant: (_context, { tenant }) => tenant,
             otoroshi: (_context, { otoroshi }) => otoroshi,
             groups: (_context, { groups = [] }) => groups,
+            services: (_context, { services = [] }) => services,
             apikeys: (_context, { apikeys = [] }) => apikeys,
           }),
         },
@@ -89,10 +92,14 @@ export const theMachine = Machine({
         id: 'otoroshiGroupsLoader',
         src: (_context, { otoroshi, tenant }) => {
           return (callBack, _onEvent) => {
-            Services.getOtoroshiGroups(tenant, otoroshi)
-              .then((groups) => {
+            Promise.all([
+              Services.getOtoroshiGroups(tenant, otoroshi),
+              Services.getOtoroshiServices(tenant, otoroshi),
+            ])
+              .then(([groups, services]) => {
                 if (groups.error) callBack({ type: 'FAILURE', error: { ...groups } });
-                else callBack({ type: 'DONE_COMPLETE', groups, tenant, otoroshi });
+                if (services.error) callBack({ type: 'FAILURE', error: { ...services } });
+                else callBack({ type: 'DONE_COMPLETE', groups, services, tenant, otoroshi });
               })
               .catch((error) => callBack({ type: 'FAILURE', error }));
           };
@@ -105,6 +112,7 @@ export const theMachine = Machine({
             tenant: (_context, { tenant }) => tenant,
             otoroshi: (_context, { otoroshi }) => otoroshi,
             groups: (_context, { groups = [] }) => groups,
+            services: (_context, { services = [] }) => services,
           }),
         },
         FAILURE: {
@@ -211,7 +219,7 @@ export const theMachine = Machine({
                     ...pp,
                     otoroshiTarget: {
                       otoroshiSettings: context.otoroshi,
-                      serviceGroup: api.groupId,
+                      authorizedEntities: { groups: [], services: [api.id] },
                       apikeyCustomization,
                     },
                   })),
@@ -240,7 +248,6 @@ export const theMachine = Machine({
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
           return (callBack, _onEvent) => {
-            console.log(context);
             Services.getOtoroshiApiKeys(context.tenant, context.otoroshi)
               .then((newApikeys) => {
                 if (newApikeys.error) callBack({ type: 'FAILURE', error: { ...newApikeys } });

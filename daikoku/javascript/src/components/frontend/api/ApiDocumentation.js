@@ -1,164 +1,154 @@
 /* eslint-disable react/display-name */
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import _ from 'lodash';
 import hljs from 'highlight.js';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import asciidoctor from 'asciidoctor';
 
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { t, Translation } from '../../../locales';
 
 import 'highlight.js/styles/monokai.css';
+import { I18nContext } from '../../../core';
 
 const asciidoctorConverter = asciidoctor();
 
-export class ApiDocumentationCartidge extends Component {
-  render() {
-    const apiId = this.props.match.params.apiId;
-    return (
-      <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
-        <ul>
-          {this.props.details.titles.map((obj) => {
-            return (
-              <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
-                <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${obj._id}`}>
-                  {obj.title}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    );
-  }
+export function ApiDocumentationCartidge({ details }) {
+  const params = useParams();
+  return (
+    <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
+      <ul>
+        {details.titles.map((obj) => {
+          return (
+            <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
+              <Link
+                to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}
+              >
+                {obj.title}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }
 
-export class ApiDocumentation extends Component {
-  state = {
-    details: null,
-    content: t('Loading page ...', this.props.currentLanguage),
-  };
+export function ApiDocumentation(props) {
+  const { translateMethod, Translation } = useContext(I18nContext);
 
-  fetchPage = () => {
-    Services.getDocDetails(this.props.api._id).then((details) => {
-      this.setState({ details });
-      const pageId = this.props.match.params.pageId || details.pages[0];
-      Services.getDocPage(this.props.api._id, pageId).then((page) => {
-        if (page.remoteContentEnabled) {
-          this.setState({
-            content: null,
-            contentType: page.contentType,
-            remoteContent: {
-              url: page.contentUrl,
-            },
-          });
-        } else {
-          this.setState({
-            content: page.content,
-            contentType: page.contentType,
-            remoteContent: null,
-          });
-          window.$('pre code').each((i, block) => {
-            hljs.highlightBlock(block);
-          });
-        }
+  const params = useParams();
+
+  const [state, setState] = useState({
+    details: null,
+    content: translateMethod('Loading page ...'),
+  });
+
+  useEffect(() => {
+    if (state.content)
+      window.$('pre code').each((i, block) => {
+        hljs.highlightElement(block);
       });
+  }, [state.content]);
+
+  useEffect(() => {
+    fetchPage();
+  }, [props.api, params.pageId]);
+
+  const fetchPage = () => {
+    Services.getDocDetails(props.api._humanReadableId, params.versionId).then((details) => {
+      const pageId = params.pageId || details.pages[0];
+      if (pageId) {
+        Services.getDocPage(props.api._id, pageId).then((page) => {
+          if (page.remoteContentEnabled) {
+            setState({
+              ...state,
+              details,
+              content: null,
+              contentType: page.contentType,
+              remoteContent: {
+                url: page.contentUrl,
+              },
+            });
+          } else
+            setState({
+              ...state,
+              details,
+              content: page.content,
+              contentType: page.contentType,
+              remoteContent: null,
+            });
+        });
+      } else {
+        setState({ ...state, details });
+      }
     });
   };
 
-  componentDidMount() {
-    if (this.props.api) {
-      this.fetchPage();
-    }
+  const api = props.api;
+
+  if (!api || !state.details) {
+    return null;
   }
 
-  UNSAFE_componentWillReceiveProps(next) {
-    if (!this.props.api && next.api) {
-      this.fetchPage();
-    }
-    if (this.props.match && !this.props.match.params.pageId !== next.match.params.pageId) {
-      this.fetchPage();
-    }
-  }
+  const details = state.details;
+  const apiId = params.apiId;
+  const pageId = params.pageId;
+  const versionId = params.versionId;
+  const idx = _.findIndex(details.pages, (p) => p === pageId);
 
-  render() {
-    const api = this.props.api;
-    if (!api || !this.state.details) {
-      return null;
-    }
-    const details = this.state.details;
-    const apiId = this.props.match.params.apiId;
-    const pageId = this.props.match.params.pageId;
-    const idx = _.findIndex(details.pages, (p) => p === pageId);
-    let prevId = null;
-    let nextId = null;
-    const next = details.pages[idx + (pageId ? 1 : 2)];
-    const prev = details.pages[idx - 1];
-    if (next) nextId = next;
-    if (prev) prevId = prev;
-    return (
-      <>
-        {details && (
-          <ApiDocumentationCartidge
-            details={details}
-            fetchPage={this.fetchPage}
-            match={this.props.match}
+  let prevId = null;
+  let nextId = null;
+
+  const next = details.pages[idx + (pageId ? 1 : 2)];
+  const prev = details.pages[idx - 1];
+  if (next) nextId = next;
+  if (prev) prevId = prev;
+
+  return (
+    <>
+      {details && <ApiDocumentationCartidge details={details} />}
+      <div className="col p-3">
+        <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
+          {prevId && (
+            <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
+              <i className="fas fa-chevron-left me-1" />
+              <Translation i18nkey="Previous page">Previous page</Translation>
+            </Link>
+          )}
+          {nextId && (
+            <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
+              <Translation i18nkey="Next page">Next page</Translation>
+              <i className="fas fa-chevron-right ms-1" />
+            </Link>
+          )}
+        </div>
+        {!state.remoteContent && (
+          <AwesomeContentViewer contentType={state.contentType} content={state.content} />
+        )}
+        {state.remoteContent && (
+          <AwesomeContentViewer
+            contentType={state.contentType}
+            remoteContent={state.remoteContent}
           />
         )}
-        <div className="col p-3">
-          <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
-            {prevId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${prevId}`}>
-                <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
-                  Previous page
-                </Translation>
-              </Link>
-            )}
-            {nextId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${nextId}`}>
-                <Translation i18nkey="Next page" language={this.props.currentLanguage}>
-                  Next page
-                </Translation>
-                <i className="fas fa-chevron-right ml-1" />
-              </Link>
-            )}
-          </div>
-          {!this.state.remoteContent && (
-            <AwesomeContentViewer
-              contentType={this.state.contentType}
-              content={this.state.content}
-            />
+        <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
+          {prevId && (
+            <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
+              <i className="fas fa-chevron-left me-1" />
+              <Translation i18nkey="Previous page">Previous page</Translation>
+            </Link>
           )}
-          {this.state.remoteContent && (
-            <AwesomeContentViewer
-              contentType={this.state.contentType}
-              remoteContent={this.state.remoteContent}
-            />
+          {nextId && (
+            <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
+              <Translation i18nkey="Next page">Next page</Translation>
+              <i className="fas fa-chevron-right ms-1" />
+            </Link>
           )}
-          <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
-            {prevId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${prevId}`}>
-                <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
-                  Previous page
-                </Translation>
-              </Link>
-            )}
-            {nextId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${nextId}`}>
-                <Translation i18nkey="Next page" language={this.props.currentLanguage}>
-                  Next page
-                </Translation>
-                <i className="fas fa-chevron-right ml-1" />
-              </Link>
-            )}
-          </div>
         </div>
-      </>
-    );
-  }
+      </div>
+    </>
+  );
 }
 
 const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;
@@ -174,108 +164,88 @@ const Pdf = ({ url }) => {
   );
 };
 
-class Markdown extends Component {
-  state = { content: null };
+function Markdown(props) {
+  const [content, setContent] = useState();
 
-  componentDidMount() {
-    if (this.props.url) {
-      this.update(this.props.url);
-    }
-  }
+  useEffect(() => {
+    if (props.url) update(props.url);
+  }, [props.url]);
 
-  UNSAFE_componentWillReceiveProps(np) {
-    if (np.url && np.url !== this.props.url) {
-      this.update(np.url);
-    }
-  }
+  useEffect(() => {
+    if (content)
+      window.$('pre code').each((i, block) => {
+        hljs.highlightElement(block);
+      });
+  }, [content]);
 
-  update = (url) => {
+  const update = (url) => {
     fetch(url, {
       method: 'GET',
       credentials: 'include',
     })
       .then((r) => r.text())
-      .then((content) =>
-        this.setState({ content }, () => {
-          window.$('pre code').each((i, block) => {
-            hljs.highlightBlock(block);
-          });
-        })
-      );
+      .then(setContent);
   };
 
-  render() {
-    if (!this.props.content && !this.state.content) {
-      return null;
-    }
-    return (
-      <div
-        className="api-description"
-        dangerouslySetInnerHTML={{
-          __html: converter.makeHtml(this.props.content || this.state.content),
-        }}
-      />
-    );
+  if (!props.content && !content) {
+    return null;
   }
+  return (
+    <div
+      className="api-description"
+      dangerouslySetInnerHTML={{
+        __html: converter.makeHtml(props.content || content),
+      }}
+    />
+  );
 }
 
-class Asciidoc extends Component {
-  state = { content: null };
+function Asciidoc(props) {
+  const [content, setContent] = useState();
 
-  componentDidMount() {
-    if (this.props.url) {
-      this.update(this.props.url);
-    }
-  }
+  useEffect(() => {
+    if (props.url) update(props.url);
+  }, [props.url]);
 
-  UNSAFE_componentWillReceiveProps(np) {
-    if (np.url && np.url !== this.props.url) {
-      this.update(np.url);
-    }
-  }
+  useEffect(() => {
+    if (content)
+      window.$('pre code').each((i, block) => {
+        hljs.highlightElement(block);
+      });
+  }, [content]);
 
-  update = (url) => {
+  const update = (url) => {
     fetch(url, {
       method: 'GET',
       credentials: 'include',
     })
       .then((r) => r.text())
-      .then((content) =>
-        this.setState({ content }, () => {
-          window.$('pre code').each((i, block) => {
-            hljs.highlightBlock(block);
-          });
-        })
-      );
+      .then(setContent);
   };
 
-  render() {
-    if (!this.props.content && !this.state.content) {
-      return null;
-    }
-    return (
-      <div
-        className="api-description asciidoc"
-        dangerouslySetInnerHTML={{
-          __html: asciidoctorConverter.convert(this.props.content || this.state.content),
-        }}
-      />
-    );
+  if (!props.content && !content) {
+    return null;
   }
+  return (
+    <div
+      className="api-description asciidoc"
+      dangerouslySetInnerHTML={{
+        __html: asciidoctorConverter.convert(props.content || content),
+      }}
+    />
+  );
 }
 
-class OpenDocument extends Component {
-  render() {
-    console.log(
-      `${window.location.origin}/assets/viewerjs/index.html#${window.location.origin}${this.props.url}`
-    );
-    return (
-      <iframe
-        src={`/assets/viewerjs/index.html#${this.props.url}`}
-        style={{ width: '100%', height: '100vh', border: 0 }}
-      />
-    );
-  }
+function OpenDocument(props) {
+  console.log(
+    `${window.location.origin}/assets/viewerjs/index.html#${window.location.origin}${props.url}`
+  );
+  return (
+    <iframe
+      src={`/assets/viewerjs/index.html#${props.url}`}
+      style={{ width: '100%', height: '100vh', border: 0 }}
+    />
+  );
 }
 
 const mimeTypes = [
@@ -307,7 +277,7 @@ const mimeTypes = [
   {
     label: '.html HyperText Markup Language file',
     value: 'text/html',
-    render: (url) => <Html url={url} />,
+    render: (url, content) => (url ? <Html url={url} /> : <Markdown url={url} content={content} />),
   },
   { label: '.jpg JPEG image', value: 'image/jpeg', render: (url) => <Image url={url} /> },
   {

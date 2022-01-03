@@ -14,7 +14,7 @@ export class NumberInput extends Component {
 
   render() {
     return (
-      <div className="form-group row">
+      <div className="mb-3 row">
         <label htmlFor={`input-${this.props.label}`} className="col-xs-12 col-sm-2 col-form-label">
           <Help text={this.props.help} label={this.props.label} />
         </label>
@@ -78,7 +78,7 @@ export class VerticalNumberInput extends Component {
 
   render() {
     return (
-      <div className="form-group row">
+      <div className="mb-3 row">
         <div className="col-xs-12">
           <label htmlFor={`input-${this.props.label}`} className="col-form-label">
             <Help text={this.props.help} label={this.props.label} />
@@ -146,7 +146,7 @@ export class NumberRangeInput extends Component {
 
   render() {
     return (
-      <div className="form-group row">
+      <div className="mb-3 row">
         <label htmlFor={`input-${this.props.label}`} className="col-xs-12 col-sm-2 col-form-label">
           <Help text={this.props.help} label={this.props.label} />
         </label>

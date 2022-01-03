@@ -1,158 +1,211 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Keep, Sink, Source}
-import fr.maif.otoroshi.daikoku.actions.DaikokuAction
+import controllers.AppError
+import controllers.AppError.TranslationNotFound
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.TranslationElement._
-import fr.maif.otoroshi.daikoku.domain.{ApiId, DatastoreId, TeamId, Translation}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Translation}
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
+import fr.maif.otoroshi.daikoku.domain.json._
+import fr.maif.otoroshi.daikoku.utils.Translator
+import org.joda.time.DateTime
+import play.api.i18n.{I18nSupport, Lang}
+import reactivemongo.bson.BSONObjectID
 
-class TranslationController(DaikokuAction: DaikokuAction,
-                            env: Env,
-                            cc: ControllerComponents)
-    extends AbstractController(cc) {
+class TranslationController(
+    DaikokuAction: DaikokuAction,
+    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    env: Env,
+    cc: ControllerComponents,
+    translator: Translator)
+    extends AbstractController(cc)
+    with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
   implicit val mat = env.defaultMaterializer
 
-  def saveApiTranslation(teamId: String, api: String) =
-    DaikokuAction.async(parse.json) { ctx =>
-      TeamApiEditorOnly(AuditTrailEvent(
-        s"@{user.name} has created a translation -  - @{t._id}"))(teamId, ctx) {
-        _ =>
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findByIdNotDeleted(api)
-            .flatMap {
-              case None =>
-                FastFuture.successful(
-                  NotFound(Json.obj("error" -> "Api not found")))
-              case Some(api) =>
-                val translations =
-                  (ctx.request.body).as[JsObject].fields.flatMap {
-                    case (language, values) =>
-                      values.as[JsObject].fields.map {
-                        case (key, value) =>
-                          Translation(
-                            id = DatastoreId(
-                              s"$language.${ctx.tenant.id.value}.$key"),
-                            tenant = ctx.tenant.id,
-                            language = language,
-                            key = key,
-                            value = value.as[String],
-                            element = ApiTranslationElement(api.id)
-                          )
-                      }
-                  }
+  val languages = supportedLangs.availables.map(_.language)
 
-                Source(translations.toList)
-                  .mapAsync(5)(translation =>
-                    env.dataStore.translationRepo
-                      .forTenant(ctx.tenant)
-                      .save(translation))
-                  .toMat(Sink.ignore)(Keep.right)
-                  .run()
-                  .map(_ => Ok(Json.obj("done" -> true)))
-            }
-      }
-    }
-
-  def saveTenantTranslation(tenantId: String) =
-    DaikokuAction.async(parse.json) { ctx =>
-      DaikokuAdminOnly(
+  def getTranslations(domain: Option[String]) =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      UberPublicUserAccess(
         AuditTrailEvent(
-          s"@{user.name} has created a translation for tenant @{tenant.name}"))(
-        ctx) {
-        env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
+          s"@{user.name} has requested translations of s${domain}"))(ctx) {
+        domain match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> "Tenant not found")))
-          case Some(tenant) =>
-            val translations = (ctx.request.body).as[JsObject].fields.flatMap {
-              case (language, values) =>
-                values.as[JsObject].fields.map {
-                  case (key, value) =>
-                    Translation(
-                      id = DatastoreId(s"$language.${ctx.tenant.id.value}.$key"),
-                      tenant = ctx.tenant.id,
-                      language = language,
-                      key = key,
-                      value = value.as[String],
-                      element = TenantTranslationElement(tenant.id)
-                    )
-                }
-            }
+              NotFound(Json.obj("error" -> "Domain missing")))
+          case Some(prefix) =>
+            (if (prefix == "all")
+               env.dataStore.translationRepo
+                 .forTenant(ctx.tenant.id)
+                 .findAll()
+             else
+               env.dataStore.translationRepo
+                 .forTenant(ctx.tenant.id)
+                 .find(Json.obj("key" -> Json.obj("$regex" -> s".*$prefix",
+                                                  "$options" -> "-i"))))
+              .map(translations => {
+                val defaultTranslations =
+                  if (prefix == "mail")
+                    messagesApi.messages
+                      .map(v =>
+                        (v._1, v._2.filter(k => k._1.startsWith(prefix))))
+                      .flatMap { v =>
+                        v._2
+                          .map {
+                            case (key, value) =>
+                              Translation(
+                                id = DatastoreId(
+                                  BSONObjectID.generate().stringify),
+                                tenant = ctx.tenant.id,
+                                language = v._1,
+                                key = key,
+                                value = value
+                              )
+                          }
+                          .filter(t => languages.contains(t.language))
+                      } else Seq.empty
 
-            Source(translations.toList)
-              .mapAsync(5)(translation =>
-                env.dataStore.translationRepo
-                  .forTenant(ctx.tenant)
-                  .save(translation))
-              .toMat(Sink.ignore)(Keep.right)
-              .run()
-              .map(_ => Ok(Json.obj("done" -> true)))
+                Ok(
+                  if (prefix == "mail")
+                    Json.obj(
+                      "translations" -> defaultTranslations
+                        .map { translation =>
+                          translations.find(t =>
+                            t.key == translation.key && t.language == translation.language) match {
+                            case None    => translation
+                            case Some(t) => t
+                          }
+                        }
+                        .groupBy(_.key)
+                        .map(
+                          v =>
+                            (v._1,
+                             v._2.map(TranslationFormat.writes),
+                             defaultTranslations
+                               .find(p => p.key == v._1)
+                               .map(_.value)
+                               .getOrElse("")))
+                    )
+                  else
+                    Json.obj(
+                      "translations" -> translations.map(
+                        TranslationFormat.writes))
+                )
+              })
         }
       }
     }
 
-  def saveTeamTranslation(teamId: String) = DaikokuAction.async(parse.json) {
-    ctx =>
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has created a translation -  - @{t._id}"))(teamId, ctx) {
-        team =>
-          val translations = (ctx.request.body).as[JsObject].fields.flatMap {
-            case (language, values) =>
-              values.as[JsObject].fields.map {
-                case (key, value) =>
-                  Translation(
-                    id = DatastoreId(s"$language.${ctx.tenant.id.value}.$key"),
-                    tenant = ctx.tenant.id,
-                    language = language,
-                    key = key,
-                    value = value.as[String],
-                    element = TeamTranslationElement(team.id)
-                  )
-              }
+  def saveTranslation() = DaikokuAction.async(parse.json) { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} has edited translations - @{tenant._id}"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
+      def _save(translation: Translation) = {
+        val savedTranslation =
+          translation.copy(lastModificationAt = Some(DateTime.now()))
+        env.dataStore.translationRepo
+          .forTenant(ctx.tenant.id)
+          .save(savedTranslation)
+          .map {
+            case true => Ok(TranslationFormat.writes(savedTranslation))
+            case false =>
+              BadRequest(Json.obj("error" -> "failed to save translation"))
           }
+      }
 
-          Source(translations.toList)
-            .mapAsync(5)(translation =>
+      TranslationFormat
+        .reads((ctx.request.body \ "translation").as[JsValue]) match {
+        case JsError(_) =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "Bad translation format")))
+        case JsSuccess(translation, _) =>
+          translation.lastModificationAt match {
+            case None =>
+              _save(translation)
+            case Some(_) =>
               env.dataStore.translationRepo
                 .forTenant(ctx.tenant)
-                .save(translation))
-            .toMat(Sink.ignore)(Keep.right)
-            .run()
-            .map(_ => Ok(Json.obj("done" -> true)))
+                .findOne(Json.obj("language" -> translation.language,
+                                  "key" -> translation.key))
+                .flatMap {
+                  case Some(existingTranslation) =>
+                    _save(existingTranslation.copy(value = translation.value))
+                  case None =>
+                    FastFuture.successful(
+                      NotFound(Json.obj("error" -> "Translation not found")))
+                }
+          }
       }
+    }
   }
 
-  def getTenantTranslation() = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(
-      s"@{user.name} has requested tenant translation - @{tenant._id}"))(ctx) {
+  def resetTranslation(translationId: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} has reset translations - @{tenant._id}"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
       env.dataStore.translationRepo
-        .forTenant(ctx.tenant)
-        .findAll()
-        .map(translations => {
+        .forTenant(ctx.tenant.id)
+        .findById(translationId)
+        .map {
+          case None =>
+            FastFuture.successful(AppError.render(TranslationNotFound))
+          case Some(translation) =>
+            env.dataStore.translationRepo
+              .forTenant(ctx.tenant.id)
+              .deleteById(translationId)
+              .map {
+                case true =>
+                  implicit val language: String = translation.language
+                  translator
+                    .translate(translation.key, ctx.tenant)
+                    .map { value =>
+                      Ok(
+                        TranslationFormat.writes(
+                          translation.copy(
+                            value = value,
+                            lastModificationAt = None
+                          )))
+                    }
+                case false =>
+                  FastFuture.successful(BadRequest(
+                    Json.obj("error" -> "failed to delete translation")))
+              }
+              .flatten
+        }
+        .flatten
+    }
+  }
 
-          import fr.maif.otoroshi.daikoku.domain.json._
-
-          val map: Map[String, Seq[Translation]] =
-            translations.groupBy(t => t.language)
-
-          val translationsAsJson = map
-            .map {
-              case (k, v) => Json.obj(k -> SeqTranslationFormat.writes(v))
+  def deleteTranslation() = DaikokuAction.async(parse.json) { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} has reset translations - @{tenant._id}"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
+      TranslationFormat
+        .reads((ctx.request.body \ "translation").as[JsValue]) match {
+        case JsError(_) =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "Bad translation format")))
+        case JsSuccess(translation, _) =>
+          env.dataStore.translationRepo
+            .forTenant(ctx.tenant.id)
+            .delete(Json.obj("_id" -> translation.id.value))
+            .map { _ =>
+              Ok(Json.obj("done" -> true))
             }
-            .fold(Json.obj())(_ deepMerge _)
-
-          Ok(translationsAsJson)
-        })
+      }
     }
   }
 }

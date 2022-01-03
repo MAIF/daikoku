@@ -1,7 +1,6 @@
 import React from 'react';
-import { t } from '../../../locales';
 
-const StarsButton = ({ stars, toggleStar, starred, currentLanguage, connectedUser }) => (
+const StarsButton = ({ stars, toggleStar, starred, connectedUser }) => (
   <div
     className="d-flex flex-row"
     style={{
@@ -12,17 +11,15 @@ const StarsButton = ({ stars, toggleStar, starred, currentLanguage, connectedUse
       borderColor: 'var(--btn-border-color, #97b0c7)',
       backgroundColor: 'var(--btn-border-color, #fff)',
       fontSize: '18px',
-    }}>
+    }}
+  >
     {connectedUser && !connectedUser.isGuest ? (
       <>
         <button
-          className="btn flex-row align-items-center"
+          className="btn flex-row align-items-center pe-2"
           style={{ color: 'var(--btn-bg-color, "#000")', padding: '0' }}
           onClick={toggleStar}>
-          <i className={`${starred ? 'fas' : 'far'} fa-star pl-2`} />
-          <span className="px-2">
-            {starred ? t('unstar', currentLanguage) : t('star', currentLanguage)}
-          </span>
+          <i className={`${starred ? 'fas' : 'far'} fa-star ps-2`} />
         </button>
         <div className="px-2 d-flex align-items-center" style={{ backgroundColor: '#fff' }}>
           <span>{stars}</span>
@@ -32,7 +29,7 @@ const StarsButton = ({ stars, toggleStar, starred, currentLanguage, connectedUse
       stars > 0 && (
         <div className="badge p-2" style={{ color: '#fff' }}>
           {stars}
-          <i className="fas fa-star pl-2" />
+          <i className="fas fa-star ps-2" />
         </div>
       )
     )}

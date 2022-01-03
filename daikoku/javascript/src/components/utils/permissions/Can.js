@@ -18,9 +18,10 @@ export const CanIDoAction = (
 ) => {
   if (what === tenant) {
     return (isTenantAdmin && whichOne._id === currentTenant._id) || user.isDaikokuAdmin;
-  } else if (what === api && !apiCreationPermitted) {
-    return false;
-  } else {
+  }
+  // else if (what === api && !apiCreationPermitted)
+  //   return false
+  else {
     const realPerm = Option(team)
       .map((t) => t.users)
       .flatMap((users) => Option(users.find((u) => u.userId === user._id)))

@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.0.0-dev
+1.5.0
 </div>
 </div>
 <div class="nav-toc">
@@ -70,6 +70,7 @@
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
+    <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -83,7 +84,8 @@
   <ul>
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="active page">Manage APIkeys</a></li>
-    <li><a href="../consumerusage/3-billing.html" class="page">Team billing</a></li>
+    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
+    <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
   <li><a href="../apis.html" class="page">Admin REST API</a></li>
@@ -121,7 +123,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.0.0-dev
+1.5.0
 </div>
 </div>
 <div class="nav-toc">
@@ -161,6 +163,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
+    <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -174,7 +177,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <ul>
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="active page">Manage APIkeys</a></li>
-    <li><a href="../consumerusage/3-billing.html" class="page">Team billing</a></li>
+    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
+    <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
   <li><a href="../apis.html" class="page">Admin REST API</a></li>
@@ -205,14 +209,22 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
 <h1><a href="#manage-apikeys" name="manage-apikeys" class="anchor"><span class="anchor-link"></span></a>Manage APIkeys</h1>
-<p>In the backoffice team, click on the <code>Team APIkeys</code> entry, on the left. And you should see the list of existing <code>APIkeys</code></p>
+<p>In the backoffice team, click on the <code>API keys</code> entry, on the left. And you should see the list of subscribed <code>APIs</code></p>
 <h2><a href="#view-apikeys" name="view-apikeys" class="anchor"><span class="anchor-link"></span></a>View APIkeys</h2>
-<p>On the right of the API line, click on the <code>API Keys</code> button. All subscribed plan for the API are displayed.  - Secret can be reseted for an APIkey  - APIkey usage statistics are avalaible after clicking on the <code>stats</code> button. Stats are avalaible for <code>today</code>, <code>yesterday</code>, <code>last week</code>, <code>last month</code> or <code>the billing period</code>. You can see a graph to see usage or some global informations likes hits count, average duration or average overhead.  - To copy credentials, click on the <code>copy</code> button at the bottom right of the component.  - APIkey Rotation can be enabled and setup (by choosing rotation period and grace period)  - APIkey can be enabled or disabled</p>
+<p>On the right of the API line, click on the <code>API Keys</code> button. All subscribed plan for the API are displayed.</p>
+<p>first of all, you can rename your API key, it&rsquo;s just for better reading</p>
+<ul>
+  <li>Secret can be reseted for an API key</li>
+  <li>API key usage statistics are avalaible after clicking on the <code>stats</code> button. Stats are avalaible for <code>today</code>, <code>yesterday</code>, <code>last week</code>, <code>last month</code> or <code>the billing period</code>. You can see a graph to see usage or some global informations likes hits count, average duration or average overhead.</li>
+  <li>To copy credentials, click on the <code>copy</code> button at the bottom right of the component.</li>
+  <li>APIkey Rotation can be enabled and setup (by choosing rotation period and grace period)</li>
+  <li>APIkey can be enabled or disabled</li>
+</ul>
 <p>Every subscription have an integration token, which make credentials accessible by admin api. This token is visible in integration token tab.</p>
 <h2><a href="#view-global-statistics" name="view-global-statistics" class="anchor"><span class="anchor-link"></span></a>View global statistics</h2>
-<p>After clicking on the <code>see stats</code> button, global statistics are displayed. It&rsquo;s a view of your usage by APIs, split by APIkeys.</p>
+<p>After clicking on the <code>Global stats</code> button, global statistics are displayed. It&rsquo;s a view of your usage by APIs, split by APIkeys.</p>
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="../consumerusage/3-billing.html">Team billing</a></p>
+<p><strong>Next:</strong> <a href="../consumerusage/3-aggregation-of-apikeys.html">Use an api key on multiple apis</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
@@ -292,7 +304,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-dev', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.5.0', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>

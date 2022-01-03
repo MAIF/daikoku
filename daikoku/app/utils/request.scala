@@ -16,7 +16,6 @@ object RequestImplicits {
     def relativeUri: String = {
       val uri = requestHeader.uri
       uriCache.computeIfAbsent(uri, _ => {
-        // println(s"computing uri for $uri")
         Try(Uri(uri).toRelative.toString()).getOrElse(uri)
       })
     }

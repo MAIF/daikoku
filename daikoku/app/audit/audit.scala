@@ -14,6 +14,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
+import fr.maif.otoroshi.daikoku.utils.Translator
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, Producer, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.config.SslConfigs
@@ -224,10 +225,10 @@ case class TenantAuditEvent(evt: AuditEvent,
 case object SendToAnalytics
 
 object AuditActor {
-  def props(implicit env: Env, messagesApi: MessagesApi) = Props(new AuditActor())
+  def props(implicit env: Env, messagesApi: MessagesApi, translator: Translator) = Props(new AuditActor())
 }
 
-class AuditActor(implicit env: Env, messagesApi: MessagesApi) extends Actor {
+class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Translator) extends Actor {
 
   implicit lazy val ec = env.defaultExecutionContext
 
@@ -283,9 +284,11 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi) extends Actor {
          |$email""".stripMargin
 
         if (evts.size > 1) {
+          implicit val language: String = tenant.defaultLanguage.getOrElse("en")
           tenant.mailer.send(s"Otoroshi Alert - ${evts.size} new alerts",
             emails,
-            emailBody)
+            emailBody,
+            tenant)
         } else {
           FastFuture.successful(())
         }
@@ -308,22 +311,25 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi) extends Actor {
         }
       }
       .mapAsync(10) { event =>
+        implicit val language: String = tenant.defaultLanguage.getOrElse("en")
         val mailSend: OptionT[Future, Future[Unit]] = for {
           subscription <- OptionT(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(event.asInstanceOf[ApiKeyRotationEvent].subscription))
           api <- OptionT(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api))
           team <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team))
           admins <- OptionT.liftF(env.dataStore.userRepo.find(
             Json.obj("_id" -> Json.obj("$in" -> JsArray(team.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId.asJson).toSeq)))))
+          plan <- OptionT.liftF(api.possibleUsagePlans
+            .find(p => p.id == subscription.plan) match {
+              case Some(p) => FastFuture.successful(p.customName.getOrElse(p.typeName))
+              case None => translator.translate("unknown.plan", tenant)
+            })
+          title <- OptionT.liftF(translator.translate("mail.apikey.rotation.title", tenant))
+          body <- OptionT.liftF(translator.translate("mail.apikey.rotation.body", tenant, Map(
+          "apiName" -> api.name,
+          "planName" -> plan
+          )))
         } yield {
-          val language =  tenant.defaultLanguage.getOrElse("en")
-          implicit val lang: Lang = Lang(language)
-
-          val plan = api.possibleUsagePlans.find(p => p.id == subscription.plan).map(p => p.customName.getOrElse(p.typeName))
-            .getOrElse(messagesApi("unknown.plan"))
-          val title = messagesApi("mail.apikey.rotation.title")
-          val body = messagesApi("mail.apikey.rotation.body", api.name, plan)
-
-          tenant.mailer.send(title, admins.map(_.email), body)
+          tenant.mailer.send(title, admins.map(_.email), body, tenant)
         }
         mailSend.value
       }
@@ -395,7 +401,7 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi) extends Actor {
   }
 }
 
-class AuditActorSupervizer(env: Env, messagesApi: MessagesApi) extends Actor {
+class AuditActorSupervizer(env: Env, messagesApi: MessagesApi, translator: Translator) extends Actor {
 
   lazy val childName = "audit-actor"
   lazy val logger = Logger("audit-actor-supervizer")
@@ -403,14 +409,14 @@ class AuditActorSupervizer(env: Env, messagesApi: MessagesApi) extends Actor {
   override def receive: Receive = {
     case Terminated(ref) =>
       logger.debug("Restarting analytics actor child")
-      context.watch(context.actorOf(AuditActor.props(env, messagesApi), childName))
+      context.watch(context.actorOf(AuditActor.props(env, messagesApi, translator), childName))
     case evt => context.child(childName).map(_ ! evt)
   }
 
   override def preStart(): Unit =
     if (context.child(childName).isEmpty) {
       logger.debug(s"Starting new child $childName")
-      val ref = context.actorOf(AuditActor.props(env, messagesApi), childName)
+      val ref = context.actorOf(AuditActor.props(env, messagesApi, translator), childName)
       context.watch(ref)
     }
 
@@ -419,7 +425,7 @@ class AuditActorSupervizer(env: Env, messagesApi: MessagesApi) extends Actor {
 }
 
 object AuditActorSupervizer {
-  def props(implicit env: Env, messagesApi: MessagesApi) = Props(new AuditActorSupervizer(env, messagesApi))
+  def props(implicit env: Env, messagesApi: MessagesApi, translator: Translator) = Props(new AuditActorSupervizer(env, messagesApi, translator))
 }
 
 case class KafkaConfig(servers: Seq[String],

@@ -1,8 +1,10 @@
-#Managing teams
+# Managing teams
 
-###Create a new Team
+### Create a new Team
+
 In the home page, on the "Your Teams" component, click on the "+" button tio open a modal to create a new Team.
 It's necessary to fill in the following fields :
+
 * Name: the public name of the the new team (it must be unique for the tenant)
 * Description: A quick description for the new team (Display in the all team page)
 * Team contact: the mail to contact the team
@@ -11,18 +13,18 @@ It's necessary to fill in the following fields :
 
 After creation, you will be redirected to the members page to managing them 
 
-#Managing team members
-In the backoffice team, click on the `Team members` entry, on the left.
+# Managing team members
+In the backoffice team, click on the `Setting/Members` entry, on the left.
 
 ### Add a new member
-Simply select a user in the selector in the top left of the page. He will be notified that you want to add him to your team. You can see him in the "pending" tab, once he accept the invitation he'll appear on the members tab.
+Simply click on `Invit a collaborator` button and then fill with his email. He will be notified that you want to add him to your team. You can see him in the "pending" tab, once he accept the invitation he'll appear on the members tab.
 You will be notified as soon as he accepts or refuses the invitation.
 
 ### Remove a member
-Hover over member's avatar and click on the `delete` button (bin icon).
+Hover over member's avatar and click on the `delete` button.
 
 ### Update member permission
-Hover over member's avatar  and click on the `manage permissions` button (user/cog icon).
+Hover over member's avatar  and click on the `manage permissions` button.
 Then, choose:
 
 * admin: member can access everything.

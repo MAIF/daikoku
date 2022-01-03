@@ -85,3 +85,22 @@ describe('users page', () => {
   });
 });
 
+describe('create new api version', () => {
+  it('load well', () => {
+    const version = "1.0.1"
+    cy.visit('http://localhost:9000/apis')
+      .url().should('include', '/apis')
+      .visit('http://localhost:9000/')
+      .get('.row:nth-child(3) > .col-12 h3').click()
+      .url().should('include', 'testers/test-api/1.0.0')
+      .get('.btn-sm:nth-child(1)').click({ force: true })
+      .get('nav .btn-outline-primary').contains('New version').click()
+      .get('.form-control:nth-child(2)').click()
+      .get('.form-control:nth-child(2)').type(version)
+      .get('.modal-footer > .btn-outline-success').click()
+      .get('.fa-save').click()
+      .visit(`http://localhost:9000/testers/test-api/${version}`)
+      .url().should('include', `/testers/test-api/${version}`)
+      .get('.badge').first().should('have.text', version)
+  })
+})

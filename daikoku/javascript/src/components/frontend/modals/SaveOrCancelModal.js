@@ -15,9 +15,7 @@ export const SaverOrCancelModal = (props) => {
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{props.title}</h5>
-        <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
       </div>
       <div className="modal-body">
         <div className="modal-description">{props.message}</div>
@@ -29,13 +27,15 @@ export const SaverOrCancelModal = (props) => {
         <button
           type="button"
           className="btn btn-outline-danger"
-          onClick={() => actionAndClose(props.dontsave)}>
+          onClick={() => actionAndClose(props.dontsave)}
+        >
           don't save
         </button>
         <button
           type="button"
           className="btn btn-outline-success"
-          onClick={() => actionAndClose(props.save)}>
+          onClick={() => actionAndClose(props.save)}
+        >
           Save
         </button>
       </div>

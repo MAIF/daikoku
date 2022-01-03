@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.0.0-dev
+1.5.0
 </div>
 </div>
 <div class="nav-toc">
@@ -70,6 +70,7 @@
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
+    <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -83,7 +84,8 @@
   <ul>
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
-    <li><a href="../consumerusage/3-billing.html" class="page">Team billing</a></li>
+    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
+    <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
   <li><a href="../apis.html" class="page">Admin REST API</a></li>
@@ -121,7 +123,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.0.0-dev
+1.5.0
 </div>
 </div>
 <div class="nav-toc">
@@ -161,6 +163,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
+    <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -174,7 +177,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <ul>
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
-    <li><a href="../consumerusage/3-billing.html" class="page">Team billing</a></li>
+    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
+    <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
   <li><a href="../apis.html" class="page">Admin REST API</a></li>
@@ -205,28 +209,45 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
 <h1><a href="#managing-tenants" name="managing-tenants" class="anchor"><span class="anchor-link"></span></a>Managing tenants</h1>
-<p>Go to <code>settings/Organizations settings</code></p><div class="centered-img">
-<img src="../img/organisation_settings.png" /></div>
+<p>Go to <code>settings/Organizations settings</code></p>
 <p>And you should see the list of the existing <code>tenants</code>.</p>
 <h2><a href="#create-a-tenant" name="create-a-tenant" class="anchor"><span class="anchor-link"></span></a>Create a tenant</h2>
 <p>To create a new tenant, just click on the <code>create a new tenant</code> button.</p>
 <h3><a href="#common-informations" name="common-informations" class="anchor"><span class="anchor-link"></span></a>Common informations</h3>
-<p>Modify the name and the domain name of the current tenant. It&rsquo;s possible to set the default language of the tenant.</p>
+<p>Modify the name and the domain name of the current tenant. It&rsquo;s possible to set the default language of the tenant. Maintenance Mode and construction mode can be activated here (only super and tenant admins can login).</p>
 <h3><a href="#tenant-style" name="tenant-style" class="anchor"><span class="anchor-link"></span></a>Tenant style</h3>
-<p>Tenants could be customized in Daikoku. Logo, title, description can be changed. The css can be customized with some css code or js code, with overwriting css variables or with a css/js file.</p>
+<p>Tenants could be customized in Daikoku. Logo, title, description can be changed. The css can be customized with some css code or js code, with overwriting css variables or with a css/js file. Daikoku can be customized just on passing a new css color theme (ths theme can be rewrite by using the dedicated page by clicking on the <code>Set color theme from UI</code> button)</p>
 <h3><a href="#authentication-security" name="authentication-security" class="anchor"><span class="anchor-link"></span></a>Authentication &amp; Security</h3>
-<p>A tenant can be private or public. In the last case, just public api can be accessed by unauthenticated users. Authentication can be set by choosen Local auth. or a tiers auth. like LDAP, OAuth2 or Otoroshi. The user session duration can be set here, by default it last 24h.</p>
-<p>A creation security option can be activated to forbid all unauthorized team to create API. You just have to authorize the team from the team edit page. A subscription security option can be activated to forbid all personal team to subscribe to an API. It&rsquo;s possible to hide teams page (/teams) to prevent everyone for knowing all teams in the organisation. This is a feature primally intended for public tenants.</p>
+<p>Authentication can be set by choosen Local auth. or a tiers auth. like LDAP, OAuth2 or Otoroshi. The user session duration can be set here, by default it last 24h.</p>
+<h3><a href="#security" name="security" class="anchor"><span class="anchor-link"></span></a>Security</h3>
+<p>A tenant can be private or public. In the last case, just public api can be accessed by unauthenticated users.</p>
+<p>A creation security option can be activated to forbid all unauthorized teams to create API. You just have to authorize the team from the team edit page.</p>
+<p>A subscription security option can be activated to forbid all personal team to subscribe to an API.</p>
+<p>An API keys aggregation security can be activated to allow admin API to activate the possibility to aggregate the generated key with an existing API key. It must be activated in every plan</p>
+<blockquote>
+  <p>Beware the risk of override metadata between key using multiple plans. </p>
+</blockquote>
+<p>It&rsquo;s possible to hide API Reference tab (for all APIs) to unlogged user. This is a feature primally intended for public tenants.</p>
+<p>It&rsquo;s possible to hide teams page (/teams) to prevent everyone for knowing all teams in the organisation. This is a feature primally intended for public tenants.</p>
 <h3><a href="#audit-trail" name="audit-trail" class="anchor"><span class="anchor-link"></span></a>Audit trail</h3>
 <p>The settings for the output of the audit trail can be set on this page. The output of it, in addition to writing in database, can be an elastic, a kafka or webhooks.</p>
 <h3><a href="#alerting" name="alerting" class="anchor"><span class="anchor-link"></span></a>Alerting</h3>
 <p>The email adresses to report some Daikoku alert.</p>
 <h3><a href="#mailer" name="mailer" class="anchor"><span class="anchor-link"></span></a>Mailer</h3>
-<p>The mailer type, by default just the standard output. Mailgun or Mailjet can be configured.</p>
+<p>The mailer type, by default just the standard output. Mailgun, Mailjet and Sendgrid can be configured as an sass solution. Otherwise, a smtp client can be configured.</p>
+<blockquote>
+  <p>The mail templates (one by supported languages) can be edited on the <code>internationalization page</code> accessible by clicking the <code>edit mail template</code> button.</p>
+</blockquote>
 <h3><a href="#bucket" name="bucket" class="anchor"><span class="anchor-link"></span></a>Bucket</h3>
 <p>An object storage can be set to store tenant and team assets.</p>
+<h3><a href="#messages" name="messages" class="anchor"><span class="anchor-link"></span></a>Messages</h3>
+<p>A default message, visible for all user clicking on the message button, in the top of conversation modal.</p>
+<h3><a href="#footer" name="footer" class="anchor"><span class="anchor-link"></span></a>Footer</h3>
+<p>A footer can be draw by daikoku an all frontend page. Just fill code input with HTML code</p>
 <h3><a href="#unlogged-home-description" name="unlogged-home-description" class="anchor"><span class="anchor-link"></span></a>Unlogged home description</h3>
 <p>The unlogged home description is the first content shown to user for private tenant, before the login page. It can also be enabled for public tenant.</p>
+<h3><a href="#seo" name="seo" class="anchor"><span class="anchor-link"></span></a>SEO</h3>
+<p>A robot.txt file is serve on the path /robot.txt. by default, the file is empty but, you can fill it like you want.</p>
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../adminusage/2-users.html">Managing users</a></p>
 </div>
@@ -307,7 +328,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-dev', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.5.0', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>

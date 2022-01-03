@@ -1,217 +1,168 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant, Spinner } from '../../utils';
-import { t, Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
+import { I18nContext } from '../../../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-class TenantOtoroshiComponent extends Component {
-  state = {
+function TenantOtoroshiComponent(props) {
+  const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams();
+  const [state, setState] = useState({
     otoroshi: null,
     create: false,
-  };
+  });
 
-  formSchema = {
+  const formSchema = {
     _id: {
       type: 'string',
       disabled: true,
-      props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+      props: { label: translateMethod('Id'), placeholder: '---' },
     },
     url: {
       type: 'string',
       props: {
-        label: t('Otoroshi Url', this.props.currentLanguage),
+        label: translateMethod('Otoroshi Url'),
         placeholder: 'https://otoroshi-api.foo.bar',
       },
     },
     host: {
       type: 'string',
       props: {
-        label: t('Otoroshi Host', this.props.currentLanguage),
+        label: translateMethod('Otoroshi Host'),
         placeholder: 'otoroshi-api.foo.bar',
       },
     },
     clientId: {
       type: 'string',
-      props: { label: t('Otoroshi client id', this.props.currentLanguage) },
+      props: { label: translateMethod('Otoroshi client id') },
     },
     clientSecret: {
       type: 'string',
-      props: { label: t('Otoroshi client secret', this.props.currentLanguage) },
+      props: { label: translateMethod('Otoroshi client secret') },
     },
   };
 
-  formFlow = ['_id', 'url', 'host', 'clientId', 'clientSecret'];
+  const formFlow = ['_id', 'url', 'host', 'clientId', 'clientSecret'];
 
-  isTeamAdmin = () => {
-    if (this.props.connectedUser.isDaikokuAdmin) {
-      return true;
-    }
-  };
-
-  componentDidMount() {
-    if (this.props.location && this.props.location.state && this.props.location.state.newSettings) {
-      this.setState({ otoroshi: this.props.location.state.newSettings, create: true });
+  useEffect(() => {
+    if (location && location.state && location.state.newSettings) {
+      setState({ ...state, otoroshi: location.state.newSettings, create: true });
     } else {
-      Services.oneOtoroshi(
-        this.props.tenant._id,
-        this.props.match.params.otoroshiId
-      ).then((otoroshi) => this.setState({ otoroshi }));
+      Services.oneOtoroshi(props.tenant._id, params.otoroshiId).then((otoroshi) =>
+        setState({ ...state, otoroshi })
+      );
     }
-  }
+  }, []);
 
-  save = () => {
-    if (this.state.create) {
-      Services.createOtoroshiSettings(this.props.tenant._id, this.state.otoroshi).then((result) => {
+  const save = () => {
+    if (state.create) {
+      Services.createOtoroshiSettings(props.tenant._id, state.otoroshi).then((result) => {
         if (result.error) {
           toastr.error('Failure', result.error);
         } else {
-          toastr.success(
-            t(
-              'otoroshi.settings.created.success',
-              this.props.currentLanguage,
-              false,
-              'Otoroshi settings successfuly created'
-            )
-          );
-          this.setState({ create: false });
+          toastr.success(translateMethod('otoroshi.settings.created.success'));
+          setState({ ...state, create: false });
         }
       });
     } else {
-      Services.saveOtoroshiSettings(this.props.tenant._id, this.state.otoroshi).then((result) => {
+      Services.saveOtoroshiSettings(props.tenant._id, state.otoroshi).then((result) => {
         if (result.error) {
           toastr.error('Failure', result.error);
         } else {
-          toastr.success(
-            t(
-              'otoroshi.settings.updated.success',
-              this.props.currentLanguage,
-              false,
-              'Otoroshi settings successfuly updated'
-            )
-          );
-          this.setState({ create: false });
+          toastr.success(translateMethod('otoroshi.settings.updated.success'));
+          setState({ ...state, create: false });
         }
       });
     }
   };
 
-  delete = () => {
-    window
-      .confirm(
-        t(
-          'otoroshi.settings.delete.confirm',
-          this.props.currentLanguage,
-          false,
-          'Are you sure you want to delete those otoroshi settings ?'
-        )
-      )
-      .then((ok) => {
-        if (ok) {
-          Services.deleteOtoroshiSettings(this.props.tenant._id, this.state.otoroshi._id).then(
-            () => {
-              toastr.success(
-                t(
-                  'otoroshi.settings.deleted.success',
-                  this.props.currentLanguage,
-                  false,
-                  'Otoroshi settings successfuly deleted'
-                )
-              );
-              this.props.history.push('/settings/otoroshis');
-            }
-          );
-        }
-      });
+  const onDelete = () => {
+    window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteOtoroshiSettings(props.tenant._id, state.otoroshi._id).then(() => {
+          toastr.success(translateMethod('otoroshi.settings.deleted.success'));
+          navigate('/settings/otoroshis');
+        });
+      }
+    });
   };
 
-  render() {
-    return (
-      <UserBackOffice tab="Otoroshi" isLoading={!this.state.otoroshi}>
-        {this.state.otoroshi && (
-          <Can I={manage} a={tenant} dispatchError>
-            <div className="row">
-              {!this.state.create && (
-                <h1>
-                  <Translation i18nkey="Otoroshi settings" language={this.props.currentLanguage}>
-                    Otoroshi settings
-                  </Translation>
-                </h1>
-              )}
-              {this.state.create && (
-                <h1>
-                  <Translation
-                    i18nkey="New otoroshi settings"
-                    language={this.props.currentLanguage}>
-                    New otoroshi settings
-                  </Translation>
-                </h1>
-              )}
-            </div>
-            <div className="row">
-              {this.state.otoroshi && (
-                <React.Suspense fallback={<Spinner />}>
-                  <LazyForm
-                    flow={this.formFlow}
-                    schema={this.formSchema}
-                    value={this.state.otoroshi}
-                    onChange={(otoroshi) => this.setState({ otoroshi })}
-                    style={{ marginBottom: 20, paddingTop: 20 }}
-                  />
-                </React.Suspense>
-              )}
-            </div>
-            <div className="row justify-content-end">
+  return (
+    <UserBackOffice tab="Otoroshi" isLoading={!state.otoroshi}>
+      {state.otoroshi && (
+        <Can I={manage} a={tenant} dispatchError>
+          <div className="row">
+            {!state.create && (
+              <h1>
+                <Translation i18nkey="Otoroshi settings">Otoroshi settings</Translation>
+              </h1>
+            )}
+            {state.create && (
+              <h1>
+                <Translation i18nkey="New otoroshi settings">New otoroshi settings</Translation>
+              </h1>
+            )}
+          </div>
+          <div className="row">
+            {state.otoroshi && (
+              <React.Suspense fallback={<Spinner />}>
+                <LazyForm
+                  flow={formFlow}
+                  schema={formSchema}
+                  value={state.otoroshi}
+                  onChange={(otoroshi) => setState({ ...state, otoroshi })}
+                  style={{ marginBottom: 20, paddingTop: 20 }}
+                />
+              </React.Suspense>
+            )}
+          </div>
+          <div className="row">
+            <div className="d-flex justify-content-end">
               <Link className="btn btn-outline-primary" to="/settings/otoroshis">
-                <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Back" language={this.props.currentLanguage}>
-                  Back
-                </Translation>
+                <i className="fas fa-chevron-left me-1" />
+                <Translation i18nkey="Back">Back</Translation>
               </Link>
-              {!this.state.create && (
+              {!state.create && (
                 <button
                   style={{ marginLeft: 5 }}
                   type="button"
                   className="btn btn-outline-danger"
-                  onClick={this.delete}>
-                  <i className="fas fa-trash mr-1" />
-                  <Translation i18nkey="Delete" language={this.props.currentLanguage}>
-                    Delete
-                  </Translation>
+                  onClick={onDelete}>
+                  <i className="fas fa-trash me-1" />
+                  <Translation i18nkey="Delete">Delete</Translation>
                 </button>
               )}
               <button
                 style={{ marginLeft: 5 }}
                 type="button"
                 className="btn btn-outline-success"
-                onClick={this.save}>
-                {!this.state.create && (
+                onClick={save}>
+                {!state.create && (
                   <span>
-                    <i className="fas fa-save mr-1" />
-                    <Translation i18nkey="Save" language={this.props.currentLanguage}>
-                      Save
-                    </Translation>
+                    <i className="fas fa-save me-1" />
+                    <Translation i18nkey="Save">Save</Translation>
                   </span>
                 )}
-                {this.state.create && (
+                {state.create && (
                   <span>
-                    <Translation i18nkey="Create" language={this.props.currentLanguage}>
-                      Create
-                    </Translation>
+                    <Translation i18nkey="Create">Create</Translation>
                   </span>
                 )}
               </button>
             </div>
-          </Can>
-        )}
-      </UserBackOffice>
-    );
-  }
+          </div>
+        </Can>
+      )}
+    </UserBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

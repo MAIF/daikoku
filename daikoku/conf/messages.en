@@ -1,63 +1,72 @@
 mail.contact.title=Contact request
 mail.contact.sender=<div>Here is the data you sent us as part of your contact request:</div>\
-<div>Name: <strong>{0}</strong></div>\
-<div>Contact email: {1}</div>\
-<div>Title: <strong>{2}<strong></div>\
-</br>{3}</br>\
+<div>Name: <strong>[user]</strong></div>\
+<div>Contact email: [email]</div>\
+<div>Title: <strong>[subject]<strong></div>\
+</br>[body]</br>\
 <small>This e-mail is sent to you automatically, please do not reply.</small></br>\
 <small>Your request has been taken into account. It will be processed as soon as possible.</small>
 mail.contact.contact=<div>Somebody send you a contact request:</div>\
-<div>Name: <strong>{0}</strong></div>\
-<div>Contact email: {1}</div>\
-<div>Title: <strong>{2}<strong></div>\
-</br>{3}
+<div>Name: <strong>[user]</strong></div>\
+<div>Contact email: [email]</div>\
+<div>Title: <strong>[subject]<strong></div>\
+</br>[body]
 unknown.plan=Unknown plan
 mail.apikey.rotation.title=Your apikey have been updated
-mail.apikey.rotation.body=Your apikey for api {0} and plan {1} have been rotated.\
+mail.apikey.rotation.body=Your apikey for api [apiName] and plan [planName] have been rotated.\
   If you don't work with an integration system, please update its usage.
 mail.apikey.refresh.title=Your apikey have been updated
-mail.apikey.refresh.body=Your apikey for api {0} and plan {1} have been updated.\
+mail.apikey.refresh.body=Your apikey for api [apiName] and plan [planName] have been updated.\
   If you don't work with an integration system, please update its usage.
 mail.apikey.demand.title=Somebody want an apikey
-mail.apikey.demand.body={0} want an apikey for {1}. \
+mail.apikey.demand.body=[user] want an apikey for [apiName]. \
   You receive this mail because you are a team admin.\
   </br>\
-  <a href="{2}">Accept or reject request</a>
+  <a href="[link]">Accept or reject request</a>
 mail.api.access.title=Somebody want to access your api
-mail.api.access.body={0} want to join your team {1}. \
+mail.api.access.body=[user] want to join your team [teamName]. \
   you receive this mail because you are admin of this team. \
   </br>\
-  <a href="{2}">Accept or reject request</a>
+  <a href="[link]">Accept or reject request</a>
 mail.team.access.title=Somebody want to join your team
-mail.team.access.body={0} want to join your team {1}. \
+mail.team.access.body=[user] want to join your team [teamName]. \
   you receive this mail because you are admin of the owner team. \
   </br>\
-  <a href="{2}">Accept or reject request</a>
+  <a href="[link]">Accept or reject request</a>
 mail.team.invitation.title=Somebody want to invit you in his team
-mail.team.invitation.body={0}, as admin of {1}, wants you to join his team. \
+mail.team.invitation.body=[user], as admin of [teamName], wants you to join his team. \
   </br>\
-  <a href="{2}">Accept or reject request</a>
+  <a href="[link]">Accept or reject request</a>
 unrecognized.api=Unrecognized API
 unrecognized.team=Unrecognized team
 unrecognized.user=Unrecognized user
 mail.rejection.title=Your Daikoku request has been rejected.
 mail.acceptation.title=Your Daikoku request has been accepted.
-mail.api.access.rejection.body=Your request to access to api {0} has been rejected.
-mail.api.access.acceptation.body=The request to access to api {0} by {1} has been accepted.
-mail.api.subscription.rejection.body=Your request for an apikey for {0} has been rejected.
-mail.api.subscription.acceptation.body=The request of {0} for an apikey for {1} has been accepted.
-mail.team.access.rejection.body=Your request to join the team {0} has been rejected.
-mail.team.access.acceptation.body=Your request to access to team {0} has been accepted.
-mail.user.invitation.rejection.body={0} rejected your request to join your team {1}.
-mail.user.invitation.acceptation.body={0} accepted your request to join your team {1}.
-mail.new.message.title=New message from {0}
+mail.api.access.rejection.body=Your request to access to api [apiName] has been rejected.
+mail.api.access.acceptation.body=The request to access to api [apiName] by [user] has been accepted.
+mail.api.subscription.rejection.body=Your request for an apikey for [apiName] has been rejected.
+mail.api.subscription.acceptation.body=The request of [user] for an apikey for [apiName] has been accepted.
+mail.team.access.rejection.body=Your request to join the team [teamName] has been rejected.
+mail.team.access.acceptation.body=Your request to access to team [teamName] has been accepted.
+mail.user.invitation.rejection.body=[user] rejected your request to join your team [teamName].
+mail.user.invitation.acceptation.body=[user] accepted your request to join your team [teamName].
+mail.new.message.title=New message from [user]
 mail.new.message.body=Hello,\
   <br/>\
   You''ve got a message,\
   <br>\
   <div>\
-  {0} :\
+  [user] :\
   <br>\
-  {1}\
+  [body]\
   </div>\
-  <a href="{2}">Respond</a>
+<a href="[link]">Respond</a>
+mail.new.user.title=Validate your [tenant] account
+mail.new.user.body=Thanks for creating your [tenant] account, you're almost done. \
+ <br/>\
+Please click on the following link to finalize your account creation process\
+<br/>\
+<a href="[link]">Confirm</a>\
+<br/>\
+The [tenant] team
+tenant.mail.template=[email]

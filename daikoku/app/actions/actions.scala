@@ -22,8 +22,8 @@ object tenantSecurity {
       FastFuture.successful(true)
     } else {
       tenant.creationSecurity
-        .map(
-          _ =>
+        .map {
+          case true =>
             env.dataStore.teamRepo
               .forTenant(tenant)
               .find(Json.obj("apisCreationPermission" -> true))
@@ -33,24 +33,28 @@ object tenantSecurity {
                 else
                   teams.exists { team =>
                     team.users.exists { u: UserWithPermission =>
-                      user.id == u.userId ||
-                      u.teamPermission.name == Administrator.name ||
-                      u.teamPermission.name == ApiEditor.name
+                      user.id == u.userId && (
+                        u.teamPermission.name == Administrator.name ||
+                        u.teamPermission.name == ApiEditor.name
+                      )
                     }
                   }
-            }
-        )
+              }
+          case false => FastFuture.successful(true)
+        }
         .getOrElse(FastFuture.successful(true))
     }
   }
 
-  def isDefaultMode(tenant: Tenant, user: Option[User]): Boolean = {
+  def isDefaultMode(tenant: Tenant,
+                    user: Option[User],
+                    isTenantAdmin: Option[Boolean]): Boolean = {
     tenant.tenantMode match {
       case None => true
       case Some(value) =>
         value match {
           case TenantMode.Maintenance | TenantMode.Construction =>
-            user.exists(_.isDaikokuAdmin)
+            user.exists(_.isDaikokuAdmin) || isTenantAdmin.getOrElse(false)
           case _ => true
         }
     }
@@ -58,7 +62,16 @@ object tenantSecurity {
 
 }
 
-case class DaikokuTenantActionContext[A](request: Request[A], tenant: Tenant)
+case class DaikokuTenantActionContext[A](request: Request[A],
+                                         tenant: Tenant,
+                                         ctx: TrieMap[String, String] =
+                                           new TrieMap[String, String]()) {
+  def setCtxValue(key: String, value: Any): Unit = {
+    if (value != null) {
+      ctx.put(key, value.toString)
+    }
+  }
+}
 
 case class DaikokuActionMaybeWithoutUserContext[A](
     request: Request[A],
@@ -109,8 +122,8 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, Some(user), _)
-          if !tenantSecurity.isDefaultMode(tenant, user.some) =>
+      case (Some(tenant), _, _, Some(user), isTenantAdmin)
+          if !tenantSecurity.isDefaultMode(tenant, user.some, isTenantAdmin) =>
         Errors.craftResponseResult(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
@@ -172,8 +185,8 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, Some(user), _)
-          if !tenantSecurity.isDefaultMode(tenant, user.some) =>
+      case (Some(tenant), _, _, Some(user), isTenantAdmin)
+          if !tenantSecurity.isDefaultMode(tenant, user.some, isTenantAdmin) =>
         Errors.craftResponseResult(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
@@ -260,8 +273,8 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, maybeUser, _)
-          if !tenantSecurity.isDefaultMode(tenant, maybeUser) =>
+      case (Some(tenant), _, _, maybeUser, isTenantAdmin)
+          if !tenantSecurity.isDefaultMode(tenant, maybeUser, isTenantAdmin) =>
         Errors.craftResponseResult(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
@@ -334,9 +347,12 @@ class DaikokuTenantAction(val parser: BodyParser[AnyContent], env: Env)
       request: Request[A],
       block: DaikokuTenantActionContext[A] => Future[Result])
     : Future[Result] = {
-
-    TenantHelper.withTenant(request, env) { tenant =>
-      block(DaikokuTenantActionContext[A](request, tenant))
+    request.attrs.get(IdentityAttrs.TenantKey) match {
+      case Some(tenant) => block(DaikokuTenantActionContext[A](request, tenant))
+      case None =>
+        TenantHelper.withTenant(request, env) { tenant =>
+          block(DaikokuTenantActionContext[A](request, tenant))
+        }
     }
   }
 

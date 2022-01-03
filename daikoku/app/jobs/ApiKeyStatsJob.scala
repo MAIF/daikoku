@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.Cancellable
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import fr.maif.otoroshi.daikoku.domain.BillingTimeUnit.{Day, Hour, Month, Year}
@@ -244,8 +244,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
               from.getMillis.toString,
               to.toDateTime.getMillis.toString)
             quotas <- otoroshiClient.getApiKeyQuotas(
-              subscription.apiKey.clientId,
-              otoroshiTarget.serviceGroup.value)
+              subscription.apiKey.clientId)
             billing <- computeBilling(tenant.id,
                                       subscription.apiKey.clientId,
                                       plan,

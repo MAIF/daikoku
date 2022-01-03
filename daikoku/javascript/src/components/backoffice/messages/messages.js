@@ -2,13 +2,15 @@ import React, { useState, useContext } from 'react';
 import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 
-import { t } from '../../../locales';
 import { MessagesContext } from '../../backoffice';
+import { I18nContext } from '../../../locales/i18n-context';
 
-export const MessagesTopBarTools = (props) => {
+export const MessagesTopBarTools = (_) => {
   const { totalUnread } = useContext(MessagesContext);
 
   const [opened, setOpened] = useState(false);
+
+  const { translateMethod } = useContext(I18nContext);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -18,7 +20,8 @@ export const MessagesTopBarTools = (props) => {
           'unread-messages': totalUnread > 0,
         })}
         onClick={() => setOpened(!opened)}
-        title={t('Access to the messages', props.currentLanguage)}>
+        title={translateMethod('Access to the messages')}
+      >
         <i className="fas fa-comment-alt" />
       </Link>
     </div>

@@ -56,19 +56,15 @@ export const openSubMetadataModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openContactModal = (
-  name = undefined,
-  email = undefined,
-  tenant,
-  team = undefined,
-  api = undefined
-) => (dispatch) => {
-  return dispatch({
-    type: OPEN_MODAL,
-    modalProps: { name, email, tenant, team, api },
-    modalType: 'contactModal',
-  });
-};
+export const openContactModal =
+  (name = undefined, email = undefined, tenant, team = undefined, api = undefined) =>
+  (dispatch) => {
+    return dispatch({
+      type: OPEN_MODAL,
+      modalProps: { name, email, tenant, team, api },
+      modalType: 'contactModal',
+    });
+  };
 
 export const openTestingApiKeyModal = (modalProps) => (dispatch) => {
   return dispatch({
@@ -90,6 +86,27 @@ export const openJoinTeamModal = (modalProps) => (dispatch) =>
     type: OPEN_MODAL,
     modalProps,
     modalType: 'joinTeamInvitation',
+  });
+
+export const openApiKeySelectModal = (modalProps) => (dispatch) =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'apiKeySelectModal',
+  });
+
+export const openApiSelectModal = (modalProps) => (dispatch) =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'apiSelectModal',
+  });
+
+export const openApiDocumentationSelectModal = (modalProps) => (dispatch) =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'apiDocumentationSelectModal',
   });
 
 export const closeModal = () => (dispatch) => {

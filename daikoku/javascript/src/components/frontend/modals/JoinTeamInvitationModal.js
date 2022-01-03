@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { withRouter } from 'react-router-dom';
-import * as Services from '../../../services';
-import { t, Translation } from '../../../locales';
+import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toastr } from 'react-redux-toastr';
+import * as Services from '../../../services';
+import { I18nContext } from '../../../core';
 
-export const JoinTeamInvitationModal = withRouter((props) => {
+export const JoinTeamInvitationModal = (props) => {
   const [error, setError] = useState(undefined);
   const [team, setTeam] = useState('');
   const [notificationId, setNotificationId] = useState('');
+  const navigate = useNavigate();
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (!params.get('token')) setError(t('team_member.missing_token', props.currentLanguage));
+    if (!params.get('token')) setError(translateMethod('team_member.missing_token'));
     else {
       Services.validateInvitationToken(params.get('token')).then((res) => {
         if (res.error) setError(res.error);
@@ -25,9 +28,10 @@ export const JoinTeamInvitationModal = withRouter((props) => {
 
   function accept() {
     Services.acceptNotificationOfTeam(notificationId).then(() => {
-      Services.removeTeamInvitation();
-      toastr.success(t('team_member.has_joined', props.currentLanguage));
-      goToHome();
+      Services.removeTeamInvitation().then(() => {
+        toastr.success(translateMethod('team_member.has_joined'));
+        goToHome();
+      });
     });
   }
 
@@ -40,7 +44,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
 
   function goToHome() {
     props.closeModal();
-    props.history.push('/apis');
+    navigate('/apis');
   }
 
   return (
@@ -48,18 +52,14 @@ export const JoinTeamInvitationModal = withRouter((props) => {
       <div className="modal-header d-flex flex-column align-items-center">
         <i className="fas fa-users fa-2x mb-3" />
         <h5 className="modal-title text-center">
-          <Translation
-            i18nkey="team_member.invitation"
-            language={props.currentLanguage}
-            replacements={[team]}
-          />
+          <Translation i18nkey="team_member.invitation" replacements={[team]} />
           <span style={{ fontWeight: 'bold', display: 'block' }}>{team}</span>
         </h5>
       </div>
       <div className="modal-body">
         {error && (
           <div className="alert alert-danger" role="alert">
-            {t(error, props.currentLanguage)}
+            {translateMethod(error)}
           </div>
         )}
         {error ? (
@@ -68,21 +68,22 @@ export const JoinTeamInvitationModal = withRouter((props) => {
             type="button"
             onClick={() => {
               props.closeModal();
-              props.history.push('/apis');
-            }}>
-            {t('Home', props.currentLanguage)}
+              navigate('/apis');
+            }}
+          >
+            {translateMethod('Home')}
           </button>
         ) : (
           <div className="d-flex mt-3">
             <button className="btn btn-success btn-block" type="button" onClick={accept}>
-              {t('team_member.accept_invitation', props.currentLanguage)}
+              {translateMethod('team_member.accept_invitation')}
             </button>
-            <button className="btn btn-danger ml-2" type="button" onClick={refuse}>
-              {t('team_member.refuse_invitation', props.currentLanguage)}
+            <button className="btn btn-danger ms-2" type="button" onClick={refuse}>
+              {translateMethod('team_member.refuse_invitation')}
             </button>
           </div>
         )}
       </div>
     </div>
   );
-});
+};

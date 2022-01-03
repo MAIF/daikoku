@@ -34,7 +34,7 @@ class TeamControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
-        teams = Seq()
+        teams = Seq(defaultAdminTeam)
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val respCreation = httpJsonCallBlocking(
@@ -176,7 +176,7 @@ class TeamControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner)
+        teams = Seq(teamOwner, defaultAdminTeam)
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val respCreation = httpJsonCallBlocking(
@@ -192,14 +192,14 @@ class TeamControllerSpec()
         path = s"/api/teams/${teamConsumerId.value}",
         method = "DELETE"
       )(tenant, session)
-      respDelete.status mustBe 401
+      respDelete.status mustBe 403
     }
 
     "not delete a team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner)
+        teams = Seq(teamOwner, defaultAdminTeam)
       )
       val session = loginWithBlocking(userAdmin, tenant)
 
@@ -207,14 +207,14 @@ class TeamControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}",
         method = "DELETE"
       )(tenant, session)
-      respDelete.status mustBe 401
+      respDelete.status mustBe 403
     }
 
     "update a team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner)
+        teams = Seq(teamOwner, defaultAdminTeam)
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val respCreation = httpJsonCallBlocking(
@@ -400,7 +400,7 @@ class TeamControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
 
-      teamOwner.apiKeyVisibility mustBe None
+      teamOwner.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.User)
       val resp =
         httpJsonCallBlocking(
           path = s"/api/teams/${teamOwnerId.value}",
@@ -675,7 +675,7 @@ class TeamControllerSpec()
       )
       val session = loginWithBlocking(randomUser, tenant)
 
-      teamOwner.apiKeyVisibility mustBe None
+      teamOwner.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.User)
       val resp =
         httpJsonCallBlocking(
           path = s"/api/teams/${teamOwnerId.value}",
@@ -702,7 +702,7 @@ class TeamControllerSpec()
       myTeam.isSuccess mustBe true
       val myTeamId = myTeam.get.id
 
-      teamOwner.apiKeyVisibility mustBe None
+      teamOwner.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.User)
       val resp =
         httpJsonCallBlocking(
           path = s"/api/teams/${myTeamId.value}",
@@ -851,7 +851,7 @@ class TeamControllerSpec()
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
-      defaultAdminTeam.apiKeyVisibility mustBe None
+      defaultAdminTeam.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.User)
       val resp =
         httpJsonCallBlocking(
           path = s"/api/teams/${defaultAdminTeam.id.value}",

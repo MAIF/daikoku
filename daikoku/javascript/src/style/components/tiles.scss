@@ -18,8 +18,8 @@
 }
 
 .home-tile{
-  width: 400px;
-  height: 200px;
+  flex: 1 1 49%;
+  padding: 12px;
   background-color: $aside-bg-color;
   color:$aside-text-color;
   margin-top: 5px;

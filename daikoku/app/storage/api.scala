@@ -32,7 +32,6 @@ trait Repo[Of, Id <: ValueType] {
   def format: Format[Of]
 
   def extractId(value: Of): String
-
   def collectionName: String
 
   def indices: Seq[Index.Default] = Seq.empty
@@ -227,6 +226,8 @@ trait TenantRepo extends Repo[Tenant, TenantId]
 
 trait UserRepo extends Repo[User, UserId]
 
+trait EvolutionRepo extends Repo[Evolution, DatastoreId]
+
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
   def myTeams(tenant: Tenant, user: User)(
       implicit env: Env,
@@ -257,7 +258,17 @@ trait ApiIssueRepo extends TenantCapableRepo[ApiIssue, ApiIssueId]
 trait ApiSubscriptionRepo
     extends TenantCapableRepo[ApiSubscription, ApiSubscriptionId]
 
-trait ApiRepo extends TenantCapableRepo[Api, ApiId]
+trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
+  def findByVersion(tenant: Tenant, id: String, version: String)(
+      implicit env: Env,
+      ec: ExecutionContext): Future[Option[Api]] = {
+    val query = Json.obj("currentVersion" -> version,
+                         "$or" -> Json.arr(Json.obj("_id" -> id),
+                                           Json.obj("_humanReadableId" -> id)))
+
+    env.dataStore.apiRepo.forTenant(tenant.id).findOneNotDeleted(query)
+  }
+}
 
 trait AuditTrailRepo extends TenantCapableRepo[JsObject, DatastoreId]
 
@@ -322,6 +333,8 @@ trait DataStore {
   def messageRepo: MessageRepo
 
   def cmsRepo: CmsPageRepo
+
+  def evolutionRepo: EvolutionRepo
 
   def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,

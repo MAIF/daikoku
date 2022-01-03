@@ -8,6 +8,8 @@ GET     /cms/pages/:id                                  fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
+GET     /robots.txt                                      fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
 GET     /signup                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
 GET     /reset                                          fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
@@ -67,21 +69,19 @@ GET     /api/me/teams/own                               fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/me/teams/:id                               fr.maif.otoroshi.daikoku.ctrls.ApiController.oneOfMyTeam(id)
 ### NoDocs ###
-GET     /api/me/teams                                   fr.maif.otoroshi.daikoku.ctrls.ApiController.myTeams()
-### NoDocs ###
 GET     /api/me/notifications                           fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUntreatedNotifications(page: Int ?= 0, pageSize: Int ?= 10)
 ### NoDocs ###
 GET     /api/me/notifications/all                       fr.maif.otoroshi.daikoku.ctrls.NotificationController.myNotifications(page: Int ?= 0, pageSize: Int ?= 10)
 ### NoDocs ###
 GET     /api/me/notifications/unread-count              fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUnreadNotificationsCount()
 ### NoDocs ###
-GET     /api/me/visible-apis/:id                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApi(id)
+GET     /api/me/visible-apis/:humanReadableId/:version  fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApi(humanReadableId, version)
 ### NoDocs ###
-GET     /api/me/visible-apis                            fr.maif.otoroshi.daikoku.ctrls.ApiController.myVisibleApis()
+GET     /api/me/visible-apis/:id                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApiWithId(id)
 ### NoDocs ###
-GET     /api/me/teams/:teamId/visible-apis/:apiId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId)
+GET     /api/me/teams/:teamId/visible-apis/:apiId/:version       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId, version)
 ### NoDocs ###
-GET     /api/me/subscriptions/:apiId                    fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId)
+GET     /api/me/subscriptions/:apiId/:version           fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId, version)
 ### NoDocs ###
 GET     /api/me                                         fr.maif.otoroshi.daikoku.ctrls.ApiController.me()
 ### NoDocs ###
@@ -98,9 +98,13 @@ POST    /api/me/invitation/_check                       fr.maif.otoroshi.daikoku
 DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation()
 
 ### NoDocs ###
+PUT     /api/apis/:apiId/subscriptions/:apiKeyId        fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, apiKeyId)
+### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
 ### NoDocs ###
-GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId)
+GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version)
+### NoDocs ###
+GET     /api/subscriptions/teams/:teamId                fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionsOfTeam(teamId)
 ### NoDocs ###
 GET     /api/apis/:apiId/pages/:id/content              fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPageRemoteContent(apiId, id)
 ### NoDocs ###
@@ -109,6 +113,8 @@ GET     /api/apis/:apiId/pages/:id                      fr.maif.otoroshi.daikoku
 POST    /api/teams/:teamId/subscriptions/:id/name       fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiSubscriptionCustomName(teamId, id)
 ### NoDocs ###
 PUT		/api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
+### NoDocs ###
+POST	/api/teams/:teamId/subscriptions/:id/_makeUnique fr.maif.otoroshi.daikoku.ctrls.ApiController.makeUniqueSubscription(teamId, id)
 
 
 ### NoDocs ###
@@ -127,7 +133,9 @@ POST    /api/subscriptions/_init                        fr.maif.otoroshi.daikoku
 POST    /api/apis/_init                                 fr.maif.otoroshi.daikoku.ctrls.ApiController.initApis()
 
 ### NoDocs ###
-GET     /api/apis/:apiId/doc                            fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId)
+GET     /api/apis/:apiId/_root                          fr.maif.otoroshi.daikoku.ctrls.ApiController.getRootApi(apiId)
+### NoDocs ###
+GET     /api/apis/:apiId/:version/doc                   fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId, version)
 ### NoDocs ###
 POST    /api/apis/:apiId/access                         fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiAccess(apiId)
 ### NoDocs ###
@@ -135,13 +143,15 @@ PUT     /api/apis/:apiId/stars                          fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/apis/_names                                fr.maif.otoroshi.daikoku.ctrls.ApiController.verifyNameUniqueness()
 ### NoDocs ###
-GET     /api/apis/:apiId/posts                          fr.maif.otoroshi.daikoku.ctrls.ApiController.getPosts(apiId)
+GET     /api/apis/:apiId/:version/posts                 fr.maif.otoroshi.daikoku.ctrls.ApiController.getPosts(apiId, version, offset: Option[Int], limit: Option[Int])
 ### NoDocs ###
 GET     /api/apis/:apiId/issues                         fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssues(apiId)
 ### NoDocs ###
 GET     /api/apis/:apiId/issues/:issueId/comments       fr.maif.otoroshi.daikoku.ctrls.ApiController.getComments(apiId, issueId)
 ### NoDocs ###
 GET     /api/apis/:apiId/issues/:issueId                fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssue(apiId, issueId)
+### NoDocs ###
+GET     /api/apis/:apiId/default_version                fr.maif.otoroshi.daikoku.ctrls.ApiController.getDefaultApiVersion(apiId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscription/:id/informations         fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionInformations(teamId, id)
@@ -167,7 +177,7 @@ GET     /api/teams/:teamId/billings                              fr.maif.otorosh
 ### NoDocs ###
 GET     /api/teams/:teamId/income                                fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId/subscriptions             fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(teamId, apiId)
+GET     /api/teams/:teamId/apis/:apiId/:version/subscriptions    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(teamId, apiId, version)
 ### NoDocs ###
 GET     /api/teams/:teamId/ldap/users/:email                     fr.maif.otoroshi.daikoku.ctrls.TeamController.checkUser(teamId, email)
 ### NoDocs ###
@@ -184,17 +194,27 @@ DELETE      /api/teams/:teamId/apis/:apiId/posts/:postId             fr.maif.oto
 POST        /api/teams/:teamId/apis/:apiId/issues                    fr.maif.otoroshi.daikoku.ctrls.ApiController.createIssue(teamId, apiId)
 ### NoDocs ###
 PUT         /api/teams/:teamId/apis/:apiId/issues/:issueId           fr.maif.otoroshi.daikoku.ctrls.ApiController.updateIssue(teamId, apiId, issueId)
+### NoDocs ###
+POST        /api/teams/:teamId/apis/:apiId/versions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.createVersion(teamId, apiId)
+### NoDocs ###
+GET         /api/teams/:teamId/apis/:apiId/versions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiVersions(teamId, apiId)
+### NoDocs ###
+GET         /api/teams/:teamId/apis/:apiId/:version/plans            fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllPlan(teamId, apiId, version)
+### NoDocs ###
+POST        /api/teams/:teamId/apis/:apiId/plans                     fr.maif.otoroshi.daikoku.ctrls.ApiController.clonePlan(teamId, apiId)
+### NoDocs ###
+GET         /api/teams/:teamId/apis/:apiId/:version/access           fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsStatusAccess(teamId, apiId, version)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId/swagger.json     fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId)
+GET     /api/teams/:teamId/apis/:apiId/:version/swagger.json     fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId, version)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId/swagger          fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId)
+GET     /api/teams/:teamId/apis/:apiId/:version/swagger          fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId, version)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId                  fr.maif.otoroshi.daikoku.ctrls.ApiController.apiOfTeam(teamId, apiId)
+GET     /api/teams/:teamId/apis/:apiId/:version                  fr.maif.otoroshi.daikoku.ctrls.ApiController.apiOfTeam(teamId, apiId, version)
 ### NoDocs ###
-PUT     /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiOfTeam(teamId, id)
+PUT     /api/teams/:teamId/apis/:id/:version                     fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiOfTeam(teamId, id, version)
 ### NoDocs ###
 DELETE  /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiOfTeam(teamId, id)
 ### NoDocs ###
@@ -202,7 +222,9 @@ POST    /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku.ctrls.ApiController.apisOfTeam(teamId)
 ### NoDocs ###
-GET     /api/teams/:teamId/visible-apis                 fr.maif.otoroshi.daikoku.ctrls.ApiController.visibleApisOfTeam(teamId)
+GET     /api/teams/:teamId/apis/:apiId/:version/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiDocumentation(teamId, apiId, version)
+### NoDocs ###
+PUT     /api/teams/:teamId/apis/:apiId/:version/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.cloneDocumentation(teamId, apiId, version)
 ### NoDocs ###
 GET     /api/categories                                 fr.maif.otoroshi.daikoku.ctrls.ApiController.categories()
 
@@ -212,8 +234,6 @@ DELETE  /api/teams/:teamId/pages/:pageId                fr.maif.otoroshi.daikoku
 PUT     /api/teams/:teamId/pages/:pageId                fr.maif.otoroshi.daikoku.ctrls.ApiController.saveDocPage(teamId, pageId)
 ### NoDocs ###
 POST    /api/teams/:teamId/pages                        fr.maif.otoroshi.daikoku.ctrls.ApiController.createDocPage(teamId)
-### NoDocs ###
-POST    /api/teams/:teamId/apis/:apiId/pages/_reorder   fr.maif.otoroshi.daikoku.ctrls.ApiController.reorderApiDocPagesIndex(teamId, apiId)
 
 ### NoDocs ###
 GET  /api/me/messages/admin                             fr.maif.otoroshi.daikoku.ctrls.MessageController.myAdminMessages(date: Option[Long] ?= None)
@@ -247,7 +267,7 @@ POST    /api/teams/:teamId/assets/:assetId/_replace     fr.maif.otoroshi.daikoku
 ### NoDocs ###
 DELETE  /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.deleteAsset(assetId)
 ### NoDocs ###
-GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId, streamed: Option[Boolean] ?= None)
+GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId)
 ### NoDocs ###
 GET     /tenant-assets                                  fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.listAssets()
 ### NoDocs ###
@@ -291,6 +311,8 @@ GET     /api/teams/:teamId/tenant/otoroshis/:oto/groups fr.maif.otoroshi.daikoku
 GET     /api/tenants/:tenantId/otoroshis/:oto/groups    fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsForTenant(tenantId, oto)
 ### NoDocs ###
 GET     /api/tenants/:tenantId/otoroshis/:oto/services  fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesForTenant(tenantId, oto)
+### NoDocs ###
+GET     /api/teams/:teamId/tenant/otoroshis/:oto/services  fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesFor(teamId, oto)
 ### NoDocs ###
 GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys   fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
 
@@ -374,13 +396,13 @@ POST    /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.otoroshi.daikoku.ctrls.TenantController.removeAdminFromTenant(tenantId, adminId)
 
 ### NoDocs ###
-POST    /api/teams/:teamId/apis/:apiId/_translate       fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveApiTranslation(teamId, apiId)
+GET     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.getTranslations(domain: Option[String] ?= None)
 ### NoDocs ###
-POST    /api/tenant/:tenantId/_translate                fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTenantTranslation(tenantId)
+PUT     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTranslation()
 ### NoDocs ###
-POST    /api/teams/:teamId/_translate                   fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTeamTranslation(teamId)
+POST    /api/translations/:translationId/_reset         fr.maif.otoroshi.daikoku.ctrls.TranslationController.resetTranslation(translationId: String)
 ### NoDocs ###
-GET     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.getTenantTranslation()
+DELETE /api/translations                                fr.maif.otoroshi.daikoku.ctrls.TranslationController.deleteTranslation()
 
 ### NoDocs ###
 GET     /api/admin/users/:id/_impersonate               fr.maif.otoroshi.daikoku.ctrls.UsersController.impersonate(id)
@@ -422,6 +444,8 @@ GET     /api/entities/user                              fr.maif.otoroshi.daikoku
 GET     /api/entities/otoroshi                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newOtoroshi()
 ### NoDocs ###
 GET     /api/entities/issue                             fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newIssue()
+### NoDocs ###
+GET     /api/entities/plan                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newPlan(planType: String)
 
 ### NoDocs ###
 POST    /api/jobs/otoroshi/_sync                        fr.maif.otoroshi.daikoku.ctrls.JobsController.otoroshiSyncJob()
@@ -448,27 +472,35 @@ POST    /api/state/unlock                               fr.maif.otoroshi.daikoku
 GET    /api/state/lock                                  fr.maif.otoroshi.daikoku.ctrls.StateController.isMaintenanceMode()
 
 ### NoDocs ###
+POST     /api/search                                    fr.maif.otoroshi.daikoku.ctrls.GraphQLController.search()
+### NoDocs ###
+GET     /api/render-schema                              fr.maif.otoroshi.daikoku.ctrls.GraphQLController.renderSchema()
+
+### NoDocs ###
 GET     /fakeotoroshi/api/stats                                      fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiStats(from: String, to: String, apikey: String)
 ### NoDocs ###
-GET     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId/quotas   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiQuotas(groupId, clientId)
+GET     /fakeotoroshi/api/apikeys/:clientId/quotas   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiQuotas(clientId)
 ### NoDocs ###
-GET     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKey(groupId, clientId)
+GET     /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKey(clientId)
 ### NoDocs ###
-PUT     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(groupId, clientId)
+PUT     /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(clientId)
 ### NoDocs ###
-DELETE  /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.deleteFakeOtoroshiApiKey(groupId, clientId)
+DELETE  /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.deleteFakeOtoroshiApiKey(clientId)
 ### NoDocs ###
-PUT		  /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(groupId, clientId)
+PUT		  /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(clientId)
 ### NoDocs ###
-POST    /fakeotoroshi/api/groups/:groupId/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.createFakeOtoroshiApiKey(groupId)
+POST    /fakeotoroshi/api/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.createFakeOtoroshiApiKey()
 ### NoDocs ###
-GET     /fakeotoroshi/api/groups/:groupId/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKeys(groupId)
+GET     /fakeotoroshi/api/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKeys()
 ### NoDocs ###
-GET     /fakeotoroshi/api/groups/:groupId                            fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroup(groupId)
+GET     /fakeotoroshi/api/groups/:groupId            fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroup(groupId)
 ### NoDocs ###
-GET     /fakeotoroshi/api/groups                                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroups()
+GET     /fakeotoroshi/api/groups                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroups()
+### NoDocs ###
+GET     /fakeotoroshi/api/services                   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiServices()
 
-GET     /admin-api/swagger.json                                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
+GET     /admin-api/swagger.json                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
+
 
 ###
 #  summary: read the full content of the datastore in nd-json format
@@ -509,20 +541,6 @@ DELETE  /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku
 PATCH   /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.patchEntity(id)
 PUT     /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.updateEntity(id)
 
-###
-#  summary: read a tenant
-#  tags:
-#    - Tenant Endpoints
-#  responses:
-#    200:
-#      description: success
-#      content:
-#        application/json:
-#          schema:
-#            type: object
-#            items:
-#              $ref: '#/components/schemas/fr.maif.otoroshi.daikoku.domain.DaikokuStyle'
-###
 GET     /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.findById(id)
 POST    /admin-api/tenants                              fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.createEntity()
 GET     /admin-api/tenants                              fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.findAll()
@@ -618,6 +636,12 @@ GET     /admin-api/issues/:id                           fr.maif.otoroshi.daikoku
 POST    /admin-api/issues                               fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.createEntity()
 GET     /admin-api/issues                               fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.findAll()
 
+DELETE  /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.deleteEntity(id)
+PATCH   /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.patchEntity(id)
+PUT     /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.updateEntity(id)
+GET     /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findById(id)
+POST    /admin-api/translations                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.createEntity()
+GET     /admin-api/translations                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findAll()
 ###
 #  summary: get apikey from integration token
 #  tags:
@@ -634,15 +658,18 @@ GET     /admin-api/issues                               fr.maif.otoroshi.daikoku
 ###
 GET     /admin-api/credentials/:token                   fr.maif.otoroshi.daikoku.ctrls.CredentialsAdminApiController.getCredentials(token)
 
+POST     /admin-api/search                               fr.maif.otoroshi.daikoku.ctrls.GraphQLController.adminApiSearch()
+GET      /admin-api/schema                               fr.maif.otoroshi.daikoku.ctrls.GraphQLController.adminApiSchema()
 
+
+GET     /integration-api/apis                           fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAll()
+GET     /integration-api/:teamId                        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAllTeam(teamId)
 GET     /integration-api/:teamId/:apiId/complete        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiComplete(teamId, apiId)
 GET     /integration-api/:teamId/:apiId/description     fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiDescription(teamId, apiId)
 GET     /integration-api/:teamId/:apiId/plans           fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiPlans(teamId, apiId)
 GET     /integration-api/:teamId/:apiId/documentation   fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiDocumentation(teamId, apiId)
 GET     /integration-api/:teamId/:apiId/apidoc          fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiSwagger(teamId, apiId)
 GET     /integration-api/:teamId/:apiId                 fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.api(teamId, apiId)
-GET     /integration-api/:teamId                        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAllTeam(teamId)
-GET     /integration-api/apis                           fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAll()
 
 ### NoDocs ###
 GET     /*path                      fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)

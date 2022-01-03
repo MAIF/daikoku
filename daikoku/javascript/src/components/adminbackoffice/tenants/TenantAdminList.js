@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import Select from 'react-select';
 import { toastr } from 'react-redux-toastr';
@@ -14,7 +14,8 @@ import {
   AvatarWithAction,
   Option,
 } from '../../utils';
-import { Translation, t } from '../../../locales';
+import { I18nContext } from '../../../core';
+import { useParams } from 'react-router-dom';
 
 const TenantAdminListComponent = (props) => {
   const [search, setSearch] = useState('');
@@ -26,8 +27,11 @@ const TenantAdminListComponent = (props) => {
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [selectedAdmin, setSelectedAdmin] = useState(undefined);
 
+  const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams();
+
   useEffect(() => {
-    const tenantId = props.match.params.tenantId || props.tenant._id;
+    const tenantId = params.tenantId || props.tenant._id;
     Promise.all([
       Services.tenantAdmins(tenantId),
       Services.addableAdminsForTenant(tenantId),
@@ -40,7 +44,7 @@ const TenantAdminListComponent = (props) => {
       setAdmins(admins);
       setLoading(false);
     });
-  }, [props.match.params.tenantId]);
+  }, [params.tenantId]);
 
   useEffect(() => {
     const filteredAdmins = Option(search)
@@ -64,9 +68,8 @@ const TenantAdminListComponent = (props) => {
           setAdmins([...admins, selectedAdmin]);
           setAddableAdmins(addableAdmins.filter((u) => u._id !== selectedAdmin._id));
           toastr.success(
-            t(
+            translateMethod(
               'admin.added.successfully',
-              props.currentLanguage,
               false,
               `${selectedAdmin.name} has been added as new admin of the tenant`,
               selectedAdmin.name
@@ -95,9 +98,8 @@ const TenantAdminListComponent = (props) => {
   const removeAdmin = (admin) => {
     if (team.users.length === 1) {
       alert(
-        t(
+        translateMethod(
           'remove.admin.tenant.alert',
-          props.currentLanguage,
           false,
           "You can't delete this admin, it must remain an admin in a tenant."
         )
@@ -105,9 +107,8 @@ const TenantAdminListComponent = (props) => {
     } else {
       window
         .confirm(
-          t(
+          translateMethod(
             'remove.admin.tenant.confirm',
-            props.currentLanguage,
             false,
             'Are you sure you want to remove this admin from the tenant ?'
           )
@@ -116,15 +117,14 @@ const TenantAdminListComponent = (props) => {
           if (ok) {
             Services.removeAdminFromTenant(tenant._id, admin._id).then((team) => {
               if (team.error) {
-                toastr.error(t('Failure', props.currentLanguage), team.error);
+                toastr.error(translateMethod('Failure'), team.error);
               } else {
                 setTeam(team);
                 setAddableAdmins([...addableAdmins, admin]);
                 setAdmins(admins.filter((a) => a._id !== admin._id));
                 toastr.success(
-                  t(
+                  translateMethod(
                     'remove.admin.tenant.success',
-                    props.currentLanguage,
                     false,
                     'Admin deleted successfully',
                     admin.name
@@ -144,32 +144,33 @@ const TenantAdminListComponent = (props) => {
           <div className="col">
             <h1>
               {tenant && <>{tenant.name} - </>}
-              <Translation i18nkey="Admins" language={props.currentLanguage}>
-                Admins
-              </Translation>
+              <Translation i18nkey="Admins">Admins</Translation>
             </h1>
           </div>
         </div>
         <div className="row">
           <div className="col-12 mb-3 d-flex justify-content-start">
             <Select
-              placeholder={t('Add new admin', props.currentLanguage)}
-              className="add-member-select mr-2 reactSelect"
+              placeholder={translateMethod('Add new admin')}
+              className="add-member-select me-2 reactSelect"
               options={addableAdmins.map(adminToSelector)}
               onChange={(slug) => setSelectedAdmin(slug.value)}
               value={selectedAdmin}
-              filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
+              filterOption={(data, search) =>
+                _.values(data.value)
+                  .filter((e) => typeof e === 'string')
+                  .some((v) => v.includes(search))
+              }
               classNamePrefix="reactSelect"
             />
             <input
-              placeholder={t('Find an admin', props.currentLanguage)}
+              placeholder={translateMethod('Find an admin')}
               className="form-control"
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
         <PaginatedComponent
-          currentLanguage={props.currentLanguage}
           items={_.sortBy(filteredAdmins, [(a) => a.name.toLowerCase()])}
           count={15}
           formatter={(admin) => {
@@ -182,7 +183,7 @@ const TenantAdminListComponent = (props) => {
                   {
                     action: () => removeAdmin(admin),
                     iconClass: 'fas fa-trash delete-icon',
-                    tooltip: t('Remove admin rights', props.currentLanguage),
+                    tooltip: translateMethod('Remove admin rights'),
                   },
                 ]}
               />

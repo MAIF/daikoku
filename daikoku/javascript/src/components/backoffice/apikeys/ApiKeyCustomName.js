@@ -29,7 +29,8 @@ export const ApiKeyCustomName = ({ apiKeyCustomName, updateCustomName }) => {
           <button
             className="btn btn-outline-secondary"
             type="button"
-            onClick={() => updateCustomName(customName)}>
+            onClick={() => updateCustomName(customName)}
+          >
             <i className="fas fa-arrow-circle-right" />
           </button>
         </div>

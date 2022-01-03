@@ -17,7 +17,8 @@ import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
-import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
+import org.mindrot.jbcrypt.BCrypt
+import play.api.libs.json.{JsArray, JsError, JsNull, JsSuccess, Json}
 import play.api.mvc.{
   AbstractController,
   Action,
@@ -47,7 +48,11 @@ class UsersController(DaikokuAction: DaikokuAction,
       ctx.tenant.id.value,
       ctx) { (_, _) =>
       env.dataStore.userRepo.findAllNotDeleted().map { users =>
-        Ok(JsArray(users.map(_.asSimpleJson)))
+        Ok(
+          JsArray(
+            users
+              .filter(u => u.invitation.forall(_.registered))
+              .map(_.asSimpleJson)))
       }
     }
   }
@@ -107,6 +112,11 @@ class UsersController(DaikokuAction: DaikokuAction,
                   val userToSave =
                     if (ctx.user.isDaikokuAdmin) newUser
                     else newUser.copy(metadata = user.metadata)
+                  val hash =
+                    if (user.password != newUser.password)
+                      newUser.password.map(maybePassword =>
+                        BCrypt.hashpw(maybePassword, BCrypt.gensalt()))
+                    else user.password
                   for {
                     maybePersonalTeam <- env.dataStore.teamRepo
                       .forTenant(ctx.tenant)
@@ -115,7 +125,8 @@ class UsersController(DaikokuAction: DaikokuAction,
                           "type" -> TeamType.Personal.name,
                           "users.userId" -> userToSave.id.asJson
                         ))
-                    _ <- env.dataStore.userRepo.save(userToSave)
+                    _ <- env.dataStore.userRepo
+                      .save(userToSave.copy(password = hash))
                     _ <- env.dataStore.teamRepo
                       .forTenant(ctx.tenant)
                       .save(
@@ -206,14 +217,17 @@ class UsersController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(
         "@{user.name} has created user profile of @{u.email} (@{u.id})"))(ctx) {
       json.UserFormat.reads(ctx.request.body) match {
-        case JsSuccess(newUser, _) =>
-          ctx.setCtxValue("u.email", newUser.email)
-          ctx.setCtxValue("u.id", newUser.id.value)
-          env.dataStore.userRepo.findByIdNotDeleted(newUser.id).flatMap {
+        case JsSuccess(user, _) =>
+          ctx.setCtxValue("u.email", user.email)
+          ctx.setCtxValue("u.id", user.id.value)
+          env.dataStore.userRepo.findByIdNotDeleted(user.id).flatMap {
             case Some(_) =>
               FastFuture.successful(
                 Conflict(Json.obj("error" -> "User id already exists")))
             case None =>
+              val hash = user.password.map(maybePassword =>
+                BCrypt.hashpw(maybePassword, BCrypt.gensalt()))
+              val newUser = user.copy(password = hash)
               env.dataStore.userRepo.save(newUser).map { _ =>
                 Created(newUser.asJson)
               }
@@ -404,45 +418,47 @@ class UsersController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def checkTokenInvitation() = DaikokuAction.async(parse.json) { ctx =>
-    PublicUserAccess(
-      AuditTrailEvent(
-        "@{user.name} has tried to validate an invitation token"))(ctx) {
-      val body = ctx.request.body
-      (body \ "token").asOpt[String] match {
-        case Some(token) =>
-          env.dataStore.userRepo
-            .findOneNotDeleted(
-              Json.obj(
-                "invitation.token" -> token,
-                "email" -> ctx.user.email
-              ))
-            .map {
-              case Some(user)
-                  if Hours
-                    .hoursBetween(user.invitation.get.createdAt, DateTime.now())
-                    .isLessThan(Hours.ONE) =>
-                user.invitation
-                  .map { invitation =>
-                    Ok(
-                      Json.obj(
-                        "team" -> invitation.team,
-                        "notificationId" -> invitation.notificationId
-                      ))
-                  }
-                  .getOrElse(
-                    BadRequest(
-                      Json.obj("error" -> "Missing invitation information"))
-                  )
-              case None =>
-                BadRequest(Json.obj(
-                  "error" -> "You're token is invalid, expired or you are already in the team"))
-            }
-        case _ =>
-          FastFuture.successful(
-            BadRequest(Json.obj("error" -> "Can't validate token")))
+  def checkTokenInvitation() = DaikokuActionMaybeWithGuest.async(parse.json) {
+    ctx =>
+      UberPublicUserAccess(
+        AuditTrailEvent(
+          "@{user.name} has tried to validate an invitation token"))(ctx) {
+        val body = ctx.request.body
+        (body \ "token").asOpt[String] match {
+          case Some(token) =>
+            env.dataStore.userRepo
+              .findOneNotDeleted(
+                Json.obj(
+                  "invitation.token" -> token,
+                  "email" -> ctx.user.email
+                ))
+              .map {
+                case Some(user)
+                    if Hours
+                      .hoursBetween(user.invitation.get.createdAt,
+                                    DateTime.now())
+                      .isLessThan(Hours.ONE) =>
+                  user.invitation
+                    .map { invitation =>
+                      Ok(
+                        Json.obj(
+                          "team" -> invitation.team,
+                          "notificationId" -> invitation.notificationId
+                        ))
+                    }
+                    .getOrElse(
+                      BadRequest(
+                        Json.obj("error" -> "Missing invitation information"))
+                    )
+                case None =>
+                  BadRequest(Json.obj(
+                    "error" -> "You're token is invalid, expired or you are already in the team"))
+              }
+          case _ =>
+            FastFuture.successful(
+              BadRequest(Json.obj("error" -> "Can't validate token")))
+        }
       }
-    }
   }
 
   def removeInvitation(): Action[AnyContent] = DaikokuAction.async { ctx =>

@@ -103,10 +103,11 @@ export class SelectInput extends Component {
   render() {
     if (this.state.error) {
       return (
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label
             htmlFor={`input-${this.props.label}`}
-            className="col-xs-12 col-sm-2 col-form-label">
+            className="col-xs-12 col-sm-2 col-form-label"
+          >
             <Help text={this.props.help} label={this.props.label} />
           </label>
           <div className="col-sm-10">
@@ -119,10 +120,11 @@ export class SelectInput extends Component {
     }
     if (this.props.classic && !this.props.disabled) {
       return (
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label
             htmlFor={`input-${this.props.label}`}
-            className="col-xs-12 col-sm-2 col-form-label">
+            className="col-xs-12 col-sm-2 col-form-label"
+          >
             <Help text={this.props.help} label={this.props.label} />
           </label>
           <div className="col-sm-10">
@@ -130,7 +132,8 @@ export class SelectInput extends Component {
               <select
                 className="form-control classic-select"
                 value={this.state.value}
-                onChange={this.onChangeClassic}>
+                onChange={this.onChangeClassic}
+              >
                 {this.state.values.map((value, idx) => (
                   <option key={idx} value={value.value}>
                     {value.label}
@@ -144,7 +147,7 @@ export class SelectInput extends Component {
       );
     }
     return (
-      <div className="form-group row">
+      <div className="mb-3 row">
         <label htmlFor={`input-${this.props.label}`} className="col-xs-12 col-sm-2 col-form-label">
           <Help text={this.props.help} label={this.props.label} />
         </label>
@@ -161,6 +164,8 @@ export class SelectInput extends Component {
               onChange={this.onChange}
               classNamePrefix="reactSelect"
               className="reactSelect"
+              menuPortalTarget={document.body}
+              styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
             />
           </div>
         </div>

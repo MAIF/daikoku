@@ -19,7 +19,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
-import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator}
+import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, Translator}
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
@@ -39,11 +39,12 @@ class LoginController(DaikokuAction: DaikokuAction,
                       DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                       DaikokuTenantAction: DaikokuTenantAction,
                       env: Env,
-                      cc: ControllerComponents)
+                      cc: ControllerComponents,
+                      translator: Translator)
     extends AbstractController(cc) {
-
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
+  implicit val tr = translator
 
   def loginPage(provider: String) = DaikokuTenantAction.async { ctx =>
     AuthProvider(provider) match {
@@ -155,7 +156,10 @@ class LoginController(DaikokuAction: DaikokuAction,
                                  request,
                                  TrieMap[String, String](),
                                  AuthorizationLevel.AuthorizedSelf)
-          Redirect(request.session.get("redirect").getOrElse("/"))
+
+          val redirectUri = request.session.get("redirect").getOrElse("/")
+
+          Redirect(if (redirectUri.startsWith("/api/")) "/" else redirectUri)
             .withSession("sessionId" -> session.sessionId.value)
             .removingFromSession("redirect")(request)
         }
@@ -211,7 +215,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                                        env,
                                        ctx.tenant)
           case Some(form) =>
-            (form.get("username").map(_.last), form.get("password").map(_.last)) match {
+            (form.get("username").map(_.last).map(_.toLowerCase),
+             form.get("password").map(_.last)) match {
               case (Some(username), Some(password)) =>
                 p match {
                   case AuthProvider.Local =>
@@ -416,23 +421,27 @@ class LoginController(DaikokuAction: DaikokuAction,
                   .get("Otoroshi-Proxied-Host")
                   .orElse(ctx.request.headers.get("X-Forwarded-Host"))
                   .getOrElse(ctx.request.host)
-                ctx.tenant.mailer
-                  .send(
-                    s"Validate your ${ctx.tenant.name} account",
-                    Seq(email),
-                    s"""
-                   |Thanks for creating your ${ctx.tenant.name} account, you're almost done.
-                   |
-                |Please click on the following link to finalize your account creation process
-                   |
-                |${ctx.request.theProtocol}://${host}/account/validate?id=${randomId}
-                   |
-                |The ${ctx.tenant.name} team
-              """.stripMargin
-                  )
-                  .map { _ =>
-                    Ok(Json.obj("done" -> true))
-                  }
+                implicit val tenantLanguage: String =
+                  ctx.tenant.defaultLanguage.getOrElse("en")
+                (for {
+                  title <- translator.translate(
+                    "mail.new.user.title",
+                    ctx.tenant,
+                    Map("tenant" -> ctx.tenant.name))
+                  body <- translator.translate(
+                    "mail.new.user.body",
+                    ctx.tenant,
+                    Map(
+                      "tenant" -> ctx.tenant.name,
+                      "link" -> s"${ctx.request.theProtocol}://${host}/account/validate?id=${randomId}"
+                    ))
+                } yield {
+                  ctx.tenant.mailer
+                    .send(title, Seq(email), body, ctx.tenant)
+                    .map { _ =>
+                      Ok(Json.obj("done" -> true))
+                    }
+                }).flatten
               }
           }
         }
@@ -487,7 +496,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                     def getUser() = User(
                       id = userId,
                       tenants = Set(ctx.tenant.id),
-                      origins = Set(AuthProvider.Otoroshi),
+                      origins = Set(ctx.tenant.authProvider),
                       name = accountCreation.name,
                       email = accountCreation.email,
                       picture = accountCreation.avatar,
@@ -557,20 +566,26 @@ class LoginController(DaikokuAction: DaikokuAction,
               .get("Otoroshi-Proxied-Host")
               .orElse(ctx.request.headers.get("X-Forwarded-Host"))
               .getOrElse(ctx.request.host)
+
+            val tenantLanguage: String =
+              ctx.tenant.defaultLanguage.getOrElse("en")
+            implicit val language: String =
+              user.defaultLanguage.getOrElse(tenantLanguage)
             ctx.tenant.mailer
               .send(
                 s"Reset your ${ctx.tenant.name} account password",
                 Seq(email),
                 s"""
-                |You asked to reset your ${ctx.tenant.name} account password.
+                |<p>You asked to reset your ${ctx.tenant.name} account password.</p>
                 |
-                |If it was you, please click on the following link to finalize the password resset process
+                |<p>If it was you, please click on the following link to finalize the password resset process</p>
                 |
-                |${ctx.request.theProtocol}://${host}/account/reset?id=$randomId
-                |If not, just ignore this email
+                |<a href="${ctx.request.theProtocol}://${host}/account/reset?id=$randomId">Reset</a>
+                |<p>If not, just ignore this email</p>
                 |
-                |The ${ctx.tenant.name} team
-              """.stripMargin
+                |<p>The ${ctx.tenant.name} team</p>
+              """.stripMargin,
+                ctx.tenant
               )
               .map { _ =>
                 Ok(Json.obj("done" -> true))

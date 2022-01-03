@@ -10,10 +10,11 @@ export function DaikokuExtension() {
       const path = window.location.pathname;
       const rawParts = path.split('/');
       rawParts.shift();
-      const parts = _.take(rawParts, 4);
+      const parts = _.take(rawParts, 5);
       const teamId = parts[1];
       const apiId = parts[3];
-      return `<a href="/${teamId}/${apiId}/documentation/${docId}">${title}</a>`;
+      const versionId = parts[4];
+      return `<a href="/${teamId}/${apiId}/${versionId}/documentation/${docId}">${title}</a>`;
     },
   };
   // @@@

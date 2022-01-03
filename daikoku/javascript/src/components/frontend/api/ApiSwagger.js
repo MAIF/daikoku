@@ -1,44 +1,50 @@
-import React, { Component } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import 'swagger-ui-dist/swagger-ui.css';
 import { LoginOrRegisterModal } from '../..';
-import { t } from '../../../locales';
+import { I18nContext } from '../../../core';
 
-export class ApiSwagger extends Component {
-  state = {
+export function ApiSwagger(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const [state, setState] = useState({
     error: undefined,
     info: undefined,
-  };
+  });
 
-  componentDidMount() {
-    if (this.props.api.testing.enabled)
-      fetch(`/api/teams/${this.props.teamId}/apis/${this.props.api._id}/swagger.json`).then(
-        (res) => {
-          if (res.status > 300)
-            this.setState({
-              error: t('api_swagger.failed_to_retrieve_swagger', this.props.currentLanguage),
-            });
-          else this.drawSwaggerUi();
-          setTimeout(() => {
-            [...document.querySelectorAll('.scheme-container')].map(
-              (i) => (i.style.display = 'none')
-            );
-            [...document.querySelectorAll('.information-container')].map(
-              (i) => (i.style.display = 'none')
-            );
-            this.handleAuthorize(false);
-          }, 500);
-        }
-      );
-    else this.setState({ info: t('api_swagger.try_it_error', this.props.currentLanguage) });
-  }
+  const params = useParams();
 
-  drawSwaggerUi = () => {
-    if (this.props.api.swagger) {
+  useEffect(() => {
+    if (props.api.testing.enabled)
+      fetch(
+        `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger.json`
+      ).then((res) => {
+        if (res.status > 300)
+          setState({
+            ...state,
+            error: translateMethod('api_swagger.failed_to_retrieve_swagger'),
+          });
+        else drawSwaggerUi();
+        setTimeout(() => {
+          [...document.querySelectorAll('.scheme-container')].map(
+            (i) => (i.style.display = 'none')
+          );
+          [...document.querySelectorAll('.information-container')].map(
+            (i) => (i.style.display = 'none')
+          );
+          handleAuthorize(false);
+        }, 500);
+      });
+    else setState({ ...state, info: translateMethod('api_swagger.try_it_error') });
+  }, []);
+
+  const drawSwaggerUi = () => {
+    if (props.api.swagger) {
       window.ui = SwaggerUIBundle({
         // TODO: this current team is actually needed by the api
-        url: `/api/teams/${this.props.teamId}/apis/${this.props.api._id}/swagger`,
+        url: `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`,
         dom_id: '#swagger-ui',
         deepLinking: true,
         docExpansion: 'list',
@@ -54,7 +60,7 @@ export class ApiSwagger extends Component {
             headers: req.headers,
           });
           const newReq = {
-            url: `/api/teams/${this.props.teamId}/testing/${this.props.api._id}/call`,
+            url: `/api/teams/${props.teamId}/testing/${props.api._id}/call`,
             method: 'POST',
             body,
             headers: {
@@ -68,29 +74,28 @@ export class ApiSwagger extends Component {
     }
   };
 
-  handleAuthorize = (canCreate) => {
+  const handleAuthorize = (canCreate) => {
     // TODO: at start, try to see if user has test key for it and use it
-    //if (canCreate && this.props.testing.auth === "ApiKey") {
+    //if (canCreate && props.testing.auth === "ApiKey") {
     //  // TODO: create a key dedicated for tests and use it
-    //} else if (canCreate && this.props.testing.auth === "Basic") {
+    //} else if (canCreate && props.testing.auth === "Basic") {
     //  // TODO: create a key dedicated for tests and use it
     //} else
-    if (this.props.testing.auth === 'ApiKey') {
+    if (props.testing.auth === 'ApiKey') {
       // window.ui.preauthorizeApiKey('api_key', 'hello');
-      // console.log('ApiKey', this.props.testing.name, this.props.testing.username)
-      // window.ui.preauthorizeApiKey(this.props.testing.name, this.props.testing.username);
-      window.ui.preauthorizeApiKey(this.props.testing.name, 'fake-' + this.props.api._id);
-    } else if (this.props.testing.auth === 'Basic') {
+      // console.log('ApiKey', props.testing.name, props.testing.username)
+      // window.ui.preauthorizeApiKey(props.testing.name, props.testing.username);
+      window.ui.preauthorizeApiKey(props.testing.name, 'fake-' + props.api._id);
+    } else if (props.testing.auth === 'Basic') {
       // window.ui.preauthorizeBasic('api_key', 'user', 'pass');
-      // console.log('Baisc', this.props.testing.name, this.props.testing.username, this.props.testing.password)
-      // window.ui.preauthorizeBasic(this.props.testing.name, this.props.testing.username, this.props.testing.password);
+      // console.log('Baisc', props.testing.name, props.testing.username, props.testing.password)
+      // window.ui.preauthorizeBasic(props.testing.name, props.testing.username, props.testing.password);
       window.ui.preauthorizeBasic(
-        this.props.testing.name,
-        'fake-' + this.props.api._id,
-        'fake-' + this.props.api._id
+        props.testing.name,
+        'fake-' + props.api._id,
+        'fake-' + props.api._id
       );
     } else {
-      console.log(this.props);
       if (canCreate) {
         window.alert('Unknown authentication type');
       } else {
@@ -99,40 +104,34 @@ export class ApiSwagger extends Component {
     }
   };
 
-  render() {
-    const { tenant, connectedUser } = this.props;
+  const { tenant, connectedUser } = props;
 
-    if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
-      return (
-        <LoginOrRegisterModal
-          {...this.props}
-          showOnlyMessage={true}
-          message={t('api_swagger.guest_user', this.props.currentLanguage)}
-        />
-      );
+  if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
+    return (
+      <LoginOrRegisterModal
+        {...props}
+        showOnlyMessage={true}
+        asFlatFormat
+        message={translateMethod('api_swagger.guest_user')}
+      />
+    );
 
-    const api = this.props.api;
-    if (!api)
-      return (
-        <div>
-          {t('api_data.missing', this.props.currentLanguage, false, undefined, ['Swagger'])}
-        </div>
-      );
+  const api = props.api;
+  if (!api) return <div>{translateMethod('api_data.missing', false, undefined, ['Swagger'])}</div>;
 
-    if (this.state.error || this.state.info)
-      return (
-        <div className="d-flex justify-content-center w-100">
-          <span className={`alert alert-${this.state.error ? 'danger' : 'info'} text-center`}>
-            {this.state.error ? this.state.error : this.state.info}
-          </span>
-        </div>
-      );
-    else
-      return (
-        <div style={{ width: '100%' }}>
-          {/*<button type="button" className="btn btn-success" onClick={e => this.handleAuthorize(true)}>Use apikey (soon)</button>*/}
-          <div id="swagger-ui" style={{ width: '100%' }} />
-        </div>
-      );
-  }
+  if (state.error || state.info)
+    return (
+      <div className="d-flex justify-content-center w-100">
+        <span className={`alert alert-${state.error ? 'danger' : 'info'} text-center`}>
+          {state.error ? state.error : state.info}
+        </span>
+      </div>
+    );
+  else
+    return (
+      <div style={{ width: '100%' }}>
+        {/*<button type="button" className="btn btn-success" onClick={e => handleAuthorize(true)}>Use apikey (soon)</button>*/}
+        <div id="swagger-ui" style={{ width: '100%' }} />
+      </div>
+    );
 }

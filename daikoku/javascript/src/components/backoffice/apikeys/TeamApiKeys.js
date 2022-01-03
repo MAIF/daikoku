@@ -1,34 +1,45 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext, useEffect, useState, useRef } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
-import { TeamBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
-export class TeamApiKeysComponent extends Component {
-  state = {
-    showApiKey:
-      this.props.connectedUser.isDaikokuAdmin ||
-      !this.props.currentTeam.showApiKeyOnlyToAdmins ||
-      isUserIsTeamAdmin(this.props.connectedUser, this.props.currentTeam),
-  };
+export function TeamApiKeysComponent(props) {
+  const tableRef = useRef();
+  const [showApiKey, setShowApiKey] = useState(false);
 
-  columns = [
+  const { translateMethod, Translation } = useContext(I18nContext);
+
+  let table;
+
+  useEffect(() => {
+    setShowApiKey(
+      props.connectedUser.isDaikokuAdmin ||
+        !props.currentTeam.showApiKeyOnlyToAdmins ||
+        isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
+    );
+  }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins]);
+
+  useEffect(() => {
+    document.title = `${props.currentTeam.name} - ${translateMethod('API key')}`;
+  }, []);
+
+  const columns = [
     {
-      Header: t('Api Name', this.props.currentLanguage),
+      Header: translateMethod('Api Name'),
       style: { textAlign: 'left' },
       accessor: (api) => api.name,
     },
     {
-      Header: t('Version', this.props.currentLanguage),
+      Header: translateMethod('Version'),
       style: { textAlign: 'left' },
       accessor: (api) => api.currentVersion,
     },
     {
-      Header: t('Actions', this.props.currentLanguage),
+      Header: translateMethod('Actions'),
       style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
@@ -40,15 +51,13 @@ export class TeamApiKeysComponent extends Component {
       }) => {
         const api = original;
         return (
-          this.state.showApiKey && (
-            <div style={{ width: 100 }}>
+          showApiKey && (
+            <div style={{ minWidth: 100 }}>
               <Link
-                to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}`}
+                to={`/${props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                 className="btn btn-sm btn-access-negative">
-                <i className="fas fa-eye mr-1" />
-                <Translation i18nkey="Api keys" language={this.props.currentLanguage}>
-                  Api keys
-                </Translation>
+                <i className="fas fa-eye me-1" />
+                <Translation i18nkey="Api keys">Api keys</Translation>
               </Link>
             </div>
           )
@@ -57,79 +66,62 @@ export class TeamApiKeysComponent extends Component {
     },
   ];
 
-  cleanSubs = () => {
+  const cleanSubs = () => {
     window
       .confirm(
-        t(
+        translateMethod(
           'clean.archived.sub.confirm',
-          this.props.currentLanguage,
+          false,
           'Are you sure you want to clean archived subscriptions ?'
         )
       )
       .then((ok) => {
         if (ok) {
-          Services.cleanArchivedSubscriptions(this.props.currentTeam._id).then(() =>
-            this.table.update()
+          Services.cleanArchivedSubscriptions(props.currentTeam._id).then(() =>
+            tableRef?.current?.update()
           );
         }
       });
   };
 
-  render() {
-    return (
-      <TeamBackOffice
-        tab="ApiKeys"
-        apiId={this.props.match.params.apiId}
-        title={`${this.props.currentTeam.name} - ${t(
-          'API key',
-          this.props.currentLanguage,
-          true
-        )}`}>
-        <Can I={manage} a={apikey} team={this.props.currentTeam} dispatchError={true}>
-          <div className="row">
-            <div className="col">
-              <h1>
-                <Translation i18nkey="Subscribed Apis" language={this.props.currentLanguage}>
-                  Subscribed Apis
-                </Translation>
-              </h1>
-              <Link
-                to={`/${this.props.currentTeam._humanReadableId}/settings/consumption`}
-                className="btn btn-sm btn-access-negative mb-2">
-                <i className="fas fa-chart-bar mr-1" />
-                <Translation i18nkey="See Stats" language={this.props.currentLanguage}>
-                  See Stats
-                </Translation>
-              </Link>
-              <div className="section p-2">
-                <Table
-                  currentLanguage={this.props.currentLanguage}
-                  selfUrl="apikeys"
-                  defaultTitle="Apikeys"
-                  defaultValue={() => ({})}
-                  defaultSort="name"
-                  itemName="apikey"
-                  columns={this.columns}
-                  fetchItems={() => Services.subscribedApis(this.props.currentTeam._id)}
-                  showActions={false}
-                  showLink={false}
-                  extractKey={(item) => item._id}
-                  injectTable={(t) => (this.table = t)}
-                />
-                <button className="btn btn-sm btn-danger-negative mt-1" onClick={this.cleanSubs}>
-                  <Translation
-                    i18nkey="clean archived apikeys"
-                    language={this.props.currentLanguage}>
-                    clean archived apikeys
-                  </Translation>
-                </button>
-              </div>
-            </div>
+  const params = useParams();
+
+  return (
+    <Can I={manage} a={apikey} team={props.currentTeam} dispatchError={true}>
+      <div className="row">
+        <div className="col">
+          <h1>
+            <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
+          </h1>
+          <Link
+            to={`/${props.currentTeam._humanReadableId}/settings/consumption`}
+            className="btn btn-sm btn-access-negative mb-2">
+            <i className="fas fa-chart-bar me-1" />
+            <Translation i18nkey="See Stats">See Stats</Translation>
+          </Link>
+          <div className="section p-2">
+            <Table
+              selfUrl="apikeys"
+              defaultTitle="Apikeys"
+              defaultValue={() => ({})}
+              defaultSort="name"
+              itemName="apikey"
+              columns={columns}
+              fetchItems={() => Services.subscribedApis(props.currentTeam._id)}
+              showActions={false}
+              showLink={false}
+              extractKey={(item) => item._id}
+              // injectTable={(t) => (table = t)}
+              ref={tableRef}
+            />
+            <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
+              <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
+            </button>
           </div>
-        </Can>
-      </TeamBackOffice>
-    );
-  }
+        </div>
+      </div>
+    </Can>
+  );
 }
 
 const mapStateToProps = (state) => ({

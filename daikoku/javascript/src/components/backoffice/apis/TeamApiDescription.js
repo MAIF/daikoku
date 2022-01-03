@@ -1,29 +1,25 @@
-import React, { Component, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import PropTypes from 'prop-types';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
-export class TeamApiDescription extends Component {
-  render() {
-    return (
-      <div>
-        <Suspense fallback={<div>loading ...</div>}>
-          <LazySingleMarkdownInput
-            currentLanguage={this.props.currentLanguage}
-            team={this.props.team}
-            height={window.innerHeight - 300 + 'px'}
-            value={this.props.value.description}
-            onChange={(code) => {
-              const newValue = this.props.value;
-              newValue.description = code;
-              this.props.onChange(newValue);
-            }}
-          />
-        </Suspense>
-      </div>
-    );
-  }
-}
+export const TeamApiDescription = (props) => (
+  <div>
+    <Suspense fallback={<div>loading ...</div>}>
+      <LazySingleMarkdownInput
+        team={props.team}
+        height={window.innerHeight - 300 + 'px'}
+        value={props.value.description}
+        onChange={(code) => {
+          const newValue = props.value;
+          newValue.description = code;
+          props.onChange(newValue);
+        }}
+        fullWidth={true}
+      />
+    </Suspense>
+  </div>
+);
 
 TeamApiDescription.propTypes = {
   team: PropTypes.object,

@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { goBack } from 'connected-react-router';
-import { t } from '../../locales';
+import { Link, useNavigate } from 'react-router-dom';
+import { I18nContext } from '../../locales/i18n-context';
+import { setError, unsetError } from '../../core';
 
 const getErrorLabel = (status, error) => {
+  // if (status) console.log(status, error);
   if (status === 400) {
     return 'Bad Request';
   } else if (status === 401) {
-    return 'Forbidden';
+    return error.message || 'Forbidden';
   } else if (status === 403) {
-    return 'Unauthorized';
+    return error.message || 'Unauthorized';
   } else if (status === 404) {
     return error.message || 'Page Not Found';
   } else if (status > 399 && status < 500) {
@@ -22,28 +23,50 @@ const getErrorLabel = (status, error) => {
   }
 };
 
-const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
-  document.title = `${tenant} - ${t('Error', currentLanguage)}`;
-  const label = getErrorLabel(error.status, error);
+const ErrorComponent = ({ error, tenant, unsetError }) => {
+  const navigate = useNavigate();
 
-  if (!label) {
+  const [label, setLabel] = useState();
+
+  const { translateMethod } = useContext(I18nContext);
+
+  useEffect(() => {
+    setLabel(getErrorLabel(error.status, error));
+    if (error?.status) {
+      document.title = `${tenant.title} - ${translateMethod('Error')}`;
+    }
+  }, [error, label]);
+
+  if (!label || !error) {
     return null;
   }
 
   return (
     <div className="row">
-      <div className="col">
+      <div className="col-md-9 offset-3">
         <div className="error-page d-flex flex-column">
           <div>
             <h1 data-h1={error.status}>{error.status}</h1>
             <p data-p={label}>{label}</p>
           </div>
           <div>
-            <Link className="btn btn-access-negative mr-1" to="/">
-              <i className="fas fa-home" /> Go home
+            <Link
+              className="btn btn-access-negative me-1"
+              to="/apis"
+              onClick={() => {
+                unsetError();
+              }}
+            >
+              <i className="fas fa-home" /> {translateMethod('Go home')}
             </Link>
-            <button className="btn btn-access-negative" onClick={() => goBack()}>
-              <i className="fas fa-angle-double-left" /> Go back
+            <button
+              className="btn btn-access-negative"
+              onClick={() => {
+                navigate(-1);
+                setTimeout(unsetError, 300);
+              }}
+            >
+              <i className="fas fa-angle-double-left" /> {translateMethod('go_back')}
             </button>
           </div>
         </div>
@@ -53,14 +76,13 @@ const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
 };
 
 const mapStateToProps = (state) => ({
-  tenant: state.context.tenant.name,
-  currentLanguage: state.context.currentLanguage,
+  tenant: state.context.tenant,
   error: state.error,
-  router: state.router,
 });
 
 const mapDispatchToProps = {
-  goBack,
+  setError: (error) => setError(error),
+  unsetError: () => unsetError(),
 };
 
 export const Error = connect(mapStateToProps, mapDispatchToProps)(ErrorComponent);

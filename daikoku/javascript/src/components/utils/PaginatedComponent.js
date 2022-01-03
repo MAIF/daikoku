@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import Pagination from 'react-paginate';
 import classNames from 'classnames';
-import { t } from '../../locales';
+import { I18nContext } from '../../locales/i18n-context';
 
 export const PaginatedComponent = (props) => {
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
+
+  const { translateMethod } = useContext(I18nContext);
 
   const pageNumber = props.count || 10;
 
@@ -25,7 +27,7 @@ export const PaginatedComponent = (props) => {
       <div className="flex-column">
         {props.help && (
           <i
-            className="far fa-question-circle ml-1 cursor-pointer"
+            className="far fa-question-circle ms-1 cursor-pointer"
             style={{ fontSize: '20px' }}
             onClick={() => props.help()}
           />
@@ -37,7 +39,8 @@ export const PaginatedComponent = (props) => {
             'flex-column-reverse': props.columnMode && props.reverse,
             'flex-row': !props.columnMode,
             'flex-row-reverse': !props.columnMode && props.reverse,
-          })}>
+          })}
+        >
           {pagedItems.map((item) => {
             if (React.isValidElement(item)) {
               return item;
@@ -48,8 +51,8 @@ export const PaginatedComponent = (props) => {
         </div>
         <div className="apis__pagination d-flex justify-content-center" style={{ width: '100%' }}>
           <Pagination
-            previousLabel={props.previousLabel || t('Previous', props.currentLanguage)}
-            nextLabel={props.nextLabel || t('Next', props.currentLanguage)}
+            previousLabel={props.previousLabel || translateMethod('Previous')}
+            nextLabel={props.nextLabel || translateMethod('Next')}
             breakLabel={props.breakLabel || '...'}
             breakClassName={'break'}
             pageCount={Math.ceil(props.items.length / pageNumber)}
@@ -76,5 +79,4 @@ PaginatedComponent.propTypes = {
   previousLabel: PropTypes.string,
   nextLabel: PropTypes.string,
   breakLabel: PropTypes.string,
-  currentLanguage: PropTypes.string,
 };

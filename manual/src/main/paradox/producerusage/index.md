@@ -5,10 +5,10 @@ Now we will see how to use Daikoku for basic tasks that will be useful for your 
 
 @@@ index
 
-* [managing apis](./1-apis.md)
-* [managing API subscription](./2-subscriptions.md)
-* [managing teams and members](./2-members.md)
-* [managing assets](./3-assets.md)
+* [manage apis](./1-apis.md)
+* [manage API subscription](./2-subscriptions.md)
+* [manage teams and members](./2-members.md)
+* [manage assets](./3-assets.md)
 * [team income](./4-income.md)
 
 @@@

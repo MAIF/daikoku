@@ -548,15 +548,13 @@ object utils {
       promise.future
     }
 
-    def otoroshiPathApiKeyQuotas(groupId: String, clientId: String) =
-      s"/api/groups/$groupId/apikeys/$clientId/quotas"
+    def otoroshiPathApiKeyQuotas(clientId: String) =
+      s"/api/apikeys/$clientId/quotas"
     val otoroshiPathStats = s"/api/stats"
     def otoroshiPathGroup(groupId: String) = s"/api/groups/[\\w-]*"
-    val otoroshiPathDeleteSub = s"/api/groups/[\\w-]*/apikeys/[\\w-]*"
-    def otoroshiDeleteApikeyPath(groupId: String, clientId: String) =
-      s"/api/groups/$groupId/apikeys/$clientId"
-    def otoroshiUpdateApikeyPath(groupId: String, clientId: String) =
-      s"/api/groups/$groupId/apikeys/$clientId"
+    def otoroshiDeleteApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
+    def otoroshiUpdateApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
+    def otoroshiGetApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
 
     lazy val wireMockUrl = s"http://$stubHost:$stubPort"
     val stubPort = 11112
@@ -864,7 +862,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-                           OtoroshiServiceGroupId("12345"))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = SubscriptionProcess.Automatic,
@@ -882,7 +882,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-                           OtoroshiServiceGroupId("12345"))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = SubscriptionProcess.Automatic,
@@ -902,7 +904,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-                           OtoroshiServiceGroupId("12345"))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = SubscriptionProcess.Automatic,
@@ -923,7 +927,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-                           OtoroshiServiceGroupId("12345"))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(true),
           subscriptionProcess = SubscriptionProcess.Automatic,
@@ -941,7 +947,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("wiremock"),
-                           OtoroshiServiceGroupId("12345"))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = SubscriptionProcess.Automatic,
