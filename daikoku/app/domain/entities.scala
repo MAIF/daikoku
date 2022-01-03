@@ -1865,9 +1865,15 @@ case class CmsPage(
             Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
               case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)), 10.seconds) match {
                 case None => s"block '$id' not found"
-                case Some(page) => page.render(ctx).map(t => t._2)
+                case Some(page) => Await.result(page.render(ctx).map(t => t._2), 10.seconds) match {
+                  case s: String => s
+                  case _ => ""
+                }
               }
-              case Some(page) => page.render(ctx).map(t => t._2)
+              case Some(page) => Await.result(page.render(ctx).map(t => t._2), 10.seconds) match {
+                case s: String => s
+                case _ => ""
+              }
             }
           }
         })
