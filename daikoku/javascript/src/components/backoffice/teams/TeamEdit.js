@@ -104,11 +104,11 @@ export function TeamEditForm(props) {
     <>
       <div className="row d-flex justify-content-start align-items-center mb-2">
         {props.team && (
-          <div className="d-flex ml-1 avatar__container">
+          <div className="d-flex ms-1 avatar__container">
             <img className="img-fluid" src={props.team.avatar} alt="avatar" />
           </div>
         )}
-        <h1 className="h1-rwd-reduce ml-2">{props.team.name}</h1>
+        <h1 className="h1-rwd-reduce ms-2">{props.team.name}</h1>
       </div>
       <div className="row">
         <React.Suspense fallback={<Spinner />}>
@@ -154,34 +154,32 @@ const TeamEditComponent = ({ currentTeam }) => {
     <>
       <TeamEditForm team={team} updateTeam={setTeam} />
       <div className="row form-back-fixedBtns">
-        <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
-          <i className="fas fa-chevron-left mr-1" />
-          <Translation i18nkey="Back">Back</Translation>
-        </Link>
-        {team && team.type !== 'Personal' && (
-          <button
+        <div className="d-flex justify-content-end">
+          <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
+            <i className="fas fa-chevron-left me-1" />
+            <Translation i18nkey="Back">Back</Translation>
+          </Link>
+          {team && team.type !== "Personal" && <button
             style={{ marginLeft: 5 }}
             type="button"
             className="btn btn-outline-primary"
-            onClick={members}
-          >
+            onClick={members}>
             <span>
-              <i className="fas fa-users mr-1" />
+              <i className="fas fa-users me-1" />
               <Translation i18nkey="Members">Members</Translation>
             </span>
+          </button>}
+          <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-success"
+            onClick={save}>
+            <span>
+              <i className="fas fa-save me-1" />
+              <Translation i18nkey="Save">Save</Translation>
+            </span>
           </button>
-        )}
-        <button
-          style={{ marginLeft: 5 }}
-          type="button"
-          className="btn btn-outline-success"
-          onClick={save}
-        >
-          <span>
-            <i className="fas fa-save mr-1" />
-            <Translation i18nkey="Save">Save</Translation>
-          </span>
-        </button>
+        </div>
       </div>
     </>
   );

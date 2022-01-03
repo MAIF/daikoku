@@ -50,9 +50,7 @@ export class UnauthenticatedTopBar extends Component {
         {this.state.error && (
           <div className="alert alert-danger alert-dismissible fade show mb-0" role="alert">
             <strong>Holy guacamole!</strong> {this.state.error}.
-            <button type="button" className="close" onClick={this.removeError} aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+            <button type="button" className="btn-close" onClick={this.removeError} aria-label="Close"/>
           </div>
         )}
       </header>

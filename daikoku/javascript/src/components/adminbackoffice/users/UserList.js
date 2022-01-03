@@ -90,7 +90,7 @@ function UserListComponent(props) {
               <h1>
                 {translateMethod('Users')}
                 <a
-                  className="btn btn-sm btn-access-negative mb-1 ml-1"
+                  className="btn btn-sm btn-access-negative mb-1 ms-1"
                   title={translateMethod('Create a new user')}
                   href="#"
                   onClick={(e) => {
@@ -101,13 +101,15 @@ function UserListComponent(props) {
                   <i className="fas fa-user-plus" />
                 </a>
               </h1>
-              <input
-                placeholder={translateMethod('Find a user')}
-                className="form-control col-5"
-                onChange={(e) => {
-                  setState({ ...state, search: e.target.value });
-                }}
-              />
+              <div className="col-5">
+                <input
+                  placeholder={translateMethod('Find a user')}
+                  className="form-control"
+                  onChange={(e) => {
+                    setState({ ...state, search: e.target.value });
+                  }}
+                />
+              </div>
             </div>
             <PaginatedComponent
               items={_.sortBy(filteredUsers, [(user) => user.name.toLowerCase()])}

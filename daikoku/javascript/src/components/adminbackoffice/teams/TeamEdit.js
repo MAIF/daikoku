@@ -128,11 +128,11 @@ function TeamEditForAdministrationComponent(props) {
       <Can I={manage} a={tenant} dispatchError>
         <div className="row d-flex justify-content-start align-items-center mb-2">
           {team && (
-            <div className="ml-1 avatar__container">
+            <div className="ms-1 avatar__container">
               <img src={team.avatar} className="img-fluid" alt="avatar" />
             </div>
           )}
-          <h1 className="h1-rwd-reduce ml-2">Team - {team.name}</h1>
+          <h1 className="h1-rwd-reduce ms-2">Team - {team.name}</h1>
         </div>
         <div className="row">
           <React.Suspense fallback={<Spinner />}>
@@ -144,47 +144,44 @@ function TeamEditForAdministrationComponent(props) {
               style={{ marginBottom: 100, paddingTop: 20 }}
             />
           </React.Suspense>
-          <div style={{ height: 60 }} />
           <div className="row form-back-fixedBtns">
-            <Link className="btn btn-outline-primary" to={'/settings/teams'}>
-              <i className="fas fa-chevron-left mr-1" />
-              <Translation i18nkey="Back">Back</Translation>
-            </Link>
-            {team.type !== 'Personal' && (
+            <div className="d-flex justify-content-end">
+              <Link className="btn btn-outline-primary" to={'/settings/teams'}>
+                <i className="fas fa-chevron-left me-1" />
+                <Translation i18nkey="Back">Back</Translation>
+              </Link>
               <button
                 style={{ marginLeft: 5 }}
                 type="button"
                 className="btn btn-outline-primary"
                 disabled={create}
-                onClick={members}
-              >
+                onClick={members}>
                 <span>
-                  <i className="fas fa-users mr-1" />
+                  <i className="fas fa-users me-1" />
                   <Translation i18nkey="Members" isPlural>
                     Members
                   </Translation>
                 </span>
               </button>
-            )}
-            <button
-              style={{ marginLeft: 5 }}
-              type="button"
-              className="btn btn-outline-success"
-              onClick={save}
-            >
-              {!create && (
-                <span>
-                  <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Save">Save</Translation>
-                </span>
-              )}
-              {create && (
-                <span>
-                  <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Create">Create</Translation>
-                </span>
-              )}
-            </button>
+              <button
+                style={{ marginLeft: 5 }}
+                type="button"
+                className="btn btn-outline-success"
+                onClick={save}>
+                {!create && (
+                  <span>
+                    <i className="fas fa-save me-1" />
+                    <Translation i18nkey="Save">Save</Translation>
+                  </span>
+                )}
+                {create && (
+                  <span>
+                    <i className="fas fa-save me-1" />
+                    <Translation i18nkey="Create">Create</Translation>
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </Can>

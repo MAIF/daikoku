@@ -233,7 +233,7 @@ function ApiPricingCardComponent(props) {
                   teams={authorizedTeams.filter((team) => team._id === props.ownerTeam._id)}
                 >
                   {!plan.otoroshiTarget && (
-                    <span className="badge badge-danger">Missing otoroshi target</span>
+                    <span className="badge bg-danger">Missing otoroshi target</span>
                   )}
                 </Can>
               )}

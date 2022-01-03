@@ -21,9 +21,7 @@ export const ApiKeySelectModal = ({ closeModal, onSubscribe, plan, apiKeys, ...p
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{translateMethod('apikey_select_modal.title')}</h5>
-        <button type="button" className="close" aria-label="Close" onClick={closeModal}>
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
       <div className="modal-body">
         {showSelectOrCreateApiKey && (
@@ -60,9 +58,8 @@ const ApiKeysView = ({ apiKeys, extendApiKey }) => {
           <div
             key={apiKey._id}
             className="team-selection team-selection__team selectable mt-1"
-            onClick={() => extendApiKey(apiKey)}
-          >
-            <span className="ml-2">{`${apiKey.apiName}/${
+            onClick={() => extendApiKey(apiKey)}>
+            <span className="ms-2">{`${apiKey.apiName}/${
               apiKey.customName || apiKey.planType
             }`}</span>
           </div>

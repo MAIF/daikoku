@@ -14,8 +14,8 @@ export function LabelInput(props) {
   }, []);
 
   return (
-    <div className="form-group row">
-      <label className="col-sm-2 control-label">
+    <div className="mb-3 row">
+      <label className="col-sm-2 control-label mb-2">
         {props.label} <Help text={props.help} />
       </label>
       <div className="col-sm-10">

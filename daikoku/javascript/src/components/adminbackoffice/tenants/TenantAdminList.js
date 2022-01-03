@@ -152,7 +152,7 @@ const TenantAdminListComponent = (props) => {
           <div className="col-12 mb-3 d-flex justify-content-start">
             <Select
               placeholder={translateMethod('Add new admin')}
-              className="add-member-select mr-2 reactSelect"
+              className="add-member-select me-2 reactSelect"
               options={addableAdmins.map(adminToSelector)}
               onChange={(slug) => setSelectedAdmin(slug.value)}
               value={selectedAdmin}

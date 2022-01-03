@@ -14,7 +14,7 @@ export const SelectionStepStep = (props) => {
   const { Translation } = useContext(I18nContext);
   return (
     <div className="d-flex">
-      <button className="btn btn-outline-primary mr-2" onClick={() => props.goToServices()}>
+      <button className="btn btn-outline-primary me-2" onClick={() => props.goToServices()}>
         <Translation i18nkey="Import Otoroshi services">Import Otoroshi Services</Translation>
       </button>
       <button className="btn btn-outline-primary" onClick={() => props.goToApikeys()}>
@@ -51,7 +51,7 @@ export const SelectOtoStep = (props) => {
     <div className="d-flex flex-row">
       <Select
         placeholder={translateMethod('Select an Otoroshi instance')}
-        className="add-member-select mr-2 reactSelect"
+        className="add-member-select me-2 reactSelect"
         isDisabled={!props.otoroshis.length}
         isLoading={!props.otoroshis.length}
         options={props.otoroshis.map((s) => ({
@@ -105,11 +105,11 @@ export const RecapServiceStep = (props) => {
           })}
       </ul>
       <div className="d-flex justify-content-end">
-        <button className="btn btn-outline-primary mr-1" onClick={() => props.goBackToServices()}>
-          <i className="fas fa-chevron-left mr-1"></i>
+        <button className="btn btn-outline-primary me-1" onClick={() => props.goBackToServices()}>
+          <i className="fas fa-chevron-left me-1"></i>
           <Translation i18nkey="Back">Back</Translation>
         </button>
-        <button className="btn btn-outline-danger mr-1" onClick={props.cancel}>
+        <button className="btn btn-outline-danger me-1" onClick={props.cancel}>
           <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
         <button className="btn btn-outline-success" onClick={() => props.create()}>
@@ -131,7 +131,7 @@ export const RecapSubsStep = (props) => {
 
   return (
     <div className="mt-3">
-      <h4 className="ml-3">
+      <h4 className="ms-3">
         <Translation i18nkey="initialize_from_otoroshi.api_keys_imported">
           These api keys will be import
         </Translation>
@@ -162,11 +162,11 @@ export const RecapSubsStep = (props) => {
           })}
       </ul>
       <div className="d-flex justify-content-end">
-        <button className="btn btn-outline-primary mr-1" onClick={() => props.goBackToServices()}>
-          <i className="fas fa-chevron-left mr-1"></i>
+        <button className="btn btn-outline-primary me-1" onClick={() => props.goBackToServices()}>
+          <i className="fas fa-chevron-left me-1"></i>
           <Translation i18nkey="Back">Back</Translation>
         </button>
-        <button className="btn btn-outline-danger mr-1" onClick={reset}>
+        <button className="btn btn-outline-danger me-1" onClick={reset}>
           <Translation i18nkey="Reset">Reset</Translation>
         </button>
         <button className="btn btn-outline-success" onClick={() => props.create()}>
@@ -359,7 +359,7 @@ export const ServicesStep = (props) => {
             <i className="fas fa-angle-double-left" />
           </button>
           <button
-            className="btn btn-access mr-2"
+            className="btn btn-access me-2"
             disabled={props.currentStep === 1 ? 'disabled' : null}
             onClick={props.previousStep}
           >
@@ -372,7 +372,7 @@ export const ServicesStep = (props) => {
           )}
           {props.maybeCreatedApi.isDefined && (
             <button
-              className="btn btn-outline-success mr-2"
+              className="btn btn-outline-success me-2"
               disabled={!selectedTeam || error.name ? 'disabled' : null}
               onClick={update}
             >
@@ -381,14 +381,14 @@ export const ServicesStep = (props) => {
           )}
           {!props.maybeCreatedApi.isDefined && (
             <button
-              className="btn btn-outline-success mr-2"
+              className="btn btn-outline-success me-2"
               disabled={!selectedTeam || error.name ? 'disabled' : null}
               onClick={getIt}
             >
               <Translation i18nkey="Import">Import this service</Translation>
             </button>
           )}
-          <button className="btn btn-access ml-2" onClick={nextStep}>
+          <button className="btn btn-access ms-2" onClick={nextStep}>
             <i className="fas fa-angle-right" />
           </button>
           <button
@@ -401,7 +401,7 @@ export const ServicesStep = (props) => {
         </div>
 
         <div>
-          <button className="btn btn-outline-danger mr-2" onClick={props.cancel}>
+          <button className="btn btn-outline-danger me-2" onClick={props.cancel}>
             <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
           <button className="btn btn-outline-success" onClick={props.recap}>
@@ -512,7 +512,7 @@ export const ApiKeyStep = (props) => {
   return (
     <div className="d-flex flex-column">
       <div className="d-flex align-items-center mx-3">
-        <span style={{ fontWeight: 'bold' }} className="mr-2">
+        <span style={{ fontWeight: 'bold' }} className="me-2">
           {translateMethod('initialize_from_otoroshi.api_keys_of')}
         </span>
         <Select
@@ -547,7 +547,7 @@ export const ApiKeyStep = (props) => {
 
       <div className="ml-auto">
         {props.createdSubs.length <= 0 && (
-          <button className="btn btn-outline-danger mr-2" onClick={props.cancel}>
+          <button className="btn btn-outline-danger me-2" onClick={props.cancel}>
             <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
         )}
@@ -686,10 +686,10 @@ const ApiKey = (props) => {
 
   return (
     <div className="d-flex flex-row justify-content-between">
-      <div className="flex-grow-1 mr-2">
+      <div className="flex-grow-1 me-2">
         <SelectApi apis={apis} setSelectedApi={setSelectedApi} selectedApi={selectedApi} />
       </div>
-      <div className="flex-grow-1 mr-2">
+      <div className="flex-grow-1 me-2">
         <SelectPlan
           possiblePlans={possiblePlans}
           selectedPlan={selectedPlan}
@@ -699,7 +699,7 @@ const ApiKey = (props) => {
           selectedApi={selectedApi}
         />
       </div>
-      <div className="flex-grow-1 mr-2">
+      <div className="flex-grow-1 me-2">
         <SelectTeam
           loading={loading}
           setNewTeam={setNewTeam}

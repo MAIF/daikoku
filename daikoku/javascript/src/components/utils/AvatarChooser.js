@@ -13,7 +13,7 @@ function Gravatar(props) {
 
   return (
     <button type="button" className="btn btn-access" onClick={setGravatarLink}>
-      <i className="fas fa-user-circle mr-1" />
+      <i className="fas fa-user-circle me-1" />
       <Translation i18nkey="gravatar.btn.label">Set avatar from Gravatar</Translation>
     </button>
   );
@@ -36,7 +36,7 @@ function AssetButton(props) {
 
 export const AvatarChooser = (props) => {
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <div className="col-12 d-flex justify-content-end">
         <Gravatar {...props} />
         <AssetButton {...props} />

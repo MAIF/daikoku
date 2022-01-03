@@ -266,9 +266,8 @@ function NotificationListComponent(props) {
             {state.nextIsPending && <Spinner />}
             {!state.nextIsPending && moreBtnIsDisplay() && (
               <button
-                className="btn btn-access-negative my-2 ml-2"
-                onClick={() => getMoreNotifications()}
-              >
+                className="btn btn-access-negative my-2 ms-2"
+                onClick={() => getMoreNotifications()}>
                 <Translation i18nkey="more">more</Translation>
               </button>
             )}

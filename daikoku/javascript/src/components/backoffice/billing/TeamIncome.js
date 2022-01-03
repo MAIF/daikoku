@@ -116,7 +116,7 @@ function TeamIncomeComponent(props) {
                       <i className="fas fa-sync-alt" />
                     </button>
                     {lastDate && (
-                      <i className="ml-1">
+                      <i className="ms-1">
                         <Translation i18nkey="date.update" replacements={[lastDate]}>
                           upd. {lastDate}
                         </Translation>

@@ -76,7 +76,7 @@ function TeamBackOfficeHomeComponent(props) {
         <h1>
           {props.currentTeam.name}
           <a
-            className="ml-1 btn btn-sm btn-access-negative"
+            className="ms-1 btn btn-sm btn-access-negative"
             title="View this Team"
             href={`/${props.currentTeam._humanReadableId}`}
           >
@@ -526,7 +526,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
       <button
         id="toggle-sidebar"
         type="button"
-        className="navbar-toggle btn btn-sm btn-access-negative float-left mr-2"
+        className="navbar-toggle btn btn-sm btn-access-negative float-left me-2"
         data-toggle="collapse"
         data-target="#sidebar"
         aria-expanded="false"
@@ -554,7 +554,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
           </ul>
         </div>
       </nav>
-      <main role="main" className="col-md-9 ml-sm-auto px-4 mt-3">
+      <main role="main" className="col-md-9 offset-md-3 ml-sm-auto px-4 mt-3">
         <div
           className={classNames('back-office-overlay', {
             active: isLoading && !error.status,
@@ -616,7 +616,7 @@ const UserBackOfficeComponent = ({
       <button
         id="toggle-sidebar"
         type="button"
-        className="navbar-toggle btn btn-sm btn-access-negative float-left mr-2"
+        className="navbar-toggle btn btn-sm btn-access-negative float-left me-2"
         data-toggle="collapse"
         data-target="#sidebar"
         aria-expanded="false"
@@ -682,10 +682,9 @@ const UserBackOfficeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`mr-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
-                  to={'/settings/admins'}
-                >
-                  <i className="fas fa-user-shield mr-1" />
+                  className={`me-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
+                  to={'/settings/admins'}>
+                  <i className="fas fa-user-shield me-1" />
                   <Translation i18nkey="Admins">Admins</Translation>
                 </Link>
               </li>
@@ -785,7 +784,7 @@ const UserBackOfficeComponent = ({
           </Can>
         </div>
       </nav>
-      <main role="main" className="col-md-9 ml-sm-auto px-4">
+      <main role="main" className="col-md-9 offset-md-3 px-4">
         <div className={classNames('back-office-overlay', { active: isLoading })} />
         <BackOfficeContent error={error}>{children}</BackOfficeContent>
       </main>

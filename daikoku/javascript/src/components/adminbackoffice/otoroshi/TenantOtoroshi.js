@@ -124,40 +124,40 @@ function TenantOtoroshiComponent(props) {
               </React.Suspense>
             )}
           </div>
-          <div className="row justify-content-end">
-            <Link className="btn btn-outline-primary" to="/settings/otoroshis">
-              <i className="fas fa-chevron-left mr-1" />
-              <Translation i18nkey="Back">Back</Translation>
-            </Link>
-            {!state.create && (
+          <div className="row">
+            <div className="d-flex justify-content-end">
+              <Link className="btn btn-outline-primary" to="/settings/otoroshis">
+                <i className="fas fa-chevron-left me-1" />
+                <Translation i18nkey="Back">Back</Translation>
+              </Link>
+              {!state.create && (
+                <button
+                  style={{ marginLeft: 5 }}
+                  type="button"
+                  className="btn btn-outline-danger"
+                  onClick={onDelete}>
+                  <i className="fas fa-trash me-1" />
+                  <Translation i18nkey="Delete">Delete</Translation>
+                </button>
+              )}
               <button
                 style={{ marginLeft: 5 }}
                 type="button"
-                className="btn btn-outline-danger"
-                onClick={onDelete}
-              >
-                <i className="fas fa-trash mr-1" />
-                <Translation i18nkey="Delete">Delete</Translation>
+                className="btn btn-outline-success"
+                onClick={save}>
+                {!state.create && (
+                  <span>
+                    <i className="fas fa-save me-1" />
+                    <Translation i18nkey="Save">Save</Translation>
+                  </span>
+                )}
+                {state.create && (
+                  <span>
+                    <Translation i18nkey="Create">Create</Translation>
+                  </span>
+                )}
               </button>
-            )}
-            <button
-              style={{ marginLeft: 5 }}
-              type="button"
-              className="btn btn-outline-success"
-              onClick={save}
-            >
-              {!state.create && (
-                <span>
-                  <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Save">Save</Translation>
-                </span>
-              )}
-              {state.create && (
-                <span>
-                  <Translation i18nkey="Create">Create</Translation>
-                </span>
-              )}
-            </button>
+            </div>
           </div>
         </Can>
       )}

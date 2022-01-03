@@ -7,7 +7,7 @@ export const MailTemplateButton = ({ isTenantUpdated, openModal, save }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label">
         {translateMethod('mailing_internalization.mail_template_tab')}
       </label>

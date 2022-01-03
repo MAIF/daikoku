@@ -118,9 +118,8 @@ function SessionListComponent(props) {
                     className="btn btn-sm btn-outline-danger"
                     title="Delete all session"
                     style={{ marginLeft: 10 }}
-                    onClick={() => deleteSessions()}
-                  >
-                    <i className="fas fa-trash mr-1" />
+                    onClick={() => deleteSessions()}>
+                    <i className="fas fa-trash me-1" />
                     <Translation i18nkey="Delete all sessions">Delete all sessions</Translation>
                   </button>
                 )}

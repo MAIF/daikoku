@@ -6,13 +6,13 @@ export const Help = ({ label, text, place }) => {
   if (label && text) {
     return (
       <BeautifulTitle place={place} title={text}>
-        {label} <i className="fas fa-question-circle ml-1" />
+        {label} <i className="fas fa-question-circle ms-1" />
       </BeautifulTitle>
     );
   } else if (!label && text) {
     return (
       <BeautifulTitle place={place} title={text}>
-        <i className="fas fa-question-circle ml-1" />
+        <i className="fas fa-question-circle ms-1" />
       </BeautifulTitle>
     );
   }
