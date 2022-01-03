@@ -35,7 +35,7 @@ export class BooleanInput extends Component {
 
     return (
       <div>
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label className="col-xs-12 col-sm-2 col-form-label">
             <Help text={this.props.help} label={this.props.label} />
           </label>

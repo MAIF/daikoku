@@ -144,7 +144,7 @@ const AdminMessagesComponent = (props) => {
         <div className="d-flex flex-column messages-sender">
           <Select
             placeholder={translateMethod('Start new conversation')}
-            className="mr-2 reactSelect"
+            className="me-2 reactSelect"
             options={possibleNewUsers.map((u) => ({
               label: (
                 <div
@@ -234,7 +234,7 @@ const AdminMessagesComponent = (props) => {
               );
             })}
         </div>
-        <div className="d-flex flex-column-reverse ml-2 messages-content">
+        <div className="d-flex flex-column-reverse ms-2 messages-content">
           {dialog.reverse().map((group, idx) => {
             return (
               <div

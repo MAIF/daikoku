@@ -35,7 +35,7 @@ const ArrayForm = (props) => {
   }
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
         {props.label} <Help text={props.help} />
       </label>

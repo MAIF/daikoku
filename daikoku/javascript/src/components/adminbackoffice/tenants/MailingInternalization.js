@@ -42,8 +42,7 @@ const MarkdownComponent = ({
         <button
           type="button"
           onClick={() => saveTranslation(translationKey, language)}
-          className="btn btn-outline-success ml-1"
-        >
+          className="btn btn-outline-success ms-1">
           <i className="fas fa-save" />
         </button>
       </div>
@@ -82,7 +81,7 @@ const Collapse = ({
           <span style={{ fontWeight: 'bold', flex: 1 }}>{label}</span>
           <div style={{ flex: 1 }} className="text-center">
             {getRequiredVariables(defaultTranslation).map((word, i) => (
-              <span className="badge badge-info mr-2" key={`translationKey${i}`}>
+              <span className="badge bg-info me-2" key={`translationKey${i}`}>
                 [{word}]
               </span>
             ))}
@@ -343,27 +342,24 @@ function MailingInternalizationComponent({ team, tenant }) {
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'mail' ? 'active' : ''}`}
-              to={`/settings/internationalization/mail`}
-            >
-              <i className="fas fa-envelope mr-1" />
+              to={`/settings/internationalization/mail`}>
+              <i className="fas fa-envelope me-1" />
               {translateMethod('mailing_internalization.mail_tab')}
             </Link>
           </li>
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'mail-template' ? 'active' : ''}`}
-              to={`/settings/internationalization/mail-template`}
-            >
-              <i className="fas fa-envelope mr-1" />
+              to={`/settings/internationalization/mail-template`}>
+              <i className="fas fa-envelope me-1" />
               {translateMethod('mailing_internalization.mail_template_tab')}
             </Link>
           </li>
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'front' ? 'active' : ''}`}
-              to={`/settings/internationalization/front`}
-            >
-              <i className="fas fa-globe mr-1" />
+              to={`/settings/internationalization/front`}>
+              <i className="fas fa-globe me-1" />
               {translateMethod('mailing_internalization.front_office_tab')}
             </Link>
           </li>

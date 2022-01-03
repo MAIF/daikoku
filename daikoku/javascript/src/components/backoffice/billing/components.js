@@ -38,7 +38,7 @@ export const NoData = () => {
   const { Translation } = useContext(I18nContext);
   return (
     <div className="col-12 no-data__container">
-      <span className="badge badge-secondary no-data">
+      <span className="badge bg-secondary no-data">
         <Translation i18nkey="No datas">No Datas</Translation>
       </span>
     </div>

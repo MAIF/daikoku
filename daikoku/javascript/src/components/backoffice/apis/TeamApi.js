@@ -277,8 +277,12 @@ function TeamApiComponent(props) {
             {state.create ? (
               <h2>{editedApi.name}</h2>
             ) : (
-              <div className="d-flex align-items-center" style={{ flex: 1 }}>
-                <h2 className="mr-2">{editedApi.name}</h2>
+              <div
+                className="d-flex align-items-center"
+                style={{ flex: 1 }}>
+                <h2 className='me-2'>
+                  {editedApi.name}
+                </h2>
               </div>
             )}
           </div>
@@ -380,32 +384,34 @@ function TeamApiComponent(props) {
             </div>
           </div>
           {!location.pathname.includes('/news') && (
-            <div className="row form-back-fixedBtns">
+            <div className="row">
+               <div className="d-flex form-back-fixedBtns">
               {!state.create && (
-                <button type="button" className="btn btn-outline-danger ml-1" onClick={deleteApi}>
-                  <i className="fas fa-trash mr-1" />
+                <button type="button" className="btn btn-outline-danger ms-1" onClick={deleteApi}>
+                  <i className="fas fa-trash me-1" />
                   <Translation i18nkey="Delete">Delete</Translation>
                 </button>
               )}
               <button
                 type="button"
-                className="btn btn-outline-success ml-1"
+                className="btn btn-outline-success ms-1"
                 {...disabled}
                 onClick={save}
               >
                 {!state.create && (
                   <span>
-                    <i className="fas fa-save mr-1" />
+                    <i className="fas fa-save me-1" />
                     <Translation i18nkey="Save">Save</Translation>
                   </span>
                 )}
                 {state.create && (
                   <span>
-                    <i className="fas fa-save mr-1" />
+                    <i className="fas fa-save me-1" />
                     <Translation i18nkey="Create">Create</Translation>
                   </span>
                 )}
               </button>
+              </div>
             </div>
           )}
         </>

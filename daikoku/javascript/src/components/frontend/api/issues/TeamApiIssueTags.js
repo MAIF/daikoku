@@ -28,7 +28,7 @@ export function TeamApiIssueTags({ value, onChange }) {
           onCancel={() => showNewTagForm(false)}
         />
       ) : (
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label className="col-xs-12 col-sm-2">Actions</label>
           <div className="col-sm-10">
             <button className="btn btn-success" onClick={() => showNewTagForm(true)}>
@@ -37,13 +37,13 @@ export function TeamApiIssueTags({ value, onChange }) {
           </div>
         </div>
       )}
-      <div className="form-group row pt-3">
+      <div className="mb-3 row pt-3">
         <label className="col-xs-12 col-sm-2">{translateMethod('issues.tags')}</label>
         <div className="col-sm-10">
           {api.issuesTags.map((issueTag, i) => (
             <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
               <span
-                className="badge badge-primary d-flex align-items-center justify-content-center px-3 py-2"
+                className="badge bg-primary d-flex align-items-center justify-content-center px-3 py-2"
                 style={{
                   backgroundColor: issueTag.color,
                   color: '#fff',
@@ -67,7 +67,7 @@ export function TeamApiIssueTags({ value, onChange }) {
                 }
               />
               <ColorTag
-                className="pr-3"
+                className="pe-3"
                 initialColor={issueTag.color}
                 handleColorChange={(color) =>
                   setApi({
@@ -94,7 +94,7 @@ export function TeamApiIssueTags({ value, onChange }) {
           {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
         </div>
       </div>
-      <div className="form-group row">
+      <div className="mb-3 row">
         <label className="col-xs-12 col-sm-2" />
         <div className="col-sm-10 d-flex">
           <button className="btn btn-success ml-auto" onClick={() => onChange(api)}>
@@ -121,11 +121,11 @@ function NewTag({ issuesTags, handleCreate, onCancel }) {
   }
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2">{translateMethod('issues.new_tag')}</label>
       <div className="col-sm-10">
         <div className="d-flex align-items-end">
-          <div className="pr-3" style={{ flex: 0.5 }}>
+          <div className="pe-3" style={{ flex: 0.5 }}>
             <label htmlFor="tag">{translateMethod('issues.tag_name')}</label>
             <input
               className="form-control"
@@ -145,7 +145,7 @@ function NewTag({ issuesTags, handleCreate, onCancel }) {
             />
           </div>
           <div className="ml-auto">
-            <button className="btn btn-outline-danger mr-2" type="button" onClick={onCancel}>
+            <button className="btn btn-outline-danger me-2" type="button" onClick={onCancel}>
               {translateMethod('Cancel')}
             </button>
             <button className="btn btn-outline-success" type="button" onClick={confirmTag}>

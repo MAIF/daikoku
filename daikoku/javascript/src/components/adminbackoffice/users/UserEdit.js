@@ -32,11 +32,11 @@ function SetPassword(props) {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div className="col-sm-10">
         <button type="button" className="btn btn-outline-success" onClick={genAndSetPassword}>
-          <i className="fas fa-unlock-alt mr-1" />
+          <i className="fas fa-unlock-alt me-1" />
           <Translation i18nkey="Set password">Set password</Translation>
         </button>
       </div>
@@ -52,11 +52,11 @@ function RefreshToken(props) {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div className="col-sm-10">
         <button type="button" className="btn btn-outline-success" onClick={reloadToken}>
-          <i className="fas fa-sync-alt mr-1" />
+          <i className="fas fa-sync-alt me-1" />
           <Translation i18nkey="Reload personal token">Reload personal token</Translation>
         </button>
       </div>
@@ -75,7 +75,7 @@ function Gravatar(props) {
 
   return (
     <button type="button" className="btn btn-access" onClick={setGravatarLink}>
-      <i className="fas fa-user-circle mr-1" />
+      <i className="fas fa-user-circle me-1" />
       <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
     </button>
   );
@@ -97,7 +97,7 @@ function AssetButton(props) {
 
 function AvatarChooser(props) {
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <div className="col-12  d-flex justify-content-end">
         <Gravatar {...props} />
         <AssetButton {...props} />
@@ -277,7 +277,7 @@ export function UserEditComponent() {
       <Can I={manage} a={daikoku} dispatchError>
         <div className="row d-flex justify-content-start align-items-center mb-2">
           {state.user && (
-            <div className="ml-1 avatar__container">
+            <div className="ms-1 avatar__container">
               <img
                 src={state.user.picture}
                 className="img-fluid"
@@ -288,7 +288,7 @@ export function UserEditComponent() {
           )}
           {!state.user && <h1>User</h1>}
           {state.user && (
-            <h1 className="h1-rwd-reduce ml-2">
+            <h1 className="h1-rwd-reduce ms-2">
               {state.user.name} - {state.user.email}
             </h1>
           )}
@@ -307,7 +307,7 @@ export function UserEditComponent() {
             </React.Suspense>
           </div>
         )}
-        <div className="row" style={{ justifyContent: 'flex-end' }}>
+        <div className="d-flex" style={{ justifyContent: 'flex-end' }}>
           <Link className="btn btn-outline-danger" to={'/settings/users'}>
             <Translation i18nkey="Cancel">Cancel</Translation>
           </Link>
@@ -316,9 +316,8 @@ export function UserEditComponent() {
               style={{ marginLeft: 5 }}
               type="button"
               className="btn btn-outline-danger"
-              onClick={removeUser}
-            >
-              <i className="fas fa-trash mr-1" />
+              onClick={removeUser}>
+              <i className="fas fa-trash me-1" />
               <Translation i18nkey="Delete">Delete</Translation>
             </button>
           )}
@@ -330,13 +329,13 @@ export function UserEditComponent() {
           >
             {!state.create && (
               <span>
-                <i className="fas fa-save mr-1" />
+                <i className="fas fa-save me-1" />
                 <Translation i18nkey="Save">Save</Translation>
               </span>
             )}
             {state.create && (
               <span>
-                <i className="fas fa-save mr-1" />
+                <i className="fas fa-save me-1" />
                 <Translation i18nkey="Create">Create</Translation>
               </span>
             )}

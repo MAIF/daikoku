@@ -2,6 +2,7 @@ body {
   font-family: Custom, Raleway, Helvetica, sans-serif;
   background-color: $body-bg-color;
   color:$body-text-color;
+  font-size: 1rem;
 }
 //remove blue border on chrome
 *:focus {
@@ -169,6 +170,9 @@ img:hover+.changePicture,.changePicture:hover{
 
 .nav-tabs{
   border-color: $btn-border-color;
+  .nav-link{
+    color: $btn-text-color;
+  }
   .nav-link:hover,.nav-link:focus{
       cursor: pointer;
       background-color: $btn-bg-hover-color;

@@ -26,9 +26,8 @@ function Gravatar(props) {
     <button
       type="button"
       className={'btn btn-access ' + (props.fullWidth ? 'btn-block' : '')}
-      onClick={setGravatarLink}
-    >
-      <i className="fas fa-user-circle mr-1" />
+      onClick={setGravatarLink}>
+      <i className="fas fa-user-circle me-1" />
       <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
     </button>
   );
@@ -38,7 +37,7 @@ function Gravatar(props) {
   if (fullWidth) return gravatarButton();
   else
     return (
-      <div className="form-group row">
+      <div className="mb-3 row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">{gravatarButton()}</div>
       </div>
@@ -101,8 +100,8 @@ export function SignupComponent() {
     },
     createAccount: {
       type: () => (
-        <div className="my-3">
-          <button type="button" className="btn btn-success btn-block" onClick={createAccount}>
+        <div className="my-3 d-grid gap-1">
+          <button type="button" className="btn btn-success" onClick={createAccount}>
             <Translation i18nkey="Create account">Create account</Translation>
           </button>
         </div>
@@ -260,7 +259,7 @@ export function ResetPasswordComponent() {
         <div className="d-flex justify-content-end">
           <button type="button" className="btn btn-outline-danger m-2" onClick={resetPassword}>
             <span>
-              <i className="fas fa-bomb mr-1" />
+              <i className="fas fa-bomb me-1" />
               <Translation i18nkey="Reset password">Reset password</Translation>
             </span>
           </button>

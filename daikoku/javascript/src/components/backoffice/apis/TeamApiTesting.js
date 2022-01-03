@@ -88,7 +88,7 @@ export const TeamApiTesting = (props) => {
 
   return (
     <div className="d-flex">
-      <form className="col-6 section pt-2 pr-2">
+      <form className="col-6 section pt-2 pe-2">
         <BooleanInput
           value={testing.enabled}
           label={translateMethod('Enabled')}
@@ -134,7 +134,7 @@ export const TeamApiTesting = (props) => {
         </div>
       )}
       {!!otoKeyExists && (
-        <div className="d-flex flex-column pt-2 pr-2">
+        <div className="d-flex flex-column pt-2 pe-2">
           <div
             style={{
               display: 'flex',
@@ -175,7 +175,7 @@ export const TeamApiTesting = (props) => {
             <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
               <Translation i18nkey="Delete Testing ApiKey">Delete Testing ApiKey</Translation>
             </button>
-            <button className="btn btn-outline-success ml-1" onClick={handleOtoroshiUsage}>
+            <button className="btn btn-outline-success ms-1" onClick={handleOtoroshiUsage}>
               <Translation i18nkey="Update Testing ApiKey">Update Testing ApiKey</Translation>
             </button>
           </div>

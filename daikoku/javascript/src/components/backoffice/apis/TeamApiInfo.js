@@ -25,12 +25,11 @@ function NameAlreadyExists(props) {
   if (!exists) return null;
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <div
         className="col-sm-12"
-        style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}
-      >
-        <span className="badge badge-danger">
+        style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <span className="badge bg-danger">
           <Translation i18nkey="api.already.exists" replacements={[props.rawValue.name]}>
             api with name "{props.rawValue.name}" already exists
           </Translation>
@@ -49,7 +48,7 @@ const StyleLogoAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.image}
         onlyPreview

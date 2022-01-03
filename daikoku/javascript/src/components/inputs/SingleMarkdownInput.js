@@ -212,7 +212,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
   const team = _.isFunction(props.team) ? props.team() : props.team;
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       {props.label && (
         <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
           <Help place="right" text={props.help} label={props.label} />

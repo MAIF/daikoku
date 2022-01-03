@@ -51,7 +51,7 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
           </div>
           <div>
             <Link
-              className="btn btn-access-negative mr-1"
+              className="btn btn-access-negative me-1"
               to="/apis"
               onClick={() => {
                 unsetError();

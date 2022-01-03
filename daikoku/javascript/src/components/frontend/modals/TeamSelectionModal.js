@@ -88,9 +88,7 @@ export const TeamSelectorModal = ({
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{title}</h5>
-        <button type="button" className="close" aria-label="Close" onClick={closeModal}>
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal}/>
       </div>
       <div className="modal-body">
         <div className="modal-description">{description}</div>
@@ -102,7 +100,7 @@ export const TeamSelectorModal = ({
               onClick={() => toggleAllTeam()}
             >
               {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
-              <span className="ml-2">
+              <span className="ms-2">
                 <Translation i18nkey="All">All</Translation>
               </span>
             </div>
@@ -123,7 +121,7 @@ export const TeamSelectorModal = ({
                 onClick={() => doTeamAction(team)}
               >
                 {getButton(team)}
-                <span className="ml-2">{getTeamLabel(team)}</span>
+                <span className="ms-2">{getTeamLabel(team)}</span>
               </div>
             );
           })}

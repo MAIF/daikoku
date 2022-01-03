@@ -172,10 +172,10 @@ const TopBarComponent = (props) => {
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
-            <div className="pl-1 pr-2">
+            <div className="ps-1 pe-2">
               <Link
                 to="/apis"
-                className="navbar-brand d-flex align-items-center mr-2"
+                className="navbar-brand d-flex align-items-center me-4"
                 title="Daikoku home"
                 style={{
                   maxHeight: '38px',
@@ -215,13 +215,9 @@ const TopBarComponent = (props) => {
           </div>
           <div className="d-flex flex-column flex-md-row mt-1 mt-xl-0">
             {props.impersonator && (
-              <a
-                href="/api/me/_deimpersonate"
-                className="btn btn-sm btn-danger mr-2"
-                style={{ display: 'flex', alignItems: 'center' }}
-              >
-                <i className="fas fa-user-ninja mr-1" /> {translateMethod('Quit impersonation')}
-                <b className="ml-1">{impersonator.email}</b>
+              <a href="/api/me/_deimpersonate" className="btn btn-danger">
+                <i className="fas fa-user-ninja" /> {translateMethod('Quit impersonation')}
+                <b className="ms-1">{impersonator.email}</b>
               </a>
             )}
             {!props.connectedUser._humanReadableId && (
@@ -246,12 +242,12 @@ const TopBarComponent = (props) => {
                   }
                 >
                   {isMaintenanceMode && (
-                    <span className="badge badge-danger mr-3">
+                    <span className="badge bg-danger me-3">
                       {translateMethod('Global maintenance mode enabled')}
                     </span>
                   )}
                   {isTranslationMode && (
-                    <span className="badge badge-warning mr-3">
+                    <span className="badge bg-warning me-3">
                       {translateMethod('Translation mode enabled')}
                     </span>
                   )}
@@ -275,7 +271,9 @@ const TopBarComponent = (props) => {
                     style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}
                     src={props.connectedUser.picture}
                     className="dropdown-toggle logo-anonymous user-logo"
-                    data-toggle="dropdown"
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false"
+                    id="dropdownMenuButton1"
                     title={
                       impersonator
                         ? `${props.connectedUser.name} (${
@@ -287,7 +285,7 @@ const TopBarComponent = (props) => {
                     }
                     alt="user menu"
                   />
-                  <div className="dropdown-menu dropdown-menu-right">
+                  <div className="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
                     <p className="dropdown-item">
                       {translateMethod('Logged in as')} <b>{props.connectedUser.email}</b>
                     </p>

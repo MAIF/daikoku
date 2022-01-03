@@ -78,7 +78,7 @@ export const JoinTeamInvitationModal = (props) => {
             <button className="btn btn-success btn-block" type="button" onClick={accept}>
               {translateMethod('team_member.accept_invitation')}
             </button>
-            <button className="btn btn-danger ml-2" type="button" onClick={refuse}>
+            <button className="btn btn-danger ms-2" type="button" onClick={refuse}>
               {translateMethod('team_member.refuse_invitation')}
             </button>
           </div>
