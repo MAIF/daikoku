@@ -3256,7 +3256,6 @@ object json {
 
     override def writes(o: JsObject): JsValue = o
   }
-<<<<<<< HEAD
 
   val CmsPageIdFormat = new Format[CmsPageId] {
     override def reads(json: JsValue): JsResult[CmsPageId] =
