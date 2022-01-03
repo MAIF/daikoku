@@ -50,19 +50,14 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
             <p data-p={label}>{label}</p>
           </div>
           <div>
-<<<<<<< HEAD
-            <Link className="btn btn-access-negative me-1" to="/">
-              <i className="fas fa-home" /> Go home
-=======
             <Link
-              className="btn btn-access-negative mr-1"
+              className="btn btn-access-negative me-1"
               to="/apis"
               onClick={() => {
                 unsetError();
               }}
             >
               <i className="fas fa-home" /> {translateMethod('Go home')}
->>>>>>> master
             </Link>
             <button
               className="btn btn-access-negative"

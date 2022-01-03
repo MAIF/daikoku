@@ -145,45 +145,17 @@ function TeamEditForAdministrationComponent(props) {
             />
           </React.Suspense>
           <div className="row form-back-fixedBtns">
-<<<<<<< HEAD
             <div className="d-flex justify-content-end">
               <Link className="btn btn-outline-primary" to={'/settings/teams'}>
                 <i className="fas fa-chevron-left me-1" />
                 <Translation i18nkey="Back">Back</Translation>
               </Link>
-=======
-            <Link className="btn btn-outline-primary" to={'/settings/teams'}>
-              <i className="fas fa-chevron-left mr-1" />
-              <Translation i18nkey="Back">Back</Translation>
-            </Link>
-            {team.type !== 'Personal' && (
->>>>>>> master
               <button
                 style={{ marginLeft: 5 }}
                 type="button"
                 className="btn btn-outline-primary"
                 disabled={create}
-<<<<<<< HEAD
                 onClick={members}>
-=======
-                onClick={members}
-              >
-                <span>
-                  <i className="fas fa-users mr-1" />
-                  <Translation i18nkey="Members" isPlural>
-                    Members
-                  </Translation>
-                </span>
-              </button>
-            )}
-            <button
-              style={{ marginLeft: 5 }}
-              type="button"
-              className="btn btn-outline-success"
-              onClick={save}
-            >
-              {!create && (
->>>>>>> master
                 <span>
                   <i className="fas fa-users me-1" />
                   <Translation i18nkey="Members" isPlural>

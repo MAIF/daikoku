@@ -307,7 +307,7 @@ export function UserEditComponent() {
             </React.Suspense>
           </div>
         )}
-        <div className="row" style={{ justifyContent: 'flex-end' }}>
+        <div className="d-flex" style={{ justifyContent: 'flex-end' }}>
           <Link className="btn btn-outline-danger" to={'/settings/users'}>
             <Translation i18nkey="Cancel">Cancel</Translation>
           </Link>
@@ -316,14 +316,8 @@ export function UserEditComponent() {
               style={{ marginLeft: 5 }}
               type="button"
               className="btn btn-outline-danger"
-<<<<<<< HEAD
               onClick={removeUser}>
               <i className="fas fa-trash me-1" />
-=======
-              onClick={removeUser}
-            >
-              <i className="fas fa-trash mr-1" />
->>>>>>> master
               <Translation i18nkey="Delete">Delete</Translation>
             </button>
           )}

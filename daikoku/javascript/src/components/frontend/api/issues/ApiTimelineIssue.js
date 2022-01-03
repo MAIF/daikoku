@@ -229,14 +229,8 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
             ) : (
               <>
                 <button
-<<<<<<< HEAD
                   className="btn btn-outline-secondary me-1"
                   onClick={() => handleEdition(true)}>
-=======
-                  className="btn btn-outline-secondary mr-1"
-                  onClick={() => handleEdition(true)}
-                >
->>>>>>> master
                   {translateMethod('Edit')}
                 </button>
                 <Link
@@ -253,7 +247,6 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
       <div className="d-flex align-items-center pb-3 mb-3">
         <div
           style={styles.getStatus(issue.open)}
-<<<<<<< HEAD
           className="d-flex justify-content-center align-items-center me-3">
           <i className="fa fa-exclamation-circle me-2" style={{ color: '#fff' }} />
           {issue.open ? translateMethod('issues.open') : translateMethod('issues.closed')}
@@ -261,16 +254,6 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
         <div>
           <span className="pe-1" style={styles.bold}>
             {issue.by ? issue.by._humanReadableId : ''}
-=======
-          className="d-flex justify-content-center align-items-center mr-3"
-        >
-          <i className="fa fa-exclamation-circle mr-2" style={{ color: '#fff' }} />
-          {issue.open ? translateMethod('issues.open') : translateMethod('issues.closed')}
-        </div>
-        <div>
-          <span className="pr-1" style={styles.bold}>
-            {issue.by ? issue.by.name : ''}
->>>>>>> master
           </span>
           {translateMethod('issues.opened_message')}{' '}
           {moment(issue.createdDate).format(translateMethod('moment.date.format.without.hours'))} ·{' '}
@@ -424,13 +407,8 @@ function Comment({
       </div>
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>
-<<<<<<< HEAD
           <span className="pe-1" style={styles.bold}>
             {by._humanReadableId}
-=======
-          <span className="pr-1" style={styles.bold}>
-            {by.name}
->>>>>>> master
           </span>
           <span className="pe-1">{translateMethod('issues.commented_on')}</span>
           {moment(createdDate).format(translateMethod('moment.date.format.without.hours'))}

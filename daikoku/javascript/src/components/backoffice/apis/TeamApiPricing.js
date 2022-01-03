@@ -1462,14 +1462,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
               <button
                 onClick={importPlan}
                 type="button"
-<<<<<<< HEAD
                 className="btn btn-outline-primary me-1"
                 style={{ marginTop: 0 }}>
-=======
-                className="btn btn-outline-primary mr-1"
-                style={{ marginTop: 0 }}
-              >
->>>>>>> master
                 {translateMethod('import a plan')}
               </button>
             )}
@@ -1499,14 +1493,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={makesDefault}
                   type="button"
-<<<<<<< HEAD
                   className="btn btn-sm btn-outline-primary me-1 mb-2">
                   <i className="fas fa-star me-1" title="Default plan" />
-=======
-                  className="btn btn-sm btn-outline-primary mr-1 mb-2"
-                >
-                  <i className="fas fa-star mr-1" title="Default plan" />
->>>>>>> master
                   <Translation i18nkey="Make default plan">Make default plan</Translation>
                 </button>
               )}
@@ -1514,12 +1502,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={makePrivate}
                   type="button"
-<<<<<<< HEAD
                   className="btn btn-sm btn-outline-primary mb-2 me-1">
-=======
-                  className="btn btn-sm btn-outline-primary mb-2 mr-1"
-                >
->>>>>>> master
                   <i
                     className={classNames('fas me-1', {
                       'fa-lock': selected.visibility === 'Public',
@@ -1538,14 +1521,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={clonePlan}
                   type="button"
-<<<<<<< HEAD
                   className="btn btn-sm btn-outline-primary mb-2 me-1">
                   <i className="fas fa-clone me-1" />
-=======
-                  className="btn btn-sm btn-outline-primary mb-2 mr-1"
-                >
-                  <i className="fas fa-clone mr-1" />
->>>>>>> master
                   <Translation i18nkey="Duplicate plan">Duplicate plan</Translation>
                 </button>
               )}
@@ -1553,14 +1530,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={deletePlan}
                   type="button"
-<<<<<<< HEAD
                   className="btn btn-sm btn-outline-danger mb-2">
                   <i className="fas fa-trash me-1" />
-=======
-                  className="btn btn-sm btn-outline-danger mb-2"
-                >
-                  <i className="fas fa-trash mr-1" />
->>>>>>> master
                   <Translation i18nkey="Delete plan">Delete plan</Translation>
                 </button>
               )}
@@ -1671,7 +1642,6 @@ const CustomMetadataInput = (props) => {
                 className="input-select reactSelect flex-grow-1"
                 classNamePrefix="reactSelect"
               />
-<<<<<<< HEAD
               <button
                 disabled={props.disabled}
                 type="button"
@@ -1688,32 +1658,6 @@ const CustomMetadataInput = (props) => {
                   <i className="fas fa-plus" />{' '}
                 </button>
               )}
-=======
-
-              <span
-                className="input-group-append"
-                style={{ height: 'calc(1.5em + 0.75rem + 2px)' }}
-              >
-                <button
-                  disabled={props.disabled}
-                  type="button"
-                  className="btn btn-outline-danger"
-                  onClick={(e) => remove(e, key)}
-                >
-                  <i className="fas fa-trash" />
-                </button>
-                {idx === props.value.length - 1 && (
-                  <button
-                    disabled={props.disabled}
-                    type="button"
-                    className="btn btn-outline-primary"
-                    onClick={addNext}
-                  >
-                    <i className="fas fa-plus" />{' '}
-                  </button>
-                )}
-              </span>
->>>>>>> master
             </div>
           </div>
         </div>

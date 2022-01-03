@@ -89,14 +89,8 @@ export const ApiCard = (props) => {
           <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
           {props.teamVisible && (
             <small
-<<<<<<< HEAD
               className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline justify-content-end"
               onClick={() => props.redirectToTeamPage(team)}>
-=======
-              className="cursor-pointer underline-on-hover a-fake d-flex align-items-center justify-content-end"
-              onClick={() => props.redirectToTeamPage(team)}
-            >
->>>>>>> master
               <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
               {team.name}
             </small>
@@ -118,14 +112,8 @@ export const ApiCard = (props) => {
             <Can I={manage} a={API} team={team}>
               <button
                 type="button"
-<<<<<<< HEAD
                 className="btn btn-sm btn-access-negative me-1 mb-1"
                 onClick={props.redirectToEditPage}>
-=======
-                className="btn btn-sm btn-access-negative mr-1 mb-1"
-                onClick={props.redirectToEditPage}
-              >
->>>>>>> master
                 <i className="fas fa-edit" />
               </button>
             </Can>
@@ -179,14 +167,8 @@ export const ApiCard = (props) => {
       <div className="col-12 d-flex mt-2">
         {props.teamVisible && (
           <small
-<<<<<<< HEAD
             className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline"
             onClick={() => props.redirectToTeamPage(team)}>
-=======
-            className="cursor-pointer underline-on-hover a-fake d-flex align-items-center"
-            onClick={() => props.redirectToTeamPage(team)}
-          >
->>>>>>> master
             <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
             {team.name}
           </small>

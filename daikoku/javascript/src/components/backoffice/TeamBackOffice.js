@@ -519,28 +519,6 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
         Back to {currentTeam._humanReadableId}
       </Link>
     </div>
-<<<<<<< HEAD
-  )
-
-  return <div className="row">
-    <button
-      id="toggle-sidebar"
-      type="button"
-      className="navbar-toggle btn btn-sm btn-access-negative float-left me-2"
-      data-toggle="collapse"
-      data-target="#sidebar"
-      aria-expanded="false"
-      aria-controls="sidebar">
-      <span className="sr-only">Toggle sidebar</span>
-      <span className="chevron" />
-    </button>
-    <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
-      <div className="sidebar-sticky d-flex flex-column p-0">
-        <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
-          {currentTeam.name}
-        </span>
-        <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
-=======
   );
 
   return (
@@ -548,7 +526,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
       <button
         id="toggle-sidebar"
         type="button"
-        className="navbar-toggle btn btn-sm btn-access-negative float-left mr-2"
+        className="navbar-toggle btn btn-sm btn-access-negative float-left me-2"
         data-toggle="collapse"
         data-target="#sidebar"
         aria-expanded="false"
@@ -576,14 +554,13 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
           </ul>
         </div>
       </nav>
-      <main role="main" className="col-md-9 ml-sm-auto px-4 mt-3">
+      <main role="main" className="col-md-9 offset-md-3 ml-sm-auto px-4 mt-3">
         <div
           className={classNames('back-office-overlay', {
             active: isLoading && !error.status,
           })}
         />
         <BackOfficeContent error={error}>
->>>>>>> master
           <Routes>
             <Route path={`/edition`} element={<TeamEdit />} />
             <Route path={`/consumption`} element={<TeamConsumption />} />
@@ -611,44 +588,10 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />
           </Routes>
-<<<<<<< HEAD
-        </ul>
-      </div>
-    </nav>
-    <main role="main" className="col-md-10 offset-md-2 px-4 mt-3">
-      <div
-        className={classNames('back-office-overlay', {
-          active: isLoading && !error.status,
-        })}
-      />
-      <BackOfficeContent error={error}>
-        <Routes>
-          <Route path={`/edition`} element={<TeamEdit />} />
-          <Route path={`/consumption`} element={<TeamConsumption />} />
-          <Route path={`/billing`} element={<TeamBilling />} />
-          <Route path={`/income`} element={<TeamIncome />} />
-          <Route path={`/subscriptions/apis/:apiId/:versionId`} element={<TeamApiSubscriptions />} />
-          <Route path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`} element={<TeamApiKeyConsumption />} />
-          <Route path={`/apikeys/:apiId/:versionId`} element={<TeamApiKeysForApi />} />
-          <Route path={`/apikeys`} element={<TeamApiKeys />} />
-          <Route path={`/consumptions/apis/:apiId/:versionId`} element={<TeamApiConsumption />} />
-          <Route path={`/consumptions/apis/:apiId/:versionId/plan/:planId`} element={<TeamPlanConsumption />} />
-          <Route path={`/members`} element={<TeamMembers />} />
-          <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
-          <Route path={`/apis/:apiId/:versionId/:tab`} element={<TeamApi />} />
-          <Route path={`/apis/:apiId/:versionId`} element={<TeamApi />} />
-          <Route path={`/apis`} element={<TeamApis />} />
-          <Route path="/" element={<TeamBackOfficeHome />} />
-        </Routes>
-      </BackOfficeContent>
-    </main>
-  </div >;
-=======
         </BackOfficeContent>
       </main>
     </div>
   );
->>>>>>> master
 };
 
 const UserBackOfficeComponent = ({
@@ -739,16 +682,9 @@ const UserBackOfficeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-<<<<<<< HEAD
                   className={`me-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
                   to={'/settings/admins'}>
                   <i className="fas fa-user-shield me-1" />
-=======
-                  className={`mr-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
-                  to={'/settings/admins'}
-                >
-                  <i className="fas fa-user-shield mr-1" />
->>>>>>> master
                   <Translation i18nkey="Admins">Admins</Translation>
                 </Link>
               </li>
@@ -848,11 +784,7 @@ const UserBackOfficeComponent = ({
           </Can>
         </div>
       </nav>
-<<<<<<< HEAD
-      <main role="main" className="col-md-10 offset-md-2 px-4">
-=======
-      <main role="main" className="col-md-9 ml-sm-auto px-4">
->>>>>>> master
+      <main role="main" className="col-md-9 offset-md-3 px-4">
         <div className={classNames('back-office-overlay', { active: isLoading })} />
         <BackOfficeContent error={error}>{children}</BackOfficeContent>
       </main>

@@ -83,14 +83,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
                   className={classNames('asset-selection', {
                     selected: asset.value === selectedAsset.value,
                   })}
-<<<<<<< HEAD
                   onClick={() => setSelectedAsset(asset)}>
                   <span className="ms-2">{asset.title}</span>
-=======
-                  onClick={() => setSelectedAsset(asset)}
-                >
-                  <span className="ml-2">{asset.title}</span>
->>>>>>> master
                 </div>
               );
             })}

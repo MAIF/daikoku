@@ -277,17 +277,12 @@ function TeamApiComponent(props) {
             {state.create ? (
               <h2>{editedApi.name}</h2>
             ) : (
-<<<<<<< HEAD
               <div
                 className="d-flex align-items-center"
                 style={{ flex: 1 }}>
                 <h2 className='me-2'>
                   {editedApi.name}
                 </h2>
-=======
-              <div className="d-flex align-items-center" style={{ flex: 1 }}>
-                <h2 className="mr-2">{editedApi.name}</h2>
->>>>>>> master
               </div>
             )}
           </div>

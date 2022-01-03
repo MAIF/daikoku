@@ -26,14 +26,8 @@ function Gravatar(props) {
     <button
       type="button"
       className={'btn btn-access ' + (props.fullWidth ? 'btn-block' : '')}
-<<<<<<< HEAD
       onClick={setGravatarLink}>
       <i className="fas fa-user-circle me-1" />
-=======
-      onClick={setGravatarLink}
-    >
-      <i className="fas fa-user-circle mr-1" />
->>>>>>> master
       <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
     </button>
   );

@@ -289,7 +289,6 @@ const ApiListComponent = (props) => {
           </ActionWithTeamSelector>
         )}
       </div>
-<<<<<<< HEAD
       <div className="row mb-2 view-selectors">
         <div className="col-9 d-flex justify-content-end">
           <button
@@ -303,21 +302,6 @@ const ApiListComponent = (props) => {
             <Grid />
           </button>
         </div>
-=======
-      <div className="d-flex mb-1 view-selectors">
-        <button
-          className={classNames('btn btn-access-negative mr-2', { active: view === LIST })}
-          onClick={() => setView(LIST)}
-        >
-          <List />
-        </button>
-        <button
-          className={classNames('btn btn-access-negative', { active: view === GRID })}
-          onClick={() => setView(GRID)}
-        >
-          <Grid />
-        </button>
->>>>>>> master
       </div>
       <div className="row">
         <div className="section col-9 d-flex flex-column">
@@ -325,14 +309,8 @@ const ApiListComponent = (props) => {
             className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
               'flex-wrap': view === GRID,
-<<<<<<< HEAD
               'row': view === GRID,
             })}>
-=======
-              'flex-row': view === GRID,
-            })}
-          >
->>>>>>> master
             {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => (
               <ApiCard

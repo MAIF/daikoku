@@ -349,14 +349,8 @@ const ApiKeyCard = ({
                   <button
                     disabled={!subscription.enabled}
                     type="button"
-<<<<<<< HEAD
                     className="btn btn-sm btn-access-negative ms-2"
                     onClick={() => setEditMode(true)}>
-=======
-                    className="btn btn-sm btn-access-negative ml-2"
-                    onClick={() => setEditMode(true)}
-                  >
->>>>>>> master
                     <i className="fas fa-pen cursor-pointer a-fake" />
                   </button>
                 </>
@@ -388,14 +382,8 @@ const ApiKeyCard = ({
               </h3>
             ) : (
               <span
-<<<<<<< HEAD
                 className="badge bg-secondary"
                 style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}>
-=======
-                className="badge badge-secondary"
-                style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
-              >
->>>>>>> master
                 {Option(plan.customName).getOrElse(formatPlanType(plan, translateMethod))}
               </span>
             )}
@@ -443,14 +431,8 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('Setup rotation')}>
                       <button
                         type="button"
-<<<<<<< HEAD
                         className="btn btn-sm btn-access-negative ms-1"
                         onClick={() => setSettingMode(true)}>
-=======
-                        className="btn btn-sm btn-access-negative ml-1"
-                        onClick={() => setSettingMode(true)}
-                      >
->>>>>>> master
                         <i className="fas fa-history" />
                       </button>
                     </BeautifulTitle>
@@ -476,14 +458,8 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
                       <button
                         type="button"
-<<<<<<< HEAD
                         className="btn btn-sm ms-1 btn-outline-danger"
                         onClick={makeUniqueApiKey}>
-=======
-                        className="btn btn-sm ml-1 btn-outline-danger"
-                        onClick={makeUniqueApiKey}
-                      >
->>>>>>> master
                         <i className="fas fa-share" />
                       </button>
                     </BeautifulTitle>
@@ -713,14 +689,8 @@ const ApiKeyCard = ({
                   disabled={
                     !subscription.enabled || Object.keys(error).length ? 'disabled' : undefined
                   }
-<<<<<<< HEAD
                   onClick={handleChanges}>
                   <i className="fas fa-save me-1"></i>
-=======
-                  onClick={handleChanges}
-                >
-                  <i className="fas fa-save mr-1"></i>
->>>>>>> master
                   <Translation i18nkey="Save">Save</Translation>
                 </button>
               </div>

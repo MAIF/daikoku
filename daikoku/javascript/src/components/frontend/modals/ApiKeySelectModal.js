@@ -58,14 +58,8 @@ const ApiKeysView = ({ apiKeys, extendApiKey }) => {
           <div
             key={apiKey._id}
             className="team-selection team-selection__team selectable mt-1"
-<<<<<<< HEAD
             onClick={() => extendApiKey(apiKey)}>
             <span className="ms-2">{`${apiKey.apiName}/${
-=======
-            onClick={() => extendApiKey(apiKey)}
-          >
-            <span className="ml-2">{`${apiKey.apiName}/${
->>>>>>> master
               apiKey.customName || apiKey.planType
             }`}</span>
           </div>

@@ -175,11 +175,7 @@ const TopBarComponent = (props) => {
             <div className="ps-1 pe-2">
               <Link
                 to="/apis"
-<<<<<<< HEAD
                 className="navbar-brand d-flex align-items-center me-4"
-=======
-                className="navbar-brand d-flex align-items-center mr-2"
->>>>>>> master
                 title="Daikoku home"
                 style={{
                   maxHeight: '38px',
@@ -219,19 +215,9 @@ const TopBarComponent = (props) => {
           </div>
           <div className="d-flex flex-column flex-md-row mt-1 mt-xl-0">
             {props.impersonator && (
-<<<<<<< HEAD
               <a href="/api/me/_deimpersonate" className="btn btn-danger">
                 <i className="fas fa-user-ninja" /> {translateMethod('Quit impersonation')}
                 <b className="ms-1">{impersonator.email}</b>
-=======
-              <a
-                href="/api/me/_deimpersonate"
-                className="btn btn-sm btn-danger mr-2"
-                style={{ display: 'flex', alignItems: 'center' }}
-              >
-                <i className="fas fa-user-ninja mr-1" /> {translateMethod('Quit impersonation')}
-                <b className="ml-1">{impersonator.email}</b>
->>>>>>> master
               </a>
             )}
             {!props.connectedUser._humanReadableId && (

@@ -105,29 +105,6 @@ export const TeamSelectorModal = ({
               </span>
             </div>
           )}
-<<<<<<< HEAD
-          {teams
-            // .filter(
-            //   (team) =>
-            //     allowMultipleDemand ||
-            //     (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
-            // )
-            .map((team) => {
-              return (
-                <div
-                  key={team._id}
-                  className={classNames('team-selection team-selection__team', {
-                    selectable:
-                      allowMultipleDemand ||
-                      (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)),
-                  })}
-                  onClick={() => doTeamAction(team)}>
-                  {getButton(team)}
-                  <span className="ms-2">{getTeamLabel(team)}</span>
-                </div>
-              );
-            })}
-=======
           {teams.map((team) => {
             return (
               <div
@@ -144,11 +121,10 @@ export const TeamSelectorModal = ({
                 onClick={() => doTeamAction(team)}
               >
                 {getButton(team)}
-                <span className="ml-2">{getTeamLabel(team)}</span>
+                <span className="ms-2">{getTeamLabel(team)}</span>
               </div>
             );
           })}
->>>>>>> master
         </div>
       </div>
       <div className="modal-footer">

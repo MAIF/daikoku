@@ -132,14 +132,8 @@ export function SimpleNotification(props) {
         <div>
           <button
             type="button"
-<<<<<<< HEAD
             className="btn btn-outline-success btn-sm me-1"
             onClick={() => props.accept()}>
-=======
-            className="btn btn-outline-success btn-sm mr-1"
-            onClick={() => props.accept()}
-          >
->>>>>>> master
             <i className="fas fa-check" />
           </button>
           <button

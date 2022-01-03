@@ -860,11 +860,7 @@ export function TenantEditComponent(props) {
                   alt="avatar"
                 />
               </div>
-<<<<<<< HEAD
               <h1 className="h1-rwd-reduce ms-2">{state.tenant.name}</h1>
-=======
-              <h1 className="h1-rwd-reduce ml-2">{state.tenant?.name}</h1>
->>>>>>> master
             </div>
             <React.Suspense fallback={<Spinner />}>
               <LazyForm
@@ -876,61 +872,29 @@ export function TenantEditComponent(props) {
               />
             </React.Suspense>
             <div style={{ height: 60 }} />
-            <div className="row form-back-fixedBtns">
-<<<<<<< HEAD
-              <div className="d-flex justify-content-end">
-                <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
-                  <i className="fas fa-chevron-left me-1" />
-                  <Translation i18nkey="Back">Back</Translation>
-                </Link>
-=======
-              <Link className="btn btn-outline-primary mr-1" to={'/settings/tenants'}>
-                <i className="fas fa-chevron-left mr-1" />
+            <div className="d-flex form-back-fixedBtns">
+              <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
+                <i className="fas fa-chevron-left me-1" />
                 <Translation i18nkey="Back">Back</Translation>
               </Link>
-              {!state.create && (
-                <Link
-                  className="btn btn-outline-primary mr-1"
-                  to={`/settings/tenants/${state.tenant?._humanReadableId}/admins`}
-                >
-                  <i className="fas fa-user-shield mr-1" />
-                  <Translation i18nkey="Admins">Admins</Translation>
-                </Link>
-              )}
               <button
                 type="button"
                 className="btn btn-outline-success"
                 {...disabled}
-                onClick={save}
-              >
->>>>>>> master
+                onClick={save}>
                 {!state.create && (
-                  <Link
-                    className="btn btn-outline-primary me-1"
-                    to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}>
-                    <i className="fas fa-user-shield me-1" />
-                    <Translation i18nkey="Admins">Admins</Translation>
-                  </Link>
+                  <span>
+                    <i className="fas fa-save me-1" />
+                    <Translation i18nkey="Save">Save</Translation>
+                  </span>
                 )}
-                <button
-                  type="button"
-                  className="btn btn-outline-success"
-                  {...disabled}
-                  onClick={save}>
-                  {!state.create && (
-                    <span>
-                      <i className="fas fa-save me-1" />
-                      <Translation i18nkey="Save">Save</Translation>
-                    </span>
-                  )}
-                  {state.create && (
-                    <span>
-                      <i className="fas fa-save me-1" />
-                      <Translation i18nkey="Create">Create</Translation>
-                    </span>
-                  )}
-                </button>
-              </div>
+                {state.create && (
+                  <span>
+                    <i className="fas fa-save me-1" />
+                    <Translation i18nkey="Create">Create</Translation>
+                  </span>
+                )}
+              </button>
             </div>
           </div>
         </Can>

@@ -333,14 +333,8 @@ const Help = () => {
             </li>
           </ul>
         </div>
-<<<<<<< HEAD
       }>
       <i className="ms-4 far fa-question-circle" />
-=======
-      }
-    >
-      <i className="ml-4 far fa-question-circle" />
->>>>>>> master
     </BeautifulTitle>
   );
 };

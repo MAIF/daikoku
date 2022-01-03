@@ -59,14 +59,7 @@ export function ApiCartidge(props) {
       <span>
         <Translation i18nkey="Visibility">Visibility</Translation>
         <span
-<<<<<<< HEAD
-          className={`badge ms-1 ${
-            api.visibility === 'Public' ? 'bg-success' : 'bg-danger'
-          }`}>
-=======
-          className={`badge ml-1 ${api.visibility === 'Public' ? 'badge-success' : 'badge-danger'}`}
-        >
->>>>>>> master
+          className={`badge ms-1 ${api.visibility === 'Public' ? 'bg-success' : 'bg-danger'}`}>
           {translateMethod(api.visibility)}
         </span>
       </span>

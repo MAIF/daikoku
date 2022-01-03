@@ -42,12 +42,7 @@ const MarkdownComponent = ({
         <button
           type="button"
           onClick={() => saveTranslation(translationKey, language)}
-<<<<<<< HEAD
           className="btn btn-outline-success ms-1">
-=======
-          className="btn btn-outline-success ml-1"
-        >
->>>>>>> master
           <i className="fas fa-save" />
         </button>
       </div>
@@ -347,42 +342,24 @@ function MailingInternalizationComponent({ team, tenant }) {
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'mail' ? 'active' : ''}`}
-<<<<<<< HEAD
               to={`/settings/internationalization/mail`}>
               <i className="fas fa-envelope me-1" />
-=======
-              to={`/settings/internationalization/mail`}
-            >
-              <i className="fas fa-envelope mr-1" />
->>>>>>> master
               {translateMethod('mailing_internalization.mail_tab')}
             </Link>
           </li>
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'mail-template' ? 'active' : ''}`}
-<<<<<<< HEAD
               to={`/settings/internationalization/mail-template`}>
               <i className="fas fa-envelope me-1" />
-=======
-              to={`/settings/internationalization/mail-template`}
-            >
-              <i className="fas fa-envelope mr-1" />
->>>>>>> master
               {translateMethod('mailing_internalization.mail_template_tab')}
             </Link>
           </li>
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'front' ? 'active' : ''}`}
-<<<<<<< HEAD
               to={`/settings/internationalization/front`}>
               <i className="fas fa-globe me-1" />
-=======
-              to={`/settings/internationalization/front`}
-            >
-              <i className="fas fa-globe mr-1" />
->>>>>>> master
               {translateMethod('mailing_internalization.front_office_tab')}
             </Link>
           </li>
