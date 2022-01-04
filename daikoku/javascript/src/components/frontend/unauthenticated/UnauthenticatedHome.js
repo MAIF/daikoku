@@ -1,18 +1,20 @@
 import React, { useContext, useEffect } from 'react';
 import { connect } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import { converter } from '../../../services/showdown';
 import hljs from 'highlight.js';
 import { I18nContext } from '../../../core';
 
 export function UnauthenticatedHomeComponent(props) {
   const { Translation } = useContext(I18nContext);
+  const location = useLocation();
 
   const content = props.tenant.unloggedHome || '';
-  const location = props.location ? props.location.pathname : '';
-  const displayInformation = location !== '/2fa' && location !== '/signup';
+  const pathname = location ? location.pathname : '';
+  const displayInformation = pathname !== '/2fa' && pathname !== '/signup';
 
   return (
-    <main role="main" className="row">
+    <main role="main">
       {displayInformation && (
         <section className="organisation__header col-12 mb-4 p-3">
           <div className="container">
@@ -48,33 +50,34 @@ export function UnauthenticatedHomeComponent(props) {
                   <div
                     dangerouslySetInnerHTML={{
                       __html: converter.makeHtml(props.tenant.description || ''),
-                    }}></div>
+                    }}
+                  ></div>
                 )}
                 <p>
                   {props.tenant.authProvider === 'Local' && (
-                    <a className="btn btn-access-negative my-2 ml-2" href={'/signup'}>
-                      <i className="fas fa-plus-square mr-1" />
+                    <a className="btn btn-access-negative my-2 ms-2" href={'/signup'}>
+                      <i className="fas fa-plus-square me-1" />
                       <Translation i18nkey="Create your account">Create your account</Translation>
                     </a>
                   )}
                   {false && props.tenant.authProvider === 'Local' && (
-                    <a className="btn btn-access-negative my-2 ml-2" href={'/reset'}>
-                      <i className="fas fa-bomb mr-1" />
+                    <a className="btn btn-access-negative my-2 ms-2" href={'/reset'}>
+                      <i className="fas fa-bomb me-1" />
                       <Translation i18nkey="Reset your password">Reset your password</Translation>
                     </a>
                   )}
 
-                  <a className="btn btn-access-negative my-2 ml-2" href={'/auth/Local/login'}>
-                    <i className="fas fa-user mr-1" />
+                  <a className="btn btn-access-negative my-2 ms-2" href={`/auth/Local/login`}>
+                    <i className="fas fa-user me-1" />
                     <Translation i18nkey="Connect to your account">
                       Connect to your account
                     </Translation>
                   </a>
                   {props.tenant.authProvider !== 'Local' && (
                     <a
-                      className="btn btn-access-negative my-2 ml-2"
+                      className="btn btn-access-negative my-2 ms-2"
                       href={`/auth/${props.tenant.authProvider}/login`}>
-                      <i className="fas fa-user mr-1" />
+                      <i className="fas fa-user me-1" />
                       <Translation i18nkey="Connect to your thrid party account">
                         Connect to your thrid party account
                       </Translation>
@@ -107,7 +110,7 @@ export function UnauthenticatedHomeComponent(props) {
 function TenantDescription(props) {
   useEffect(() => {
     window.$('pre code').each((i, block) => {
-      hljs.highlightBlock(block);
+      hljs.highlightElement(block);
     });
   }, []);
 

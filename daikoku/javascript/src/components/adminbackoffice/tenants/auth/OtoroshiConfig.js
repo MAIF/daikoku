@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { I18nContext } from '../../../../core';
 import { Spinner } from '../../../utils';
 

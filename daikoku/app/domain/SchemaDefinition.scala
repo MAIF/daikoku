@@ -115,7 +115,6 @@ object SchemaDefinition {
         Field("deleted", BooleanType, resolve = _.value.deleted),
         Field("name", StringType, resolve = _.value.name),
         Field("domain", StringType, resolve = _.value.domain),
-        Field("exposedPort", OptionType(IntType), resolve = _.value.exposedPort),
         Field("contact", StringType, resolve = _.value.contact),
         Field("style", OptionType(DaikokuStyleType), resolve = _.value.style),
         Field("defaultLanguage", OptionType(StringType), resolve = _.value.defaultLanguage),
@@ -327,7 +326,8 @@ object SchemaDefinition {
         Field("authorizedOtoroshiGroups", ListType(StringType), resolve = _.value.authorizedOtoroshiGroups.toSeq.map(_.value)),
         Field("apiKeyVisibility", OptionType(StringType), resolve = _.value.apiKeyVisibility.map(_.name)),
         Field("metadata", MapType, resolve = _.value.metadata),
-        Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
+        Field("_humanReadableId", StringType, resolve = _.value.humanReadableId),
+        Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission)
       )
     )
 
@@ -669,7 +669,7 @@ object SchemaDefinition {
       "A configuration to try to call an api on Otorshi from the Daikoku UI",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
         Field("otoroshiSettings", StringType, resolve = _.value.otoroshiSettings.value),
-        Field("serviceGroup", StringType, resolve = _.value.serviceGroup.value),
+        Field("authorizedEntities", OptionType(AuthorizedEntitiesType), resolve = _.value.authorizedEntities),
         Field("api", OptionType(ApiType),
           resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)),
         Field("customMetadata", OptionType(JsonType), resolve = _.value.customMetadata)
@@ -1142,7 +1142,7 @@ object SchemaDefinition {
         val teamRepo = env.dataStore.teamRepo.forTenant(ctx.ctx._2.tenant)
         (teamId match {
           case None => teamRepo.findAllNotDeleted()
-          case Some(id) => teamRepo.find(Json.obj("id" -> id))
+          case Some(id) => teamRepo.find(Json.obj("_humanReadableId" -> id))
         })
           .map(teams => if (ctx.ctx._2.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.ctx._2.user.id)))
           .flatMap(teams => {
@@ -1193,7 +1193,7 @@ object SchemaDefinition {
                   }
                 })
 
-              if (user.isDaikokuAdmin)
+              (if (user.isDaikokuAdmin)
                 adminApis.map(api => GraphQLApi(api, teams.map(team =>
                   AuthorizationApi(
                     team = team.id.value,
@@ -1202,7 +1202,10 @@ object SchemaDefinition {
                   )
                 ))) ++ sortedApis
               else
-                sortedApis
+                sortedApis)
+                .groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
+                .map(res => res._2.head)
+                .toSeq
             }
           })
       }.map {

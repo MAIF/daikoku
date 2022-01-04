@@ -1,9 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import faker from 'faker';
-import bcrypt from 'bcryptjs';
 import md5 from 'js-md5';
 import { toastr } from 'react-redux-toastr';
 
@@ -24,8 +23,7 @@ function SetPassword(props) {
           // const validation = validatePassword(pw1, pw2, translateMethod);
           const validation = true; //FIXME: use constraints instaend of validate fucntion
           if (validation.ok) {
-            const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-            props.changeValue('password', hashed);
+            props.changeValue('password', pw2);
           } else {
             props.displayError(validation.error);
           }
@@ -35,11 +33,11 @@ function SetPassword(props) {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div className="col-sm-10">
         <button type="button" className="btn btn-outline-success" onClick={genAndSetPassword}>
-          <i className="fas fa-unlock-alt mr-1" />
+          <i className="fas fa-unlock-alt me-1" />
           <Translation i18nkey="Set password">Set password</Translation>
         </button>
       </div>
@@ -55,11 +53,11 @@ function RefreshToken(props) {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div className="col-sm-10">
         <button type="button" className="btn btn-outline-success" onClick={reloadToken}>
-          <i className="fas fa-sync-alt mr-1" />
+          <i className="fas fa-sync-alt me-1" />
           <Translation i18nkey="Reload personal token">Reload personal token</Translation>
         </button>
       </div>
@@ -78,7 +76,7 @@ function Gravatar(props) {
 
   return (
     <button type="button" className="btn btn-access" onClick={setGravatarLink}>
-      <i className="fas fa-user-circle mr-1" />
+      <i className="fas fa-user-circle me-1" />
       <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
     </button>
   );
@@ -100,7 +98,7 @@ function AssetButton(props) {
 
 function AvatarChooser(props) {
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <div className="col-12  d-flex justify-content-end">
         <Gravatar {...props} />
         <AssetButton {...props} />
@@ -109,8 +107,11 @@ function AvatarChooser(props) {
   );
 }
 
-export function UserEditComponent(props) {
+export function UserEditComponent() {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams();
 
   const [state, setState] = useState({
     user: null,
@@ -206,17 +207,17 @@ export function UserEditComponent(props) {
   ];
 
   useEffect(() => {
-    if (props.location && props.location.state && props.location.state.newUser) {
+    if (location && location.state && location.state.newUser) {
       setState({
         ...state,
         user: {
-          ...props.location.state.newUser,
+          ...location.state.newUser,
           personalToken: faker.random.alphaNumeric(32),
         },
         create: true,
       });
     } else {
-      Services.findUserById(props.match.params.userId).then((user) => setState({ ...state, user }));
+      Services.findUserById(params.userId).then((user) => setState({ ...state, user }));
     }
   }, []);
 
@@ -232,7 +233,7 @@ export function UserEditComponent(props) {
               state.user.name
             )
           );
-          props.history.push('/settings/users');
+          navigate('/settings/users');
         });
       }
     });
@@ -252,7 +253,7 @@ export function UserEditComponent(props) {
               state.user.name
             )
           );
-          props.history.push('/settings/users');
+          navigate('/settings/users');
         });
       } else {
         Services.updateUserById(state.user).then((user) => {
@@ -265,7 +266,7 @@ export function UserEditComponent(props) {
               state.user.name
             )
           );
-          props.history.push('/settings/users');
+          navigate('/settings/users');
         });
       }
     } else {
@@ -278,7 +279,7 @@ export function UserEditComponent(props) {
       <Can I={manage} a={daikoku} dispatchError>
         <div className="row d-flex justify-content-start align-items-center mb-2">
           {state.user && (
-            <div className="ml-1 avatar__container">
+            <div className="ms-1 avatar__container">
               <img
                 src={state.user.picture}
                 className="img-fluid"
@@ -289,7 +290,7 @@ export function UserEditComponent(props) {
           )}
           {!state.user && <h1>User</h1>}
           {state.user && (
-            <h1 className="h1-rwd-reduce ml-2">
+            <h1 className="h1-rwd-reduce ms-2">
               {state.user.name} - {state.user.email}
             </h1>
           )}
@@ -308,7 +309,7 @@ export function UserEditComponent(props) {
             </React.Suspense>
           </div>
         )}
-        <div className="row" style={{ justifyContent: 'flex-end' }}>
+        <div className="d-flex" style={{ justifyContent: 'flex-end' }}>
           <Link className="btn btn-outline-danger" to={'/settings/users'}>
             <Translation i18nkey="Cancel">Cancel</Translation>
           </Link>
@@ -318,7 +319,7 @@ export function UserEditComponent(props) {
               type="button"
               className="btn btn-outline-danger"
               onClick={removeUser}>
-              <i className="fas fa-trash mr-1" />
+              <i className="fas fa-trash me-1" />
               <Translation i18nkey="Delete">Delete</Translation>
             </button>
           )}
@@ -326,16 +327,17 @@ export function UserEditComponent(props) {
             style={{ marginLeft: 5 }}
             type="button"
             className="btn btn-outline-success"
-            onClick={save}>
+            onClick={save}
+          >
             {!state.create && (
               <span>
-                <i className="fas fa-save mr-1" />
+                <i className="fas fa-save me-1" />
                 <Translation i18nkey="Save">Save</Translation>
               </span>
             )}
             {state.create && (
               <span>
-                <i className="fas fa-save mr-1" />
+                <i className="fas fa-save me-1" />
                 <Translation i18nkey="Create">Create</Translation>
               </span>
             )}

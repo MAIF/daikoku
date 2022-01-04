@@ -68,7 +68,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         api.swagger match {
           case Some(SwaggerAccess(_, Some(content), _)) => FastFuture.successful(Ok(content).as("application/json"))
           case Some(SwaggerAccess(url, None, headers)) => {
-            val finalUrl = if (url.startsWith("/")) s"http://127.0.0.1:${env.config.port}${url}" else url
+            val finalUrl = if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url) else url
             Try {
               env.wsClient.url(finalUrl).withHttpHeaders(headers.toSeq: _*).get().map { resp =>
                 Ok(resp.body).as(resp.header("Content-Type").getOrElse("application/json"))
@@ -730,7 +730,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       case Some(_) if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
-        case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team))
+        case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team, apiKeyId))
         case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team, apiKeyId))
       }
     }
@@ -740,7 +740,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                             user: User,
                             api: Api,
                             planId: String,
-                            team: Team)(implicit ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
+                            team: Team,
+                            apiKeyId: Option[ApiSubscriptionId])(implicit ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     val defaultPlanOpt = api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
@@ -752,17 +753,11 @@ class ApiController(DaikokuAction: DaikokuAction,
       tenant = tenant.id,
       team = Some(api.team),
       sender = user,
-      action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id)
+      action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id, apiKeyId)
     )
 
     val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
-
-    val notificationUrl = tenant.exposedPort match {
-      case Some(80) => s"http://${tenant.domain}/notifications"
-      case Some(443) => s"https://${tenant.domain}/notifications"
-      case Some(value) => s"http://${tenant.domain}:$value/"
-      case None => s"http://${tenant.domain}:${env.config.exposedPort}/"
-    }
+    val notificationUrl = env.getDaikokuUrl(tenant, "/notifications")
     for {
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
@@ -1086,9 +1081,9 @@ class ApiController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(s"@{user.name} has made unique aggregate api subscription @{subscription.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
-        if (subscription.parent.isEmpty)
+        /*if (subscription.parent.isEmpty)
             FastFuture.successful(Left(MissingParentSubscription))
-        else
+        else*/
           plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
             ctx.tenant.otoroshiSettings.find(_.id == id)
           } match {
@@ -1453,7 +1448,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                 "user" -> ctx.user.name,
                 "apiName" -> api.name,
                 "teamName" -> team.name,
-                "link" -> s"${ctx.tenant.domain}/notifications"
+                "link" -> env.getDaikokuUrl(ctx.tenant, "/notifications")
               ))
             } yield {
               ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
@@ -1592,7 +1587,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                          _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
                          apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
                          _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
-                         _ <- otoroshiSynchronisator.verify(Json.obj("api" -> apiId)) //launch synhro to maybe update customeMetadata & authorizedEntities
+                         _ <- otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)) //launch synhro to maybe update customeMetadata & authorizedEntities
                          _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
                          _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
                          _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)

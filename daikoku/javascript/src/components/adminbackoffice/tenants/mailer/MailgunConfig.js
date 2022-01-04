@@ -6,7 +6,7 @@ import { I18nContext } from '../../../../core';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function MailgunConfig({ value, onChange }) {
+export function MailgunConfig({ value, onChange, ...props }) {
   const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['domain', 'eu', 'key', 'fromTitle', 'fromEmail', 'template'];
@@ -43,7 +43,7 @@ export function MailgunConfig({ value, onChange }) {
       },
     },
     template: {
-      type: () => <MailTemplateButton />,
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 

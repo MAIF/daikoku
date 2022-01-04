@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import fr.maif.otoroshi.daikoku.actions._
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.PublicUserAccessTenant
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminAccessTenant
 import fr.maif.otoroshi.daikoku.domain.{Api, ApiVisibility, Team}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
@@ -12,18 +12,15 @@ import play.api.mvc.{AbstractController, ControllerComponents, Result}
 
 import scala.concurrent.Future
 
-class IntegrationApiController(
-    DaikokuAction: DaikokuAction,
-    DaikokuTenantAction: DaikokuTenantAction,
-    DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
-    env: Env,
-    cc: ControllerComponents)
+class IntegrationApiController(DaikokuAction: DaikokuAction,
+                               env: Env,
+                               cc: ControllerComponents)
     extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
 
-  def findById(ctx: DaikokuTenantActionContext[_],
+  def findById(ctx: DaikokuActionContext[_],
                teamId: String,
                apiId: String): Future[Either[Result, (Team, Api)]] = {
     env.dataStore.teamRepo
@@ -62,8 +59,8 @@ class IntegrationApiController(
 
   /////////////////
 
-  def findAll() = DaikokuTenantAction.async { ctx =>
-    PublicUserAccessTenant(AuditTrailEvent(
+  def findAll() = DaikokuAction.async { ctx =>
+    TenantAdminAccessTenant(AuditTrailEvent(
       s"@{user.name} has accessed the list of visible apis through integration api"))(
       ctx) {
       for {
@@ -85,8 +82,8 @@ class IntegrationApiController(
     }
   }
 
-  def findAllTeam(teamId: String) = DaikokuTenantAction.async { ctx =>
-    PublicUserAccessTenant(AuditTrailEvent(
+  def findAllTeam(teamId: String) = DaikokuAction.async { ctx =>
+    TenantAdminAccessTenant(AuditTrailEvent(
       s"@{user.name} has accessed the list of visible apis for team ${teamId} through integration api"))(
       ctx) {
       env.dataStore.teamRepo
@@ -117,8 +114,8 @@ class IntegrationApiController(
     }
   }
 
-  def api(teamId: String, apiId: String) = DaikokuTenantAction.async { ctx =>
-    PublicUserAccessTenant(AuditTrailEvent(
+  def api(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+    TenantAdminAccessTenant(AuditTrailEvent(
       "@{user.name} is accessing team @{team.name} visible api @{api.name} through integration api"))(
       ctx) {
       findById(ctx, teamId, apiId).map {
@@ -128,42 +125,40 @@ class IntegrationApiController(
     }
   }
 
-  def apiComplete(teamId: String, apiId: String) = DaikokuTenantAction.async {
-    ctx =>
-      PublicUserAccessTenant(AuditTrailEvent(
-        "@{user.name} is accessing team @{team.name} visible api @{api.name} complete through integration api"))(
-        ctx) {
-        findById(ctx, teamId, apiId).flatMap {
-          case Left(res) => res.future
-          case Right((team, api)) => {
-            api.documentation.fetchPages(ctx.tenant).map { pages =>
-              val cleanPages = pages.map(p =>
-                p - "_id" - "_humanReadableId" - "lastModificationAt" ++ Json
-                  .obj("id" -> (p \ "_humanReadableId").as[String]))
-              val newDoc = api.documentation.asJson
-                .as[JsObject] - "_id" - "_humanReadableId" - "lastModificationAt" ++ Json
-                .obj("pages" -> JsArray(cleanPages))
-              Ok(api.asJson
-                .as[JsObject] - "tenant" - "_deleted" - "_humanReadableId" - "subscriptions" - "authorizedTeams" - "managedServices" ++ Json
-                .obj(
-                  "documentation" -> newDoc,
-                  "id" -> s"$teamId/$apiId/complete",
-                  "api" -> api.name.urlPathSegmentSanitized,
-                  "team" -> team.name.urlPathSegmentSanitized,
-                  "possibleUsagePlans" -> JsArray(
-                    api.possibleUsagePlans.map(v =>
-                      v.asJson.as[JsObject] - "_id" ++ Json.obj(
-                        "id" -> v.id.value)))
-                ))
-            }
+  def apiComplete(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+    TenantAdminAccessTenant(AuditTrailEvent(
+      "@{user.name} is accessing team @{team.name} visible api @{api.name} complete through integration api"))(
+      ctx) {
+      findById(ctx, teamId, apiId).flatMap {
+        case Left(res) => res.future
+        case Right((team, api)) => {
+          api.documentation.fetchPages(ctx.tenant).map { pages =>
+            val cleanPages = pages.map(p =>
+              p - "_id" - "_humanReadableId" - "lastModificationAt" ++ Json
+                .obj("id" -> (p \ "_humanReadableId").as[String]))
+            val newDoc = api.documentation.asJson
+              .as[JsObject] - "_id" - "_humanReadableId" - "lastModificationAt" ++ Json
+              .obj("pages" -> JsArray(cleanPages))
+            Ok(api.asJson
+              .as[JsObject] - "tenant" - "_deleted" - "_humanReadableId" - "subscriptions" - "authorizedTeams" - "managedServices" ++ Json
+              .obj(
+                "documentation" -> newDoc,
+                "id" -> s"$teamId/$apiId/complete",
+                "api" -> api.name.urlPathSegmentSanitized,
+                "team" -> team.name.urlPathSegmentSanitized,
+                "possibleUsagePlans" -> JsArray(api.possibleUsagePlans.map(v =>
+                  v.asJson.as[JsObject] - "_id" ++ Json.obj(
+                    "id" -> v.id.value)))
+              ))
           }
         }
       }
+    }
   }
 
   def apiDescription(teamId: String, apiId: String) =
-    DaikokuTenantAction.async { ctx =>
-      PublicUserAccessTenant(AuditTrailEvent(
+    DaikokuAction.async { ctx =>
+      TenantAdminAccessTenant(AuditTrailEvent(
         "@{user.name} is accessing team @{team.name} visible api @{api.name} description through integration api"))(
         ctx) {
         findById(ctx, teamId, apiId).map {
@@ -181,31 +176,29 @@ class IntegrationApiController(
       }
     }
 
-  def apiPlans(teamId: String, apiId: String) = DaikokuTenantAction.async {
-    ctx =>
-      PublicUserAccessTenant(AuditTrailEvent(
-        "@{user.name} is accessing team @{team.name} visible api @{api.name} plans through integration api"))(
-        ctx) {
-        findById(ctx, teamId, apiId).map {
-          case Left(res) => res
-          case Right((team, api)) =>
-            Ok(
-              Json.obj(
-                "id" -> s"$teamId/$apiId/plans",
-                "api" -> api.name.urlPathSegmentSanitized,
-                "team" -> team.name.urlPathSegmentSanitized,
-                "name" -> api.name,
-                "plans" -> JsArray(api.possibleUsagePlans.map(v =>
-                  v.asJson.as[JsObject] - "_id" ++ Json.obj(
-                    "id" -> v.id.value)))
-              ))
-        }
+  def apiPlans(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+    TenantAdminAccessTenant(AuditTrailEvent(
+      "@{user.name} is accessing team @{team.name} visible api @{api.name} plans through integration api"))(
+      ctx) {
+      findById(ctx, teamId, apiId).map {
+        case Left(res) => res
+        case Right((team, api)) =>
+          Ok(
+            Json.obj(
+              "id" -> s"$teamId/$apiId/plans",
+              "api" -> api.name.urlPathSegmentSanitized,
+              "team" -> team.name.urlPathSegmentSanitized,
+              "name" -> api.name,
+              "plans" -> JsArray(api.possibleUsagePlans.map(v =>
+                v.asJson.as[JsObject] - "_id" ++ Json.obj("id" -> v.id.value)))
+            ))
       }
+    }
   }
 
   def apiDocumentation(teamId: String, apiId: String) =
-    DaikokuTenantAction.async { ctx =>
-      PublicUserAccessTenant(AuditTrailEvent(
+    DaikokuAction.async { ctx =>
+      TenantAdminAccessTenant(AuditTrailEvent(
         "@{user.name} is accessing team @{team.name} visible api @{api.name} documentation through integration api"))(
         ctx) {
         findById(ctx, teamId, apiId).flatMap {
@@ -229,20 +222,19 @@ class IntegrationApiController(
       }
     }
 
-  def apiSwagger(teamId: String, apiId: String) = DaikokuTenantAction.async {
-    ctx =>
-      PublicUserAccessTenant(AuditTrailEvent(
-        "@{user.name} is accessing team @{team.name} visible api @{api.name} swagger through integration api"))(
-        ctx) {
-        findById(ctx, teamId, apiId).flatMap {
-          case Left(res) => res.future
-          case Right((_, api)) =>
-            api.swagger.map(_.swaggerContent()) match {
-              case None =>
-                NotFound(Json.obj("error" -> "swagger not found")).future
-              case Some(fu) => fu.map(v => Ok(v))
-            }
-        }
+  def apiSwagger(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+    TenantAdminAccessTenant(AuditTrailEvent(
+      "@{user.name} is accessing team @{team.name} visible api @{api.name} swagger through integration api"))(
+      ctx) {
+      findById(ctx, teamId, apiId).flatMap {
+        case Left(res) => res.future
+        case Right((_, api)) =>
+          api.swagger.map(_.swaggerContent()) match {
+            case None =>
+              NotFound(Json.obj("error" -> "swagger not found")).future
+            case Some(fu) => fu.map(v => Ok(v))
+          }
       }
+    }
   }
 }

@@ -1,13 +1,14 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { withRouter } from 'react-router-dom';
-import * as Services from '../../../services';
+import { useNavigate } from 'react-router-dom';
 import { toastr } from 'react-redux-toastr';
+import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
-export const JoinTeamInvitationModal = withRouter((props) => {
+export const JoinTeamInvitationModal = (props) => {
   const [error, setError] = useState(undefined);
   const [team, setTeam] = useState('');
   const [notificationId, setNotificationId] = useState('');
+  const navigate = useNavigate();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -27,9 +28,10 @@ export const JoinTeamInvitationModal = withRouter((props) => {
 
   function accept() {
     Services.acceptNotificationOfTeam(notificationId).then(() => {
-      Services.removeTeamInvitation();
-      toastr.success(translateMethod('team_member.has_joined'));
-      goToHome();
+      Services.removeTeamInvitation().then(() => {
+        toastr.success(translateMethod('team_member.has_joined'));
+        goToHome();
+      });
     });
   }
 
@@ -42,7 +44,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
 
   function goToHome() {
     props.closeModal();
-    props.history.push('/apis');
+    navigate('/apis');
   }
 
   return (
@@ -66,8 +68,9 @@ export const JoinTeamInvitationModal = withRouter((props) => {
             type="button"
             onClick={() => {
               props.closeModal();
-              props.history.push('/apis');
-            }}>
+              navigate('/apis');
+            }}
+          >
             {translateMethod('Home')}
           </button>
         ) : (
@@ -75,7 +78,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
             <button className="btn btn-success btn-block" type="button" onClick={accept}>
               {translateMethod('team_member.accept_invitation')}
             </button>
-            <button className="btn btn-danger ml-2" type="button" onClick={refuse}>
+            <button className="btn btn-danger ms-2" type="button" onClick={refuse}>
               {translateMethod('team_member.refuse_invitation')}
             </button>
           </div>
@@ -83,4 +86,4 @@ export const JoinTeamInvitationModal = withRouter((props) => {
       </div>
     </div>
   );
-});
+};

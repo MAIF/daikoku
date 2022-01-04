@@ -2,14 +2,16 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Progress } from 'antd';
 import moment from 'moment';
 import { connect } from 'react-redux';
+import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
+import { OtoroshiStatsVizualization } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
 import { I18nContext } from '../../../core';
 
 function TeamApiKeyConsumptionComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams();
 
   const mappers = [
     {
@@ -30,6 +32,10 @@ function TeamApiKeyConsumptionComponent(props) {
       formatter: (data) => (data.length ? data[data.length - 1].globalInformations : []),
     },
   ];
+
+  useEffect(() => {
+    document.title = `${props.currentTeam.name} - ${translateMethod('API key consumption')}`;
+  }, []);
 
   const getLabelForDataIn = (datas, max) => {
     let hits = datas.length ? datas.reduce((acc, data) => acc + data.hits, 0) : 0;
@@ -60,47 +66,37 @@ function TeamApiKeyConsumptionComponent(props) {
   };
 
   const getInformations = () => {
-    return Services.getSubscriptionInformations(
-      props.match.params.subscription,
-      props.currentTeam._id
-    );
+    return Services.getSubscriptionInformations(params.subscription, props.currentTeam._id);
   };
 
   return (
-    <TeamBackOffice
-      tab="ApiKeys"
-      title={`${props.currentTeam.name} - ${translateMethod('API key consumption')}`}>
-      <Can I={read} a={stat} team={props.currentTeam} dispatchError>
-        <div className="d-flex col flex-column pricing-content">
-          <div className="row">
-            <div className="col-12">
-              <h1>Api Consumption</h1>
-              <PlanInformations fetchData={() => getInformations()} />
-            </div>
-            <div className="col section p-2">
-              <OtoroshiStatsVizualization
-                sync={() =>
-                  Services.syncSubscriptionConsumption(
-                    props.match.params.subscription,
-                    props.currentTeam._id
-                  )
-                }
-                fetchData={(from, to) =>
-                  Services.subscriptionConsumption(
-                    props.match.params.subscription,
-                    props.currentTeam._id,
-                    from.valueOf(),
-                    to.valueOf()
-                  ).then((c) => c.consumptions)
-                }
-                mappers={mappers}
-                forConsumer={true}
-              />
-            </div>
+    <Can I={read} a={stat} team={props.currentTeam} dispatchError>
+      <div className="d-flex col flex-column pricing-content">
+        <div className="row">
+          <div className="col-12">
+            <h1>Api Consumption</h1>
+            <PlanInformations fetchData={() => getInformations()} />
+          </div>
+          <div className="col section p-2">
+            <OtoroshiStatsVizualization
+              sync={() =>
+                Services.syncSubscriptionConsumption(params.subscription, props.currentTeam._id)
+              }
+              fetchData={(from, to) =>
+                Services.subscriptionConsumption(
+                  params.subscription,
+                  props.currentTeam._id,
+                  from.valueOf(),
+                  to.valueOf()
+                ).then((c) => c.consumptions)
+              }
+              mappers={mappers}
+              forConsumer={true}
+            />
           </div>
         </div>
-      </Can>
-    </TeamBackOffice>
+      </div>
+    </Can>
   );
 }
 

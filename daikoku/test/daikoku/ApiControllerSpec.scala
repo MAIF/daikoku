@@ -15,6 +15,11 @@ import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
   ApiSubscriptionDemand
 }
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
   Admin,
   FreeWithQuotas,
@@ -66,7 +71,7 @@ class ApiControllerSpec()
   override def afterEach(): Unit = {
     wireMockServer.stop()
   }
-  /*
+
   "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
       setupEnvBlocking(
@@ -422,10 +427,13 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking("/api/search", "POST",
-        body = Some(Json.obj(
-          "query" ->
-            """
+      val resp = httpJsonCallBlocking(
+        "/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              """
               |query MyTeams {
               |    myTeams {
               |      name
@@ -441,7 +449,8 @@ class ApiControllerSpec()
               |    }
               |  }
               |""".stripMargin
-        )))(tenant, session)
+          ))
+      )(tenant, session)
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
@@ -1213,7 +1222,6 @@ class ApiControllerSpec()
       (resultOrg \ "creation").as[String] mustBe "done"
     }
   }
-   */
 
   "a api editor" can {
     "see his teams" in {
@@ -3657,7 +3665,7 @@ class ApiControllerSpec()
         .apiKey
         .clientId mustBe parentApiKeyClientId
     }
-    "not be transformed in unique api key when the subscription hasn't parent" in {
+    "be transformed in unique api key when the subscription hasn't parent" in {
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -3724,11 +3732,7 @@ class ApiControllerSpec()
         method = "POST"
       )(tenant, loginWithBlocking(user, tenant))
 
-      resp.status mustBe 404
-
-      val expectedError =
-        (AppError.toJson(MissingParentSubscription) \ "error").as[String]
-      (resp.json \ "error").as[String] mustBe expectedError
+      resp.status mustBe 200
     }
     "be transform in unique api key" in {
       val parentSub = ApiSubscription(

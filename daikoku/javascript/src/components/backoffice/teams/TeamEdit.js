@@ -1,12 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { I18nContext, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
 
-import { TeamBackOffice } from '..';
 import { AvatarChooser, Spinner } from '../../utils';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -25,6 +24,7 @@ export function TeamEditForm(props) {
       type: 'select',
       props: {
         label: translateMethod('Tenant'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
         valuesFrom: '/api/tenants',
         transformer: (tenant) => ({ label: tenant.name, value: tenant._id }),
       },
@@ -33,6 +33,7 @@ export function TeamEditForm(props) {
       type: 'select',
       props: {
         label: translateMethod('Type'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
         possibleValues: [
           { label: translateMethod('Personal'), value: 'Personal' },
           {
@@ -44,30 +45,44 @@ export function TeamEditForm(props) {
     },
     name: {
       type: 'string',
-      props: { label: translateMethod('Name') },
+      props: {
+        label: translateMethod('Name'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
+      },
     },
     description: {
       type: 'string',
-      props: { label: translateMethod('Description') },
+      props: {
+        label: translateMethod('Description'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
+      },
     },
     contact: {
       type: 'string',
-      props: { label: translateMethod('Team contact') },
+      props: {
+        label: translateMethod('Team contact'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
+      },
     },
     avatar: {
       type: 'string',
-      props: { label: translateMethod('Team avatar') },
+      props: {
+        label: translateMethod('Team avatar'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
+      },
     },
     avatarFrom: {
       type: AvatarChooser,
       props: {
         team: () => props.team,
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
       },
     },
     apiKeyVisibility: {
       type: 'select',
       props: {
         label: translateMethod('apikey visibility'),
+        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
         possibleValues: [
           { label: translateMethod('Administrator'), value: 'Administrator' },
           { label: translateMethod('ApiEditor'), value: 'ApiEditor' },
@@ -81,15 +96,19 @@ export function TeamEditForm(props) {
     return null;
   }
 
+  useEffect(() => {
+    document.title = `${props.team.name} - ${translateMethod('Edition')}`;
+  }, []);
+
   return (
     <>
       <div className="row d-flex justify-content-start align-items-center mb-2">
         {props.team && (
-          <div className="d-flex ml-1 avatar__container">
+          <div className="d-flex ms-1 avatar__container">
             <img className="img-fluid" src={props.team.avatar} alt="avatar" />
           </div>
         )}
-        <h1 className="h1-rwd-reduce ml-2">{props.team.name}</h1>
+        <h1 className="h1-rwd-reduce ms-2">{props.team.name}</h1>
       </div>
       <div className="row">
         <React.Suspense fallback={<Spinner />}>
@@ -105,19 +124,20 @@ export function TeamEditForm(props) {
   );
 }
 
-const TeamEditComponent = ({ history, currentTeam }) => {
+const TeamEditComponent = ({ currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
+  const navigate = useNavigate();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const members = () => {
-    history.push(`/${team._humanReadableId}/settings/members`);
+    navigate(`/${team._humanReadableId}/settings/members`);
   };
 
   const save = () => {
     Services.updateTeam(team).then((updatedTeam) => {
       if (team._humanReadableId !== updatedTeam._humanReadableId) {
-        history.push(`/${updatedTeam._humanReadableId}/settings/edition`);
+        navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
       }
       toastr.success(
         translateMethod(
@@ -131,35 +151,37 @@ const TeamEditComponent = ({ history, currentTeam }) => {
   };
 
   return (
-    <TeamBackOffice title={`${team.name} - ${translateMethod('Edition')}`}>
+    <>
       <TeamEditForm team={team} updateTeam={setTeam} />
       <div className="row form-back-fixedBtns">
-        <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
-          <i className="fas fa-chevron-left mr-1" />
-          <Translation i18nkey="Back">Back</Translation>
-        </Link>
-        <button
-          style={{ marginLeft: 5 }}
-          type="button"
-          className="btn btn-outline-primary"
-          onClick={members}>
-          <span>
-            <i className="fas fa-users mr-1" />
-            <Translation i18nkey="Members">Members</Translation>
-          </span>
-        </button>
-        <button
-          style={{ marginLeft: 5 }}
-          type="button"
-          className="btn btn-outline-success"
-          onClick={save}>
-          <span>
-            <i className="fas fa-save mr-1" />
-            <Translation i18nkey="Save">Save</Translation>
-          </span>
-        </button>
+        <div className="d-flex justify-content-end">
+          <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
+            <i className="fas fa-chevron-left me-1" />
+            <Translation i18nkey="Back">Back</Translation>
+          </Link>
+          {team && team.type !== "Personal" && <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={members}>
+            <span>
+              <i className="fas fa-users me-1" />
+              <Translation i18nkey="Members">Members</Translation>
+            </span>
+          </button>}
+          <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-success"
+            onClick={save}>
+            <span>
+              <i className="fas fa-save me-1" />
+              <Translation i18nkey="Save">Save</Translation>
+            </span>
+          </button>
+        </div>
       </div>
-    </TeamBackOffice>
+    </>
   );
 };
 

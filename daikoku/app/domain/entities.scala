@@ -130,7 +130,6 @@ case class Tenant(
     deleted: Boolean = false,
     name: String,
     domain: String,
-    exposedPort: Option[Int] = None,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
@@ -149,7 +148,8 @@ case class Tenant(
     hideTeamsPage: Option[Boolean] = None,
     defaultMessage: Option[String] = None,
     tenantMode: Option[TenantMode] = None,
-    aggregationApiKeysSecurity: Option[Boolean] = None
+    aggregationApiKeysSecurity: Option[Boolean] = None,
+    robotTxt: Option[String] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -232,7 +232,7 @@ case class Tenant(
       val moreFontFamily = s.fontFamilyUrl
         .map(u => s"""<style>
              |@font-face{
-             |font-family: "custom";
+             |font-family: "Custom";
              |src: url("$u")
              |}
              |</style>""".stripMargin)
@@ -1243,7 +1243,8 @@ case class Team(
     users: Set[UserWithPermission] = Set.empty,
     subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     authorizedOtoroshiGroups: Set[OtoroshiGroup] = Set.empty,
-    apiKeyVisibility: Option[TeamApiKeyVisibility] = None,
+    apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
+      TeamApiKeyVisibility.User),
     metadata: Map[String, String] = Map.empty,
     apisCreationPermission: Option[Boolean] = None,
 ) extends CanJson[User] {
@@ -1293,7 +1294,7 @@ object TestingAuth {
 
 case class TestingConfig(
     otoroshiSettings: OtoroshiSettingsId,
-    serviceGroup: OtoroshiServiceGroupId,
+    authorizedEntities: AuthorizedEntities,
     clientName: String,
     api: ApiId,
     tag: String,

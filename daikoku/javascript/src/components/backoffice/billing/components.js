@@ -23,7 +23,8 @@ export const PriceCartridge = ({ label, total, currency, handleClick, ...props }
     <div
       className={classNames('price__cartridge', { clickable: !!handleClick })}
       onClick={() => (handleClick ? handleClick() : {})}
-      {...props}>
+      {...props}
+    >
       <span className="price__cartridge__label">{label}</span>
       <span className="price__cartridge__total currency">
         {formatCurrency(total)}
@@ -37,7 +38,7 @@ export const NoData = () => {
   const { Translation } = useContext(I18nContext);
   return (
     <div className="col-12 no-data__container">
-      <span className="badge badge-secondary no-data">
+      <span className="badge bg-secondary no-data">
         <Translation i18nkey="No datas">No Datas</Translation>
       </span>
     </div>

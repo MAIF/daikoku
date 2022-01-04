@@ -13,12 +13,14 @@ export const LoginOrRegisterModal = (props) => {
       <div className="m-2 d-flex align-items-center justify-content-center">
         <a
           href={`/auth/${loginProvider}/login`}
-          className="btn btn-outline-success mx-1 login-button">
+          className="btn btn-outline-success mx-1 login-button"
+        >
           {translateMethod('Login')}
         </a>
         <a
           href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-          className="btn btn-success register-button">
+          className="btn btn-success register-button"
+        >
           {translateMethod('Register')}
         </a>
       </div>
@@ -28,9 +30,7 @@ export const LoginOrRegisterModal = (props) => {
       {!props.showOnlyMessage && (
         <div className="modal-header">
           <h5 className="modal-title">{translateMethod('consume.apikey')}</h5>
-          <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
-            <span aria-hidden="true">&times;</span>
-          </button>
+          <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
         </div>
       )}
       <div className="modal-body">
@@ -40,15 +40,18 @@ export const LoginOrRegisterModal = (props) => {
       </div>
       <div
         className="p-2 d-flex align-items-center justify-content-end"
-        style={{ borderTop: '1px solid #dee2e6' }}>
+        style={{ borderTop: '1px solid #dee2e6' }}
+      >
         <a
           href={`/auth/${loginProvider}/login`}
-          className="btn btn-outline-success mx-1 login-button">
+          className="btn btn-outline-success mx-1 login-button"
+        >
           {translateMethod('Login')}
         </a>
         <a
           href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-          className="btn btn-success register-button">
+          className="btn btn-success register-button"
+        >
           {translateMethod('Register')}
         </a>
       </div>

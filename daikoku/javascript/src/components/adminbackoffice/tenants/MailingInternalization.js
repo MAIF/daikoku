@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { UserBackOffice } from '../../backoffice';
 import * as Services from '../../../services';
 import { toastr } from 'react-redux-toastr';
-import { Link, Route, Switch, useParams } from 'react-router-dom';
+import { Link, Route, Routes, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import { I18nContext } from '../../../core';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
@@ -34,14 +34,15 @@ const MarkdownComponent = ({
           <button
             type="button"
             onClick={() => resetTranslation(translationKey, language)}
-            className="btn btn-outline-info">
+            className="btn btn-outline-info"
+          >
             <i className="fas fa-undo" />
           </button>
         )}
         <button
           type="button"
           onClick={() => saveTranslation(translationKey, language)}
-          className="btn btn-outline-success ml-1">
+          className="btn btn-outline-success ms-1">
           <i className="fas fa-save" />
         </button>
       </div>
@@ -49,7 +50,14 @@ const MarkdownComponent = ({
   </Suspense>
 );
 
-const Collapse = ({ label, children, edited, toggleTranslation, translationKey }) => {
+const Collapse = ({
+  label,
+  children,
+  edited,
+  toggleTranslation,
+  translationKey,
+  defaultTranslation,
+}) => {
   function getRequiredVariables(str) {
     let dels = [];
     const words = [];
@@ -72,8 +80,8 @@ const Collapse = ({ label, children, edited, toggleTranslation, translationKey }
         <div className="col-12 d-flex justify-space-between">
           <span style={{ fontWeight: 'bold', flex: 1 }}>{label}</span>
           <div style={{ flex: 1 }} className="text-center">
-            {getRequiredVariables(label).map((word, i) => (
-              <span className="badge badge-info mr-2" key={`translationKey${i}`}>
+            {getRequiredVariables(defaultTranslation).map((word, i) => (
+              <span className="badge bg-info me-2" key={`translationKey${i}`}>
                 [{word}]
               </span>
             ))}
@@ -82,7 +90,8 @@ const Collapse = ({ label, children, edited, toggleTranslation, translationKey }
             type="button"
             className="btn btn-access-negative btn-sm"
             style={{ float: 'right' }}
-            onClick={() => toggleTranslation(translationKey)}>
+            onClick={() => toggleTranslation(translationKey)}
+          >
             <i className={`fas fa-eye${!edited ? '' : '-slash'}`} />
           </button>
         </div>
@@ -274,9 +283,10 @@ function MailingInternalizationComponent({ team, tenant }) {
 
   function toggleTranslation(editedKey) {
     setTranslations(
-      translations.map(([key, values, edited]) => [
+      translations.map(([key, values, defaultTranslation, edited]) => [
         key,
         values,
+        defaultTranslation,
         key === editedKey ? (edited === undefined ? true : !edited) : edited,
       ])
     );
@@ -301,7 +311,7 @@ function MailingInternalizationComponent({ team, tenant }) {
 
   function editTranslations(editedKey, language, actions) {
     setTranslations(
-      translations.map(([key, values, edited]) => {
+      translations.map(([key, values, defaultTranslation, edited]) => {
         if (key === editedKey)
           return [
             key,
@@ -312,14 +322,15 @@ function MailingInternalizationComponent({ team, tenant }) {
                 );
               return translation;
             }),
+            defaultTranslation,
             edited,
           ];
-        return [key, values, edited];
+        return [key, values, defaultTranslation, edited];
       })
     );
   }
 
-  const basePath = '/settings/internationalization';
+  const { domain } = params;
 
   return (
     <UserBackOffice tab="Internalization">
@@ -330,75 +341,67 @@ function MailingInternalizationComponent({ team, tenant }) {
         <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
           <li className="nav-item">
             <Link
-              className={`nav-link ${params.domain === 'mail' ? 'active' : ''}`}
+              className={`nav-link ${domain === 'mail' ? 'active' : ''}`}
               to={`/settings/internationalization/mail`}>
-              <i className="fas fa-envelope mr-1" />
+              <i className="fas fa-envelope me-1" />
               {translateMethod('mailing_internalization.mail_tab')}
             </Link>
           </li>
           <li className="nav-item">
             <Link
-              className={`nav-link ${params.domain === 'mail-template' ? 'active' : ''}`}
+              className={`nav-link ${domain === 'mail-template' ? 'active' : ''}`}
               to={`/settings/internationalization/mail-template`}>
-              <i className="fas fa-envelope mr-1" />
+              <i className="fas fa-envelope me-1" />
               {translateMethod('mailing_internalization.mail_template_tab')}
             </Link>
           </li>
           <li className="nav-item">
             <Link
-              className={`nav-link ${params.domain === 'front' ? 'active' : ''}`}
+              className={`nav-link ${domain === 'front' ? 'active' : ''}`}
               to={`/settings/internationalization/front`}>
-              <i className="fas fa-globe mr-1" />
+              <i className="fas fa-globe me-1" />
               {translateMethod('mailing_internalization.front_office_tab')}
             </Link>
           </li>
         </ul>
 
-        <Switch>
-          <Route
-            path={`${basePath}/mail`}
-            render={() => (
-              <div className="col-12 pb-3">
-                <div className="d-flex justify-space-between py-3">
-                  <span style={{ flex: 1 }} className="lead">
-                    {translateMethod('mailing_internalization.message_text')}
-                  </span>
-                  <span style={{ flex: 1 }} className="lead text-center">
-                    {translateMethod('mailing_internalization.required_variables')}
-                  </span>
-                </div>
-                {translations.map(([key, values, edited]) => (
-                  <Collapse
-                    label={translateMethod(key)}
-                    edited={edited === undefined ? false : edited}
+        {domain === 'mail' && (
+          <div className="col-12 pb-3">
+            <div className="d-flex justify-space-between py-3">
+              <span style={{ flex: 1 }} className="lead">
+                {translateMethod('mailing_internalization.message_text')}
+              </span>
+              <span style={{ flex: 1 }} className="lead text-center">
+                {translateMethod('mailing_internalization.required_variables')}
+              </span>
+            </div>
+            {translations.map(([key, values, defaultTranslation, edited]) => (
+              <Collapse
+                label={translateMethod(key)}
+                edited={edited === undefined ? false : edited}
+                translationKey={key}
+                toggleTranslation={toggleTranslation}
+                defaultTranslation={defaultTranslation}
+                key={`${key}-collapse`}
+              >
+                {values.map((v, i) => (
+                  <MarkdownComponent
+                    {...v}
+                    key={`${key}-${v.language}-${i}`}
+                    team={team}
                     translationKey={key}
-                    toggleTranslation={toggleTranslation}
-                    key={`${key}-collapse`}>
-                    {values.map((v, i) => (
-                      <MarkdownComponent
-                        {...v}
-                        key={`${key}-${v.language}-${i}`}
-                        team={team}
-                        translationKey={key}
-                        saveTranslation={saveTranslation}
-                        resetTranslation={resetTranslation}
-                        handleInputChange={handleInputChange}
-                      />
-                    ))}
-                  </Collapse>
+                    saveTranslation={saveTranslation}
+                    resetTranslation={resetTranslation}
+                    handleInputChange={handleInputChange}
+                  />
                 ))}
-              </div>
-            )}
-          />
-          <Route
-            path={`${basePath}/mail-template`}
-            render={() => <EditMailtemplate tenantId={tenant._id} team={team} />}
-          />
-          <Route
-            path={`${basePath}/front`}
-            render={() => <EditFrontOfficeTranslations tenantId={tenant._id} team={team} />}
-          />
-        </Switch>
+              </Collapse>
+            ))}
+          </div>
+        )}
+        {domain === 'mail-template' && <EditMailtemplate tenantId={tenant._id} team={team} />}
+
+        {domain === 'front' && <EditFrontOfficeTranslations tenantId={tenant._id} team={team} />}
       </Can>
     </UserBackOffice>
   );

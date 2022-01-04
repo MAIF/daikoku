@@ -17,8 +17,11 @@ const configuration = {
   },
 };
 
-export const I18nProvider = ({ tenant, children }) => {
-  const [language, setLanguage] = useState(Option(tenant.defaultLanguage).getOrElse('en'));
+export const I18nProvider = ({ user, tenant, children }) => {
+  const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('en');
+  const currentLanguage = Option(user?.defaultLanguage).getOrElse(tenantDefaultLanguage);
+
+  const [language, setLanguage] = useState(currentLanguage);
   const [isTranslationMode, setTranslationMode] = useState(
     tenant.tenantMode && tenant.tenantMode === 'Translation'
   );
@@ -34,7 +37,7 @@ export const I18nProvider = ({ tenant, children }) => {
     });
   });
 
-  const capitalize = (l) => l.charAt(0).toUpperCase() + l.slice(1);
+  const capitalize = (l) => (l || 'En').charAt(0).toUpperCase() + (l || 'En').slice(1);
 
   const translate = (
     i18nkey,
@@ -119,13 +122,15 @@ export const I18nProvider = ({ tenant, children }) => {
             <button
               className="btn btn-sm btn-outline-success mx-1"
               style={{ minWidth: '38px' }}
-              onClick={() => setShowEditButton(false)}>
+              onClick={() => setShowEditButton(false)}
+            >
               <i className="fas fa-check" />
             </button>
             <button
               className="btn btn-sm btn-outline-danger"
               style={{ minWidth: '38px' }}
-              onClick={() => setShowEditButton(false)}>
+              onClick={() => setShowEditButton(false)}
+            >
               <i className="fas fa-times" />
             </button>
           </div>
@@ -133,7 +138,8 @@ export const I18nProvider = ({ tenant, children }) => {
       return (
         <div
           onMouseEnter={() => setShowEditButton(true)}
-          onMouseLeave={() => setShowEditButton(false)}>
+          onMouseLeave={() => setShowEditButton(false)}
+        >
           {translatedMessage}
         </div>
       );
@@ -163,7 +169,8 @@ export const I18nProvider = ({ tenant, children }) => {
           label: translations[value].label,
         })),
         translations,
-      }}>
+      }}
+    >
       {children}
     </I18nContext.Provider>
   );

@@ -13,7 +13,8 @@ export function ShowApiSecret(props) {
         style={{
           width: '100%',
           whiteSpace: 'initial',
-        }}>
+        }}
+      >
         <span style={{ marginRight: 5, wordBreak: 'break-all' }}>{props.secret}</span>
         <button onClick={toggle} type="button" className="btn btn-sm btn-access-negative">
           <i className="fas fa-eye-slash" /> Hide
@@ -28,7 +29,8 @@ export function ShowApiSecret(props) {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-      }}>
+      }}
+    >
       ************{' '}
       {props.secret && (
         <button onClick={toggle} type="button" className="btn btn-sm btn-access-negative">

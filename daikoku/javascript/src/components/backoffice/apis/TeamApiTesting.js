@@ -19,7 +19,7 @@ export const TeamApiTesting = (props) => {
         ? testing.config
         : {
             otoroshiSettings: null,
-            serviceGroup: null,
+            authorizedEntities: null,
             clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
             api: props.value._id,
             tag: `daikoku_testing_${random}`,
@@ -60,8 +60,8 @@ export const TeamApiTesting = (props) => {
       if (ok)
         Services.deleteTestingApiKey(props.team._id, {
           otoroshiSettings: testing.config.otoroshiSettings,
-          serviceGroup: testing.config.serviceGroup,
-          clientId: testing.name,
+          authorizedEntities: testing.config.authorizedEntities,
+          clientId: testing.username,
         }).then(() =>
           props.onAction({
             ...props.value,
@@ -88,7 +88,7 @@ export const TeamApiTesting = (props) => {
 
   return (
     <div className="d-flex">
-      <form className="col-6 section pt-2 pr-2">
+      <form className="col-6 section pt-2 pe-2">
         <BooleanInput
           value={testing.enabled}
           label={translateMethod('Enabled')}
@@ -134,14 +134,15 @@ export const TeamApiTesting = (props) => {
         </div>
       )}
       {!!otoKeyExists && (
-        <div className="d-flex flex-column pt-2 pr-2">
+        <div className="d-flex flex-column pt-2 pe-2">
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'flex-start',
-            }}>
+            }}
+          >
             <p>
               <Translation i18nkey="otoroshi.test.key.modal.description">
                 In order to make everything work, you'll have to add a tags match (OneTageIn /
@@ -165,7 +166,8 @@ export const TeamApiTesting = (props) => {
                 marginBottom: 16,
                 display: 'flex',
                 justifyContent: 'center',
-              }}>
+              }}
+            >
               {testing.config.tag}
             </div>
           </div>
@@ -173,7 +175,7 @@ export const TeamApiTesting = (props) => {
             <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
               <Translation i18nkey="Delete Testing ApiKey">Delete Testing ApiKey</Translation>
             </button>
-            <button className="btn btn-outline-success ml-1" onClick={handleOtoroshiUsage}>
+            <button className="btn btn-outline-success ms-1" onClick={handleOtoroshiUsage}>
               <Translation i18nkey="Update Testing ApiKey">Update Testing ApiKey</Translation>
             </button>
           </div>

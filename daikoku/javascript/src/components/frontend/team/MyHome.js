@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { toastr } from 'react-redux-toastr';
 
 import { I18nContext, openContactModal, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
 import { ApiList } from '../../frontend';
 import { updateUser } from '../../../core';
-import { api as API, CanIDoAction, manage } from '../../utils';
+import { api as API, CanIDoAction, manage, tenant as TENANT, Can } from '../../utils';
 import { converter } from '../../../services/showdown';
 import { getApolloContext } from '@apollo/client';
 
@@ -18,6 +19,7 @@ function MyHomeComponent(props) {
   });
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   const { translateMethod } = useContext(I18nContext);
 
@@ -25,7 +27,6 @@ function MyHomeComponent(props) {
 
   const fetchData = () => {
     setState({ ...state, loading: true });
-    console.log('run store');
     Promise.all([
       client.query({
         query: Services.graphql.myVisibleApis(),
@@ -44,7 +45,6 @@ function MyHomeComponent(props) {
           data: { myTeams },
         },
       ]) => {
-        console.log('changed store');
         setState({
           ...state,
           apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
@@ -60,12 +60,14 @@ function MyHomeComponent(props) {
   };
 
   useEffect(() => {
-    console.log(location.pathname);
     fetchData();
   }, [props.connectedUser._id, location.pathname]);
 
   const askForApiAccess = (api, teams) =>
-    Services.askForApiAccess(teams, api._id).then(() => fetchData());
+    Services.askForApiAccess(teams, api._id).then(() => {
+      toastr.info(translateMethod('ask.api.access.info', false, '', api.name));
+      fetchData();
+    });
 
   const toggleStar = (api) => {
     Services.toggleStar(api._id).then((res) => {
@@ -91,7 +93,7 @@ function MyHomeComponent(props) {
   };
 
   const redirectToTeamPage = (team) => {
-    props.history.push(`/${team._humanReadableId}`);
+    navigate(`/${team._humanReadableId}`);
   };
 
   const redirectToApiPage = (api) => {
@@ -100,10 +102,10 @@ function MyHomeComponent(props) {
     const route = (version) =>
       `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}`;
 
-    if (api.isDefault) props.history.push(route(api.currentVersion));
+    if (api.isDefault) navigate(route(api.currentVersion));
     else
       Services.getDefaultApiVersion(api._humanReadableId).then((res) =>
-        props.history.push(route(res.defaultVersion))
+        navigate(route(res.defaultVersion))
       );
   };
 
@@ -116,7 +118,7 @@ function MyHomeComponent(props) {
       props
         .updateTeam(adminTeam)
         .then(() =>
-          props.history.push(
+          navigate(
             `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
           )
         );
@@ -124,7 +126,7 @@ function MyHomeComponent(props) {
   };
 
   return (
-    <main role="main" className="row">
+    <main role="main">
       <section className="organisation__header col-12 mb-4 p-3">
         <div className="container">
           <div className="row text-center">
@@ -141,25 +143,25 @@ function MyHomeComponent(props) {
               </h1>
               <Description description={props.tenant.description} />
             </div>
-            {props.connectedUser.isDaikokuAdmin && (
+            <Can I={manage} a={TENANT}>
               <div className="col-sm-1 d-flex flex-column">
                 <div>
                   <Link
                     to={`/settings/tenants/${props.tenant._humanReadableId}`}
-                    className="tenant__settings float-right btn btn-sm btn-access-negative">
+                    className="tenant__settings float-right btn btn-sm btn-access-negative"
+                  >
                     <i className="fas fa-cogs" />
                   </Link>
                 </div>
               </div>
-            )}
+            </Can>
           </div>
         </div>
       </section>
       <ApiList
-        history={props.history}
-        myTeams={state.myTeams}
         apis={state.apis}
         teams={state.teams}
+        myTeams={state.myTeams}
         teamVisible={true}
         askForApiAccess={askForApiAccess}
         toggleStar={toggleStar}

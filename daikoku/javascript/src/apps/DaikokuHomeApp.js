@@ -3,12 +3,11 @@ import { connect } from 'react-redux';
 import md5 from 'js-md5';
 import queryString from 'query-string';
 import { Form, type, format, constraints } from '@maif/react-forms';
-
-import { BrowserRouter as Router, Route } from 'react-router-dom';
-import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
-
-import * as Services from '../services';
 import { toastr } from 'react-redux-toastr';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+
+import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
+import * as Services from '../services';
 import { I18nContext } from '../locales/i18n-context';
 
 
@@ -390,41 +389,31 @@ export const DaikokuHomeApp = (props) => {
   return (
     <Router>
       <div role="root-container" className="container-fluid">
-        <Route
-          path="/"
-          render={(p) => (
-            <UnauthenticatedTopBar
-              tenant={tenant}
-              location={p.location}
-              history={p.history}
-              match={p.match}
-            />
-          )}
-        />
-        <Route
-          exact
-          path="/"
-          render={(p) => (
-            <UnauthenticatedHome tenant={tenant} match={p.match} history={p.history} />
-          )}
-        />
-        <Route
-          exact
-          path="/signup"
-          render={(p) => <Signup tenant={tenant} match={p.match} history={p.history} />}
-        />
-        <Route exact path="/reset" render={() => <ResetPassword />} />
-        <Route
-          exact
-          path="/2fa"
-          render={(p) => (
-            <TwoFactorAuthentication
-              match={p.match}
-              history={p.history}
-              title={`${tenant.name} - ${translateMethod('Verification code')}`}
-            />
-          )}
-        />
+        <Routes>
+          <Route
+            path="*"
+            element={
+              <>
+                <UnauthenticatedTopBar tenant={tenant} />
+              </>
+            }
+          />
+        </Routes>
+        <Routes>
+          <Route path="/" element={<UnauthenticatedHome tenant={tenant} />} />
+        </Routes>
+        <Routes>
+          <Route path="/signup" element={<Signup tenant={tenant} />} />
+          <Route path="/reset" element={<ResetPassword />} />
+          <Route
+            path="/2fa"
+            element={
+              <TwoFactorAuthentication
+                title={`${tenant.name} - ${translateMethod('Verification code')}`}
+              />
+            }
+          />
+        </Routes>
       </div>
     </Router>
   );

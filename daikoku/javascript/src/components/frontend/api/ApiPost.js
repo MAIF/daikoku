@@ -58,7 +58,8 @@ export function ApiPost({ api, versionId }) {
               limit: 1,
               offset: pagination.offset + 1,
             });
-          }}>
+          }}
+        >
           {translateMethod('Load older posts')}
         </button>
       )}

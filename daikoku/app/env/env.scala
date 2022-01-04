@@ -8,10 +8,9 @@ import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
-import fr.maif.otoroshi.daikoku.domain.TeamApiKeyVisibility
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Evolution, TeamApiKeyVisibility, Tenant}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
-import fr.maif.otoroshi.daikoku.domain.{Evolution, DatastoreId}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
@@ -261,6 +260,8 @@ sealed trait Env {
 
   def expositionFilters(implicit mat: Materializer,
                         ec: ExecutionContext): Seq[EssentialFilter]
+
+  def getDaikokuUrl(tenant: Tenant, path: String): String
 }
 
 class DaikokuEnv(ws: WSClient,
@@ -375,6 +376,7 @@ class DaikokuEnv(ws: WSClient,
                 AppLogger.warn(
                   "Main dataStore seems to be empty, generating initial data ...")
                 val userId = UserId(BSONObjectID.generate().stringify)
+                val administrationTeamId = TeamId("administration")
                 val adminApiDefaultTenantId =
                   ApiId(s"admin-api-tenant-${Tenant.Default.value}")
                 val defaultAdminTeam = Team(
@@ -405,7 +407,7 @@ class DaikokuEnv(ws: WSClient,
                     pages = Seq.empty[ApiDocumentationPageId],
                     lastModificationAt = DateTime.now()
                   ),
-                  swagger = None,
+                  swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
                   possibleUsagePlans = Seq(
                     FreeWithoutQuotas(
                       id = UsagePlanId("1"),
@@ -544,4 +546,10 @@ class DaikokuEnv(ws: WSClient,
         )
       case _ => Seq.empty
     }
+
+  def getDaikokuUrl(tenant: Tenant, path: String): String = config.exposedPort match {
+    case 80 => s"http://${tenant.domain}$path"
+    case 443 => s"https://${tenant.domain}$path"
+    case _ => s"http://${tenant.domain}:${config.exposedPort}$path"
+  }
 }

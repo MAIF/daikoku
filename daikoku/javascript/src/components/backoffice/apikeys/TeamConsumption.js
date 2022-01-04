@@ -1,14 +1,17 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { connect } from 'react-redux';
 import * as _ from 'lodash';
 
 import { OtoroshiStatsVizualization } from '../../utils';
-import { TeamBackOffice } from '../TeamBackOffice';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
 const TeamConsumptionComponent = ({ currentTeam }) => {
   const { translateMethod } = useContext(I18nContext);
+
+  useEffect(() => {
+    document.title = `${currentTeam.name} - ${translateMethod('Consumption')}`;
+  }, []);
 
   const mappers = [
     {
@@ -44,20 +47,18 @@ const TeamConsumptionComponent = ({ currentTeam }) => {
   ];
 
   return (
-    <TeamBackOffice tab="ApiKeys" title={`${currentTeam.name} - ${translateMethod('Consumption')}`}>
-      <div className="row">
-        <div className="col">
-          <h1>Consumption</h1>
-          <OtoroshiStatsVizualization
-            sync={() => Services.syncTeamBilling(currentTeam._id)}
-            fetchData={(from, to) =>
-              Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
-            }
-            mappers={mappers}
-          />
-        </div>
+    <div className="row">
+      <div className="col">
+        <h1>Consumption</h1>
+        <OtoroshiStatsVizualization
+          sync={() => Services.syncTeamBilling(currentTeam._id)}
+          fetchData={(from, to) =>
+            Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
+          }
+          mappers={mappers}
+        />
       </div>
-    </TeamBackOffice>
+    </div>
   );
 };
 

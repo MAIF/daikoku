@@ -1,4 +1,5 @@
 import React, { Component, useContext, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { ApiList } from './ApiList';
@@ -14,6 +15,9 @@ function TeamHomeComponent(props) {
     team: null,
     apis: [],
   });
+
+  const navigate = useNavigate();
+  const params = useParams();
 
   const { client } = useContext(getApolloContext());
 
@@ -46,7 +50,10 @@ function TeamHomeComponent(props) {
             apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
             team,
             teams,
-            myTeams,
+            myTeams: myTeams.map(({ users, ...data }) => ({
+              ...data,
+              users: users.map(({ teamPermission, user }) => ({ ...user, teamPermission })),
+            })),
           });
         }
       }
@@ -54,13 +61,11 @@ function TeamHomeComponent(props) {
   };
 
   useEffect(() => {
-    fetchData(props.match.params.teamId);
+    fetchData(params.teamId);
   }, []);
 
   const askForApiAccess = (api, teams) => {
-    return Services.askForApiAccess(teams, api._id).then(() =>
-      fetchData(props.match.params.teamId)
-    );
+    return Services.askForApiAccess(teams, api._id).then(() => fetchData(params.teamId));
   };
 
   const toggleStar = (api) => {
@@ -94,39 +99,33 @@ function TeamHomeComponent(props) {
           api._humanReadableId
         }/${version}`;
 
-      // if (api.isDefault)
-      props.history.push(route(api.currentVersion));
-      // else
-      //     Services.getDefaultApiVersion(api._humanReadableId)
-      // .then(res => props.history.push(route(res.defaultVersion)))
+      navigate(route(api.currentVersion));
     }
   };
 
   const redirectToTeamPage = (team) => {
-    props.history.push(`/${team._humanReadableId}`);
+    navigate(`/${team._humanReadableId}`);
   };
 
   const redirectToEditPage = (api) => {
-    props.history.push(
-      `/${props.match.params.teamId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-    );
+    navigate(`/${params.teamId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`);
   };
 
   const redirectToTeamSettings = (team) => {
-    props.history.push(`/${team._humanReadableId}/settings`);
+    navigate(`/${team._humanReadableId}/settings`);
     // props
     //   .updateTeam(team)
-    //   .then(() => props.history.push(`/${team._humanReadableId}/settings`));
+    //   .then(() => navigate(`/${team._humanReadableId}/settings`));
   };
 
   if (!state.team) {
     return null;
   }
 
-  document.title = `${props.tenant.name} - ${state.team.name}`;
+  document.title = `${props.tenant.title} - ${state.team.name}`;
 
   return (
-    <main role="main" className="row">
+    <main role="main">
       <section className="organisation__header col-12 mb-4 p-3">
         <div className="container">
           <div className="row text-center">
@@ -147,7 +146,8 @@ function TeamHomeComponent(props) {
                   <a
                     href="#"
                     className="float-right team__settings btn btn-sm btn-access-negative"
-                    onClick={() => redirectToTeamSettings(state.team)}>
+                    onClick={() => redirectToTeamSettings(state.team)}
+                  >
                     <i className="fas fa-cogs" />
                   </a>
                 </div>
@@ -159,16 +159,15 @@ function TeamHomeComponent(props) {
       <ApiList
         apis={state.apis}
         teams={state.teams}
+        myTeams={state.myTeams}
         teamVisible={false}
         askForApiAccess={askForApiAccess}
         toggleStar={toggleStar}
         redirectToApiPage={redirectToApiPage}
         redirectToEditPage={redirectToEditPage}
         redirectToTeamPage={redirectToTeamPage}
-        history={props.history}
-        myTeams={state.myTeams}
         showTeam={false}
-        team={state.teams.find((team) => team._humanReadableId === props.match.params.teamId)}
+        team={state.teams.find((team) => team._humanReadableId === params.teamId)}
       />
     </main>
   );

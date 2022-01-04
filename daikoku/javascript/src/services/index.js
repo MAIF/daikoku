@@ -341,6 +341,7 @@ export const fetchNewApi = () => customFetch('/api/entities/api');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
+export const fetchNewPlan = (planType) => customFetch(`/api/entities/plan?planType=${planType}`);
 
 export const checkIfApiNameIsUnique = (name, id) =>
   customFetch('/api/apis/_names', {
@@ -892,6 +893,8 @@ export const graphql = {
         _humanReadableId
         _id
         type
+        apiKeyVisibility
+        apisCreationPermission
         users {
           user {
             userId: id
@@ -913,6 +916,9 @@ export const graphql = {
           categories
           stars
           smallDescription
+          isDefault
+          visibility
+          image
           possibleUsagePlans {
             _id
             customName

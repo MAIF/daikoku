@@ -1,47 +1,37 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
+import { useParams } from 'react-router-dom';
 import { openInvitationTeamModal } from '../../../core';
 
 import * as Services from '../../../services';
 import { UserBackOffice, TeamMembersSimpleComponent } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 
-class TeamMembersComponent extends Component {
-  state = {
-    team: null,
-  };
+const TeamMembersComponent = (props) => {
+  const [team, setTeam] = useState();
+  const params = useParams();
 
-  componentDidMount() {
-    this.updateMembers();
+  useEffect(() => {
+    Services.teamFull(params.teamSettingId).then(setTeam);
+  }, []);
+
+  if (!team) {
+    return null;
   }
 
-  updateMembers = () => {
-    Services.teamFull(this.props.match.params.teamSettingId).then((team) => {
-      this.setState({
-        team,
-      });
-    });
-  };
-
-  render() {
-    if (!this.state.team) {
-      return null;
-    }
-
-    return (
-      <UserBackOffice tab="Teams">
-        <Can I={manage} a={tenant} dispatchError>
-          <TeamMembersSimpleComponent
-            currentTeam={this.state.team}
-            connectedUser={this.props.connectedUser}
-            updateTeam={(team) => Promise.resolve(this.setState({ team }))}
-            openInvitationModal={this.props.openInvitationModal}
-          />
-        </Can>
-      </UserBackOffice>
-    );
-  }
-}
+  return (
+    <UserBackOffice tab="Teams">
+      <Can I={manage} a={tenant} dispatchError>
+        <TeamMembersSimpleComponent
+          currentTeam={team}
+          connectedUser={props.connectedUser}
+          updateTeam={(team) => Promise.resolve(setTeam(team))}
+          openInvitationModal={props.openInvitationModal}
+        />
+      </Can>
+    </UserBackOffice>
+  );
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,

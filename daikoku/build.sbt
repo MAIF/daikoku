@@ -52,8 +52,6 @@ libraryDependencies ++= Seq(
   "com.github.tomakehurst" % "wiremock-jre8" % wiremockVersion % Test,
   "org.apache.commons" % "commons-lang3" % "3.10",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.65",
-  "org.gnieh" %% "diffson-play-json" % "4.0.2" excludeAll ExclusionRule(
-    organization = "com.typesafe.akka"),
   "com.typesafe.play" %% "play-json" % "2.8.1",
   "com.typesafe.play" %% "play-json-joda" % "2.8.1",
   "com.auth0" % "java-jwt" % "3.10.3",
@@ -64,9 +62,13 @@ libraryDependencies ++= Seq(
   "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
   "com.sun.xml.bind" % "jaxb-impl" % "2.3.0.1",
   "io.vertx" % "vertx-pg-client" % "4.0.0",
+  "com.ongres.scram" % "common" % "2.1",
+  "com.ongres.scram" % "client" % "2.1",
   "io.nayuki" % "qrcodegen" % "1.6.0",
   "com.eatthepath" % "java-otp" % "0.2.0",
   "com.sun.mail" % "javax.mail" % "1.6.2",
+  "org.gnieh" %% "diffson-play-json" % "4.1.1" excludeAll ExclusionRule(
+    organization = "com.typesafe.akka"),
   "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
@@ -82,7 +84,8 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" % "sangria-play-json_2.13" % "2.0.2" excludeAll ExclusionRule(
     organization = "com.typesafe.play"
   ),
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2"
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2",
+  "org.apache.logging.log4j" % "log4j-api" % "2.16.0"
 )
 
 dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"

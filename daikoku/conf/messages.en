@@ -60,13 +60,13 @@ mail.new.message.body=Hello,\
   <br>\
   [body]\
   </div>\
-  <a href="[link]">Respond</a>
+<a href="[link]">Respond</a>
 mail.new.user.title=Validate your [tenant] account
 mail.new.user.body=Thanks for creating your [tenant] account, you're almost done. \
  <br/>\
 Please click on the following link to finalize your account creation process\
 <br/>\
-[link]\
+<a href="[link]">Confirm</a>\
 <br/>\
 The [tenant] team
 tenant.mail.template=[email]

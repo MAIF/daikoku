@@ -13,7 +13,6 @@ import play.api.mvc._
 import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.Logger
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration
@@ -183,6 +182,15 @@ object TenantHelper {
                                          tenant)
             case Some(tenant) => f(tenant)
           }
+          .recoverWith {
+            case _ =>
+              Errors.craftResponseResult(
+                "Failed to retrieve tenant # Try to reload your page",
+                Results.NotFound,
+                request,
+                None,
+                env)
+          }
     }
   }
 }
@@ -282,6 +290,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", r"/signup") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
+                  case ("get", r"/robot.txt") =>
+                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", r"/reset") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case (_, path) if path.startsWith("/api/2fa") =>
@@ -293,6 +303,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                   case ("get", path) if path.startsWith("/reset") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", path) if path.startsWith("/signup") =>
+                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
+                  case ("get", path) if path.startsWith("/robots.txt") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case (_, r"/account") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))

@@ -904,7 +904,7 @@
   "audittrail.export.label": "Exporter la piste d'audit",
   "Authorized entities": "Authorized entities",
   "Authorized.entities.placeholder": "Selectionnez les service groupes de services et/ou les services Otoroshi",
-  "teamapi.new_version": "Créer une version",
+  "teamapi.new_version": "Nouvelle version",
   "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder",
   "apikey_select_modal.title": "Récupération d'une api key",
   "apikey_select_modal.select_your_api_key": "Sélectionner l'api key à étendre",
@@ -975,5 +975,13 @@
   "constraints.required.confirmPassword": "Le mots de passe de confirmation est requis",
   "constraints.format.url": "%s doit être une URL valide",
   "constraint.matches.password": "Votre mots de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spéciale.",
-  "constraint.oneof.confirm.password": "La confirmation du mots de passe doit être identique au mots de passe"
+  "constraint.oneof.confirm.password": "La confirmation du mots de passe doit être identique au mots de passe",
+  "Robot.txt.label": "Contenu  du Robot.txt",
+  "Robot.txt.content": "Le contenu du fichier Robot.txt file servi par Daikoku",
+  "Mode": "Mode",
+  "ldap.namefields.help": "le nom d'utilisateur est construit en concaténant les champs ldap fournis",
+  "Go home": "Retourner à l'accueil",
+  "notification.accept.on_error.title": "Impossible d'accepter la notification",
+  "You're not authorized on this api": "Vous n'êtes pas autorisé à accéder à cette API",
+  "ask.api.access.info": "Votre demande d'accès à %s à bien été envoyée."
 }

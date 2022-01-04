@@ -1,15 +1,15 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import moment from 'moment';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
-import { TeamBackOffice } from '../..';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
 
 function TeamPlanConsumptionComponent(props) {
   const { translateMethod } = useContext(I18nContext);
+  const params = useParams();
 
   const [state, setState] = useState({
     api: null,
@@ -58,17 +58,13 @@ function TeamPlanConsumptionComponent(props) {
   ];
 
   const getPlanInformation = () => {
-    return Services.teamApi(
-      props.currentTeam._id,
-      props.match.params.apiId,
-      props.match.params.versionId
-    ).then((api) => {
+    return Services.teamApi(props.currentTeam._id, params.apiId, params.versionId).then((api) => {
       if (api.error) {
         return null;
       }
       return {
         api,
-        plan: api.possibleUsagePlans.find((pp) => pp._id === props.match.params.planId),
+        plan: api.possibleUsagePlans.find((pp) => pp._id === params.planId),
       };
     });
   };
@@ -93,41 +89,40 @@ function TeamPlanConsumptionComponent(props) {
 
   useEffect(() => {
     Services.teams().then((teams) => setState({ ...state, teams }));
+
+    document.title = `${props.currentTeam.name} - ${translateMethod('Plan consumption')}`;
   }, []);
 
   return (
-    <TeamBackOffice
-      tab="Apis"
-      title={`${props.currentTeam.name} - ${translateMethod('Plan consumption')}`}>
-      <div>
-        <div className="row">
-          <div className="col">
-            <h1>Api Consumption</h1>
-            <PlanInformations fetchData={() => getPlanInformation()} />
-          </div>
-          <p className="col">
-            <Link
-              to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${props.match.params.apiId}`}
-              className="btn my-2 btn-access-negative">
-              <i className="fas fa-angle-left" /> Back to plans
-            </Link>
-          </p>
+    <div>
+      <div className="row">
+        <div className="col">
+          <h1>Api Consumption</h1>
+          <PlanInformations fetchData={() => getPlanInformation()} />
         </div>
-        <OtoroshiStatsVizualization
-          sync={() => Services.syncApiConsumption(props.match.params.apiId, props.currentTeam._id)}
-          fetchData={(from, to) =>
-            Services.apiConsumption(
-              props.match.params.apiId,
-              props.match.params.planId,
-              props.currentTeam._id,
-              from.valueOf(),
-              to.valueOf()
-            )
-          }
-          mappers={mappers}
-        />
+        <p className="col">
+          <Link
+            to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${params.apiId}/${params.versionId}`}
+            className="btn my-2 btn-access-negative"
+          >
+            <i className="fas fa-angle-left" /> Back to plans
+          </Link>
+        </p>
       </div>
-    </TeamBackOffice>
+      <OtoroshiStatsVizualization
+        sync={() => Services.syncApiConsumption(params.apiId, props.currentTeam._id)}
+        fetchData={(from, to) =>
+          Services.apiConsumption(
+            params.apiId,
+            params.planId,
+            props.currentTeam._id,
+            from.valueOf(),
+            to.valueOf()
+          )
+        }
+        mappers={mappers}
+      />
+    </div>
   );
 }
 

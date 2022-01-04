@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import _ from 'lodash';
+import { useNavigate } from 'react-router-dom';
 
 import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant } from '../../utils';
@@ -11,10 +12,15 @@ function TeamListComponent(props) {
   const [state, setState] = useState({
     teams: [],
   });
+  const navigate = useNavigate();
 
   const createNewTeam = () => {
     Services.fetchNewTeam().then((newTeam) => {
-      props.history.push(`/settings/teams/${newTeam._id}`, { newTeam });
+      navigate(`/settings/teams/${newTeam._id}`, {
+        state: {
+          newTeam,
+        },
+      });
     });
   };
 
@@ -52,7 +58,7 @@ function TeamListComponent(props) {
         tooltip: translateMethod('Delete team'),
       },
       {
-        redirect: () => props.history.push(`/settings/teams/${team._humanReadableId}`),
+        redirect: () => navigate(`/settings/teams/${team._humanReadableId}`),
         iconClass: 'fas fa-pen',
         tooltip: translateMethod('Edit team'),
       },
@@ -65,7 +71,7 @@ function TeamListComponent(props) {
     return [
       ...basicActions,
       {
-        redirect: () => props.history.push(`/settings/teams/${team._humanReadableId}/members`),
+        redirect: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
         iconClass: 'fas fa-users',
         tooltip: translateMethod('Team members'),
       },
@@ -76,28 +82,30 @@ function TeamListComponent(props) {
     <UserBackOffice tab="Teams">
       <Can I={manage} a={tenant} dispatchError>
         <div className="row">
-          <div className="col">
             <div className="d-flex justify-content-between align-items-center">
               <h1>
                 <Translation i18nkey="Teams">Teams</Translation>
                 <a
-                  className="btn btn-sm btn-access-negative mb-1 ml-1"
+                  className="btn btn-sm btn-access-negative mb-1 ms-1"
                   title={translateMethod('Create a new team')}
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
                     createNewTeam();
-                  }}>
+                  }}
+                >
                   <i className="fas fa-plus-circle" />
                 </a>
               </h1>
-              <input
-                placeholder={translateMethod('Find a team')}
-                className="form-control col-5"
-                onChange={(e) => {
-                  setState({ ...state, search: e.target.value });
-                }}
-              />
+              <div className="col-5">
+                <input
+                  placeholder={translateMethod('Find a team')}
+                  className="form-control"
+                  onChange={(e) => {
+                    setState({ ...state, search: e.target.value });
+                  }}
+                />
+              </div>
             </div>
             <PaginatedComponent
               items={_.sortBy(filteredTeams, [(team) => team.name.toLowerCase()])}
@@ -117,7 +125,6 @@ function TeamListComponent(props) {
                 );
               }}
             />
-          </div>
         </div>
       </Can>
     </UserBackOffice>

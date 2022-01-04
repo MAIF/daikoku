@@ -28,20 +28,20 @@ export function ApiCartidge(props) {
       </small>
       <div>
         <button className="btn btn-xs btn-access-negative" onClick={props.openContactModal}>
-          <i className="far fa-envelope mr-1" />
+          <i className="far fa-envelope me-1" />
           <Translation i18nkey="Contact us">Contact us</Translation>
         </button>
       </div>
       <Separator />
       <span>
         <Translation i18nkey="Version">Version</Translation>
-        <span className="badge badge-info ml-1">{api.currentVersion}</span>
+        <span className="badge bg-info ms-1">{api.currentVersion}</span>
       </span>
       <Separator />
       <span>
         <Translation i18nkey="Supported versions">Supported versions</Translation>
         {(api.supportedVersions || []).map((v, idx) => (
-          <span key={idx} className="badge badge-info ml-1">
+          <span key={idx} className="badge bg-info ms-1">
             {v}
           </span>
         ))}
@@ -50,7 +50,7 @@ export function ApiCartidge(props) {
       <span>
         <Translation i18nkey="Tags">Tags</Translation>
         {(api.tags || []).map((a, idx) => (
-          <span key={idx} className="badge badge-warning ml-1">
+          <span key={idx} className="badge bg-warning ms-1">
             {a}
           </span>
         ))}
@@ -59,9 +59,7 @@ export function ApiCartidge(props) {
       <span>
         <Translation i18nkey="Visibility">Visibility</Translation>
         <span
-          className={`badge ml-1 ${
-            api.visibility === 'Public' ? 'badge-success' : 'badge-danger'
-          }`}>
+          className={`badge ms-1 ${api.visibility === 'Public' ? 'bg-success' : 'bg-danger'}`}>
           {translateMethod(api.visibility)}
         </span>
       </span>
@@ -70,7 +68,7 @@ export function ApiCartidge(props) {
         <>
           <span>
             <Translation i18nkey="Default plan">Default plan</Translation>
-            <span className="badge badge-primary word-break ml-1" style={{ whiteSpace: 'normal' }}>
+            <span className="badge bg-primary word-break ms-1" style={{ whiteSpace: 'normal' }}>
               {defaultPlan.customName || translateMethod(pricing)}
             </span>
           </span>
@@ -96,7 +94,8 @@ export function ApiCartidge(props) {
             action={(teams) => {
               props.redirectToApiKeysPage(props.myTeams.find((t) => teams.includes(t._id)));
             }}
-            withAllTeamSelector={false}>
+            withAllTeamSelector={false}
+          >
             <button className="btn btn-sm btn-access-negative mt-2">
               <Translation i18nkey="View your api keys">View your api keys</Translation>
             </button>

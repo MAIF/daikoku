@@ -1,12 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Redirect } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
 import classnames from 'classnames';
 
 import * as Services from '../../../services';
-import { TeamBackOffice } from '..';
 import { openInvitationTeamModal, updateTeamPromise, I18nContext } from '../../../core';
 import {
   Option,
@@ -221,7 +220,7 @@ export function TeamMembersSimpleComponent(props) {
   };
 
   if (props.currentTeam.type === 'Personal') {
-    return <Redirect to="/settings/me" />;
+    return <Navigate to="/settings/me" />;
   }
 
   if (!state.members) {
@@ -241,15 +240,6 @@ export function TeamMembersSimpleComponent(props) {
     : state.pendingUsers;
   return (
     <>
-      <div className="row">
-        <div className="col">
-          <h1>
-            <Translation i18nkey="team.members.title" replacements={[props.currentTeam.name]}>
-              {props.currentTeam.name} members
-            </Translation>
-          </h1>
-        </div>
-      </div>
       <div className="container-fluid" style={{ position: 'relative' }}>
         <button
           className="btn btn-success"
@@ -266,7 +256,8 @@ export function TeamMembersSimpleComponent(props) {
               invitUser: invitUser,
               pendingUsers: filteredPending,
             });
-          }}>
+          }}
+        >
           {translateMethod('team_member.invit_user')}
         </button>
         <div className="row">
@@ -277,7 +268,8 @@ export function TeamMembersSimpleComponent(props) {
                   className={`nav-link cursor-pointer ${
                     state.tab === TABS.members ? 'active' : ''
                   }`}
-                  onClick={() => setState({ ...state, tab: TABS.members })}>
+                  onClick={() => setState({ ...state, tab: TABS.members })}
+                >
                   <Translation i18nkey="Member" isPlural={state.members.length > 1}>
                     Member
                   </Translation>
@@ -288,10 +280,12 @@ export function TeamMembersSimpleComponent(props) {
                   className={classnames('nav-link cursor-pointer', {
                     active: state.tab === TABS.pending,
                   })}
-                  onClick={() => setState({ ...state, tab: TABS.pending })}>
+                  onClick={() => setState({ ...state, tab: TABS.pending })}
+                >
                   <Translation
                     i18nkey="pending members"
-                    replacements={[(state.pendingUsers || []).length]}>
+                    replacements={[(state.pendingUsers || []).length]}
+                  >
                     Pending ({(state.pendingUsers || []).length})
                   </Translation>
                 </span>
@@ -306,16 +300,16 @@ export function TeamMembersSimpleComponent(props) {
             alert(
               <div className="d-flex flex-column">
                 <div>
-                  <i className="fas fa-shield-alt mr-1" />
-                  <Translation i18nkey="permission.caption.administrator" />
+                  <i className="fas fa-shield-alt me-1" />
+                  {translateMethod('permission.caption.administrator')}
                 </div>
                 <div>
-                  <i className="fas fa-pencil-alt mr-1" />
-                  <Translation i18nkey="permission.caption.apiEditor" />
+                  <i className="fas fa-pencil-alt me-1" />
+                  {translateMethod('permission.caption.apiEditor')}
                 </div>
                 <div>
-                  <i className="fas fa-user-alt mr-1" />
-                  <Translation i18nkey="permission.caption.user" />
+                  <i className="fas fa-user-alt me-1" />
+                  {translateMethod('permission.caption.user')}
                 </div>
               </div>,
               translateMethod('Permission', true)
@@ -333,7 +327,7 @@ export function TeamMembersSimpleComponent(props) {
                   avatar={member.picture}
                   infos={
                     <>
-                      <i className="fas fa-question mr-2" />
+                      <i className="fas fa-question me-2" />
                       <span className="team-member__name">{member.name}</span>
                     </>
                   }
@@ -449,15 +443,14 @@ export function TeamMembersSimpleComponent(props) {
 const TeamMembersComponent = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
+  useEffect(() => {
+    document.title = `${props.currentTeam.name} - ${translateMethod('Member', true)}`;
+  }, []);
+
   return (
-    <TeamBackOffice
-      tab="Members"
-      apiId={props.match.params.apiId}
-      title={`${props.currentTeam.name} - ${translateMethod('Member', true)}`}>
-      <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
-        <TeamMembersSimpleComponent {...props} />
-      </Can>
-    </TeamBackOffice>
+    <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
+      <TeamMembersSimpleComponent {...props} />
+    </Can>
   );
 };
 

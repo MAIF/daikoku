@@ -27,7 +27,7 @@ export const PaginatedComponent = (props) => {
       <div className="flex-column">
         {props.help && (
           <i
-            className="far fa-question-circle ml-1 cursor-pointer"
+            className="far fa-question-circle ms-1 cursor-pointer"
             style={{ fontSize: '20px' }}
             onClick={() => props.help()}
           />
@@ -39,7 +39,8 @@ export const PaginatedComponent = (props) => {
             'flex-column-reverse': props.columnMode && props.reverse,
             'flex-row': !props.columnMode,
             'flex-row-reverse': !props.columnMode && props.reverse,
-          })}>
+          })}
+        >
           {pagedItems.map((item) => {
             if (React.isValidElement(item)) {
               return item;

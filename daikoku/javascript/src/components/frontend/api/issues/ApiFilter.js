@@ -31,19 +31,22 @@ export function ApiFilter({
         <button
           className={`btn btn-${filter !== 'all' ? 'outline-' : ''}primary`}
           style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
-          onClick={() => handleFilter('all')}>
+          onClick={() => handleFilter('all')}
+        >
           {translateMethod('All')}
         </button>
         <button
           className={`btn btn-${filter !== 'open' ? 'outline-' : ''}primary`}
           style={{ borderRadius: 0 }}
-          onClick={() => handleFilter('open')}>
+          onClick={() => handleFilter('open')}
+        >
           {translateMethod('issues.open')}
         </button>
         <button
           className={`btn btn-${filter !== 'closed' ? 'outline-' : ''}primary`}
           style={{ borderLeft: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-          onClick={() => handleFilter('closed')}>
+          onClick={() => handleFilter('closed')}
+        >
           {translateMethod('issues.closed')}
         </button>
         <Select
@@ -54,7 +57,7 @@ export function ApiFilter({
             { value: 'all', label: 'All' },
           ]}
           value={selectedVersion}
-          className="input-select reactSelect ml-1"
+          className="input-select reactSelect ms-1"
           classNamePrefix="reactSelect"
           styles={{
             menu: (provided) => ({ ...provided, zIndex: 9999 }),
@@ -70,12 +73,12 @@ export function ApiFilter({
         <div>
           <Can I={manage} a={API} team={ownerTeam}>
             <Link to={`${pathname}/labels`} className="btn btn-outline-primary">
-              <i className="fa fa-tag mr-1" />
+              <i className="fa fa-tag me-1" />
               {translateMethod('issues.tags')}
-              <span className="badge badge-secondary ml-2">{tags.length || 0}</span>
+              <span className="badge bg-secondary ms-2">{tags.length || 0}</span>
             </Link>
           </Can>
-          <Link to={`${pathname}/issues/new`} className="btn btn-outline-success ml-1">
+          <Link to={`${pathname}/issues/new`} className="btn btn-outline-success ms-1">
             {translateMethod('issues.new_issue')}
           </Link>
         </div>

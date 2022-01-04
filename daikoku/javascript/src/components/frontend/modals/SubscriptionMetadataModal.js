@@ -207,9 +207,7 @@ export const SubscriptionMetadataModal = (props) => {
             </Translation>
           </h5>
         )}
-        <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
       </div>
       <div className="modal-body">
         {loading && <Spinner />}
@@ -222,7 +220,8 @@ export const SubscriptionMetadataModal = (props) => {
                   replacements={[
                     props.team.name,
                     plan.customName || formatPlanType(plan, translateMethod),
-                  ]}>
+                  ]}
+                >
                   {props.team.name} ask you an apikey for plan{' '}
                   {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
@@ -235,7 +234,8 @@ export const SubscriptionMetadataModal = (props) => {
                   replacements={[
                     props.team.name,
                     plan.customName || formatPlanType(plan, translateMethod),
-                  ]}>
+                  ]}
+                >
                   Team: {props.team.name} - Plan:{' '}
                   {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
@@ -250,13 +250,14 @@ export const SubscriptionMetadataModal = (props) => {
                   `Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.customMetadata.length})`,
                   plan.otoroshiTarget.apikeyCustomization.customMetadata.length
                 )}
-                collapsed={false}>
+                collapsed={false}
+              >
                 {_.sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key']).map(
                   ({ key, possibleValues }, idx) => {
                     return (
                       <div className="d-flex flex-row mb-1" key={idx}>
                         <input
-                          className="form-control col-5 mr-1"
+                          className="form-control col-5 me-1"
                           value={key}
                           disabled="disabled"
                         />
@@ -281,21 +282,21 @@ export const SubscriptionMetadataModal = (props) => {
                 min="0"
                 label={translateMethod('Max. requests per second')}
                 value={customMaxPerSecond}
-                onChange={(e) => setCustomMaxPerSecond(Number(e.target.value))}
+                onChange={(value) => setCustomMaxPerSecond(Number(value))}
               />
               <NumberInput
                 step="1"
                 min="0"
                 label={translateMethod('Max. requests per day')}
                 value={customMaxPerDay}
-                onChange={(e) => setCustomMaxPerDay(Number(e.target.value))}
+                onChange={(value) => setCustomMaxPerDay(Number(value))}
               />
               <NumberInput
                 step="1"
                 min="0"
                 label={translateMethod('Max. requests per month')}
                 value={customMaxPerMonth}
-                onChange={(e) => setCustomMaxPerMonth(Number(e.target.value))}
+                onChange={(value) => setCustomMaxPerMonth(Number(value))}
               />
             </Collapse>
             <Collapse label={translateMethod('Other custom props')} collapsed={true}>
@@ -312,14 +313,16 @@ export const SubscriptionMetadataModal = (props) => {
           <button
             type="button"
             className="btn btn-outline-danger"
-            onClick={() => props.closeModal()}>
+            onClick={() => props.closeModal()}
+          >
             <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
           <button
             type="button"
             className="btn btn-outline-success"
             disabled={isValid ? undefined : 'disabled'}
-            onClick={() => actionAndClose(props.save)}>
+            onClick={() => actionAndClose(props.save)}
+          >
             {props.creationMode ? translateMethod('Accept') : translateMethod('Update')}
           </button>
         </div>

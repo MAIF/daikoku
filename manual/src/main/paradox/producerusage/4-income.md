@@ -1,6 +1,6 @@
 # Team earnings
 
-In the backoffice team, click on the `Team income` entry, on the left.
+In the backoffice team, click on the `Team Billing/Team income` entry, on the left.
 And you should see the list of the `team income`.
 
 Earnings are calculated by month and could be synchronized with otoroshi if data's not fresh.

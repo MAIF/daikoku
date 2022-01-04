@@ -725,7 +725,7 @@ class MockController(DaikokuAction: DaikokuAction,
         pages = Seq.empty[ApiDocumentationPageId],
         lastModificationAt = DateTime.now()
       ),
-      swagger = None,
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
       possibleUsagePlans = Seq(
         Admin(
           id = UsagePlanId("admin"),
@@ -747,6 +747,7 @@ class MockController(DaikokuAction: DaikokuAction,
       name = s"admin-api-tenant-${tenant2Id.value}",
       team = tenant2adminTeam.id,
       tags = Set("Administration"),
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = tenant2Id,
@@ -1431,22 +1432,29 @@ class MockController(DaikokuAction: DaikokuAction,
     Ok(JsArray(apikeys))
   }
 
-  def fakeOtoroshiApiKey(clientId: String) = Action {
-    Ok(
-      ActualOtoroshiApiKey(
-        clientId = clientId,
-        clientSecret = "",
-        clientName = "",
-        authorizedEntities = AuthorizedEntities(),
-        throttlingQuota = 10,
-        dailyQuota = 10000,
-        monthlyQuota = 300000,
-        constrainedServicesOnly = true,
-        tags = Seq(),
-        restrictions = ApiKeyRestrictions(),
-        metadata = Map(),
-        rotation = None
-      ).asJson)
+  def fakeOtoroshiApiKey(clientId: String) = Action.async {
+    env.dataStore.apiSubscriptionRepo
+      .forAllTenant()
+      .findOne(Json.obj("apiKey.clientId" -> clientId))
+      .map {
+        case Some(subscription) =>
+          Ok(
+            ActualOtoroshiApiKey(
+              clientId = clientId,
+              clientSecret = subscription.apiKey.clientSecret,
+              clientName = "",
+              authorizedEntities = AuthorizedEntities(),
+              throttlingQuota = 10,
+              dailyQuota = 10000,
+              monthlyQuota = 300000,
+              constrainedServicesOnly = true,
+              tags = Seq(),
+              restrictions = ApiKeyRestrictions(),
+              metadata = Map(),
+              rotation = None
+            ).asJson)
+        case _ => BadRequest(Json.obj("error" -> "Subscription not found"))
+      }
   }
 
   def createFakeOtoroshiApiKey() = Action(parse.json) { req =>

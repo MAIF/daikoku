@@ -22,7 +22,8 @@ export function ApiDocumentationCartidge({ details }) {
           return (
             <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
               <Link
-                to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}>
+                to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}
+              >
                 {obj.title}
               </Link>
             </li>
@@ -46,7 +47,7 @@ export function ApiDocumentation(props) {
   useEffect(() => {
     if (state.content)
       window.$('pre code').each((i, block) => {
-        hljs.highlightBlock(block);
+        hljs.highlightElement(block);
       });
   }, [state.content]);
 
@@ -111,14 +112,14 @@ export function ApiDocumentation(props) {
         <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
           {prevId && (
             <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
-              <i className="fas fa-chevron-left mr-1" />
+              <i className="fas fa-chevron-left me-1" />
               <Translation i18nkey="Previous page">Previous page</Translation>
             </Link>
           )}
           {nextId && (
             <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
               <Translation i18nkey="Next page">Next page</Translation>
-              <i className="fas fa-chevron-right ml-1" />
+              <i className="fas fa-chevron-right ms-1" />
             </Link>
           )}
         </div>
@@ -134,14 +135,14 @@ export function ApiDocumentation(props) {
         <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
           {prevId && (
             <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
-              <i className="fas fa-chevron-left mr-1" />
+              <i className="fas fa-chevron-left me-1" />
               <Translation i18nkey="Previous page">Previous page</Translation>
             </Link>
           )}
           {nextId && (
             <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
               <Translation i18nkey="Next page">Next page</Translation>
-              <i className="fas fa-chevron-right ml-1" />
+              <i className="fas fa-chevron-right ms-1" />
             </Link>
           )}
         </div>
@@ -173,7 +174,7 @@ function Markdown(props) {
   useEffect(() => {
     if (content)
       window.$('pre code').each((i, block) => {
-        hljs.highlightBlock(block);
+        hljs.highlightElement(block);
       });
   }, [content]);
 
@@ -209,7 +210,7 @@ function Asciidoc(props) {
   useEffect(() => {
     if (content)
       window.$('pre code').each((i, block) => {
-        hljs.highlightBlock(block);
+        hljs.highlightElement(block);
       });
   }, [content]);
 

@@ -21,9 +21,7 @@ export const ApiKeySelectModal = ({ closeModal, onSubscribe, plan, apiKeys, ...p
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{translateMethod('apikey_select_modal.title')}</h5>
-        <button type="button" className="close" aria-label="Close" onClick={closeModal}>
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
       <div className="modal-body">
         {showSelectOrCreateApiKey && (
@@ -50,23 +48,26 @@ export const ApiKeySelectModal = ({ closeModal, onSubscribe, plan, apiKeys, ...p
   );
 };
 
-const ApiKeysView = ({ apiKeys, extendApiKey }) => (
-  <div>
-    <h5 className="modal-title">{translateMethod('apikey_select_modal.select_your_api_key')}</h5>
-    <div className="team-selection__container">
-      {apiKeys.map((apiKey) => (
-        <div
-          key={apiKey._id}
-          className="team-selection team-selection__team selectable mt-1"
-          onClick={() => extendApiKey(apiKey)}>
-          <span className="ml-2">{`${apiKey.apiName}/${
-            apiKey.customName || apiKey.planType
-          }`}</span>
-        </div>
-      ))}
+const ApiKeysView = ({ apiKeys, extendApiKey }) => {
+  const { translateMethod } = useContext(I18nContext);
+  return (
+    <div>
+      <h5 className="modal-title">{translateMethod('apikey_select_modal.select_your_api_key')}</h5>
+      <div className="team-selection__container">
+        {apiKeys.map((apiKey) => (
+          <div
+            key={apiKey._id}
+            className="team-selection team-selection__team selectable mt-1"
+            onClick={() => extendApiKey(apiKey)}>
+            <span className="ms-2">{`${apiKey.apiName}/${
+              apiKey.customName || apiKey.planType
+            }`}</span>
+          </div>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const SelectOrCreateApiKey = ({ create, disableExtendButton, aggregationApiKeysSecurity }) => {
   const Button = ({ onClick, message, icon, disabled }) => (
@@ -75,17 +76,20 @@ const SelectOrCreateApiKey = ({ create, disableExtendButton, aggregationApiKeysS
       className="btn"
       style={{ maxWidth: '200px' }}
       onClick={onClick}
-      disabled={disabled}>
+      disabled={disabled}
+    >
       <div
         className="d-flex flex-column p-2"
         style={{
           border: '1px solid rgb(222, 226, 230)',
           minHeight: '196px',
           borderRadius: '8px',
-        }}>
+        }}
+      >
         <div
           style={{ flex: 1, minHeight: '100px' }}
-          className="d-flex align-items-center justify-content-center">
+          className="d-flex align-items-center justify-content-center"
+        >
           <i className={`fas fa-${icon} fa-2x`} />
         </div>
         <div style={{ flex: 1 }} className="d-flex align-items-start justify-content-center">

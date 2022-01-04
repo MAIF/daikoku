@@ -15,6 +15,7 @@ import {
   Option,
 } from '../../utils';
 import { I18nContext } from '../../../core';
+import { useParams } from 'react-router-dom';
 
 const TenantAdminListComponent = (props) => {
   const [search, setSearch] = useState('');
@@ -27,9 +28,10 @@ const TenantAdminListComponent = (props) => {
   const [selectedAdmin, setSelectedAdmin] = useState(undefined);
 
   const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams();
 
   useEffect(() => {
-    const tenantId = props.match.params.tenantId || props.tenant._id;
+    const tenantId = params.tenantId || props.tenant._id;
     Promise.all([
       Services.tenantAdmins(tenantId),
       Services.addableAdminsForTenant(tenantId),
@@ -42,7 +44,7 @@ const TenantAdminListComponent = (props) => {
       setAdmins(admins);
       setLoading(false);
     });
-  }, [props.match.params.tenantId]);
+  }, [params.tenantId]);
 
   useEffect(() => {
     const filteredAdmins = Option(search)
@@ -150,11 +152,15 @@ const TenantAdminListComponent = (props) => {
           <div className="col-12 mb-3 d-flex justify-content-start">
             <Select
               placeholder={translateMethod('Add new admin')}
-              className="add-member-select mr-2 reactSelect"
+              className="add-member-select me-2 reactSelect"
               options={addableAdmins.map(adminToSelector)}
               onChange={(slug) => setSelectedAdmin(slug.value)}
               value={selectedAdmin}
-              filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
+              filterOption={(data, search) =>
+                _.values(data.value)
+                  .filter((e) => typeof e === 'string')
+                  .some((v) => v.includes(search))
+              }
               classNamePrefix="reactSelect"
             />
             <input

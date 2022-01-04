@@ -25,7 +25,7 @@ export function TeamCard(props) {
                 <Can I={read} a={TEAM} team={props.team}>
                   <a
                     href="#"
-                    className="ml-3 team__settings"
+                    className="ms-3 team__settings"
                     onClick={props.redirectToTeamSettings}>
                     <i className="fas fa-cogs fa-xxs" />
                   </a>
@@ -35,15 +35,15 @@ export function TeamCard(props) {
                 {team.description}
               </Translation>
             </div>
-            <div className="ml-2">
+            <div className="ms-2">
               <div className="btn_group">
                 {team.canJoin && !team.alreadyJoin && (
-                  <button className="btn btn-sm btn-access-negative mr-2" onClick={props.askToJoin}>
+                  <button className="btn btn-sm btn-access-negative me-2" onClick={props.askToJoin}>
                     <Translation i18nkey="Join">Join</Translation>
                   </button>
                 )}
                 {team.canJoin && team.alreadyJoin && (
-                  <button className="btn btn-sm btn-access-negative mr-2">
+                  <button className="btn btn-sm btn-access-negative me-2">
                     <Translation i18nkey="Pending request">Pending request</Translation>
                   </button>
                 )}

@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import faker from 'faker';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -13,6 +14,7 @@ function UserListComponent(props) {
   const [state, setState] = useState({
     users: [],
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     updateUsers();
@@ -37,8 +39,10 @@ function UserListComponent(props) {
       password: '',
       hardwareKeyRegistrations: [],
     };
-    props.history.push(`/settings/users/${user._id}`, {
-      newUser: user,
+    navigate(`/settings/users/${user._id}`, {
+      state: {
+        newUser: user,
+      },
     });
   };
 
@@ -86,23 +90,26 @@ function UserListComponent(props) {
               <h1>
                 {translateMethod('Users')}
                 <a
-                  className="btn btn-sm btn-access-negative mb-1 ml-1"
+                  className="btn btn-sm btn-access-negative mb-1 ms-1"
                   title={translateMethod('Create a new user')}
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
                     createNewUser();
-                  }}>
+                  }}
+                >
                   <i className="fas fa-user-plus" />
                 </a>
               </h1>
-              <input
-                placeholder={translateMethod('Find a user')}
-                className="form-control col-5"
-                onChange={(e) => {
-                  setState({ ...state, search: e.target.value });
-                }}
-              />
+              <div className="col-5">
+                <input
+                  placeholder={translateMethod('Find a user')}
+                  className="form-control"
+                  onChange={(e) => {
+                    setState({ ...state, search: e.target.value });
+                  }}
+                />
+              </div>
             </div>
             <PaginatedComponent
               items={_.sortBy(filteredUsers, [(user) => user.name.toLowerCase()])}
@@ -127,8 +134,7 @@ function UserListComponent(props) {
                         tooltip: translateMethod('Remove user'),
                       },
                       {
-                        redirect: () =>
-                          props.history.push(`/settings/users/${user._humanReadableId}`),
+                        redirect: () => navigate(`/settings/users/${user._humanReadableId}`),
                         iconClass: 'fas fa-pen',
                         tooltip: translateMethod('Edit user'),
                       },

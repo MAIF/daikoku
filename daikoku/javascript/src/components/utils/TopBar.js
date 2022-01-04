@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import _ from 'lodash';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 import Select, { components } from 'react-select';
@@ -20,12 +20,14 @@ const GuestUserMenu = ({ loginProvider }) => {
     <>
       <a
         href={`/auth/${loginProvider}/login`}
-        className="btn btn-outline-success mx-1 login-button">
+        className="btn btn-outline-success mx-1 login-button"
+      >
         {translateMethod('Login')}
       </a>
       <a
         href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-        className="btn btn-success register-button">
+        className="btn btn-success register-button"
+      >
         {translateMethod('Register')}
       </a>
     </>
@@ -51,7 +53,8 @@ const DarkModeActivator = ({ initialDark }) => {
   return (
     <div
       className="cursor-pointer d-flex align-items-center darkmode"
-      onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
+      onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}
+    >
       {theme === DARK ? <Sun /> : <Moon />}
     </div>
   );
@@ -60,6 +63,8 @@ const DarkModeActivator = ({ initialDark }) => {
 const TopBarComponent = (props) => {
   const [teams, setTeams] = useState([]);
   const [daikokuVersion, setVersion] = useState(null);
+
+  const navigate = useNavigate();
 
   const { translateMethod, setLanguage, language, isTranslationMode, languages } =
     useContext(I18nContext);
@@ -80,16 +85,16 @@ const TopBarComponent = (props) => {
     const team = teams.find((t) => t._id === item.team);
     switch (item.type) {
       case 'link':
-        props.history.push(item.url);
+        navigate(item.url);
         break;
       case 'tenant':
-        props.history.push(`/settings/tenants/${item.value}`);
+        navigate(`/settings/tenants/${item.value}`);
         break;
       case 'team':
-        props.history.push(`/${item.value}`);
+        navigate(`/${item.value}`);
         break;
       case 'api':
-        props.history.push(`/${team ? team._humanReadableId : item.team}/${item.value}`);
+        navigate(`/${team ? team._humanReadableId : item.team}/${item.value}`);
         break;
     }
   };
@@ -167,21 +172,21 @@ const TopBarComponent = (props) => {
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
-            <div className="pl-1 pr-2">
+            <div className="ps-1 pe-2">
               <Link
                 to="/apis"
-                className="navbar-brand d-flex align-items-center mr-4"
+                className="navbar-brand d-flex align-items-center me-4"
                 title="Daikoku home"
                 style={{
-                  maxWidth: '59px',
                   maxHeight: '38px',
-                }}>
+                }}
+              >
                 {props.tenant.logo && !isDefaultLogo && (
                   <img
                     src={props.tenant.logo}
                     style={{
                       height: 'auto',
-                      maxWidth: '100%',
+                      maxWidth: '59px',
                     }}
                   />
                 )}
@@ -212,7 +217,7 @@ const TopBarComponent = (props) => {
             {props.impersonator && (
               <a href="/api/me/_deimpersonate" className="btn btn-danger">
                 <i className="fas fa-user-ninja" /> {translateMethod('Quit impersonation')}
-                <b className="ml-1">{impersonator.email}</b>
+                <b className="ms-1">{impersonator.email}</b>
               </a>
             )}
             {!props.connectedUser._humanReadableId && (
@@ -234,14 +239,15 @@ const TopBarComponent = (props) => {
                   isTenantAdmin={
                     props.connectedUser.isDaikokuAdmin ||
                     (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1
-                  }>
+                  }
+                >
                   {isMaintenanceMode && (
-                    <span className="badge badge-danger mr-3">
+                    <span className="badge bg-danger me-3">
                       {translateMethod('Global maintenance mode enabled')}
                     </span>
                   )}
                   {isTranslationMode && (
-                    <span className="badge badge-warning mr-3">
+                    <span className="badge bg-warning me-3">
                       {translateMethod('Translation mode enabled')}
                     </span>
                   )}
@@ -253,7 +259,8 @@ const TopBarComponent = (props) => {
                     'unread-notifications': !!unreadNotificationsCount,
                   })}
                   to="/notifications"
-                  title={translateMethod('Access to the notifications')}>
+                  title={translateMethod('Access to the notifications')}
+                >
                   <i className="fas fa-bell" />
                 </Link>
                 {(props.connectedUser.isDaikokuAdmin || props.isTenantAdmin) && (
@@ -264,7 +271,9 @@ const TopBarComponent = (props) => {
                     style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}
                     src={props.connectedUser.picture}
                     className="dropdown-toggle logo-anonymous user-logo"
-                    data-toggle="dropdown"
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false"
+                    id="dropdownMenuButton1"
                     title={
                       impersonator
                         ? `${props.connectedUser.name} (${
@@ -276,7 +285,7 @@ const TopBarComponent = (props) => {
                     }
                     alt="user menu"
                   />
-                  <div className="dropdown-menu dropdown-menu-right">
+                  <div className="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
                     <p className="dropdown-item">
                       {translateMethod('Logged in as')} <b>{props.connectedUser.email}</b>
                     </p>

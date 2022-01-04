@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { I18nContext } from '../../../../core';
 
 import { Spinner } from '../../../utils';
 import { MailTemplateButton } from './MailTemplateButton';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function SendGridConfig({ value, onChange }) {
+export function SendGridConfig({ value, onChange, ...props }) {
   const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['apikey', 'fromEmail', 'template'];
@@ -24,7 +25,7 @@ export function SendGridConfig({ value, onChange }) {
       },
     },
     template: {
-      type: () => <MailTemplateButton />,
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 

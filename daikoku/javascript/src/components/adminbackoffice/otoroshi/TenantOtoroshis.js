@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { v4 as uuid } from 'uuid';
 import faker from 'faker';
@@ -13,6 +13,17 @@ import { I18nContext } from '../../../locales/i18n-context';
 
 export function TenantOtoroshisComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
+
+  const [isTenantAdmin, setIsTenantAdmin] = useState(props.connectedUser.isDaikokuAdmin);
+
+  useEffect(() => {
+    if (!isTenantAdmin)
+      Services.tenantAdmins(props.tenant._id).then((res) => {
+        if (res.admins)
+          setIsTenantAdmin(res.admins.find((admin) => admin._id === props.connectedUser._id));
+      });
+  }, []);
 
   let table;
 
@@ -41,22 +52,24 @@ export function TenantOtoroshisComponent(props) {
         const otoroshi = original;
         return (
           <div className="btn-group">
-            {isTenantAdmin() && (
+            {isTenantAdmin && (
               <Link to={`/settings/otoroshis/${otoroshi._id}`}>
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
-                  title={translateMethod('Edit this settings')}>
+                  title={translateMethod('Edit this settings')}
+                >
                   <i className="fas fa-edit" />
                 </button>
               </Link>
             )}
-            {isTenantAdmin() && (
+            {isTenantAdmin && (
               <button
                 type="button"
                 className="btn btn-sm btn-outline-danger"
                 title={translateMethod('Delete this settings')}
-                onClick={() => onDelete(otoroshi._id)}>
+                onClick={() => onDelete(otoroshi._id)}
+              >
                 <i className="fas fa-trash" />
               </button>
             )}
@@ -65,13 +78,6 @@ export function TenantOtoroshisComponent(props) {
       },
     },
   ];
-
-  const isTenantAdmin = () => {
-    if (props.connectedUser.isDaikokuAdmin) {
-      return true;
-    }
-    return props.tenant.admins.indexOf(props.connectedUser._id) > -1;
-  };
 
   const onDelete = (id) => {
     window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
@@ -92,7 +98,11 @@ export function TenantOtoroshisComponent(props) {
       clientId: faker.random.alphaNumeric(16),
       clientSecret: faker.random.alphaNumeric(64),
     };
-    props.history.push(`/settings/otoroshis/${settings._id}`, { newSettings: settings });
+    navigate(`/settings/otoroshis/${settings._id}`, {
+      state: {
+        newSettings: settings,
+      },
+    });
   };
 
   return (
@@ -103,13 +113,14 @@ export function TenantOtoroshisComponent(props) {
             <h1>
               <Translation i18nkey="Otoroshi settings">Otoroshi settings</Translation>
               <a
-                className="btn btn-sm btn-access-negative mb-1 ml-1"
+                className="btn btn-sm btn-access-negative mb-1 ms-1"
                 title={translateMethod('Create new settings')}
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
                   createNewSettings();
-                }}>
+                }}
+              >
                 <i className="fas fa-plus-circle" />
               </a>
             </h1>

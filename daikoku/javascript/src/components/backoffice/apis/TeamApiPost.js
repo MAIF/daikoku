@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { Route, Link, Switch, useLocation, useHistory } from 'react-router-dom';
+import { Route, Link, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Spinner } from '../..';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
@@ -40,7 +40,7 @@ const ApiPost = ({ publishPost, params, team }) => {
       </React.Suspense>
       <div className="d-flex justify-content-end my-3">
         <Link
-          className="btn btn-outline-danger mr-1"
+          className="btn btn-outline-danger me-1"
           to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}>
           {translateMethod('Cancel')}
         </Link>
@@ -53,7 +53,7 @@ const ApiPost = ({ publishPost, params, team }) => {
 };
 
 export function TeamApiPost({ team, params, api, ...props }) {
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
   const { translateMethod } = useContext(I18nContext);
 
@@ -141,7 +141,7 @@ export function TeamApiPost({ team, params, api, ...props }) {
       if (res.error) toastr.error(translateMethod('team_api_post.failed'));
       else {
         toastr.success(translateMethod('team_api_post.saved'));
-        history.push(`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`);
+        navigate(`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`);
       }
     });
   }
@@ -164,24 +164,20 @@ export function TeamApiPost({ team, params, api, ...props }) {
 
   const { posts, pagination } = state;
 
-  const basePath = '/:teamId/settings/apis/:apiId/:versionId/news';
-
   return (
     <div>
-      <Switch>
+      <Routes>
+        <Route path="/new" element={<ApiPost publishPost={publishPost} params={params} />} />
         <Route
-          path={`${basePath}/new`}
-          render={(props) => <ApiPost {...props} publishPost={publishPost} params={params} />}
-        />
-        <Route
-          path={basePath}
-          render={() => (
+          path="/"
+          element={
             <div className="p-3">
               <div className="d-flex align-items-center justify-content-between">
                 <h2>{translateMethod('News')}</h2>
                 <Link
                   className="btn btn-outline-success"
-                  to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news/new`}>
+                  to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news/new`}
+                >
                   {translateMethod('team_api_post.new')}
                 </Link>
               </div>
@@ -195,7 +191,7 @@ export function TeamApiPost({ team, params, api, ...props }) {
                           type="text"
                           value={post.title}
                           onChange={(e) => handleTitle(i, e.target.value)}
-                          className="form-control mr-1"
+                          className="form-control me-1"
                           style={{ flex: 1 }}
                         />
                       ) : (
@@ -204,13 +200,13 @@ export function TeamApiPost({ team, params, api, ...props }) {
                       <div>
                         {post.isOpen && (
                           <button
-                            className="btn btn-outline-success mr-1"
+                            className="btn btn-outline-success me-1"
                             onClick={() => savePost(i)}>
                             <i className="fas fa-save" />
                           </button>
                         )}
                         <button
-                          className="btn btn-outline-danger mr-1"
+                          className="btn btn-outline-danger me-1"
                           onClick={() => removePost(post._id, i)}>
                           <i className="fas fa-trash" />
                         </button>
@@ -238,9 +234,9 @@ export function TeamApiPost({ team, params, api, ...props }) {
                 </button>
               )}
             </div>
-          )}
+          }
         />
-      </Switch>
+      </Routes>
     </div>
   );
 }

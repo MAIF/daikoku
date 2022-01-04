@@ -6,7 +6,6 @@ import classNames from 'classnames';
 import { sortBy } from 'lodash';
 
 import * as Services from '../../../services';
-import { TeamBackOffice } from '..';
 import {
   formatPlanType,
   Can,
@@ -34,18 +33,18 @@ function TeamApiKeysForApiComponent(props) {
 
   useEffect(() => {
     Promise.all([
-      Services.getTeamVisibleApi(props.currentTeam._id, props.match.params.apiId, params.versionId),
-      Services.getTeamSubscriptions(
-        props.match.params.apiId,
-        props.currentTeam._id,
-        params.versionId
-      ),
+      Services.getTeamVisibleApi(props.currentTeam._id, params.apiId, params.versionId),
+      Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId),
     ]).then(([api, subscriptions]) => {
       setSubscriptions(subscriptions);
       setApi(api);
       Services.team(api.team).then((apiTeam) => setApiTeam(apiTeam));
     });
   }, [location]);
+
+  useEffect(() => {
+    document.title = `${props.currentTeam.name} - ApiKeys`;
+  }, []);
 
   const updateCustomName = (subscription, customName) => {
     return Services.updateSubscriptionCustomName(props.currentTeam, subscription, customName);
@@ -54,11 +53,7 @@ function TeamApiKeysForApiComponent(props) {
   const archiveApiKey = (subscription) => {
     return Services.archiveApiKey(props.currentTeam._id, subscription._id, !subscription.enabled)
       .then(() =>
-        Services.getTeamSubscriptions(
-          props.match.params.apiId,
-          props.currentTeam._id,
-          params.versionId
-        )
+        Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
       )
       .then((subs) => setSubscriptions(subs));
   };
@@ -67,11 +62,7 @@ function TeamApiKeysForApiComponent(props) {
     window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique')).then((ok) => {
       if (ok)
         Services.makeUniqueApiKey(props.currentTeam._id, subscription._id).then(() =>
-          Services.getTeamSubscriptions(
-            props.match.params.apiId,
-            props.currentTeam._id,
-            params.versionId
-          )
+          Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
         );
       then((subs) => setSubscriptions(subs));
     });
@@ -96,11 +87,7 @@ function TeamApiKeysForApiComponent(props) {
       gracePeriod
     )
       .then(() =>
-        Services.getTeamSubscriptions(
-          props.match.params.apiId,
-          props.currentTeam._id,
-          params.versionId
-        )
+        Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
       )
       .then((subs) => setSubscriptions(subs));
   };
@@ -118,11 +105,7 @@ function TeamApiKeysForApiComponent(props) {
         if (ok) {
           Services.regenerateApiKeySecret(props.currentTeam._id, subscription._id)
             .then(() =>
-              Services.getTeamSubscriptions(
-                props.match.params.apiId,
-                props.currentTeam._id,
-                params.versionId
-              )
+              Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
             )
             .then((subs) => setSubscriptions(subs))
             .then(() => toastr.success('secret reseted successfully'));
@@ -174,70 +157,65 @@ function TeamApiKeysForApiComponent(props) {
     );
 
   return (
-    <TeamBackOffice
-      title={`${props.currentTeam.name} - ApiKeys`}
-      tab="ApiKeys"
-      apiId={props.match.params.apiId}
-      isLoading={!apiTeam}>
-      <Can I={read} a={apikey} team={props.currentTeam} dispatchError>
-        {api && apiTeam ? (
-          <div className="row">
-            <div className="col-12 d-flex align-items-center">
-              <h1>
-                <Translation i18nkey="Api keys for">Api keys for</Translation>
-                &nbsp;
-                <Link
-                  to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
-                  className="cursor-pointer underline-on-hover a-fake">
-                  {api.name}
-                </Link>
-              </h1>
-            </div>
-            <div className="col-12 mt-2 mb-4">
-              <input
-                type="text"
-                className="form-control col-5"
-                placeholder={translateMethod('Search your apiKey...')}
-                aria-label="Search your apikey"
-                value={searched}
-                onChange={(e) => setSearched(e.target.value)}
-              />
-            </div>
-
-            <div className="col-12">
-              <PaginatedComponent
-                items={sortedApiKeys}
-                count={5}
-                formatter={(subscription) => {
-                  const plan = currentPlan(subscription);
-
-                  return (
-                    <ApiKeyCard
-                      currentTeam={props.currentTeam}
-                      openInfoNotif={(message) => toastr.info(message)}
-                      statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${props.match.params.apiId}/${props.match.params.versionId}/subscription/${subscription._id}/consumptions`}
-                      key={subscription._id}
-                      subscription={subscription}
-                      showApiKey={showApiKey}
-                      plan={plan}
-                      api={api}
-                      updateCustomName={(name) => updateCustomName(subscription, name)}
-                      archiveApiKey={() => archiveApiKey(subscription)}
-                      makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
-                      toggleRotation={(rotationEvery, gracePeriod) =>
-                        toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)
-                      }
-                      regenerateSecret={() => regenerateApiKeySecret(subscription)}
-                      disableRotation={api.visibility === 'AdminOnly'}
-                    />
-                  );
-                }}
-              />
-            </div>
+    <Can I={read} a={apikey} team={props.currentTeam} dispatchError>
+      {api && apiTeam ? (
+        <div className="row">
+          <div className="col-12 d-flex align-items-center">
+            <h1>
+              <Translation i18nkey="Api keys for">Api keys for</Translation>
+              &nbsp;
+              <Link
+                to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
+                className="cursor-pointer underline-on-hover a-fake"
+              >
+                {api.name}
+              </Link>
+            </h1>
           </div>
-        ) : null}
-      </Can>
-    </TeamBackOffice>
+          <div className="col-12 mt-2 mb-4">
+            <input
+              type="text"
+              className="form-control col-5"
+              placeholder={translateMethod('Search your apiKey...')}
+              aria-label="Search your apikey"
+              value={searched}
+              onChange={(e) => setSearched(e.target.value)}
+            />
+          </div>
+
+          <div className="col-12">
+            <PaginatedComponent
+              items={sortedApiKeys}
+              count={5}
+              formatter={(subscription) => {
+                const plan = currentPlan(subscription);
+
+                return (
+                  <ApiKeyCard
+                    currentTeam={props.currentTeam}
+                    openInfoNotif={(message) => toastr.info(message)}
+                    statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
+                    key={subscription._id}
+                    subscription={subscription}
+                    showApiKey={showApiKey}
+                    plan={plan}
+                    api={api}
+                    updateCustomName={(name) => updateCustomName(subscription, name)}
+                    archiveApiKey={() => archiveApiKey(subscription)}
+                    makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
+                    toggleRotation={(rotationEvery, gracePeriod) =>
+                      toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)
+                    }
+                    regenerateSecret={() => regenerateApiKeySecret(subscription)}
+                    disableRotation={api.visibility === 'AdminOnly'}
+                  />
+                );
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+    </Can>
   );
 }
 
@@ -364,13 +342,14 @@ const ApiKeyCard = ({
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                     }}
-                    className="plan-name">
+                    className="plan-name"
+                  >
                     {customName}
                   </BeautifulTitle>
                   <button
                     disabled={!subscription.enabled}
                     type="button"
-                    className="btn btn-sm btn-access-negative ml-2"
+                    className="btn btn-sm btn-access-negative ms-2"
                     onClick={() => setEditMode(true)}>
                     <i className="fas fa-pen cursor-pointer a-fake" />
                   </button>
@@ -387,7 +366,8 @@ const ApiKeyCard = ({
                   <div className="input-group-append">
                     <span
                       className="input-group-text cursor-pointer"
-                      onClick={handleCustomNameChange}>
+                      onClick={handleCustomNameChange}
+                    >
                       <i className="fas fa-check accept" />
                     </span>
                     <span className="input-group-text cursor-pointer" onClick={abortCustomNameEdit}>
@@ -402,7 +382,7 @@ const ApiKeyCard = ({
               </h3>
             ) : (
               <span
-                className="badge badge-secondary"
+                className="badge bg-secondary"
                 style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}>
                 {Option(plan.customName).getOrElse(formatPlanType(plan, translateMethod))}
               </span>
@@ -418,16 +398,17 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('Reset secret')}>
                       <button
                         type="button"
-                        className="btn btn-sm btn-outline-danger ml-1"
+                        className="btn btn-sm btn-outline-danger ms-1"
                         disabled={!subscription.enabled}
-                        onClick={regenerateSecret}>
+                        onClick={regenerateSecret}
+                      >
                         <i className="fas fa-sync-alt" />
                       </button>
                     </BeautifulTitle>
                   )}
                   <Can I={read} a={stat} team={currentTeam}>
                     <BeautifulTitle title={translateMethod('View usage statistics')}>
-                      <Link to={statsLink} className="btn btn-sm btn-access-negative ml-1">
+                      <Link to={statsLink} className="btn btn-sm btn-access-negative ms-1">
                         <i className="fas fa-chart-bar" />
                       </Link>
                     </BeautifulTitle>
@@ -436,12 +417,13 @@ const ApiKeyCard = ({
                     <button
                       type="button"
                       disabled={!subscription.enabled}
-                      className="btn btn-sm btn-access-negative ml-1"
+                      className="btn btn-sm btn-access-negative ms-1"
                       onClick={() => {
                         clipboard.current.select();
                         document.execCommand('Copy');
                         openInfoNotif(translateMethod('Credientials copied'));
-                      }}>
+                      }}
+                    >
                       <i className="fas fa-copy" />
                     </button>
                   </BeautifulTitle>
@@ -449,7 +431,7 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('Setup rotation')}>
                       <button
                         type="button"
-                        className="btn btn-sm btn-access-negative ml-1"
+                        className="btn btn-sm btn-access-negative ms-1"
                         onClick={() => setSettingMode(true)}>
                         <i className="fas fa-history" />
                       </button>
@@ -459,7 +441,7 @@ const ApiKeyCard = ({
                     <button
                       type="button"
                       disabled={subscription.parent ? !subscription.parentUp : false}
-                      className={classNames('btn btn-sm ml-1', {
+                      className={classNames('btn btn-sm ms-1', {
                         'btn-outline-danger':
                           subscription.enabled &&
                           (subscription.parent ? subscription.parentUp : true),
@@ -467,7 +449,8 @@ const ApiKeyCard = ({
                           !subscription.enabled &&
                           (subscription.parent ? subscription.parentUp : true),
                       })}
-                      onClick={archiveApiKey}>
+                      onClick={archiveApiKey}
+                    >
                       <i className="fas fa-power-off" />
                     </button>
                   </BeautifulTitle>
@@ -475,7 +458,7 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
                       <button
                         type="button"
-                        className="btn btn-sm ml-1 btn-outline-danger"
+                        className="btn btn-sm ms-1 btn-outline-danger"
                         onClick={makeUniqueApiKey}>
                         <i className="fas fa-share" />
                       </button>
@@ -489,7 +472,8 @@ const ApiKeyCard = ({
                     <li className="nav-item cursor-pointer">
                       <span
                         className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('apikey')}>
+                        onClick={() => setActiveTab('apikey')}
+                      >
                         <Translation i18nkey="ApiKey">ApiKey</Translation>
                       </span>
                     </li>
@@ -497,7 +481,8 @@ const ApiKeyCard = ({
                       <li className="nav-item  cursor-pointer">
                         <span
                           className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
-                          onClick={() => setActiveTab('token')}>
+                          onClick={() => setActiveTab('token')}
+                        >
                           <Translation i18nkey="Integration token">Integration token</Translation>
                         </span>
                       </li>
@@ -507,7 +492,7 @@ const ApiKeyCard = ({
               )}
               {activeTab == 'apikey' && (
                 <>
-                  <div className="form-group">
+                  <div className="mb-3">
                     <label htmlFor={`client-id-${_id}`} className="">
                       <Translation i18nkey="Client Id">Client Id</Translation>
                     </label>
@@ -521,7 +506,7 @@ const ApiKeyCard = ({
                       />
                     </div>
                   </div>
-                  <div className="form-group">
+                  <div className="mb-3">
                     <label htmlFor={`client-secret-${_id}`} className="">
                       <Translation i18nkey="Client secret">Client secret</Translation>
                     </label>
@@ -546,7 +531,8 @@ const ApiKeyCard = ({
                             'cursor-pointer': subscription.enabled,
                             'cursor-forbidden': !subscription.enabled,
                           })}
-                          id={`client-secret-addon-${_id}`}>
+                          id={`client-secret-addon-${_id}`}
+                        >
                           {hide ? <i className="fas fa-eye" /> : <i className="fas fa-eye-slash" />}
                         </span>
                       </div>
@@ -556,7 +542,7 @@ const ApiKeyCard = ({
               )}
               {activeTab == 'token' && (
                 <>
-                  <div className="form-group">
+                  <div className="mb-3">
                     <label htmlFor={`token-${_id}`} className="">
                       <Translation i18nkey="Integration token">Integration token</Translation>
                     </label>
@@ -582,7 +568,8 @@ const ApiKeyCard = ({
                         {subscription.children.map((aggregate) => (
                           <div key={aggregate._id}>
                             <Link
-                              to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}`}>
+                              to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}`}
+                            >
                               {`${aggregate.apiName}/${aggregate.customName || aggregate.planType}`}
                             </Link>
                           </div>
@@ -594,7 +581,8 @@ const ApiKeyCard = ({
                     className={`btn btn-sm btn-outline-info mx-auto d-flex ${
                       showAggregatePlan ? 'mt-3' : ''
                     }`}
-                    onClick={() => setAggregatePlan(!showAggregatePlan)}>
+                    onClick={() => setAggregatePlan(!showAggregatePlan)}
+                  >
                     {showAggregatePlan
                       ? translateMethod('team_apikey_for_api.hide_aggregate_sub')
                       : translateMethod('team_apikey_for_api.show_aggregate_sub')}
@@ -697,12 +685,12 @@ const ApiKeyCard = ({
                   <Translation i18nkey="Back">Back</Translation>
                 </button>
                 <button
-                  className="btn btn-outline-success ml-2"
+                  className="btn btn-outline-success ms-2"
                   disabled={
                     !subscription.enabled || Object.keys(error).length ? 'disabled' : undefined
                   }
                   onClick={handleChanges}>
-                  <i className="fas fa-save mr-1"></i>
+                  <i className="fas fa-save me-1"></i>
                   <Translation i18nkey="Save">Save</Translation>
                 </button>
               </div>
@@ -717,7 +705,7 @@ const ApiKeyCard = ({
 const Help = ({ message }) => {
   return (
     <BeautifulTitle placement="bottom" title={message}>
-      <i className="ml-4 far fa-question-circle" />
+      <i className="ms-4 far fa-question-circle" />
     </BeautifulTitle>
   );
 };

@@ -1,12 +1,19 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import { Redirect } from 'react-router';
+import React, { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { converter } from '../../services/showdown';
 
-const MaybeHomePageComponent = ({ tenant, connectedUser }) => {
-  if (!tenant.homePageVisible || connectedUser._humanReadableId) {
-    return <Redirect to="/apis" />;
-  }
+export const MaybeHomePage = ({ tenant }) => {
+  const connectedUser = useSelector((state) => state.connectedUser);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
+      navigate('/apis');
+    }
+  }, []);
+
   return (
     <div className="row">
       <div
@@ -16,9 +23,3 @@ const MaybeHomePageComponent = ({ tenant, connectedUser }) => {
     </div>
   );
 };
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const MaybeHomePage = connect(mapStateToProps)(MaybeHomePageComponent);

@@ -126,8 +126,8 @@ object json {
           TestingConfig(
             otoroshiSettings =
               (json \ "otoroshiSettings").as(OtoroshiSettingsIdFormat),
-            serviceGroup =
-              (json \ "serviceGroup").as(OtoroshiServiceGroupIdFormat),
+            authorizedEntities =
+              (json \ "authorizedEntities").as(AuthorizedEntitiesFormat),
             clientName = (json \ "clientName").as[String],
             api = (json \ "api").as(ApiIdFormat),
             tag = (json \ "tag").as[String],
@@ -144,7 +144,8 @@ object json {
 
     override def writes(o: TestingConfig): JsValue = Json.obj(
       "otoroshiSettings" -> OtoroshiSettingsIdFormat.writes(o.otoroshiSettings),
-      "serviceGroup" -> OtoroshiServiceGroupIdFormat.writes(o.serviceGroup),
+      "authorizedEntities" -> AuthorizedEntitiesFormat.writes(
+        o.authorizedEntities),
       "clientName" -> o.clientName,
       "api" -> ApiIdFormat.writes(o.api),
       "tag" -> o.tag,
@@ -1575,7 +1576,6 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
             domain = (json \ "domain").asOpt[String].getOrElse("localhost"),
-            exposedPort = (json \ "exposedPort").asOpt[Int],
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
             contact = (json \ "contact").as[String],
             style = (json \ "style").asOpt(DaikokuStyleFormat),
@@ -1638,7 +1638,8 @@ object json {
               .asOpt[String],
             tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat),
             aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
-              .asOpt[Boolean]
+              .asOpt[Boolean],
+            robotTxt = (json \ "robotTxt").asOpt[String]
           )
         )
       } recover {
@@ -1656,10 +1657,6 @@ object json {
       "_deleted" -> o.deleted,
       "name" -> o.name,
       "domain" -> o.domain,
-      "exposedPort" -> o.exposedPort
-        .map(JsNumber(_))
-        .getOrElse(JsNull)
-        .as[JsValue],
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "enabled" -> o.enabled,
@@ -1683,11 +1680,11 @@ object json {
         o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes)),
       "creationSecurity" -> o.creationSecurity
         .map(JsBoolean)
-        .getOrElse(JsNull)
+        .getOrElse(JsBoolean(false))
         .as[JsValue],
       "subscriptionSecurity" -> o.subscriptionSecurity
         .map(JsBoolean)
-        .getOrElse(JsNull)
+        .getOrElse(JsBoolean(true))
         .as[JsValue],
       "apiReferenceHideForGuest" -> o.apiReferenceHideForGuest
         .map(JsBoolean)
@@ -1695,7 +1692,7 @@ object json {
         .as[JsValue],
       "hideTeamsPage" -> o.hideTeamsPage
         .map(JsBoolean)
-        .getOrElse(JsNull)
+        .getOrElse(JsBoolean(false))
         .as[JsValue],
       "defaultMessage" -> o.defaultMessage
         .map(JsString.apply)
@@ -1708,7 +1705,11 @@ object json {
       "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
         .map(JsBoolean)
         .getOrElse(JsBoolean(false))
-        .as[JsValue]
+        .as[JsValue],
+      "robotTxt" -> o.robotTxt
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {

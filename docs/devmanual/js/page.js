@@ -54,4 +54,28 @@ $(function() {
   }
 
   setupSearch();
+
+  function improveSidebar() {
+    let list = document.getElementsByClassName("active")[1]
+      .parentElement
+      .getElementsByTagName("ul")[0]
+
+    if (!list) {
+      list = document.getElementsByClassName("active")[1]
+        .parentElement
+        .parentElement
+        .parentElement
+        .children[0]
+        .parentElement
+        .getElementsByTagName("ul")[0]
+    }
+
+    if (list && list.children)
+      for (let i = 0; i < list.children.length; i++) {
+        let r = list.children[i]
+        r.style.display = "block"
+      }
+  }
+
+  improveSidebar();
 });

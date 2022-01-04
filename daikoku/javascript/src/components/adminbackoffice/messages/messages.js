@@ -144,7 +144,7 @@ const AdminMessagesComponent = (props) => {
         <div className="d-flex flex-column messages-sender">
           <Select
             placeholder={translateMethod('Start new conversation')}
-            className="mr-2 reactSelect"
+            className="me-2 reactSelect"
             options={possibleNewUsers.map((u) => ({
               label: (
                 <div
@@ -152,7 +152,8 @@ const AdminMessagesComponent = (props) => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                  }}>
+                  }}
+                >
                   {u.name} ({u.email}){' '}
                   <img
                     style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
@@ -165,7 +166,11 @@ const AdminMessagesComponent = (props) => {
             }))}
             value={null}
             onChange={({ value }) => createDialog(value)}
-            filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
+            filterOption={(data, search) =>
+              _.values(data.value)
+                .filter((e) => typeof e === 'string')
+                .some((v) => v.includes(search))
+            }
             classNamePrefix="reactSelect"
           />
           {_.orderBy(
@@ -195,7 +200,8 @@ const AdminMessagesComponent = (props) => {
                   className={classNames('p-3 cursor-pointer d-flex flex-row', {
                     'messages-sender__active': selectedChat === chat,
                   })}
-                  onClick={() => setSelectedChat(chat)}>
+                  onClick={() => setSelectedChat(chat)}
+                >
                   <div className="col-4">
                     <img
                       className="user-avatar"
@@ -215,7 +221,8 @@ const AdminMessagesComponent = (props) => {
                         onClick={(e) => {
                           e.stopPropagation();
                           closeSelectedChat(chat);
-                        }}>
+                        }}
+                      >
                         <i className="fas fa-trash" />
                       </a>
                     </div>
@@ -227,7 +234,7 @@ const AdminMessagesComponent = (props) => {
               );
             })}
         </div>
-        <div className="d-flex flex-column-reverse ml-2 messages-content">
+        <div className="d-flex flex-column-reverse ms-2 messages-content">
           {dialog.reverse().map((group, idx) => {
             return (
               <div
@@ -235,7 +242,8 @@ const AdminMessagesComponent = (props) => {
                 className={classNames('discussion-messages', {
                   'discussion-messages--received': group.every((m) => m.sender === selectedChat),
                   'discussion-messages--send': group.every((m) => m.sender !== selectedChat),
-                })}>
+                })}
+              >
                 {group.map((m, idx) => {
                   const sender = Option(users.find((u) => u._id === m.sender))
                     .map((u) => u.name)
@@ -243,7 +251,8 @@ const AdminMessagesComponent = (props) => {
                   return (
                     <div
                       key={`discussion-message-${idx}`}
-                      className="discussion-message d-flex flex-column">
+                      className="discussion-message d-flex flex-column"
+                    >
                       <span className="sender">{sender}</span>
                       <span className="message">{m.message}</span>
                       <span className="info">
@@ -260,7 +269,8 @@ const AdminMessagesComponent = (props) => {
               <button
                 className="btn btn-sm btn-outline-primary"
                 disabled={loading ? 'disabled' : null}
-                onClick={() => getPreviousMessages(selectedChat)}>
+                onClick={() => getPreviousMessages(selectedChat)}
+              >
                 <Translation i18nkey="Load previous messages">Load previous messages</Translation>
               </button>
             </div>
@@ -278,7 +288,8 @@ const AdminMessagesComponent = (props) => {
               <button
                 disabled={loading ? 'disabled' : null}
                 className="send-button"
-                onClick={sendMessage}>
+                onClick={sendMessage}
+              >
                 <Send />
               </button>
             </div>

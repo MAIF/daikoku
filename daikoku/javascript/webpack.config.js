@@ -1,18 +1,15 @@
 const path = require('path');
 const TerserJSPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-const SpeedMeasurePlugin = require('speed-measure-webpack-plugin');
-const CompressionPlugin = require("compression-webpack-plugin");
-
-const smp = new SpeedMeasurePlugin();
+const CompressionPlugin = require('compression-webpack-plugin');
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 
 module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
   const config = {
+    mode: isProd ? 'production' : 'development',
     devServer: {
-      disableHostCheck: true,
-      liveReload: true,
+      hot: true,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
@@ -32,11 +29,7 @@ module.exports = (env, argv) => {
       },
       {
         test: /\.css$/,
-        use: [{
-          loader: MiniCssExtractPlugin.loader,
-        },
-          'css-loader'
-        ]
+        use: [MiniCssExtractPlugin.loader, 'css-loader']
       },
       {
         test: /\.scss$/,
@@ -156,46 +149,30 @@ module.exports = (env, argv) => {
     }
   };
   if (isProd) {
-    return smp.wrap({
+    return {
       ...config,
       plugins: [
         ...config.plugins,
-        new CompressionPlugin()
+        new CompressionPlugin(),
+        new MiniCssExtractPlugin()
       ],
       optimization: {
         minimize: true,
         minimizer: [
           new TerserJSPlugin({
-            parallel: true,
-            cache: true
+            parallel: true
           }),
-          new OptimizeCSSAssetsPlugin({})
+          new CssMinimizerPlugin()
         ],
       }
-    });
+    };
   } else {
     return {
       ...config,
-      devtool: 'eval'
+      plugins: [
+        ...config.plugins
+      ],
+      devtool: 'eval-source-map'
     };
   }
 };
-
-/*
-
-minimizer: [
-  new TerserJSPlugin({
-    parallel: true,
-    cache: true
-  }),
-  new OptimizeCSSAssetsPlugin({})
-],
-
-minimizer: [
-  new UglifyJsPlugin({
-    cache: true,
-    parallel: true,
-  }),
-  new OptimizeCSSAssetsPlugin({})
-],
-*/

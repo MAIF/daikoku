@@ -70,13 +70,18 @@ const InitializeFromOtoroshiComponent = (props) => {
             visibleApis {
               api {
                 _id
-                tenant
+                name
+                tenant {
+                  id
+                }
                 team {
                   _id
                 }
                 currentVersion
                 possibleUsagePlans {
                   _id
+                  customName
+                  type
                 }
                 _humanReadableId
               }
@@ -130,15 +135,18 @@ const InitializeFromOtoroshiComponent = (props) => {
     />
   ));
 
-  const orderedApikeys = _.orderBy(state.context.apikeys, ['authorizedGroup', 'clientName']);
+  const orderedApikeys = _.orderBy(state.context.apikeys, ['clientName']);
 
-  const filterApikeys = (group) =>
-    orderedApikeys.filter((apikey) => (apikey.authorizedGroup || '').includes(group.value));
+  const filterApikeys = (entitie) => {
+    return orderedApikeys.filter((apikey) =>
+      (apikey.authorizedEntities || '').includes(`${entitie.prefix}${entitie.value}`)
+    );
+  };
 
   const afterCreation = () => {
     getVisibleApis().then((apis) => {
       setStep(1);
-      setApis(apis);
+      // setApis(apis);
       setCreatedApis([]);
       toastr.success('Apis successfully created');
     });
@@ -201,7 +209,8 @@ const InitializeFromOtoroshiComponent = (props) => {
               initialStep={step}
               isLazyMount={true}
               transitions={{}}
-              onStepChange={(x) => setStep(x.activeStep)}>
+              onStepChange={(x) => setStep(x.activeStep)}
+            >
               {servicesSteps}
             </StepWizard>
           )}
@@ -224,6 +233,7 @@ const InitializeFromOtoroshiComponent = (props) => {
                 teams={teams}
                 apis={apis}
                 groups={state.context.groups}
+                services={state.context.services}
                 addNewTeam={(t) => setTeams([...teams, t])}
                 addSub={(apikey, team, api, plan) =>
                   setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])
@@ -324,7 +334,7 @@ const Help = () => {
           </ul>
         </div>
       }>
-      <i className="ml-4 far fa-question-circle" />
+      <i className="ms-4 far fa-question-circle" />
     </BeautifulTitle>
   );
 };

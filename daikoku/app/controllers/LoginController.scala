@@ -215,7 +215,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                                        env,
                                        ctx.tenant)
           case Some(form) =>
-            (form.get("username").map(_.last), form.get("password").map(_.last)) match {
+            (form.get("username").map(_.last).map(_.toLowerCase),
+             form.get("password").map(_.last)) match {
               case (Some(username), Some(password)) =>
                 p match {
                   case AuthProvider.Local =>
@@ -495,7 +496,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                     def getUser() = User(
                       id = userId,
                       tenants = Set(ctx.tenant.id),
-                      origins = Set(AuthProvider.Otoroshi),
+                      origins = Set(ctx.tenant.authProvider),
                       name = accountCreation.name,
                       email = accountCreation.email,
                       picture = accountCreation.avatar,
@@ -575,14 +576,14 @@ class LoginController(DaikokuAction: DaikokuAction,
                 s"Reset your ${ctx.tenant.name} account password",
                 Seq(email),
                 s"""
-                |You asked to reset your ${ctx.tenant.name} account password.
+                |<p>You asked to reset your ${ctx.tenant.name} account password.</p>
                 |
-                |If it was you, please click on the following link to finalize the password resset process
+                |<p>If it was you, please click on the following link to finalize the password resset process</p>
                 |
-                |${ctx.request.theProtocol}://${host}/account/reset?id=$randomId
-                |If not, just ignore this email
+                |<a href="${ctx.request.theProtocol}://${host}/account/reset?id=$randomId">Reset</a>
+                |<p>If not, just ignore this email</p>
                 |
-                |The ${ctx.tenant.name} team
+                |<p>The ${ctx.tenant.name} team</p>
               """.stripMargin,
                 ctx.tenant
               )

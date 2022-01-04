@@ -7,6 +7,7 @@ import _, { filter } from 'lodash';
 import faker from 'faker';
 import { Grid, List } from 'react-feather';
 import classNames from 'classnames';
+import { useNavigate } from 'react-router-dom';
 
 import { ApiCard } from '../api';
 import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
@@ -36,6 +37,7 @@ const computeTop = (arrayOfArray) => {
 
 const ApiListComponent = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
 
   const allCategories = () => ({ value: 'All', label: translateMethod('All categories') });
   const allTags = () => ({ value: 'All', label: translateMethod('All tags') });
@@ -75,24 +77,21 @@ const ApiListComponent = (props) => {
           return e;
         })
         .then((newApi) => {
-          props.history.push(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
-            newApi: { ...newApi, team: team._id },
+          navigate(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
+            state: {
+              newApi: { ...newApi, team: team._id },
+            },
           });
         });
     }
   };
 
   const createNewteam = () => {
-    Services.fetchNewTeam().then((team) =>
-      props.openCreationTeamModal({
-        history: props.history,
-        team,
-      })
-    );
+    Services.fetchNewTeam().then((team) => props.openCreationTeamModal({ team }));
   };
 
   const redirectToTeam = (team) => {
-    props.history.push(`/${team._humanReadableId}/settings`);
+    navigate(`/${team._humanReadableId}/settings`);
   };
 
   const computeTops = (apis) => {
@@ -147,7 +146,7 @@ const ApiListComponent = (props) => {
           )}
         </div>
         <div className="clear cursor-pointer" onClick={clearFilter}>
-          <i className="far fa-times-circle mr-1" />
+          <i className="far fa-times-circle me-1" />
           <Translation i18nkey="clear filter">clear filter</Translation>
         </div>
       </div>
@@ -178,8 +177,6 @@ const ApiListComponent = (props) => {
           if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
             return true;
           } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
             return true;
           } else if (teamMatch(api, searchedTrim)) {
             return true;
@@ -264,7 +261,8 @@ const ApiListComponent = (props) => {
             <div className="col-12 col-sm-2">
               <button
                 className="btn btn-access-negative mb-2 float-right"
-                onClick={() => createNewApi(props.team._id)}>
+                onClick={() => createNewApi(props.team._id)}
+              >
                 <i className="fas fa-plus-square" /> API
               </button>
             </div>
@@ -281,7 +279,8 @@ const ApiListComponent = (props) => {
                 CanIDoAction(props.connectedUser, manage, api, t, props.apiCreationPermitted)
               )}
             action={(team) => createNewApi(team)}
-            withAllTeamSelector={false}>
+            withAllTeamSelector={false}
+          >
             <div className="col-12 col-sm-2">
               <button className="btn btn-access-negative mb-2 float-right">
                 <i className="fas fa-plus-square" /> API
@@ -290,25 +289,27 @@ const ApiListComponent = (props) => {
           </ActionWithTeamSelector>
         )}
       </div>
-      <div className="d-flex mb-1 view-selectors">
-        <button
-          className={classNames('btn btn-access-negative mr-2', { active: view === LIST })}
-          onClick={() => setView(LIST)}>
-          <List />
-        </button>
-        <button
-          className={classNames('btn btn-access-negative', { active: view === GRID })}
-          onClick={() => setView(GRID)}>
-          <Grid />
-        </button>
+      <div className="row mb-2 view-selectors">
+        <div className="col-9 d-flex justify-content-end">
+          <button
+            className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
+            onClick={() => setView(LIST)}>
+            <List />
+          </button>
+          <button
+            className={classNames('btn btn-sm btn-access-negative', { active: view === GRID })}
+            onClick={() => setView(GRID)}>
+            <Grid />
+          </button>
+        </div>
       </div>
-      <div className="d-flex flex-row">
+      <div className="row">
         <div className="section col-9 d-flex flex-column">
           <div
             className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
               'flex-wrap': view === GRID,
-              'flex-row': view === GRID,
+              'row': view === GRID,
             })}>
             {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => (
@@ -363,7 +364,7 @@ const ApiListComponent = (props) => {
             <Top
               className="p-3 rounded additionalContent mb-2"
               title="Top tags"
-              icon="fas fa-tag mr-2"
+              icon="fas fa-tag me-2"
               list={tags}
               formatter={(tag) => tag.value}
               handleClick={setSelectedTag}
@@ -373,7 +374,7 @@ const ApiListComponent = (props) => {
             <Top
               className="p-3 rounded additionalContent"
               title="Top categories"
-              icon="fas fa-folder mr-2"
+              icon="fas fa-folder me-2"
               list={categories}
               formatter={(category) => category.value}
               handleClick={setSelectedCategory}
@@ -397,7 +398,6 @@ const mapDispatchToProps = {
 export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
 
 ApiListComponent.propTypes = {
-  history: PropTypes.object.isRequired,
   myTeams: PropTypes.array.isRequired,
   apis: PropTypes.array.isRequired,
   teams: PropTypes.array.isRequired,
@@ -421,9 +421,10 @@ const Top = (props) => {
       {props.list.slice(0, 10).map((item, idx) => {
         return (
           <span
-            className="badge badge-warning mr-1 cursor-pointer"
+            className="badge bg-warning me-1 cursor-pointer"
             key={idx}
-            onClick={() => props.handleClick(item)}>
+            onClick={() => props.handleClick(item)}
+          >
             {props.formatter(item)}
           </span>
         );
@@ -444,7 +445,7 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
     <div className={'top__container p-3 rounded additionalContent mb-2'}>
       <div>
         <h5>
-          <i className="fas fa-users mr-2" />
+          <i className="fas fa-users me-2" />
           {translateMethod('your teams', language)}
         </h5>
       </div>
@@ -468,7 +469,8 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
               <span
                 className="p-1 cursor-pointer underline-on-hover text-break"
                 key={team._id}
-                onClick={() => redirectToTeam(team)}>
+                onClick={() => redirectToTeam(team)}
+              >
                 {team.name}
               </span>
             );

@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment';
+import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import _ from 'lodash';
 
 import * as Services from '../../../services';
 
-import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
+import { OtoroshiStatsVizualization } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
@@ -40,6 +41,8 @@ function TeamApiConsumptionComponent(props) {
     viewByPlan: true,
   });
 
+  const navigate = useNavigate();
+  const params = useParams();
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const mappers = [
@@ -98,7 +101,7 @@ function TeamApiConsumptionComponent(props) {
                 data={sumGlobalInformations(data.filter((d) => d.plan === plan._id))}
                 period={state.period}
                 handleClick={() =>
-                  props.history.push(
+                  navigate(
                     `/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${state.api._humanReadableId}/${state.api.currentVersion}/plan/${plan._id}`
                   )
                 }
@@ -113,51 +116,42 @@ function TeamApiConsumptionComponent(props) {
   useEffect(() => {
     Promise.all([
       Services.teams(),
-      Services.teamApi(
-        props.currentTeam._id,
-        props.match.params.apiId,
-        props.match.params.versionId
-      ),
+      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
     ]).then(([teams, api]) => setState({ ...state, teams, api }));
+
+    document.title = `${props.currentTeam.name} - ${translateMethod('API consumption')}`;
   }, []);
 
   return (
-    <TeamBackOffice
-      tab="Apis"
-      isLoading={!state.api}
-      title={`${props.currentTeam.name} - ${translateMethod('API consumption')}`}>
-      <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
-        {!!state.api && (
-          <div className="d-flex col flex-column pricing-content">
-            <div className="row">
-              <div className="col-12">
-                <h1>
-                  <Translation i18nkey="api.consumption.title" replacements={[state.api.name]}>
-                    Api Consumption - {state.api.name}
-                  </Translation>
-                </h1>
-              </div>
-              <div className="col section p-2">
-                <OtoroshiStatsVizualization
-                  sync={() =>
-                    Services.syncApiConsumption(props.match.params.apiId, props.currentTeam._id)
-                  }
-                  fetchData={(from, to) =>
-                    Services.apiGlobalConsumption(
-                      props.match.params.apiId,
-                      props.currentTeam._id,
-                      from.valueOf(),
-                      to.valueOf()
-                    )
-                  }
-                  mappers={mappers}
-                />
-              </div>
+    <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
+      {!!state.api && (
+        <div className="d-flex col flex-column pricing-content">
+          <div className="row">
+            <div className="col-12">
+              <h1>
+                <Translation i18nkey="api.consumption.title" replacements={[state.api.name]}>
+                  Api Consumption - {state.api.name}
+                </Translation>
+              </h1>
+            </div>
+            <div className="col section p-2">
+              <OtoroshiStatsVizualization
+                sync={() => Services.syncApiConsumption(params.apiId, props.currentTeam._id)}
+                fetchData={(from, to) =>
+                  Services.apiGlobalConsumption(
+                    params.apiId,
+                    props.currentTeam._id,
+                    from.valueOf(),
+                    to.valueOf()
+                  )
+                }
+                mappers={mappers}
+              />
             </div>
           </div>
-        )}
-      </Can>
-    </TeamBackOffice>
+        </div>
+      )}
+    </Can>
   );
 }
 
@@ -170,15 +164,15 @@ export const TeamApiConsumption = connect(mapStateToProps)(TeamApiConsumptionCom
 function PlanLightConsumption(props) {
   const { translateMethod } = useContext(I18nContext);
 
-  renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
+  const renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
 
-  renderFreeWithQuotas = () => (
+  const renderFreeWithQuotas = () => (
     <span>
       You'll pay nothing but you'll have {props.plan.maxPerMonth} authorized requests per month
     </span>
   );
 
-  renderQuotasWithLimits = () => (
+  const renderQuotasWithLimits = () => (
     <span>
       You'll pay {props.plan.costPerMonth}
       <Currency plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
@@ -186,7 +180,7 @@ function PlanLightConsumption(props) {
     </span>
   );
 
-  renderQuotasWithoutLimits = () => (
+  const renderQuotasWithoutLimits = () => (
     <span>
       You'll pay {props.plan.costPerMonth}
       <Currency plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
@@ -195,7 +189,7 @@ function PlanLightConsumption(props) {
     </span>
   );
 
-  renderPayPerUse = () => {
+  const renderPayPerUse = () => {
     if (props.plan.costPerMonth === 0.0) {
       return (
         <span>
@@ -221,7 +215,8 @@ function PlanLightConsumption(props) {
   return (
     <div
       className={classNames('card mb-3 shadow-sm consumptions-plan')}
-      onClick={props.handleClick}>
+      onClick={props.handleClick}
+    >
       <div className="card-img-top card-data" data-holder-rendered="true">
         <GlobalDataConsumption data={props.data} />
       </div>

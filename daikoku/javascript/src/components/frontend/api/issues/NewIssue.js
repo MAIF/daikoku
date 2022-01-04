@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
+import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
+
 import { I18nContext } from '../../../../core';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 import * as Services from '../../../../services';
@@ -24,6 +26,7 @@ export function NewIssue({ user, api, ...props }) {
   const [availableApiVersions, setApiVersions] = useState([]);
 
   const { translateMethod } = useContext(I18nContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     Services.fetchNewIssue().then((template) => setIssue(template));
@@ -44,7 +47,7 @@ export function NewIssue({ user, api, ...props }) {
         if (res.error) toastr.error(res.error);
         else {
           toastr.success('Issue created');
-          props.history.push(`${props.basePath}/issues`);
+          navigate(`${props.basePath}/issues`);
         }
       });
     }
@@ -52,7 +55,7 @@ export function NewIssue({ user, api, ...props }) {
 
   return issue ? (
     <div className="d-flex">
-      <div className="dropdown pr-2">
+      <div className="dropdown pe-2">
         <img
           style={{ width: 42 }}
           src={user.picture}
@@ -123,7 +126,8 @@ export function NewIssue({ user, api, ...props }) {
             borderBottomLeftRadius: '8px',
             borderBottomRightRadius: '8px',
             backgroundColor: '#fff',
-          }}>
+          }}
+        >
           <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
               fullWidth

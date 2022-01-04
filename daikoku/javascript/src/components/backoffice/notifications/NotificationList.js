@@ -9,9 +9,11 @@ import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotications, openSubMetadataModal, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
+import { useParams } from 'react-router-dom';
 
 function NotificationListComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams();
 
   const [state, setState] = useState({
     notifications: [],
@@ -33,13 +35,15 @@ function NotificationListComponent(props) {
       Services.teams(),
       client.query({
         query: gql`
-          query AllVisibleApis {
+          query NotificationList {
             visibleApis {
               api {
                 _id
                 name
                 possibleUsagePlans {
                   _id
+                  type
+                  customName
                 }
               }
             }
@@ -53,7 +57,7 @@ function NotificationListComponent(props) {
         {
           data: { visibleApis },
         },
-      ]) =>
+      ]) => {
         setState({
           ...state,
           untreatedNotifications: notifications.notifications.filter((n) =>
@@ -65,7 +69,8 @@ function NotificationListComponent(props) {
           // page: state.page + 1,
           teams,
           apis: visibleApis.map(({ api }) => api),
-        })
+        });
+      }
     );
   }, []);
 
@@ -83,6 +88,11 @@ function NotificationListComponent(props) {
       }),
     });
     Services.acceptNotificationOfTeam(notificationId, values)
+      .then((res) => {
+        if (res.error)
+          window.alert(res.error, translateMethod('notification.accept.on_error.title'));
+        else return Promise.resolve();
+      })
       .then(() => Services.myNotifications(0, state.notifications.length))
       .then(({ notifications, count }) =>
         setState({
@@ -105,18 +115,15 @@ function NotificationListComponent(props) {
     });
     Services.rejectNotificationOfTeam(notificationId)
       .then(() => Services.myNotifications(0, state.notifications.length))
-      .then(({ notifications, count }) =>
-        setState(
-          {
-            ...state,
-            notifications,
-            count,
-            untreatedCount: count,
-            untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
-          },
-          () => props.updateNotifications(state.untreatedNotifications.length)
-        )
-      );
+      .then(({ notifications, count }) => {
+        setState({
+          ...state,
+          notifications,
+          count,
+          untreatedCount: count,
+          untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
+        });
+      });
   };
 
   useEffect(() => {
@@ -179,15 +186,16 @@ function NotificationListComponent(props) {
   return (
     <UserBackOffice
       tab="Notifications"
-      apiId={props.match.params.apiId}
+      apiId={params.apiId}
       notificationSubMenu={
         <ul className="nav flex-column sub-nav">
           <li
             className={classNames({
               'nav-item': true,
               active: state.tab === 'unread',
-            })}>
-            <a href="#" onClick={() => onSelectTab('unread')}>
+            })}
+          >
+            <a href="#unread" onClick={() => onSelectTab('unread')}>
               <Translation i18nkey="Untreated" count={state.untreatedCount}>
                 Untreated
               </Translation>
@@ -198,13 +206,15 @@ function NotificationListComponent(props) {
             className={classNames({
               'nav-item': true,
               active: state.tab === 'all',
-            })}>
-            <a href="#" onClick={() => onSelectTab('all')}>
+            })}
+          >
+            <a href="#all" onClick={() => onSelectTab('all')}>
               <Translation i18nkey="All notifications">All notifications</Translation>
             </a>
           </li>
         </ul>
-      }>
+      }
+    >
       <div className="row">
         <h1>
           <Translation i18nkey="Notifications" isPlural={true}>
@@ -247,7 +257,6 @@ function NotificationListComponent(props) {
                           getTeam={(id) => state.teams.find((team) => team._id === id)}
                           getApi={(id) => state.apis.find((a) => a._id === id)}
                           openSubMetadataModal={props.openSubMetadataModal}
-                          history={props.history}
                         />
                       ))}
                   </div>
@@ -257,7 +266,7 @@ function NotificationListComponent(props) {
             {state.nextIsPending && <Spinner />}
             {!state.nextIsPending && moreBtnIsDisplay() && (
               <button
-                className="btn btn-access-negative my-2 ml-2"
+                className="btn btn-access-negative my-2 ms-2"
                 onClick={() => getMoreNotifications()}>
                 <Translation i18nkey="more">more</Translation>
               </button>

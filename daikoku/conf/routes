@@ -4,6 +4,8 @@ GET     /assets/*file                                   controllers.Assets.versi
 ### NoDocs ###
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
+GET     /robots.txt                                      fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
 GET     /signup                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
 GET     /reset                                          fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
@@ -261,7 +263,7 @@ POST    /api/teams/:teamId/assets/:assetId/_replace     fr.maif.otoroshi.daikoku
 ### NoDocs ###
 DELETE  /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.deleteAsset(assetId)
 ### NoDocs ###
-GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId, streamed: Option[Boolean] ?= None)
+GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId)
 ### NoDocs ###
 GET     /tenant-assets                                  fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.listAssets()
 ### NoDocs ###
@@ -438,6 +440,8 @@ GET     /api/entities/user                              fr.maif.otoroshi.daikoku
 GET     /api/entities/otoroshi                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newOtoroshi()
 ### NoDocs ###
 GET     /api/entities/issue                             fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newIssue()
+### NoDocs ###
+GET     /api/entities/plan                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newPlan(planType: String)
 
 ### NoDocs ###
 POST    /api/jobs/otoroshi/_sync                        fr.maif.otoroshi.daikoku.ctrls.JobsController.otoroshiSyncJob()
@@ -533,20 +537,6 @@ DELETE  /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku
 PATCH   /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.patchEntity(id)
 PUT     /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.updateEntity(id)
 
-###
-#  summary: read a tenant
-#  tags:
-#    - Tenant Endpoints
-#  responses:
-#    200:
-#      description: success
-#      content:
-#        application/json:
-#          schema:
-#            type: object
-#            items:
-#              $ref: '#/components/schemas/fr.maif.otoroshi.daikoku.domain.DaikokuStyle'
-###
 GET     /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.findById(id)
 POST    /admin-api/tenants                              fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.createEntity()
 GET     /admin-api/tenants                              fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.findAll()
@@ -661,14 +651,14 @@ POST     /admin-api/search                               fr.maif.otoroshi.daikok
 GET      /admin-api/schema                               fr.maif.otoroshi.daikoku.ctrls.GraphQLController.adminApiSchema()
 
 
+GET     /integration-api/apis                           fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAll()
+GET     /integration-api/:teamId                        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAllTeam(teamId)
 GET     /integration-api/:teamId/:apiId/complete        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiComplete(teamId, apiId)
 GET     /integration-api/:teamId/:apiId/description     fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiDescription(teamId, apiId)
 GET     /integration-api/:teamId/:apiId/plans           fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiPlans(teamId, apiId)
 GET     /integration-api/:teamId/:apiId/documentation   fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiDocumentation(teamId, apiId)
 GET     /integration-api/:teamId/:apiId/apidoc          fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiSwagger(teamId, apiId)
 GET     /integration-api/:teamId/:apiId                 fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.api(teamId, apiId)
-GET     /integration-api/:teamId                        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAllTeam(teamId)
-GET     /integration-api/apis                           fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAll()
 
 ### NoDocs ###
 GET     /*path                      fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)

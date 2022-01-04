@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { useParams } from 'react-router-dom';
 
-import { TeamBackOffice } from '../TeamBackOffice';
 import {
   Can,
   manage,
@@ -15,7 +15,6 @@ import {
 import * as Services from '../../../services';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
 import { I18nContext, openSubMetadataModal } from '../../../core';
-import { useParams } from 'react-router-dom';
 
 const TeamApiSubscriptionsComponent = (props) => {
   const [api, setApi] = useState(undefined);
@@ -30,17 +29,15 @@ const TeamApiSubscriptionsComponent = (props) => {
 
   useEffect(() => {
     Promise.all([
-      Services.teamApi(
-        props.currentTeam._id,
-        props.match.params.apiId,
-        props.match.params.versionId
-      ),
+      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.teams(),
     ]).then(([api, teams]) => {
       setApi(api);
       setTeams(teams);
       setLoading(false);
     });
+
+    document.title = `${props.currentTeam.name} - ${translateMethod('Subscriptions')}`;
   }, []);
 
   useEffect(() => {
@@ -127,7 +124,8 @@ const TeamApiSubscriptionsComponent = (props) => {
                     key={`edit-meta-${sub._humanReadableId}`}
                     type="button"
                     className="btn btn-sm btn-access-negative"
-                    onClick={() => updateMeta(sub)}>
+                    onClick={() => updateMeta(sub)}
+                  >
                     <i className="fas fa-edit" />
                   </button>
                 </BeautifulTitle>
@@ -136,7 +134,8 @@ const TeamApiSubscriptionsComponent = (props) => {
                     key={`edit-meta-${sub._humanReadableId}`}
                     type="button"
                     className="btn btn-sm btn-access-negative btn-danger"
-                    onClick={() => regenerateSecret(sub)}>
+                    onClick={() => regenerateSecret(sub)}
+                  >
                     <i className="fas fa-sync" />
                   </button>
                 </BeautifulTitle>
@@ -183,45 +182,34 @@ const TeamApiSubscriptionsComponent = (props) => {
   };
 
   return (
-    <TeamBackOffice
-      tab="Apis"
-      apiId={props.match.params.apiId}
-      isLoading={loading}
-      title={`${props.currentTeam.name} - ${translateMethod('Subscriptions')}`}>
-      <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
-        {!loading && (
-          <div className="row">
-            <div className="col-12">
-              <h1>
-                <Translation i18nkey="Api subscriptions">Api subscriptions</Translation> -{' '}
-                {api.name}
-              </h1>
-            </div>
-            <div className="col-12">
-              <Table
-                selfUrl="apis"
-                defaultTitle="Ai subscriptions"
-                defaultValue={() => ({})}
-                defaultSort="name"
-                itemName="sub"
-                columns={columns}
-                fetchItems={() =>
-                  Services.apiSubscriptions(
-                    props.match.params.apiId,
-                    props.currentTeam._id,
-                    params.versionId
-                  )
-                }
-                showActions={false}
-                showLink={false}
-                extractKey={(item) => item._id}
-                injectTable={(t) => setTable(t)}
-              />
-            </div>
+    <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
+      {!loading && (
+        <div className="row">
+          <div className="col-12">
+            <h1>
+              <Translation i18nkey="Api subscriptions">Api subscriptions</Translation> - {api.name}
+            </h1>
           </div>
-        )}
-      </Can>
-    </TeamBackOffice>
+          <div className="col-12">
+            <Table
+              selfUrl="apis"
+              defaultTitle="Ai subscriptions"
+              defaultValue={() => ({})}
+              defaultSort="name"
+              itemName="sub"
+              columns={columns}
+              fetchItems={() =>
+                Services.apiSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+              }
+              showActions={false}
+              showLink={false}
+              extractKey={(item) => item._id}
+              injectTable={(t) => setTable(t)}
+            />
+          </div>
+        </div>
+      )}
+    </Can>
   );
 };
 

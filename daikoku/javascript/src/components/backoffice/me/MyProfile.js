@@ -5,6 +5,9 @@ import md5 from 'js-md5';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { Form, type, format, constraints } from '@maif/react-forms';
+import faker from 'faker';
+import { connect } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import { UserBackOffice } from '../../backoffice';
 import { I18nContext, updateUser } from '../../../core';
@@ -68,19 +71,21 @@ function TwoFactorAuthentication({ user }) {
           <div className="d-flex w-100 mb-3">
             <input type="text" disabled={true} value={backupCodes} className="form-control" />
             <button
-              className="btn btn-outline-success ml-1"
+              className="btn btn-outline-success ms-1"
               type="button"
               onClick={() => {
                 navigator.clipboard.writeText(backupCodes);
                 toastr.success('Copied');
-              }}>
+              }}
+            >
               <i className="fas fa-copy" />
             </button>
           </div>
           <button
             className="btn btn-outline-success"
             type="button"
-            onClick={() => window.location.reload()}>
+            onClick={() => window.location.reload()}
+          >
             {translateMethod('2fa.confirm')}
           </button>
         </div>
@@ -176,9 +181,10 @@ function TwoFactorAuthentication({ user }) {
                 className="form-control"
               />
               <button
-                className="btn btn-outline-success ml-1"
+                className="btn btn-outline-success ms-1"
                 type="button"
-                onClick={copyToClipboard}>
+                onClick={copyToClipboard}
+              >
                 <i className="fas fa-copy" />
               </button>
             </div>
@@ -328,6 +334,8 @@ function MyProfileComponent(props) {
   const { translateMethod, setLanguage, language, Translation, languages } =
     useContext(I18nContext);
 
+  const navigate = useNavigate();
+
   const formSchema = {
     name: {
       type: type.string,
@@ -435,7 +443,7 @@ function MyProfileComponent(props) {
       .then((ok) => {
         if (ok) {
           Services.deleteSelfUserById().then(() => {
-            props.history.push('/logout');
+            navigate('/logout');
           });
         }
       });

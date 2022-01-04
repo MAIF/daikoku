@@ -35,9 +35,7 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
         <h5 className="modal-title">
           <Translation i18nkey="Select an asset">Select an asset</Translation>
         </h5>
-        <button type="button" className="close" aria-label="Close" onClick={closeModal}>
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal}/>
       </div>
       <div className="modal-body">
         <div className="asset-selection-body">
@@ -51,7 +49,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
               'asset-selection__container--column': !onlyPreview,
               'asset-selection__container--row': onlyPreview,
               tiles: onlyPreview,
-            })}>
+            })}
+          >
             {filteredAssets.map((asset, idx) => {
               if (onlyPreview) {
                 return (
@@ -59,7 +58,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
                     className={classNames('tile', {
                       selected: asset.value === selectedAsset.value,
                     })}
-                    key={idx}>
+                    key={idx}
+                  >
                     <img
                       onClick={() => setSelectedAsset(asset)}
                       onDoubleClick={() => {
@@ -84,7 +84,7 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
                     selected: asset.value === selectedAsset.value,
                   })}
                   onClick={() => setSelectedAsset(asset)}>
-                  <span className="ml-2">{asset.title}</span>
+                  <span className="ms-2">{asset.title}</span>
                 </div>
               );
             })}
@@ -109,7 +109,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
         <button
           type="button"
           className="btn btn-outline-success"
-          onClick={() => selectAssetAndCloseModal()}>
+          onClick={() => selectAssetAndCloseModal()}
+        >
           <Translation i18nkey="Select">Select</Translation>
         </button>
       </div>
@@ -196,7 +197,7 @@ export function AssetChooserComponent(props) {
 
   if (state.assets && state.loading) {
     return (
-      <button type="button" className="btn btn-outline-success ml-1" disabled>
+      <button type="button" className="btn btn-outline-success ms-1" disabled>
         <Translation i18nkey="loading">loading...</Translation>
       </button>
     );
@@ -205,11 +206,11 @@ export function AssetChooserComponent(props) {
   if (state.error) {
     return (
       <BeautifulTitle title={state.error.message}>
-        <button type="button" className="btn btn-outline-primary ml-1 cursor-help" disabled>
+        <button type="button" className="btn btn-outline-primary ms-1 cursor-help" disabled>
           <i
             className={classNames('fas', {
-              'fa-user-circle mr-1': !!props.onlyPreview,
-              'fa-file mr-1': !props.onlyPreview,
+              'fa-user-circle me-1': !!props.onlyPreview,
+              'fa-file me-1': !props.onlyPreview,
             })}
           />
           {props.label}
@@ -221,9 +222,9 @@ export function AssetChooserComponent(props) {
   if (!state.assets.length) {
     return (
       <BeautifulTitle title={translateMethod('No assets found')}>
-        <button type="button" className="btn btn-sm btn-access-negative ml-1 cursor-help" disabled>
+        <button type="button" className="btn btn-sm btn-access-negative ms-1 cursor-help" disabled>
           <i
-            className={classNames('fas mr-1', {
+            className={classNames('fas me-1', {
               'fa-user-circle': !!props.onlyPreview,
               'fa-file': !props.onlyPreview,
             })}
@@ -237,7 +238,7 @@ export function AssetChooserComponent(props) {
   return (
     <button
       type="button"
-      className={props.classNames ? props.classNames : 'btn btn-access-negative ml-1'}
+      className={props.classNames ? props.classNames : 'btn btn-access-negative ms-1'}
       onClick={() =>
         props.openAssetSelectorModal({
           open: true,
@@ -246,12 +247,13 @@ export function AssetChooserComponent(props) {
           onlyPreview: props.onlyPreview,
           panelView: true,
         })
-      }>
+      }
+    >
       <i
         className={
           props.icon
             ? props.icon
-            : classNames('fas mr-1', {
+            : classNames('fas me-1', {
                 'fa-user-circle': !!props.onlyPreview,
                 'fa-file': !props.onlyPreview,
               })

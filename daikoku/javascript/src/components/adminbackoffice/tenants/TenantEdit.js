@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
@@ -73,7 +73,7 @@ function StyleLogoAssetButton(props) {
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.image}
         onlyPreview
@@ -93,7 +93,7 @@ function StyleJsUrlAssetButton(props) {
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.javascript}
         tenantMode
@@ -113,7 +113,7 @@ function StyleCssUrlAssetButton(props) {
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
 
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.css}
         tenantMode
@@ -132,7 +132,7 @@ function StyleFaviconUrlAssetButton(props) {
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.image}
         onlyPreview
@@ -152,7 +152,7 @@ function StyleFontFamilyUrlAssetButton(props) {
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.font}
         tenantMode
@@ -167,15 +167,15 @@ function StyleFontFamilyUrlAssetButton(props) {
 
 function ThemeUpdatorFromUI(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
 
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <button
         type="button"
         className="btn btn-access-negative"
-        onClick={() => {
-          const RedirectToUI = () =>
-            props.history.push(`/settings/tenants/${props.tenant()._id}/style`);
+        onClick={(e) => {
+          const RedirectToUI = () => navigate(`/settings/tenants/${props.tenant()._id}/style`);
           if (props.isTenantUpdated()) {
             props.openModal({
               open: true,
@@ -191,7 +191,8 @@ function ThemeUpdatorFromUI(props) {
           } else {
             RedirectToUI();
           }
-        }}>
+        }}
+      >
         <Translation i18nkey="Set Color Theme from UI">Set Color Theme from UI</Translation>
       </button>
     </div>
@@ -216,6 +217,9 @@ export function TenantEditComponent(props) {
   const { translateMethod, language, Translation, languages, setTranslationMode } =
     useContext(I18nContext);
 
+  const params = useParams();
+  const location = useLocation();
+
   const [state, setState] = useState({
     tenant: null,
     create: false,
@@ -227,7 +231,6 @@ export function TenantEditComponent(props) {
     'enabled',
     'name',
     'domain',
-    'exposedPort',
     'defaultLanguage',
     'contact',
     'tenantMode',
@@ -289,6 +292,8 @@ export function TenantEditComponent(props) {
     `>>> ${translateMethod('Unlogged home description')}`,
     'style.homePageVisible',
     'style.unloggedHome',
+    `>>> ${translateMethod('SEO')}`,
+    'robotTxt',
   ];
 
   const elasticConfigFormFlow = ['clusterUri', 'index', 'type', 'user', 'password'];
@@ -367,12 +372,6 @@ export function TenantEditComponent(props) {
     domain: {
       type: 'string',
       props: { label: translateMethod('Domain name') },
-    },
-    exposedPort: {
-      type: 'number',
-      props: {
-        label: translateMethod('Exposed port'),
-      },
     },
     defaultLanguage: {
       type: 'select',
@@ -461,7 +460,6 @@ export function TenantEditComponent(props) {
       props: {
         tenant: () => state.tenant,
         save: () => save(),
-        history: props.history,
         isTenantUpdated: () => !!state.updated,
         openModal: (p) => props.openSaveOrCancelModal({ ...p }),
       },
@@ -616,6 +614,10 @@ export function TenantEditComponent(props) {
       type: MailerConfig,
       props: {
         label: translateMethod('Mailer'),
+        tenant: () => state.tenant,
+        save: () => save(),
+        isTenantUpdated: () => !!state.updated,
+        openModal: (p) => props.openSaveOrCancelModal({ ...p }),
       },
     },
     'daikokuHeader.name': {
@@ -776,29 +778,35 @@ export function TenantEditComponent(props) {
     tenantMode: {
       type: 'select',
       props: {
-        label: translateMethod('Modes'),
+        label: translateMethod('Mode'),
         possibleValues: [
           { label: translateMethod('Default mode'), value: 'default' },
           { label: translateMethod('Maintenance mode'), value: 'maintenance' },
           { label: translateMethod('Construction mode'), value: 'construction' },
-          { label: translateMethod('Translation mode'), value: 'translation' },
         ],
+      },
+    },
+    robotTxt: {
+      type: 'text',
+      props: {
+        label: translateMethod('Robot.txt.label'),
+        Help: translateMethod('Robot.txt.help'),
       },
     },
   };
 
   useEffect(() => {
-    if (props.location && props.location.state && props.location.state.newTenant) {
+    if (location && location.state && location.state.newTenant) {
       setState({
         ...state,
         tenant: {
-          ...props.location.state.newTenant,
-          bucketSettings: props.location.state.newTenant.bucketSettings || {},
+          ...location.state.newTenant,
+          bucketSettings: location.state.newTenant.bucketSettings || {},
         },
         create: true,
       });
     } else {
-      Services.oneTenant(props.match.params.tenantId).then((tenant) => {
+      Services.oneTenant(params.tenantId).then((tenant) => {
         setState({
           ...state,
           tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
@@ -848,11 +856,11 @@ export function TenantEditComponent(props) {
               <div className="avatar__container">
                 <img
                   style={{ width: '100%', height: 'auto' }}
-                  src={state.tenant.style.logo}
+                  src={state.tenant?.style?.logo}
                   alt="avatar"
                 />
               </div>
-              <h1 className="h1-rwd-reduce ml-2">{state.tenant.name}</h1>
+              <h1 className="h1-rwd-reduce ms-2">{state.tenant.name}</h1>
             </div>
             <React.Suspense fallback={<Spinner />}>
               <LazyForm
@@ -864,19 +872,11 @@ export function TenantEditComponent(props) {
               />
             </React.Suspense>
             <div style={{ height: 60 }} />
-            <div className="row form-back-fixedBtns">
-              <Link className="btn btn-outline-primary mr-1" to={'/settings/tenants'}>
-                <i className="fas fa-chevron-left mr-1" />
+            <div className="d-flex form-back-fixedBtns">
+              <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
+                <i className="fas fa-chevron-left me-1" />
                 <Translation i18nkey="Back">Back</Translation>
               </Link>
-              {!state.create && (
-                <Link
-                  className="btn btn-outline-primary mr-1"
-                  to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}>
-                  <i className="fas fa-user-shield mr-1" />
-                  <Translation i18nkey="Admins">Admins</Translation>
-                </Link>
-              )}
               <button
                 type="button"
                 className="btn btn-outline-success"
@@ -884,13 +884,13 @@ export function TenantEditComponent(props) {
                 onClick={save}>
                 {!state.create && (
                   <span>
-                    <i className="fas fa-save mr-1" />
+                    <i className="fas fa-save me-1" />
                     <Translation i18nkey="Save">Save</Translation>
                   </span>
                 )}
                 {state.create && (
                   <span>
-                    <i className="fas fa-save mr-1" />
+                    <i className="fas fa-save me-1" />
                     <Translation i18nkey="Create">Create</Translation>
                   </span>
                 )}

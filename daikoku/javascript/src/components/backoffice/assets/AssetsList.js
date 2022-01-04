@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { TeamBackOffice, UserBackOffice } from '..';
+import { UserBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, asset, Spinner, tenant as TENANT } from '../../utils';
 import { openWysywygModal } from '../../../core/modal';
@@ -84,9 +85,7 @@ const maybeCreateThumbnail = (id, file) => {
   });
 };
 
-const handleAssetType = (tenantMode, type) => {
-  const { translateMethod } = useContext(I18nContext);
-
+const handleAssetType = (tenantMode, type, translateMethod) => {
   return new Promise(function (resolve, reject) {
     if (tenantMode) {
       return resolve(true);
@@ -187,8 +186,8 @@ const FileInput = (props) => {
         className="btn btn-outline-success pl"
         disabled={uploading}
         onClick={trigger}>
-        {uploading && <i className="fas fa-spinner mr-1" />}
-        {!uploading && <i className="fas fa-upload mr-1" />}
+        {uploading && <i className="fas fa-spinner me-1" />}
+        {!uploading && <i className="fas fa-upload me-1" />}
         <Translation i18nkey="Select file">Select file</Translation>
       </button>
     </div>
@@ -198,7 +197,7 @@ const FileInput = (props) => {
 const AddAsset = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div className="col-sm-10">
         <button
@@ -207,7 +206,7 @@ const AddAsset = (props) => {
           title={translateMethod('Add asset')}
           disabled={props.disabled ? 'disabled' : undefined}
           onClick={() => props.addAsset()}>
-          <i className="fas fa-plus mr-1" />
+          <i className="fas fa-plus me-1" />
           <Translation i18nkey="Add asset">Add asset</Translation>
         </button>
       </div>
@@ -215,7 +214,7 @@ const AddAsset = (props) => {
   );
 };
 
-const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysywygModal }) => {
+const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal }) => {
   const [assets, setAssets] = useState([]);
   const [newAsset, setNewAsset] = useState({});
   const [loading, setLoading] = useState(true);
@@ -230,6 +229,11 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
 
   useEffect(() => {
     fetchAssets();
+
+    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod(
+      'Asset',
+      true
+    )}`;
   }, []);
 
   const flow = ['filename', 'title', 'description', 'contentType', 'input', 'add'];
@@ -334,7 +338,8 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
               <button
                 type="button"
                 onClick={() => readAndUpdate(item)}
-                className="btn btn-sm btn-outline-primary">
+                className="btn btn-sm btn-outline-primary"
+              >
                 <i className="fas fa-pen" />
               </button>
             )}
@@ -350,13 +355,14 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
             <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
               <button
                 className="btn btn-sm btn-outline-primary"
-                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
+                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
+              >
                 <i className="fas fa-eye" />
               </button>
             </a>
             <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
               <button
-                className="btn btn-sm btn-outline-primary mr-1"
+                className="btn btn-sm btn-outline-primary me-1"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
                 <i className="fas fa-download" />
               </button>
@@ -364,7 +370,8 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
             <button
               type="button"
               onClick={() => deleteAsset(item)}
-              className="btn btn-sm btn-outline-danger">
+              className="btn btn-sm btn-outline-danger"
+            >
               <i className="fas fa-trash" />
             </button>
           </div>
@@ -474,7 +481,7 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
             });
           });
         } else {
-          return handleAssetType(tenantMode, file.type)
+          return handleAssetType(tenantMode, file.type, translateMethod)
             .then(() =>
               Services.storeAsset(
                 currentTeam._id,
@@ -524,57 +531,58 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
       }
     });
 
-  const BackOffice = tenantMode ? UserBackOffice : TeamBackOffice;
-  return (
-    <BackOffice
-      tab="Assets"
-      apiId={match.params.apiId}
-      title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}>
-      <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
-        <div className="row">
-          <div className="col">
-            <h1>
-              {tenantMode ? translateMethod('Tenant') : currentTeam.name}{' '}
-              {translateMethod('asset', true)}
-            </h1>
-          </div>
-        </div>
-        {loading && <Spinner />}
-        {error && <div className="alert alert-danger">{error}</div>}
-        {!loading && !error && (
-          <>
-            <div className="row">
-              <div className="col-12 mb-3 d-flex justify-content-start">
-                <React.Suspense fallback={<Spinner />}>
-                  <LazyForm
-                    flow={flow}
-                    schema={schema}
-                    value={newAsset}
-                    onChange={(newAsset) => setNewAsset(newAsset)}
-                  />
-                </React.Suspense>
-              </div>
-            </div>
-            <div className="row">
-              <div className="col">
-                <Table
-                  selfUrl="assets"
-                  defaultTitle="Team assets"
-                  defaultValue={() => ({})}
-                  itemName="asset"
-                  columns={columns}
-                  fetchItems={() => Promise.resolve(assetList)}
-                  showActions={false}
-                  showLink={false}
-                  extractKey={(item) => item.key}
+  const params = useParams();
+
+  const View = () => (
+    <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
+      {loading && <Spinner />}
+      {error && <div className="alert alert-danger">{error}</div>}
+      {!loading && !error && (
+        <>
+          <div className="row">
+            <div className="col-12 mb-3 d-flex justify-content-start">
+              <React.Suspense fallback={<Spinner />}>
+                <LazyForm
+                  flow={flow}
+                  schema={schema}
+                  value={newAsset}
+                  onChange={(newAsset) => setNewAsset(newAsset)}
                 />
-              </div>
+              </React.Suspense>
             </div>
-          </>
-        )}
-      </Can>
-    </BackOffice>
+          </div>
+          <div className="row">
+            <div className="col">
+              <Table
+                selfUrl="assets"
+                defaultTitle="Team assets"
+                defaultValue={() => ({})}
+                itemName="asset"
+                columns={columns}
+                fetchItems={() => Promise.resolve(assetList)}
+                showActions={false}
+                showLink={false}
+                extractKey={(item) => item.key}
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </Can>
   );
+
+  if (tenantMode)
+    return (
+      <UserBackOffice
+        tab="Assets"
+        apiId={params.apiId}
+        title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}
+      >
+        <View />
+      </UserBackOffice>
+    );
+
+  return <View />;
 };
 
 const mapStateToProps = (state) => ({

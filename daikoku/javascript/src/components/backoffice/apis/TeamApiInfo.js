@@ -14,7 +14,7 @@ const StyleLogoAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.image}
         onlyPreview

@@ -3,10 +3,11 @@ import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
 import { SketchPicker } from 'react-color';
+import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
-import { Can, daikoku, manage, Option } from '../../utils';
+import { Can, tenant as TENANT, manage, Option } from '../../utils';
 
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
 import { I18nContext } from '../../../core';
@@ -15,6 +16,7 @@ const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 
 export function TenantStyleEditComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams();
 
   const [state, setState] = useState({
     tenant: null,
@@ -36,7 +38,7 @@ export function TenantStyleEditComponent(props) {
         create: true,
       });
     } else {
-      Services.oneTenant(props.match.params.tenantId).then((tenant) => {
+      Services.oneTenant(params.tenantId).then((tenant) => {
         const style = state.style.map(({ value, defaultColor, group }) => {
           const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
             () => defaultColor,
@@ -60,7 +62,7 @@ export function TenantStyleEditComponent(props) {
     }, ':root {\n') + '}';
 
   const goBack = () => {
-    props.history.goBack();
+    navigate(`/settings/tenants/${state.tenant._id}`);
   };
 
   const reset = () => {
@@ -81,12 +83,13 @@ export function TenantStyleEditComponent(props) {
   return (
     <UserBackOffice tab="Tenants" isLoading={!state.tenant}>
       {state.tenant && (
-        <Can I={manage} a={daikoku} dispatchError>
+        <Can I={manage} a={TENANT} dispatchError>
           <div className="d-flex flex-row justify-content-between mb-1">
             <div>
               <button
                 className="btn btn-access-negative"
-                onClick={() => setState({ ...state, preview: !state.preview })}>
+                onClick={() => setState({ ...state, preview: !state.preview })}
+              >
                 <Translation i18nkey="Preview">Preview</Translation>
               </button>
             </div>
@@ -163,7 +166,9 @@ class Preview extends React.Component {
   _updateIframe() {
     const iframe = this.iframe;
     const document = iframe.contentDocument;
-    const head = document.getElementsByTagName('head')[0];
+    const head = Option(document.getElementsByTagName('head'))
+      .map((h) => h[0])
+      .getOrNull();
 
     window.parent.document.querySelectorAll('link[rel=stylesheet]').forEach((link) => {
       var newLink = document.createElement('link');

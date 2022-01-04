@@ -33,23 +33,26 @@ export function ApiIssues({ filter, api, selectedVersion }) {
           <div
             className="border-bottom py-3 d-flex align-items-center justify-content-between"
             key={`issue-${seqId}`}
-            style={{ backgroundColor: '#fff' }}>
+            style={{ backgroundColor: '#fff' }}
+          >
             <div className="d-flex align-items-center">
               <i
                 className="fa fa-exclamation-circle mx-3"
-                style={{ color: open ? 'inherit' : 'red' }}></i>
+                style={{ color: open ? 'inherit' : 'red' }}
+              ></i>
               <div>
                 <div>
-                  <Link to={`issues/${_id}`} className="mr-2">
+                  <Link to={`issues/${_id}`} className="me-2">
                     {title}
                   </Link>
                   {tags
                     .sort((a, b) => (a.name < b.name ? -1 : 1))
                     .map((tag, i) => (
                       <span
-                        className="badge badge-primary mr-1"
+                        className="badge bg-primary me-1"
                         style={{ backgroundColor: tag.color }}
-                        key={`issue-${seqId}-tag${i}`}>
+                        key={`issue-${seqId}-tag${i}`}
+                      >
                         {tag.name}
                       </span>
                     ))}
@@ -60,11 +63,11 @@ export function ApiIssues({ filter, api, selectedVersion }) {
                     {moment(createdDate).format(
                       translateMethod('moment.date.format.without.hours')
                     )}{' '}
-                    {translateMethod('issues.by')} {by._humanReadableId}
+                    {translateMethod('issues.by')} {by.name}
                   </span>
                 ) : (
                   <span>
-                    #{seqId} {translateMethod('issues.by')} {by._humanReadableId}{' '}
+                    #{seqId} {translateMethod('issues.by')} {by.name}{' '}
                     {translateMethod('was closed on')}{' '}
                     {moment(closedDate).format(translateMethod('moment.date.format.without.hours'))}{' '}
                   </span>
@@ -72,7 +75,7 @@ export function ApiIssues({ filter, api, selectedVersion }) {
               </div>
             </div>
             <div className="py-2 px-3">
-              <span className="badge badge-info">{apiVersion}</span>
+              <span className="badge bg-info">{apiVersion}</span>
             </div>
           </div>
         )

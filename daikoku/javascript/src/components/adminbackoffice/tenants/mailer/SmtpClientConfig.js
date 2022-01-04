@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 import { Spinner } from '../../../utils';
 import { MailTemplateButton } from './MailTemplateButton';
+import { I18nContext } from '../../../../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function SmtpClientConfig({ value, onChange }) {
+export function SmtpClientConfig({ value, onChange, ...props }) {
   const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['host', 'port', 'fromTitle', 'fromEmail', 'template'];
@@ -36,7 +37,7 @@ export function SmtpClientConfig({ value, onChange }) {
       },
     },
     template: {
-      type: () => <MailTemplateButton />,
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 

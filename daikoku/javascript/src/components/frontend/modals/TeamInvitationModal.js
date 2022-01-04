@@ -36,9 +36,7 @@ export const TeamInvitationModal = (props) => {
   return (
     <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
       <div className="modal-header d-flex flex-column align-items-center">
-        <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
         <i className="fas fa-users fa-2x mb-3" />
         <h5 className="modal-title text-center">
           {translateMethod('team_member.invite_user_to')}
@@ -66,14 +64,16 @@ export const TeamInvitationModal = (props) => {
           <button
             onClick={invitUser}
             className="btn btn-success mt-3 btn-block btn-lg"
-            type="button">
+            type="button"
+          >
             {translateMethod('Search')}
           </button>
         ) : (
           <button
             className="btn btn-success mt-3 btn-block btn-lg"
             type="button"
-            onClick={invitUser}>
+            onClick={invitUser}
+          >
             {translateMethod('team_member.send_email')}
           </button>
         )}

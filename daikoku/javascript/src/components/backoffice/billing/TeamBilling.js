@@ -3,7 +3,6 @@ import { connect } from 'react-redux';
 import moment from 'moment';
 import _ from 'lodash';
 
-import { TeamBackOffice } from '../TeamBackOffice';
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { formatCurrency, formatPlanType, Can, read, stat } from '../../utils';
@@ -23,6 +22,8 @@ function TeamBillingComponent(props) {
 
   useEffect(() => {
     getTeamBilling(props.currentTeam);
+
+    document.title = `${props.currentTeam.name} - ${translateMethod('Billing')}`;
   }, []);
 
   const getTeamBilling = (team) => {
@@ -96,96 +97,89 @@ function TeamBillingComponent(props) {
     mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
   return (
-    <TeamBackOffice
-      tab="Billing"
-      isLoading={state.loading}
-      title={`${props.currentTeam.name} - ${translateMethod('Billing')}`}>
-      <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
-        <div className="row">
-          <div className="col">
-            <h1>
-              <Translation i18nkey="Billing">Billing</Translation>
-            </h1>
-            <div className="row">
-              <div className="col apis">
-                <div className="row month__and__total">
-                  <div className="col-12 month__selector d-flex align-items-center">
-                    <MonthPicker updateDate={getBilling} value={state.date} />
-                    <button className="btn btn-sm btn-access-negative" onClick={sync}>
-                      <i className="fas fa-sync-alt ml-1" />
-                    </button>
-                    {lastDate && (
-                      <i className="ml-1">
-                        <Translation i18nkey="date.update" replacements={[lastDate]}>
-                          upd. {lastDate}
-                        </Translation>
-                      </i>
-                    )}
-                  </div>
-                </div>
-                <div className="row api__billing__card__container section p-2">
-                  <TheadBillingContainer
-                    label={translateMethod('Subscribed Apis')}
-                    total={formatCurrency(total)}
-                  />
-                  {!state.consumptionsByApi.length && <NoData />}
-                  {state.consumptionsByApi
-                    .sort((api1, api2) => api2.billing.total - api1.billing.total)
-                    .map(({ api, billing }) => (
-                      <ApiTotal
-                        key={api}
-                        handleClick={() =>
-                          setState({
-                            ...state,
-                            selectedApi: state.apis.find((a) => a._id === api),
-                          })
-                        }
-                        api={state.apis.find((a) => a._id === api)}
-                        total={billing.total}
-                      />
-                    ))}
-                  <TheadBillingContainer
-                    label={translateMethod('Subscribed Apis')}
-                    total={formatCurrency(total)}
-                  />
+    <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
+      <div className="row">
+        <div className="col">
+          <h1>
+            <Translation i18nkey="Billing">Billing</Translation>
+          </h1>
+          <div className="row">
+            <div className="col apis">
+              <div className="row month__and__total">
+                <div className="col-12 month__selector d-flex align-items-center">
+                  <MonthPicker updateDate={getBilling} value={state.date} />
+                  <button className="btn btn-sm btn-access-negative" onClick={sync}>
+                    <i className="fas fa-sync-alt ms-1" />
+                  </button>
+                  {lastDate && (
+                    <i className="ms-1">
+                      <Translation i18nkey="date.update" replacements={[lastDate]}>
+                        upd. {lastDate}
+                      </Translation>
+                    </i>
+                  )}
                 </div>
               </div>
-              <div className="col apikeys">
-                {state.selectedApi && (
-                  <div className="api-plans-consumptions section p-2">
-                    <div className="api__plans__consumption__header">
-                      <h3 className="api__name">{state.selectedApi.name}</h3>
-                      <i
-                        className="far fa-times-circle quit"
-                        onClick={() => setState({ ...state, selectedApi: undefined })}
-                      />
-                    </div>
-                    {state.consumptions
-                      .filter((c) => c.api === state.selectedApi._id)
-                      .sort((c1, c2) => c2.billing.total - c1.billing.total)
-                      .map(({ plan, billing }, idx) => {
-                        const usagePlan = state.selectedApi.possibleUsagePlans.find(
-                          (pp) => pp._id === plan
-                        );
-                        return (
-                          <PriceCartridge
-                            key={idx}
-                            label={
-                              usagePlan.customName || formatPlanType(usagePlan, translateMethod)
-                            }
-                            total={billing.total}
-                            currency={usagePlan.currency}
-                          />
-                        );
-                      })}
-                  </div>
-                )}
+              <div className="row api__billing__card__container section p-2">
+                <TheadBillingContainer
+                  label={translateMethod('Subscribed Apis')}
+                  total={formatCurrency(total)}
+                />
+                {!state.consumptionsByApi.length && <NoData />}
+                {state.consumptionsByApi
+                  .sort((api1, api2) => api2.billing.total - api1.billing.total)
+                  .map(({ api, billing }) => (
+                    <ApiTotal
+                      key={api}
+                      handleClick={() =>
+                        setState({
+                          ...state,
+                          selectedApi: state.apis.find((a) => a._id === api),
+                        })
+                      }
+                      api={state.apis.find((a) => a._id === api)}
+                      total={billing.total}
+                    />
+                  ))}
+                <TheadBillingContainer
+                  label={translateMethod('Subscribed Apis')}
+                  total={formatCurrency(total)}
+                />
               </div>
+            </div>
+            <div className="col apikeys">
+              {state.selectedApi && (
+                <div className="api-plans-consumptions section p-2">
+                  <div className="api__plans__consumption__header">
+                    <h3 className="api__name">{state.selectedApi.name}</h3>
+                    <i
+                      className="far fa-times-circle quit"
+                      onClick={() => setState({ ...state, selectedApi: undefined })}
+                    />
+                  </div>
+                  {state.consumptions
+                    .filter((c) => c.api === state.selectedApi._id)
+                    .sort((c1, c2) => c2.billing.total - c1.billing.total)
+                    .map(({ plan, billing }, idx) => {
+                      const usagePlan = state.selectedApi.possibleUsagePlans.find(
+                        (pp) => pp._id === plan
+                      );
+                      return (
+                        <PriceCartridge
+                          key={idx}
+                          label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)}
+                          total={billing.total}
+                          currency={usagePlan.currency}
+                        />
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </Can>
-    </TeamBackOffice>
+      </div>
+    </Can>
   );
 }
 

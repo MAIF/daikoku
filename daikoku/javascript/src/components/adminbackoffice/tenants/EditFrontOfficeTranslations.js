@@ -29,7 +29,7 @@ const TranslationInput = ({ key, tsl, save }) => {
     <div className="px-3 py-1 section mb-2" key={`${key}`}>
       <div className="d-flex align-items-center justify-content-between">
         <div>
-          <span className="badge badge-info mr-3 align-self-center">Default</span>
+          <span className="badge bg-info me-3 align-self-center">Default</span>
           <span style={{ fontWeight: 'bold' }}>{tsl.length > 0 ? tsl[0].default : key}</span>
         </div>
         {!edited && (
@@ -44,7 +44,8 @@ const TranslationInput = ({ key, tsl, save }) => {
               onClick={() => {
                 save(values);
                 setEdited(false);
-              }}>
+              }}
+            >
               <i className="fas fa-save" />
             </button>
             <button
@@ -52,7 +53,8 @@ const TranslationInput = ({ key, tsl, save }) => {
               onClick={() => {
                 setValues(entryValues);
                 setEdited(false);
-              }}>
+              }}
+            >
               <i className="fas fa-times" />
             </button>
           </div>
