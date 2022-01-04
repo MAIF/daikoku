@@ -1,6 +1,5 @@
 import React, { useContext, useState } from 'react';
 
-import { ValidateEmail } from '../../utils/validation';
 import { I18nContext } from '../../../core';
 
 export const TeamInvitationModal = (props) => {
@@ -12,7 +11,8 @@ export const TeamInvitationModal = (props) => {
   function invitUser() {
     const { members, pendingUsers } = props;
 
-    const validator = ValidateEmail(email, translateMethod);
+    // const validator = ValidateEmail(email, translateMethod);
+    const validator = true; //FIXME: use constraints instead of validation function
     if (validator.ok) {
       if (members.find((f) => f.email === email)) setError(translateMethod('User already in team'));
       else if (pendingUsers.find((f) => f.email === email))

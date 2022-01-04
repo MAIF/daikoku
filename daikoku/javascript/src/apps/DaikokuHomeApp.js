@@ -2,187 +2,139 @@ import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import md5 from 'js-md5';
 import queryString from 'query-string';
+import { Form, type, format, constraints } from '@maif/react-forms';
 import { toastr } from 'react-redux-toastr';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
-import { Spinner } from '../components/utils/Spinner';
-import { validatePassword, ValidateEmail } from '../components/utils/validation';
 import * as Services from '../services';
 import { I18nContext } from '../locales/i18n-context';
 
-const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
-function Gravatar(props) {
+const AvatarInput = ({rawValues, value, error, onChange}) => {
   const { Translation } = useContext(I18nContext);
 
   const setGravatarLink = () => {
-    const email = (props.rawValue.email || Date.now().toString()).toLowerCase().trim();
+    const email = (rawValues.email || Date.now().toString()).toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
-    props.changeValue('avatar', url);
+    onChange(url);
   };
 
-  const gravatarButton = () => (
-    <button
-      type="button"
-      className={'btn btn-access ' + (props.fullWidth ? 'btn-block' : '')}
-      onClick={setGravatarLink}>
-      <i className="fas fa-user-circle me-1" />
-      <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
-    </button>
-  );
-
-  const { fullWidth } = props;
-
-  if (fullWidth) return gravatarButton();
-  else
-    return (
-      <div className="mb-3 row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
-        <div className="col-sm-10">{gravatarButton()}</div>
+  return (
+    <div className='d-flex flex-row align-items-center'>
+      <div className="d-flex flex-column flex-grow-1">
+        <input type="text" className='form-control' value={value} onChange={e => onChange(e.target.value)} />
+        <button
+          type="button"
+          className='btn btn-access btn-block'
+          onClick={setGravatarLink}>
+          <i className="fas fa-user-circle mr-1" />
+          <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
+        </button>
       </div>
-    );
-}
+      {rawValues.avatar && <img src={value} style={{ height: '70px' }} />}
+    </div>
+  );
+};
 
-export function SignupComponent() {
+export const SignupComponent = () => {
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  const [state, setState] = useState({
-    user: {
-      avatar: `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`,
-    },
-  });
-
-  const formSchema = {
-    name: {
-      type: 'string',
-      props: {
-        label: translateMethod('Name'),
-        isColmunFormat: true,
-      },
-    },
-    email: {
-      type: 'string',
-      props: {
-        type: 'email',
-        label: translateMethod('Email address'),
-        isColmunFormat: true,
-      },
-    },
-    avatar: {
-      type: 'string',
-      props: {
-        label: translateMethod('Avatar'),
-        isColmunFormat: true,
-      },
-    },
-    password1: {
-      type: 'string',
-      props: {
-        type: 'password',
-        label: translateMethod('Password'),
-        isColmunFormat: true,
-      },
-    },
-    password2: {
-      type: 'string',
-      props: {
-        type: 'password',
-        label: translateMethod('Confirm password'),
-        isColmunFormat: true,
-      },
-    },
-    gravatar: {
-      type: Gravatar,
-      props: {
-        fullWidth: true,
-      },
-    },
-    createAccount: {
-      type: () => (
-        <div className="my-3 d-grid gap-1">
-          <button type="button" className="btn btn-success" onClick={createAccount}>
-            <Translation i18nkey="Create account">Create account</Translation>
-          </button>
-        </div>
-      ),
-    },
-  };
-
-  const formFlow = [
-    'name',
-    'email',
-    'avatar',
-    'password1',
-    'password2',
-    'gravatar',
-    'createAccount',
-  ];
-
-  const createAccount = () => {
-    if (
-      state.user.name &&
-      state.user.email &&
-      state.user.avatar &&
-      state.user.password1 &&
-      state.user.password2
-    ) {
-      const validationPassword = validatePassword(
-        state.user.password1,
-        state.user.password2,
-        translateMethod
-      );
-      const validationEmail = ValidateEmail(state.user.email, translateMethod);
-      if (validationPassword.ok && validationEmail.ok) {
-        return fetch('/account', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ...state.user }),
-        })
-          .then((r) => r.json())
-          .then((res) => {
-            if (res.error) {
-              setState({ ...state, state: 'error', error: res.error });
-            } else {
-              setState({ ...state, state: 'done' });
-            }
-          });
-      } else if (validationPassword.error) {
-        setState({ ...state, state: 'error', error: validationPassword.error });
-      } else {
-        setState({ ...state, state: 'error', error: validationEmail.error });
-      }
-    } else {
-      setState({
-        state: 'error',
-        error: translateMethod('Missing informations ...'),
-      });
-    }
-  };
+  const defaultAvatar = `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`;
+  const [user, setUser] = useState(undefined);
+  const [state, setState] = useState('creation');
+  const [error, setError] = useState(undefined);
 
   useEffect(() => {
     const query = queryString.parse(window.location.search);
-    if (query.error && query.error === 'not-valid-anymore') {
-      setState({
-        ...state,
-        state: 'error',
-        error: translateMethod('account.creation.error'),
-      });
+    if (query.error) {
+      setState('error');
+      setError(translateMethod(`account.creation.error.${query.error}`));
     }
   }, []);
 
-  if (state.state === 'done') {
+  const schema = {
+    name: {
+      type: type.string,
+      label: translateMethod('Name'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.name'))
+      ]
+    },
+    email: {
+      type: type.string,
+      format: format.email,
+      label: translateMethod('Email address'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.email')),
+        constraints.email(translateMethod('constraints.matches.email'))
+      ]
+    },
+    avatar: {
+      type: type.string,
+      label: translateMethod('Avatar'),
+      defaultValue: defaultAvatar,
+      render: AvatarInput
+
+    },
+    password: {
+      type: type.string,
+      format: format.password,
+      label: translateMethod('Password'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.password')),
+        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, translateMethod('constraint.matches.password'))
+      ]
+    },
+    confirmPassword: {
+      type: type.string,
+      format: format.password,
+      label: translateMethod('Confirm password'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.confirmPassword')),
+        constraints.oneOf([constraints.ref('password')], translateMethod('constraint.oneof.confirm.password'))
+      ]
+    },
+  };
+
+  const flow = [
+    'name',
+    'email',
+    'avatar',
+    'password',
+    'confirmPassword',
+  ];
+
+  const createAccount = (data) => {
+    return fetch('/account', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...data }),
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.error) {
+          setState('error');
+          setError(res.error);
+        } else {
+          setUser(data);
+          setState('done');
+        }
+      });
+  };
+
+  if (state === 'done') {
     return (
       <div className="col">
         <h1 className="h1-rwd-reduce text-center">
           <Translation i18nkey="Create account">Create account</Translation>
         </h1>
         <p style={{ width: '100%', textAlign: 'center' }}>
-          <Translation i18nkey="create.account.done" replacements={[state.user.email]}>
-            You will receive an email at <b>{state.user.email}</b> to finish your account creation
+          <Translation i18nkey="create.account.done" replacements={[user.email]}>
+            You will receive an email at <b>{user.email}</b> to finish your account creation
             process. You will have 15 minutes from now to finish your account creation process.
           </Translation>
         </p>
@@ -195,137 +147,108 @@ export function SignupComponent() {
       <h1 className="h1-rwd-reduce text-center">
         <Translation i18nkey="Create account">Create account</Translation>
       </h1>
-      {state.user && (
-        <div className="d-flex justify-content-center align-items-center my-4">
-          <img
-            src={state.user.avatar}
-            style={{ width: 60, borderRadius: '50%', backgroundColor: 'white' }}
-            alt="avatar"
-          />
-        </div>
-      )}
-      {state.error && (
-        <div className="alert alert-danger text-center" role="alert">
-          {state.error}
-        </div>
-      )}
-      {state.user && (
-        <React.Suspense fallback={<Spinner />}>
-          <LazyForm
-            flow={formFlow}
-            schema={formSchema}
-            value={state.user}
-            onChange={(user) => {
-              setState({ ...state, user, error: undefined });
-            }}
-          />
-        </React.Suspense>
-      )}
+      {state === 'error' && error && <div className="alert alert-danger" role="alert">
+        {error}
+      </div>}
+      <Form
+        schema={schema}
+        flow={flow}
+        onChange={createAccount}
+        footer={({ reset, valid }) => {
+            return (
+              <div className="d-flex justify-content-end">
+                <button className="btn btn-outline-danger m-3" onClick={reset}>
+                  <Translation i18nkey="Cancel">Cancel</Translation>
+                </button>
+                <button className="btn btn-outline-success m-3" onClick={valid}>
+                  <Translation i18nkey="Create account">Create account</Translation>
+                </button>
+              </div>
+            );
+          }}
+      />
     </div>
   );
-}
+};
 
-export function ResetPasswordComponent() {
+export const ResetPasswordComponent = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  const [state, setState] = useState({
-    user: {},
-  });
+  const [user, setUser] = useState(undefined);
+  const [state, setState] = useState('creation');
+  const [error, setError] = useState(undefined);
 
-  const formSchema = {
+  const schema = {
+
     email: {
-      type: 'string',
-      props: {
-        type: 'email',
-        label: translateMethod('Email address'),
-      },
+      type: type.string,
+      format: format.email,
+      label: translateMethod('Email address'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.email')),
+        constraints.email(translateMethod('constraints.matches.email'))
+      ]
     },
-    password1: {
-      type: 'string',
-      props: {
-        type: 'password',
-        label: translateMethod('Type your new password'),
-      },
+    password: {
+      type: type.string,
+      format: format.password,
+      label: translateMethod('Password'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.password')),
+        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, translateMethod('constraints.matches.password'))
+      ]
     },
-    password2: {
-      type: 'string',
-      props: {
-        type: 'password',
-        label: translateMethod('Re-type your new password'),
-      },
-    },
-    resetPassword: {
-      type: () => (
-        <div className="d-flex justify-content-end">
-          <button type="button" className="btn btn-outline-danger m-2" onClick={resetPassword}>
-            <span>
-              <i className="fas fa-bomb me-1" />
-              <Translation i18nkey="Reset password">Reset password</Translation>
-            </span>
-          </button>
-        </div>
-      ),
-    },
+    confirmPassword: {
+      type: type.string,
+      format: format.password,
+      label: translateMethod('Confirm password'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.confirmPassword')),
+        constraints.oneOf([constraints.ref('password')], translateMethod('constraint.oneof.confirm.password'))
+      ]
+    }
   };
 
-  const formFlow = ['email', 'password1', 'password2', 'resetPassword'];
+  const flow = ['email', 'password', 'confirmPassword'];
 
-  const resetPassword = () => {
-    if (state.user.email && state.user.password1 && state.user.password2) {
-      const validation = validatePassword(
-        state.user.password1,
-        state.user.password2,
-        translateMethod
-      );
-      if (validation.ok) {
-        return fetch('/account/reset', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(state.user),
-        })
-          .then((r) => r.json())
-          .then((res) => {
-            if (res.error) {
-              setState({ ...state, state: 'error', error: translateMethod(res.error) });
-            } else {
-              setState({ ...state, state: 'done' });
-            }
-          });
-      } else {
-        setState({ ...state, state: 'error', error: validation.error });
-      }
-    } else {
-      setState({
-        ...state,
-        state: 'error',
-        error: translateMethod('Missing informations ...'),
+  const resetPassword = data => {
+    return fetch('/account/reset', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.error) {
+          setState('error');
+          setError(res.error);
+        } else {
+          setUser(data);
+          setState('done');
+        }
       });
-    }
   };
 
   useEffect(() => {
     const query = queryString.parse(window.location.search);
-    if (query.error && query.error === 'not-valid-anymore') {
-      setState({
-        ...state,
-        state: 'error',
-        error: translateMethod('account.reset.error'),
-      });
+    if (query.error) {
+      setState('error');
+      setError(translateMethod(`account.reset.error.${query.error}`));
     }
   }, []);
 
-  if (state.state === 'done') {
+  if (state === 'done') {
     return (
       <div className="col">
         <h1 className="h1-rwd-reduce text-center mt-2">
           <Translation i18nkey="Reset password">Reset password</Translation>
         </h1>
         <p className="text-center mt-2">
-          <Translation i18nkey="password.reset.done" replacements={[state.user.email]}>
-            You will receive an email at <b>{state.user.email}</b> to finish your passsword reset
+          <Translation i18nkey="password.reset.done" replacements={[user.email]}>
+            You will receive an email at <b>{user.email}</b> to finish your passsword reset
             process. You will have 15 minutes from now to finish your password reset process.
           </Translation>
         </p>
@@ -333,34 +256,38 @@ export function ResetPasswordComponent() {
     );
   }
   return (
-    <div className="col">
+    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px', minWidth: '448px' }}>
       <h1 className="h1-rwd-reduce text-center mt-2">
         <Translation i18nkey="Reset password">Reset password</Translation>
       </h1>
-      {state.state === 'error' && (
+      {state === 'error' && (
         <div className="alert alert-danger" role="alert">
-          {state.error}
+          {error}
         </div>
       )}
-      {state.user && (
-        <React.Suspense fallback={<Spinner />}>
-          <div className="row">
-            <LazyForm
-              flow={formFlow}
-              schema={formSchema}
-              value={state.user}
-              onChange={(user) => {
-                setState({ ...state, user });
-              }}
-            />
-          </div>
-        </React.Suspense>
-      )}
+      <Form
+        schema={schema}
+        flow={flow}
+        onChange={resetPassword}
+        footer={({ reset, valid }) => {
+            return (
+              <div className="d-flex justify-content-end">
+                <button className="btn btn-outline-primary m-3" onClick={reset}>Cancel</button>
+                <button className="btn btn-outline-danger m-3" onClick={valid}>
+                  <span>
+                    <i className="fas fa-bomb mr-1" />
+                    <Translation i18nkey="Reset password">Reset password</Translation>
+                  </span>
+                </button>
+              </div>
+            );
+          }}
+      />
     </div>
   );
-}
+};
 
-export function TwoFactorAuthentication({ title }) {
+export const TwoFactorAuthentication = ({ title }) => {
   const [code, setCode] = useState('');
   const [token, setToken] = useState('');
   const [error, setError] = useState();
@@ -454,11 +381,10 @@ export function TwoFactorAuthentication({ title }) {
       )}
     </div>
   );
-}
+};
 
-export function DaikokuHomeApp(props) {
+export const DaikokuHomeApp = (props) => {
   const tenant = props.tenant;
-
   const { translateMethod } = useContext(I18nContext);
 
   return (
@@ -492,7 +418,7 @@ export function DaikokuHomeApp(props) {
       </div>
     </Router>
   );
-}
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,

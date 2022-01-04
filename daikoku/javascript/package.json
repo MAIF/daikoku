@@ -20,6 +20,7 @@
   "dependencies": {
     "@apollo/client": "^3.5.5",
     "@fortawesome/fontawesome-free": "5.15.4",
+    "@maif/react-forms": "1.0.5",
     "@popperjs/core": "^2.11.0",
     "@xstate/react": "1.6.3",
     "antd": "4.17.2",
@@ -77,6 +78,7 @@
     "@babel/preset-react": "7.16.0",
     "babel-eslint": "10.1.0",
     "babel-loader": "8.2.3",
+    "buffer": "^6.0.3",
     "compression-webpack-plugin": "9.0.1",
     "crypto-browserify": "^3.12.0",
     "css-loader": "6.5.1",

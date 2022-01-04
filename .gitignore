@@ -19,3 +19,5 @@ daikoku/javascript/cypress/videos
 daikoku/javascript/cypress/results
 daikoku/javascript/cypress/screenshots
 daikoku/javascript/index.json
+.yalc
+yalc.lock

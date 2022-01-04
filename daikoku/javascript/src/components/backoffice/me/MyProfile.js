@@ -1,18 +1,16 @@
 import React, { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../services';
-import faker from 'faker';
 import md5 from 'js-md5';
-import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { Form, type, format, constraints } from '@maif/react-forms';
+import { connect } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { UserBackOffice } from '../../backoffice';
-import { Spinner, validatePassword, ValidateEmail } from '../../utils';
 import { I18nContext, updateUser } from '../../../core';
 
-const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-function TwoFactorAuthentication({ rawValue }) {
+function TwoFactorAuthentication({ user }) {
   const [modal, setModal] = useState(false);
   const [error, setError] = useState();
   const [backupCodes, setBackupCodes] = useState('');
@@ -40,7 +38,7 @@ function TwoFactorAuthentication({ rawValue }) {
   };
 
   function copyToClipboard() {
-    navigator.clipboard.writeText(rawValue.twoFactorAuthentication.backupCodes);
+    navigator.clipboard.writeText(user?.twoFactorAuthentication.backupCodes);
     toastr.success(translateMethod('2fa.copied'));
   }
 
@@ -62,17 +60,7 @@ function TwoFactorAuthentication({ rawValue }) {
   }
 
   return modal ? (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        zIndex: 3,
-        backgroundColor: '#f6f7f7',
-      }}
-    >
+    <div>
       {backupCodes ? (
         <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
           <span className="my-3">{translateMethod('2fa.backup_codes_message')}</span>
@@ -162,10 +150,9 @@ function TwoFactorAuthentication({ rawValue }) {
     </div>
   ) : (
     <>
-      <div className="mb-3 row">
-        <label className="col-xs-12 col-sm-2 col-form-label">{translateMethod('2fa')}</label>
+      <div className="form-group row">
         <div className="col-sm-10">
-          {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled ? (
+          {user?.twoFactorAuthentication?.enabled ? (
             <button onClick={disable2FA} className="btn btn-outline-danger" type="button">
               {translateMethod('2fa.disable_action')}
             </button>
@@ -176,8 +163,8 @@ function TwoFactorAuthentication({ rawValue }) {
           )}
         </div>
       </div>
-      {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled && (
-        <div className="mb-3 row">
+      {user?.twoFactorAuthentication?.enabled && (
+        <div className="form-group row">
           <label className="col-xs-12 col-sm-2 col-form-label">
             {translateMethod('2fa.backup_codes')}
           </label>
@@ -186,7 +173,7 @@ function TwoFactorAuthentication({ rawValue }) {
               <input
                 type="text"
                 disabled={true}
-                value={rawValue.twoFactorAuthentication.backupCodes}
+                value={user?.twoFactorAuthentication.backupCodes}
                 className="form-control"
               />
               <button
@@ -204,142 +191,94 @@ function TwoFactorAuthentication({ rawValue }) {
   );
 }
 
-function SetPassword(props) {
-  const { translateMethod, Translation } = useContext(I18nContext);
 
-  const genAndSetPassword = () => {
-    window.prompt(translateMethod('Type the password'), undefined, true).then((pw1) => {
-      if (pw1) {
-        window.prompt(translateMethod('Re-type the password'), undefined, true).then((pw2) => {
-          const validation = validatePassword(pw1, pw2, translateMethod);
-          if (validation.ok) {
-            props.changeValue('password', pw2);
-          } else {
-            props.displayError(validation.error);
-          }
-        });
+const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
+  const { Translation } = useContext(I18nContext);
+
+  const setFiles = (files) => {
+    const file = files[0];
+    const filename = file.name;
+    const contentType = file.type;
+    return Services.storeUserAvatar(filename, contentType, file).then((res) => {
+      if (res.error) {
+        toastr.error(res.error);
+      } else {
+        setValue('pictureFromProvider', false);
+        onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
       }
     });
   };
 
-  if (props.rawValue.origins.length === 1 && props.rawValue.origins[0].toLowerCase() === 'local') {
-    return (
-      <div className="mb-3 row">
-        <label className="col-xs-12 col-sm-2 col-form-label">
-          <Translation i18nkey="Password">Password</Translation>
-        </label>
-        <div className="col-sm-10">
-          <button type="button" className="btn btn-outline-primary" onClick={genAndSetPassword}>
-            <i className="fas fa-unlock-alt me-1" />
-            <Translation i18nkey="Change my password">Change my password</Translation>
-          </button>
-        </div>
-      </div>
-    );
-  } else {
-    return null;
-  }
-}
-
-function RefreshToken(props) {
-  const { Translation } = useContext(I18nContext);
-
-  const reloadToken = () => {
-    props.changeValue('personalToken', faker.random.alphaNumeric(32));
-  };
-
-  return (
-    <div className="mb-3 row">
-      <label className="col-xs-12 col-sm-2 col-form-label" />
-      <div className="col-sm-10">
-        <button type="button" className="btn btn-outline-primary" onClick={reloadToken}>
-          <i className="fas fa-sync-alt me-1" />
-          <Translation i18nkey="Reload personal token">Reload personal token</Translation>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
-  const { Translation } = useContext(I18nContext);
-
   const setPictureFromProvider = () => {
-    changeValue('pictureFromProvider', true);
+    setValue('pictureFromProvider', true);
   };
 
   const changePicture = (picture) => {
-    if (rawValue.pictureFromProvider) {
-      props.onRawChange({ ...rawValue, picture, pictureFromProvider: false });
+    if (rawValues.pictureFromProvider) {
+      setValue('pictureFromProvider', false);
+      onChange(picture);
     } else {
-      changeValue('picture', picture);
+      onChange(picture);
     }
   };
 
   const setGravatarLink = () => {
-    const email = rawValue.email.toLowerCase().trim();
+    const email = rawValues.email.toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
     changePicture(url);
   };
 
-  const isOtherOriginThanLocal = rawValue.origins.some((o) => o.toLowerCase !== 'local');
+  const isOtherOriginThanLocal = rawValues?.origins?.some((o) => o.toLowerCase !== 'local');
 
   if (!isOtherOriginThanLocal) {
     return null;
   }
   return (
-    <div className="mb-3 row">
-      <label className="col-xs-12 col-sm-2 col-form-label">{label}</label>
-      <div className="col-sm-10">
+    <div className="d-flex flex-row align-items-center">
+      <div className='d-flex align-items-center'>
+        <img
+          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`}`}
+          style={{
+            width: 100,
+            borderRadius: '50%',
+            backgroundColor: 'white',
+            position: 'relative',
+          }}
+          alt="avatar"
+          className="mx-3"
+        />
+        <PictureUpload setFiles={setFiles} />
+      </div>
+      <div className="d-flex flex-column flex-grow-1">
         <input
           type="text"
           className="form-control"
           value={value}
           onChange={(e) => changePicture(e.target.value)}
         />
-      </div>
-      <div className="col-sm-10 offset-sm-2 d-flex mt-1">
-        <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink}>
-          <i className="fas fa-user-circle me-1" />
-          <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
-        </button>
-        {isOtherOriginThanLocal && (
-          <button
-            type="button"
-            className="btn btn-outline-primary"
-            onClick={setPictureFromProvider}
-            disabled={rawValue.pictureFromProvider ? 'disabled' : null}>
+        <div className="d-flex mt-1 justify-content-end">
+          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink}>
             <i className="fas fa-user-circle me-1" />
-            <Translation i18nkey="Set avatar from auth. provider">
-              Set avatar from auth. Provider
-            </Translation>
+            <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
-        )}
+          {isOtherOriginThanLocal && (
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={setPictureFromProvider}
+              disabled={rawValues.pictureFromProvider ? 'disabled' : null}>
+              <i className="fas fa-user-circle me-1" />
+              <Translation i18nkey="Set avatar from auth. provider">
+                Set avatar from auth. Provider
+              </Translation>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-function TenantList(props) {
-  const [tenants, setTenants] = useState([]);
-
-  const { Translation } = useContext(I18nContext);
-
-  useEffect(() => {
-    Services.getTenantNames(props.value).then(setTenants);
-  }, []);
-
-  return (
-    <div className="mb-3 row pt-3">
-      <label className="col-xs-12 col-sm-2 col-form-label">
-        <Translation i18nkey="Tenants">Tenants</Translation>
-      </label>
-      <div className="col-sm-10">
-        <p className="fake-form-control">{tenants.join(', ')}</p>
-      </div>
-    </div>
-  );
-}
 
 function PictureUpload(props) {
   const [uploading, setUploading] = useState(false);
@@ -360,7 +299,7 @@ function PictureUpload(props) {
   let input;
 
   return (
-    <div className="changePicture">
+    <div className="changePicture mx-3">
       <input
         ref={(r) => (input = r)}
         type="file"
@@ -372,8 +311,7 @@ function PictureUpload(props) {
         className="btn btn-outline-secondary"
         disabled={uploading}
         onClick={trigger}
-        style={{ width: 200, height: 200, borderRadius: '50%' }}
-      >
+        style={{ width: 100, height: 100, borderRadius: '50%' }}>
         {uploading && <i className="fas fa-spinner" />}
         {!uploading && (
           <div className="text-white">
@@ -387,6 +325,7 @@ function PictureUpload(props) {
 
 function MyProfileComponent(props) {
   const [user, setUser] = useState();
+  const [tab, setTab] = useState('infos');
 
   const { translateMethod, setLanguage, language, Translation, languages } =
     useContext(I18nContext);
@@ -394,105 +333,78 @@ function MyProfileComponent(props) {
   const navigate = useNavigate();
 
   const formSchema = {
-    _id: { type: 'string', disabled: true, props: { label: 'Id', placeholder: '---' } },
-    tenants: {
-      type: TenantList,
-    },
-    origins: {
-      type: ({ value }) => (
-        <div className="mb-3 row">
-          <label className="col-xs-12 col-sm-2 col-form-label">
-            <Translation i18nkey="Origins">Origins</Translation>
-          </label>
-          <div className="col-sm-10">
-            <p className="fake-form-control">{value.join(', ')}</p>
-          </div>
-        </div>
-      ),
-    },
     name: {
-      type: 'string',
-      props: {
-        label: translateMethod('Name'),
-      },
+      type: type.string,
+      label: translateMethod('Name'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.name'))
+      ]
     },
     email: {
-      type: 'string',
-      props: {
-        label: translateMethod('Email address'),
-      },
-    },
-    personalToken: {
-      type: 'string',
-      props: {
-        label: translateMethod('Personal Token'),
-        disabled: true,
-      },
-    },
-    refreshToken: {
-      type: RefreshToken,
-    },
-    isDaikokuAdmin: {
-      type: 'bool',
-      props: {
-        label: translateMethod('Daikoku admin.'),
-      },
-    },
-    setPassword: {
-      type: SetPassword,
-      props: {
-        displayError: (error) => toastr.error(error),
-      },
+      type: type.string,
+      format: format.email,
+      label: translateMethod('Email address'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.email')),
+        constraints.email(translateMethod('constraints.matches.email'))
+      ]
+
     },
     picture: {
-      type: Avatar,
-      props: {
-        label: translateMethod('Avatar'),
-      },
+      type: type.string,
+      label: translateMethod('Avatar'),
+      render: v => Avatar({ ...v, tenant: props.tenant }),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.avatar')),
+        constraints.url(translateMethod('constraints.format.url', false, '', translateMethod('Avatar')))
+      ]
     },
     defaultLanguage: {
-      type: 'select',
-      props: {
-        label: translateMethod('Default language'),
-        possibleValues: languages,
-      },
-    },
-    enable2FA: {
-      type: TwoFactorAuthentication,
-      props: {
-        ...props,
-      },
+      type: type.string,
+      format: format.select,
+      label: translateMethod('Default language'),
+      defaultValue: languages.find(l => l.value === props.tenant.defaultLanguage),
+      options: languages,
+      constraints: [
+        constraints.nullable()
+      ]
     },
   };
 
   const formFlow = [
+    'picture',
     'name',
     'email',
-    'setPassword',
-    'picture',
-    'personalToken',
-    'refreshToken',
     'defaultLanguage',
-    'enable2FA',
-    'tenants',
-    'origins',
   ];
 
-  const setFiles = (files) => {
-    const file = files[0];
-    const filename = file.name;
-    const contentType = file.type;
-    return Services.storeUserAvatar(filename, contentType, file).then((res) => {
-      if (res.error) {
-        toastr.error(res.error);
-      } else {
-        setUser({
-          ...user,
-          picture: `/user-avatar/${props.tenant._humanReadableId}/${res.id}`,
-          pictureFromProvider: false,
-        });
-      }
-    });
+  const changePasswordSchema = {
+    oldPassword: {
+      type: type.string,
+      format: format.password,
+      label: translateMethod('profile.security.oldPassword'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.oldPassword'))
+      ]
+    },
+    newPassword: {
+      type: type.string,
+      format: format.password,
+      label: translateMethod('profile.security.newPassword'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.newPassword')),
+        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, translateMethod('constraint.matches.password'))
+      ]
+    },
+    confirmNewPassword: {
+      type: type.string,
+      format: format.password,
+      label: translateMethod('profile.security.confirmPassword'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.newPassword')),
+        constraints.oneOf([constraints.ref('newPassword')], translateMethod('constraint.oneof.confirm.password'))
+      ]
+    },
   };
 
   useEffect(() => {
@@ -503,26 +415,17 @@ function MyProfileComponent(props) {
     });
   }, []);
 
-  const save = () => {
-    if (user.name && user.email && user.picture) {
-      const emailValidation = ValidateEmail(user.email, translateMethod);
-      if (emailValidation.ok) {
-        Services.updateUserById(user).then((user) => {
-          setUser(user);
-          props.updateUser(user);
+  const save = data => {
+    Services.updateUserById(data).then((user) => {
+      setUser(user);
+      props.updateUser(user);
 
-          if (language !== user.defaultLanguage) setLanguage(user.defaultLanguage);
+      if (language !== user.defaultLanguage) setLanguage(user.defaultLanguage);
 
-          toastr.success(
-            translateMethod('user.updated.success', false, 'user successfully updated', user.name)
-          );
-        });
-      } else {
-        toastr.error(emailValidation.error);
-      }
-    } else {
-      toastr.error(translateMethod('Missing informations ...'));
-    }
+      toastr.success(
+        translateMethod('user.updated.success', false, 'user successfully updated', user.name)
+      );
+    });
   };
 
   const removeUser = () => {
@@ -543,74 +446,114 @@ function MyProfileComponent(props) {
       });
   };
 
+  const updatePassword = ({ oldPassword, newPassword }) => {
+
+    Services.updateMyPassword(oldPassword, newPassword)
+      .then((user) => {
+        if (user.error) {
+          toastr.error(
+            translateMethod(user.error, false)
+          );
+        } else {
+          setUser(user);
+          props.updateUser(user);
+  
+          toastr.success(
+            translateMethod('user.password.updated.success', false, 'Your password has been successfully updated')
+          );
+        }
+      });
+  };
+
   return (
-    <UserBackOffice tab="Me">
-      <div className="row">
-        <div className="col">
-          <div className="d-flex mb-3">
-            {user && (
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <img
-                  src={`${user.picture}${user.picture.startsWith('http') ? '' : `?${Date.now()}`}`}
-                  style={{
-                    width: 200,
-                    borderRadius: '50%',
-                    backgroundColor: 'white',
-                    position: 'relative',
+    <UserBackOffice tab="Me" isLoading={!user}>
+      <div className="col">
+        <div className="">
+          <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
+            <li className="nav-item">
+              <span
+                className={`nav-link cursor-pointer ${tab === 'infos' ? 'active' : ''}`}
+                onClick={() => setTab('infos')}>
+                <Translation i18nkey="Informations">Informations</Translation>
+              </span>
+            </li>
+            <li className="nav-item">
+              <span
+                className={`nav-link cursor-pointer ${tab === 'security' ? 'active' : ''}`}
+                onClick={() => setTab('security')}>
+                <Translation i18nkey="Security">AccountSecurity</Translation>
+              </span>
+            </li>
+          </ul>
+          {tab === 'infos' && <Form
+            flow={formFlow}
+            schema={formSchema}
+            value={user}
+            onSubmit={save}
+            footer={({ valid }) => {
+              return (
+                <div className="d-flex" style={{ justifyContent: 'flex-end' }}>
+                  <a className="btn btn-outline-primary" href="#" onClick={() => props.history.goBack()}>
+                    <i className="fas fa-chevron-left me-1" />
+                    <Translation i18nkey="Back">Back</Translation>
+                  </a>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger"
+                    style={{ marginLeft: 5 }}
+                    onClick={removeUser}>
+                    <i className="fas fa-trash me-1" />
+                    <Translation i18nkey="Delete my profile">Delete my profile</Translation>
+                  </button>
+                  <button
+                    style={{ marginLeft: 5 }}
+                    type="button"
+                    className="btn btn-outline-success"
+                    onClick={valid}>
+                    <span>
+                      <i className="fas fa-save me-1" />
+                      <Translation i18nkey="Save">Save</Translation>
+                    </span>
+                  </button>
+                </div>
+              );
+            }}
+          />}
+          {tab === 'security' && (
+            <div className='d-flex flex-row'>
+              <div className='col-sm-6 d-flex flex-column flex-grow-1'>
+                <h4>
+                  <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                </h4>
+                <Form
+                  schema={changePasswordSchema}
+                  onSubmit={updatePassword}
+                  footer={({ valid }) => {
+                    return (
+                      <div className='d-flex flex-row align-items-center'>
+                        <button
+                          style={{ marginLeft: 5 }}
+                          type="button"
+                          className="btn btn-outline-success"
+                          onClick={valid}>
+                          <span>
+                            <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                          </span>
+                        </button>
+                        {/* TODO: forgot password link */}
+                      </div>
+                    );
                   }}
-                  alt="avatar"
-                  className="me-3"
                 />
-                <PictureUpload setFiles={setFiles} />
               </div>
-            )}
-            {user ? (
-              <div className="mt-3">
-                <h1 className="my-0">{user.name}</h1>
-                <span id="my_profile_email">{user.email}</span>
+              <div className='d-flex flex-column  flex-grow-1'>
+                <h4>
+                  <Translation i18nkey="2fa">Two-factor authentication</Translation>
+                </h4>
+                <TwoFactorAuthentication user={user} />
               </div>
-            ) : (
-              <h1>Me</h1>
-            )}
-          </div>
-          {user && (
-            <React.Suspense fallback={<Spinner />}>
-              <LazyForm
-                flow={formFlow}
-                schema={formSchema}
-                value={user}
-                onChange={(user) => {
-                  setUser(user);
-                }}
-              />
-            </React.Suspense>
+            </div>
           )}
-        </div>
-      </div>
-      <div className="row">
-        <div className="d-flex justify-content-end">
-          <a className="btn btn-outline-primary" href="#" onClick={() => navigate(-1)}>
-            <i className="fas fa-chevron-left me-1" />
-            <Translation i18nkey="Back">Back</Translation>
-          </a>
-          <button
-            type="button"
-            className="btn btn-outline-danger"
-            style={{ marginLeft: 5 }}
-            onClick={removeUser}>
-            <i className="fas fa-trash me-1" />
-            <Translation i18nkey="Delete my profile">Delete my profile</Translation>
-          </button>
-          <button
-            style={{ marginLeft: 5 }}
-            type="button"
-            className="btn btn-outline-success"
-            onClick={save}>
-            <span>
-              <i className="fas fa-save me-1" />
-              <Translation i18nkey="Save">Save</Translation>
-            </span>
-          </button>
         </div>
       </div>
     </UserBackOffice>
