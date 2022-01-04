@@ -971,6 +971,7 @@
     "constraints.required.newPassword": "New password is required",
     "constraints.required.confirmPassword": "Confirm password is required",
     "constraints.format.url": "%s must be a valid URL",
+    "constraints.matches.email": "Your mail must be a valid Email address",
     "constraint.matches.password": "Your password must have 8 letters min with Capital, number and special caracter",
     "constraint.oneof.confirm.password": "confirm and password must be equal",
     "constraints.test.password": "wrong password",

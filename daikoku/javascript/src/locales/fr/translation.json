@@ -974,6 +974,7 @@
   "constraints.required.newPassword": "Le nouveau mots de passe est requis",
   "constraints.required.confirmPassword": "Le mots de passe de confirmation est requis",
   "constraints.format.url": "%s doit être une URL valide",
+  "constraints.matches.email": "Votre courriel doit être une addresse électronique valide",
   "constraint.matches.password": "Votre mots de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spéciale.",
   "constraint.oneof.confirm.password": "La confirmation du mots de passe doit être identique au mots de passe",
   "Robot.txt.label": "Contenu  du Robot.txt",

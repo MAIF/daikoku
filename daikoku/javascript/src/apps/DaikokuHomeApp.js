@@ -66,7 +66,8 @@ export const SignupComponent = () => {
       format: format.email,
       label: translateMethod('Email address'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.email'))
+        constraints.required(translateMethod('constraints.required.email')),
+        constraints.email(translateMethod('constraints.matches.email'))
       ]
     },
     avatar: {
@@ -185,7 +186,7 @@ export const ResetPasswordComponent = (props) => {
       label: translateMethod('Email address'),
       constraints: [
         constraints.required(translateMethod('constraints.required.email')),
-        constraints.url(translateMethod('constraints.format.url'))
+        constraints.email(translateMethod('constraints.matches.email'))
       ]
     },
     password: {
