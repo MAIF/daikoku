@@ -983,5 +983,7 @@
   "Go home": "Retourner à l'accueil",
   "notification.accept.on_error.title": "Impossible d'accepter la notification",
   "You're not authorized on this api": "Vous n'êtes pas autorisé à accéder à cette API",
-  "ask.api.access.info": "Votre demande d'accès à %s à bien été envoyée."
+  "ask.api.access.info": "Votre demande d'accès à %s à bien été envoyée.",
+  "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
+  "incorrect password": "Mots de passe incorrect"
 }

@@ -473,4 +473,21 @@ class UsersController(DaikokuAction: DaikokuAction,
         }
     }
   }
+
+  def updatePassword() = DaikokuAction.async(parse.json) { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has updated his password"))(ctx) {
+      val body = ctx.request.body
+      ((body \ "oldPassword").asOpt[String], (body \ "newPassword").asOpt[String]) match {
+        case (Some(oldPassword), Some(newPassword))
+          if BCrypt.checkpw(oldPassword, ctx.user.password.get) =>
+          val updatedUser = ctx.user.copy(password = Some(BCrypt.hashpw(newPassword, BCrypt.gensalt())))
+          env.dataStore.userRepo.save(ctx.user.copy(password = Some(BCrypt.hashpw(newPassword, BCrypt.gensalt()))))
+            .map {
+              case true => Ok(updatedUser.asJson)
+              case false => BadRequest(Json.obj("error" -> "updated password can't be saved"))
+            }
+        case (_, _)  => FastFuture.successful(BadRequest(Json.obj("error" -> "incorrect password")))
+      }
+    }
+  }
 }

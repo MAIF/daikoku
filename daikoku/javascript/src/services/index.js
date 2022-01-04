@@ -319,6 +319,16 @@ export const updateUserById = (user) =>
     body: JSON.stringify(user),
   });
 
+export const updateMyPassword = (oldPassword, newPassword) =>
+  customFetch(`/api/me/password`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      oldPassword,
+      newPassword
+    }),
+  });
+
+
 export const createUser = (user) =>
   customFetch('/api/admin/users', {
     method: 'POST',
@@ -717,9 +727,9 @@ export const checkConnection = (config, user) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   });
 

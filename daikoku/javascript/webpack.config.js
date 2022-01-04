@@ -144,7 +144,10 @@ module.exports = (env, argv) => {
     resolve: {
       alias: {
         crypto: 'crypto-browserify',
-        path: 'path-browserify'
+        path: 'path-browserify',
+      },
+      fallback: {
+        buffer: require.resolve('buffer/'),
       }
     }
   };

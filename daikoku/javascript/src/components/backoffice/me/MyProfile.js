@@ -1,17 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../services';
-import bcrypt from 'bcryptjs';
 import md5 from 'js-md5';
-import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { Form, type, format, constraints } from '@maif/react-forms';
-import faker from 'faker';
 import { connect } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { UserBackOffice } from '../../backoffice';
 import { I18nContext, updateUser } from '../../../core';
-import { tenant } from '../..';
 
 
 function TwoFactorAuthentication({ user }) {
@@ -249,7 +245,7 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
             position: 'relative',
           }}
           alt="avatar"
-          className="mr-3"
+          className="mx-3"
         />
         <PictureUpload setFiles={setFiles} />
       </div>
@@ -261,8 +257,8 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
           onChange={(e) => changePicture(e.target.value)}
         />
         <div className="d-flex mt-1 justify-content-end">
-          <button type="button" className="btn btn-outline-primary mr-1" onClick={setGravatarLink}>
-            <i className="fas fa-user-circle mr-1" />
+          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink}>
+            <i className="fas fa-user-circle me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
           {isOtherOriginThanLocal && (
@@ -271,7 +267,7 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
               className="btn btn-outline-primary"
               onClick={setPictureFromProvider}
               disabled={rawValues.pictureFromProvider ? 'disabled' : null}>
-              <i className="fas fa-user-circle mr-1" />
+              <i className="fas fa-user-circle me-1" />
               <Translation i18nkey="Set avatar from auth. provider">
                 Set avatar from auth. Provider
               </Translation>
@@ -303,7 +299,7 @@ function PictureUpload(props) {
   let input;
 
   return (
-    <div className="changePicture">
+    <div className="changePicture mx-3">
       <input
         ref={(r) => (input = r)}
         type="file"
@@ -349,7 +345,8 @@ function MyProfileComponent(props) {
       format: format.email,
       label: translateMethod('Email address'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.email'))
+        constraints.required(translateMethod('constraints.required.email')),
+        constraints.email(translateMethod('constraints.matches.email'))
       ]
 
     },
@@ -366,8 +363,11 @@ function MyProfileComponent(props) {
       type: type.string,
       format: format.select,
       label: translateMethod('Default language'),
-      defaultValue: 'Français', //FIXME: get tenant default language
+      defaultValue: languages.find(l => l.value === props.tenant.defaultLanguage),
       options: languages,
+      constraints: [
+        constraints.nullable()
+      ]
     },
   };
 
@@ -384,10 +384,7 @@ function MyProfileComponent(props) {
       format: format.password,
       label: translateMethod('profile.security.oldPassword'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.oldPassword')),
-        constraints.test('hash', translateMethod('constraints.test.password'), (value) => {
-          return bcrypt.compareSync(value, user.password);
-        })
+        constraints.required(translateMethod('constraints.required.oldPassword'))
       ]
     },
     newPassword: {
@@ -449,19 +446,23 @@ function MyProfileComponent(props) {
       });
   };
 
-  const updatePassword = ({ newPassword }) => {
+  const updatePassword = ({ oldPassword, newPassword }) => {
 
-    const hashedPassword = bcrypt.hashSync(newPassword, bcrypt.genSaltSync(10));
-    Services.updateUserById({ ...user, password: hashedPassword })
+    Services.updateMyPassword(oldPassword, newPassword)
       .then((user) => {
-        setUser(user);
-        props.updateUser(user);
-
-        toastr.success(
-          translateMethod('user.password.updated.success', false, 'Your password has been successfully updated')
-        );
+        if (user.error) {
+          toastr.error(
+            translateMethod(user.error, false)
+          );
+        } else {
+          setUser(user);
+          props.updateUser(user);
+  
+          toastr.success(
+            translateMethod('user.password.updated.success', false, 'Your password has been successfully updated')
+          );
+        }
       });
-
   };
 
   return (
@@ -488,12 +489,12 @@ function MyProfileComponent(props) {
             flow={formFlow}
             schema={formSchema}
             value={user}
-            onChange={save}
+            onSubmit={save}
             footer={({ valid }) => {
               return (
-                <div className="row" style={{ justifyContent: 'flex-end' }}>
+                <div className="d-flex" style={{ justifyContent: 'flex-end' }}>
                   <a className="btn btn-outline-primary" href="#" onClick={() => props.history.goBack()}>
-                    <i className="fas fa-chevron-left mr-1" />
+                    <i className="fas fa-chevron-left me-1" />
                     <Translation i18nkey="Back">Back</Translation>
                   </a>
                   <button
@@ -501,7 +502,7 @@ function MyProfileComponent(props) {
                     className="btn btn-outline-danger"
                     style={{ marginLeft: 5 }}
                     onClick={removeUser}>
-                    <i className="fas fa-trash mr-1" />
+                    <i className="fas fa-trash me-1" />
                     <Translation i18nkey="Delete my profile">Delete my profile</Translation>
                   </button>
                   <button
@@ -510,7 +511,7 @@ function MyProfileComponent(props) {
                     className="btn btn-outline-success"
                     onClick={valid}>
                     <span>
-                      <i className="fas fa-save mr-1" />
+                      <i className="fas fa-save me-1" />
                       <Translation i18nkey="Save">Save</Translation>
                     </span>
                   </button>
@@ -526,7 +527,7 @@ function MyProfileComponent(props) {
                 </h4>
                 <Form
                   schema={changePasswordSchema}
-                  onChange={updatePassword}
+                  onSubmit={updatePassword}
                   footer={({ valid }) => {
                     return (
                       <div className='d-flex flex-row align-items-center'>
