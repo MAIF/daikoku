@@ -1839,11 +1839,15 @@ case class CmsPage(
     }).flatMap { page =>
       try {
         import scala.jdk.CollectionConverters._
+        import com.github.jknack.handlebars.EscapingStrategy
         implicit val ec = CmsPage.pageRenderingEc
 
         val wantDraft = ctx.request.getQueryString("draft").contains("true")
-        val template = if (wantDraft) page.draft.getOrElse(page.body) else page.body
-        val handlebars = new Handlebars()
+        val template = if (wantDraft) metadata.getOrElse("draft", page.body) else page.body
+        val handlebars = new Handlebars().`with`(
+          new EscapingStrategy() {
+            override def escape(value: CharSequence): String = value.toString
+          })
         handlebars.registerHelper("daikoku-asset-url", new Helper[String] {
           override def apply(context: String, options: Options): CharSequence = s"/tenant-assets/${context}"
         })
@@ -1872,8 +1876,9 @@ case class CmsPage(
             }
           }
         })
+        // TODO: include wrap
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
-        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "teams", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
+        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "team", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
         val context = Context
           .newBuilder(this)
           .combine("tenant", new JavaBeanTenant(ctx.tenant))
@@ -1888,7 +1893,7 @@ case class CmsPage(
       } catch {
         case t: Throwable =>
           t.printStackTrace()
-          FastFuture.successful(("text/html", s"error: ${t.getMessage}"))
+          FastFuture.successful((s"error: ${t.getMessage}", "text/html"))
       }
     }(env.defaultExecutionContext)
   }
