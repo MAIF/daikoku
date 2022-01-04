@@ -4,6 +4,9 @@ GET     /assets/*file                                   controllers.Assets.versi
 GET     /_/                                             fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageByPath(path="")
 GET     /_/*path                                        fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageByPath(path)
 GET     /cms/pages/:id                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageById(id)
+POST    /api/cms/pages                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.createCmsPage()
+PUT     /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.updateCmsPage(id)
+DELETE  /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.deleteCmsPage(id)
 
 ### NoDocs ###
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()

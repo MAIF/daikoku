@@ -733,6 +733,17 @@ const UserBackOfficeComponent = ({
                   <Translation i18nkey="Internationalization">Internationalization</Translation>
                 </NavLink>
               </li>
+              {/* {tenant.useCMS && */}
+                <li className="nav-item">
+                  <NavLink
+                    className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}
+                    to={'/settings/pages'}
+                  >
+                    <i className="fas fa-pager" />
+                    <Translation i18nkey="Pages">Pages</Translation>
+                  </NavLink>
+                </li>
+              {/* } */}
             </ul>
           </Can>
 

@@ -50,6 +50,7 @@ import {
   InitializeFromOtoroshi,
   MailingInternalization,
   AdminMessages,
+  CMSOffice
 } from '../components/adminbackoffice';
 
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
@@ -320,6 +321,14 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               element={
                 <RouteWithTitle title={`${tenant.title} - ${translateMethod('Init')}`}>
                   <InitializeFromOtoroshi />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/pages*"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('daikokuapp.pages_title')}`}>
+                  <CMSOffice />
                 </RouteWithTitle>
               }
             />

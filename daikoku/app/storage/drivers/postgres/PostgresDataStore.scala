@@ -307,7 +307,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     "user_sessions" -> false,
     "api_posts" -> true,
     "api_issues" -> true,
-    "evolutions" -> false
+    "evolutions" -> false,
+    "cmspages" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()

@@ -3282,6 +3282,7 @@ object json {
       "contentType" -> o.contentType,
       "forwardRef" -> o.forwardRef.map(v => v.asJson).getOrElse(JsNull).as[JsValue],
       "body" -> o.body,
+      "draft" -> o.draft,
       "path" -> o.path,
     )
     override def reads(json: JsValue): JsResult[CmsPage] = Try {
@@ -3296,6 +3297,7 @@ object json {
         tags = (json \ "tags").asOpt[List[String]].getOrElse(List.empty),
         metadata = (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
         body = (json \ "body").asOpt[String].getOrElse(""),
+        draft = (json \ "draft").asOpt[String],
         contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
         forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
         path = (json \ "path").asOpt[String].getOrElse("-"),

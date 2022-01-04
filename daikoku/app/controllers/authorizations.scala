@@ -3,11 +3,8 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
-import controllers.AppError.Unauthorized
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuActionContext,
-  DaikokuTenantActionContext
-}
+import controllers.AppError.{ForbiddenAction, Unauthorized}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain._
@@ -212,10 +209,22 @@ object authorizations {
       }
     }
 
+
     def TenantAdminAccessTenant[T](audit: AuditEvent)(
-        ctx: DaikokuActionContext[T])(f: => Future[Result])(
+      ctx: DaikokuActionContext[T])(f: => Future[Result])(
+                                    implicit ec: ExecutionContext,
+                                    env: Env): Future[Result] = {
+      _TenantAdminAccessTenant(audit)(ctx)(f)
+        .map {
+          case Left(value)  => value
+          case Right(value) => AppError.render(value)
+        }
+    }
+
+    def _TenantAdminAccessTenant[T, B](audit: AuditEvent)(
+        ctx: DaikokuActionContext[T])(f: => Future[B])(
         implicit ec: ExecutionContext,
-        env: Env): Future[Result] = {
+        env: Env): Future[Either[B, AppError]] = {
       val tenant = ctx.tenant
       val session = UserSession(
         id = DatastoreId(BSONObjectID.generate().stringify),
@@ -247,7 +256,7 @@ object authorizations {
                   ctx.request,
                   ctx.ctx,
                   AuthorizationLevel.AuthorizedDaikokuAdmin)
-            }
+            }.flatMap(f => FastFuture.successful(Left(f)))
           case Some(team)
               if team.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator) =>
@@ -262,7 +271,7 @@ object authorizations {
                   ctx.request,
                   ctx.ctx,
                   AuthorizationLevel.AuthorizedTenantAdmin)
-            }
+            }.flatMap(f => FastFuture.successful(Left(f)))
           case Some(team)
               if !team.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator) =>
@@ -274,8 +283,7 @@ object authorizations {
                                       ctx.request,
                                       ctx.ctx,
                                       AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(
-              Results.Forbidden(Json.obj("error" -> "Access Forbidden")))
+            FastFuture.successful(Right(ForbiddenAction))
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
                                       ctx.user,
@@ -283,8 +291,7 @@ object authorizations {
                                       ctx.request,
                                       ctx.ctx,
                                       AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(Results.NotFound(Json.obj(
-              "error" -> "Tenant admin team not found, please contact your administrator")))
+            FastFuture.successful(Right(Unauthorized))
         }
     }
 

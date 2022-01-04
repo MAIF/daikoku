@@ -183,7 +183,8 @@ object TenantHelper {
             case Some(tenant) => f(tenant)
           }
           .recoverWith {
-            case _ =>
+            case e =>
+              AppLogger.error(s"Failed to retrieve tenant : ${e.getMessage}")
               Errors.craftResponseResult(
                 "Failed to retrieve tenant # Try to reload your page",
                 Results.NotFound,

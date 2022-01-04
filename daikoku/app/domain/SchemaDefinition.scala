@@ -4,7 +4,7 @@ import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._UberPublicUserAccess
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.ValueType
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
@@ -1112,12 +1112,36 @@ object SchemaDefinition {
       )
     )
 
+    lazy val  CmsPageType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage](
+      "CmsPage",
+      "A CMS page",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), CmsPage](
+        Field("id", StringType, resolve = _.value.id.value),
+        Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant)),
+        Field("forwardRef", OptionType(CmsPageType), resolve = ctx => ctx.value.forwardRef match {
+          case Some(ref) => ctx.ctx._1.cmsRepo.forTenant(ctx.value.tenant).findById(ref)
+          case None => None
+        }),
+        Field("deleted", BooleanType, resolve = _.value.deleted),
+        Field("visible", BooleanType, resolve = _.value.visible),
+        Field("authenticated", BooleanType, resolve = _.value.authenticated),
+        Field("name", StringType, resolve = _.value.name),
+        Field("picture", OptionType(StringType), resolve = _.value.picture),
+        Field("tags", ListType(StringType), resolve = _.value.tags),
+        Field("metadata", MapType, resolve = _.value.metadata),
+        Field("contentType", StringType, resolve = _.value.contentType),
+        Field("body", StringType, resolve = _.value.body),
+        Field("path", StringType, resolve = _.value.path),
+      )
+    )
+
     val ID: Argument[String] = Argument("id", StringType, description = "The id of element")
     val TEAM_ID: Argument[String] = Argument("teamId", StringType, description = "The id of the team")
     val LIMIT: Argument[Int] = Argument("limit", IntType,
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
+    val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
 
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
@@ -1223,6 +1247,19 @@ object SchemaDefinition {
       })
     )
 
+    def cmsPageFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("pages", ListType(CmsPageType), arguments = DELETED :: Nil, resolve = ctx => {
+        _TenantAdminAccessTenant(AuditTrailEvent(s"@{user.name} has accessed the list of cms page"))(ctx.ctx._2) {
+          ctx.ctx._1.cmsRepo.forTenant(ctx.ctx._2.tenant).find(Json.obj(
+            "_deleted" -> ctx.arg(DELETED)
+          ))
+        }.map {
+          case Left(value) => value
+          case Right(r) => throw NotAuthorizedError(r.toString)
+        }
+      })
+    )
+
     def getRepoFields[Out, Of, Id <: ValueType](
                                                fieldName: String,
                                                fieldType: OutputType[Out],
@@ -1263,11 +1300,12 @@ object SchemaDefinition {
       getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo) ++
       getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo) ++
       getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo) ++
+      getTenantFields("cmsPage", CmsPageType, ctx => ctx.ctx._1.cmsRepo) ++
       getTenantFields("auditEvent", AuditEventType, ctx => ctx.ctx._1.auditTrailRepo):_*)
 
     (
       Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields():_*)
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields() ++ cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher)
     )

@@ -717,9 +717,9 @@ export const checkConnection = (config, user) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   });
 
@@ -884,6 +884,15 @@ export const getAllApiDocumentation = (teamId, apiId, version) =>
 
 export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
+
+export const createCmsPage = cmsPage => customFetch('/api/cms/pages', {
+  method: 'POST',
+  body: JSON.stringify(cmsPage),
+});
+
+export const removeCmsPage = id => customFetch(`/api/cms/pages/${id}`, {
+  method: 'DELETE'
+});
 
 export const graphql = {
   myTeams: gql`
