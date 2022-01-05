@@ -1131,6 +1131,7 @@ object SchemaDefinition {
         Field("metadata", MapType, resolve = _.value.metadata),
         Field("contentType", StringType, resolve = _.value.contentType),
         Field("body", StringType, resolve = _.value.body),
+        Field("draft", OptionType(StringType), resolve = _.value.draft),
         Field("path", StringType, resolve = _.value.path),
       )
     )
@@ -1265,8 +1266,8 @@ object SchemaDefinition {
                                                fieldType: OutputType[Out],
                                                repo: Context[(DataStore, DaikokuActionContext[JsValue]), Unit] => Repo[Of, Id]): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
-        Field(fieldName, OptionType(fieldType), arguments = List(ID),
-          resolve = ctx => repo(ctx).findById(ctx arg ID).asInstanceOf[Option[Out]]),
+        Field(fieldName, OptionType(fieldType), arguments = ID :: Nil,
+          resolve = ctx => repo(ctx).findById(ctx.arg(ID)).asInstanceOf[Future[Option[Out]]]),
         Field(s"${fieldName}s", ListType(fieldType), arguments = LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             (ctx.arg(LIMIT), ctx.arg(OFFSET)) match {

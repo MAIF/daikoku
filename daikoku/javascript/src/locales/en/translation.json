@@ -968,5 +968,9 @@
     "notification.accept.on_error.title": "Unable to accept the notification",
     "You're not authorized on this api": "You're not authorized on this api",
     "ask.api.access.info": "Your request for access to %s has been sent.",
-    "daikokuapp.pages_title": "Pages edition"
+    "daikokuapp.pages_title": "Pages edition",
+    "cms.create.new_page": "New page",
+    "cms.create.save_modifications": "Update page",
+    "cms.create.edited_page": "Edition of page",
+    "cms.create.create_page": "Create the new page"
 }

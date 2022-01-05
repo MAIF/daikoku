@@ -25,7 +25,7 @@ export const Pages = ({ pages }) => {
                         <Link to={`/settings/pages/edit/${id}`}>
                             <i className="fas fa-edit"></i>
                         </Link>
-                        <Link to={`/_${path}`}>
+                        <Link to={`/_${path}`} target="_blank" rel="noopener noreferrer">
                             <i className="fas fa-eye"></i>
                         </Link>
 

@@ -50,6 +50,7 @@ export const CMSOffice = () => {
                     <Routes>
                         <Route path="/" element={index()} />
                         <Route path="/new" element={<Create />} />
+                        <Route path="/edit/:id" element={<Create />} />
                     </Routes>
                 </div>
             </Can>

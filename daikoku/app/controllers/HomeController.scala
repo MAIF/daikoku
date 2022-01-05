@@ -8,7 +8,7 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain.{CmsPage, CmsPageId, TenantId, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsError, JsObject, JsSuccess, Json}
+import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
@@ -74,7 +74,11 @@ class HomeController(
   }
 
   def cmsPageByPath(path: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
-    val actualPath = s"/$path"
+    val actualPath = if (path.startsWith("/")) {
+      path
+    } else {
+      s"/$path"
+    }
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> actualPath)).flatMap {
       case None => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
       case Some(page) if !page.visible => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
@@ -97,13 +101,14 @@ class HomeController(
       AuditTrailEvent("@{user.name} has created a cms page"))(
       ctx.tenant.id.value,
       ctx) { (tenant, _) => {
-        val cmsPage = ctx.request.body.as[JsObject] ++
-          Json.obj("_id" -> BSONObjectID.generate().stringify) ++
+        val body =  ctx.request.body.as[JsObject]
+        val cmsPage = body ++
+          Json.obj("_id" -> JsString((body \ "id").asOpt[String].getOrElse(BSONObjectID.generate().stringify))) ++
           Json.obj("_tenant" -> tenant.id.value)
         json.CmsPageFormat.reads(cmsPage) match {
-          case JsSuccess(user, _) =>
-            env.dataStore.cmsRepo.forTenant(tenant)
-              .save(user)
+          case JsSuccess(page, _) =>
+           env.dataStore.cmsRepo.forTenant(tenant)
+              .save(page)
               .map {
                 case true => Created(Json.obj("created" -> true))
                 case false => BadRequest(Json.obj("error" -> "Error when creating cms page"))

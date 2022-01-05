@@ -885,9 +885,12 @@ export const getAllApiDocumentation = (teamId, apiId, version) =>
 export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
-export const createCmsPage = cmsPage => customFetch('/api/cms/pages', {
+export const createCmsPage = (id, cmsPage) => customFetch('/api/cms/pages', {
   method: 'POST',
-  body: JSON.stringify(cmsPage),
+  body: JSON.stringify({
+    id,
+    ...cmsPage
+  }),
 });
 
 export const removeCmsPage = id => customFetch(`/api/cms/pages/${id}`, {
