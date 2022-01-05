@@ -15,6 +15,7 @@ export const Create = () => {
         path: '',
         body: '<html><head></head><body><h1>Home page</h1></body></html>',
         draft: '<html><head></head><body><h1>My draft version</h1></body></html>',
+        contentType: { label: 'HTML document', value: 'text/html' },
         visible: true,
         authenticated: false,
         metadata: {}
@@ -35,6 +36,7 @@ export const Create = () => {
                         visible
                         authenticated
                         metadata
+                        contentType
                     }
                 }
             `})
@@ -47,6 +49,7 @@ export const Create = () => {
                 })
     }, []);
 
+    console.log(value)
 
     const schema = {
         name: {
@@ -63,17 +66,34 @@ export const Create = () => {
             help: 'The path where the page will be displayed',
             label: translateMethod('Path'),
             constraints: [
-                constraints.required()
+                constraints.required(),
+                constraints.matches("^/")
+            ]
+        },
+        contentType: {
+            type: type.string,
+            format: format.select,
+            label: translateMethod('Content type'),
+            options: [
+                { label: 'HTML document', value: 'text/html' },
+                { label: 'CSS stylesheet', value: 'text/css' },
+                { label: 'Javascript script', value: 'text/javascript' },
+                { label: 'Markdown document', value: 'text/markdown' },
+                { label: 'Text plain', value: 'text/plain' },
+                { label: 'XML content', value: 'text/xml' },
+                { label: 'JSON content', value: 'application/json' }
             ]
         },
         body: {
             type: type.string,
             format: format.code,
+            label: 'Content of the page',
             help: 'The content of the page. It must be of the same type than the content-type',
         },
         draft: {
             type: type.string,
             format: format.code,
+            label: 'Draft content',
             help: 'The content of the draft page. This is useful when you want to work on a future version of your page without exposing it.',
             constraints: [
                 constraints.nullable()
@@ -109,11 +129,11 @@ export const Create = () => {
         // },
     }
 
-    const flow = ['name', 'path', 'body', 'draft', 'visible', 'authenticated', /*'tags'*/, 'metadata']
+    const flow = ['name', 'path', 'contentType', 'body', 'draft', 'visible', 'authenticated', /*'tags'*/, 'metadata']
 
     return (
         <div>
-            <h1>{params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}</h1>
+            <h1 className='mb-1'>{params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}</h1>
             <Form
                 schema={schema}
                 flow={flow}

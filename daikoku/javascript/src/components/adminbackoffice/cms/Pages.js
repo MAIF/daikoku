@@ -4,23 +4,22 @@ import { I18nContext } from '../../../core'
 import * as Services from '../../../services'
 import { Table } from '../../inputs'
 
+const CONTENT_TYPES = {
+    'text/html': 'HTML',
+    'text/css': 'CSS',
+    'text/javascript': 'JS',
+    'text/markdown': 'MD',
+    'text/plain': 'PLAIN',
+    'text/xml': 'XML',
+    'application/json': 'JSON'
+}
+
 export const Pages = ({ pages, removePage }) => {
-    const navigate = useNavigate()
     const { translateMethod } = useContext(I18nContext)
 
     let table;
 
     const columns = [
-        // {
-        //     Header: 'Date',
-        //     id: 'date',
-        //     accessor: (item) =>
-        //         item['@timestamp']['$long'] ? item['@timestamp']['$long'] : item['@timestamp'], //todo: try to remove this $long prop from reactivemongo
-        //     style: { textAlign: 'left' },
-        //     Cell: ({ value }) => {
-        //         return moment(value).format('YYYY-MM-DD HH:mm:ss.SSS');
-        //     },
-        // },
         {
             Header: 'Name',
             style: { textAlign: 'left' },
@@ -28,8 +27,32 @@ export const Pages = ({ pages, removePage }) => {
         },
         {
             Header: 'Path',
-            style: { textAlign: 'left' },
+            style: {
+                textAlign: 'left',
+                fontStyle: 'italic'
+            },
             accessor: (item) => item.path,
+        },
+        {
+            Header: 'Content Type',
+            style: {
+                textAlign: 'center',
+                maxWidth: 100
+            },
+            disableFilters: true,
+            accessor: (item) => item.contentType,
+            Cell: ({
+                cell: {
+                    row: { original },
+                },
+            }) => {
+                const { contentType } = original;
+                return (
+                    <span class="badge bg-dark">
+                        {CONTENT_TYPES[contentType]}
+                    </span>
+                );
+            }
         },
         {
             Header: 'Actions',
@@ -69,8 +92,8 @@ export const Pages = ({ pages, removePage }) => {
                         </Link>
                     </>
                 );
-            },
-        },
+            }
+        }
     ];
 
     return (

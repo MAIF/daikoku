@@ -14,6 +14,7 @@ const getAllPages = () => ({
             id
             name
             path
+            contentType
         }
       }
     `,

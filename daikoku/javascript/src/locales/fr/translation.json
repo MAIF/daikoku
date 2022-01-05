@@ -971,5 +971,9 @@
   "notification.accept.on_error.title": "Impossible d'accepter la notification",
   "You're not authorized on this api": "Vous n'êtes pas autorisé à accéder à cette API",
   "ask.api.access.info": "Votre demande d'accès à %s à bien été envoyée.",
-  "daikokuapp.pages_title": "Edition des pages"
+  "daikokuapp.pages_title": "Edition des pages",
+  "cms.create.new_page": "Nouvelle page",
+  "cms.create.save_modifications": "Mettre à jour",
+  "cms.create.edited_page": "Edition de la page",
+  "cms.create.create_page": "Créer la page"
 }
