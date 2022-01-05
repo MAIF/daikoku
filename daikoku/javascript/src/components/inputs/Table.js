@@ -30,6 +30,8 @@ export const Table = React.forwardRef(
       search,
       pageSizee = 15,
       mobileSize = 767,
+      header = true,
+      footer = true
     },
     ref
   ) => {
@@ -252,12 +254,12 @@ export const Table = React.forwardRef(
       <div>
         <div>
           <div className="rrow section">
-            <div className="row" style={{ marginBottom: 10 }}>
+            {header && <div className="row" style={{ marginBottom: 10 }}>
               <div className="col-md-12 d-flex">
                 {injectTopBar && <div style={{ fontSize: 14 }}>{injectTopBar()}</div>}
                 {tablePagination}
               </div>
-            </div>
+            </div>}
             <table {...getTableProps()} className="reactTableV7">
               <thead>
                 {headerGroups.map((headerGroup, idx) => (
@@ -299,7 +301,7 @@ export const Table = React.forwardRef(
                 })}
               </tbody>
             </table>
-            {tablePagination}
+            {footer && tablePagination}
           </div>
         </div>
       </div>

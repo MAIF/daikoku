@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import java.util.concurrent.{Executors, TimeUnit}
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
 import com.github.jknack.handlebars.{Context, Handlebars, Helper, Options}
@@ -19,9 +18,9 @@ import play.api.libs.json._
 import play.api.mvc.Request
 import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
-import storage.{DataStore, Repo, TenantCapableRepo}
-import sangria.schema.ObjectType
+import storage.TenantCapableRepo
 
+import java.util.concurrent.{Executors, TimeUnit}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -1838,7 +1837,6 @@ case class CmsPage(
       case None => FastFuture.successful(this)
     }).flatMap { page =>
       try {
-        import scala.jdk.CollectionConverters._
         import com.github.jknack.handlebars.EscapingStrategy
         implicit val ec = CmsPage.pageRenderingEc
 
@@ -1848,32 +1846,22 @@ case class CmsPage(
           new EscapingStrategy() {
             override def escape(value: CharSequence): String = value.toString
           })
-        handlebars.registerHelper("daikoku-asset-url", new Helper[String] {
-          override def apply(context: String, options: Options): CharSequence = s"/tenant-assets/${context}"
-        })
-        handlebars.registerHelper("daikoku-page-url", new Helper[String] {
-          override def apply(id: String, options: Options): CharSequence = {
-            Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
-              case None => "#not-found"
-              case Some(page) => s"/_${page.path}"
-            }
+        handlebars.registerHelper("daikoku-asset-url", (context: String, _: Options) => s"/tenant-assets/${context}")
+        handlebars.registerHelper("daikoku-page-url", (id: String, _: Options) => {
+          Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+            case None => "#not-found"
+            case Some(page) => s"/_${page.path}"
           }
         })
-        handlebars.registerHelper("daikoku-generic-page-url", new Helper[String] {
-          override def apply(id: String, options: Options): CharSequence = s"/cms/pages/${id}"
-        })
-        handlebars.registerHelper("daikoku-page-preview-url", new Helper[String] {
-          override def apply(id: String, options: Options): CharSequence = s"/cms/pages/${id}?draft=true"
-        })
-        handlebars.registerHelper("daikoku-include-block", new Helper[String] {
-          override def apply(id: String, options: Options): CharSequence = {
-            Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
-              case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)), 10.seconds) match {
-                case None => s"block '$id' not found"
-                case Some(page) => Await.result(page.render(ctx).map(t => t._2), 10.seconds)
-              }
+        handlebars.registerHelper("daikoku-generic-page-url", (id: String, _: Options) => s"/cms/pages/$id")
+        handlebars.registerHelper("daikoku-page-preview-url", (id: String, _: Options) => s"/cms/pages/$id?draft=true")
+        handlebars.registerHelper("daikoku-include-block", (id: String, _: Options) => {
+          Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+            case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)), 10.seconds) match {
+              case None => s"block '$id' not found"
               case Some(page) => Await.result(page.render(ctx).map(t => t._2), 10.seconds)
             }
+            case Some(page) => Await.result(page.render(ctx).map(t => t._2), 10.seconds)
           }
         })
         // TODO: include wrap

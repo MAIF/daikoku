@@ -52,18 +52,24 @@ export const Create = () => {
         name: {
             type: type.string,
             placeholder: 'The name of the page.',
-            label: translateMethod('Name')
+            label: translateMethod('Name'),
+            constraints: [
+                constraints.required()
+            ]
         },
         path: {
             type: type.string,
             placeholder: '/index',
             help: 'The path where the page will be displayed',
-            label: translateMethod('Path')
+            label: translateMethod('Path'),
+            constraints: [
+                constraints.required()
+            ]
         },
         body: {
             type: type.string,
             format: format.code,
-            help: 'The content of the page. It must be of the same type than the content-type'
+            help: 'The content of the page. It must be of the same type than the content-type',
         },
         draft: {
             type: type.string,
@@ -115,16 +121,22 @@ export const Create = () => {
                 onSubmit={item => {
                     Services.createCmsPage(params.id, item)
                         .then(res => {
-                            console.log(res)
+                            if (!res.error)
+                                navigate('/settings/pages', {
+                                    state: {
+                                        reload: true
+                                    }
+                                })
+                            else
+                                window.alert(res.error)
                         })
-                    console.log({ item })
                 }}
                 footer={({ reset, valid }) => {
                     return (
                         <div className="d-flex justify-content-end">
                             <button className="btn btn-sm btn-primary me-1" onClick={() => navigate(-1)}>Back</button>
                             <button className="btn btn-sm btn-success" onClick={valid}>
-                                {params.id ? translateMethod('cms.create.save_modifications'): translateMethod('cms.create.create_page')}
+                                {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
                             </button>
                         </div>
                     )
