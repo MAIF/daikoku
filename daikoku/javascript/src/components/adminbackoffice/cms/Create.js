@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { Form, constraints, type, format } from '@maif/react-forms'
 import { I18nContext } from '../../../core'
-import { useNavigate, useParams } from 'react-router-dom'
+import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import * as Services from '../../../services'
 import { getApolloContext, gql } from '@apollo/client'
 
@@ -13,8 +13,8 @@ export const Create = () => {
     const [value, setValue] = useState({
         name: '',
         path: '',
-        body: '<html><head></head><body><h1>Home page</h1></body></html>',
-        draft: '<html><head></head><body><h1>My draft version</h1></body></html>',
+        body: '<!DOCTYPE html><html><head></head><body><h1>Home page</h1></body></html>',
+        draft: '<!DOCTYPE html><html><head></head><body><h1>My draft version</h1></body></html>',
         contentType: { label: 'HTML document', value: 'text/html' },
         visible: true,
         authenticated: false,
@@ -48,8 +48,6 @@ export const Create = () => {
                         })
                 })
     }, []);
-
-    console.log(value)
 
     const schema = {
         name: {
@@ -129,39 +127,79 @@ export const Create = () => {
         // },
     }
 
-    const flow = ['name', 'path', 'contentType', 'body', 'draft', 'visible', 'authenticated', /*'tags'*/, 'metadata']
+    const informationFlow = ['name', 'path', 'visible', 'authenticated', /*'tags'*/, 'metadata']
+    const contentFlow = ['contentType', 'body']
+    const draftFlow = ['draft']
+
+    const flow = {
+        draft: draftFlow,
+        content: contentFlow,
+        information: informationFlow
+    }[params.tab]
+
+    if (!flow)
+        return navigate('/settings/pages')
 
     return (
         <div>
-            <h1 className='mb-1'>{params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}</h1>
+            <h1>{params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}</h1>
+            <ul className="nav nav-tabs flex-column flex-sm-row">
+                {[
+                    { name: 'Information', to: '/information' },
+                    { name: 'Content', to: '/content' },
+                    { name: 'Draft content', to: '/draft' },
+                ].map(({ name, to }) => (
+                    <li className="nav-item">
+                        <NavLink className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}
+                            to={params.id ? `/settings/pages/edit/${params.id}${to}` : `/settings/pages/new${to}`}>
+                            {name}
+                        </NavLink>
+                    </li>
+                ))}
+            </ul>
             <Form
                 schema={schema}
                 flow={flow}
                 value={value}
+                options={{
+                    autosubmit: true
+                }}
                 onSubmit={item => {
-                    Services.createCmsPage(params.id, item)
-                        .then(res => {
-                            if (!res.error)
-                                navigate('/settings/pages', {
-                                    state: {
-                                        reload: true
-                                    }
-                                })
-                            else
-                                window.alert(res.error)
-                        })
+                    console.log(item)
+                    setValue(item)
                 }}
-                footer={({ reset, valid }) => {
-                    return (
-                        <div className="d-flex justify-content-end">
-                            <button className="btn btn-sm btn-primary me-1" onClick={() => navigate(-1)}>Back</button>
-                            <button className="btn btn-sm btn-success" onClick={valid}>
-                                {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
-                            </button>
-                        </div>
-                    )
-                }}
+                footer={() => null}
             />
+            <>
+                {/* {params.id && params.tab === "content" &&
+                    <>
+                        <span>Preview</span>
+                        <iframe src={`/_${value.path}`}
+                            style={{
+                                width: '100%',
+                                border: 0
+                            }} />
+                    </>
+                } */}
+                <div className="d-flex justify-content-end">
+                    <button className="btn btn-sm btn-primary me-1" onClick={() => navigate('/settings/pages')}>Back</button>
+                    <button className="btn btn-sm btn-success" onClick={() => {
+                        Services.createCmsPage(params.id, value)
+                            .then(res => {
+                                if (!res.error)
+                                    navigate('/settings/pages', {
+                                        state: {
+                                            reload: true
+                                        }
+                                    })
+                                else
+                                    window.alert(res.error)
+                            })
+                    }}>
+                        {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
+                    </button>
+                </div>
+            </>
         </div>
     )
 }

@@ -48,7 +48,7 @@ export const Pages = ({ pages, removePage }) => {
             }) => {
                 const { contentType } = original;
                 return (
-                    <span class="badge bg-dark">
+                    <span className="badge bg-dark">
                         {CONTENT_TYPES[contentType]}
                     </span>
                 );
@@ -68,7 +68,7 @@ export const Pages = ({ pages, removePage }) => {
                 const value = original;
                 return (
                     <>
-                        <Link to={`edit/${value.id}`}
+                        <Link to={`edit/${value.id}/information`}
                             className="btn btn-sm btn-outline-primary">
                             <i className='fas fa-edit' />
                         </Link>

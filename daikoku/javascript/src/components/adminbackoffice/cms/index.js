@@ -1,6 +1,6 @@
 import { getApolloContext, gql } from '@apollo/client'
 import React, { useContext, useEffect, useState } from 'react'
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { I18nContext } from '../../../core'
 import { UserBackOffice } from '../../backoffice'
 import { Can, manage, tenant } from '../../utils'
@@ -23,8 +23,6 @@ const getAllPages = () => ({
 export const CMSOffice = () => {
     const { Translation } = useContext(I18nContext)
     const { client } = useContext(getApolloContext())
-
-    const navigate = useNavigate()
     const location = useLocation()
 
     const [pages, setPages] = useState([])
@@ -47,8 +45,7 @@ export const CMSOffice = () => {
         <div>
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
-                <button className="btn btn-sm btn-primary"
-                    onClick={() => navigate('new')}>New page</button>
+                <Link to="new/information" className="btn btn-sm btn-primary">New page</Link>
             </div>
             <Pages pages={pages} removePage={id => setPages(pages.filter(f => f.id !== id))} />
         </div>
@@ -59,9 +56,9 @@ export const CMSOffice = () => {
             <Can I={manage} a={tenant} dispatchError>
                 <div className="section py-3 px-2 mt-3">
                     <Routes>
-                        <Route path="/" element={index()} />
-                        <Route path="/new" element={<Create />} />
-                        <Route path="/edit/:id" element={<Create />} />
+                        <Route path={`/new/:tab`} element={<Create />} />
+                        <Route path={`/edit/:id/:tab`} element={<Create />} />
+                        <Route path="*" element={index()} />
                     </Routes>
                 </div>
             </Can>
