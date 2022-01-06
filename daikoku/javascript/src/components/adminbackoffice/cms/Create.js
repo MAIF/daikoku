@@ -161,14 +161,26 @@ export const Create = () => {
                 schema={schema}
                 flow={flow}
                 value={value}
-                options={{
-                    autosubmit: true
-                }}
+                // options={{
+                //     autosubmit: true
+                // }}
                 onSubmit={item => {
-                    console.log(item)
-                    setValue(item)
+                    // console.log(item)
+                    // setValue(item)
+                    // TODO - remove on react-form 1.0.6
+                    Services.createCmsPage(params.id, item)
+                        .then(res => {
+                            // if (!res.error)
+                            //     navigate('/settings/pages', {
+                            //         state: {
+                            //             reload: true
+                            //         }
+                            //     })
+                            // else
+                            //     window.alert(res.error)
+                        })
                 }}
-                footer={() => null}
+                // footer={() => null}
             />
             <>
                 {/* {params.id && params.tab === "content" &&

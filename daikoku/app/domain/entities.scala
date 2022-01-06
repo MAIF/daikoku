@@ -1835,6 +1835,7 @@ case class CmsPage(
     }).flatMap { page =>
       try {
         import com.github.jknack.handlebars.EscapingStrategy
+        import scala.jdk.CollectionConverters._
         implicit val ec = CmsPage.pageRenderingEc
 
         val wantDraft = ctx.request.getQueryString("draft").contains("true")
@@ -1877,9 +1878,11 @@ case class CmsPage(
         })
         handlebars.registerHelper(s"daikoku-template-wrapper", (id: String, options: Options) => {
           Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
-            case None => "template not found"
+            case None => "page not found"
             case Some(page) =>
-              Await.result(page.render(ctx, Some(Map("children" -> options.fn.apply(ctx)))).map(t => t._1), 10.seconds)
+              val attrs = options.hash.asScala.map { case (k, v) => (k, v.toString) }
+              Await.result(page.render(ctx, Some(
+                Map("children" -> options.fn.apply(ctx)) ++ attrs)).map(t => t._1), 10.seconds)
           }
         })
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
@@ -1891,7 +1894,17 @@ case class CmsPage(
       } catch {
         case t: Throwable =>
           t.printStackTrace()
-          FastFuture.successful((s"error: ${t.getMessage}", "text/html"))
+          FastFuture.successful((s"""
+          <!DOCTYPE html>
+          <html>
+            <body>
+             <h1 style="text-align: center">Server error</h1>
+             <div>
+              <pre><code style="white-space: pre-line;font-size: 18px">${t.getMessage}</code></pre>
+             <div>
+           </body>
+          </html>
+          """, "text/html"))
       }
     }(env.defaultExecutionContext)
   }
