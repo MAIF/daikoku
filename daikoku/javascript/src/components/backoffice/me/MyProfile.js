@@ -520,33 +520,34 @@ function MyProfileComponent(props) {
             }}
           />}
           {tab === 'security' && (
-            <div className='d-flex flex-row'>
-              <div className='col-sm-6 d-flex flex-column flex-grow-1'>
-                <h4>
-                  <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
-                </h4>
-                <Form
-                  schema={changePasswordSchema}
-                  onSubmit={updatePassword}
-                  footer={({ valid }) => {
-                    return (
-                      <div className='d-flex flex-row align-items-center'>
-                        <button
-                          style={{ marginLeft: 5 }}
-                          type="button"
-                          className="btn btn-outline-success"
-                          onClick={valid}>
-                          <span>
-                            <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
-                          </span>
-                        </button>
-                        {/* TODO: forgot password link */}
-                      </div>
-                    );
-                  }}
-                />
+            <div className='row'>
+              <div className='col-sm-6'>
+                <div className='row'>
+                  <h4>
+                    <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                  </h4>
+                  <Form
+                    schema={changePasswordSchema}
+                    onSubmit={updatePassword}
+                    footer={({ valid }) => {
+                      return (
+                        <div className='d-flex justify-content-end'>
+                          <button
+                            type="button"
+                            className="btn btn-outline-success mb-2"
+                            onClick={valid}>
+                            <span>
+                              <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                            </span>
+                          </button>
+                          {/* TODO: forgot password link */}
+                        </div>
+                      );
+                    }}
+                  />
+                </div>
               </div>
-              <div className='d-flex flex-column  flex-grow-1'>
+              <div className='col-sm-6'>
                 <h4>
                   <Translation i18nkey="2fa">Two-factor authentication</Translation>
                 </h4>
