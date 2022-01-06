@@ -468,7 +468,7 @@ function MyProfileComponent(props) {
   return (
     <UserBackOffice tab="Me" isLoading={!user}>
       <div className="col">
-        <div className="">
+        <div className="row">
           <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
             <li className="nav-item">
               <span
