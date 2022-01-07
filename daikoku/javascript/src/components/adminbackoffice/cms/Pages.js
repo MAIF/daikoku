@@ -68,7 +68,7 @@ export const Pages = ({ pages, removePage }) => {
                 const value = original;
                 return (
                     <>
-                        <Link to={`edit/${value.id}/information`}
+                        <Link to={`edit/${value.id}`}
                             className="btn btn-sm btn-outline-primary">
                             <i className='fas fa-edit' />
                         </Link>

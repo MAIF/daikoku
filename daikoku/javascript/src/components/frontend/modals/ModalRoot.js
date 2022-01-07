@@ -21,7 +21,7 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
     loginOrRegisterModal: Modals.LoginOrRegisterModal,
     apiKeySelectModal: Modals.ApiKeySelectModal,
     apiSelectModal: Modals.ApiSelectModal,
-    apiDocumentationSelectModal: Modals.ApiDocumentationSelectModal,
+    apiDocumentationSelectModal: Modals.ApiDocumentationSelectModal
   };
 
   const [modalIsOpen, setModalIsOpen] = useState(open);

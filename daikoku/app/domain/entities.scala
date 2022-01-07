@@ -1865,6 +1865,17 @@ case class CmsPage(
             case Some(page) => s"/_${page.path}"
           }
         })
+
+        val links = Map(
+          "login" -> s"/auth/${ctx.tenant.authProvider.name}/login",
+          "logout" -> "/logout",
+          "language" -> ctx.user.map(_.defaultLanguage).getOrElse(ctx.tenant.defaultLanguage.getOrElse("en")),
+          "signup" -> (if(ctx.tenant.authProvider.name == "Local") "/signup" else s"/auth/${ctx.tenant.authProvider.name}/login"),
+          "backoffice" -> "/apis",
+          "notifications" -> "/notifications"
+        )
+        links.map { case (name, link) => handlebars.registerHelper(s"daikoku-links-$name", (_: Object, _: Options) => link) }
+
         handlebars.registerHelper("daikoku-generic-page-url", (id: String, _: Options) => s"/cms/pages/$id")
         handlebars.registerHelper("daikoku-page-preview-url", (id: String, _: Options) => s"/cms/pages/$id?draft=true")
         handlebars.registerHelper("daikoku-include-block", (id: String, _: Options) => {
