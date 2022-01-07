@@ -4,9 +4,9 @@ import { I18nContext } from '../../../core'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as Services from '../../../services'
 import { getApolloContext, gql } from '@apollo/client'
-import { CodeInput, SelectInput } from '@maif/react-forms/lib/inputs'
+import { ContentSideView } from './ContentSideView'
 
-export const Create = () => {
+export const Create = (props) => {
     const { translateMethod } = useContext(I18nContext)
     const navigate = useNavigate()
     const params = useParams()
@@ -89,61 +89,7 @@ export const Create = () => {
             type: type.string,
             label: 'Content of the page',
             help: 'The content of the page. It must be of the same type than the content-type',
-            render: ({ value, onChange }) => {
-                const [sideView, setSideView] = useState(false);
-                const [selector, setSelector] = useState("");
-                const [sideViewState, setSideViewState] = useState({});
-
-                return <div style={{
-                    position: "relative",
-                    marginTop: "12px"
-                }}>
-                    <div style={{
-                        position: "absolute",
-                        top: "-36px",
-                        right: 0,
-                        zIndex: 100
-                    }}>
-                        <button className='btn btn-sm btn-outline-primary'
-                            type="button"
-                            onClick={() => {
-                                setSideView(true)
-                                setSelector("links")
-                            }}>
-                            <i className='fas fa-link' />
-                        </button>
-                    </div>
-                    <div className='d-flex'>
-                        <div style={{ flex: 1 }}>
-                            <CodeInput value={value} onChange={onChange} />
-                        </div>
-                        {sideView && <div style={{ flex: 1 }} className='p-2'>
-                            {selector === "links" && <>
-                                <span className='mb-1'>Choose the link to import</span>
-                                <SelectInput possibleValues={[
-                                    { label: "Notifications", value: "notifications" },
-                                    { label: "Sign in", value: "login" },
-                                    { label: "Logout", value: "logout" },
-                                    { label: "Language", value: "language" },
-                                    { label: "Back office", value: "backoffice" },
-                                    { label: "Sign up", value: "signup" }
-                                ]} onChange={link => setSideViewState({ link })} />
-                            </>}
-                            <button type="button" className='btn btn-sm btn-outline-secondary mt-1 me-1'
-                                onClick={() => {
-                                    setSideView(false)
-                                }}>Cancel
-                            </button>
-                            <button type="button" className='btn btn-sm btn-outline-primary mt-1'
-                                onClick={() => {
-                                    navigator.clipboard.writeText(`{{daikoku-links-${sideViewState.link}}}`)
-                                    setSideView(false)
-                                }}>Copy
-                            </button>
-                        </div>}
-                    </div>
-                </div>
-            }
+            render: formProps => <ContentSideView {...formProps} {...props} />
         },
         draft: {
             type: type.string,

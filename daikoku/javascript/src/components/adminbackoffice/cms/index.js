@@ -56,8 +56,8 @@ export const CMSOffice = () => {
             <Can I={manage} a={tenant} dispatchError>
                 <div className="section py-3 px-2 mt-3">
                     <Routes>
-                        <Route path={`/new`} element={<Create />} />
-                        <Route path={`/edit/:id`} element={<Create />} />
+                        <Route path={`/new`} element={<Create pages={pages} />} />
+                        <Route path={`/edit/:id`} element={<Create pages={pages} />} />
                         <Route path="*" element={index()} />
                     </Routes>
                 </div>
