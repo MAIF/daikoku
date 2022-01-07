@@ -47,9 +47,9 @@ const copy = (text) => {
     navigator.clipboard.writeText(text)
 }
 
-const PagesView = ({ pages }) => (
+const PagesView = ({ pages, prefix, title }) => (
     <>
-        <span className='mb-1'>Choose the link page to copy</span>
+        <span className='mb-1'>{title}</span>
         <Copied>
             {setShow => <SelectInput possibleValues={pages.map(page => ({
                 label: page.name,
@@ -57,7 +57,7 @@ const PagesView = ({ pages }) => (
             }))}
                 onChange={page => {
                     setShow(true)
-                    copy(`{{daikoku-page-url "${page}"}}`)
+                    copy(`{{${prefix} "${page}"}}`)
                 }}
             />}
         </Copied>
@@ -85,6 +85,11 @@ const TopActions = ({ setSideView, setSelector }) => {
             onClick={() => select("pages")}>
             <i className='fas fa-pager' />
         </button>
+        <button className='btn btn-sm btn-outline-primary'
+            type="button"
+            onClick={() => select("blocks")}>
+            <i className='fas fa-square' />
+        </button>
     </div>
 }
 
@@ -110,7 +115,8 @@ export const ContentSideView = ({ value, onChange, pages }) => {
             </div>
             {sideView && <div style={{ flex: .5 }} className='p-2'>
                 {selector === "links" && <LinksView />}
-                {selector === "pages" && <PagesView pages={pages} />}
+                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Link to the file"  />}
+                {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Block to include" />}
                 <SideBarActions setSideView={setSideView} />
             </div>}
         </div>
