@@ -243,6 +243,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
       <>
         <VersionsButton {...sidebarParams} currentTeam={currentTeam} />
         {[
+          { route: 'multistep', icon: 'info', name: translateMethod('multistep') },
           { route: 'infos', icon: 'info', name: translateMethod('Informations') },
           { route: 'description', icon: 'file-alt', name: translateMethod('Description') },
           { route: 'plans', icon: 'dollar-sign', name: translateMethod('Plans') },

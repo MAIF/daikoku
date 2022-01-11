@@ -20,7 +20,7 @@
   "dependencies": {
     "@apollo/client": "^3.5.5",
     "@fortawesome/fontawesome-free": "5.15.4",
-    "@maif/react-forms": "1.0.5",
+    "@maif/react-forms": "1.0.8",
     "@popperjs/core": "^2.11.0",
     "@xstate/react": "1.6.3",
     "antd": "4.17.2",
@@ -68,7 +68,7 @@
     "swagger-ui-dist": "3.38.0",
     "uuid": "8.3.2",
     "whatwg-fetch": "3.6.2",
-    "xstate": "4.26.1"
+    "xstate": "4.27.0"
   },
   "devDependencies": {
     "@babel/core": "7.16.0",

@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import _ from 'lodash';
-import { currencies } from '../../../services/currencies';
+import classNames from 'classnames';
 import faker from 'faker';
+import _ from 'lodash';
+import { connect } from 'react-redux';
+import { toastr } from 'react-redux-toastr';
+import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import classNames from 'classnames';
 
+import { currencies } from '../../../services/currencies';
 import { Spinner, newPossibleUsagePlan, Option } from '../../utils';
 import * as Services from '../../../services';
 import { Help } from '../../inputs';
-import { toastr } from 'react-redux-toastr';
-import { connect } from 'react-redux';
 import { I18nContext, openApiSelectModal } from '../../../core';
-import { useParams } from 'react-router-dom';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -198,6 +198,7 @@ function usePrevious(value) {
 function TeamApiPricingComponent({ value, tenant, ...props }) {
   const [selected, setSelected] = useState(value.possibleUsagePlans[0]);
   const [otoroshiSettings, setOtoroshiSettings] = useState([]);
+  const params = useParams();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -219,7 +220,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       )
         setSelected(value.possibleUsagePlans[0]);
     }
-  }, [props.params.versionId, value.possibleUsagePlans]);
+  }, [params.versionId, value.possibleUsagePlans]);
 
   function equals(a, b) {
     return a.length === b.length && a.every((v, i) => v === b[i]);

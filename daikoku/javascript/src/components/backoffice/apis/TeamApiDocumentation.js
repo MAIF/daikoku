@@ -1,12 +1,12 @@
 import React, { Component, useEffect, useState, useImperativeHandle, useContext } from 'react';
-import _ from 'lodash';
-import * as Services from '../../../services';
+import { useParams } from 'react-router-dom';
 import faker from 'faker';
-
-import { Spinner } from '../../utils';
-
-import { AssetChooserByModal } from '../../frontend';
+import _ from 'lodash';
 import { connect } from 'react-redux';
+
+import * as Services from '../../../services';
+import { Spinner } from '../../utils';
+import { AssetChooserByModal } from '../../frontend';
 import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -77,7 +77,8 @@ function AssetButton(props) {
 }
 
 const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
-  const { team, value, versionId, creationInProgress, params } = props;
+  const { team, value, versionId, creationInProgress } = props;
+  const params = useParams();
 
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(undefined);
