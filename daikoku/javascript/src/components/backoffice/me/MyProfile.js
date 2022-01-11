@@ -234,22 +234,21 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
     return null;
   }
   return (
-    <div className="d-flex flex-row align-items-center">
-      <div className='d-flex align-items-center'>
+    <div className="">
+      <div className='float-right mb-4 position-relative'>
         <img
           src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`}`}
           style={{
             width: 100,
             borderRadius: '50%',
-            backgroundColor: 'white',
-            position: 'relative',
+            backgroundColor: 'white'            
           }}
           alt="avatar"
           className="mx-3"
         />
         <PictureUpload setFiles={setFiles} />
       </div>
-      <div className="d-flex flex-column flex-grow-1">
+      <div className="">
         <input
           type="text"
           className="form-control"
