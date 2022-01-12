@@ -19,4 +19,10 @@ mongo-data
 daikoku/javascript/cypress/videos
 daikoku/javascript/cypress/results
 daikoku/javascript/cypress/screenshots
+<<<<<<< HEAD
 daikoku/javascript/index.json
+=======
+daikoku/javascript/index.json
+.yalc
+yalc.lock
+>>>>>>> master

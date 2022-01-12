@@ -99,6 +99,7 @@ DELETE  /api/me/_2fa                                    fr.maif.otoroshi.daikoku
 POST    /api/me/invitation/_check                       fr.maif.otoroshi.daikoku.ctrls.UsersController.checkTokenInvitation()
 ### NoDocs ###
 DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation()
+PUT     /api/me/password                                fr.maif.otoroshi.daikoku.ctrls.UsersController.updatePassword()
 
 ### NoDocs ###
 PUT     /api/apis/:apiId/subscriptions/:apiKeyId        fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, apiKeyId)
