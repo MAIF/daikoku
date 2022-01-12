@@ -72,8 +72,7 @@ const TopActions = ({ setSideView, setSelector }) => {
     return <div style={{
         position: "absolute",
         top: "-36px",
-        right: 0,
-        zIndex: 100
+        right: 0
     }}>
         <button className='btn btn-sm btn-outline-primary'
             type="button"
@@ -111,11 +110,12 @@ export const ContentSideView = ({ value, onChange, pages }) => {
         <TopActions setSelector={setSelector} setSideView={setSideView} />
         <div className='d-flex'>
             <div style={{ flex: 1 }}>
-                <CodeInput value={value} onChange={onChange} />
+                <CodeInput value={value} onChange={onChange}
+                    mode="html" theme="tomorrow" width="-1" />
             </div>
             {sideView && <div style={{ flex: .5 }} className='p-2'>
                 {selector === "links" && <LinksView />}
-                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Link to the file"  />}
+                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Link to the file" />}
                 {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Block to include" />}
                 <SideBarActions setSideView={setSideView} />
             </div>}

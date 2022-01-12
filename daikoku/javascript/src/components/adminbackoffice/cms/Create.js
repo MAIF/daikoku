@@ -15,8 +15,8 @@ export const Create = (props) => {
     const [value, setValue] = useState({
         name: '',
         path: '',
-        body: '<!DOCTYPE html><html><head></head><body><h1>Home page</h1></body></html>',
-        draft: '<!DOCTYPE html><html><head></head><body><h1>My draft version</h1></body></html>',
+        body: `<!DOCTYPE html><html><head></head><body><h1>{translateMethod('cms.create.default_body_text')}</h1></body></html>`,
+        draft: `<!DOCTYPE html><html><head></head><body><h1>{translateMethod('cms.create.default_draft_body')}</h1></body></html>`,
         contentType: 'text/html',
         visible: true,
         authenticated: false,
@@ -55,7 +55,7 @@ export const Create = (props) => {
     const schema = {
         name: {
             type: type.string,
-            placeholder: 'The name of the page.',
+            placeholder: translateMethod('cms.create.name_placeholder'),
             label: translateMethod('Name'),
             constraints: [
                 constraints.required()
@@ -64,11 +64,12 @@ export const Create = (props) => {
         path: {
             type: type.string,
             placeholder: '/index',
-            help: 'The path where the page will be displayed',
+            help: translateMethod('cms.create.path_placeholder'),
             label: translateMethod('Path'),
             constraints: [
                 constraints.required(),
-                constraints.matches("^/")
+                constraints.matches("^/", translateMethod('cms.create.path_slash_constraints')),
+                constraints.test('path', translateMethod('cms.create.path_paths_constraints'), value => params.id ? true : !props.pages.find(p => p.path !== value))
             ]
         },
         contentType: {
@@ -87,31 +88,39 @@ export const Create = (props) => {
         },
         body: {
             type: type.string,
-            label: 'Content of the page',
-            help: 'The content of the page. It must be of the same type than the content-type',
+            label: translateMethod('cms.create.body_placeholder'),
+            help: translateMethod('cms.create.body_help'),
             render: formProps => <ContentSideView {...formProps} {...props} />
         },
         draft: {
             type: type.string,
             format: format.code,
-            label: 'Draft content',
-            help: 'The content of the draft page. This is useful when you want to work on a future version of your page without exposing it.'
+            props: {
+                mode: 'html',
+                theme: 'tomorrow',
+                width: '-1'
+            },
+            label: translateMethod('cms.create.draft_label'),
+            help: translateMethod('cms.create.draft_help'),
+            constraints: [
+                constraints.nullable()
+            ]
         },
         visible: {
             type: type.bool,
-            label: 'Visible',
-            help: 'If not enabled, the page will not exposed'
+            label: translateMethod('Visible'),
+            help: translateMethod('cms.create.visible_label')
         },
         authenticated: {
             type: type.bool,
-            label: 'Authenticated',
-            help: 'If enabled, the page will be only visible for authenticated user'
+            label: translateMethod('cms.create.authenticated'),
+            help: translateMethod('cms.create.authenticated_help')
         },
         metadata: {
             type: type.object,
             format: format.array,
             label: 'Metadata',
-            help: 'Linked metadata'
+            help: translateMethod('cms.create.metadata_help')
         },
         tags: {
             type: type.string,
@@ -119,19 +128,19 @@ export const Create = (props) => {
             createOption: true,
             isMulti: true,
             label: 'Tags',
-            help: 'Linked tags'
+            help: translateMethod('cms.create.tags_help')
         },
     }
 
     const flow = [{
-        label: 'Information',
+        label: translateMethod('cms.create.information'),
         flow: [
-            'name', 'path', 'visible', 'authenticated', 'tags', 'metadata'
+            'name', 'path', 'visible', 'authenticated'
         ],
         collapsed: params.id
     },
     {
-        label: 'Content',
+        label: translateMethod('cms.create.content'),
         flow: [
             'contentType',
             'body'
@@ -139,8 +148,13 @@ export const Create = (props) => {
         collapsed: !params.id
     },
     {
-        label: 'Draft',
+        label: translateMethod('cms.create.draft'),
         flow: ['draft'],
+        collapsed: true
+    },
+    {
+        label: translateMethod('cms.create.advanced'),
+        flow: ['tags', 'metadata'],
         collapsed: true
     }]
 
@@ -151,6 +165,7 @@ export const Create = (props) => {
                 schema={schema}
                 flow={flow}
                 value={value}
+                onError={console.log}
                 onSubmit={item => {
                     Services.createCmsPage(params.id, item)
                         .then(res => {
@@ -165,8 +180,8 @@ export const Create = (props) => {
                         })
                 }}
                 footer={({ valid }) => (
-                    <div className="d-flex justify-content-end">
-                        <button className="btn btn-sm btn-primary me-1" onClick={() => navigate('/settings/pages')}>Back</button>
+                    <div className="d-flex justify-content-end mt-3">
+                        <button className="btn btn-sm btn-primary me-1" onClick={() => navigate('/settings/pages')}>{translateMethod('Back')}</button>
                         <button className="btn btn-sm btn-success" onClick={valid}>
                             {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
                         </button>

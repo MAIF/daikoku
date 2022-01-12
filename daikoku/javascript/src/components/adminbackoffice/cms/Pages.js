@@ -4,15 +4,15 @@ import { I18nContext } from '../../../core'
 import * as Services from '../../../services'
 import { Table } from '../../inputs'
 
-const CONTENT_TYPES = {
-    'text/html': 'HTML',
-    'text/css': 'CSS',
-    'text/javascript': 'JS',
-    'text/markdown': 'MD',
-    'text/plain': 'PLAIN',
-    'text/xml': 'XML',
-    'application/json': 'JSON'
-}
+const CONTENT_TYPES = [
+    { value: 'text/html', label: 'HTML', color: 'secondary' },
+    { value: 'text/css', label: 'CSS', color: 'success' },
+    { value: 'text/javascript', label: 'JS', color: 'warning' },
+    { value: 'text/markdown', label: 'MD', color: 'dark' },
+    { value: 'text/plain', label: 'PLAIN', color: 'dark' },
+    { value: 'text/xml', label: 'XML', color: 'primary' },
+    { value: 'application/json', label: 'JSON', color: 'primary' }
+]
 
 export const Pages = ({ pages, removePage }) => {
     const { translateMethod } = useContext(I18nContext)
@@ -47,9 +47,10 @@ export const Pages = ({ pages, removePage }) => {
                 },
             }) => {
                 const { contentType } = original;
+                const item = CONTENT_TYPES.find(f => f.value === contentType)
                 return (
-                    <span className="badge bg-dark">
-                        {CONTENT_TYPES[contentType]}
+                    <span className={`badge bg-${item.color}`}>
+                        {item.label}
                     </span>
                 );
             }
