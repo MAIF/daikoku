@@ -225,7 +225,6 @@
     "Enabled": "Enabled",
     "Domain name": "Domain name",
     "Default  language": "Default  language",
-    "Unlogged description": "Unlogged description",
     "Logo": "Logo",
     "CSS": "CSS",
     "CSS color theme": "CSS color theme",
@@ -275,6 +274,9 @@
     "Alerting": "Alerting",
     "Bucket": "Bucket",
     "tenant_edit.cms_pages": "Personalized home pages",
+    "tenant_edit.link_to_cmspages": "Edit the pages",
+    "tenant_edit.home_page": "Home page",
+    "tenant_edit.view_home_page": "View home page",
     "Session max. age": "Session max. age",
     "Second": {
         "s": "Second",

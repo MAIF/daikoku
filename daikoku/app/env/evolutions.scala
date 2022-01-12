@@ -133,28 +133,30 @@ object evolution_151 extends EvolutionScript {
           TenantFormat.reads(value) match {
             case JsSuccess(tenant, _) =>
               tenant.style match {
-                case Some(value) if value.homePageVisible && value.unloggedHome.nonEmpty =>
+                case Some(value) =>
                   dataStore.cmsRepo
                     .forTenant(tenant)
                     .findOneNotDeleted(Json.obj("path" -> "/"))(ec)
                     .map {
                       case Some(_) => FastFuture.successful(())
                       case None =>
+                        val homeId = BSONObjectID.generate().stringify
                         dataStore.cmsRepo
                           .forTenant(tenant)
                           .save(CmsPage(
-                            id = CmsPageId(BSONObjectID.generate().stringify),
+                            id = CmsPageId(homeId),
                             tenant = tenant.id,
-                            visible = true,
+                            visible = value.homePageVisible,
                             authenticated = false,
                             name = "Old unlogged home",
                             forwardRef = None,
                             tags = List(),
                             metadata = Map(),
                             contentType = "text/html",
-                            body = value.unloggedHome,
+                            body = if(value.unloggedHome.nonEmpty) value.unloggedHome else "<!DOCTYPE html><html><head></head><body><h1>Home page</h1><a href=\"/apis\">Back office</a></body></html>" ,
                             path = "/"
                           ))(ec)
+                        dataStore.tenantRepo.save(tenant.copy(style = tenant.style.map(_.copy(homeCmsPage = Some(homeId)))))(ec)
                     }(ec)
                 case None => FastFuture.successful(())
               }

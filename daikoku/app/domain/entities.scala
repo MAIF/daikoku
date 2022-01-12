@@ -87,6 +87,7 @@ case class DaikokuStyle(
     description: String = "A new organization to host very fine APIs",
     unloggedHome: String = "",
     homePageVisible: Boolean = false,
+    homeCmsPage: Option[String] = None,
     logo: String = "/assets/images/daikoku.svg",
     footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {

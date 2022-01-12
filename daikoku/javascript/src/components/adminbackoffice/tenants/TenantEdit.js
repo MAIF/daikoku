@@ -19,6 +19,7 @@ import { Can, manage, tenant, Spinner } from '../../utils';
 import { BooleanInput } from '../../inputs/BooleanInput';
 import { openSaveOrCancelModal, updateTenant } from '../../../core';
 import { I18nContext } from '../../../locales/i18n-context';
+import { getApolloContext, gql } from '@apollo/client';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -223,8 +224,28 @@ export function TenantEditComponent(props) {
   const [state, setState] = useState({
     tenant: null,
     create: false,
-    updated: false,
+    updated: false
   });
+
+  const [cmsPages, setCmsPages] = useState([])
+
+  const { client } = useContext(getApolloContext())
+
+  useEffect(() => {
+    client.query({
+      query: gql`
+        query CmsPages {
+          pages {
+              id
+              name
+              path
+              contentType
+          }
+        }
+      `,
+    })
+      .then(r => setCmsPages(r.data.pages))
+  }, [])
 
   const flow = [
     '_id',
@@ -291,7 +312,8 @@ export function TenantEditComponent(props) {
     'style.footer',
     `>>> ${translateMethod('tenant_edit.cms_pages')}`,
     'style.homePageVisible',
-    'style.unloggedHome',
+    'style.homeCmsPage',
+    'linkToCmsPages',
     `>>> ${translateMethod('SEO')}`,
     'robotTxt',
   ];
@@ -394,18 +416,46 @@ export function TenantEditComponent(props) {
       type: 'markdown',
       props: { label: translateMethod('Description') },
     },
-    'style.unloggedHome': {
-      type: 'markdown',
-      props: {
-        tenantMode: true,
-        label: translateMethod('Unlogged description'),
-      },
-    },
     'style.homePageVisible': {
       type: HomePageVisibilitySwitch,
       props: {
         label: translateMethod('Enabled'),
       },
+    },
+    'style.homeCmsPage': {
+      type: 'select',
+      visible: () => state.tenant?.style.homePageVisible,
+      props: {
+        label: translateMethod('tenant_edit.home_page'),
+        disabled: !state.tenant?.style.homePageVisible,
+        possibleValues: cmsPages.map(t => ({ label: `${t.name} - ${t.path}`, value: t.id }))
+      }
+    },
+    linkToCmsPages: {
+      type: () => (
+        <div className="mb-3 row">
+          <label className="col-xs-12 col-sm-2 col-form-label" />
+          <div className="col-sm-10">
+            <Link to="/settings/pages" className='btn btn-sm btn-outline-success'>
+              <Translation i18nkey="tenant_edit.link_to_cmspages" />
+            </Link>
+            {state.tenant?.style.homePageVisible && state.tenant?.style?.homeCmsPage &&
+              <button className='btn btn-sm btn-outline-primary ms-1'
+                type='button'
+                onClick={() => {
+                  client.query({
+                    query: gql`
+                query GetCmsPage {
+                    cmsPage(id: "${state.tenant?.style.homeCmsPage}") {
+                        path
+                    }
+                }`}).then(r => window.open(`/_${r.data.cmsPage.path}`, '_blank'))
+                }}>
+                <Translation i18nkey="tenant_edit.view_home_page" />
+              </button>}
+          </div>
+        </div>
+      )
     },
     'style.logo': {
       type: 'string',
