@@ -277,7 +277,7 @@
   "Audit trail (Kafka)": "Piste d'audit (Kafka)",
   "Alerting": "Alerting",
   "Bucket": "Bucket",
-  "Unlogged home description": "Page d'accueil - mode déconnecté",
+  "tenant_edit.cms_pages": "Pages d'accueil personnalisés",
   "Session max. age": "Age max. de session",
   "Second": {
     "s": "Seconde",

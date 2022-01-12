@@ -289,7 +289,7 @@ export function TenantEditComponent(props) {
     'defaultMessage',
     `>>> ${translateMethod('Footer')}`,
     'style.footer',
-    `>>> ${translateMethod('Unlogged home description')}`,
+    `>>> ${translateMethod('tenant_edit.cms_pages')}`,
     'style.homePageVisible',
     'style.unloggedHome',
     `>>> ${translateMethod('SEO')}`,

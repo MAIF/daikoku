@@ -4,18 +4,11 @@ import akka.Done
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.json.ApiFormat
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Evolution}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, CmsPageIdFormat, TenantFormat}
+import fr.maif.otoroshi.daikoku.domain.{CmsPage, CmsPageId, DatastoreId, Evolution, TenantId}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.libs.json.{
-  JsArray,
-  JsError,
-  JsObject,
-  JsString,
-  JsSuccess,
-  Json
-}
-import reactivemongo.api.bson.BSONObjectID
+import play.api.libs.json.{JsArray, JsError, JsObject, JsString, JsSuccess, Json}
+import reactivemongo.bson.BSONObjectID
 import storage.DataStore
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -120,12 +113,66 @@ object evolution_150 extends EvolutionScript {
     }
 }
 
+object evolution_151 extends EvolutionScript {
+  override def version: String = "1.5.1"
+
+  override def script: (Option[DatastoreId],
+    DataStore,
+    Materializer,
+    ExecutionContext) => Future[Done] =
+    (_: Option[DatastoreId],
+     dataStore: DataStore,
+     mat: Materializer,
+     ec: ExecutionContext) => {
+      AppLogger.info(
+        s"Begin evolution $version - Convert unlogged home to CMS format")
+
+      dataStore.tenantRepo
+        .streamAllRaw()(ec)
+        .mapAsync(10) { value =>
+          TenantFormat.reads(value) match {
+            case JsSuccess(tenant, _) =>
+              tenant.style match {
+                case Some(value) if value.homePageVisible && value.unloggedHome.nonEmpty =>
+                  dataStore.cmsRepo
+                    .forTenant(tenant)
+                    .findOneNotDeleted(Json.obj("path" -> "/"))(ec)
+                    .map {
+                      case Some(_) => FastFuture.successful(())
+                      case None =>
+                        dataStore.cmsRepo
+                          .forTenant(tenant)
+                          .save(CmsPage(
+                            id = CmsPageId(BSONObjectID.generate().stringify),
+                            tenant = tenant.id,
+                            visible = true,
+                            authenticated = false,
+                            name = "Old unlogged home",
+                            forwardRef = None,
+                            tags = List(),
+                            metadata = Map(),
+                            contentType = "text/html",
+                            body = value.unloggedHome,
+                            path = "/"
+                          ))(ec)
+                    }(ec)
+                case None => FastFuture.successful(())
+              }
+            case JsError(errors) =>
+              FastFuture.successful(
+                AppLogger.error(s"Evolution $version : $errors"))
+          }
+        }
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
 object evolutions {
-  val list: Set[EvolutionScript] = Set(evolution_102, evolution_150)
+  val list: Set[EvolutionScript] = Set(evolution_102, evolution_150, evolution_151)
   def run(dataStore: DataStore)(implicit ec: ExecutionContext,
                                 mat: Materializer): Future[Done] =
     Source(list)
-      .mapAsync(1) { evolution =>
+      .map { evolution =>
         dataStore.evolutionRepo
           .findOne(Json.obj("version" -> evolution.version))
           .flatMap {

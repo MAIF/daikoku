@@ -1816,7 +1816,7 @@ case class CmsPage(
 
   def enrichHandlebarsWithEntity[A](handlebars: Handlebars, env: Env, tenant: Tenant, name: String, getRepo: Env => TenantCapableRepo[A, _], makeBean: A => AnyRef)(implicit ec: ExecutionContext): Handlebars = {
     val repo: TenantCapableRepo[A, _] = getRepo(env)
-    handlebars.registerHelper(s"daikoku-${name}s", (page: CmsPage, options: Options) => {
+    handlebars.registerHelper(s"daikoku-${name}s", (_: CmsPage, options: Options) => {
       val apis = Await.result(repo.forTenant(tenant).findAllNotDeleted(), 10.seconds)
       apis.map(api => makeBean(api)).map(api => options.fn.apply(Context.newBuilder(api).combine(name, api).build())).mkString("\n")
     })

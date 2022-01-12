@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { connect } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { converter } from '../../../services/showdown';
 import hljs from 'highlight.js';
 import { I18nContext } from '../../../core';
@@ -8,10 +8,14 @@ import { I18nContext } from '../../../core';
 export function UnauthenticatedHomeComponent(props) {
   const { Translation } = useContext(I18nContext);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const content = props.tenant.unloggedHome || '';
   const pathname = location ? location.pathname : '';
   const displayInformation = pathname !== '/2fa' && pathname !== '/signup';
+  
+  if(props.tenant.unloggedHome && props.tenant.homePageVisible)
+    return navigate('/_/')
 
   return (
     <main role="main">

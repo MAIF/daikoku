@@ -24,6 +24,7 @@ class HomeController(
   implicit val e = env
 
   def actualIndex[A](ctx: DaikokuActionMaybeWithoutUserContext[A]): Result = {
+    println(ctx.user)
     ctx.user match {
       case _ if ctx.request.uri.startsWith("/robots.txt") =>
         ctx.tenant.robotTxt match {
@@ -31,6 +32,7 @@ class HomeController(
           case None           => NotFound(Json.obj("error" -> "robots.txt not found"))
         }
       case Some(_) =>
+        manageCmsHome(ctx,
         Ok(
           views.html.index(ctx.user.get,
                            ctx.session.get,
@@ -39,6 +41,7 @@ class HomeController(
                            env,
                            ctx.isTenantAdmin,
                            ctx.apiCreationPermitted))
+        )
       case None if ctx.request.uri.startsWith("/signup") =>
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
       case None if ctx.request.uri.startsWith("/reset") =>
@@ -46,8 +49,16 @@ class HomeController(
       case None if ctx.request.uri.startsWith("/2fa") =>
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
       case None if ctx.request.uri == "/" =>
-        Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
-      case _ => Redirect("/")
+        manageCmsHome(ctx, Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)))
+      case _ => manageCmsHome(ctx, Redirect("/"))
+    }
+  }
+
+  private def manageCmsHome[A](ctx: DaikokuActionMaybeWithoutUserContext[A], redirectTo: Result) = {
+    println("manageCmsHome")
+    ctx.tenant.style match {
+      case Some(value) if value.homePageVisible => Redirect("/_/")
+      case None => redirectTo
     }
   }
 
