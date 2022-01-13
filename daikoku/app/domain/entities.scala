@@ -1816,18 +1816,85 @@ case class CmsPage(
 
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
-  def enrichHandlebarsWithEntity[A](handlebars: Handlebars, env: Env, tenant: Tenant, name: String, getRepo: Env => TenantCapableRepo[A, _], makeBean: A => AnyRef)(implicit ec: ExecutionContext): Handlebars = {
+  def enrichHandlebarsWithEntity[A](handlebars: Handlebars, env: Env, tenant: Tenant, name: String, getRepo: Env => TenantCapableRepo[A, _], makeBean: A => AnyRef,
+                                    stringify: A => JsValue)
+                                   (implicit ec: ExecutionContext): Handlebars = {
     val repo: TenantCapableRepo[A, _] = getRepo(env)
     handlebars.registerHelper(s"daikoku-${name}s", (_: CmsPage, options: Options) => {
       val apis = Await.result(repo.forTenant(tenant).findAllNotDeleted(), 10.seconds)
       apis.map(api => makeBean(api)).map(api => options.fn.apply(Context.newBuilder(api).combine(name, api).build())).mkString("\n")
     })
-    handlebars.registerHelper(s"daikoku-${name}", (id: String, options: Options) => {
-      Await.result(repo.forTenant(tenant).findByIdNotDeleted(id), 10.seconds) match {
-        case None => ""
-        case Some(api) => options.fn.apply(Context.newBuilder(makeBean(api)).combine(name, api).build())
+    handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) =>
+      Await.result(repo.forTenant(tenant).findByIdNotDeleted(id), 10.seconds)
+        .map(api => options.fn.apply(Context.newBuilder(makeBean(api)).combine(name, api).build()))
+        .getOrElse("")
+      )
+    handlebars.registerHelper(s"daikoku-json-$name", (id: String, _: Options) =>
+      Await.result(repo.forTenant(tenant).findByIdNotDeleted(id), 10.seconds).map(stringify).getOrElse("")
+    )
+    handlebars.registerHelper(s"daikoku-json-${name}s", (_: CmsPage, _: Options) =>
+      JsArray(Await.result(repo.forTenant(tenant).findAllNotDeleted(), 10.seconds).map(stringify))
+    )
+  }
+
+  private def daikokuIncludeBlockHelper(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String)
+                                       (implicit env: Env, ec: ExecutionContext) =
+    Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+      case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)), 10.seconds) match {
+        case None => s"block '$id' not found"
+        case Some(page) => Await.result(page.render(ctx).map(t => t._1), 10.seconds)
       }
-    })
+      case Some(page) => Await.result(page.render(ctx).map(t => t._1), 10.seconds)
+    }
+
+  private def daikokuTemplateWrapper(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String, options: Options)
+                                    (implicit env: Env, ec: ExecutionContext) = {
+    import scala.jdk.CollectionConverters._
+
+    Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+      case None => "page not found"
+      case Some(page) =>
+        val attrs = options.hash.asScala.map { case (k, v) => (k, v.toString) }
+        Await.result(page.render(ctx, Some(
+          Map("children" -> options.fn.apply(ctx)) ++ attrs)).map(t => t._1), 10.seconds)
+    }
+  }
+
+  private def daikokuPathParam(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String)
+                              (implicit env: Env, ec: ExecutionContext) = {
+    val pagesPath = Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findWithProjection(Json.obj(), Json.obj("path" -> true)), 10.seconds)
+      .map(r => s"/_${(r \ "path").as[String]}")
+      .sortBy(_.length)(Ordering[Int].reverse)
+    pagesPath
+      .find(p => ctx.request.path.startsWith(p))
+      .map(r => {
+        val params = ctx.request.path.split(r)
+        if (params.length > 1)
+          params(1).split("/").filter(_.nonEmpty)(Integer.parseInt(id))
+        else
+          s"path param $id not found"
+      })
+      .getOrElse(s"path param $id not found")
+  }
+
+  private def daikokuPageUrl(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String)
+                            (implicit env: Env, ec: ExecutionContext) =
+    Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+      case None => "#not-found"
+      case Some(page) => s"/_${page.path}"
+    }
+
+  private def daikokuLinks(ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars)
+                          (implicit env: Env, ec: ExecutionContext) = {
+    val links = Map(
+      "login" -> s"/auth/${ctx.tenant.authProvider.name}/login",
+      "logout" -> "/logout",
+      "language" -> ctx.user.map(_.defaultLanguage).getOrElse(ctx.tenant.defaultLanguage.getOrElse("en")),
+      "signup" -> (if(ctx.tenant.authProvider.name == "Local") "/signup" else s"/auth/${ctx.tenant.authProvider.name}/login"),
+      "backoffice" -> "/apis",
+      "notifications" -> "/notifications"
+    )
+    links.map { case (name, link) => handlebars.registerHelper(s"daikoku-links-$name", (_: Object, _: Options) => link) }
   }
 
   def render(ctx: DaikokuActionMaybeWithoutUserContext[_], additionalContext: Option[Map[String, String]] = None)(implicit env: Env): Future[(String, String)] = {
@@ -1837,7 +1904,6 @@ case class CmsPage(
     }).flatMap { page =>
       try {
         import com.github.jknack.handlebars.EscapingStrategy
-        import scala.jdk.CollectionConverters._
         implicit val ec = CmsPage.pageRenderingEc
 
         val wantDraft = ctx.request.getQueryString("draft").contains("true")
@@ -1860,65 +1926,17 @@ case class CmsPage(
           new EscapingStrategy() {
             override def escape(value: CharSequence): String = value.toString
           })
-        handlebars.registerHelper("daikoku-asset-url", (context: String, _: Options) => s"/tenant-assets/${context}")
-        handlebars.registerHelper("daikoku-page-url", (id: String, _: Options) => {
-          Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
-            case None => "#not-found"
-            case Some(page) => s"/_${page.path}"
-          }
-        })
-
-        val links = Map(
-          "login" -> s"/auth/${ctx.tenant.authProvider.name}/login",
-          "logout" -> "/logout",
-          "language" -> ctx.user.map(_.defaultLanguage).getOrElse(ctx.tenant.defaultLanguage.getOrElse("en")),
-          "signup" -> (if(ctx.tenant.authProvider.name == "Local") "/signup" else s"/auth/${ctx.tenant.authProvider.name}/login"),
-          "backoffice" -> "/apis",
-          "notifications" -> "/notifications"
-        )
-        links.map { case (name, link) => handlebars.registerHelper(s"daikoku-links-$name", (_: Object, _: Options) => link) }
-
+        handlebars.registerHelper("daikoku-asset-url", (context: String, _: Options) => s"/tenant-assets/$context")
+        handlebars.registerHelper("daikoku-page-url", (id: String, _: Options) => daikokuPageUrl(ctx, id))
         handlebars.registerHelper("daikoku-generic-page-url", (id: String, _: Options) => s"/cms/pages/$id")
         handlebars.registerHelper("daikoku-page-preview-url", (id: String, _: Options) => s"/cms/pages/$id?draft=true")
-        handlebars.registerHelper("daikoku-include-block", (id: String, _: Options) => {
-          Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
-            case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)), 10.seconds) match {
-              case None => s"block '$id' not found"
-              case Some(page) => Await.result(page.render(ctx).map(t => t._1), 10.seconds)
-            }
-            case Some(page) => Await.result(page.render(ctx).map(t => t._1), 10.seconds)
-          }
-        })
-        handlebars.registerHelper("daikoku-template-wrapper", (id: String, options: Options) => {
-          Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
-            case None => "page not found"
-            case Some(page) =>
-              val attrs = options.hash.asScala.map { case (k, v) => (k, v.toString) }
-              Await.result(page.render(ctx, Some(
-                Map("children" -> options.fn.apply(ctx)) ++ attrs)).map(t => t._1), 10.seconds)
-          }
-        })
-        handlebars.registerHelper("daikoku-path-param", (id: String, _: Options) => {
-          val pagesPath = Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findWithProjection(Json.obj(), Json.obj("path" -> true)), 10.seconds)
-            .map(r => s"/_${(r \ "path").as[String]}")
-            .sortBy(_.length)(Ordering[Int].reverse)
-          pagesPath
-            .find(p => ctx.request.path.startsWith(p))
-            .map(r => {
-              val params = ctx.request.path.split(r)
-              if (params.length > 1)
-                params(1).split("/").filter(_.nonEmpty)(Integer.parseInt(id))
-              else
-                s"path param $id not found"
-            })
-            .getOrElse(s"path param $id not found")
-        })
-        handlebars.registerHelper("daikoku-query-param", (id: String, _: Options) => {
-          ctx.request.queryString.get(id).map(_.head).getOrElse("id param not found")
-        })
-
-        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
-        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "team", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
+        handlebars.registerHelper("daikoku-include-block", (id: String, _: Options) => daikokuIncludeBlockHelper(ctx, id))
+        handlebars.registerHelper("daikoku-template-wrapper", (id: String, options: Options) => daikokuTemplateWrapper(ctx, id, options))
+        handlebars.registerHelper("daikoku-path-param", (id: String, _: Options) => daikokuPathParam(ctx, id))
+        handlebars.registerHelper("daikoku-query-param", (id: String, _: Options) => ctx.request.queryString.get(id).map(_.head).getOrElse("id param not found"))
+        daikokuLinks(ctx, handlebars)
+        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api), (api: Api) => api.asJson)
+        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "team", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team), (team: Team) => team.asJson)
 
         val result = handlebars.compileInline(template).apply(context)
         context.destroy()

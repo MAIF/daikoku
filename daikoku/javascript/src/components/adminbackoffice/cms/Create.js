@@ -169,19 +169,20 @@ export const Create = (props) => {
                 onSubmit={item => {
                     Services.createCmsPage(params.id, item)
                         .then(res => {
-                            if (!res.error)
+                            if (!res.error && !params.id)
                                 navigate('/settings/pages', {
                                     state: {
                                         reload: true
                                     }
                                 })
-                            else
+                            else if (res.error)
                                 window.alert(res.error)
                         })
                 }}
                 footer={({ valid }) => (
                     <div className="d-flex justify-content-end mt-3">
-                        <button className="btn btn-sm btn-primary me-1" onClick={() => navigate('/settings/pages')}>{translateMethod('Back')}</button>
+                        <button className="btn btn-sm btn-primary me-1"
+                            onClick={() => navigate('/settings/pages')}>{translateMethod('cms.create.back_to_pages')}</button>
                         <button className="btn btn-sm btn-success" onClick={valid}>
                             {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
                         </button>

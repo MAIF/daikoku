@@ -988,6 +988,7 @@
   "You're not authorized on this api": "Vous n'êtes pas autorisé à accéder à cette API",
   "ask.api.access.info": "Votre demande d'accès à %s à bien été envoyée.",
   "daikokuapp.pages_title": "Edition des pages",
+  "cms.create.back_to_pages": "Retour à la liste",
   "cms.create.new_page": "Nouvelle page",
   "cms.create.save_modifications": "Mettre à jour",
   "cms.create.edited_page": "Edition de la page",

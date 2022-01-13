@@ -988,6 +988,7 @@
     "ask.api.access.info": "Your request for access to %s has been sent.",
     "daikokuapp.pages_title": "Pages edition",
     "cms.create.new_page": "New page",
+    "cms.create.back_to_pages": "Back to list",
     "cms.create.save_modifications": "Update page",
     "cms.create.edited_page": "Edition of page",
     "cms.create.create_page": "Create the new page",
