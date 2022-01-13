@@ -69,7 +69,8 @@ export const Create = (props) => {
             constraints: [
                 constraints.required(),
                 constraints.matches("^/", translateMethod('cms.create.path_slash_constraints')),
-                constraints.test('path', translateMethod('cms.create.path_paths_constraints'), value => params.id ? true : !props.pages.find(p => p.path !== value))
+                constraints.test('path', translateMethod('cms.create.path_paths_constraints'),
+                    value => params.id ? true : !props.pages.find(p => p.path === value))
             ]
         },
         contentType: {

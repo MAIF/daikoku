@@ -1847,16 +1847,15 @@ case class CmsPage(
       case Some(page) => Await.result(page.render(ctx).map(t => t._1), 10.seconds)
     }
 
-  private def daikokuTemplateWrapper(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String, options: Options)
+  private def daikokuTemplateWrapper(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String, options: Options, staticContext: Context.Builder)
                                     (implicit env: Env, ec: ExecutionContext) = {
     import scala.jdk.CollectionConverters._
-
     Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
       case None => "page not found"
       case Some(page) =>
         val attrs = options.hash.asScala.map { case (k, v) => (k, v.toString) }
         Await.result(page.render(ctx, Some(
-          Map("children" -> options.fn.apply(ctx)) ++ attrs)).map(t => t._1), 10.seconds)
+          Map("children" -> options.fn.apply(staticContext.build())) ++ attrs)).map(t => t._1), 10.seconds)
     }
   }
 
@@ -1926,12 +1925,13 @@ case class CmsPage(
           new EscapingStrategy() {
             override def escape(value: CharSequence): String = value.toString
           })
+
         handlebars.registerHelper("daikoku-asset-url", (context: String, _: Options) => s"/tenant-assets/$context")
         handlebars.registerHelper("daikoku-page-url", (id: String, _: Options) => daikokuPageUrl(ctx, id))
         handlebars.registerHelper("daikoku-generic-page-url", (id: String, _: Options) => s"/cms/pages/$id")
         handlebars.registerHelper("daikoku-page-preview-url", (id: String, _: Options) => s"/cms/pages/$id?draft=true")
         handlebars.registerHelper("daikoku-include-block", (id: String, _: Options) => daikokuIncludeBlockHelper(ctx, id))
-        handlebars.registerHelper("daikoku-template-wrapper", (id: String, options: Options) => daikokuTemplateWrapper(ctx, id, options))
+        handlebars.registerHelper("daikoku-template-wrapper", (id: String, options: Options) => daikokuTemplateWrapper(ctx, id, options, staticContext))
         handlebars.registerHelper("daikoku-path-param", (id: String, _: Options) => daikokuPathParam(ctx, id))
         handlebars.registerHelper("daikoku-query-param", (id: String, _: Options) => ctx.request.queryString.get(id).map(_.head).getOrElse("id param not found"))
         daikokuLinks(ctx, handlebars)
