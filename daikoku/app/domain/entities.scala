@@ -24,6 +24,7 @@ import java.util.concurrent.{Executors, TimeUnit}
 import scala.collection.immutable.{AbstractMap, SeqMap, SortedMap}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.xml.NodeSeq
 
 trait CanJson[A] {
   def asJson: JsValue
@@ -1888,7 +1889,7 @@ case class CmsPage(
             case Some(page) => Await.result(page.render(ctx).map(t => t._1), 10.seconds)
           }
         })
-        handlebars.registerHelper(s"daikoku-template-wrapper", (id: String, options: Options) => {
+        handlebars.registerHelper("daikoku-template-wrapper", (id: String, options: Options) => {
           Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
             case None => "page not found"
             case Some(page) =>
@@ -1897,6 +1898,25 @@ case class CmsPage(
                 Map("children" -> options.fn.apply(ctx)) ++ attrs)).map(t => t._1), 10.seconds)
           }
         })
+        handlebars.registerHelper("daikoku-path-param", (id: String, _: Options) => {
+          val pagesPath = Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findWithProjection(Json.obj(), Json.obj("path" -> true)), 10.seconds)
+            .map(r => s"/_${(r \ "path").as[String]}")
+            .sortBy(_.length)(Ordering[Int].reverse)
+          pagesPath
+            .find(p => ctx.request.path.startsWith(p))
+            .map(r => {
+              val params = ctx.request.path.split(r)
+              if (params.length > 1)
+                params(1).split("/").filter(_.nonEmpty)(Integer.parseInt(id))
+              else
+                s"path param $id not found"
+            })
+            .getOrElse(s"path param $id not found")
+        })
+        handlebars.registerHelper("daikoku-query-param", (id: String, _: Options) => {
+          ctx.request.queryString.get(id).map(_.head).getOrElse("id param not found")
+        })
+
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "team", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
 

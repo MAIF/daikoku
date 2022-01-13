@@ -12,6 +12,8 @@ import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
+import scala.concurrent.Future
+
 class HomeController(
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
@@ -23,12 +25,12 @@ class HomeController(
   implicit val ec = env.defaultExecutionContext
   implicit val e = env
 
-  def actualIndex[A](ctx: DaikokuActionMaybeWithoutUserContext[A]): Result = {
+  def actualIndex[A](ctx: DaikokuActionMaybeWithoutUserContext[A]): Future[Result] = {
     ctx.user match {
       case _ if ctx.request.uri.startsWith("/robots.txt") =>
         ctx.tenant.robotTxt match {
-          case Some(robotTxt) => Ok(views.txt.robot.render(robotTxt));
-          case None           => NotFound(Json.obj("error" -> "robots.txt not found"))
+          case Some(robotTxt) => FastFuture.successful(Ok(views.txt.robot.render(robotTxt)))
+          case None           => FastFuture.successful(NotFound(Json.obj("error" -> "robots.txt not found")))
         }
       case Some(_) =>
         if (ctx.request.uri == "/") {
@@ -43,14 +45,14 @@ class HomeController(
                 ctx.apiCreationPermitted))
           )
         } else
-          Ok(views.html.index(ctx.user.get, ctx.session.get, ctx.tenant,
-              ctx.request.domain, env, ctx.isTenantAdmin, ctx.apiCreationPermitted))
+          FastFuture.successful(Ok(views.html.index(ctx.user.get, ctx.session.get, ctx.tenant,
+              ctx.request.domain, env, ctx.isTenantAdmin, ctx.apiCreationPermitted)))
       case None if ctx.request.uri.startsWith("/signup") =>
-        Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
+        FastFuture.successful(Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)))
       case None if ctx.request.uri.startsWith("/reset") =>
-        Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
+        FastFuture.successful(Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)))
       case None if ctx.request.uri.startsWith("/2fa") =>
-        Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
+        FastFuture.successful(Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)))
       case None if ctx.request.uri == "/" =>
         manageCmsHome(ctx, Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)))
       case _ => manageCmsHome(ctx, Redirect("/"))
@@ -59,16 +61,27 @@ class HomeController(
 
   private def manageCmsHome[A](ctx: DaikokuActionMaybeWithoutUserContext[A], redirectTo: Result) = {
     ctx.tenant.style match {
-      case Some(value) if value.homePageVisible => Redirect("/_/")
-      case None => redirectTo
+      case Some(value) if value.homePageVisible =>
+        value.homeCmsPage match {
+          case Some(pageId) =>
+            env.dataStore.cmsRepo
+              .forTenant(ctx.tenant)
+              .findByIdNotDeleted(pageId)
+              .map {
+                case Some(v) => Redirect(s"/_${v.path}")
+                case _ => Redirect("/_/")
+              }
+          case None => FastFuture.successful(Redirect("/_/"))
+        }
+      case None => FastFuture.successful(redirectTo)
     }
   }
 
-  def index() = DaikokuActionMaybeWithoutUser { ctx =>
+  def index() = DaikokuActionMaybeWithoutUser.async { ctx =>
     actualIndex(ctx)
   }
 
-  def indexWithPath(path: String) = DaikokuActionMaybeWithoutUser { ctx =>
+  def indexWithPath(path: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
     actualIndex(ctx)
   }
 
@@ -93,12 +106,27 @@ class HomeController(
       s"/$path"
     }
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> actualPath)).flatMap {
-      case None => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
-      case Some(page) if !page.visible => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
-      case Some(page) if page.authenticated && ctx.user.isEmpty => FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
+      case None =>
+        env.dataStore.cmsRepo.forTenant(ctx.tenant).findAll()
+          .flatMap(cmsPages => {
+            cmsPages
+              .sortBy(_.path.length)(Ordering[Int].reverse)
+              .find(p => ctx.request.path.startsWith(s"/_${p.path}")) match {
+              case Some(r) if r.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
+              case Some(r) => r.render(ctx)(env).map(res => Ok(res._1).as(res._2))
+              case None => cmsPageNotFound()
+            }
+          })
+      case Some(page) if !page.visible => cmsPageNotFound()
+      case Some(page) if page.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
       case Some(page) => page.render(ctx)(env).map(res => Ok(res._1).as(res._2))
     }
   }
+
+  private def redirectToLoginPage[A](ctx: DaikokuActionMaybeWithoutUserContext[A]) =
+    FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
+
+  private def cmsPageNotFound() = FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
 
   def cmsPageById(id: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).flatMap {
