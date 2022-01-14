@@ -283,8 +283,8 @@ function TeamApiComponent(props) {
                   value={editedApi}
                   team={props.currentTeam}
                   onChange={(api) => setState({ ...state, api })}
-                  creating={
-                    props.location && props.location.state && !!props.location.state.newApi
+                  creation={
+                    location && location.state && !!location.state.newApi
                   }
                 />
               </div>

@@ -131,7 +131,7 @@ export const teamApiInfoForm = (translateMethod) => {
     },
     visibility: {
       type: type.string,
-      format: format.select,
+      format: format.buttonsSelect,
       label: translateMethod('Visibility'),
       options: [
         { label: translateMethod('Public'), value: 'Public' },
@@ -144,6 +144,10 @@ export const teamApiInfoForm = (translateMethod) => {
     authorizedTeams: {
       type: type.string,
       format: format.select,
+      visible: {
+        ref: 'visibility', 
+        test: v => v !== 'Public'
+      },
       array: true,
       label: translateMethod('Authorized teams'),
       optionFrom: '/api/teams',
@@ -184,7 +188,46 @@ export const teamApiInfoForm = (translateMethod) => {
     }
   ];
 
-  return { schema, flow }
+  const simpleFlow = [
+    {
+      label: 'Simple Mode',
+      flow: [
+        'name',
+        'smallDescription',
+        'currentVersion',
+        'visibility',
+        'authorizedTeams'
+      ],
+      collapsed: false
+    },
+    {
+      label: 'Expert Mode',
+      flow: [
+        {
+          label: 'Basic',
+          flow: [
+            'isDefault',
+            'published',
+            'image',
+            'header',
+          ],
+          collapsed: true
+        },
+        {
+          label: translateMethod('Versions and tags'),
+          flow: [
+            'supportedVersions',
+            'tags',
+            'categories',
+          ],
+          collapsed: true
+        },
+      ],
+      collapsed: true
+    }
+  ]
+
+  return { schema, flow, simpleFlow }
 
   const adminFormFlow = ['_id', 'name', 'smallDescription'];
 

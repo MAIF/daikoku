@@ -1,8 +1,6 @@
 import React, { useContext } from 'react';
-import { type, format, constraints } from '@maif/react-forms';
 import { I18nContext } from '../../../core';
 import { MultiStepForm } from '../../utils';
-import { assign } from 'xstate';
 
 import {
   teamApiInfoForm,
@@ -15,52 +13,23 @@ import {
 } from './';
 import { actions } from 'react-redux-toastr';
 
+import CodeInput from '../../inputs/CodeInput';
+import { type } from '@maif/react-forms';
+
 
 export const TeamApiMultiStep = ({ value, team, onChange, creation }) => {
   const { translateMethod } = useContext(I18nContext);
-
-  const setInformation = assign({
-    isDefault: (_, response) => response.isDefault,
-    published: (_, response) => response.published,
-    name: (_, response) => response.name,
-    smallDescription: (_, response) => response.smallDescription,
-    image: (_, response) => response.image,
-    header: (_, response) => response.header,
-    currentVersion: (_, response) => response.currentVersion,
-    supportedVersions: (_, response) => response.supportedVersions,
-    tags: (_, response) => response.tags,
-    categories: (_, response) => response.categories,
-    visibility: (_, response) => response.visibility,
-    authorizedTeams: (_, response) => response.authorizedTeams
-  })
-  const setDescription = assign({
-    description: (_, response) => response.description
-  })
-  const setSwagger = assign({
-    swagger: (_, response) => response.swagger
-  })
-  const setPlans = assign({
-    possibleUsagePlans: (_, response) => response.possibleUsagePlans
-  })
-  const setTesting = assign({
-    testing: (_, response) => response.testing
-  })
-  const setDocumentation = assign({
-    documentation: (_, response) => response.documentation
-  })
-
-  const save = (context) => onChange(context)
-
 
   const informationForm = teamApiInfoForm(translateMethod)
   const descriptionForm = teamApiDescriptionForm(translateMethod)
 
   const steps = [
+    
     {
       id: 'info',
       label: translateMethod('Informations'),
       schema: informationForm.schema,
-      flow: informationForm.flow,
+      flow: informationForm.simpleFlow,
       actions: ['setInformation']
     },
     {
@@ -74,24 +43,24 @@ export const TeamApiMultiStep = ({ value, team, onChange, creation }) => {
       id: 'pricing',
       label: translateMethod('Plans'),
       component: TeamApiPricing,
-      skipTo: 'swagger',
+      // skipTo: 'swagger',
       actions: ['setPlans']
     },
-    {
-      id: 'swagger',
-      label: translateMethod('Swagger'),
-      component: TeamApiSwagger,
-      // skipTo: 'documentation',
-      actions: ['setSwagger']
-    },
+    // {
+    //   id: 'swagger',
+    //   label: translateMethod('Swagger'),
+    //   component: TeamApiSwagger,
+    //   // skipTo: 'documentation',
+    //   actions: ['setSwagger']
+    // },
 
-    {
-      id: 'testing',
-      label: translateMethod('Testing'),
-      component: TeamApiTesting,
-      // skipTo: 'documentation',
-      actions: ['setTesting']
-    },
+    // {
+    //   id: 'testing',
+    //   label: translateMethod('Testing'),
+    //   component: TeamApiTesting,
+    //   // skipTo: 'documentation',
+    //   actions: ['setTesting']
+    // },
     // {
     //   id: 'documentation',
     //   label: translateMethod('Documentation'),
@@ -107,6 +76,18 @@ export const TeamApiMultiStep = ({ value, team, onChange, creation }) => {
   ]
 
   return (
-    <MultiStepForm value={value} steps={steps} actions={{ setInformation, setDescription, setSwagger, setPlans, setDocumentation, setTesting, save }} initial="info" creation={creation} />
+    <MultiStepForm 
+      value={value} 
+      steps={steps} 
+      initial="info" 
+      creation={creation}
+      onSave={v => console.error({v})}
+      // report={(value, current)  => (
+      //   <div className='col-5'>
+      //     <h4>{current}</h4>
+      //     <CodeInput value={JSON.stringify(value, null, 4)} mode='json'/>
+      //   </div>
+      // )} 
+      />
   );
 };
