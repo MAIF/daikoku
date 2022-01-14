@@ -1258,13 +1258,14 @@
   dependencies:
     stream "^0.0.2"
 
-"@maif/react-forms@^1.0.9":
-  version "1.0.9"
-  resolved "https://registry.yarnpkg.com/@maif/react-forms/-/react-forms-1.0.9.tgz#b7c92e85792c721ea7278a74e54ef12e8b813c90"
-  integrity sha512-GRUEHfArTx0ptVrA2FQa3DZt4H5xyM4fMyBAB13AIEVhfBBHx5iZtFNu1Yy6QIzhqlRHRiAqbwqvXLUM/ZLdkw==
+"@maif/react-forms@^1.0.12":
+  version "1.0.12"
+  resolved "https://registry.yarnpkg.com/@maif/react-forms/-/react-forms-1.0.12.tgz#e15b17cbfff8de12064a5dc29b6abb0bcf82501f"
+  integrity sha512-dqOq+Cx7l6KRVwQdzs25bQzIh4HRgAV9PBa+7JW8Wq7zEnSucRzJaz8gev2kNb2fwNi4Rt5diM4l1yOh7a3RaQ==
   dependencies:
     "@fortawesome/fontawesome-free" "^5.15.3"
     "@hookform/resolvers" "2.4.0"
+    "@popperjs/core" "^2.11.2"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
     "@testing-library/user-event" "^12.1.10"
@@ -1318,7 +1319,7 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@popperjs/core@^2.11.0":
+"@popperjs/core@^2.11.0", "@popperjs/core@^2.11.2":
   version "2.11.2"
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.2.tgz#830beaec4b4091a9e9398ac50f865ddea52186b9"
   integrity sha512-92FRmppjjqz29VMJ2dn+xdyXZBrMlE42AV6Kq6BwjWV7CNUW1hs2FtxSNLQE+gJhaZ6AAmYuO9y8dshhcBl7vA==

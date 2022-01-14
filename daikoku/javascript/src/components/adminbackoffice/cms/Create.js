@@ -15,8 +15,8 @@ export const Create = (props) => {
     const [value, setValue] = useState({
         name: '',
         path: '',
-        body: `<!DOCTYPE html><html><head></head><body><h1>{translateMethod('cms.create.default_body_text')}</h1></body></html>`,
-        draft: `<!DOCTYPE html><html><head></head><body><h1>{translateMethod('cms.create.default_draft_body')}</h1></body></html>`,
+        body: `<DOCTYPE html><html><head></head><body><h1>${translateMethod('cms.create.default_body_text')}</h1></body></html>`,
+        draft: `<!DOCTYPE html><html><head></head><body><h1>${translateMethod('cms.create.default_draft_body')}</h1></body></html>`,
         contentType: 'text/html',
         visible: true,
         authenticated: false,
@@ -40,6 +40,7 @@ export const Create = (props) => {
                         metadata
                         contentType
                         tags
+                        version
                     }
                 }
             `})
@@ -71,6 +72,17 @@ export const Create = (props) => {
                 constraints.matches("^/", translateMethod('cms.create.path_slash_constraints')),
                 constraints.test('path', translateMethod('cms.create.path_paths_constraints'),
                     value => params.id ? true : !props.pages.find(p => p.path === value))
+            ]
+        },
+        version: {
+            type: type.string,
+            placeholder: '1.0.0',
+            help: translateMethod('cms.create.version_help'),
+            label: translateMethod('cms.create.version_label'),
+            constraints: [
+                constraints.required(),
+                // constraints.test('version', translateMethod('cms.create.version_constraint'), 
+                //     value => params.id ? true : !props.pages.find(p => p.version === value))
             ]
         },
         contentType: {
@@ -136,7 +148,7 @@ export const Create = (props) => {
     const flow = [{
         label: translateMethod('cms.create.information'),
         flow: [
-            'name', 'path', 'visible', 'authenticated'
+            'name', 'path', 'version', 'visible', 'authenticated'
         ],
         collapsed: params.id
     },

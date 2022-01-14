@@ -2,6 +2,14 @@ import { CodeInput, SelectInput } from '@maif/react-forms/lib/inputs';
 import React, { useContext, useEffect, useState } from 'react'
 import { I18nContext } from '../../../core';
 
+const CONTENT_TYPES_TO_MODE = {
+    "application/json": "json",
+    "text/html": "html",
+    "text/javascript": "javascript",
+    "text/css": "css",
+    "text/markdown": "mardown"
+}
+
 const LinksView = ({ }) => (
     <>
         <span className='mb-1'>Choose the back office link to copy</span>
@@ -12,7 +20,8 @@ const LinksView = ({ }) => (
                 { label: "Logout", value: "logout" },
                 { label: "Language", value: "language" },
                 { label: "Back office", value: "backoffice" },
-                { label: "Sign up", value: "signup" }
+                { label: "Sign up", value: "signup" },
+                { label: 'Home', value: 'home'}
             ]}
                 onChange={link => {
                     setShow(true)
@@ -99,7 +108,7 @@ const SideBarActions = (props) => (
     </>
 )
 
-export const ContentSideView = ({ value, onChange, pages }) => {
+export const ContentSideView = ({ value, onChange, pages, rawValues }) => {
     const [sideView, setSideView] = useState(false);
     const [selector, setSelector] = useState("");
 
@@ -111,7 +120,7 @@ export const ContentSideView = ({ value, onChange, pages }) => {
         <div className='d-flex'>
             <div style={{ flex: 1 }}>
                 <CodeInput value={value} onChange={onChange}
-                    mode="html" theme="tomorrow" width="-1" />
+                    mode={CONTENT_TYPES_TO_MODE[rawValues.contentType] || "html"} theme="tomorrow" width="-1" />
             </div>
             {sideView && <div style={{ flex: .5 }} className='p-2'>
                 {selector === "links" && <LinksView />}

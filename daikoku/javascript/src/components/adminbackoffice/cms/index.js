@@ -15,6 +15,7 @@ const getAllPages = () => ({
             name
             path
             contentType
+            version
         }
       }
     `,

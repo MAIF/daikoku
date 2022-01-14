@@ -3286,6 +3286,8 @@ object json {
       "body" -> o.body,
       "draft" -> o.draft,
       "path" -> o.path,
+      "version" -> o.version,
+      "parent" -> o.parent.map(CmsPageIdFormat.writes).getOrElse(JsNull).as[JsValue]
     )
     override def reads(json: JsValue): JsResult[CmsPage] = Try {
       CmsPage(
@@ -3303,6 +3305,8 @@ object json {
         contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
         forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
         path = (json \ "path").asOpt[String].getOrElse("-"),
+        version = (json \ "version").asOpt[String].getOrElse("1.0.0"),
+        parent = (json \ "parent").asOpt(CmsPageIdFormat.reads)
       )
     } match {
       case Failure(exception) => JsError(exception.getMessage)
