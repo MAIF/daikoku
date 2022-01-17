@@ -29,7 +29,7 @@ export const TeamApiMultiStep = ({ value, team, onChange, creation }) => {
       id: 'info',
       label: translateMethod('Informations'),
       schema: informationForm.schema,
-      flow: informationForm.simpleFlow,
+      flow: informationForm.flow(false),
       actions: ['setInformation']
     },
     {

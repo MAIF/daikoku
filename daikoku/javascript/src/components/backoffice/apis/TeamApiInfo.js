@@ -1,37 +1,6 @@
 import { type, constraints, format } from '@maif/react-forms';
 import * as Services from '../../../services';
 
-// function NameAlreadyExists(props) {
-//   const [exists, setExists] = useState(false);
-
-//   const update = () => {
-//     Services.checkIfApiNameIsUnique(props.rawValue.name, props.rawValue._id).then((r) =>
-//       setExists(r.exists)
-//     );
-//   };
-
-//   const { Translation } = useContext(I18nContext);
-
-//   useEffect(() => {
-//     update(props);
-//   }, [props.rawValue.name]);
-
-//   if (!exists) return null;
-
-//   return (
-//     <div className="mb-3 row">
-//       <div
-//         className="col-sm-12"
-//         style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-//         <span className="badge bg-danger">
-//           <Translation i18nkey="api.already.exists" replacements={[props.rawValue.name]}>
-//             api with name "{props.rawValue.name}" already exists
-//           </Translation>
-//         </span>
-//       </div>
-//     </div>
-//   );
-// }
 
 // const StyleLogoAssetButton = (props) => {
 //   const tenant = props.tenant ? props.tenant : { domain: window.location.origin };
@@ -60,6 +29,7 @@ export const teamApiInfoForm = (translateMethod) => {
     isDefault: {
       type: type.bool,
       label: translateMethod('team_api_info.isDefault'),
+      expert: true
     },
     name: {
       type: type.string,
@@ -87,7 +57,8 @@ export const teamApiInfoForm = (translateMethod) => {
       ),
       constraints: [
         constraints.nullable()
-      ]
+      ],
+      expert: true
     },
     image: {
       type: type.string,
@@ -96,7 +67,8 @@ export const teamApiInfoForm = (translateMethod) => {
       constraints: [
         constraints.nullable(),
         constraints.url('this must be an url to an image')
-      ]
+      ],
+      expert: true
     },
     currentVersion: {
       type: type.string,
@@ -106,6 +78,7 @@ export const teamApiInfoForm = (translateMethod) => {
       type: type.string,
       array: true,
       label: translateMethod('Supported versions'),
+      expert: true
     },
     published: {
       type: type.bool,
@@ -114,11 +87,13 @@ export const teamApiInfoForm = (translateMethod) => {
     testable: {
       type: type.bool,
       label: translateMethod('Testable'),
+      expert: true
     },
     tags: {
       type: type.string,
       array: true,
       label: translateMethod('Tags'),
+      expert: true
     },
     categories: {
       type: type.string,
@@ -128,6 +103,7 @@ export const teamApiInfoForm = (translateMethod) => {
       label: translateMethod('Categories'),
       optionFrom: '/api/categories',
       transformer: (t) => ({ label: t, value: t }),
+      expert: true
     },
     visibility: {
       type: type.string,
@@ -155,7 +131,18 @@ export const teamApiInfoForm = (translateMethod) => {
     },
   };
 
-  const flow = [
+
+  const simpleOrExpertMode = (entry, expert) => {
+    console.debug({
+      entry,
+      expert,
+      entryExpert: !schema[entry]?.expert,
+      test: !!expert || !schema[entry]?.expert
+    })
+    return !!expert || !schema[entry]?.expert
+  }
+
+  const flow = (expert) => [
     {
       label: 'Basic',
       flow: [
@@ -165,7 +152,7 @@ export const teamApiInfoForm = (translateMethod) => {
         'smallDescription',
         'image',
         'header',
-      ],
+      ].filter((entry => simpleOrExpertMode(entry, expert))),
       collapsed: false
     },
     {
@@ -175,7 +162,7 @@ export const teamApiInfoForm = (translateMethod) => {
         'supportedVersions',
         'tags',
         'categories',
-      ],
+      ].filter((entry => simpleOrExpertMode(entry, expert))),
       collapsed: true
     },
     {
@@ -183,51 +170,12 @@ export const teamApiInfoForm = (translateMethod) => {
       flow: [
         'visibility',
         'authorizedTeams'
-      ],
+      ].filter((entry => simpleOrExpertMode(entry, expert))),
       collapsed: true
     }
   ];
 
-  const simpleFlow = [
-    {
-      label: 'Simple Mode',
-      flow: [
-        'name',
-        'smallDescription',
-        'currentVersion',
-        'visibility',
-        'authorizedTeams'
-      ],
-      collapsed: false
-    },
-    {
-      label: 'Expert Mode',
-      flow: [
-        {
-          label: 'Basic',
-          flow: [
-            'isDefault',
-            'published',
-            'image',
-            'header',
-          ],
-          collapsed: true
-        },
-        {
-          label: translateMethod('Versions and tags'),
-          flow: [
-            'supportedVersions',
-            'tags',
-            'categories',
-          ],
-          collapsed: true
-        },
-      ],
-      collapsed: true
-    }
-  ]
-
-  return { schema, flow, simpleFlow }
+  return { schema, flow: (expert) => flow(expert) }
 
   const adminFormFlow = ['_id', 'name', 'smallDescription'];
 

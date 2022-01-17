@@ -67,7 +67,6 @@ export const MultiStepForm = ({ value, steps, initial, creation, report }) => {
     {
       actions: {
         setValue: assign((context, response) => {
-          console.debug({ context, response })
           return { ...context, ...response.value }
         }),
         save: (context, response) => {
@@ -78,34 +77,15 @@ export const MultiStepForm = ({ value, steps, initial, creation, report }) => {
     }
   ), [])
 
-  console.debug(JSON.stringify({
-    id: 'foo',
-    context: value,
-    initial,
-    states
-  },
-    {
-      actions: {
-        setValue: assign((context, response) => {
-          console.debug({ context, response })
-          return { ...context, ...response.value }
-        }),
-        save: (context, response) => {
-          console.debug("save")
-          console.debug({ context, response })
-        }
-      }
-    }, null, 4))
-
 
   const [current, send] = useMachine(machine);
 
   if (current.matches("done")) {
-    console.log({ current })
     return <div>{JSON.stringify(current.context, null, 4)}</div>;
   }
 
   const step = steps.find(s => s.id === current.value)
+  console.debug({current})
   return (
     <div>
       <Breadcrumb
@@ -113,10 +93,10 @@ export const MultiStepForm = ({ value, steps, initial, creation, report }) => {
         currentStep={current.value}
         chooseStep={s => send(`TO_${s}`, { value: current.context.value })}
         creation={creation} />
-      <div className='d-flex flex-row'>
+      <div className='d-flex flex-row col-6'>
         {step.component && (
           <ComponentedForm
-            value={value}
+            value={current.context}
             valid={response => {
               if (steps.findIndex(s => s.id === step.id) !== steps.length - 1) {
                 send('NEXT', { value: response })
@@ -133,16 +113,12 @@ export const MultiStepForm = ({ value, steps, initial, creation, report }) => {
         {step.schema && <Form
           key={step.id}
           onSubmit={response => {
-            // if (steps.findIndex(s => s.id === step.id) !== steps.length - 1) {
             send('NEXT', { value: response })
-            // } else {
-            //   send('SAVE', {value: response})
-            // }
           }}
           onError={(errors, e) => console.error(errors, e)}
           schema={step.schema}
           flow={step.flow}
-          value={current.context.value}
+          value={current.context}
           footer={({ valid }) => {
             return (
               <div className="d-flex justify-content-between">
