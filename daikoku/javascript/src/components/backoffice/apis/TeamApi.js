@@ -6,7 +6,9 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { Can, manage, api as API, Spinner, MultiStepForm } from '../../utils';
 import {
-  TeamApiMultiStep
+  TeamApiMultiStep,
+  TeamApiPost,
+  TeamApiDocumentation
 } from '.';
 
 import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext } from '../../../core';
@@ -279,14 +281,39 @@ function TeamApiComponent(props) {
           <div className="row">
             <div className="section col container-api">
               <div className="mt-2">
-                <TeamApiMultiStep
-                  value={editedApi}
-                  team={props.currentTeam}
-                  onChange={(api) => setState({ ...state, api })}
-                  creation={
-                    location && location.state && !!location.state.newApi
-                  }
-                />
+                {editedApi && tab === 'documentation' && (
+                  <TeamApiDocumentation
+                    creationInProgress={state.create}
+                    team={props.currentTeam}
+                    teamId={teamId}
+                    value={editedApi}
+                    onChange={(api) => setState({ ...state, api })}
+                    save={save}
+                    versionId={params.versionId}
+                    params={params}
+                    reloadState={reloadState}
+                    ref={teamApiDocumentationRef}
+                  />
+                )}
+                {editedApi && tab === 'infos' && (
+                  <TeamApiMultiStep
+                    value={editedApi}
+                    team={props.currentTeam}
+                    onChange={(api) => setState({ ...state, api })}
+                    creation={
+                      location && location.state && !!location.state.newApi
+                    }
+                  />
+                )}
+                {editedApi && tab === 'news' && (
+                  <TeamApiPost
+                    value={editedApi}
+                    team={props.currentTeam}
+                    api={state.api}
+                    onChange={(api) => setState({ ...state, api })}
+                    params={params}
+                  />
+                )}
               </div>
             </div>
           </div>

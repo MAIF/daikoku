@@ -85,7 +85,6 @@ export const MultiStepForm = ({ value, steps, initial, creation, report }) => {
   }
 
   const step = steps.find(s => s.id === current.value)
-  console.debug({current})
   return (
     <div>
       <Breadcrumb
@@ -93,17 +92,11 @@ export const MultiStepForm = ({ value, steps, initial, creation, report }) => {
         currentStep={current.value}
         chooseStep={s => send(`TO_${s}`, { value: current.context.value })}
         creation={creation} />
-      <div className='d-flex flex-row col-6'>
+      <div className='d-flex flex-row col-12'>
         {step.component && (
           <ComponentedForm
             value={current.context}
-            valid={response => {
-              if (steps.findIndex(s => s.id === step.id) !== steps.length - 1) {
-                send('NEXT', { value: response })
-              } else {
-                send('SAVE', { value: response })
-              }
-            }}
+            valid={response => send('NEXT', { value: response })}
             component={step.component}
             steps={steps} step={step}
             initial={initial}
@@ -143,7 +136,7 @@ const ComponentedForm = ({ value, valid, component, steps, step, initial, send, 
   const [state, setState] = useState(value)
 
   return (
-    <>
+    <div className="d-flex flex-column flex-grow-1">
       {React.createElement(component, {
         value: state,
         onChange: setState
@@ -156,7 +149,7 @@ const ComponentedForm = ({ value, valid, component, steps, step, initial, send, 
           {steps.findIndex(s => s.id === step.id) === steps.length - 1 && <button type="button" className="btn btn-success m-3" onClick={() => valid(state)}>save</button>}
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

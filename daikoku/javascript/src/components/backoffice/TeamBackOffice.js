@@ -243,12 +243,12 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
       <>
         <VersionsButton {...sidebarParams} currentTeam={currentTeam} />
         {[
-          { route: 'multistep', icon: 'info', name: translateMethod('multistep') },
+          // { route: 'multistep', icon: 'info', name: translateMethod('multistep') },
           { route: 'infos', icon: 'info', name: translateMethod('Informations') },
-          { route: 'description', icon: 'file-alt', name: translateMethod('Description') },
-          { route: 'plans', icon: 'dollar-sign', name: translateMethod('Plans') },
-          { route: 'swagger', icon: 'file-code', name: translateMethod('Swagger') },
-          { route: 'testing', icon: 'vial', name: translateMethod('Testing') },
+          // { route: 'description', icon: 'file-alt', name: translateMethod('Description') },
+          // { route: 'plans', icon: 'dollar-sign', name: translateMethod('Plans') },
+          // { route: 'swagger', icon: 'file-code', name: translateMethod('Swagger') },
+          // { route: 'testing', icon: 'vial', name: translateMethod('Testing') },
           { route: 'documentation', icon: 'book', name: translateMethod('Documentation') },
           { route: 'news', icon: 'newspaper', name: translateMethod('News') },
         ].map((item, i) => (

@@ -133,13 +133,7 @@ export const teamApiInfoForm = (translateMethod) => {
 
 
   const simpleOrExpertMode = (entry, expert) => {
-    console.debug({
-      entry,
-      expert,
-      entryExpert: !schema[entry]?.expert,
-      test: !!expert || !schema[entry]?.expert
-    })
-    return !!expert || !schema[entry]?.expert
+   return !!expert || !schema[entry]?.expert
   }
 
   const flow = (expert) => [

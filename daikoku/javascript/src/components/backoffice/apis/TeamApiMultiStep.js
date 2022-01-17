@@ -8,16 +8,13 @@ import {
   TeamApiPricing,
   TeamApiSwagger,
   TeamApiTesting,
-  TeamApiDocumentation,
-  TeamApiPost
 } from './';
 import { actions } from 'react-redux-toastr';
 
 import CodeInput from '../../inputs/CodeInput';
-import { type } from '@maif/react-forms';
 
 
-export const TeamApiMultiStep = ({ value, team, onChange, creation }) => {
+export const TeamApiMultiStep = ({ value, onChange, creation }) => {
   const { translateMethod } = useContext(I18nContext);
 
   const informationForm = teamApiInfoForm(translateMethod)
@@ -29,50 +26,33 @@ export const TeamApiMultiStep = ({ value, team, onChange, creation }) => {
       id: 'info',
       label: translateMethod('Informations'),
       schema: informationForm.schema,
-      flow: informationForm.flow(false),
-      actions: ['setInformation']
+      flow: informationForm.flow(true),
     },
     {
       id: 'description',
       label: translateMethod('Description'),
       schema: descriptionForm.schema,
       flow: descriptionForm.flow,
-      actions: ['setDescription']
     },
     {
       id: 'pricing',
       label: translateMethod('Plans'),
       component: TeamApiPricing,
-      // skipTo: 'swagger',
-      actions: ['setPlans']
+      skipTo: 'swagger',
     },
-    // {
-    //   id: 'swagger',
-    //   label: translateMethod('Swagger'),
-    //   component: TeamApiSwagger,
-    //   // skipTo: 'documentation',
-    //   actions: ['setSwagger']
-    // },
+    {
+      id: 'swagger',
+      label: translateMethod('Swagger'),
+      component: TeamApiSwagger,
+      skipTo: 'done',
+    },
 
-    // {
-    //   id: 'testing',
-    //   label: translateMethod('Testing'),
-    //   component: TeamApiTesting,
-    //   // skipTo: 'documentation',
-    //   actions: ['setTesting']
-    // },
-    // {
-    //   id: 'documentation',
-    //   label: translateMethod('Documentation'),
-    //   component: TeamApiDocumentation,
-    //   actions: ['setDocumentation']
-    // },
-    // {
-    //   id: 'news',
-    //   label: translateMethod('News'),
-    //   component: TeamApiPost,
-    //   actions: ['setPost']
-    // },
+    {
+      id: 'testing',
+      label: translateMethod('Testing'),
+      component: TeamApiTesting,
+      skipTo: 'done',
+    }
   ]
 
   return (
@@ -81,7 +61,7 @@ export const TeamApiMultiStep = ({ value, team, onChange, creation }) => {
       steps={steps} 
       initial="info" 
       creation={creation}
-      onSave={v => console.error({v})}
+      onSave={v => console.error({v})} //todo: real onSave
       // report={(value, current)  => (
       //   <div className='col-5'>
       //     <h4>{current}</h4>
