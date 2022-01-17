@@ -14,7 +14,7 @@ import { actions } from 'react-redux-toastr';
 import CodeInput from '../../inputs/CodeInput';
 
 
-export const TeamApiMultiStep = ({ value, onChange, creation }) => {
+export const TeamApiMultiStep = ({ value, onChange, creation, expertMode }) => {
   const { translateMethod } = useContext(I18nContext);
 
   const informationForm = teamApiInfoForm(translateMethod)
@@ -26,7 +26,7 @@ export const TeamApiMultiStep = ({ value, onChange, creation }) => {
       id: 'info',
       label: translateMethod('Informations'),
       schema: informationForm.schema,
-      flow: informationForm.flow(true),
+      flow: informationForm.flow(expertMode),
     },
     {
       id: 'description',

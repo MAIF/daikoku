@@ -56,6 +56,7 @@ export function init(
     impersonator,
     isTenantAdmin,
     apiCreationPermitted,
+    expertMode: localStorage.getItem('expertMode') || false
   });
 
   customizeFetch(storeInst);

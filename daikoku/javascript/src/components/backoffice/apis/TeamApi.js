@@ -11,7 +11,7 @@ import {
   TeamApiDocumentation
 } from '.';
 
-import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext } from '../../../core';
+import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext, toggleExpertMode } from '../../../core';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 
@@ -52,6 +52,15 @@ function TeamApiComponent(props) {
       reloadState();
     }
   }, [params.tab, params.versionId]);
+
+  useEffect(() => {
+    props.injectNavFooter(
+      <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
+        {props.expertMode && translateMethod("Standard mode")}
+        {!props.expertMode && translateMethod("Expert mode")}
+      </button>
+    )
+  }, [props.expertMode])
 
   useEffect(() => {
     if (state.changed) {
@@ -303,6 +312,7 @@ function TeamApiComponent(props) {
                     creation={
                       location && location.state && !!location.state.newApi
                     }
+                    expertMode={props.expertMode}
                   />
                 )}
                 {editedApi && tab === 'news' && (
@@ -331,6 +341,7 @@ const mapDispatchToProps = {
   setError: (error) => setError(error),
   openSubMetadataModal: (props) => openSubMetadataModal(props),
   openTestingApiKeyModal: (props) => openTestingApiKeyModal(props),
+  toggleExpertMode: () => toggleExpertMode()
 };
 
 export const TeamApi = connect(mapStateToProps, mapDispatchToProps)(TeamApiComponent);

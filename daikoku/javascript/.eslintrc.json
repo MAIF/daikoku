@@ -13,14 +13,15 @@
         "ecmaFeatures": {
             "jsx": true
         },
-        "parser": "babel-eslint",
-        "ecmaVersion": 2018,
-        "sourceType": "module"
+        "parser": "@babel/eslint-parser",
+        "sourceType": "module",
+        "ecmaVersion": 8,
+        "requireConfigFile": false
     },
     "plugins": [
         "react"
     ],
-    "parser": "babel-eslint",
+    "parser": "@babel/eslint-parser",
     "rules": {
         "no-unused-vars": [
             "error",

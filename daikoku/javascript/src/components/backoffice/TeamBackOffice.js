@@ -219,6 +219,10 @@ const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
 };
 
 const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title }) => {
+
+  const [injectedSubMenu, setInjectedSubMenu] = useState();
+  const [injectedNavFooter, setInjectedNavFooter] = useState();
+
   useEffect(() => {
     if (title) {
       document.title = title;
@@ -234,7 +238,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const ApiSidebar = () => {
+  const ApiSidebar = ({injectHeader, injectedFooter, injectedSubMenu}) => {
     const sidebarParams = useParams();
 
     const to = `/${currentTeam._humanReadableId}/settings/apis/${sidebarParams.apiId}/${sidebarParams.versionId}`;
@@ -243,12 +247,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
       <>
         <VersionsButton {...sidebarParams} currentTeam={currentTeam} />
         {[
-          // { route: 'multistep', icon: 'info', name: translateMethod('multistep') },
           { route: 'infos', icon: 'info', name: translateMethod('Informations') },
-          // { route: 'description', icon: 'file-alt', name: translateMethod('Description') },
-          // { route: 'plans', icon: 'dollar-sign', name: translateMethod('Plans') },
-          // { route: 'swagger', icon: 'file-code', name: translateMethod('Swagger') },
-          // { route: 'testing', icon: 'vial', name: translateMethod('Testing') },
           { route: 'documentation', icon: 'book', name: translateMethod('Documentation') },
           { route: 'news', icon: 'newspaper', name: translateMethod('News') },
         ].map((item, i) => (
@@ -256,9 +255,10 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
         ))}
 
         <div className="px-3 mb-4 mt-auto d-flex flex-column">
+          {injectedFooter}
           <Link
             to={`/${currentTeam._humanReadableId}/${sidebarParams.apiId}/${sidebarParams.versionId}`}
-            className="btn btn-sm btn-access-negative mb-2"
+            className="btn btn-sm btn-access-negative my-2"
           >
             {translateMethod('View this Api')}
           </Link>
@@ -543,7 +543,9 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
           </span>
           <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
             <Routes>
-              <Route path="/apis/:apiId/:versionId/:tab*" element={<ApiSidebar />} />
+              <Route 
+                path="/apis/:apiId/:versionId/:tab*" 
+                element={<ApiSidebar injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu}/>} />
               <Route path={`/apis/:apiId/:tab`} element={<NewApiBar />} />
               <Route path={`/apikeys/:apiId/:versionId`} element={<ApiKeysBar />} />
               <Route
@@ -584,7 +586,12 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             />
             <Route path={`/members`} element={<TeamMembers />} />
             <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
-            <Route path={`/apis/:apiId/:versionId/:tab*`} element={<TeamApi />} />
+            <Route 
+              path={`/apis/:apiId/:versionId/:tab/*`} 
+              element={<TeamApi injectFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu}/>} />
+            <Route 
+              path={`/apis/:apiId/:versionId/:tab`} 
+              element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu}/>} />
             <Route path={`/apis/:apiId/:versionId`} element={<TeamApi />} />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />

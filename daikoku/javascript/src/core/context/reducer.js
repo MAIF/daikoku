@@ -6,6 +6,7 @@ import {
   UPDATE_NOTIFS,
   UPDATE_TENANT,
   UPDATE_USER,
+  TOGGLE_EXPERT_MODE
 } from './action-types';
 
 const initialState = {
@@ -16,6 +17,7 @@ const initialState = {
   tenant: null,
   history: null,
   isTenantAdmin: false,
+  expertMode: false
 };
 
 export function contextReducer(state = initialState, action) {
@@ -26,6 +28,7 @@ export function contextReducer(state = initialState, action) {
         connectedUser: action.user,
         currentTeam: action.team,
         tenant: action.tenant,
+        expertMode: action.expertMode || localStorage.getItem('expertMode') || false
       };
 
     case LOGOUT:
@@ -52,6 +55,15 @@ export function contextReducer(state = initialState, action) {
         ...state,
         connectedUser: action.user,
       };
+
+    case TOGGLE_EXPERT_MODE:
+      console.debug("toggling exprt mode")
+      console.debug({ exp: state.expertMode})
+      localStorage.setItem('expertMode', !state.expertMode);
+      return {
+        ...state,
+        expertMode: !state.expertMode
+      }
 
     default:
       return state;

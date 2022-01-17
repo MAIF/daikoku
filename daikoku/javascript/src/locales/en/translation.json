@@ -985,6 +985,9 @@
     "You're not authorized on this api": "You're not authorized on this api",
     "ask.api.access.info": "Your request for access to %s has been sent.",
     "updated password can't be saved": "Updated password can't be saved",
-    "incorrect password": "Incorrect password"
+    "incorrect password": "Incorrect password",
+    "Standard mode": "Standard mode",
+    "Expert mode": "Expert mode"
+
 
 }
