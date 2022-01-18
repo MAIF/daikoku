@@ -112,6 +112,7 @@ function TeamApiComponent(props) {
         })
         .catch((error) => toastr.error(translateMethod(error)));
     } else {
+      console.debug({editedApi})
       return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
         .then((r) => {
           if (!r.exists) {
@@ -303,18 +304,34 @@ function TeamApiComponent(props) {
             <div className="section col container-api">
               <div className="mt-2">
                 {editedApi && tab === 'documentation' && (
-                  <TeamApiDocumentation
-                    creationInProgress={state.create}
-                    team={props.currentTeam}
-                    teamId={teamId}
-                    value={editedApi}
-                    onChange={(api) => setState({ ...state, api })}
-                    save={save}
-                    versionId={params.versionId}
-                    params={params}
-                    reloadState={reloadState}
-                    ref={teamApiDocumentationRef}
-                  />
+                  <>
+                    <TeamApiDocumentation
+                      creationInProgress={state.create}
+                      team={props.currentTeam}
+                      teamId={teamId}
+                      value={editedApi}
+                      onChange={(api) => setState({ ...state, api })}
+                      save={save}
+                      versionId={params.versionId}
+                      params={params}
+                      reloadState={reloadState}
+                      ref={teamApiDocumentationRef}
+                    />
+                    <div className="row">
+                      <div className="d-flex form-back-fixedBtns">
+                        <button
+                          type="button"
+                          className="btn btn-outline-success ms-1"
+                          onClick={() => save()}
+                        >
+                          <span>
+                            <i className="fas fa-save me-1" />
+                            <Translation i18nkey="Save">Save</Translation>
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 )}
                 {editedApi && tab === 'infos' && (
                   <TeamApiInfos

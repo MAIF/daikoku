@@ -2,9 +2,14 @@
     "env": {
         "browser": true,
         "node": true,
-        "es6": true
+        "es2021": true
     },
-    "extends": ["eslint:recommended", "plugin:react/recommended"],
+    "extends": [
+        "eslint:recommended", 
+        "plugin:react/recommended",
+        "standard",
+        "plugin:react/jsx-runtime",
+    ],
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
@@ -53,7 +58,7 @@
     "settings": {
         "react": {
             "pragma": "React",
-            "version": "17.0.2"
+            "version": "detect"
         }
     }
 }
