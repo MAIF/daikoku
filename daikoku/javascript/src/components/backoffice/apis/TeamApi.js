@@ -6,7 +6,7 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { Can, manage, api as API, Spinner, MultiStepForm } from '../../utils';
 import {
-  TeamApiMultiStep,
+  TeamApiInfos,
   TeamApiPost,
   TeamApiDocumentation
 } from '.';
@@ -54,12 +54,14 @@ function TeamApiComponent(props) {
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
-    props.injectNavFooter(
-      <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
-        {props.expertMode && translateMethod("Standard mode")}
-        {!props.expertMode && translateMethod("Expert mode")}
-      </button>
-    )
+    if (props.injectNavFooter) {
+      props.injectNavFooter(
+        <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
+          {props.expertMode && translateMethod("Standard mode")}
+          {!props.expertMode && translateMethod("Expert mode")}
+        </button>
+      )
+    }
   }, [props.expertMode])
 
   useEffect(() => {
@@ -269,6 +271,12 @@ function TeamApiComponent(props) {
     props.setError({ error: { status: 403, message: 'Creation security enabled' } });
   }
 
+  useEffect(() => {
+    if (tab !== 'infos') {
+      props.injectSubMenu(null);
+    }
+  }, [tab])
+
   return (
     <Can I={manage} a={API} team={props.currentTeam} dispatchError>
       {!editedApi && <Spinner />}
@@ -305,7 +313,7 @@ function TeamApiComponent(props) {
                   />
                 )}
                 {editedApi && tab === 'infos' && (
-                  <TeamApiMultiStep
+                  <TeamApiInfos
                     value={editedApi}
                     team={props.currentTeam}
                     onChange={(api) => setState({ ...state, api })}
@@ -313,6 +321,7 @@ function TeamApiComponent(props) {
                       location && location.state && !!location.state.newApi
                     }
                     expertMode={props.expertMode}
+                    injectSubMenu={props.injectSubMenu}
                   />
                 )}
                 {editedApi && tab === 'news' && (

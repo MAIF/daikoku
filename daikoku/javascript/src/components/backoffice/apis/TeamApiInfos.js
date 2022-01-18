@@ -8,20 +8,19 @@ import {
   TeamApiPricing,
   TeamApiSwagger,
   TeamApiTesting,
-} from './';
+} from '.';
 import { actions } from 'react-redux-toastr';
 
 import CodeInput from '../../inputs/CodeInput';
 
 
-export const TeamApiMultiStep = ({ value, onChange, creation, expertMode }) => {
+export const TeamApiInfos = ({ value, onChange, creation, expertMode, injectSubMenu }) => {
   const { translateMethod } = useContext(I18nContext);
 
   const informationForm = teamApiInfoForm(translateMethod)
   const descriptionForm = teamApiDescriptionForm(translateMethod)
 
   const steps = [
-    
     {
       id: 'info',
       label: translateMethod('Informations'),
@@ -62,6 +61,7 @@ export const TeamApiMultiStep = ({ value, onChange, creation, expertMode }) => {
       initial="info" 
       creation={creation}
       onSave={v => console.error({v})} //todo: real onSave
+      getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
       // report={(value, current)  => (
       //   <div className='col-5'>
       //     <h4>{current}</h4>

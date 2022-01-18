@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import classNames from 'classnames';
 import { createMachine, assign } from 'xstate';
 import { useMachine } from "@xstate/react";
 import { Form } from '@maif/react-forms';
@@ -7,7 +8,7 @@ import _ from 'lodash';
 
 const { Step } = Steps;
 
-export const MultiStepForm = ({ value, steps, initial, creation, report }) => {
+export const MultiStepForm = ({ value, steps, initial, creation, report, getBreadcrumb }) => {
 
   const tos = steps.reduce((acc, step) => {
     return {
@@ -80,18 +81,24 @@ export const MultiStepForm = ({ value, steps, initial, creation, report }) => {
 
   const [current, send] = useMachine(machine);
 
-  if (current.matches("done")) {
-    return <div>{JSON.stringify(current.context, null, 4)}</div>;
-  }
-
-  const step = steps.find(s => s.id === current.value)
-  return (
-    <div>
-      <Breadcrumb
+  useEffect(() => {
+    if (!!getBreadcrumb) {
+      getBreadcrumb(current.value, <BreadcrumbDaikoku
         steps={steps}
         currentStep={current.value}
         chooseStep={s => send(`TO_${s}`, { value: current.context.value })}
-        creation={creation} />
+        creation={creation}
+        direction="vertical"
+      />)
+    }
+  }, [current.value])
+
+  if (current.matches("done")) {
+    return <div>{JSON.stringify(current.context, null, 4)}</div>;
+  }
+  const step = steps.find(s => s.id === current.value)
+  return (
+    <div>
       <div className='d-flex flex-row col-12'>
         {step.component && (
           <ComponentedForm
@@ -153,7 +160,7 @@ const ComponentedForm = ({ value, valid, component, steps, step, initial, send, 
   )
 }
 
-const Breadcrumb = ({ steps, currentStep, chooseStep, creation }) => {
+const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction }) => {
   const currentIdx = steps.findIndex(s => s.id === currentStep)
 
   const handleChooseStep = idx => {
@@ -163,12 +170,44 @@ const Breadcrumb = ({ steps, currentStep, chooseStep, creation }) => {
   }
 
   return (
-    <Steps current={currentIdx} onChange={handleChooseStep}>
+    <Steps progressDot current={currentIdx} onChange={handleChooseStep} direction={direction}>
       {steps.map((step, idx) => {
         return (
           <Step key={idx} title={step.label} disabled={creation && idx > currentIdx} />
         )
       })}
     </Steps>
+  )
+}
+
+const BreadcrumbDaikoku = ({ steps, currentStep, chooseStep, creation, direction }) => {
+  const currentIdx = steps.findIndex(s => s.id === currentStep)
+
+  const handleChooseStep = idx => {
+    if (!creation || idx < currentIdx) {
+      chooseStep(steps[idx].id.toUpperCase())
+    }
+  }
+
+  return (
+    <div className={classNames('d-flex steps', { 'flex-column': direction === 'vertical', 'flex-row': direction !== 'vertical' })}>
+      {steps.map((step, idx) => {
+        return (
+          <div
+            className={classNames('step d-flex cursor-pointer ', {
+              // 'flex-column': direction !== 'vertical', 
+              // 'flex-row': direction === 'vertical',
+              'active': currentIdx === idx,
+              'finished': currentIdx > idx,
+              'wait': currentIdx < idx,
+              'cursor-forbidden': creation && idx > currentIdx
+            })} key={idx} onClick={() => handleChooseStep(idx)}>
+              <div className='step-content'>
+                {step.label }
+              </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }

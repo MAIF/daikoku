@@ -13,4 +13,4 @@ export * from './TeamApiConsumption';
 export * from './TeamPlanConsumption';
 export * from './TeamApiSubscriptions';
 export * from './TeamApiPost';
-export * from './TeamApiMultiStep';
+export * from './TeamApiInfos';
