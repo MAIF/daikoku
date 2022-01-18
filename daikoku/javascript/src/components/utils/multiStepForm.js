@@ -3,12 +3,11 @@ import classNames from 'classnames';
 import { createMachine, assign } from 'xstate';
 import { useMachine } from "@xstate/react";
 import { Form } from '@maif/react-forms';
-import { Steps } from 'antd';
 import _ from 'lodash';
 
-const { Step } = Steps;
+import {Spinner} from '../utils';
 
-export const MultiStepForm = ({ value, steps, initial, creation, report, getBreadcrumb }) => {
+export const MultiStepForm = ({ value, steps, initial, creation, report, getBreadcrumb, save }) => {
 
   const tos = steps.reduce((acc, step) => {
     return {
@@ -28,12 +27,9 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
         target: step.skipTo
       }
     } : {}
-
-
-    const saveStep = i === steps.length - 1 ? {
-      SAVE: {
-        target: 'done',
-        actions: ["save"]
+    const previousStepObj = previousStep ? {
+      PREVIOUS: {
+        target: previousStep ? previousStep.id : null,
       }
     } : {}
 
@@ -41,21 +37,50 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
     acc[step.id] = {
       on: {
         NEXT: {
-          target: nextStep ? nextStep.id : "done",
+          target: nextStep ? nextStep.id : 'save',
           actions: ['setValue']
         },
-        PREVIOUS: {
-          target: previousStep ? previousStep.id : null,
-        },
+        ...previousStepObj,
         ..._.omit(tos, `TO_${step.id.toUpperCase()}`),
-        ...skipStep,
-        ...saveStep
+        ...skipStep
       }
     };
     return acc;
   }, {
-    done: {
-    }
+    save: {
+      invoke: {
+        id: 'save_step',
+        src: (context) => {
+          return (callBack, _onEvent) => {
+            return save(context)
+              .then(response => {
+                if (response.error) {
+                  console.debug({response})
+                  return callBack({ type: 'FAILURE', error: response.error })
+                } else {
+                  return callBack({ type: 'DONE' })
+                }
+              })
+              .catch((error) => {
+                console.debug({error})
+                return callBack({ type: 'FAILURE', error })
+              });
+          };
+        },
+      },
+      on: {
+        DONE: {
+          target: initial,
+        },
+        FAILURE: {
+          target: 'failure',
+          actions: assign({
+            error: (_context, { error }) => error,
+          })
+        }
+      }
+    },
+    failure: {type: 'final'}
   })
 
   const machine = useMemo(() => createMachine(
@@ -70,20 +95,15 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
         setValue: assign((context, response) => {
           return { ...context, ...response.value }
         }),
-        save: (context, response) => {
-          console.debug("save")
-          console.debug({ context, response })
-        }
       }
     }
   ), [])
-
 
   const [current, send] = useMachine(machine);
 
   useEffect(() => {
     if (!!getBreadcrumb) {
-      getBreadcrumb(current.value, <BreadcrumbDaikoku
+      getBreadcrumb(current.value, <Breadcrumb
         steps={steps}
         currentStep={current.value}
         chooseStep={s => send(`TO_${s}`, { value: current.context.value })}
@@ -93,8 +113,11 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
     }
   }, [current.value])
 
-  if (current.matches("done")) {
-    return <div>{JSON.stringify(current.context, null, 4)}</div>;
+  if (current.matches("save")) {
+    return <Spinner />;
+  }  
+  if (current.matches("failure")) {
+    return <div>{current.context.error}</div>
   }
   const step = steps.find(s => s.id === current.value)
   return (
@@ -122,11 +145,11 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
           footer={({ valid }) => {
             return (
               <div className="d-flex justify-content-between">
-                {steps.findIndex(s => s.id === step.id) !== 0 && <button className="btn btn-danger m-3" disabled={step.id === initial} onClick={() => send("PREVIOUS")}>previous</button>}
+                {steps.findIndex(s => s.id === step.id) !== 0 && <button className="btn btn-outline-danger m-3" disabled={step.id === initial} onClick={() => send("PREVIOUS")}>previous</button>}
                 <div className="flex-grow-1 d-flex justify-content-end">
-                  {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button className="btn btn-primary m-3" disabled={!!creation && !step.skipTo} onClick={() => send('SKIP')}>skip</button>}
-                  {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button className="btn btn-success m-3" onClick={valid}>next</button>}
-                  {steps.findIndex(s => s.id === step.id) === steps.length - 1 && <button className="btn btn-success m-3" onClick={valid}>save</button>}
+                  {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button className="btn btn-outline-info m-3" disabled={!!creation && !step.skipTo} onClick={() => send('SKIP')}>skip</button>}
+                  {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button className="btn btn-outline-success m-3" onClick={valid}>next</button>}
+                  {steps.findIndex(s => s.id === step.id) === steps.length - 1 && <button className="btn btn-outline-success m-3" onClick={valid}>save</button>}
                 </div>
               </div>
             )
@@ -149,11 +172,11 @@ const ComponentedForm = ({ value, valid, component, steps, step, initial, send, 
         onChange: setState
       })}
       <div className="d-flex justify-content-between">
-        {steps.findIndex(s => s.id === step.id) !== 0 && <button className="btn btn-danger m-3" disabled={step.id === initial} onClick={() => send("PREVIOUS")}>previous</button>}
+        {steps.findIndex(s => s.id === step.id) !== 0 && <button className="btn btn-outline-danger m-3" disabled={step.id === initial} onClick={() => send("PREVIOUS")}>previous</button>}
         <div className="flex-grow-1 d-flex justify-content-end">
-          {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button type="button" className="btn btn-primary m-3" disabled={!!creation && !step.skipTo} onClick={() => send('SKIP')}>skip</button>}
-          {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button type="button" className="btn btn-success m-3" onClick={() => valid(state)}>next</button>}
-          {steps.findIndex(s => s.id === step.id) === steps.length - 1 && <button type="button" className="btn btn-success m-3" onClick={() => valid(state)}>save</button>}
+          {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button type="button" className="btn btn-outline-info m-3" disabled={!!creation && !step.skipTo} onClick={() => send('SKIP')}>skip</button>}
+          {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button type="button" className="btn btn-outline-success m-3" onClick={() => valid(state)}>next</button>}
+          {steps.findIndex(s => s.id === step.id) === steps.length - 1 && <button type="button" className="btn btn-outline-success m-3" onClick={() => valid(state)}>save</button>}
         </div>
       </div>
     </div>
@@ -170,33 +193,11 @@ const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction }) => 
   }
 
   return (
-    <Steps progressDot current={currentIdx} onChange={handleChooseStep} direction={direction}>
-      {steps.map((step, idx) => {
-        return (
-          <Step key={idx} title={step.label} disabled={creation && idx > currentIdx} />
-        )
-      })}
-    </Steps>
-  )
-}
-
-const BreadcrumbDaikoku = ({ steps, currentStep, chooseStep, creation, direction }) => {
-  const currentIdx = steps.findIndex(s => s.id === currentStep)
-
-  const handleChooseStep = idx => {
-    if (!creation || idx < currentIdx) {
-      chooseStep(steps[idx].id.toUpperCase())
-    }
-  }
-
-  return (
     <div className={classNames('d-flex steps', { 'flex-column': direction === 'vertical', 'flex-row': direction !== 'vertical' })}>
       {steps.map((step, idx) => {
         return (
           <div
             className={classNames('step d-flex cursor-pointer ', {
-              // 'flex-column': direction !== 'vertical', 
-              // 'flex-row': direction === 'vertical',
               'active': currentIdx === idx,
               'finished': currentIdx > idx,
               'wait': currentIdx < idx,

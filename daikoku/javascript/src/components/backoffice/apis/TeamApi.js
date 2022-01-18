@@ -89,10 +89,10 @@ function TeamApiComponent(props) {
     });
   }
 
-  function save() {
+  function save(v) {
     if (params.tab === 'documentation') teamApiDocumentationRef.current.saveCurrentPage();
 
-    const editedApi = transformPossiblePlansBack(state.api);
+    const editedApi = transformPossiblePlansBack(v || state.api);
     if (state.create) {
       return Services.createTeamApi(props.currentTeam._id, editedApi)
         .then((api) => {
@@ -101,44 +101,48 @@ function TeamApiComponent(props) {
               translateMethod('api.created.success', false, `Api "${api.name}" created`, api.name)
             );
             return api;
-          } else return Promise.reject(api.error);
+          } else {
+            return Promise.reject(api.error)
+          };
         })
         .then((api) => {
           setState({ ...state, create: false, api });
-          navigate(
-            `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-          );
+          navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`);
+          return api
         })
         .catch((error) => toastr.error(translateMethod(error)));
     } else {
-      return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id).then((r) => {
-        if (!r.exists) {
-          if (editedApi.currentVersion.split('').find((c) => reservedCharacters.includes(c))) {
-            toastr.error(
-              "Can't set version with special characters : " + reservedCharacters.join(' | ')
-            );
-            return Promise.resolve();
-          } else
-            return Services.saveTeamApiWithId(
-              props.currentTeam._id,
-              editedApi,
-              apiVersion.value,
-              editedApi._humanReadableId
-            ).then((res) => {
-              if (res.error) toastr.error(translateMethod(res.error));
-              else {
-                toastr.success(translateMethod('Api saved'));
-                if (
-                  res._humanReadableId !== params.apiId ||
-                  res.currentVersion !== params.versionId
-                )
-                  navigate(
-                    `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
-                  );
-              }
-            });
-        } else toastr.error(`api with name "${editedApi.name}" already exists`);
-      });
+      return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
+        .then((r) => {
+          if (!r.exists) {
+            if (editedApi.currentVersion.split('').find((c) => reservedCharacters.includes(c))) {
+              return toastr.error(
+                "Can't set version with special characters : " + reservedCharacters.join(' | ')
+              );
+            } else
+              return Services.saveTeamApiWithId(
+                props.currentTeam._id,
+                editedApi,
+                apiVersion.value,
+                editedApi._humanReadableId
+              ).then((res) => {
+                if (res.error) toastr.error(translateMethod(res.error));
+                else {
+                  toastr.success(translateMethod('Api saved'));
+                  if (
+                    res._humanReadableId !== params.apiId ||
+                    res.currentVersion !== params.versionId
+                  )
+                    navigate(
+                      `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
+                    );
+                  return res
+                }
+              });
+          } else {
+            return toastr.error(`api with name "${editedApi.name}" already exists`)
+          };
+        });
     }
   }
 
@@ -316,7 +320,7 @@ function TeamApiComponent(props) {
                   <TeamApiInfos
                     value={editedApi}
                     team={props.currentTeam}
-                    onChange={(api) => setState({ ...state, api })}
+                    save={save}
                     creation={
                       location && location.state && !!location.state.newApi
                     }

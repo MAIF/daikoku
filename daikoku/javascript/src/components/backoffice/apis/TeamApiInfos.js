@@ -14,7 +14,7 @@ import { actions } from 'react-redux-toastr';
 import CodeInput from '../../inputs/CodeInput';
 
 
-export const TeamApiInfos = ({ value, onChange, creation, expertMode, injectSubMenu }) => {
+export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu }) => {
   const { translateMethod } = useContext(I18nContext);
 
   const informationForm = teamApiInfoForm(translateMethod)
@@ -33,25 +33,25 @@ export const TeamApiInfos = ({ value, onChange, creation, expertMode, injectSubM
       schema: descriptionForm.schema,
       flow: descriptionForm.flow,
     },
-    {
-      id: 'pricing',
-      label: translateMethod('Plans'),
-      component: TeamApiPricing,
-      skipTo: 'swagger',
-    },
-    {
-      id: 'swagger',
-      label: translateMethod('Swagger'),
-      component: TeamApiSwagger,
-      skipTo: 'done',
-    },
+    // {
+    //   id: 'pricing',
+    //   label: translateMethod('Plans'),
+    //   component: TeamApiPricing,
+    //   skipTo: 'swagger',
+    // },
+    // {
+    //   id: 'swagger',
+    //   label: translateMethod('Swagger'),
+    //   component: TeamApiSwagger,
+    //   skipTo: 'save',
+    // },
 
-    {
-      id: 'testing',
-      label: translateMethod('Testing'),
-      component: TeamApiTesting,
-      skipTo: 'done',
-    }
+    // {
+    //   id: 'testing',
+    //   label: translateMethod('Testing'),
+    //   component: TeamApiTesting,
+    //   skipTo: 'save',
+    // }
   ]
 
   return (
@@ -60,7 +60,7 @@ export const TeamApiInfos = ({ value, onChange, creation, expertMode, injectSubM
       steps={steps} 
       initial="info" 
       creation={creation}
-      onSave={v => console.error({v})} //todo: real onSave
+      save={save}
       getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
       // report={(value, current)  => (
       //   <div className='col-5'>

@@ -154,8 +154,6 @@ const NavItem = ({ to, icon, name, subItem, injectedSubMenu }) => {
   const resolved = useResolvedPath(to);
   const match = useMatch({ path: resolved.pathname, end: true });
 
-  console.debug({to, resolved, match})
-
   return (
     <li className="nav-item">
       <NavLink className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')} to={to}>
@@ -251,7 +249,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const ApiSidebar = ({ path, injectedFooter, injectedSubMenu }) => {
+  const ApiSidebar = ({ path, injectedFooter, injectedSubMenu, creation }) => {
     const sidebarParams = useParams();
 
     const realPath = `/${currentTeam._humanReadableId}/settings` + path;
@@ -260,10 +258,12 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
       <>
         <VersionsButton {...sidebarParams} currentTeam={currentTeam} />
         {[
-          { route: 'infos', icon: 'info', name: translateMethod('Informations') },
-          { route: 'documentation', icon: 'book', name: translateMethod('Documentation') },
-          { route: 'news', icon: 'newspaper', name: translateMethod('News') },
-        ].map((item, i) => (
+          { route: 'infos', icon: 'info', name: translateMethod('Informations'), onCreation: true },
+          { route: 'documentation', icon: 'book', name: translateMethod('Documentation'), onCreation: false },
+          { route: 'news', icon: 'newspaper', name: translateMethod('News'), onCreation: false },
+        ]
+        .filter(item => creation || item.onCreation)
+        .map((item, i) => (
           <NavItem {...item} to={realPath.replace(':tab', item.route)} key={`item-${i}`} injectedSubMenu={injectedSubMenu} />
         ))}
 
@@ -542,7 +542,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             <Routes>
               <Route
                 path="/apis/:apiId/:versionId/:tab/*"
-                element={<ApiSidebar path="/apis/:apiId/:versionId/:tab/*" injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} />} />
+                element={<ApiSidebar path="/apis/:apiId/:versionId/:tab/*" injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} creation/>} />
               <Route path={`/apis/:apiId/:tab`} element={<ApiSidebar path={`/apis/:apiId/:tab`} injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} />} />
               <Route path={`/apikeys/:apiId/:versionId`} element={<ApiKeysBar />} />
               <Route
