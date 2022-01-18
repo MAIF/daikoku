@@ -252,7 +252,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
   const ApiSidebar = ({ path, injectedFooter, injectedSubMenu, creation }) => {
     const sidebarParams = useParams();
 
-    const realPath = `/${currentTeam._humanReadableId}/settings` + path;
+    const realPath = `/${currentTeam._humanReadableId}/settings` + path.replace(':apiId', sidebarParams.apiId).replace(':versionId', sidebarParams.versionId);
 
     return (
       <>
@@ -542,7 +542,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             <Routes>
               <Route
                 path="/apis/:apiId/:versionId/:tab/*"
-                element={<ApiSidebar path="/apis/:apiId/:versionId/:tab/*" injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} creation/>} />
+                element={<ApiSidebar path="/apis/:apiId/:versionId/:tab" injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} creation/>} />
               <Route path={`/apis/:apiId/:tab`} element={<ApiSidebar path={`/apis/:apiId/:tab`} injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} />} />
               <Route path={`/apikeys/:apiId/:versionId`} element={<ApiKeysBar />} />
               <Route
