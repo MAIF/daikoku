@@ -24,6 +24,7 @@ import * as Services from '../../../services';
 //   );
 // };
 
+const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 export const teamApiInfoForm = (translateMethod) => {
   const schema = {
     isDefault: {
@@ -73,6 +74,12 @@ export const teamApiInfoForm = (translateMethod) => {
     currentVersion: {
       type: type.string,
       label: translateMethod('Current version'),
+      constraints: [
+        constraints.test(
+          'reservedChar',
+          `Some characters are reserved for name (${reservedVersionCharacters.join(' ')})`,
+          name => (name || '').split('').every((c) => !reservedVersionCharacters.includes(c)))
+      ]
     },
     supportedVersions: {
       type: type.string,

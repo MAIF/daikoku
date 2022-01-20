@@ -57,8 +57,6 @@ export function contextReducer(state = initialState, action) {
       };
 
     case TOGGLE_EXPERT_MODE:
-      console.debug("toggling exprt mode")
-      console.debug({ exp: state.expertMode})
       localStorage.setItem('expertMode', !state.expertMode);
       return {
         ...state,

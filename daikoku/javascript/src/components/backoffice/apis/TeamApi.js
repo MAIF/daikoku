@@ -16,7 +16,6 @@ import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext, to
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
   const { translateMethod } = useContext(I18nContext);
-  const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 
   const navigate = useNavigate();
 
@@ -357,7 +356,7 @@ const TeamApiComponent = (props) => {
       {!editedApi && <Spinner />}
       {editedApi && (
         <>
-          <div className="row">
+          <div className="d-flex flex-row justify-content-between align-items-center">
             {state.create ? (
               <h2>{editedApi.name}</h2>
             ) : (
@@ -367,12 +366,12 @@ const TeamApiComponent = (props) => {
                 <h2 className='me-2'>
                   {editedApi.name}
                 </h2>
-                <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
-                  {props.expertMode && translateMethod("Standard mode")}
-                  {!props.expertMode && translateMethod("Expert mode")}
-                </button>
               </div>
             )}
+            <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
+              {props.expertMode && translateMethod("Standard mode")}
+              {!props.expertMode && translateMethod("Expert mode")}
+            </button>
           </div>
           <div className="row">
             <div className="section col container-api">
