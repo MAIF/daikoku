@@ -363,6 +363,7 @@
   "deletion successful": "Supprimé avec succès",
   "No API": "Aucune API",
   "View this Api": "Voir cette api",
+  "Delete this Api": "Supprimer cette API",
   "New api": "Nouvelle api",
   "Informations": "Informations",
   "Otoroshi": {

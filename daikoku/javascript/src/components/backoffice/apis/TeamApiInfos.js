@@ -9,9 +9,7 @@ import {
   TeamApiSwagger,
   TeamApiTesting,
 } from '.';
-import { actions } from 'react-redux-toastr';
 
-import CodeInput from '../../inputs/CodeInput';
 
 
 export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu }) => {
@@ -33,25 +31,25 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu 
       schema: descriptionForm.schema,
       flow: descriptionForm.flow,
     },
-    // {
-    //   id: 'pricing',
-    //   label: translateMethod('Plans'),
-    //   component: TeamApiPricing,
-    //   skipTo: 'swagger',
-    // },
-    // {
-    //   id: 'swagger',
-    //   label: translateMethod('Swagger'),
-    //   component: TeamApiSwagger,
-    //   skipTo: 'save',
-    // },
+    {
+      id: 'pricing',
+      label: translateMethod('Plans'),
+      component: TeamApiPricing,
+      skipTo: 'swagger',
+    },
+    {
+      id: 'swagger',
+      label: translateMethod('Swagger'),
+      component: TeamApiSwagger,
+      skipTo: 'save',
+    },
 
-    // {
-    //   id: 'testing',
-    //   label: translateMethod('Testing'),
-    //   component: TeamApiTesting,
-    //   skipTo: 'save',
-    // }
+    {
+      id: 'testing',
+      label: translateMethod('Testing'),
+      component: TeamApiTesting,
+      skipTo: 'save',
+    }
   ]
 
   return (

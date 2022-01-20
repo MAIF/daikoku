@@ -168,43 +168,6 @@ const NavItem = ({ to, icon, name, subItem, injectedSubMenu }) => {
   )
 };
 
-const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
-  const { translateMethod } = useContext(I18nContext);
-  const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-
-  const navigate = useNavigate();
-
-  const promptVersion = () => {
-    window
-      .prompt('Version number', undefined, false, 'New version', `Current version : ${versionId}`)
-      .then((newVersion) => {
-        if (newVersion) {
-          if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-            toastr.error(
-              "Can't create version with special characters : " + reservedCharacters.join(' | ')
-            );
-          else createNewVersion(newVersion);
-        }
-      });
-  };
-
-  const createNewVersion = (newVersion) => {
-    Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
-      if (res.error) toastr.error(res.error);
-      else {
-        toastr.success('New version of api created');
-        navigate(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
-      }
-    });
-  };
-
-  return (
-    <button onClick={promptVersion} className="btn btn-sm btn-outline-primary">
-      {translateMethod('teamapi.new_version')}
-    </button>
-  );
-};
-
 const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
   const [versions, setVersions] = useState([]);
   const navigate = useNavigate();
@@ -268,26 +231,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
         ))}
 
         <div className="px-3 mb-4 mt-auto d-flex flex-column">
-          {injectedFooter}
-          <Link
-            to={`/${currentTeam._humanReadableId}/${sidebarParams.apiId}/${sidebarParams.versionId}`}
-            className="btn btn-sm btn-access-negative my-2"
-          >
-            {translateMethod('View this Api')}
-          </Link>
-          <CreateNewVersionButton {...sidebarParams} currentTeam={currentTeam} />
-          <Link
-            className="d-flex justify-content-around mt-3 align-items-center"
-            style={{
-              border: 0,
-              background: 'transparent',
-              outline: 'none',
-            }}
-            to={`/${currentTeam._humanReadableId}/settings/apis`}
-          >
-            <i className="fas fa-chevron-left" />
-            Back to {currentTeam._humanReadableId}
-          </Link>
+          {injectedNavFooter}
         </div>
       </>
     );
@@ -585,8 +529,8 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
             <Route
               path={`/apis/:apiId/:versionId/:tab/*`}
-              element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu} />} />
-            <Route path={`/apis/:apiId/:versionId`} element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu}/>} />
+              element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu}/>} />
+            <Route path={`/apis/:apiId/:versionId`} element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu} creation/>} />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />
           </Routes>

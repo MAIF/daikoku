@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useLocation, useParams, Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -14,8 +14,44 @@ import {
 import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext, toggleExpertMode } from '../../../core';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
+const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
+  const { translateMethod } = useContext(I18nContext);
+  const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 
-function TeamApiComponent(props) {
+  const navigate = useNavigate();
+
+  const promptVersion = () => {
+    window
+      .prompt('Version number', undefined, false, 'New version', `Current version : ${versionId}`)
+      .then((newVersion) => {
+        if (newVersion) {
+          if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
+            toastr.error(
+              "Can't create version with special characters : " + reservedCharacters.join(' | ')
+            );
+          else createNewVersion(newVersion);
+        }
+      });
+  };
+
+  const createNewVersion = (newVersion) => {
+    Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
+      if (res.error) toastr.error(res.error);
+      else {
+        toastr.success('New version of api created');
+        navigate(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
+      }
+    });
+  };
+
+  return (
+    <button onClick={promptVersion} className="btn btn-sm btn-outline-primary mb-2">
+      {translateMethod('teamapi.new_version')}
+    </button>
+  );
+};
+
+const TeamApiComponent = (props) => {
   const [state, setState] = useState({
     api: null,
     create: false,
@@ -52,17 +88,6 @@ function TeamApiComponent(props) {
       reloadState();
     }
   }, [params.tab, params.versionId]);
-
-  useEffect(() => {
-    if (props.injectNavFooter) {
-      props.injectNavFooter(
-        <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
-          {props.expertMode && translateMethod("Standard mode")}
-          {!props.expertMode && translateMethod("Expert mode")}
-        </button>
-      )
-    }
-  }, [props.expertMode])
 
   useEffect(() => {
     if (state.changed) {
@@ -112,7 +137,6 @@ function TeamApiComponent(props) {
         })
         .catch((error) => toastr.error(translateMethod(error)));
     } else {
-      console.debug({editedApi})
       return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
         .then((r) => {
           if (!r.exists) {
@@ -145,16 +169,6 @@ function TeamApiComponent(props) {
           };
         });
     }
-  }
-
-  function deleteApi() {
-    window.confirm(translateMethod('delete.api.confirm')).then((ok) => {
-      if (ok) {
-        Services.deleteTeamApi(props.currentTeam._id, state.api._id)
-          .then(() => navigate(`/${props.currentTeam._humanReadableId}/settings/apis`))
-          .then(() => toastr.success(translateMethod('deletion successful')));
-      }
-    });
   }
 
   function transformPossiblePlansBack(api) {
@@ -277,6 +291,62 @@ function TeamApiComponent(props) {
   }
 
   useEffect(() => {
+    if (!!state.api) {
+      const deleteApi = () => {
+        window.confirm(translateMethod('delete.api.confirm')).then((ok) => {
+          if (ok) {
+            Services.deleteTeamApi(props.currentTeam._humanReadableId, params.apiId)
+              .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
+              .then(() => toastr.success(translateMethod('deletion successful')));
+          }
+        });
+      }
+      if (props.creation) {
+        props.injectNavFooter(<>
+          <Link
+            className="d-flex justify-content-around mt-3 align-items-center"
+            style={{
+              border: 0,
+              background: 'transparent',
+              outline: 'none',
+            }}
+            to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+          >
+            <i className="fas fa-chevron-left" />
+            Back to {props.currentTeam._humanReadableId}
+          </Link>
+        </>)
+      } else {
+        props.injectNavFooter(<>
+            <Link
+              to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
+              className="btn btn-sm btn-access-negative mb-2"
+            >
+              {translateMethod('View this Api')}
+            </Link>
+            <CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
+            <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
+              {translateMethod('Delete this Api')}
+            </button>
+            <Link
+              className="d-flex justify-content-around mt-3 align-items-center"
+              style={{
+                border: 0,
+                background: 'transparent',
+                outline: 'none',
+              }}
+              to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+            >
+              <i className="fas fa-chevron-left" />
+              Back to {props.currentTeam._humanReadableId}
+            </Link>
+        </>)
+      }
+    }
+    return () => props.injectNavFooter(null)
+  }, [state.api])
+
+  useEffect(() => {
     if (tab !== 'infos') {
       props.injectSubMenu(null);
     }
@@ -292,11 +362,15 @@ function TeamApiComponent(props) {
               <h2>{editedApi.name}</h2>
             ) : (
               <div
-                className="d-flex align-items-center"
+                className="d-flex align-items-center justify-content-between"
                 style={{ flex: 1 }}>
                 <h2 className='me-2'>
                   {editedApi.name}
                 </h2>
+                <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
+                  {props.expertMode && translateMethod("Standard mode")}
+                  {!props.expertMode && translateMethod("Expert mode")}
+                </button>
               </div>
             )}
           </div>

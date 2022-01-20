@@ -28,7 +28,7 @@ export function contextReducer(state = initialState, action) {
         connectedUser: action.user,
         currentTeam: action.team,
         tenant: action.tenant,
-        expertMode: action.expertMode || localStorage.getItem('expertMode') || false
+        expertMode: !!action.expertMode
       };
 
     case LOGOUT:
