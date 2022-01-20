@@ -295,8 +295,8 @@ const TeamApiComponent = (props) => {
       const deleteApi = () => {
         window.confirm(translateMethod('delete.api.confirm')).then((ok) => {
           if (ok) {
-            Services.deleteTeamApi(props.currentTeam._humanReadableId, params.apiId)
-              .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
+            Services.deleteTeamApi(props.currentTeam._id, state.api._id)
+              .then(() => navigate(`/${props.currentTeam._humanReadableId}/settings/apis`))
               .then(() => toastr.success(translateMethod('deletion successful')));
           }
         });
