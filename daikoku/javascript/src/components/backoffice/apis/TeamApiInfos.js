@@ -12,10 +12,10 @@ import {
 
 
 
-export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu }) => {
+export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu, team, tenant }) => {
   const { translateMethod } = useContext(I18nContext);
 
-  const informationForm = teamApiInfoForm(translateMethod)
+  const informationForm = teamApiInfoForm(translateMethod, team, tenant)
   const descriptionForm = teamApiDescriptionForm(translateMethod)
 
   const steps = [

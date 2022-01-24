@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
-import { Can, manage, api as API, Spinner, MultiStepForm } from '../../utils';
+import { Can, manage, api as API, Spinner } from '../../utils';
 import {
   TeamApiInfos,
   TeamApiPost,
@@ -410,6 +410,7 @@ const TeamApiComponent = (props) => {
                   <TeamApiInfos
                     value={editedApi}
                     team={props.currentTeam}
+                    tenant={props.tenant}
                     save={save}
                     creation={
                       location && location.state && !!location.state.newApi

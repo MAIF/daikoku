@@ -1,31 +1,40 @@
+import { useContext } from 'react';
 import { type, constraints, format } from '@maif/react-forms';
 import * as Services from '../../../services';
+import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
+import { I18nContext } from '../../../core';
 
+const Image = ({ setValue, rawValues, value, error, onChange, tenant, team }) => {
+  const { translateMethod } = useContext(I18nContext);
+  const domain = tenant?.domain || window.location.origin;
+  const origin = window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
 
-// const StyleLogoAssetButton = (props) => {
-//   const tenant = props.tenant ? props.tenant : { domain: window.location.origin };
-//   const domain = tenant.domain;
-//   const origin =
-//     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
-
-//   const { translateMethod } = useContext(I18nContext);
-
-//   return (
-//     <div className="mb-3 d-flex justify-content-end">
-//       <AssetChooserByModal
-//         typeFilter={MimeTypeFilter.image}
-//         onlyPreview
-//         team={props.team}
-//         teamId={props.team._id}
-//         label={translateMethod('Set api image from asset')}
-//         onSelect={(asset) => props.changeValue('image', origin + asset.link)}
-//       />
-//     </div>
-//   );
-// };
+  return (
+    <div className="d-flex flex-row align-items-center">
+      <div className="d-flex flex-column flex-grow-1">
+        <input
+          type="text"
+          className="form-control"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <div className="d-flex mt-1 justify-content-end">
+          <AssetChooserByModal
+            typeFilter={MimeTypeFilter.image}
+            onlyPreview
+            team={team}
+            teamId={team._id}
+            label={translateMethod('Set api image from asset')}
+            onSelect={(asset) => onChange(origin + asset.link)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-export const teamApiInfoForm = (translateMethod) => {
+export const teamApiInfoForm = (translateMethod, team, tenant) => {
   const schema = {
     isDefault: {
       type: type.bool,
@@ -65,6 +74,7 @@ export const teamApiInfoForm = (translateMethod) => {
       type: type.string,
       label: translateMethod('Image'),
       //todo: render custom for image from asset
+      render: v => Image({ ...v, team, tenant }),
       constraints: [
         constraints.nullable(),
         constraints.url('this must be an url to an image')
@@ -108,7 +118,7 @@ export const teamApiInfoForm = (translateMethod) => {
       isMulti: true,
       createOption: true,
       label: translateMethod('Categories'),
-      optionFrom: '/api/categories',
+      optionsFrom: '/api/categories',
       transformer: (t) => ({ label: t, value: t }),
       expert: true
     },
@@ -127,20 +137,21 @@ export const teamApiInfoForm = (translateMethod) => {
     authorizedTeams: {
       type: type.string,
       format: format.select,
+      isMulti: true,
+      defaultValue: [],
       visible: {
-        ref: 'visibility', 
+        ref: 'visibility',
         test: v => v !== 'Public'
       },
-      array: true,
       label: translateMethod('Authorized teams'),
-      optionFrom: '/api/teams',
+      optionsFrom: '/api/teams',
       transformer: (t) => ({ label: t.name, value: t._id }),
     },
   };
 
 
   const simpleOrExpertMode = (entry, expert) => {
-   return !!expert || !schema[entry]?.expert
+    return !!expert || !schema[entry]?.expert
   }
 
   const flow = (expert) => [
