@@ -378,7 +378,7 @@
     "Versions and tags": "Versions and tags",
     "Visibility and subscription": "Visibility and subscription",
     "Authorizations": "Authorizations",
-    "api.already.exists": "api with name \"%s\" already exists",
+    "api.already.exists": "api with this name already exists",
     "Add header": "Add header",
     "Add bold text": "Add bold text",
     "Add italic text": "Add italic text",
@@ -976,6 +976,7 @@
     "constraint.matches.password": "Your password must have 8 letters min with capital, number and special character (#$^+=!*()@%&)",
     "constraint.oneof.confirm.password": "confirm and password must be equal",
     "constraints.test.password": "wrong password",
+    "constraints.reserved.char.version": "Some characters are reserved for version (%s)",
     "SEO": "SEO",
     "Robot.txt.label": "Robot.txt content",
     "Robot.txt.content": "the content of the Robot.txt file serve by Daikoku",
@@ -989,6 +990,4 @@
     "incorrect password": "Incorrect password",
     "Standard mode": "Standard mode",
     "Expert mode": "Expert mode"
-
-
 }

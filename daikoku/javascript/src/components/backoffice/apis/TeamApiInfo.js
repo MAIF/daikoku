@@ -46,8 +46,8 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       label: translateMethod('Name'),
       placeholder: 'New Api',
       constraints: [
-        constraints.required('api name is required'),
-        constraints.test('name_already_exist', 'this name already exists', (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then(r => !r.exists))
+        constraints.required(translateMethod('constraints.required.name')),
+        constraints.test('name_already_exist', translateMethod("api.already.exists"), (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then(r => !r.exists))
       ]
     },
     smallDescription: {
@@ -77,7 +77,9 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       render: v => Image({ ...v, team, tenant }),
       constraints: [
         constraints.nullable(),
-        constraints.matches(/^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/mg, 'this must be an url to an image')
+        constraints.matches(
+          /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/mg, 
+          translateMethod('constraints.format.url', false, '', translateMethod('Image')))
       ],
       expert: true
     },
@@ -87,7 +89,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       constraints: [
         constraints.test(
           'reservedChar',
-          `Some characters are reserved for name (${reservedVersionCharacters.join(' ')})`,
+          translateMethod('constraints.reserved.char.version', false, '', reservedVersionCharacters.join(' ')),
           name => (name || '').split('').every((c) => !reservedVersionCharacters.includes(c)))
       ]
     },
