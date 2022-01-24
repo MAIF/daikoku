@@ -77,7 +77,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       render: v => Image({ ...v, team, tenant }),
       constraints: [
         constraints.nullable(),
-        constraints.url('this must be an url to an image')
+        constraints.matches(/^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/mg, 'this must be an url to an image')
       ],
       expert: true
     },
