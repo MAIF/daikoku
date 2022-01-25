@@ -1796,7 +1796,7 @@ case class CmsPage(
   path: String,
   version: String,
   exact: Boolean = false,
-  parent: Option[CmsPageId] = None
+  lastPublishedDate: Option[DateTime] = None
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
@@ -1872,7 +1872,6 @@ case class CmsPage(
       .find(p => ctx.request.path.startsWith(p))
       .map(r => {
         val params = ctx.request.path.split(r).filter(f => f.nonEmpty)
-        println(params.mkString("Array(", ", ", ")"))
         if (params.length > 0)
           params(0).split("/").filter(_.nonEmpty)(Integer.parseInt(id))
         else

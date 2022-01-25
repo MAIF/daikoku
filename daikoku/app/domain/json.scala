@@ -3288,7 +3288,7 @@ object json {
       "path" -> o.path,
       "version" -> o.version,
       "exact" -> o.exact,
-      "parent" -> o.parent.map(CmsPageIdFormat.writes).getOrElse(JsNull).as[JsValue]
+      "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes)
     )
     override def reads(json: JsValue): JsResult[CmsPage] = Try {
       CmsPage(
@@ -3307,8 +3307,8 @@ object json {
         forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
         path = (json \ "path").asOpt[String].getOrElse("-"),
         version = (json \ "version").asOpt[String].getOrElse("1.0.0"),
-        parent = (json \ "parent").asOpt(CmsPageIdFormat.reads),
-        exact = (json \ "exact").asOpt[Boolean].getOrElse(false)
+        exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
+        lastPublishedDate = (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads)
       )
     } match {
       case Failure(exception) => JsError(exception.getMessage)

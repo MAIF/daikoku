@@ -999,7 +999,7 @@
   "cms.create.path_placeholder": "Le chemin sur lequel la page sera affiché",
   "cms.create.path_slash_constraints": "Le chemin doit commencer par un slash",
   "cms.create.path_paths_constraints": "Ce chemin est déjà pris",
-  "cms.create.body_placeholder": "Contenu de la page",
+  "cms.create.body_placeholder": "Page publiée",
   "cms.create.body_help": "Le contenu doit être du même type que celui du Content-Type",
   "cms.create.draft_label": "Contenu du brouillon",
   "cms.create.draft_help": "Le brouillon est utile lorsqu'on souhaite faire une version en avance de phase, sans pour autant l'exposer",
@@ -1010,8 +1010,10 @@
   "cms.create.tags_help": "Tags",
   "cms.create.information": "Informations",
   "cms.create.content": "Contenu de la page",
-  "cms.create.draft": "Brouillon",
+  "cms.create.draft": "Contenu non publié",
   "cms.create.advanced": "Informations avancées",
+  "cms.content_side.publish_button": "Publier cette version",
+  "cms.content_side.publish_label": "Êtes-vous sûr de vouloir publier cette version ?",
   "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
   "incorrect password": "Mots de passe incorrect"
 }

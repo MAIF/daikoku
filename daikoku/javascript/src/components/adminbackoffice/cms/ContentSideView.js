@@ -21,7 +21,7 @@ const LinksView = ({ }) => (
                 { label: "Language", value: "language" },
                 { label: "Back office", value: "backoffice" },
                 { label: "Sign up", value: "signup" },
-                { label: 'Home', value: 'home'}
+                { label: 'Home', value: 'home' }
             ]}
                 onChange={link => {
                     setShow(true)
@@ -73,7 +73,8 @@ const PagesView = ({ pages, prefix, title }) => (
     </>
 )
 
-const TopActions = ({ setSideView, setSelector }) => {
+const TopActions = ({ setSideView, setSelector, publish }) => {
+    const { translateMethod } = useContext(I18nContext);
     const select = id => {
         setSideView(true)
         setSelector(id);
@@ -93,10 +94,21 @@ const TopActions = ({ setSideView, setSelector }) => {
             onClick={() => select("pages")}>
             <i className='fas fa-pager' />
         </button>
-        <button className='btn btn-sm btn-outline-primary'
+        <button className='btn btn-sm btn-outline-primary me-1'
             type="button"
             onClick={() => select("blocks")}>
             <i className='fas fa-square' />
+        </button>
+        <button className='btn btn-sm btn-outline-success'
+            type="button"
+            onClick={() => {
+                window.confirm(translateMethod('cms.content_side.publish_label')).then((ok) => {
+                    if (ok) {
+                        publish()
+                    }
+                });
+            }}>
+            {translateMethod("cms.content_side.publish_button")}
         </button>
     </div>
 }
@@ -108,7 +120,7 @@ const SideBarActions = (props) => (
     </>
 )
 
-export const ContentSideView = ({ value, onChange, pages, rawValues }) => {
+export const ContentSideView = ({ value, onChange, pages, rawValues, publish }) => {
     const [sideView, setSideView] = useState(false);
     const [selector, setSelector] = useState("");
 
@@ -116,7 +128,7 @@ export const ContentSideView = ({ value, onChange, pages, rawValues }) => {
         position: "relative",
         marginTop: "12px"
     }}>
-        <TopActions setSelector={setSelector} setSideView={setSideView} />
+        <TopActions setSelector={setSelector} setSideView={setSideView} publish={publish} />
         <div className='d-flex'>
             <div style={{ flex: 1 }}>
                 <CodeInput value={value} onChange={onChange}

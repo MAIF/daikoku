@@ -99,22 +99,29 @@ export const Create = (props) => {
                 { label: 'JSON content', value: 'application/json' }
             ]
         },
-        body: {
-            type: type.string,
-            label: translateMethod('cms.create.body_placeholder'),
-            help: translateMethod('cms.create.body_help'),
-            render: formProps => <ContentSideView {...formProps} {...props} />
-        },
         draft: {
+            type: type.string,
+            label: translateMethod('cms.create.draft_label'),
+            help: translateMethod('cms.create.draft_help'),
+            render: formProps => <ContentSideView {...formProps} {...props} publish={() => {
+                const newValue = {
+                    ...formProps.rawValues,
+                    body: formProps.rawValues.draft,
+                }
+                setValue(newValue)
+                Services.createCmsPage(params.id, newValue)
+            }} />
+        },
+        body: {
             type: type.string,
             format: format.code,
             props: {
-                mode: 'html',
                 theme: 'tomorrow',
                 width: '-1'
             },
-            label: translateMethod('cms.create.draft_label'),
-            help: translateMethod('cms.create.draft_help'),
+            label: translateMethod('cms.create.body_placeholder'),
+            help: translateMethod('cms.create.body_help'),
+            disabled: true,
             constraints: [
                 constraints.nullable()
             ]
@@ -153,16 +160,15 @@ export const Create = (props) => {
         collapsed: params.id
     },
     {
-        label: translateMethod('cms.create.content'),
-        flow: [
-            'contentType',
-            'body'
-        ],
+        label: translateMethod('cms.create.draft'),
+        flow: ['contentType', 'draft'],
         collapsed: !params.id
     },
     {
-        label: translateMethod('cms.create.draft'),
-        flow: ['draft'],
+        label: translateMethod('cms.create.content'),
+        flow: [
+            'body'
+        ],
         collapsed: true
     },
     {
