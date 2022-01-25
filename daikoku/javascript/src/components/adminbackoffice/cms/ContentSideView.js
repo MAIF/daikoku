@@ -124,7 +124,7 @@ export const ContentSideView = ({ value, onChange, pages, rawValues }) => {
             </div>
             {sideView && <div style={{ flex: .5 }} className='p-2'>
                 {selector === "links" && <LinksView />}
-                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Link to the file" />}
+                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Link to the page" />}
                 {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Block to include" />}
                 <SideBarActions setSideView={setSideView} />
             </div>}

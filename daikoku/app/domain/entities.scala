@@ -1795,6 +1795,7 @@ case class CmsPage(
   draft: Option[String] = None,
   path: String,
   version: String,
+  exact: Boolean = false,
   parent: Option[CmsPageId] = None
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)

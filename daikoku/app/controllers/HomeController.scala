@@ -2,13 +2,13 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain.{CmsPage, CmsPageId, TenantId, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, Json}
+import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, JsValue, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
@@ -63,22 +63,15 @@ class HomeController(
     ctx.tenant.style match {
       case Some(value) if value.homePageVisible =>
         value.homeCmsPage match {
-          case Some(pageId) =>
-            env.dataStore.cmsRepo
-              .forTenant(ctx.tenant)
-              .findByIdNotDeleted(pageId)
-              .map {
-                case Some(v) => Redirect(s"/_${v.path}")
-                case _ => Redirect("/_/")
-              }
-          case None => FastFuture.successful(Redirect("/_/"))
+          case Some(pageId) => cmsPageByIdWithoutAction(ctx, pageId)
+          case _ => FastFuture.successful(redirectTo)
         }
-      case None => FastFuture.successful(redirectTo)
+      case _ => FastFuture.successful(redirectTo)
     }
   }
 
   def index() = DaikokuActionMaybeWithoutUser.async { ctx =>
-    actualIndex(ctx)
+      actualIndex(ctx)
   }
 
   def indexWithPath(path: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
@@ -128,13 +121,17 @@ class HomeController(
 
   private def cmsPageNotFound() = FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
 
-  def cmsPageById(id: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
+  private def cmsPageByIdWithoutAction[A](ctx: DaikokuActionMaybeWithoutUserContext[A], id: String) = {
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).flatMap {
       case None => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
       case Some(page) if !page.visible => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
       case Some(page) if page.authenticated && ctx.user.isEmpty => FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
       case Some(page) => page.render(ctx)(env).map(res => Ok(res._1).as(res._2))
     }
+  }
+
+  def cmsPageById(id: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
+    cmsPageByIdWithoutAction(ctx, id)
   }
 
   def createCmsPage() = DaikokuAction.async(parse.json) { ctx =>

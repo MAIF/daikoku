@@ -428,7 +428,7 @@ export function TenantEditComponent(props) {
       props: {
         label: translateMethod('tenant_edit.home_page'),
         disabled: !state.tenant?.style.homePageVisible,
-        possibleValues: cmsPages.map(t => ({ label: `${t.name} - ${t.path}`, value: t.id }))
+        possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
       }
     },
     linkToCmsPages: {
