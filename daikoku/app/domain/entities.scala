@@ -1794,7 +1794,6 @@ case class CmsPage(
   body: String,
   draft: Option[String] = None,
   path: String,
-  version: String,
   exact: Boolean = false,
   lastPublishedDate: Option[DateTime] = None
 ) extends CanJson[CmsPage] {
@@ -1832,8 +1831,7 @@ case class CmsPage(
     metadata = Map(),
     contentType = "text/html",
     body = str,
-    path = "/",
-    version = "1.0.0"
+    path = "/"
   ).render(ctx), 10.seconds)._1
 
   private def daikokuIncludeBlockHelper(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String, options: Options)

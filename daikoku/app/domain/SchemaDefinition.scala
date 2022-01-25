@@ -1133,7 +1133,6 @@ object SchemaDefinition {
         Field("body", StringType, resolve = _.value.body),
         Field("draft", OptionType(StringType), resolve = _.value.draft),
         Field("path", StringType, resolve = _.value.path),
-        Field("version", StringType, resolve = _.value.version),
         Field("exact", BooleanType, resolve = _.value.exact),
         Field("lastPublishedDate", OptionType(DateTimeUnitype), resolve = _.value.lastPublishedDate),
       )

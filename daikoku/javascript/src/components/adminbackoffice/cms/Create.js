@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import * as Services from '../../../services'
 import { getApolloContext, gql } from '@apollo/client'
 import { ContentSideView } from './ContentSideView'
+import moment from 'moment'
 
 export const Create = (props) => {
     const { translateMethod } = useContext(I18nContext)
@@ -15,8 +16,21 @@ export const Create = (props) => {
     const [value, setValue] = useState({
         name: '',
         path: '',
-        body: `<DOCTYPE html><html><head></head><body><h1>${translateMethod('cms.create.default_body_text')}</h1></body></html>`,
-        draft: `<!DOCTYPE html><html><head></head><body><h1>${translateMethod('cms.create.default_draft_body')}</h1></body></html>`,
+        body: `<DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <h1>${translateMethod('cms.create.default_body_text')}</h1>
+    </body>
+</html>
+        `,
+        draft: `<DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <h1>${translateMethod('cms.create.default_draft_body')}</h1>
+    </body>
+</html>`,
         contentType: 'text/html',
         visible: true,
         authenticated: false,
@@ -40,7 +54,8 @@ export const Create = (props) => {
                         metadata
                         contentType
                         tags
-                        version
+                        version,
+                        lastPublishedDate
                     }
                 }
             `})
@@ -68,21 +83,9 @@ export const Create = (props) => {
             help: translateMethod('cms.create.path_placeholder'),
             label: translateMethod('Path'),
             constraints: [
-                constraints.required(),
                 constraints.matches("^/", translateMethod('cms.create.path_slash_constraints')),
                 constraints.test('path', translateMethod('cms.create.path_paths_constraints'),
                     value => params.id ? true : !props.pages.find(p => p.path === value))
-            ]
-        },
-        version: {
-            type: type.string,
-            placeholder: '1.0.0',
-            help: translateMethod('cms.create.version_help'),
-            label: translateMethod('cms.create.version_label'),
-            constraints: [
-                constraints.required(),
-                // constraints.test('version', translateMethod('cms.create.version_constraint'), 
-                //     value => params.id ? true : !props.pages.find(p => p.version === value))
             ]
         },
         contentType: {
@@ -109,7 +112,10 @@ export const Create = (props) => {
                     body: formProps.rawValues.draft,
                 }
                 setValue(newValue)
-                Services.createCmsPage(params.id, newValue)
+                Services.createCmsPage(params.id, {
+                    ...newValue,
+                    lastPublishedDate: Date.now()
+                })
             }} />
         },
         body: {
@@ -155,7 +161,7 @@ export const Create = (props) => {
     const flow = [{
         label: translateMethod('cms.create.information'),
         flow: [
-            'name', 'path', 'version', 'visible', 'authenticated'
+            'name', 'path', 'visible', 'authenticated'
         ],
         collapsed: params.id
     },
@@ -179,7 +185,13 @@ export const Create = (props) => {
 
     return (
         <div>
-            <h1>{params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}</h1>
+            <div className='d-flex justify-content-lg-between align-items-center'>
+                <h1 className='my-0'>{params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}</h1>
+                {value.lastPublishedDate &&
+                    <span className='h6 my-0'>
+                        {translateMethod('cms.create.last_update')} {' : '} {value.lastPublishedDate && moment(value.lastPublishedDate).format('DD MMMM y kk:mm')}
+                    </span>}
+            </div>
             <Form
                 schema={schema}
                 flow={flow}

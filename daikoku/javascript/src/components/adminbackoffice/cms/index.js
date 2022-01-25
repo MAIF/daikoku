@@ -15,7 +15,7 @@ const getAllPages = () => ({
             name
             path
             contentType
-            version
+            lastPublishedDate
         }
       }
     `,

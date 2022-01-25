@@ -3286,7 +3286,6 @@ object json {
       "body" -> o.body,
       "draft" -> o.draft,
       "path" -> o.path,
-      "version" -> o.version,
       "exact" -> o.exact,
       "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes)
     )
@@ -3306,7 +3305,6 @@ object json {
         contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
         forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
         path = (json \ "path").asOpt[String].getOrElse("-"),
-        version = (json \ "version").asOpt[String].getOrElse("1.0.0"),
         exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
         lastPublishedDate = (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads)
       )

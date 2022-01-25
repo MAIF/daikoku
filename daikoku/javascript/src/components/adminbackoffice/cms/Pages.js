@@ -1,3 +1,4 @@
+import moment from 'moment'
 import React, { useContext } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { I18nContext } from '../../../core'
@@ -5,13 +6,13 @@ import * as Services from '../../../services'
 import { Table } from '../../inputs'
 
 const CONTENT_TYPES = [
-    { value: 'text/html', label: 'HTML', color: 'secondary' },
-    { value: 'text/css', label: 'CSS', color: 'success' },
-    { value: 'text/javascript', label: 'JS', color: 'warning' },
-    { value: 'text/markdown', label: 'MD', color: 'dark' },
-    { value: 'text/plain', label: 'PLAIN', color: 'dark' },
-    { value: 'text/xml', label: 'XML', color: 'primary' },
-    { value: 'application/json', label: 'JSON', color: 'primary' }
+    { value: 'text/html', label: 'HTML', icon: 'fab fa-html5' },
+    { value: 'text/css', label: 'CSS', icon: 'fab fa-css3-alt' },
+    { value: 'text/javascript', label: 'JS', icon: 'fab fa-js' },
+    { value: 'text/markdown', label: 'MD', icon: 'fab fa-markdown' },
+    { value: 'text/plain', label: 'PLAIN', icon: 'fas fa-quote-right' },
+    { value: 'text/xml', label: 'XML' },
+    { value: 'application/json', label: 'JSON' }
 ]
 
 export const Pages = ({ pages, removePage }) => {
@@ -34,6 +35,14 @@ export const Pages = ({ pages, removePage }) => {
             accessor: (item) => item.path,
         },
         {
+            Header: 'Publish Date',
+            style: { textAlign: 'left', maxWidth: 220 },
+            disableFilters: true,
+            accessor: (item) => item.lastPublishedDate ?
+                moment(item.lastPublishedDate).format('DD MMMM y kk:mm') :
+                '-',
+        },
+        {
             Header: 'Content Type',
             style: {
                 textAlign: 'center',
@@ -49,9 +58,8 @@ export const Pages = ({ pages, removePage }) => {
                 const { contentType } = original;
                 const item = CONTENT_TYPES.find(f => f.value === contentType)
                 return (
-                    <span className={`badge bg-${item.color}`}>
-                        {item.label}
-                    </span>
+                    item.icon ? <i className={`${item.icon} fa-lg`} /> :
+                        <span className={`badge bg-dark`}>{item.label}</span>
                 );
             }
         },
