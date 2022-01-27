@@ -2,13 +2,12 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
-import fr.maif.otoroshi.daikoku.domain.{CmsPage, CmsPageId, TenantId, json}
+import fr.maif.otoroshi.daikoku.domain.{json}
 import fr.maif.otoroshi.daikoku.env.Env
-import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, JsValue, Json}
+import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 

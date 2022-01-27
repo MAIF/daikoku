@@ -76,7 +76,7 @@ export const Pages = ({ pages, removePage }) => {
             }) => {
                 const value = original;
                 return (
-                    <>
+                    <div className='d-flex'>
                         <Link to={`edit/${value.id}`}
                             className="btn btn-sm btn-outline-primary">
                             <i className='fas fa-edit' />
@@ -99,7 +99,7 @@ export const Pages = ({ pages, removePage }) => {
                         <Link to={`/_${value.path}`} className="btn btn-sm btn-outline-primary" target="_blank" rel="noopener noreferrer">
                             <i className='fas fa-eye' />
                         </Link>
-                    </>
+                    </div>
                 );
             }
         }

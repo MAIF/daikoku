@@ -1,6 +1,7 @@
-import { CodeInput, SelectInput } from '@maif/react-forms/lib/inputs';
-import React, { useContext, useEffect, useState } from 'react'
+import { SelectInput } from '@maif/react-forms/lib/inputs';
+import React, { useContext, useEffect, useState, useRef } from 'react'
 import { I18nContext } from '../../../core';
+import Editor from './Editor'
 
 const CONTENT_TYPES_TO_MODE = {
     "application/json": "json",
@@ -10,9 +11,9 @@ const CONTENT_TYPES_TO_MODE = {
     "text/markdown": "mardown"
 }
 
-const LinksView = ({ }) => (
+const LinksView = ({ editor, onChange }) => (
     <>
-        <span className='mb-1'>Choose the back office link to copy</span>
+        <span>Choose the back office link to insert</span>
         <Copied>
             {setShow => <SelectInput possibleValues={[
                 { label: "Notifications", value: "notifications" },
@@ -25,7 +26,8 @@ const LinksView = ({ }) => (
             ]}
                 onChange={link => {
                     setShow(true)
-                    copy(`{{daikoku-links-${link}}}`)
+                    onChange()
+                    copy(editor, `{{daikoku-links-${link}}}`)
                 }}
             />}
         </Copied>
@@ -46,19 +48,19 @@ const Copied = ({ children }) => {
             backgroundColor: "#fff",
             borderRadius: "6px"
         }}>
-            <span>{translateMethod('2fa.copied')}</span>
+            <span>{translateMethod('cms.inserted')}</span>
         </div>
     else
         return children(setShow)
 }
 
-const copy = (text) => {
-    navigator.clipboard.writeText(text)
+const copy = (r, text) => {
+    r.session.insert(r.getCursorPosition(), text)
 }
 
-const PagesView = ({ pages, prefix, title }) => (
+const PagesView = ({ editor, pages, prefix, title, onChange }) => (
     <>
-        <span className='mb-1'>{title}</span>
+        <span>{title}</span>
         <Copied>
             {setShow => <SelectInput possibleValues={pages.map(page => ({
                 label: page.name,
@@ -66,7 +68,8 @@ const PagesView = ({ pages, prefix, title }) => (
             }))}
                 onChange={page => {
                     setShow(true)
-                    copy(`{{${prefix} "${page}"}}`)
+                    onChange()
+                    copy(editor, `{{${prefix} "${page}"}}`)
                 }}
             />}
         </Copied>
@@ -113,33 +116,47 @@ const TopActions = ({ setSideView, setSelector, publish }) => {
     </div>
 }
 
-const SideBarActions = (props) => (
-    <>
-        <button type="button" className='btn btn-sm btn-outline-secondary mt-1 me-1'
-            onClick={() => props.setSideView(false)}>Close</button>
-    </>
-)
-
 export const ContentSideView = ({ value, onChange, pages, rawValues, publish }) => {
     const [sideView, setSideView] = useState(false);
     const [selector, setSelector] = useState("");
+
+    const [ref, setRef] = useState();
 
     return <div style={{
         position: "relative",
         marginTop: "12px"
     }}>
         <TopActions setSelector={setSelector} setSideView={setSideView} publish={publish} />
-        <div className='d-flex'>
-            <div style={{ flex: 1 }}>
-                <CodeInput value={value} onChange={onChange}
+        <div style={{ flex: 1 }}>
+            <div style={{
+                position: "relative",
+                border: "1px solid rgba(225,225,225,.5)"
+            }} >
+                <Editor
+                    value={value}
+                    onChange={onChange}
+                    setRef={setRef}
                     mode={CONTENT_TYPES_TO_MODE[rawValues.contentType] || "html"} theme="tomorrow" width="-1" />
+
+                {sideView && <div className='p-3' style={{
+                    backgroundColor: "#ecf0f1",
+                    boxShadow: "rgb(25 25 25 / 50%) 3px 3px 3px -2px",
+                    position: 'absolute',
+                    top: 0,
+                    right: '25%',
+                    left: '25%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    textAlign: 'center'
+                }}>
+                    {selector === "links" && <LinksView editor={ref} onChange={() => setSideView(false)} />}
+                    {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Choose the link to the page to insert" editor={ref} onChange={() => setSideView(false)} />}
+                    {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Choose the block to insert" editor={ref} onChange={() => setSideView(false)} />}
+                    <button type="button" className='btn btn-sm btn-outline-secondary mt-1 me-1'
+                        onClick={() => setSideView(false)}>Close</button>
+                </div>}
             </div>
-            {sideView && <div style={{ flex: .5 }} className='p-2'>
-                {selector === "links" && <LinksView />}
-                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Link to the page" />}
-                {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Block to include" />}
-                <SideBarActions setSideView={setSideView} />
-            </div>}
         </div>
-    </div>
+    </div >
 }

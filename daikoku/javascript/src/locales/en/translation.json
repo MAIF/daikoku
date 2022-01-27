@@ -1015,6 +1015,7 @@
     "cms.content_side.publish_label": "Are you sur to publish this version ?",
     "cms.create.last_update": "Last publish date",
     "cms.create.version_label": "Version",
+    "cms.inserted": "Le texte a été ajouté",
     "updated password can't be saved": "Updated password can't be saved",
     "incorrect password": "Incorrect password"
 

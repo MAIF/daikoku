@@ -54,7 +54,6 @@ export const Create = (props) => {
                         metadata
                         contentType
                         tags
-                        version,
                         lastPublishedDate
                     }
                 }
