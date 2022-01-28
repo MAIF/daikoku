@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
+import { Form, constraints, type, format } from '@maif/react-forms';
 import classNames from 'classnames';
 import faker from 'faker';
 import _ from 'lodash';
@@ -13,8 +14,7 @@ import { Spinner, newPossibleUsagePlan, Option } from '../../utils';
 import * as Services from '../../../services';
 import { Help } from '../../inputs';
 import { I18nContext, openApiSelectModal } from '../../../core';
-
-const LazyForm = React.lazy(() => import('../../inputs/Form'));
+import { object, string } from 'prop-types';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -39,7 +39,7 @@ const SUBSCRIPTION_PLAN_TYPES = {
 const PUBLIC = 'Public';
 const PRIVATE = 'Private';
 
-const OtoroshiServicesAndGroupSelector = (props) => {
+const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translateMethod }) => {
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState(undefined);
   const [services, setServices] = useState(undefined);
@@ -54,11 +54,11 @@ const OtoroshiServicesAndGroupSelector = (props) => {
     Promise.all([
       Services.getOtoroshiGroupsAsTeamAdmin(
         params.teamId,
-        props._found.otoroshiTarget.otoroshiSettings
+        rawValues.otoroshiTarget.otoroshiSettings
       ),
       Services.getOtoroshiServicesAsTeamAdmin(
         params.teamId,
-        props._found.otoroshiTarget.otoroshiSettings
+        rawValues.otoroshiTarget.otoroshiSettings
       ),
     ])
       .then(([groups, services]) => {
@@ -73,7 +73,7 @@ const OtoroshiServicesAndGroupSelector = (props) => {
         setGroups([]);
         setServices([]);
       });
-  }, [props._found.otoroshiTarget.otoroshiSettings]);
+  }, [rawValues.otoroshiTarget.otoroshiSettings]);
 
   useEffect(() => {
     if (groups && services) {
@@ -82,28 +82,30 @@ const OtoroshiServicesAndGroupSelector = (props) => {
   }, [services, groups]);
 
   useEffect(() => {
-    if (!!groups && !!services && !!props._found.otoroshiTarget.authorizedEntities) {
+    if (!!groups && !!services && !!rawValues.otoroshiTarget.authorizedEntities) {
       setValue(
         [
-          ...props._found.otoroshiTarget.authorizedEntities.groups.map((authGroup) =>
+          ...rawValues.otoroshiTarget.authorizedEntities.groups.map((authGroup) =>
             groups.find((g) => g.value === authGroup)
           ),
-          ...props._found.otoroshiTarget.authorizedEntities.services.map((authService) =>
+          ...rawValues.otoroshiTarget.authorizedEntities.services.map((authService) =>
             services.find((g) => g.value === authService)
           ),
         ].filter((f) => f)
       );
     }
-  }, [props._found, groups, services]);
+  }, [rawValues, groups, services]);
 
   useEffect(() => {
-    const otoroshiTarget = props._found.otoroshiTarget;
+    const otoroshiTarget = rawValues.otoroshiTarget;
+    console.debug({ otoroshiTarget, disabled: !otoroshiTarget || !otoroshiTarget.otoroshiSettings })
     setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
-  }, [props._found.otoroshiTarget, loading]);
+  }, [rawValues.otoroshiTarget.otoroshiSettings]);
 
-  const onChange = (v) => {
+
+  const onValueChange = (v) => {
     if (!v) {
-      props.onChange(null);
+      onChange(null);
       setValue(undefined);
     } else {
       const value = v.reduce(
@@ -127,60 +129,56 @@ const OtoroshiServicesAndGroupSelector = (props) => {
         ...value.groups.map((authGroup) => groups.find((g) => g.value === authGroup)),
         ...value.services.map((authService) => services.find((g) => g.value === authService)),
       ]);
-      props.onChange(value);
+      console.debug({ value })
+      onChange(value);
     }
   };
 
   return (
-    <div className="mb-3 row">
-      <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
-        <Help text={props.help} label={props.label} />
-      </label>
-      <div className="col-sm-10 d-flex flex-column">
-        <Select
-          id={`input-${props.label}`}
-          isMulti
-          name={`${props.label}-search`}
-          isLoading={loading}
-          isDisabled={disabled && !loading}
-          placeholder={props.placeholder}
-          components={(props) => <components.Group {...props} />}
-          options={[
-            { label: 'Service groups', options: groups },
-            { label: 'Services', options: services },
-          ]}
-          value={value}
-          onChange={onChange}
-          classNamePrefix="reactSelect"
-          className="reactSelect"
-        />
-        <div className="col-12 d-flex flex-row mt-1">
-          <div className="d-flex flex-column flex-grow-1">
-            <strong className="font-italic">
-              <Translation i18nkey="Authorized Groups">Authorized Groups</Translation>
-            </strong>
-            {!!value &&
-              value
-                .filter((x) => x.type === 'group')
-                .map((g, idx) => (
-                  <span className="font-italic" key={idx}>
-                    {g.label}
-                  </span>
-                ))}
-          </div>
-          <div className="d-flex flex-column flex-grow-1">
-            <strong className="font-italic">
-              <Translation i18nkey="Authorized Services">Authorized Services</Translation>
-            </strong>
-            {!!value &&
-              value
-                .filter((x) => x.type === 'service')
-                .map((g, idx) => (
-                  <span className="font-italic" key={idx}>
-                    {g.label}
-                  </span>
-                ))}
-          </div>
+    <div>
+      <Select
+        id={`input-label`}
+        isMulti
+        name={`search-label`}
+        isLoading={loading}
+        isDisabled={disabled && !loading}
+        placeholder={translateMethod('Authorized.entities.placeholder')}
+        components={(props) => <components.Group {...props} />}
+        options={[
+          { label: 'Service groups', options: groups },
+          { label: 'Services', options: services },
+        ]}
+        value={value}
+        onChange={onValueChange}
+        classNamePrefix="reactSelect"
+        className="reactSelect"
+      />
+      <div className="col-12 d-flex flex-row mt-1">
+        <div className="d-flex flex-column flex-grow-1">
+          <strong className="font-italic">
+            <Translation i18nkey="Authorized Groups">Authorized Groups</Translation>
+          </strong>
+          {!!value &&
+            value
+              .filter((x) => x.type === 'group')
+              .map((g, idx) => (
+                <span className="font-italic" key={idx}>
+                  {g.label}
+                </span>
+              ))}
+        </div>
+        <div className="d-flex flex-column flex-grow-1">
+          <strong className="font-italic">
+            <Translation i18nkey="Authorized Services">Authorized Services</Translation>
+          </strong>
+          {!!value &&
+            value
+              .filter((x) => x.type === 'service')
+              .map((g, idx) => (
+                <span className="font-italic" key={idx}>
+                  {g.label}
+                </span>
+              ))}
         </div>
       </div>
     </div>
@@ -226,213 +224,217 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     return a.length === b.length && a.every((v, i) => v === b[i]);
   }
 
-  function otoroshiFlow(_found) {
-    if (
-      !(
-        !!_found.otoroshiTarget &&
-        !!_found.otoroshiTarget.otoroshiSettings &&
-        !!_found.otoroshiTarget.authorizedEntities
-      )
-    ) {
-      return [
-        `>>> ${translateMethod('Otoroshi')}`,
-        'otoroshiTarget.otoroshiSettings',
-        'otoroshiTarget.authorizedEntities',
-      ];
+  const otoroshiFormFlow = [
+    {
+      label: translateMethod('Otoroshi'),
+      collapsed: true,
+      flow: [
+        'otoroshiTarget'
+      ]
     }
-    return [
-      `>>> ${translateMethod('Otoroshi')}`,
-      'otoroshiTarget.otoroshiSettings',
-      'otoroshiTarget.authorizedEntities',
-      'otoroshiTarget.apikeyCustomization.clientIdOnly',
-      'otoroshiTarget.apikeyCustomization.readOnly',
-      'otoroshiTarget.apikeyCustomization.constrainedServicesOnly',
-      'otoroshiTarget.apikeyCustomization.dynamicPrefix',
-      'otoroshiTarget.apikeyCustomization.tags',
-      'otoroshiTarget.apikeyCustomization.metadata',
-      'otoroshiTarget.apikeyCustomization.customMetadata',
-      'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-      'otoroshiTarget.apikeyCustomization.restrictions.allowLast',
-      'otoroshiTarget.apikeyCustomization.restrictions.allowed',
-      'otoroshiTarget.apikeyCustomization.restrictions.forbidden',
-      'otoroshiTarget.apikeyCustomization.restrictions.notFound',
-    ];
+  ]
+
+  const pathes = {
+    type: type.object,
+    format: format.form,
+    array: true,
+    visible: {
+      ref: 'enabled',
+      test: v => !!v
+    },
+    schema: {
+      method: {
+        type: type.string,
+        format: format.select,
+        label: translateMethod('http.method'), //todo: translation
+        options: [
+          '*',
+          'GET',
+          'HEAD',
+          'POST',
+          'PUT',
+          'DELETE',
+          'CONNECT',
+          'OPTIONS',
+          'TRACE',
+          'PATCH',
+        ]
+      },
+      'path': {
+        type: type.string,
+        label: translateMethod('http.path'), //todo:trabnslation
+        defaultValue: '/',
+        constraints: [
+          constraints.matches(/^\/([^\s]\w*)*$/, 'constraint.match.path') //todo:  trabnslation
+        ]
+      }
+    },
+    flow: ['method', 'path']
   }
 
-  function otoroshiForm(_found) {
-    const firstPartOfOtoroshiForm = {
-      'otoroshiTarget.otoroshiSettings': {
-        type: 'select',
-        props: {
+  const otoroshiFormSchema = {
+    otoroshiTarget: {
+      type: type.object,
+      format: format.form,
+      label: translateMethod('Otoroshi target'),
+      schema: {
+        otoroshiSettings: {
+          type: type.string,
+          format: format.select,
           label: translateMethod('Otoroshi instances'),
-          possibleValues: otoroshiSettings.map((s) => ({
+          options: otoroshiSettings.map((s) => ({
             label: s.url,
             value: s._id,
           })),
         },
-      },
-      'otoroshiTarget.authorizedEntities': {
-        type: OtoroshiServicesAndGroupSelector,
-        props: {
+        authorizedEntities: {
+          type: type.string,
+          visible: {
+            ref: 'otoroshiSettings',
+            test: v => !!v
+          },
+          render: props => OtoroshiServicesAndGroupSelector({ ...props, translateMethod }),
+          // render: props => <button className='btn btn-outline-primary' onClick={() => console.debug({ props })}>test</button>,
           label: translateMethod('Authorized entities'),
-          _found,
           placeholder: translateMethod('Authorized.entities.placeholder'),
-          tenant: tenant,
           help: translateMethod('authorized.entities.help'),
         },
+        // apikeyCustomization: {
+        //   type: type.object,
+        //   format: format.form,
+        //   label: translateMethod('apikey customisation'), //todo: translation
+        //   visible: {
+        //     ref: 'authorizedEntities',
+        //     test: v => !!v.length
+        //   },
+        //   schema: {
+        //     clientIdOnly: {
+        //       type: type.bool,
+        //       label: translateMethod('Apikey with clientId only'),
+        //     },
+        //     readOnly: {
+        //       type: type.bool,
+        //       label: translateMethod('Read only apikey'),
+        //     },
+        //     constrainedServicesOnly: {
+        //       type: type.bool,
+        //       label: translateMethod('Constrained services only'),
+        //     },
+        //     dynamicPrefix: {
+        //       type: type.string,
+        //       label: translateMethod('Dynamic prefix'),
+        //       help: translateMethod(
+        //         'dynamic.prefix.help',
+        //         false,
+        //         'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
+        //       ),
+        //     },
+        //     metadata: {
+        //       type: type.object,
+        //       label: translateMethod('Automatic API key metadata'),
+        //       help: translateMethod(
+        //         'automatic.metadata.help',
+        //         false,
+        //         'Automatic metadata will be calculated on subscription acceptation'
+        //       ),
+        //     },
+        //     customMetadata: {
+        //       type: object,
+        //       render: CustomMetadataInput,
+        //       label: translateMethod('Custom Apikey metadata'),
+        //       toastr: () => toastr.info(translateMethod('sub.process.update.to.manual')),
+        //       help: translateMethod(
+        //         'custom.metadata.help',
+        //         false,
+        //         'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
+        //       ),
+        //     },
+        //     tags: {
+        //       type: string,
+        //       array: true,
+        //       label: translateMethod('Apikey tags'),
+        //     },
+        //     restrictions: {
+        //       type: type.object,
+        //       format: format.form,
+        //       schema: {
+        //         enabled: {
+        //           type: type.bool,
+        //           label: translateMethod('Enable restrictions'),
+        //         },
+        //         allowLast: {
+        //           type: type.bool,
+        //           visible: {
+        //             ref: 'enabled',
+        //             test: v => !!v
+        //           },
+        //           label: translateMethod('Allow at last'),
+        //           help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
+        //         },
+        //         allowed: {
+        //           label: translateMethod('Allowed pathes'),
+        //           ...pathes
+        //         },
+        //         forbidden: {
+        //           label: translateMethod('Forbidden pathes'),
+        //           ...pathes
+        //         },
+        //         notFound: {
+        //           label: translateMethod('Not found pathes'),
+        //           ...pathes
+        //         },
+        //       }
+        //     }
+        //   }
+        // }
       },
-    };
-    if (
-      !(
-        !!_found.otoroshiTarget &&
-        !!_found.otoroshiTarget.otoroshiSettings &&
-        !!_found.otoroshiTarget.authorizedEntities
-      )
-    ) {
-      return firstPartOfOtoroshiForm;
     }
-    return {
-      ...firstPartOfOtoroshiForm,
-      'otoroshiTarget.apikeyCustomization.clientIdOnly': {
-        type: 'bool',
-        props: {
-          label: translateMethod('Apikey with clientId only'),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.readOnly': {
-        type: 'bool',
-        props: {
-          label: translateMethod('Read only apikey'),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.constrainedServicesOnly': {
-        type: 'bool',
-        props: {
-          label: translateMethod('Constrained services only'),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.dynamicPrefix': {
-        type: 'string',
-        props: {
-          label: translateMethod('Dynamic prefix'),
-          help: translateMethod(
-            'dynamic.prefix.help',
-            false,
-            'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
-          ),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.metadata': {
-        type: 'object',
-        props: {
-          label: translateMethod('Automatic API key metadata'),
-          help: translateMethod(
-            'automatic.metadata.help',
-            false,
-            'Automatic metadata will be calculated on subscription acceptation'
-          ),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.customMetadata': {
-        type: CustomMetadataInput,
-        props: {
-          label: translateMethod('Custom Apikey metadata'),
-          toastr: () => toastr.info(translateMethod('sub.process.update.to.manual')),
-          help: translateMethod(
-            'custom.metadata.help',
-            false,
-            'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
-          ),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.tags': {
-        type: 'array',
-        props: {
-          label: translateMethod('Apikey tags'),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.restrictions.enabled': {
-        type: 'bool',
-        props: {
-          label: translateMethod('Enable restrictions'),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.restrictions.allowLast': {
-        type: 'bool',
-        props: {
-          label: translateMethod('Allow at last'),
-          help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.restrictions.allowed': {
-        type: OtoroshiPathInput,
-        props: {
-          label: translateMethod('Allowed pathes'),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.restrictions.forbidden': {
-        type: OtoroshiPathInput,
-        props: {
-          label: translateMethod('Forbidden pathes'),
-        },
-      },
-      'otoroshiTarget.apikeyCustomization.restrictions.notFound': {
-        type: OtoroshiPathInput,
-        props: {
-          label: translateMethod('Not found pathes'),
-        },
-      },
-    };
-  }
+  };
 
-  function securityFlow(_found) {
-    return [
-      `>>> ${translateMethod('Security')}`,
-      'autoRotation',
-      'subscriptionProcess',
-      'integrationProcess',
-    ];
-  }
 
-  function securityForm(_found) {
-    return {
-      autoRotation: {
-        type: 'bool',
-        props: {
-          label: translateMethod('Force apikey auto-rotation'),
+  const securityFormFlow = [
+    {
+      label: translateMethod('Security'),
+      collapsed: true,
+      flow: [
+        'autoRotation',
+        'subscriptionProcess',
+        'integrationProcess',
+      ]
+    }
+  ];
+
+  const securityFormSchema = {
+    autoRotation: {
+      type: type.bool,
+      label: translateMethod('Force apikey auto-rotation'),
+    },
+    subscriptionProcess: {
+      type: type.string,
+      format: format.buttonsSelect,
+      disabled: false, //FIXME ===> disable if customMetatda.legnth ==> react-form v1.0.16
+      label: translateMethod('Subscription'),
+      options: [
+        {
+          label: translateMethod('Automatic'),
+          value: 'Automatic',
         },
-      },
-      subscriptionProcess: {
-        type: 'select',
-        disabled:
-          _found.otoroshiTarget.apikeyCustomization.customMetadata &&
-          !!_found.otoroshiTarget.apikeyCustomization.customMetadata.length,
-        props: {
-          label: translateMethod('Subscription'),
-          possibleValues: [
-            {
-              label: translateMethod('Automatic'),
-              value: 'Automatic',
-            },
-            { label: translateMethod('Manual'), value: 'Manual' },
-          ],
+        { label: translateMethod('Manual'), value: 'Manual' },
+      ],
+    },
+    integrationProcess: {
+      type: type.string,
+      format: format.buttonsSelect,
+      label: translateMethod('Integration'),
+      options: [
+        {
+          label: translateMethod('Automatic'),
+          value: 'Automatic',
         },
-      },
-      integrationProcess: {
-        type: 'select',
-        props: {
-          label: translateMethod('Integration'),
-          possibleValues: [
-            {
-              label: translateMethod('Automatic'),
-              value: 'Automatic',
-            },
-            { label: translateMethod('ApiKey'), value: 'ApiKey' },
-          ],
-        },
-      },
-    };
-  }
+        { label: translateMethod('ApiKey'), value: 'ApiKey' },
+      ],
+    },
+  };
 
   function smartNameAndDescription(newType) {
     let response = {};
@@ -453,6 +455,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
   }
 
   function onChange(v) {
+    console.debug({v})
     if (!v.currency) {
       v.currency = { code: 'EUR' };
     }
@@ -475,7 +478,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     });
   }
 
-  function renderAdmin(plan) {
+  const adminFlow = (plan) => {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
@@ -483,71 +486,9 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
         authorizedEntities: [],
       };
     }
-    const flow = ['_id', 'type', 'customName', 'customDescription', ...otoroshiFlow(found)];
-    const schema = {
-      _id: {
-        type: 'string',
-        disabled: true,
-        props: {
-          label: translateMethod('Id'),
-          placeholder: '---',
-        },
-      },
-      type: {
-        type: 'select',
-        disabled: true,
-        props: {
-          label: translateMethod('Type'),
-          possibleValues: [
-            {
-              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
-              value: 'FreeWithoutQuotas',
-            },
-            {
-              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
-              value: 'FreeWithQuotas',
-            },
-            {
-              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
-              value: 'QuotasWithLimits',
-            },
-            {
-              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
-              value: 'QuotasWithoutLimits',
-            },
-            {
-              label: translateMethod('PayPerUse', false, 'Pay per use'),
-              value: 'PayPerUse',
-            },
-          ],
-        },
-      },
-      customName: {
-        type: 'string',
-        disabled: true,
-        props: {
-          label: translateMethod('Name'),
-          placeholder: translateMethod('Plan name'),
-        },
-      },
-      customDescription: {
-        type: 'string',
-        disabled: true,
-        props: {
-          label: translateMethod('Description'),
-          placeholder: translateMethod('Plan description'),
-        },
-      },
-      ...otoroshiForm(found),
-    };
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
-      </React.Suspense>
-    );
   }
 
-  function renderFreeWithoutQuotas(plan) {
+  const freeWithoutQuotasFlow = (plan) => {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
@@ -555,8 +496,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
         authorizedEntities: [],
       };
     }
-    const flow = [
-      '_id',
+
+    return [
       'type',
       'customName',
       'customDescription',
@@ -564,107 +505,14 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
-      `>>> ${translateMethod('Billing')}`,
-      'billingDuration.value',
-      'billingDuration.unit',
-      ...otoroshiFlow(found),
-      ...securityFlow(found),
-    ].filter((f) => f);
-    const schema = {
-      _id: {
-        type: 'string',
-        disabled: true,
-        props: {
-          label: translateMethod('Id'),
-          placeholder: '---',
-        },
-      },
-      type: {
-        type: 'select',
-        props: {
-          label: translateMethod('Type'),
-          possibleValues: [
-            {
-              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
-              value: 'FreeWithoutQuotas',
-            },
-            {
-              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
-              value: 'FreeWithQuotas',
-            },
-            {
-              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
-              value: 'QuotasWithLimits',
-            },
-            {
-              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
-              value: 'QuotasWithoutLimits',
-            },
-            {
-              label: translateMethod('PayPerUse', false, 'Pay per use'),
-              value: 'PayPerUse',
-            },
-          ],
-        },
-      },
-      'billingDuration.value': {
-        type: 'number',
-        props: {
-          label: translateMethod('Billing every'),
-        },
-      },
-      'billingDuration.unit': {
-        type: 'select',
-        props: {
-          label: translateMethod('Billing every'),
-          possibleValues: [
-            { label: translateMethod('Hours'), value: 'Hour' },
-            { label: translateMethod('Days'), value: 'Day' },
-            { label: translateMethod('Months'), value: 'Month' },
-            { label: translateMethod('Years'), value: 'Year' },
-          ],
-        },
-      },
-      customName: {
-        type: 'string',
-        props: {
-          label: translateMethod('Name'),
-          placeholder: translateMethod('Plan name'),
-        },
-      },
-      customDescription: {
-        type: 'string',
-        props: {
-          label: translateMethod('Description'),
-          placeholder: translateMethod('Plan description'),
-        },
-      },
-      allowMultipleKeys: {
-        type: 'bool',
-        props: {
-          label: translateMethod('Allow multiple apiKey demands'),
-        },
-      },
-      aggregationApiKeysSecurity: {
-        type: 'bool',
-        props: {
-          label: translateMethod('aggregation api keys security'),
-          help: translateMethod('aggregation_apikeys.security.help'),
-        },
-      },
-      ...otoroshiForm(found),
-      ...securityForm(found),
-    };
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
-      </React.Suspense>
-    );
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
+      ...otoroshiFormFlow,
+      ...securityFormFlow,
+    ];
   }
 
-  function renderFreeWithQuotas(plan) {
+  const freeWithQuotasFlow = (plan) => {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
@@ -672,8 +520,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
         authorizedEntities: [],
       };
     }
-    const flow = [
-      '_id',
+    return [
       'type',
       'customName',
       'customDescription',
@@ -681,132 +528,23 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
-      `>>> ${translateMethod('Quotas')}`,
-      'maxPerSecond',
-      'maxPerDay',
-      'maxPerMonth',
-      `>>> ${translateMethod('Billing')}`,
-      'billingDuration.value',
-      'billingDuration.unit',
-      ...otoroshiFlow(found),
-      ...securityFlow(found),
-    ].filter((f) => f);
-    const schema = {
-      _id: {
-        type: 'string',
-        disabled: true,
-        props: {
-          label: translateMethod('Id'),
-          placeholder: '---',
-        },
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
+      {
+        label: translateMethod('Quotas'),
+        collapsed: true,
+        flow: [
+          'maxPerSecond',
+          'maxPerDay',
+          'maxPerMonth',
+        ]
       },
-      type: {
-        type: 'select',
-        props: {
-          label: translateMethod('Type'),
-          possibleValues: [
-            {
-              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
-              value: 'FreeWithoutQuotas',
-            },
-            {
-              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
-              value: 'FreeWithQuotas',
-            },
-            {
-              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
-              value: 'QuotasWithLimits',
-            },
-            {
-              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
-              value: 'QuotasWithoutLimits',
-            },
-            {
-              label: translateMethod('PayPerUse', false, 'Pay per use'),
-              value: 'PayPerUse',
-            },
-          ],
-        },
-      },
-      'billingDuration.value': {
-        type: 'number',
-        props: {
-          label: translateMethod('Billing every'),
-        },
-      },
-      'billingDuration.unit': {
-        type: 'select',
-        props: {
-          label: translateMethod('Billing every'),
-          possibleValues: [
-            { label: translateMethod('Hours'), value: 'Hour' },
-            { label: translateMethod('Days'), value: 'Day' },
-            { label: translateMethod('Months'), value: 'Month' },
-            { label: translateMethod('Years'), value: 'Year' },
-          ],
-        },
-      },
-      allowMultipleKeys: {
-        type: 'bool',
-        props: {
-          label: translateMethod('Allow multiple apiKey demands'),
-        },
-      },
-      aggregationApiKeysSecurity: {
-        type: 'bool',
-        props: {
-          label: translateMethod('aggregation api keys security'),
-          help: translateMethod('aggregation_apikeys.security.help'),
-        },
-      },
-      maxPerSecond: {
-        type: 'number',
-        props: {
-          label: translateMethod('Max. per second'),
-          placeholder: translateMethod('Max. requests per second'),
-        },
-      },
-      maxPerDay: {
-        type: 'number',
-        props: {
-          label: translateMethod('Max. per day'),
-          placeholder: translateMethod('Max. requests per day'),
-        },
-      },
-      maxPerMonth: {
-        type: 'number',
-        props: {
-          label: translateMethod('Max. per month'),
-          placeholder: translateMethod('Max. requests per month'),
-        },
-      },
-      customName: {
-        type: 'string',
-        props: {
-          label: translateMethod('Name'),
-          placeholder: translateMethod('Plan name'),
-        },
-      },
-      customDescription: {
-        type: 'string',
-        props: {
-          label: translateMethod('Description'),
-          placeholder: translateMethod('Plan description'),
-        },
-      },
-      ...otoroshiForm(found),
-      ...securityForm(found),
-    };
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
-      </React.Suspense>
-    );
+      ...otoroshiFormFlow,
+      ...securityFormFlow,
+    ];
   }
 
-  function renderQuotasWithLimits(plan) {
+  const quotasWithLimitsFlow = (plan) => {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
@@ -814,8 +552,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
         authorizedEntities: [],
       };
     }
-    const flow = [
-      '_id',
+    return [
       'type',
       'customName',
       'customDescription',
@@ -823,22 +560,35 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
-      `>>> ${translateMethod('Quotas')}`,
-      'maxPerSecond',
-      'maxPerDay',
-      'maxPerMonth',
-      `>>> ${translateMethod('Trial')}`,
-      'trialPeriod.value',
-      'trialPeriod.unit',
-      `>>> ${translateMethod('Billing')}`,
-      'costPerMonth',
-      'currency.code',
-      'billingDuration.value',
-      'billingDuration.unit',
-      ...otoroshiFlow(found),
-      ...securityFlow(found),
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
+      {
+        label: translateMethod('Quotas'),
+        collapsed: true,
+        flow: [
+          'maxPerSecond',
+          'maxPerDay',
+          'maxPerMonth',
+        ]
+      },
+      {
+        label: translateMethod('Trial'),
+        collapsed: true,
+        flow: [
+          'trialPeriod',
+        ]
+      },
+      {
+        label: translateMethod('Billing'),
+        collapsed: true,
+        flow: [
+          'costPerMonth',
+          'currency.code',
+          'billingDuration',
+        ]
+      },
+      ...otoroshiFormFlow,
+      ...securityFormFlow,
     ].filter((f) => f);
     const schema = {
       _id: {
@@ -979,17 +729,12 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
           placeholder: translateMethod('Plan description'),
         },
       },
-      ...otoroshiForm(found),
-      ...securityForm(found),
+      ...otoroshiFormSchema,
+      ...securityFormSchema,
     };
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
-      </React.Suspense>
-    );
   }
 
-  function renderQuotasWithoutLimits(plan) {
+  const quotasWithoutLimitsFlow = (plan) => {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
@@ -997,8 +742,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
         authorizedEntities: [],
       };
     }
-    const flow = [
-      '_id',
+    return [
       'type',
       'customName',
       'customDescription',
@@ -1006,181 +750,40 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
-      `>>> ${translateMethod('Quotas')}`,
-      'maxPerSecond',
-      'maxPerDay',
-      'maxPerMonth',
-      `>>> ${translateMethod('Trial')}`,
-      'trialPeriod.value',
-      'trialPeriod.unit',
-      `>>> ${translateMethod('Billing')}`,
-      'costPerMonth',
-      'costPerAdditionalRequest',
-      'currency.code',
-      'billingDuration.value',
-      'billingDuration.unit',
-      ...otoroshiFlow(found),
-      ...securityFlow(found),
-    ].filter((f) => f);
-    const schema = {
-      _id: {
-        type: 'string',
-        disabled: true,
-        props: {
-          label: translateMethod('Id'),
-          placeholder: '---',
-        },
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
+      {
+        label: translateMethod('Quotas'),
+        collapsed: true,
+        flow: [
+          'maxPerSecond',
+          'maxPerDay',
+          'maxPerMonth',
+        ]
       },
-      type: {
-        type: 'select',
-        props: {
-          label: translateMethod('Type'),
-          possibleValues: [
-            {
-              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
-              value: 'FreeWithoutQuotas',
-            },
-            {
-              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
-              value: 'FreeWithQuotas',
-            },
-            {
-              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
-              value: 'QuotasWithLimits',
-            },
-            {
-              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
-              value: 'QuotasWithoutLimits',
-            },
-            {
-              label: translateMethod('PayPerUse', false, 'Pay per use'),
-              value: 'PayPerUse',
-            },
-          ],
-        },
+      {
+        label: translateMethod('Trial'),
+        collapsed: true,
+        flow: [
+          'trialPeriod',
+        ]
       },
-      'billingDuration.value': {
-        type: 'number',
-        props: {
-          label: translateMethod('Billing every'),
-        },
+      {
+        label: translateMethod('Billing'),
+        collapsed: true,
+        flow: [
+          'costPerMonth',
+          'costPerAdditionalRequest',
+          'currency.code',
+          'billingDuration',
+        ]
       },
-      'billingDuration.unit': {
-        type: 'select',
-        props: {
-          label: translateMethod('Billing every'),
-          possibleValues: [
-            { label: translateMethod('Hours'), value: 'Hour' },
-            { label: translateMethod('Days'), value: 'Day' },
-            { label: translateMethod('Months'), value: 'Month' },
-            { label: translateMethod('Years'), value: 'Year' },
-          ],
-        },
-      },
-      allowMultipleKeys: {
-        type: 'bool',
-        props: {
-          label: translateMethod('Allow multiple apiKey demands'),
-        },
-      },
-      aggregationApiKeysSecurity: {
-        type: 'bool',
-        props: {
-          label: translateMethod('aggregation api keys security'),
-          help: translateMethod('aggregation_apikeys.security.help'),
-        },
-      },
-      'trialPeriod.value': {
-        type: 'number',
-        props: {
-          label: translateMethod('Trial period'),
-          placeholder: translateMethod('The trial period'),
-        },
-      },
-      'trialPeriod.unit': {
-        type: 'select',
-        props: {
-          label: translateMethod('Trial period unit'),
-          possibleValues: [
-            { label: translateMethod('Hours'), value: 'Hour' },
-            { label: translateMethod('Days'), value: 'Day' },
-            { label: translateMethod('Months'), value: 'Month' },
-            { label: translateMethod('Years'), value: 'Year' },
-          ],
-        },
-      },
-      maxPerSecond: {
-        type: 'number',
-        props: {
-          label: translateMethod('Max. per second'),
-          placeholder: translateMethod('Max. requests per second'),
-        },
-      },
-      maxPerDay: {
-        type: 'number',
-        props: {
-          label: translateMethod('Max. per day'),
-          placeholder: translateMethod('Max. requests per day'),
-        },
-      },
-      maxPerMonth: {
-        type: 'number',
-        props: {
-          label: translateMethod('Max. per month'),
-          placeholder: translateMethod('Max. requests per month'),
-        },
-      },
-      costPerMonth: {
-        type: 'number',
-        props: {
-          label: translateMethod('Cost per month'),
-          placeholder: translateMethod('Cost per month'),
-        },
-      },
-      costPerAdditionalRequest: {
-        type: 'number',
-        props: {
-          label: translateMethod('Cost per add. req.'),
-          placeholder: translateMethod('Cost per additionnal request'),
-        },
-      },
-      'currency.code': {
-        type: 'select',
-        props: {
-          label: translateMethod('Currency'),
-          possibleValues: currencies.map((c) => ({
-            label: `${c.name} (${c.symbol})`,
-            value: c.code,
-          })),
-        },
-      },
-      customName: {
-        type: 'string',
-        props: {
-          label: translateMethod('Name'),
-          placeholder: translateMethod('Plan name'),
-        },
-      },
-      customDescription: {
-        type: 'string',
-        props: {
-          label: translateMethod('Description'),
-          placeholder: translateMethod('Plan description'),
-        },
-      },
-      ...otoroshiForm(found),
-      ...securityForm(found),
-    };
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
-      </React.Suspense>
-    );
+      ...otoroshiFormFlow,
+      ...securityFormFlow,
+    ];
   }
 
-  function renderPayPerUse(plan) {
+  const payPerUseFlow = (plan) => {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
@@ -1188,8 +791,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
         authorizedEntities: [],
       };
     }
-    const flow = [
-      '_id',
+    return [
       'type',
       'customName',
       'customDescription',
@@ -1197,153 +799,28 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
-      `>>> ${translateMethod('Billing')}`,
-      'costPerMonth',
-      'costPerRequest',
-      'currency.code',
-      'billingDuration.value',
-      'billingDuration.unit',
-      `>>> ${translateMethod('Trial')}`,
-      'trialPeriod.value',
-      'trialPeriod.unit',
-      ...otoroshiFlow(found),
-      ...securityFlow(found),
-    ].filter((f) => f);
-    const schema = {
-      _id: {
-        type: 'string',
-        disabled: true,
-        props: {
-          label: translateMethod('Id'),
-          placeholder: '---',
-        },
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
+      {
+        label: translateMethod('Trial'),
+        collapsed: true,
+        flow: [
+          'trialPeriod',
+        ]
       },
-      type: {
-        type: 'select',
-        props: {
-          label: translateMethod('Type'),
-          possibleValues: [
-            {
-              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
-              value: 'FreeWithoutQuotas',
-            },
-            {
-              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
-              value: 'FreeWithQuotas',
-            },
-            {
-              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
-              value: 'QuotasWithLimits',
-            },
-            {
-              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
-              value: 'QuotasWithoutLimits',
-            },
-            {
-              label: translateMethod('PayPerUse', false, 'Pay per use'),
-              value: 'PayPerUse',
-            },
-          ],
-        },
+      {
+        label: translateMethod('Billing'),
+        collapsed: true,
+        flow: [
+          'costPerMonth',
+          'costPerAdditionalRequest',
+          'currency.code',
+          'billingDuration',
+        ]
       },
-      costPerMonth: {
-        type: 'number',
-        props: {
-          label: translateMethod('Cost per month'),
-          placeholder: translateMethod('Cost per month'),
-        },
-      },
-      costPerRequest: {
-        type: 'number',
-        props: {
-          label: translateMethod('Cost per req.'),
-          placeholder: translateMethod('Cost per request'),
-        },
-      },
-      'currency.code': {
-        type: 'select',
-        props: {
-          label: translateMethod('Currency'),
-          possibleValues: currencies.map((c) => ({
-            label: `${c.name} (${c.symbol})`,
-            value: c.code,
-          })),
-        },
-      },
-      'billingDuration.value': {
-        type: 'number',
-        props: {
-          label: translateMethod('Billing every'),
-        },
-      },
-      'billingDuration.unit': {
-        type: 'select',
-        props: {
-          label: translateMethod('Billing every'),
-          possibleValues: [
-            { label: translateMethod('Hours'), value: 'Hour' },
-            { label: translateMethod('Days'), value: 'Day' },
-            { label: translateMethod('Months'), value: 'Month' },
-            { label: translateMethod('Years'), value: 'Year' },
-          ],
-        },
-      },
-      allowMultipleKeys: {
-        type: 'bool',
-        props: {
-          label: translateMethod('Allow multiple apiKey demands'),
-        },
-      },
-      aggregationApiKeysSecurity: {
-        type: 'bool',
-        props: {
-          label: translateMethod('aggregation api keys security'),
-          help: translateMethod('aggregation_apikeys.security.help'),
-        },
-      },
-      'trialPeriod.value': {
-        type: 'number',
-        props: {
-          label: translateMethod('Trial period'),
-          placeholder: translateMethod('The trial period'),
-        },
-      },
-      'trialPeriod.unit': {
-        type: 'select',
-        props: {
-          label: translateMethod('Trial period unit'),
-          possibleValues: [
-            { label: translateMethod('Hours'), value: 'Hour' },
-            { label: translateMethod('Days'), value: 'Day' },
-            { label: translateMethod('Months'), value: 'Month' },
-            { label: translateMethod('Years'), value: 'Year' },
-          ],
-        },
-      },
-      customName: {
-        type: 'string',
-        props: {
-          label: translateMethod('Name'),
-          placeholder: translateMethod('Plan name'),
-        },
-      },
-      customDescription: {
-        type: 'string',
-        props: {
-          label: translateMethod('Description'),
-          placeholder: translateMethod('Plan description'),
-        },
-      },
-      ...otoroshiForm(found),
-      ...securityForm(found),
-    };
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
-      </React.Suspense>
-    );
+      ...otoroshiFormFlow,
+      ...securityFormFlow,
+    ];
   }
 
   function addNewPlan() {
@@ -1424,6 +901,183 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     }
   }
 
+
+  const schema = {
+    type: {
+      type: type.string,
+      format: format.select,
+      label: translateMethod('Type'),
+      options: [
+        {
+          label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
+          value: 'FreeWithoutQuotas',
+        },
+        {
+          label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
+          value: 'FreeWithQuotas',
+        },
+        {
+          label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
+          value: 'QuotasWithLimits',
+        },
+        {
+          label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
+          value: 'QuotasWithoutLimits',
+        },
+        {
+          label: translateMethod('PayPerUse', false, 'Pay per use'),
+          value: 'PayPerUse',
+        },
+      ],
+      constraints: [
+        constraints.required('') //todo: message
+      ]
+    },
+    'billingDuration': {
+      type: type.object,
+      format: format.form,
+      label: translateMethod('Billing'), //todo: translate
+      schema: {
+        value: {
+          type: type.number,
+          label: translateMethod('Billing every'),
+          constraints: [
+            constraints.positive() //todo: message
+          ]
+        },
+        unit: {
+          type: type.string,
+          format: format.select,
+          label: translateMethod('Billing every'),
+          options: [
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
+          ],
+        }
+      },
+      flow: ['value', 'unit']
+    },
+    allowMultipleKeys: {
+      type: type.bool,
+      label: translateMethod('Allow multiple apiKey demands'),
+    },
+    aggregationApiKeysSecurity: {
+      type: type.bool,
+      label: translateMethod('aggregation api keys security'),
+      help: translateMethod('aggregation_apikeys.security.help'),
+    },
+    trialPeriod: {
+      type: type.object,
+      label: translateMethod('Trial'), //todo: translation,
+      schema: {
+        value: {
+          type: type.number,
+          label: translateMethod('Trial period'),
+          placeholder: translateMethod('The trial period'),
+          constraints: [
+            constraints.positive() //todo: message
+          ]
+        },
+        unit: {
+          type: type.string,
+          format: format.select,
+          label: translateMethod('Trial period unit'),
+          possibleValues: [
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
+          ],
+        }
+      },
+      flow: ['value', 'unit']
+    },
+    maxPerSecond: {
+      type: type.number,
+      label: translateMethod('Max. per second'),
+      placeholder: translateMethod('Max. requests per second'),
+      constraints: [
+        constraints.positive() //todo: message
+      ]
+    },
+    maxPerDay: {
+      type: type.number,
+      label: translateMethod('Max. per day'),
+      placeholder: translateMethod('Max. requests per day'),
+      constraints: [
+        constraints.positive() //todo: message
+      ]
+    },
+    maxPerMonth: {
+      type: type.number,
+      label: translateMethod('Max. per month'),
+      placeholder: translateMethod('Max. requests per month'),
+      constraints: [
+        constraints.positive() //todo: message
+      ]
+    },
+    costPerMonth: {
+      type: type.number,
+      label: translateMethod('Cost per month'),
+      placeholder: translateMethod('Cost per month'),
+      constraints: [
+        constraints.positive() //todo: message
+      ]
+    },
+    costPerAdditionalRequest: {
+      type: type.number,
+      label: translateMethod('Cost per add. req.'),
+      placeholder: translateMethod('Cost per additionnal request'),
+      constraints: [
+        constraints.positive() //todo: message
+      ]
+    },
+    'currency.code': {
+      type: type.string,
+      format: format.select,
+      label: translateMethod('Currency'),
+      possibleValues: currencies.map((c) => ({
+        label: `${c.name} (${c.symbol})`,
+        value: c.code,
+      })),
+    },
+    customName: {
+      type: type.string,
+      label: translateMethod('Name'),
+      placeholder: translateMethod('Plan name'),
+    },
+    customDescription: {
+      type: type.string,
+      format: format.text,
+      label: translateMethod('Description'),
+      placeholder: translateMethod('Plan description'),
+    },
+    ...otoroshiFormSchema,
+    ...securityFormSchema,
+  };
+
+
+
+  const getRightFlow = () => {
+    switch (selected.type) {
+      case 'Admin':
+        return adminFlow(selected);
+      case 'FreeWithoutQuotas':
+        return freeWithoutQuotasFlow(selected);
+      case 'FreeWithQuotas':
+        return freeWithQuotasFlow(selected);
+      case 'QuotasWithLimits':
+        return quotasWithLimitsFlow(selected);
+      case 'QuotasWithoutLimits':
+        return quotasWithoutLimitsFlow(selected);
+      case 'PayPerUse':
+        return payPerUseFlow(selected);
+    }
+  }
+
+
   function planToOption(plan) {
     if (!plan || value.possibleUsagePlans.length === 0) return null;
 
@@ -1447,6 +1101,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
   }
 
   if (value === null) return null;
+
+  const flow = getRightFlow().filter(x => x);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 100 }}>
@@ -1537,12 +1193,16 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 </button>
               )}
             </div>
-            {selected.type === 'Admin' && renderAdmin(selected)}
-            {selected.type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas(selected)}
-            {selected.type === 'FreeWithQuotas' && renderFreeWithQuotas(selected)}
-            {selected.type === 'QuotasWithLimits' && renderQuotasWithLimits(selected)}
-            {selected.type === 'QuotasWithoutLimits' && renderQuotasWithoutLimits(selected)}
-            {selected.type === 'PayPerUse' && renderPayPerUse(selected)}
+            <Form
+              schema={schema}
+              onSubmit={onChange}
+              options={{
+                autosubmit: true
+              }}
+              flow={flow}
+              value={selected}
+              footer={() => (null)}
+            />
           </div>
         )}
       </div>
@@ -1575,8 +1235,8 @@ const CustomMetadataInput = (props) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
       props.onChange([{ key: '', possibleValues: [] }]);
-      props.changeValue('subscriptionProcess', 'Manual');
-      props.toastr();
+      props.setValue('subscriptionProcess', 'Manual');
+      // props.toastr(); //FIXME
     }
   };
 
@@ -1596,70 +1256,58 @@ const CustomMetadataInput = (props) => {
   return (
     <div>
       {props.value.length === 0 && (
-        <div className="mb-3 row align-items-center">
-          <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
-            <Help text={props.help} label={props.label} />
-          </label>
-          <div className="col-sm-10">
-            <button
-              disabled={props.disabled}
-              type="button"
-              className="btn btn-outline-primary"
-              onClick={addFirst}
-            >
-              <i className="fas fa-plus" />{' '}
-            </button>
-          </div>
+
+        <div className="col-sm-10">
+          <button
+            disabled={props.disabled}
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={addFirst}
+          >
+            <i className="fas fa-plus" />{' '}
+          </button>
         </div>
       )}
       {props.value.map(({ key, possibleValues }, idx) => (
-        <div key={`form-group-${idx}`} className="row mb-2 align-items-center">
-          {idx === 0 && (
-            <label className="col-xs-12 col-sm-2 col-form-label">
-              <Help text={props.help} label={props.label} />
-            </label>
-          )}
-          {idx > 0 && <label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>}
-          <div className="col-sm-10">
-            <div className="input-group">
-              <input
-                disabled={props.disabled}
-                type="text"
-                className="form-control col-5 me-1"
-                placeholder={props.placeholderKey}
-                value={key}
-                onChange={(e) => changeKey(e, key)}
-              />
-              <CreatableSelect
-                isMulti
-                onChange={(e) =>
-                  changeValue(
-                    e.map(({ value }) => value),
-                    key
-                  )
-                }
-                options={undefined}
-                value={possibleValues.map((value) => ({ label: value, value }))}
-                className="input-select reactSelect flex-grow-1"
-                classNamePrefix="reactSelect"
-              />
+        <div className="col-sm-10">
+          <div className="input-group">
+            <input
+              disabled={props.disabled}
+              type="text"
+              className="form-control col-5 me-1"
+              placeholder={props.placeholderKey}
+              value={key}
+              onChange={(e) => changeKey(e, key)}
+            />
+            <CreatableSelect
+              isMulti
+              onChange={(e) =>
+                changeValue(
+                  e.map(({ value }) => value),
+                  key
+                )
+              }
+              options={undefined}
+              value={possibleValues.map((value) => ({ label: value, value }))}
+              className="input-select reactSelect flex-grow-1"
+              classNamePrefix="reactSelect"
+            />
+            <button
+              disabled={props.disabled}
+              type="button"
+              className="input-group-text btn btn-outline-danger"
+              onClick={(e) => remove(e, key)}>
+              <i className="fas fa-trash" />
+            </button>
+            {idx === props.value.length - 1 && (
               <button
                 disabled={props.disabled}
                 type="button"
-                className="input-group-text btn btn-outline-danger"
-                onClick={(e) => remove(e, key)}>
-                <i className="fas fa-trash" />
+                className="input-group-text btn btn-outline-primary"
+                onClick={addNext}>
+                <i className="fas fa-plus" />{' '}
               </button>
-              {idx === props.value.length - 1 && (
-                <button
-                  disabled={props.disabled}
-                  type="button"
-                  className="input-group-text btn btn-outline-primary"
-                  onClick={addNext}>
-                  <i className="fas fa-plus" />{' '}
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       ))}

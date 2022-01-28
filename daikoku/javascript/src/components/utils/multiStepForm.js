@@ -168,7 +168,7 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
   )
 }
 
-const ComponentedForm = React.forwardRef(({ value, valid, component, steps, step, initial, send, creation }, ref) => {
+const ComponentedForm = React.forwardRef(({ value, valid, component }, ref) => {
   const [state, setState] = useState(value)
 
   useImperativeHandle(ref, () => ({

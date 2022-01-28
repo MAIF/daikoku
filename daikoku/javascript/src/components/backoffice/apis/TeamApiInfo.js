@@ -189,38 +189,23 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
     }
   ];
 
-  return { schema, flow: (expert) => flow(expert) }
+  
 
-  const adminFormFlow = ['_id', 'name', 'smallDescription'];
+  const adminFlow = ['name', 'smallDescription'];
 
-  const adminFormSchema = {
-    _id: {
-      type: 'string',
-      disabled: true,
-      props: { label: translateMethod('Id'), placeholder: '---' },
-    },
+  const adminSchema = {
     name: {
-      type: 'string',
+      type: type.string,
       disabled: true,
       props: { label: translateMethod('Name'), placeholder: 'New Api' },
     },
     smallDescription: {
-      type: 'text',
+      type: type.string,
+      format: format.text,
       disabled: true,
       props: { label: translateMethod('Small desc.') },
     },
   };
 
-  // const isAdminOnly = props.value.visibility === 'AdminOnly';
-
-  // return (
-  //   <React.Suspense fallback={<Spinner />}>
-  //     <LazyForm
-  //       flow={isAdminOnly ? adminFormFlow : formFlow}
-  //       schema={isAdminOnly ? adminFormSchema : formSchema}
-  //       value={props.value}
-  //       onChange={props.onChange}
-  //     />
-  //   </React.Suspense>
-  // );
+  return { schema, flow: (expert) => flow(expert), adminFlow, adminSchema }
 }

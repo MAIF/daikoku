@@ -25,47 +25,68 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
       schema: informationForm.schema,
       flow: informationForm.flow(expertMode),
     },
-    {
-      id: 'description',
-      label: translateMethod('Description'),
-      schema: descriptionForm.schema,
-      flow: descriptionForm.flow,
-    },
+    // {
+    //   id: 'description',
+    //   label: translateMethod('Description'),
+    //   schema: descriptionForm.schema,
+    //   flow: descriptionForm.flow,
+    // },
     {
       id: 'pricing',
       label: translateMethod('Plans'),
       component: TeamApiPricing,
-      skipTo: 'swagger',
+      // skipTo: 'swagger',
     },
-    {
-      id: 'swagger',
-      label: translateMethod('Swagger'),
-      component: TeamApiSwagger,
-      skipTo: 'save',
-    },
+    // {
+    //   id: 'swagger',
+    //   label: translateMethod('Swagger'),
+    //   component: TeamApiSwagger,
+    //   skipTo: 'save',
+    // },
 
-    {
-      id: 'testing',
-      label: translateMethod('Testing'),
-      component: TeamApiTesting,
-      skipTo: 'save',
-    }
+    // {
+    //   id: 'testing',
+    //   label: translateMethod('Testing'),
+    //   component: TeamApiTesting,
+    //   skipTo: 'save',
+    // }
   ]
 
+  if (value.visibility === 'AdminOnly') {
+    return (
+      <MultiStepForm
+        value={value}
+        steps={[{
+          id: 'info',
+          label: translateMethod('Informations'),
+          schema: informationForm.adminSchema,
+          flow: informationForm.adminFlow,
+        }, {
+            id: 'pricing',
+            label: translateMethod('Plans'),
+            component: TeamApiPricing
+          },]}
+        initial="info"
+        creation={creation}
+        save={save}
+        getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
+      />
+    );
+  }
   return (
-    <MultiStepForm 
-      value={value} 
-      steps={steps} 
-      initial="info" 
+    <MultiStepForm
+      value={value}
+      steps={steps}
+      initial="info"
       creation={creation}
       save={save}
       getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
-      // report={(value, current)  => (
-      //   <div className='col-5'>
-      //     <h4>{current}</h4>
-      //     <CodeInput value={JSON.stringify(value, null, 4)} mode='json'/>
-      //   </div>
-      // )} 
-      />
+    // report={(value, current)  => (
+    //   <div className='col-5'>
+    //     <h4>{current}</h4>
+    //     <CodeInput value={JSON.stringify(value, null, 4)} mode='json'/>
+    //   </div>
+    // )} 
+    />
   );
 };
