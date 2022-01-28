@@ -22,9 +22,9 @@ const getAllPages = () => ({
 })
 
 export const CMSOffice = () => {
-    const { Translation } = useContext(I18nContext)
     const { client } = useContext(getApolloContext())
     const location = useLocation()
+    const navigate = useNavigate()
 
     const [pages, setPages] = useState([])
 
@@ -55,13 +55,11 @@ export const CMSOffice = () => {
     return (
         <UserBackOffice tab="Pages">
             <Can I={manage} a={tenant} dispatchError>
-                <div className="section py-3 px-2 mt-3">
-                    <Routes>
-                        <Route path={`/new`} element={<Create pages={pages} />} />
-                        <Route path={`/edit/:id`} element={<Create pages={pages} />} />
-                        <Route path="*" element={index()} />
-                    </Routes>
-                </div>
+                <Routes>
+                    <Route path={`/new`} element={<Create pages={pages} />} />
+                    <Route path={`/edit/:id`} element={<Create pages={pages} />} />
+                    <Route path="*" element={index()} />
+                </Routes>
             </Can>
         </UserBackOffice>
     )

@@ -124,39 +124,43 @@ export const ContentSideView = ({ value, onChange, pages, rawValues, publish }) 
 
     return <div style={{
         position: "relative",
-        marginTop: "12px"
+        marginTop: "48px",
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column'
     }}>
         <TopActions setSelector={setSelector} setSideView={setSideView} publish={publish} />
-        <div style={{ flex: 1 }}>
-            <div style={{
-                position: "relative",
-                border: "1px solid rgba(225,225,225,.5)"
-            }} >
-                <Editor
-                    value={value}
-                    onChange={onChange}
-                    setRef={setRef}
-                    mode={CONTENT_TYPES_TO_MODE[rawValues.contentType] || "html"} theme="tomorrow" width="-1" />
+        <div style={{
+            position: "relative",
+            border: "1px solid rgba(225,225,225,.5)",
+            flex: 1
+        }} >
+            <Editor
+                value={value}
+                onChange={onChange}
+                setRef={setRef}
+                mode={CONTENT_TYPES_TO_MODE[rawValues.contentType] || "html"}
+                theme="tomorrow"
+                width="-1" />
 
-                {sideView && <div className='p-3' style={{
-                    backgroundColor: "#ecf0f1",
-                    boxShadow: "rgb(25 25 25 / 50%) 3px 3px 3px -2px",
-                    position: 'absolute',
-                    top: 0,
-                    right: '25%',
-                    left: '25%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    textAlign: 'center'
-                }}>
-                    {selector === "links" && <LinksView editor={ref} onChange={() => setSideView(false)} />}
-                    {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Choose the link to the page to insert" editor={ref} onChange={() => setSideView(false)} />}
-                    {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Choose the block to insert" editor={ref} onChange={() => setSideView(false)} />}
-                    <button type="button" className='btn btn-sm btn-outline-secondary mt-1 me-1'
-                        onClick={() => setSideView(false)}>Close</button>
-                </div>}
-            </div>
+            {sideView && <div className='p-3' style={{
+                backgroundColor: "#ecf0f1",
+                boxShadow: "rgb(25 25 25 / 50%) 3px 3px 3px -2px",
+                position: 'absolute',
+                top: 0,
+                right: '25%',
+                left: '25%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                textAlign: 'center'
+            }}>
+                {selector === "links" && <LinksView editor={ref} onChange={() => setSideView(false)} />}
+                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Choose the link to the page to insert" editor={ref} onChange={() => setSideView(false)} />}
+                {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Choose the block to insert" editor={ref} onChange={() => setSideView(false)} />}
+                <button type="button" className='btn btn-sm btn-outline-secondary mt-1 me-1'
+                    onClick={() => setSideView(false)}>Close</button>
+            </div>}
         </div>
     </div >
 }

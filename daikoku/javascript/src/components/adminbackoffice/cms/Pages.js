@@ -77,27 +77,31 @@ export const Pages = ({ pages, removePage }) => {
                 const value = original;
                 return (
                     <div className='d-flex'>
-                        <Link to={`edit/${value.id}`}
-                            className="btn btn-sm btn-outline-primary">
-                            <i className='fas fa-edit' />
+                        <Link to={`edit/${value.id}`} className='m-1'>
+                            <i className='fas fa-edit fa-lg' style={{ color: "#000" }} />
                         </Link>
-                        <button className="btn btn-sm btn-outline-danger mx-1" onClick={() => {
-                            window.confirm(translateMethod('cms.pages.remove_confirm')).then((ok) => {
-                                if (ok) {
-                                    Services.removeCmsPage(value.id)
-                                        .then(res => {
-                                            if (res.error)
-                                                window.alert(res.error)
-                                            else
-                                                removePage(value.id)
-                                        })
-                                }
-                            });
-                        }}>
-                            <i className='fas fa-trash' />
+                        <button className="m-1"
+                            style={{
+                                border: 'none',
+                                background: 'none'
+                            }}
+                            onClick={() => {
+                                window.confirm(translateMethod('cms.pages.remove_confirm')).then((ok) => {
+                                    if (ok) {
+                                        Services.removeCmsPage(value.id)
+                                            .then(res => {
+                                                if (res.error)
+                                                    window.alert(res.error)
+                                                else
+                                                    removePage(value.id)
+                                            })
+                                    }
+                                });
+                            }}>
+                            <i className='fas fa-trash fa-lg' style={{ color: "var(--danger-color, #dc3545)" }} />
                         </button>
-                        <Link to={`/_${value.path}`} className="btn btn-sm btn-outline-primary" target="_blank" rel="noopener noreferrer">
-                            <i className='fas fa-eye' />
+                        <Link to={`/_${value.path}`} target="_blank" rel="noopener noreferrer" className='m-1'>
+                            <i className='fas fa-eye fa-lg' style={{ color: "#000" }} />
                         </Link>
                     </div>
                 );

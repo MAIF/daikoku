@@ -1,17 +1,19 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { Form, constraints, type, format } from '@maif/react-forms'
 import { I18nContext } from '../../../core'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as Services from '../../../services'
 import { getApolloContext, gql } from '@apollo/client'
 import { ContentSideView } from './ContentSideView'
-import moment from 'moment'
 
 export const Create = (props) => {
     const { translateMethod } = useContext(I18nContext)
     const navigate = useNavigate()
     const params = useParams()
+    const ref = useRef()
     const { client } = useContext(getApolloContext())
+
+    const [tab, setTab] = useState(0)
 
     const [value, setValue] = useState({
         name: '',
@@ -103,7 +105,7 @@ export const Create = (props) => {
         },
         draft: {
             type: type.string,
-            label: translateMethod('cms.create.draft_label'),
+            label: null,
             help: translateMethod('cms.create.draft_help'),
             render: formProps => <ContentSideView {...formProps} {...props} publish={() => {
                 const newValue = {
@@ -122,11 +124,17 @@ export const Create = (props) => {
             format: format.code,
             props: {
                 theme: 'tomorrow',
-                width: '-1'
+                width: '-1',
+                style: {
+                    zIndex: 0,
+                    isolation: 'isolate',
+                    border: "1px solid rgba(225,225,225,.5)"
+                }
             },
-            label: translateMethod('cms.create.body_placeholder'),
+            label: null,
             help: translateMethod('cms.create.body_help'),
             disabled: true,
+            readOnly: true,
             constraints: [
                 constraints.nullable()
             ]
@@ -157,68 +165,120 @@ export const Create = (props) => {
         },
     }
 
-    const flow = [{
-        label: translateMethod('cms.create.information'),
-        flow: [
-            'name', 'path', 'visible', 'authenticated'
-        ],
-        collapsed: params.id
-    },
-    {
-        label: translateMethod('cms.create.draft'),
-        flow: ['contentType', 'draft'],
-        collapsed: !params.id
-    },
-    {
-        label: translateMethod('cms.create.content'),
-        flow: [
-            'body'
-        ],
-        collapsed: true
-    },
-    {
-        label: translateMethod('cms.create.advanced'),
-        flow: ['tags', 'metadata'],
-        collapsed: true
-    }]
+    const bodyFlow = [
+        'draft'
+    ]
 
-    return (
-        <div>
-            <div className='d-flex justify-content-lg-between align-items-center'>
-                <h1 className='my-0'>{params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}</h1>
-                {value.lastPublishedDate &&
-                    <span className='h6 my-0'>
-                        {translateMethod('cms.create.last_update')} {' : '} {value.lastPublishedDate && moment(value.lastPublishedDate).format('DD MMMM y kk:mm')}
-                    </span>}
-            </div>
-            <Form
-                schema={schema}
-                flow={flow}
-                value={value}
-                onError={console.log}
-                onSubmit={item => {
-                    Services.createCmsPage(params.id, item)
-                        .then(res => {
-                            if (!res.error && !params.id)
-                                navigate('/settings/pages', {
-                                    state: {
-                                        reload: true
-                                    }
-                                })
-                            else if (res.error)
-                                window.alert(res.error)
-                        })
-                }}
-                footer={({ valid }) => (
-                    <div className="d-flex justify-content-end mt-3">
-                        <button className="btn btn-sm btn-primary me-1"
+    const productionFlow = ['body']
+
+    const sideFlow = [
+        'name',
+        'path',
+        'contentType',
+        'visible',
+        'authenticated'
+        ,
+        {
+            label: translateMethod('cms.create.advanced'),
+            flow: ['tags', 'metadata'],
+            collapsed: true
+        }]
+
+    const CustomForm = ({ flow }) => (
+        <Form
+            schema={schema}
+            flow={flow}
+            value={value}
+            onError={console.log}
+            onSubmit={item => {
+                Services.createCmsPage(params.id, item)
+                    .then(res => {
+                        if (!res.error && !params.id)
+                            navigate('/settings/pages', {
+                                state: {
+                                    reload: true
+                                }
+                            })
+                        else if (res.error)
+                            window.alert(res.error)
+                    })
+            }}
+            ref={ref}
+            footer={() => null}
+        />
+    )
+
+    const Sidebar = () => (
+        <>
+            <button
+                id="toggle-sidebar"
+                type="button"
+                className="navbar-toggle btn btn-sm btn-access-negative float-left me-2"
+                data-toggle="collapse"
+                data-target="#sidebar"
+                aria-expanded="false"
+                aria-controls="sidebar"
+            >
+                <span className="sr-only">Toggle sidebar</span>
+                <span className="chevron" />
+            </button>
+            <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
+                <div className="sidebar-sticky" style={{
+                    display: 'flex',
+                    flexDirection: 'column'
+                }}>
+                    <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        {params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}
+                    </h6>
+                    <ul className="nav flex-column mb-2 px-3">
+                        <li className="nav-item">
+                            <CustomForm flow={sideFlow} />
+                        </li>
+                    </ul>
+                    <div className="px-2 mb-4 mt-auto d-flex">
+                        <button className="btn btn-sm btn-primary me-1" style={{ flex: 1 }}
                             onClick={() => navigate('/settings/pages')}>{translateMethod('cms.create.back_to_pages')}</button>
-                        <button className="btn btn-sm btn-success" onClick={valid}>
+                        <button className="btn btn-sm btn-success" style={{ flex: 1 }}
+                            onClick={ref.current?.handleSubmit}>
                             {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
                         </button>
                     </div>
-                )}
-            />
+                </div>
+            </nav>
+        </>
+    )
+
+    const TabButton = ({ title, onClose, onClick, selected }) => (
+        <div style={{
+            height: "42px",
+            backgroundColor: "#fff",
+            display: 'flex',
+            alignItems: 'center',
+            boxShadow: selected ? '0 1px 3px rgba(25,25,25,.5)' : 'none',
+            backgroundColor: 'var(--sidebar-bg-color, #f8f9fa)',
+            borderRadius: '4px',
+            zIndex: selected ? 2 : 0
+        }} onClick={onClick} className='px-3'>
+            <button className='btn btn-sm'>{title}</button>
+            {onClose && <i className='fas fa-times' />}
         </div>
+    )
+
+    return (
+        <>
+            <Sidebar />
+            <div className='p-2 d-flex flex-column' style={{ flex: 1 }}>
+                <div className='d-flex align-items-center mt-2'>
+                    <TabButton title={translateMethod('cms.create.draft')} onClick={() => setTab(0)} selected={tab === 0} />
+                    <TabButton title={translateMethod('cms.create.content')} onClick={() => setTab(1)} selected={tab === 1} />
+                </div>
+                {tab === 0 && <CustomForm flow={bodyFlow} />}
+                {tab === 1 && <CustomForm flow={productionFlow} />}
+            </div>
+            {/* {value.lastPublishedDate && <div>
+                        <span>{translateMethod('cms.create.last_update')}</span>
+                        <span>{value.lastPublishedDate && moment(value.lastPublishedDate).format('DD MMMM y kk:mm')}</span>
+                    </div>} */}
+        </>
     )
 }

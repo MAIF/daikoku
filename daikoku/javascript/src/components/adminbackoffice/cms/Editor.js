@@ -12,7 +12,7 @@ import 'ace-builds/src-noconflict/theme-tomorrow'
 import 'ace-builds/src-noconflict/ext-searchbox'
 import 'ace-builds/src-noconflict/ext-language_tools'
 
-export default ({ onChange, value, setRef, className = '', readOnly, theme = 'monokai', mode = 'javascript', height, width }) => (
+export default ({ onChange, value, setRef, className = '', readOnly, theme = 'monokai', mode = 'javascript', ...props }) => (
     <AceEditor
         commands={Beautify.commands}
         className={className}
@@ -31,12 +31,13 @@ export default ({ onChange, value, setRef, className = '', readOnly, theme = 'mo
                 editorInstance.resize()
             ));
         }}
-        height={height}
-        width={width}
         showGutter={true}
         tabSize={2}
         highlightActiveLine={true}
         enableBasicAutocompletion={true}
         enableLiveAutocompletion={true}
+        height={props.height}
+        // maxLines={Infinity}
+        width={props.width}
     />
 );

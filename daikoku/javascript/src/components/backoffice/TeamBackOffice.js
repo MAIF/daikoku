@@ -609,7 +609,14 @@ const UserBackOfficeComponent = ({
     }
   }, [title]);
 
+  const location = useLocation()
   const { translateMethod, Translation } = useContext(I18nContext);
+
+  if (location.pathname !== "/settings/pages" && location.pathname.startsWith("/settings/pages"))
+    return <main role="main" className="col-md-9 offset-md-3 d-flex">
+      <div className={classNames('back-office-overlay', { active: isLoading })} />
+      {!error.status && children}
+    </main>
 
   return (
     <div className="row">

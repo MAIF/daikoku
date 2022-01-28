@@ -1258,10 +1258,10 @@
   dependencies:
     stream "^0.0.2"
 
-"@maif/react-forms@^1.0.12":
-  version "1.0.12"
-  resolved "https://registry.yarnpkg.com/@maif/react-forms/-/react-forms-1.0.12.tgz#e15b17cbfff8de12064a5dc29b6abb0bcf82501f"
-  integrity sha512-dqOq+Cx7l6KRVwQdzs25bQzIh4HRgAV9PBa+7JW8Wq7zEnSucRzJaz8gev2kNb2fwNi4Rt5diM4l1yOh7a3RaQ==
+"@maif/react-forms@^1.0.16":
+  version "1.0.16"
+  resolved "https://registry.yarnpkg.com/@maif/react-forms/-/react-forms-1.0.16.tgz#50cf1ff108b66b5dc53acdd538ba2c1b5e082252"
+  integrity sha512-rJeCUOY8YjR7hmhkYDtkyBFx1w6NivxRvKpSugqw4PwZ7QCnBfppbs2ES4A8Vysy9jIe6TIj7Q17JU42Da3/SQ==
   dependencies:
     "@fortawesome/fontawesome-free" "^5.15.3"
     "@hookform/resolvers" "2.4.0"
