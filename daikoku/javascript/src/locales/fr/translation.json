@@ -1011,9 +1011,10 @@
   "cms.create.advanced": "Informations avancées",
   "cms.content_side.publish_button": "Publier cette version",
   "cms.content_side.publish_label": "Êtes-vous sûr de vouloir publier cette version ?",
-  "cms.create.last_update": "Dernière publication",
+  "cms.create.last_update": "Dernier changement : ",
   "cms.create.version_label": "Version",
   "cms.inserted": "The text has been added",
+  "cms.create.draft_preview": "Voir la page en cours",
   "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
   "incorrect password": "Mots de passe incorrect"
 }

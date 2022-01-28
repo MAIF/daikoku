@@ -24,8 +24,6 @@ const getAllPages = () => ({
 export const CMSOffice = () => {
     const { client } = useContext(getApolloContext())
     const location = useLocation()
-    const navigate = useNavigate()
-
     const [pages, setPages] = useState([])
 
     useEffect(() => {
@@ -42,15 +40,18 @@ export const CMSOffice = () => {
             .then(r => setPages(r.data.pages))
     }
 
-    const index = () => (
-        <div>
+    const Index = ({ reload }) => {
+        useEffect(() => {
+            reload()
+        }, [])
+        return <div>
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
                 <Link to="new" className="btn btn-sm btn-primary">New page</Link>
             </div>
             <Pages pages={pages} removePage={id => setPages(pages.filter(f => f.id !== id))} />
         </div>
-    )
+    }
 
     return (
         <UserBackOffice tab="Pages">
@@ -58,7 +59,7 @@ export const CMSOffice = () => {
                 <Routes>
                     <Route path={`/new`} element={<Create pages={pages} />} />
                     <Route path={`/edit/:id`} element={<Create pages={pages} />} />
-                    <Route path="*" element={index()} />
+                    <Route path="*" element={<Index reload={reload} />} />
                 </Routes>
             </Can>
         </UserBackOffice>

@@ -5,40 +5,87 @@ import { useNavigate, useParams } from 'react-router-dom'
 import * as Services from '../../../services'
 import { getApolloContext, gql } from '@apollo/client'
 import { ContentSideView } from './ContentSideView'
+import moment from 'moment'
 
 export const Create = (props) => {
     const { translateMethod } = useContext(I18nContext)
     const navigate = useNavigate()
     const params = useParams()
-    const ref = useRef()
     const { client } = useContext(getApolloContext())
+
+    const sideRef = useRef()
+    const bodyRef = useRef()
 
     const [tab, setTab] = useState(0)
 
-    const [value, setValue] = useState({
+    const [sideValue, setSideValue] = useState({
         name: '',
         path: '',
-        body: `<DOCTYPE html>
-<html>
-    <head></head>
-    <body>
-        <h1>${translateMethod('cms.create.default_body_text')}</h1>
-    </body>
-</html>
-        `,
-        draft: `<DOCTYPE html>
-<html>
-    <head></head>
-    <body>
-        <h1>${translateMethod('cms.create.default_draft_body')}</h1>
-    </body>
-</html>`,
         contentType: 'text/html',
         visible: true,
         authenticated: false,
         metadata: {},
         tags: []
     })
+
+    const [bodyValue, setBodyValue] = useState({
+        draft: `<DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <h1>${translateMethod('cms.create.default_draft_body')}</h1>
+    </body>
+</html>`
+    });
+
+    const [savePath, setSavePath] = useState()
+
+    const [finalSideValue, setFinalSideValue] = useState();
+    const [finalBodyValue, setFinalBodyValue] = useState();
+
+    const [onPublishValueSideValue, setPublishValueSideValue] = useState();
+    const [onPublishValueBodyValue, setPublishValueBodyValue] = useState();
+
+    const [action, setFormAction] = useState()
+
+    useEffect(() => {
+        if (action === 'publish' && onPublishValueSideValue && onPublishValueBodyValue) {
+            Services.createCmsPage(params.id, {
+                ...onPublishValueSideValue,
+                ...onPublishValueBodyValue,
+                body: onPublishValueBodyValue.draft,
+                lastPublishedDate: Date.now()
+            })
+            setFormAction(undefined)
+            setPublishValueSideValue(undefined)
+            setPublishValueBodyValue(undefined)
+        }
+    }, [onPublishValueSideValue, onPublishValueBodyValue]);
+
+    useEffect(() => {
+        if (action === 'update' && finalSideValue && finalBodyValue) {
+            console.log(finalSideValue, finalBodyValue)
+            Services.createCmsPage(params.id, {
+                ...finalSideValue,
+                ...finalBodyValue
+            })
+                .then(res => {
+                    if (!res.error && !params.id)
+                        navigate('/settings/pages', {
+                            state: {
+                                reload: true
+                            }
+                        })
+                    else if (res.error)
+                        window.alert(res.error)
+                    else
+                        setSavePath(finalSideValue.path)
+                })
+            setFormAction(undefined)
+            setFinalSideValue(undefined)
+            setFinalBodyValue(undefined)
+        }
+    }, [finalSideValue, finalBodyValue]);
 
     useEffect(() => {
         const id = params.id
@@ -61,15 +108,21 @@ export const Create = (props) => {
                 }
             `})
                 .then(res => {
-                    if (res.data)
-                        setValue({
+                    if (res.data) {
+                        const v = {
                             ...res.data.cmsPage,
                             metadata: JSON.parse(res.data.cmsPage.metadata)
+                        }
+                        setSavePath(v.path)
+                        setSideValue(v)
+                        setBodyValue({
+                            draft: v.draft
                         })
+                    }
                 })
     }, []);
 
-    const schema = {
+    const sideSchema = {
         name: {
             type: type.string,
             placeholder: translateMethod('cms.create.name_placeholder'),
@@ -103,42 +156,6 @@ export const Create = (props) => {
                 { label: 'JSON content', value: 'application/json' }
             ]
         },
-        draft: {
-            type: type.string,
-            label: null,
-            help: translateMethod('cms.create.draft_help'),
-            render: formProps => <ContentSideView {...formProps} {...props} publish={() => {
-                const newValue = {
-                    ...formProps.rawValues,
-                    body: formProps.rawValues.draft,
-                }
-                setValue(newValue)
-                Services.createCmsPage(params.id, {
-                    ...newValue,
-                    lastPublishedDate: Date.now()
-                })
-            }} />
-        },
-        body: {
-            type: type.string,
-            format: format.code,
-            props: {
-                theme: 'tomorrow',
-                width: '-1',
-                style: {
-                    zIndex: 0,
-                    isolation: 'isolate',
-                    border: "1px solid rgba(225,225,225,.5)"
-                }
-            },
-            label: null,
-            help: translateMethod('cms.create.body_help'),
-            disabled: true,
-            readOnly: true,
-            constraints: [
-                constraints.nullable()
-            ]
-        },
         visible: {
             type: type.bool,
             label: translateMethod('Visible'),
@@ -149,64 +166,53 @@ export const Create = (props) => {
             label: translateMethod('cms.create.authenticated'),
             help: translateMethod('cms.create.authenticated_help')
         },
-        metadata: {
-            type: type.object,
-            format: format.array,
-            label: 'Metadata',
-            help: translateMethod('cms.create.metadata_help')
-        },
-        tags: {
+
+        // metadata: {
+        //     type: type.object,
+        //     array: true,
+        //     label: 'Metadata',
+        //     help: translateMethod('cms.create.metadata_help')
+        // },
+        // tags: {
+        //     type: type.string,
+        //     format: format.select,
+        //     createOption: true,
+        //     isMulti: true,
+        //     label: 'Tags',
+        //     help: translateMethod('cms.create.tags_help')
+        // }
+    }
+
+    const schema = {
+        draft: {
             type: type.string,
-            format: format.select,
-            createOption: true,
-            isMulti: true,
-            label: 'Tags',
-            help: translateMethod('cms.create.tags_help')
-        },
+            label: null,
+            help: translateMethod('cms.create.draft_help'),
+            render: formProps => <ContentSideView {...formProps} {...props}
+                publish={() => {
+                    setFormAction("publish");
+                    [bodyRef, sideRef].map(r => r.current.handleSubmit())
+                }}
+            />
+        }
     }
 
     const bodyFlow = [
         'draft'
     ]
 
-    const productionFlow = ['body']
-
     const sideFlow = [
         'name',
         'path',
         'contentType',
         'visible',
-        'authenticated'
-        ,
-        {
-            label: translateMethod('cms.create.advanced'),
-            flow: ['tags', 'metadata'],
-            collapsed: true
-        }]
-
-    const CustomForm = ({ flow }) => (
-        <Form
-            schema={schema}
-            flow={flow}
-            value={value}
-            onError={console.log}
-            onSubmit={item => {
-                Services.createCmsPage(params.id, item)
-                    .then(res => {
-                        if (!res.error && !params.id)
-                            navigate('/settings/pages', {
-                                state: {
-                                    reload: true
-                                }
-                            })
-                        else if (res.error)
-                            window.alert(res.error)
-                    })
-            }}
-            ref={ref}
-            footer={() => null}
-        />
-    )
+        'authenticated',
+        // {
+        //     label: translateMethod('cms.create.advanced'),
+        //     flow: ['tags', 'metadata'],
+        //     collapsed: true
+        // }
+    ]
 
     const Sidebar = () => (
         <>
@@ -232,21 +238,43 @@ export const Create = (props) => {
                     </h6>
                     <ul className="nav flex-column mb-2 px-3">
                         <li className="nav-item">
-                            <CustomForm flow={sideFlow} />
+                            <Form
+                                schema={sideSchema}
+                                value={sideValue}
+                                flow={sideFlow}
+                                onSubmit={side => {
+                                    setSideValue(side)
+                                    setFinalSideValue(side)
+                                    setPublishValueSideValue(side)
+                                }}
+                                ref={sideRef}
+                                footer={() => null}
+                            />
                         </li>
                     </ul>
-                    <div className="px-2 mb-4 mt-auto d-flex">
-                        <button className="btn btn-sm btn-primary me-1" style={{ flex: 1 }}
-                            onClick={() => navigate('/settings/pages')}>{translateMethod('cms.create.back_to_pages')}</button>
-                        <button className="btn btn-sm btn-success" style={{ flex: 1 }}
-                            onClick={ref.current?.handleSubmit}>
-                            {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
-                        </button>
+                    <div className="px-2 mb-4 mt-auto">
+                        {sideValue.lastPublishedDate && <div>
+                            <span>{translateMethod('cms.create.last_update')}</span>
+                            <span>{sideValue.lastPublishedDate && moment(sideValue.lastPublishedDate).format('DD MMMM y kk:mm')}</span>
+                        </div>}
+                        <div className='d-flex mt-3'>
+                            <button className="btn btn-sm btn-primary me-1" style={{ flex: 1 }} type="button"
+                                onClick={() => navigate('/settings/pages')}>{translateMethod('cms.create.back_to_pages')}</button>
+                            <button className="btn btn-sm btn-success" style={{ flex: 1 }} type="button"
+                                onClick={updatePage}>
+                                {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </nav>
         </>
     )
+
+    const updatePage = () => {
+        setFormAction("update");
+        [bodyRef, sideRef].map(r => r.current.handleSubmit())
+    }
 
     const TabButton = ({ title, onClose, onClick, selected }) => (
         <div style={{
@@ -259,7 +287,7 @@ export const Create = (props) => {
             borderRadius: '4px',
             zIndex: selected ? 2 : 0
         }} onClick={onClick} className='px-3'>
-            <button className='btn btn-sm'>{title}</button>
+            <button className='btn btn-sm' type="button">{title}</button>
             {onClose && <i className='fas fa-times' />}
         </div>
     )
@@ -267,18 +295,45 @@ export const Create = (props) => {
     return (
         <>
             <Sidebar />
-            <div className='p-2 d-flex flex-column' style={{ flex: 1 }}>
+            <div className='p-2 d-flex flex-column' style={{ flex: 1, overflow: 'hidden' }}>
                 <div className='d-flex align-items-center mt-2'>
-                    <TabButton title={translateMethod('cms.create.draft')} onClick={() => setTab(0)} selected={tab === 0} />
-                    <TabButton title={translateMethod('cms.create.content')} onClick={() => setTab(1)} selected={tab === 1} />
+                    {[
+                        { title: translateMethod('cms.create.draft'), id: 0 },
+                        { title: translateMethod('cms.create.draft_preview'), id: 1, callback: updatePage },
+                        { title: translateMethod('cms.create.content'), id: 2 }
+                    ].map(({ title, id, callback }) => (
+                        <TabButton title={title} selected={tab === id} onClick={() => {
+                            if (callback)
+                                callback()
+                            setFormAction(undefined);
+                            [bodyRef, sideRef].map(r => {
+                                if (r && r.current)
+                                    r.current.handleSubmit()
+                            })
+                            setTab(id)
+                        }} />
+                    ))}
                 </div>
-                {tab === 0 && <CustomForm flow={bodyFlow} />}
-                {tab === 1 && <CustomForm flow={productionFlow} />}
+                <div style={{
+                    display: tab === 0 ? 'block' : 'none'
+                }}>
+                    <Form
+                        schema={schema}
+                        value={bodyValue}
+                        flow={bodyFlow}
+                        onSubmit={body => {
+                            setBodyValue(body)
+                            setFinalBodyValue(body)
+                            setPublishValueBodyValue(body)
+                        }}
+
+                        ref={bodyRef}
+                        footer={() => null}
+                    />
+                </div>
+                {tab === 1 && <iframe className='mt-3' style={{ flex: 1 }} src={`/_${savePath || '/'}?draft=true`} />}
+                {tab === 2 && <iframe className='mt-3' style={{ flex: 1 }} src={`/_${savePath || '/'}`} />}
             </div>
-            {/* {value.lastPublishedDate && <div>
-                        <span>{translateMethod('cms.create.last_update')}</span>
-                        <span>{value.lastPublishedDate && moment(value.lastPublishedDate).format('DD MMMM y kk:mm')}</span>
-                    </div>} */}
         </>
     )
 }
