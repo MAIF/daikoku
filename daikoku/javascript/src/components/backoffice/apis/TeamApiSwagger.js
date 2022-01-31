@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
+import SwaggerEditor, {plugins} from 'swagger-editor';
 import { I18nContext } from '../../../core';
 import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
+
+import 'swagger-editor/dist/swagger-editor.css';
+import { ensurePluginOrder } from 'react-table';
 
 export const TeamApiSwagger = ({ value, onChange }) => {
   const [lastContent, setLastContent] = useState(undefined);
@@ -21,16 +25,15 @@ export const TeamApiSwagger = ({ value, onChange }) => {
   }, [value]);
 
   const initSwaggerEditor = (content) => {
-    window.editor = SwaggerEditorBundle({
+    window.editor = SwaggerEditor({
       // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
-      layout: 'StandaloneLayout',
-      presets: [SwaggerEditorStandalonePreset], // eslint-disable-line no-undef
-      showExtensions: false,
+      layout: 'EditorLayout',
+      plugins,
       swagger2GeneratorUrl: 'https://generator.swagger.io/api/swagger.json',
       oas3GeneratorUrl: 'https://generator3.swagger.io/openapi.json',
       swagger2ConverterUrl: 'https://converter.swagger.io/api/convert',
-      spec: content,
+      // spec: content,
     });
     window.editor.specActions.updateSpec(content);
     setLastContent(content);
@@ -39,6 +42,7 @@ export const TeamApiSwagger = ({ value, onChange }) => {
       if (ctt !== lastContent) {
         updateStateFromSwaggerEditor();
         setLastContent(ctt);
+        localStorage.removeItem('swagger-editor-content')
       }
     });
   };
