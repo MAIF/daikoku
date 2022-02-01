@@ -25,6 +25,11 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
+        # install node 16
+    - name: setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '16'
     - uses: coursier/cache-action@v5
     - name: initialize backend build
       run: |
@@ -62,6 +67,8 @@ jobs:
       run: |
         cd daikoku/javascript
         yarn build
+      env:
+        NODE_OPTIONS: --max_old_space_size=4096
     - name: Cypress run and publish report
       uses: cypress-io/github-action@v2
       with:

@@ -629,7 +629,8 @@ const UserBackOfficeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`me-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
-                  to={'/settings/admins'}>
+                  to={'/settings/admins'}
+                >
                   <i className="fas fa-user-shield me-1" />
                   <Translation i18nkey="Admins">Admins</Translation>
                 </Link>

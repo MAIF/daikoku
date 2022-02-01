@@ -269,3 +269,11 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@Zwiterrion](https://github.com/Zwiterrion)
 
+## [v1.5.1] - 2022-02-01
+
+## :beetle: Bug Fixes
+
+- Paid plan - Bad plan description [#382](https://github.com/MAIF/daikoku/issues/382)
+- Swagger page in team back office is broken [#380](https://github.com/MAIF/daikoku/issues/380)
+- email links in outlook don't work [#369](https://github.com/MAIF/daikoku/issues/369)
+

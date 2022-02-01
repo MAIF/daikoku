@@ -41,7 +41,8 @@ const ApiPost = ({ publishPost, params, team }) => {
       <div className="d-flex justify-content-end my-3">
         <Link
           className="btn btn-outline-danger me-1"
-          to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}>
+          to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}
+        >
           {translateMethod('Cancel')}
         </Link>
         <button className="btn btn-outline-success" onClick={() => publishPost(selected)}>
@@ -202,13 +203,15 @@ export function TeamApiPost({ team, api, ...props }) {
                         {post.isOpen && (
                           <button
                             className="btn btn-outline-success me-1"
-                            onClick={() => savePost(i)}>
+                            onClick={() => savePost(i)}
+                          >
                             <i className="fas fa-save" />
                           </button>
                         )}
                         <button
                           className="btn btn-outline-danger me-1"
-                          onClick={() => removePost(post._id, i)}>
+                          onClick={() => removePost(post._id, i)}
+                        >
                           <i className="fas fa-trash" />
                         </button>
                         <button className="btn btn-outline-info" onClick={() => togglePost(i)}>

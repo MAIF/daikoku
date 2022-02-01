@@ -185,7 +185,8 @@ const FileInput = (props) => {
         type="button"
         className="btn btn-outline-success pl"
         disabled={uploading}
-        onClick={trigger}>
+        onClick={trigger}
+      >
         {uploading && <i className="fas fa-spinner me-1" />}
         {!uploading && <i className="fas fa-upload me-1" />}
         <Translation i18nkey="Select file">Select file</Translation>
@@ -205,7 +206,8 @@ const AddAsset = (props) => {
           className="btn btn-access-negative"
           title={translateMethod('Add asset')}
           disabled={props.disabled ? 'disabled' : undefined}
-          onClick={() => props.addAsset()}>
+          onClick={() => props.addAsset()}
+        >
           <i className="fas fa-plus me-1" />
           <Translation i18nkey="Add asset">Add asset</Translation>
         </button>
@@ -363,7 +365,8 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
             <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
               <button
                 className="btn btn-sm btn-outline-primary me-1"
-                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
+                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
+              >
                 <i className="fas fa-download" />
               </button>
             </a>

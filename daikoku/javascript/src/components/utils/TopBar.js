@@ -271,7 +271,7 @@ const TopBarComponent = (props) => {
                     style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}
                     src={props.connectedUser.picture}
                     className="dropdown-toggle logo-anonymous user-logo"
-                    data-bs-toggle="dropdown" 
+                    data-bs-toggle="dropdown"
                     aria-expanded="false"
                     id="dropdownMenuButton1"
                     title={
@@ -285,7 +285,10 @@ const TopBarComponent = (props) => {
                     }
                     alt="user menu"
                   />
-                  <div className="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
+                  <div
+                    className="dropdown-menu dropdown-menu-end"
+                    aria-labelledby="dropdownMenuButton1"
+                  >
                     <p className="dropdown-item">
                       {translateMethod('Logged in as')} <b>{props.connectedUser.email}</b>
                     </p>
