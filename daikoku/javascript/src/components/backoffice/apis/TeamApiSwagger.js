@@ -2,9 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { I18nContext } from '../../../core';
 import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
+
 export const TeamApiSwagger = ({ value, onChange }) => {
   const [lastContent, setLastContent] = useState(undefined);
-  let unsubscribe = () => {};
+  let unsubscribe = () => { };
 
   const { translateMethod } = useContext(I18nContext);
 

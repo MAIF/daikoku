@@ -1,5 +1,6 @@
 import { SelectInput } from '@maif/react-forms/lib/inputs';
 import React, { useContext, useEffect, useState, useRef } from 'react'
+import { Link } from 'react-router-dom';
 import { I18nContext } from '../../../core';
 import Editor from './Editor'
 
@@ -8,7 +9,9 @@ const CONTENT_TYPES_TO_MODE = {
     "text/html": "html",
     "text/javascript": "javascript",
     "text/css": "css",
-    "text/markdown": "mardown"
+    "text/markdown": "mardown",
+    "text/plain": "plain_text",
+    "text/xml": "xml",
 }
 
 const LinksView = ({ editor, onChange }) => (
@@ -116,11 +119,64 @@ const TopActions = ({ setSideView, setSelector, publish }) => {
     </div>
 }
 
-export const ContentSideView = ({ value, onChange, pages, rawValues, publish }) => {
+export const ContentSideView = ({ value, onChange, pages, rawValues, publish, contentType }) => {
     const [sideView, setSideView] = useState(false);
     const [selector, setSelector] = useState("");
 
     const [ref, setRef] = useState();
+
+    const [selectedPage, setSelectedPage] = useState({
+        top: 0,
+        left: 0,
+        pageName: undefined
+    })
+
+    window.pages = pages
+
+    const onMouseDown = () => {
+        if (ref) {
+            setTimeout(() => {
+                const pos = ref.getCursorPosition();
+                const token = ref.session.getTokenAt(pos.row, pos.column);
+
+                const value = token ? token.value.trim() : "";
+
+                if (['{{daikoku-', '{{#daikoku-'].find(f => value.startsWith(f))) {
+                    const id = value
+                        .match(/(?:"[^"]*"|^[^"]*$)/)[0]
+                        .replace(/"/g, "")
+
+                    setSelectedPage({
+                        ...ref.renderer.$cursorLayer.getPixelPosition(),
+                        pageName: window.pages.find(p => p.id === id)?.name,
+                        id
+                    })
+                } else {
+                    setSelectedPage({ top: 0, left: 0, pageName: undefined })
+                }
+
+                // const range = new Range(pos.row, token.start,
+                //     pos.row, token.start + token.value.length)
+
+                // console.log(token)
+                // console.log(range)
+                // console.log(ref.session)
+
+                // ref.session.addMarker(range, 'red')
+            }, 10)
+        }
+    }
+
+    useEffect(() => {
+        console.log(ref)
+        if (ref)
+            ref.on("mousedown", onMouseDown);
+    }, [ref])
+
+    useEffect(() => {
+        if (value && ref)
+            ref.execCommand("beautify")
+    }, [value, ref])
 
     return <div style={{
         position: "relative",
@@ -135,11 +191,22 @@ export const ContentSideView = ({ value, onChange, pages, rawValues, publish }) 
             border: "1px solid rgba(225,225,225,.5)",
             flex: 1
         }} >
+            {selectedPage.pageName && <Link className='btn btn-sm px-1' style={{
+                position: 'absolute',
+                zIndex: 100,
+                backgroundColor: "#fff",
+                boxShadow: '0 1px 3px rgba(25,25,25.5)',
+                top: selectedPage.top - 24,
+                left: selectedPage.left
+            }}
+                to={`/settings/pages/edit/${selectedPage.id}`}
+                onClick={() => setSelectedPage({ pageName: undefined })}
+            >{`Editer ${selectedPage.pageName}`}</Link>}
             <Editor
                 value={value}
                 onChange={onChange}
                 setRef={setRef}
-                mode={CONTENT_TYPES_TO_MODE[rawValues.contentType] || "html"}
+                mode={(CONTENT_TYPES_TO_MODE[contentType] || "html")}
                 theme="tomorrow"
                 width="-1" />
 

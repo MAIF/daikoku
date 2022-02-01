@@ -6,6 +6,7 @@ import * as Services from '../../../services'
 import { getApolloContext, gql } from '@apollo/client'
 import { ContentSideView } from './ContentSideView'
 import moment from 'moment'
+import { SelectInput } from '@maif/react-forms/lib/inputs'
 
 export const Create = (props) => {
     const { translateMethod } = useContext(I18nContext)
@@ -29,84 +30,62 @@ export const Create = (props) => {
     })
 
     const [bodyValue, setBodyValue] = useState({
-        draft: `<DOCTYPE html>
-<html>
-    <head></head>
-    <body>
-        <h1>${translateMethod('cms.create.default_draft_body')}</h1>
-    </body>
-</html>`
+        draft: `<DOCTYPE html><html><head></head><body><h1>${translateMethod('cms.create.default_draft_body')}</h1></body></html>`
     });
 
     const [savePath, setSavePath] = useState()
-
     const [finalSideValue, setFinalSideValue] = useState();
     const [finalBodyValue, setFinalBodyValue] = useState();
-
-    const [onPublishValueSideValue, setPublishValueSideValue] = useState();
-    const [onPublishValueBodyValue, setPublishValueBodyValue] = useState();
-
     const [action, setFormAction] = useState()
 
     useEffect(() => {
-        if (action === 'publish' && onPublishValueSideValue && onPublishValueBodyValue) {
-            Services.createCmsPage(params.id, {
-                ...onPublishValueSideValue,
-                ...onPublishValueBodyValue,
-                body: onPublishValueBodyValue.draft,
-                lastPublishedDate: Date.now()
-            })
-            setFormAction(undefined)
-            setPublishValueSideValue(undefined)
-            setPublishValueBodyValue(undefined)
-        }
-    }, [onPublishValueSideValue, onPublishValueBodyValue]);
+        const onUpdatePreview = action === 'update_before_preview'
+        const onPublish = action === 'publish'
 
-    useEffect(() => {
-        if (action === 'update' && finalSideValue && finalBodyValue) {
-            console.log(finalSideValue, finalBodyValue)
-            Services.createCmsPage(params.id, {
-                ...finalSideValue,
-                ...finalBodyValue
-            })
-                .then(res => {
-                    if (!res.error && !params.id)
-                        navigate('/settings/pages', {
-                            state: {
-                                reload: true
-                            }
-                        })
-                    else if (res.error)
-                        window.alert(res.error)
-                    else
-                        setSavePath(finalSideValue.path)
+        if ((action === 'update' || onUpdatePreview || onPublish) && finalSideValue && finalBodyValue) {
+            if (onPublish) {
+                const lastPublishedDate = Date.now()
+                Services.createCmsPage(params.id, {
+                    ...finalSideValue,
+                    ...finalBodyValue,
+                    body: finalBodyValue.draft,
+                    lastPublishedDate
                 })
+                    .then(() => {
+                        setSideValue({ ...sideValue, lastPublishedDate })
+                        setBodyValue({ ...bodyValue, body: finalBodyValue.draft })
+                    })
+            } else
+                Services.createCmsPage(params.id, {
+                    ...finalSideValue,
+                    ...finalBodyValue
+                })
+                    .then(res => {
+                        if (!res.error && !params.id)
+                            navigate('/settings/pages', {
+                                state: {
+                                    reload: true
+                                }
+                            })
+                        else if (res.error)
+                            window.alert(res.error)
+                        else
+                            setSavePath(finalSideValue.path)
+                    })
+
             setFormAction(undefined)
             setFinalSideValue(undefined)
             setFinalBodyValue(undefined)
+
+            if (onUpdatePreview)
+                setTab(1)
         }
     }, [finalSideValue, finalBodyValue]);
 
     useEffect(() => {
         const id = params.id
         if (id)
-            client.query({
-                query: gql`
-                query GetCmsPage {
-                    cmsPage(id: "${id}") {
-                        name
-                        path
-                        body
-                        draft
-                        visible
-                        authenticated
-                        metadata
-                        contentType
-                        tags
-                        lastPublishedDate
-                    }
-                }
-            `})
+            client.query({ query: Services.graphql.getCmsPage(id) })
                 .then(res => {
                     if (res.data) {
                         const v = {
@@ -120,9 +99,13 @@ export const Create = (props) => {
                         })
                     }
                 })
-    }, []);
+    }, [params.id]);
 
     const sideSchema = {
+        lastPublishedDate: {
+            type: type.string,
+            format: format.text
+        },
         name: {
             type: type.string,
             placeholder: translateMethod('cms.create.name_placeholder'),
@@ -144,17 +127,23 @@ export const Create = (props) => {
         },
         contentType: {
             type: type.string,
-            format: format.select,
             label: translateMethod('Content type'),
-            options: [
-                { label: 'HTML document', value: 'text/html' },
-                { label: 'CSS stylesheet', value: 'text/css' },
-                { label: 'Javascript script', value: 'text/javascript' },
-                { label: 'Markdown document', value: 'text/markdown' },
-                { label: 'Text plain', value: 'text/plain' },
-                { label: 'XML content', value: 'text/xml' },
-                { label: 'JSON content', value: 'application/json' }
-            ]
+            render: ({ rawValues, value, onChange, error }) => <SelectInput
+                value={value}
+                possibleValues={[
+                    { label: 'HTML document', value: 'text/html' },
+                    { label: 'CSS stylesheet', value: 'text/css' },
+                    { label: 'Javascript script', value: 'text/javascript' },
+                    { label: 'Markdown document', value: 'text/markdown' },
+                    { label: 'Text plain', value: 'text/plain' },
+                    { label: 'XML content', value: 'text/xml' },
+                    { label: 'JSON content', value: 'application/json' }
+                ]}
+                onChange={contentType => {
+                    setSideValue({ ...sideValue, contentType })
+                    onChange(contentType)
+                }}
+            />
         },
         visible: {
             type: type.bool,
@@ -188,7 +177,7 @@ export const Create = (props) => {
             type: type.string,
             label: null,
             help: translateMethod('cms.create.draft_help'),
-            render: formProps => <ContentSideView {...formProps} {...props}
+            render: formProps => <ContentSideView {...formProps} {...props} contentType={sideValue.contentType}
                 publish={() => {
                     setFormAction("publish");
                     [bodyRef, sideRef].map(r => r.current.handleSubmit())
@@ -245,7 +234,6 @@ export const Create = (props) => {
                                 onSubmit={side => {
                                     setSideValue(side)
                                     setFinalSideValue(side)
-                                    setPublishValueSideValue(side)
                                 }}
                                 ref={sideRef}
                                 footer={() => null}
@@ -299,19 +287,29 @@ export const Create = (props) => {
                 <div className='d-flex align-items-center mt-2'>
                     {[
                         { title: translateMethod('cms.create.draft'), id: 0 },
-                        { title: translateMethod('cms.create.draft_preview'), id: 1, callback: updatePage },
+                        {
+                            title: translateMethod('cms.create.draft_preview'), id: 1, showPreview: () => {
+                                setFormAction("update_before_preview");
+                                [bodyRef, sideRef].map(r => r.current.handleSubmit())
+                            }
+                        },
                         { title: translateMethod('cms.create.content'), id: 2 }
-                    ].map(({ title, id, callback }) => (
-                        <TabButton title={title} selected={tab === id} onClick={() => {
-                            if (callback)
-                                callback()
-                            setFormAction(undefined);
-                            [bodyRef, sideRef].map(r => {
-                                if (r && r.current)
-                                    r.current.handleSubmit()
-                            })
-                            setTab(id)
-                        }} />
+                    ].map(({ title, id, showPreview }) => (
+                        <TabButton title={title}
+                            selected={tab === id}
+                            key={`tabButton${id}`}
+                            onClick={() => {
+                                if (showPreview)
+                                    showPreview()
+                                else {
+                                    setFormAction(undefined);
+                                    [bodyRef, sideRef].map(r => {
+                                        if (r && r.current)
+                                            r.current.handleSubmit()
+                                    })
+                                    setTab(id)
+                                }
+                            }} />
                     ))}
                 </div>
                 <div style={{
@@ -324,7 +322,6 @@ export const Create = (props) => {
                         onSubmit={body => {
                             setBodyValue(body)
                             setFinalBodyValue(body)
-                            setPublishValueBodyValue(body)
                         }}
 
                         ref={bodyRef}

@@ -963,4 +963,20 @@ export const graphql = {
     }
     `),
   myVisibleApisOfTeam: (teamId) => graphql.myVisibleApis(teamId),
+  getCmsPage: id => gql`
+    query GetCmsPage {
+        cmsPage(id: "${id}") {
+            name
+            path
+            body
+            draft
+            visible
+            authenticated
+            metadata
+            contentType
+            tags
+            lastPublishedDate
+        }
+    }
+  `
 };

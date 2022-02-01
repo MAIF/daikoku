@@ -6,14 +6,16 @@ import 'ace-builds/src-noconflict/mode-html'
 import 'ace-builds/src-noconflict/mode-json'
 import 'ace-builds/src-noconflict/mode-javascript'
 import 'ace-builds/src-noconflict/mode-css'
+import 'ace-builds/src-noconflict/mode-plain_text'
+import 'ace-builds/src-noconflict/mode-xml'
 import 'ace-builds/src-noconflict/mode-markdown'
 import 'ace-builds/src-noconflict/theme-monokai'
 import 'ace-builds/src-noconflict/theme-tomorrow'
 import 'ace-builds/src-noconflict/ext-searchbox'
 import 'ace-builds/src-noconflict/ext-language_tools'
 
-export default ({ onChange, value, setRef, className = '', readOnly, theme = 'monokai', mode = 'javascript', ...props }) => (
-    <AceEditor
+export default ({ onChange, value, setRef, className = '', readOnly, theme = 'monokai', mode = 'javascript', ...props }) => {
+    return <AceEditor
         commands={Beautify.commands}
         className={className}
         readOnly={readOnly}
@@ -40,4 +42,4 @@ export default ({ onChange, value, setRef, className = '', readOnly, theme = 'mo
         // maxLines={Infinity}
         width={props.width}
     />
-);
+}
