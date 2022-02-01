@@ -67,6 +67,8 @@ jobs:
       run: |
         cd daikoku/javascript
         yarn build
+      env:
+        NODE_OPTIONS: --max_old_space_size=4096
     - name: Cypress run and publish report
       uses: cypress-io/github-action@v2
       with:
