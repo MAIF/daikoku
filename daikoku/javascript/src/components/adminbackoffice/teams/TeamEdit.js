@@ -155,7 +155,8 @@ function TeamEditForAdministrationComponent(props) {
                 type="button"
                 className="btn btn-outline-primary"
                 disabled={create}
-                onClick={members}>
+                onClick={members}
+              >
                 <span>
                   <i className="fas fa-users me-1" />
                   <Translation i18nkey="Members" isPlural>
@@ -167,7 +168,8 @@ function TeamEditForAdministrationComponent(props) {
                 style={{ marginLeft: 5 }}
                 type="button"
                 className="btn btn-outline-success"
-                onClick={save}>
+                onClick={save}
+              >
                 {!create && (
                   <span>
                     <i className="fas fa-save me-1" />

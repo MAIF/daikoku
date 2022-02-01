@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import SwaggerEditor, {plugins} from 'swagger-editor';
+import SwaggerEditor, { plugins } from 'swagger-editor';
 import { I18nContext } from '../../../core';
 import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
@@ -42,7 +42,7 @@ export const TeamApiSwagger = ({ value, onChange }) => {
       if (ctt !== lastContent) {
         updateStateFromSwaggerEditor();
         setLastContent(ctt);
-        localStorage.removeItem('swagger-editor-content')
+        localStorage.removeItem('swagger-editor-content');
       }
     });
   };

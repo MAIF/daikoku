@@ -71,7 +71,8 @@ export function ImportExportComponent(props) {
               <a
                 href={`/api/state/export?download=true&export-audit-trail=${!!state.exportAuditTrail}`}
                 target="_blank"
-                className="btn btn-outline-primary">
+                className="btn btn-outline-primary"
+              >
                 <i className="fas fa-download me-1" />
                 <Translation i18nkey="download state">download state</Translation>
               </a>
@@ -79,7 +80,8 @@ export function ImportExportComponent(props) {
                 type="button"
                 style={{ marginLeft: 10 }}
                 onClick={importState}
-                className="btn btn-outline-primary">
+                className="btn btn-outline-primary"
+              >
                 <i className="fas fa-upload me-1" />
                 {state.uploading
                   ? translateMethod('importing ...')

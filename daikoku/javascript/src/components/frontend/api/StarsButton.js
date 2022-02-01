@@ -18,7 +18,8 @@ const StarsButton = ({ stars, toggleStar, starred, connectedUser }) => (
         <button
           className="btn flex-row align-items-center pe-2"
           style={{ color: 'var(--btn-bg-color, "#000")', padding: '0' }}
-          onClick={toggleStar}>
+          onClick={toggleStar}
+        >
           <i className={`${starred ? 'fas' : 'far'} fa-star ps-2`} />
         </button>
         <div className="px-2 d-flex align-items-center" style={{ backgroundColor: '#fff' }}>

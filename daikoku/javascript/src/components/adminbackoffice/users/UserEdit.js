@@ -318,7 +318,8 @@ export function UserEditComponent() {
               style={{ marginLeft: 5 }}
               type="button"
               className="btn btn-outline-danger"
-              onClick={removeUser}>
+              onClick={removeUser}
+            >
               <i className="fas fa-trash me-1" />
               <Translation i18nkey="Delete">Delete</Translation>
             </button>

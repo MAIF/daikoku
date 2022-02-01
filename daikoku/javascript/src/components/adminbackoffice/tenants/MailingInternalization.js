@@ -42,7 +42,8 @@ const MarkdownComponent = ({
         <button
           type="button"
           onClick={() => saveTranslation(translationKey, language)}
-          className="btn btn-outline-success ms-1">
+          className="btn btn-outline-success ms-1"
+        >
           <i className="fas fa-save" />
         </button>
       </div>
@@ -342,7 +343,8 @@ function MailingInternalizationComponent({ team, tenant }) {
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'mail' ? 'active' : ''}`}
-              to={`/settings/internationalization/mail`}>
+              to={`/settings/internationalization/mail`}
+            >
               <i className="fas fa-envelope me-1" />
               {translateMethod('mailing_internalization.mail_tab')}
             </Link>
@@ -350,7 +352,8 @@ function MailingInternalizationComponent({ team, tenant }) {
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'mail-template' ? 'active' : ''}`}
-              to={`/settings/internationalization/mail-template`}>
+              to={`/settings/internationalization/mail-template`}
+            >
               <i className="fas fa-envelope me-1" />
               {translateMethod('mailing_internalization.mail_template_tab')}
             </Link>
@@ -358,7 +361,8 @@ function MailingInternalizationComponent({ team, tenant }) {
           <li className="nav-item">
             <Link
               className={`nav-link ${domain === 'front' ? 'active' : ''}`}
-              to={`/settings/internationalization/front`}>
+              to={`/settings/internationalization/front`}
+            >
               <i className="fas fa-globe me-1" />
               {translateMethod('mailing_internalization.front_office_tab')}
             </Link>

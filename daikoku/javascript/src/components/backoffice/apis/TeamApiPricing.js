@@ -1378,7 +1378,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     value.possibleUsagePlans = plans;
     props.onChange(value);
     setSelected(clone);
-  }
+  };
 
   function deletePlan() {
     window
@@ -1463,7 +1463,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 onClick={importPlan}
                 type="button"
                 className="btn btn-outline-primary me-1"
-                style={{ marginTop: 0 }}>
+                style={{ marginTop: 0 }}
+              >
                 {translateMethod('import a plan')}
               </button>
             )}
@@ -1493,7 +1494,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={makesDefault}
                   type="button"
-                  className="btn btn-sm btn-outline-primary me-1 mb-2">
+                  className="btn btn-sm btn-outline-primary me-1 mb-2"
+                >
                   <i className="fas fa-star me-1" title="Default plan" />
                   <Translation i18nkey="Make default plan">Make default plan</Translation>
                 </button>
@@ -1502,7 +1504,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={makePrivate}
                   type="button"
-                  className="btn btn-sm btn-outline-primary mb-2 me-1">
+                  className="btn btn-sm btn-outline-primary mb-2 me-1"
+                >
                   <i
                     className={classNames('fas me-1', {
                       'fa-lock': selected.visibility === 'Public',
@@ -1521,7 +1524,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={clonePlan}
                   type="button"
-                  className="btn btn-sm btn-outline-primary mb-2 me-1">
+                  className="btn btn-sm btn-outline-primary mb-2 me-1"
+                >
                   <i className="fas fa-clone me-1" />
                   <Translation i18nkey="Duplicate plan">Duplicate plan</Translation>
                 </button>
@@ -1530,7 +1534,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={deletePlan}
                   type="button"
-                  className="btn btn-sm btn-outline-danger mb-2">
+                  className="btn btn-sm btn-outline-danger mb-2"
+                >
                   <i className="fas fa-trash me-1" />
                   <Translation i18nkey="Delete plan">Delete plan</Translation>
                 </button>
@@ -1646,7 +1651,8 @@ const CustomMetadataInput = (props) => {
                 disabled={props.disabled}
                 type="button"
                 className="input-group-text btn btn-outline-danger"
-                onClick={(e) => remove(e, key)}>
+                onClick={(e) => remove(e, key)}
+              >
                 <i className="fas fa-trash" />
               </button>
               {idx === props.value.length - 1 && (
@@ -1654,7 +1660,8 @@ const CustomMetadataInput = (props) => {
                   disabled={props.disabled}
                   type="button"
                   className="input-group-text btn btn-outline-primary"
-                  onClick={addNext}>
+                  onClick={addNext}
+                >
                   <i className="fas fa-plus" />{' '}
                 </button>
               )}

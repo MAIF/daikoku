@@ -352,7 +352,8 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
               <button
                 onClick={deletePage}
                 type="button"
-                className="btn btn-sm btn-outline-danger mb-2">
+                className="btn btn-sm btn-outline-danger mb-2"
+              >
                 <i className="fas fa-trash me-1" />
                 <Translation i18nkey="Delete page">Delete page</Translation>
               </button>

@@ -36,7 +36,7 @@ const ContactModalComponent = (props) => {
         <h5 className="modal-title">
           <Translation i18nkey="Contact request">Contact request</Translation>
         </h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
       </div>
 
       <div className="modal-body">

@@ -60,42 +60,43 @@ export const ApiCard = (props) => {
     return (
       <div className="col-4">
         <div className="card mb-4 shadow-sm api-card ">
-        <div
-          className={classNames('card-img-top card-link card-skin', { 'card-skin': !api.image })}
-          data-holder-rendered="true"
-        >
-          {api.image && (
-            <img style={{ height: '100%', width: '100%' }} src={api.image} alt={api.name} />
-          )}
-          {!api.image && <span>{api.name}</span>}
-          {accessButton()}
-          <Can I={manage} a={API} team={team}>
-            <button
-              type="button"
-              className="btn btn-sm btn-access-negative btn-edit"
-              onClick={props.redirectToEditPage}
-            >
-              <i className="fas fa-edit" />
-            </button>
-          </Can>
-        </div>
-        <div className="card-body plan-body d-flex flex-column">
-          <h4
-            className="cursor-pointer underline-on-hover a-fake"
-            onClick={props.redirectToApiPage}
+          <div
+            className={classNames('card-img-top card-link card-skin', { 'card-skin': !api.image })}
+            data-holder-rendered="true"
           >
-            {api.name}
-          </h4>
-          <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
-          {props.teamVisible && (
-            <small
-              className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline justify-content-end"
-              onClick={() => props.redirectToTeamPage(team)}>
-              <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
-              {team.name}
-            </small>
-          )}
-        </div>
+            {api.image && (
+              <img style={{ height: '100%', width: '100%' }} src={api.image} alt={api.name} />
+            )}
+            {!api.image && <span>{api.name}</span>}
+            {accessButton()}
+            <Can I={manage} a={API} team={team}>
+              <button
+                type="button"
+                className="btn btn-sm btn-access-negative btn-edit"
+                onClick={props.redirectToEditPage}
+              >
+                <i className="fas fa-edit" />
+              </button>
+            </Can>
+          </div>
+          <div className="card-body plan-body d-flex flex-column">
+            <h4
+              className="cursor-pointer underline-on-hover a-fake"
+              onClick={props.redirectToApiPage}
+            >
+              {api.name}
+            </h4>
+            <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
+            {props.teamVisible && (
+              <small
+                className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline justify-content-end"
+                onClick={() => props.redirectToTeamPage(team)}
+              >
+                <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
+                {team.name}
+              </small>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -113,7 +114,8 @@ export const ApiCard = (props) => {
               <button
                 type="button"
                 className="btn btn-sm btn-access-negative me-1 mb-1"
-                onClick={props.redirectToEditPage}>
+                onClick={props.redirectToEditPage}
+              >
                 <i className="fas fa-edit" />
               </button>
             </Can>
@@ -168,7 +170,8 @@ export const ApiCard = (props) => {
         {props.teamVisible && (
           <small
             className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline"
-            onClick={() => props.redirectToTeamPage(team)}>
+            onClick={() => props.redirectToTeamPage(team)}
+          >
             <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
             {team.name}
           </small>

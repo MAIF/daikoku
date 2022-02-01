@@ -82,49 +82,49 @@ function TeamListComponent(props) {
     <UserBackOffice tab="Teams">
       <Can I={manage} a={tenant} dispatchError>
         <div className="row">
-            <div className="d-flex justify-content-between align-items-center">
-              <h1>
-                <Translation i18nkey="Teams">Teams</Translation>
-                <a
-                  className="btn btn-sm btn-access-negative mb-1 ms-1"
-                  title={translateMethod('Create a new team')}
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    createNewTeam();
-                  }}
-                >
-                  <i className="fas fa-plus-circle" />
-                </a>
-              </h1>
-              <div className="col-5">
-                <input
-                  placeholder={translateMethod('Find a team')}
-                  className="form-control"
-                  onChange={(e) => {
-                    setState({ ...state, search: e.target.value });
-                  }}
-                />
-              </div>
+          <div className="d-flex justify-content-between align-items-center">
+            <h1>
+              <Translation i18nkey="Teams">Teams</Translation>
+              <a
+                className="btn btn-sm btn-access-negative mb-1 ms-1"
+                title={translateMethod('Create a new team')}
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  createNewTeam();
+                }}
+              >
+                <i className="fas fa-plus-circle" />
+              </a>
+            </h1>
+            <div className="col-5">
+              <input
+                placeholder={translateMethod('Find a team')}
+                className="form-control"
+                onChange={(e) => {
+                  setState({ ...state, search: e.target.value });
+                }}
+              />
             </div>
-            <PaginatedComponent
-              items={_.sortBy(filteredTeams, [(team) => team.name.toLowerCase()])}
-              count={8}
-              formatter={(team) => {
-                return (
-                  <AvatarWithAction
-                    key={team._id}
-                    avatar={team.avatar}
-                    infos={
-                      <>
-                        <span className="team__name text-truncate">{team.name}</span>
-                      </>
-                    }
-                    actions={actions(team)}
-                  />
-                );
-              }}
-            />
+          </div>
+          <PaginatedComponent
+            items={_.sortBy(filteredTeams, [(team) => team.name.toLowerCase()])}
+            count={8}
+            formatter={(team) => {
+              return (
+                <AvatarWithAction
+                  key={team._id}
+                  avatar={team.avatar}
+                  infos={
+                    <>
+                      <span className="team__name text-truncate">{team.name}</span>
+                    </>
+                  }
+                  actions={actions(team)}
+                />
+              );
+            }}
+          />
         </div>
       </Can>
     </UserBackOffice>

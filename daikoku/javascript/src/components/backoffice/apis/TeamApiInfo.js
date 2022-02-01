@@ -28,7 +28,8 @@ function NameAlreadyExists(props) {
     <div className="mb-3 row">
       <div
         className="col-sm-12"
-        style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}
+      >
         <span className="badge bg-danger">
           <Translation i18nkey="api.already.exists" replacements={[props.rawValue.name]}>
             api with name "{props.rawValue.name}" already exists
