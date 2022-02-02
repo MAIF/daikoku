@@ -42,7 +42,7 @@ export const CMSOffice = () => {
     }
 
     const Index = ({ }) => {
-        return <div>
+        return <div className='pt-2'>
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
                 <Link to="new" className="btn btn-sm btn-primary">New page</Link>

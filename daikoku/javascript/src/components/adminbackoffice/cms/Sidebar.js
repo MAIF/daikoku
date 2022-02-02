@@ -22,7 +22,8 @@ export default React.memo(
                 authenticated: false,
                 metadata: {},
                 tags: [],
-                isBlockPage: false
+                isBlockPage: false,
+                exact: true
             })
         }, [inValue])
 
@@ -70,6 +71,15 @@ export default React.memo(
                         )
                     ])
                 ]
+            },
+            exact: {
+                type: type.bool,
+                label: translateMethod('Exact path'),
+                help: translateMethod('cms.create.exact'),
+                visible: {
+                    ref: 'isBlockPage',
+                    test: v => !v
+                },
             },
             contentType: {
                 type: type.string,
@@ -119,6 +129,7 @@ export default React.memo(
         const flow = [
             'name',
             'isBlockPage',
+            'exact',
             'path',
             'contentType',
             'visible',

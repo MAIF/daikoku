@@ -1014,6 +1014,7 @@
     "cms.create.version_label": "Version",
     "cms.create.draft_preview": "Visualize draft page",
     "cms.inserted": "The text has been added",
+    "cms.create.exact": "Exact path",
     "cms.pages.remove_confirm": "Are your sure to delete this page?",
     "updated password can't be saved": "Updated password can't be saved",
     "incorrect password": "Incorrect password"

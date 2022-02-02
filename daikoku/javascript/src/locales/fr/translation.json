@@ -1016,6 +1016,7 @@
   "cms.inserted": "Le texte a été ajouté",
   "cms.create.draft_preview": "Voir la page en cours",
   "cms.pages.remove_confirm": "Êtes-vous sûr de vouloir supprimer cette page ?",
+  "cms.create.exact": "Chemin exact",
   "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
   "incorrect password": "Mots de passe incorrect"
 }

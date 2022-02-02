@@ -100,10 +100,23 @@ class HomeController(
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> actualPath)).flatMap {
       case None =>
         env.dataStore.cmsRepo.forTenant(ctx.tenant).findAll()
+          .map(cmsPages => cmsPages.filter(p => p.path.exists(_.nonEmpty)))
           .flatMap(cmsPages => {
-            cmsPages
+            val strictPage = cmsPages.filter(_.exact)
               .sortBy(_.path.map(_.length).getOrElse(0))(Ordering[Int].reverse)
-              .find(p => ctx.request.path.startsWith(s"/_${p.path.getOrElse("")}")) match {
+              .find(p => ctx.request.path.equals(s"/_${p.path.getOrElse("")}"))
+
+            val page = strictPage match {
+              case Some(p) => Some(p)
+              case None => cmsPages
+                .filter(!_.exact)
+                .sortBy(_.path.map(_.length).getOrElse(0))(Ordering[Int].reverse)
+                .find(p => ctx.request.path.startsWith(s"/_${p.path.getOrElse("")}"))
+            }
+
+            println(cmsPages
+              .filter(!_.exact).map(_.path), page.map(_.path))
+            page match {
               case Some(r) if r.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
               case Some(r) => r.render(ctx, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
               case None => cmsPageNotFound()
