@@ -1528,6 +1528,7 @@ object json {
             homePageVisible =
               (json \ "homePageVisible").asOpt[Boolean].getOrElse(false),
             homeCmsPage = (json \ "homeCmsPage").asOpt[String],
+            notFoundCmsPage = (json \ "notFoundCmsPage").asOpt[String],
             logo = (json \ "logo")
               .asOpt[String]
               .getOrElse("/assets/images/daikoku.svg"),
@@ -1556,6 +1557,7 @@ object json {
       "description" -> o.description,
       "unloggedHome" -> o.unloggedHome,
       "homeCmsPage" -> o.homeCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "notFoundCmsPage" -> o.notFoundCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "homePageVisible" -> o.homePageVisible,
       "logo" -> o.logo,
       "footer" -> o.footer

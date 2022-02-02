@@ -5,8 +5,9 @@ import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
-import fr.maif.otoroshi.daikoku.domain.{json}
+import fr.maif.otoroshi.daikoku.domain.{DaikokuStyle, json}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.utils.Errors
 import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
@@ -113,16 +114,13 @@ class HomeController(
                 .sortBy(_.path.map(_.length).getOrElse(0))(Ordering[Int].reverse)
                 .find(p => ctx.request.path.startsWith(s"/_${p.path.getOrElse("")}"))
             }
-
-            println(cmsPages
-              .filter(!_.exact).map(_.path), page.map(_.path))
             page match {
               case Some(r) if r.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
               case Some(r) => r.render(ctx, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
-              case None => cmsPageNotFound()
+              case None => cmsPageNotFound(ctx)
             }
           })
-      case Some(page) if !page.visible => cmsPageNotFound()
+      case Some(page) if !page.visible => cmsPageNotFound(ctx)
       case Some(page) if page.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
       case Some(page) => page.render(ctx, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
     }
@@ -131,7 +129,18 @@ class HomeController(
   private def redirectToLoginPage[A](ctx: DaikokuActionMaybeWithoutUserContext[A]) =
     FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
 
-  private def cmsPageNotFound() = FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
+  private def cmsPageNotFound[A](ctx: DaikokuActionMaybeWithoutUserContext[A]): Future[Result] = {
+    val optionFoundPage: Option[DaikokuStyle] = ctx.tenant.style
+      .find(p => p.homePageVisible && p.notFoundCmsPage.nonEmpty)
+
+      optionFoundPage match {
+        case Some(p) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(p.notFoundCmsPage.get).flatMap {
+          case Some(page) => page.render(ctx).map(res => Ok(res._1).as(res._2))
+          case _ => Errors.craftResponseResult("Page not found !", Results.NotFound, ctx.request, None, env)
+        }
+        case _ => Errors.craftResponseResult("Page not found !", Results.NotFound, ctx.request, None, env)
+      }
+  }
 
   private def cmsPageByIdWithoutAction[A](ctx: DaikokuActionMaybeWithoutUserContext[A], id: String) = {
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).flatMap {

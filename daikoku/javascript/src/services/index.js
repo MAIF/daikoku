@@ -899,7 +899,8 @@ export const createCmsPage = (id, cmsPage) => customFetch('/api/cms/pages', {
   method: 'POST',
   body: JSON.stringify({
     ...cmsPage,
-    id
+    id,
+    path: cmsPage.isBlockPage ? undefined : cms.isBlockPage
   }),
 });
 
@@ -970,6 +971,7 @@ export const graphql = {
             path
             draft
             body
+            exact
             visible
             authenticated
             metadata

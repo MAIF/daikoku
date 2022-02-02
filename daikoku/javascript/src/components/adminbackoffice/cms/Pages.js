@@ -52,7 +52,7 @@ export const Pages = ({ pages, removePage }) => {
                 textAlign: 'left',
                 fontStyle: 'italic'
             },
-            accessor: (item) => item.path,
+            accessor: (item) => item.path ? item.path : '-',
         },
         {
             Header: 'Publish Date',

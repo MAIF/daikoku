@@ -313,6 +313,7 @@ export function TenantEditComponent(props) {
     `>>> ${translateMethod('tenant_edit.cms_pages')}`,
     'style.homePageVisible',
     'style.homeCmsPage',
+    'style.notFoundCmsPage',
     'linkToCmsPages',
     `>>> ${translateMethod('SEO')}`,
     'robotTxt',
@@ -427,6 +428,15 @@ export function TenantEditComponent(props) {
       visible: () => state.tenant?.style.homePageVisible,
       props: {
         label: translateMethod('tenant_edit.home_page'),
+        disabled: !state.tenant?.style.homePageVisible,
+        possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
+      }
+    },
+    'style.notFoundCmsPage': {
+      type: 'select',
+      visible: () => state.tenant?.style.homePageVisible,
+      props: {
+        label: translateMethod('tenant_edit.404_page'),
         disabled: !state.tenant?.style.homePageVisible,
         possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
       }

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import moment from 'moment'
-import { SelectInput } from '@maif/react-forms/lib/inputs'
+import { BooleanInput, SelectInput } from '@maif/react-forms/lib/inputs'
 import { constraints, Form, format, type } from '@maif/react-forms'
 import { I18nContext } from '../../../core'
 
@@ -50,7 +50,7 @@ export default React.memo(
             },
             isBlockPage: {
                 type: type.bool,
-                label: translateMethod('Is a block ?'),
+                label: translateMethod('Is a block ?')
             },
             path: {
                 type: type.string,
@@ -62,7 +62,9 @@ export default React.memo(
                 help: translateMethod('cms.create.path_placeholder'),
                 label: translateMethod('Path'),
                 constraints: [
-                    constraints.when('isBlockPage', v => !!v, [], [
+                    constraints.when('isBlockPage', v => !!v, [
+                        constraints.nullable()
+                    ], [
                         constraints.matches("^/", translateMethod('cms.create.path_slash_constraints')),
                         constraints.test(
                             'path',
