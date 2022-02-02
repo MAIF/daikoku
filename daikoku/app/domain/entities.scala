@@ -1799,7 +1799,8 @@ case class CmsPage(
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
-  def enrichHandlebarsWithEntity[A](ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars, env: Env, tenant: Tenant, name: String, getRepo: Env => TenantCapableRepo[A, _], makeBean: A => AnyRef,
+  def enrichHandlebarsWithEntity[A](ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars, env: Env, tenant: Tenant, name: String,
+                                    getRepo: Env => TenantCapableRepo[A, _], makeBean: A => AnyRef,
                                     stringify: A => JsValue)
                                    (implicit ec: ExecutionContext): Handlebars = {
     val repo: TenantCapableRepo[A, _] = getRepo(env)
@@ -1843,9 +1844,9 @@ case class CmsPage(
     Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
       case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)), 10.seconds) match {
         case None => s"block '$id' not found"
-        case Some(page) => Await.result(page.render(ctx, Some(Map() ++ attrs)).map(t => t._1), 10.seconds)
+        case Some(page) => Await.result(page.render(ctx, wantDraft = false, Some(Map() ++ attrs)).map(t => t._1), 10.seconds)
       }
-      case Some(page) => Await.result(page.render(ctx, Some(Map() ++ attrs)).map(t => t._1), 10.seconds)
+      case Some(page) => Await.result(page.render(ctx, wantDraft = false, Some(Map() ++ attrs)).map(t => t._1), 10.seconds)
     }
   }
 
@@ -1856,7 +1857,7 @@ case class CmsPage(
       case None => "page not found"
       case Some(page) =>
         val attrs = options.hash.asScala.map { case (k, v) => (k, renderString(ctx, v.toString)) }
-        Await.result(page.render(ctx, Some(
+        Await.result(page.render(ctx, wantDraft = false, Some(
           Map("children" -> options.fn.apply(staticContext.build())) ++ attrs)).map(t => t._1), 10.seconds)
     }
   }
@@ -1899,7 +1900,61 @@ case class CmsPage(
     links.map { case (name, link) => handlebars.registerHelper(s"daikoku-links-$name", (_: Object, _: Options) => link) }
   }
 
-  def render(ctx: DaikokuActionMaybeWithoutUserContext[_], additionalContext: Option[Map[String, String]] = None)(implicit env: Env): Future[(String, String)] = {
+  private def enrichHandlebarWithDocumentationEntity(ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars, env: Env, tenant: Tenant, name: String)
+                                        (implicit ec: ExecutionContext): Handlebars = {
+    import scala.jdk.CollectionConverters._
+
+    val repo = env.dataStore.apiDocumentationPageRepo
+    handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
+      val pages = Await.result(env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(renderString(ctx, id)(env, ec))
+          .flatMap {
+            case Some(api) => Future.sequence(api.documentation.pages.map(repo.forTenant(tenant).findById(_)))
+            case _ => FastFuture.successful(Seq())
+          }, 10.seconds)
+        .flatten
+
+      pages
+        .map(p => new JavaBeanDocumentation(p))
+        .map(doc => options.fn.apply(Context.newBuilder(doc).combine(name, doc).build()))
+        .mkString("\n")
+    })
+
+    handlebars.registerHelper(s"daikoku-$name-page", (id: String, options: Options) => {
+      val attrs = options.hash.asScala.map {
+        case (k, v) => (k, renderString(ctx, v.toString)(env, ec))
+      }
+
+      val page = attrs.get("page").map(_.toInt).getOrElse(0)
+      Await.result(env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(renderString(ctx, id)(env, ec))
+        .flatMap {
+          case Some(api) => Future.sequence(api.documentation.pages.slice(page, page+1).map(repo.forTenant(tenant).findById(_)))
+          case _ => FastFuture.successful(Seq())
+        }, 10.seconds)
+        .flatten
+        .map(p => new JavaBeanDocumentation(p))
+        .map(doc => options.fn.apply(Context.newBuilder(doc).combine(name, doc).build()))
+        .mkString("\n")
+    })
+
+    handlebars.registerHelper(s"daikoku-$name-page-id", (id: String, options: Options) => {
+      val attrs = options.hash.asScala.map {
+        case (k, v) => (k, renderString(ctx, v.toString)(env, ec))
+      }
+
+      val page = attrs.getOrElse("page", "")
+      Await.result(env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(renderString(ctx, id)(env, ec))
+        .flatMap {
+          case Some(api) => api.documentation.pages.find(_.value == page).map(repo.forTenant(tenant).findById(_))
+            .getOrElse(FastFuture.successful(None))
+          case _ => FastFuture.successful(None)
+        }, 10.seconds)
+        .map(p => new JavaBeanDocumentation(p))
+        .map(doc => options.fn.apply(Context.newBuilder(doc).combine(name, doc).build()))
+        .getOrElse("")
+    })
+  }
+
+  def render(ctx: DaikokuActionMaybeWithoutUserContext[_], wantDraft: Boolean = false, additionalContext: Option[Map[String, String]] = None)(implicit env: Env): Future[(String, String)] = {
     (forwardRef match {
       case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)(env.defaultExecutionContext).map(_.getOrElse(this))(env.defaultExecutionContext)
       case None => FastFuture.successful(this)
@@ -1908,7 +1963,6 @@ case class CmsPage(
         import com.github.jknack.handlebars.EscapingStrategy
         implicit val ec = CmsPage.pageRenderingEc
 
-        val wantDraft = ctx.request.getQueryString("draft").contains("true")
         val template = if (wantDraft) page.draft.getOrElse(page.body) else page.body
 
         val staticContext = Context
@@ -1938,8 +1992,13 @@ case class CmsPage(
         handlebars.registerHelper("daikoku-path-param", (id: String, _: Options) => daikokuPathParam(ctx, id))
         handlebars.registerHelper("daikoku-query-param", (id: String, _: Options) => ctx.request.queryString.get(id).map(_.head).getOrElse("id param not found"))
         daikokuLinks(ctx, handlebars)
-        enrichHandlebarsWithEntity(ctx, handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api), (api: Api) => api.asJson)
-        enrichHandlebarsWithEntity(ctx, handlebars, env, ctx.tenant, "team", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team), (team: Team) => team.asJson)
+        enrichHandlebarsWithEntity(ctx, handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo,
+          (api: Api) => new JavaBeanApi(api),
+          (api: Api) => api.asJson)
+        enrichHandlebarsWithEntity(ctx, handlebars, env, ctx.tenant, "team", _.dataStore.teamRepo,
+          (team: Team) => new JavaBeanTeam(team),
+          (team: Team) => team.asJson)
+        enrichHandlebarWithDocumentationEntity(ctx, handlebars, env, ctx.tenant, "documentations")
 
         val result = handlebars.compileInline(template).apply(context)
         context.destroy()
@@ -1961,6 +2020,13 @@ case class CmsPage(
       }
     }(env.defaultExecutionContext)
   }
+}
+
+class JavaBeanDocumentation(documentation: ApiDocumentationPage) {
+  def getId(): String = documentation.id.value
+  def getTitle(): String = documentation.title
+  def getContentType(): String = documentation.contentType
+  def getContent(): String = documentation.content
 }
 
 class JavaBeanApi(api: Api) {

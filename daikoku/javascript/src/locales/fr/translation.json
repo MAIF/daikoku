@@ -1013,8 +1013,9 @@
   "cms.content_side.publish_label": "Êtes-vous sûr de vouloir publier cette version ?",
   "cms.create.last_update": "Dernier changement : ",
   "cms.create.version_label": "Version",
-  "cms.inserted": "The text has been added",
+  "cms.inserted": "Le texte a été ajouté",
   "cms.create.draft_preview": "Voir la page en cours",
+  "cms.pages.remove_confirm": "Êtes-vous sûr de vouloir supprimer cette page ?",
   "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
   "incorrect password": "Mots de passe incorrect"
 }

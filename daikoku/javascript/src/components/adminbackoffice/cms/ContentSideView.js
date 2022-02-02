@@ -151,32 +151,16 @@ export const ContentSideView = ({ value, onChange, pages, rawValues, publish, co
                         pageName: window.pages.find(p => p.id === id)?.name,
                         id
                     })
-                } else {
+                } else
                     setSelectedPage({ top: 0, left: 0, pageName: undefined })
-                }
-
-                // const range = new Range(pos.row, token.start,
-                //     pos.row, token.start + token.value.length)
-
-                // console.log(token)
-                // console.log(range)
-                // console.log(ref.session)
-
-                // ref.session.addMarker(range, 'red')
             }, 10)
         }
     }
 
     useEffect(() => {
-        console.log(ref)
         if (ref)
             ref.on("mousedown", onMouseDown);
     }, [ref])
-
-    useEffect(() => {
-        if (value && ref)
-            ref.execCommand("beautify")
-    }, [value, ref])
 
     return <div style={{
         position: "relative",
@@ -196,7 +180,7 @@ export const ContentSideView = ({ value, onChange, pages, rawValues, publish, co
                 zIndex: 100,
                 backgroundColor: "#fff",
                 boxShadow: '0 1px 3px rgba(25,25,25.5)',
-                top: selectedPage.top - 24,
+                top: selectedPage.top - 36,
                 left: selectedPage.left
             }}
                 to={`/settings/pages/edit/${selectedPage.id}`}

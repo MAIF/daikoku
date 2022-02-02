@@ -1013,7 +1013,8 @@
     "cms.create.last_update": "Last update :",
     "cms.create.version_label": "Version",
     "cms.create.draft_preview": "Visualize draft page",
-    "cms.inserted": "Le texte a été ajouté",
+    "cms.inserted": "The text has been added",
+    "cms.pages.remove_confirm": "Are your sure to delete this page?",
     "updated password can't be saved": "Updated password can't be saved",
     "incorrect password": "Incorrect password"
 

@@ -1134,7 +1134,7 @@ object SchemaDefinition {
         Field("draft", OptionType(StringType), resolve = _.value.draft),
         Field("path", StringType, resolve = _.value.path),
         Field("exact", BooleanType, resolve = _.value.exact),
-        Field("lastPublishedDate", OptionType(DateTimeUnitype), resolve = _.value.lastPublishedDate),
+        Field("lastPublishedDate", OptionType(LongType), resolve = _.value.lastPublishedDate.map(p => p.getMillis)),
       )
     )
 

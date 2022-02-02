@@ -898,8 +898,8 @@ export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
 export const createCmsPage = (id, cmsPage) => customFetch('/api/cms/pages', {
   method: 'POST',
   body: JSON.stringify({
-    id,
-    ...cmsPage
+    ...cmsPage,
+    id
   }),
 });
 
@@ -968,8 +968,8 @@ export const graphql = {
         cmsPage(id: "${id}") {
             name
             path
-            body
             draft
+            body
             visible
             authenticated
             metadata

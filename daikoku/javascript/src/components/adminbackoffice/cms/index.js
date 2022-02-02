@@ -31,19 +31,17 @@ export const CMSOffice = () => {
     }, [])
 
     useEffect(() => {
+        console.log(location.state)
         if (location.state && location.state.reload)
             reload()
-    }, [location.state])
+    }, [location])
 
     const reload = () => {
         client.query(getAllPages())
             .then(r => setPages(r.data.pages))
     }
 
-    const Index = ({ reload }) => {
-        useEffect(() => {
-            reload()
-        }, [])
+    const Index = ({ }) => {
         return <div>
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
@@ -59,7 +57,7 @@ export const CMSOffice = () => {
                 <Routes>
                     <Route path={`/new`} element={<Create pages={pages} />} />
                     <Route path={`/edit/:id`} element={<Create pages={pages} />} />
-                    <Route path="*" element={<Index reload={reload} />} />
+                    <Route path="*" element={<Index />} />
                 </Routes>
             </Can>
         </UserBackOffice>

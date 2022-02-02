@@ -6,11 +6,11 @@ import * as Services from '../../../services'
 import { Table } from '../../inputs'
 
 const CONTENT_TYPES = [
-    { value: 'text/html', label: 'HTML', icon: 'fab fa-html5' },
-    { value: 'text/css', label: 'CSS', icon: 'fab fa-css3-alt' },
-    { value: 'text/javascript', label: 'JS', icon: 'fab fa-js' },
-    { value: 'text/markdown', label: 'MD', icon: 'fab fa-markdown' },
-    { value: 'text/plain', label: 'PLAIN', icon: 'fas fa-quote-right' },
+    { value: 'text/html', label: 'HTML' },
+    { value: 'text/css', label: 'CSS' },
+    { value: 'text/javascript', label: 'JS' },
+    { value: 'text/markdown', label: 'MD' },
+    { value: 'text/plain', label: 'PLAIN' },
     { value: 'text/xml', label: 'XML' },
     { value: 'application/json', label: 'JSON' }
 ]
@@ -21,6 +21,26 @@ export const Pages = ({ pages, removePage }) => {
     let table;
 
     const columns = [
+        {
+            Header: ' ',
+            style: {
+                textAlign: 'center',
+                maxWidth: 60
+            },
+            disableFilters: true,
+            accessor: (item) => item.contentType,
+            Cell: ({
+                cell: {
+                    row: { original },
+                },
+            }) => {
+                const { contentType } = original;
+                const item = CONTENT_TYPES.find(f => f.value === contentType)
+                return <img
+                    style={{ width: '24px' }}
+                    src={`/assets/file-icons/${item.value.replace('text/', '').replace('application/', '')}.svg`} />
+            }
+        },
         {
             Header: 'Name',
             style: { textAlign: 'left' },
@@ -39,29 +59,8 @@ export const Pages = ({ pages, removePage }) => {
             style: { textAlign: 'left', maxWidth: 220 },
             disableFilters: true,
             accessor: (item) => item.lastPublishedDate ?
-                moment(item.lastPublishedDate).format('DD MMMM y kk:mm') :
+                moment(item.lastPublishedDate).format('DD/MM/yy kk:mm') :
                 '-',
-        },
-        {
-            Header: 'Content Type',
-            style: {
-                textAlign: 'center',
-                maxWidth: 100
-            },
-            disableFilters: true,
-            accessor: (item) => item.contentType,
-            Cell: ({
-                cell: {
-                    row: { original },
-                },
-            }) => {
-                const { contentType } = original;
-                const item = CONTENT_TYPES.find(f => f.value === contentType)
-                return (
-                    item.icon ? <i className={`${item.icon} fa-lg`} /> :
-                        <span className={`badge bg-dark`}>{item.label}</span>
-                );
-            }
         },
         {
             Header: 'Actions',
@@ -125,7 +124,7 @@ export const Pages = ({ pages, removePage }) => {
                 defaultSort="path"
                 defaultSortDesc={true}
                 header={false}
-                footer={false}
+                // footer={false}
             />
         </div>
     )
