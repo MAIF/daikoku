@@ -8,6 +8,7 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithQuotas, FreeWithoutQuotas, PayPerUse, QuotasWithLimits, QuotasWithoutLimits}
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -1837,10 +1838,7 @@ case class CmsPage(
 
   private def daikokuIncludeBlockHelper(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String, options: Options)
                                        (implicit env: Env, ec: ExecutionContext) = {
-    import scala.jdk.CollectionConverters._
-    val attrs = options.hash.asScala.map {
-      case (k, v) => (k, renderString(ctx, v.toString))
-    }
+    val attrs = getAttrs(ctx, options)
     Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
       case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)), 10.seconds) match {
         case None => s"block '$id' not found"
@@ -1856,7 +1854,7 @@ case class CmsPage(
     Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
       case None => "page not found"
       case Some(page) =>
-        val attrs = options.hash.asScala.map { case (k, v) => (k, renderString(ctx, v.toString)) }
+        val attrs = getAttrs(ctx, options)
         Await.result(page.render(ctx, wantDraft = false, Some(
           Map("children" -> options.fn.apply(staticContext.build())) ++ attrs)).map(t => t._1), 10.seconds)
     }
@@ -1900,49 +1898,92 @@ case class CmsPage(
     links.map { case (name, link) => handlebars.registerHelper(s"daikoku-links-$name", (_: Object, _: Options) => link) }
   }
 
+  private def getAttrs(ctx: DaikokuActionMaybeWithoutUserContext[_], options: Options)(implicit env: Env, ec: ExecutionContext) = {
+    import scala.jdk.CollectionConverters._
+    options.hash.asScala.map {
+      case (k, v) => (k, renderString(ctx, v.toString)(env, ec))
+    }
+  }
+
+  private def enrichHandlebarWithPlanEntity(ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars, env: Env, name: String)
+                                           (implicit ec: ExecutionContext): Handlebars = {
+    handlebars.registerHelper(s"daikoku-$name-json", (id: String, _: Options) => {
+      Await.result(getApi(ctx, id)(env, ec), 10.seconds)
+        .map(_.possibleUsagePlans).getOrElse(Seq())
+        .map(_.asJson)
+    })
+
+    handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
+      Await.result(getApi(ctx, id)(env, ec), 10.seconds)
+        .map(api => {
+          api.possibleUsagePlans
+            .map {
+              case p: Admin => new JavaBeanAdmin(p, api.team.value, api.humanReadableId, api.currentVersion.value)
+              case p: FreeWithoutQuotas => new JavaBeanFreeWithoutQuotas(p, api.team.value, api.humanReadableId, api.currentVersion.value)
+              case p: FreeWithQuotas => new JavaBeanFreeWithQuotas(p, api.team.value, api.humanReadableId, api.currentVersion.value)
+              case p: QuotasWithLimits => new JavaBeanQuotasWithLimits(p, api.team.value, api.humanReadableId, api.currentVersion.value)
+              case p: QuotasWithoutLimits => new JavaBeanQuotasWithoutLimits(p, api.team.value, api.humanReadableId, api.currentVersion.value)
+              case p: PayPerUse => new JavaBeanPayPerUse(p, api.team.value, api.humanReadableId, api.currentVersion.value)
+            }
+            .map(p => options.fn.apply(Context.newBuilder(p).combine(name, p).build()))
+            .mkString("\n")
+        })
+        .getOrElse("")
+    })
+  }
+
+  private def getApi(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String)
+                    (implicit env: Env, ec: ExecutionContext) = env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(renderString(ctx, id)(env, ec))
+
   private def enrichHandlebarWithDocumentationEntity(ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars, env: Env, tenant: Tenant, name: String)
                                         (implicit ec: ExecutionContext): Handlebars = {
-    import scala.jdk.CollectionConverters._
+
+    def makeBean(pages: Seq[ApiDocumentationPage], options: Options) = pages
+      .map(p => new JavaBeanDocumentation(p))
+      .map(doc => options.fn.apply(Context.newBuilder(doc).combine(name, doc).build()))
+      .mkString("\n")
 
     val repo = env.dataStore.apiDocumentationPageRepo
     handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
-      val pages = Await.result(env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(renderString(ctx, id)(env, ec))
+      val pages = Await.result(getApi(ctx, id)(env, ec)
           .flatMap {
             case Some(api) => Future.sequence(api.documentation.pages.map(repo.forTenant(tenant).findById(_)))
             case _ => FastFuture.successful(Seq())
           }, 10.seconds)
         .flatten
 
-      pages
-        .map(p => new JavaBeanDocumentation(p))
-        .map(doc => options.fn.apply(Context.newBuilder(doc).combine(name, doc).build()))
-        .mkString("\n")
+      makeBean(pages, options)
+    })
+
+
+    handlebars.registerHelper(s"daikoku-$name-json", (id: String, options: Options) => {
+      Await.result(getApi(ctx, id)(env, ec)
+        .flatMap {
+          case Some(api) => Future.sequence(api.documentation.pages.map(repo.forTenant(tenant).findById(_)))
+          case _ => FastFuture.successful(Seq())
+        }, 10.seconds)
+        .flatten
+        .map(_.asJson)
     })
 
     handlebars.registerHelper(s"daikoku-$name-page", (id: String, options: Options) => {
-      val attrs = options.hash.asScala.map {
-        case (k, v) => (k, renderString(ctx, v.toString)(env, ec))
-      }
+      val attrs = getAttrs(ctx, options)(env, ec)
 
       val page = attrs.get("page").map(_.toInt).getOrElse(0)
-      Await.result(env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(renderString(ctx, id)(env, ec))
+      val pages = Await.result(getApi(ctx, id)(env, ec)
         .flatMap {
           case Some(api) => Future.sequence(api.documentation.pages.slice(page, page+1).map(repo.forTenant(tenant).findById(_)))
           case _ => FastFuture.successful(Seq())
         }, 10.seconds)
         .flatten
-        .map(p => new JavaBeanDocumentation(p))
-        .map(doc => options.fn.apply(Context.newBuilder(doc).combine(name, doc).build()))
-        .mkString("\n")
+
+      makeBean(pages, options)
     })
 
     handlebars.registerHelper(s"daikoku-$name-page-id", (id: String, options: Options) => {
-      val attrs = options.hash.asScala.map {
-        case (k, v) => (k, renderString(ctx, v.toString)(env, ec))
-      }
-
+      val attrs = getAttrs(ctx, options)(env, ec)
       val page = attrs.getOrElse("page", "")
-      Await.result(env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(renderString(ctx, id)(env, ec))
+      Await.result(getApi(ctx, id)(env, ec)
         .flatMap {
           case Some(api) => api.documentation.pages.find(_.value == page).map(repo.forTenant(tenant).findById(_))
             .getOrElse(FastFuture.successful(None))
@@ -1999,6 +2040,7 @@ case class CmsPage(
           (team: Team) => new JavaBeanTeam(team),
           (team: Team) => team.asJson)
         enrichHandlebarWithDocumentationEntity(ctx, handlebars, env, ctx.tenant, "documentations")
+        enrichHandlebarWithPlanEntity(ctx, handlebars, env, "plans")
 
         val result = handlebars.compileInline(template).apply(context)
         context.destroy()
@@ -2020,6 +2062,104 @@ case class CmsPage(
       }
     }(env.defaultExecutionContext)
   }
+}
+
+class JavaBeanPlan(team: String, api: String, version: String) {
+  def getLink() = s"/$team/$api/$version/pricing"
+}
+
+class JavaBeanAdmin(o: Admin, team: String, api: String, version: String) extends JavaBeanPlan(team, api, version) {
+  def getId() = o.id.value
+  def getCustomDescription() = o.customDescription.getOrElse("")
+  def getCustomName() = o.customName.getOrElse("")
+  def getAllowMultipleKeys() = o.allowMultipleKeys.getOrElse(false)
+  def getAggregationApiKeysSecurity() = o.aggregationApiKeysSecurity.getOrElse(false)
+}
+
+class JavaBeanBillingDuration(o: BillingDuration) {
+  def getValue() = o.value
+  def getUnit() = o.unit.name
+}
+
+class JavaBeanFreeWithoutQuotas(o: FreeWithoutQuotas, team: String, api: String, version: String) extends JavaBeanPlan(team, api, version) {
+  def getId() = o.id.value
+  def getCurrency() = o.currency.code
+  def getBillingDuration() = new JavaBeanBillingDuration(o.billingDuration)
+  def getCustomName() = o.customName.getOrElse("")
+  def getCustomDescription() = o.customDescription.getOrElse("")
+  def getAllowMultipleKeys() = o.allowMultipleKeys.getOrElse(false)
+  def getVisibility() = o.visibility.name
+  def getAuthorizedTeams() = o.authorizedTeams.map(_.value)
+  def getAutoRotation() = o.autoRotation.getOrElse(false)
+  def getAggregationApiKeysSecurity() = o.aggregationApiKeysSecurity.getOrElse(false)
+}
+
+class JavaBeanFreeWithQuotas(o: FreeWithQuotas, team: String, api: String, version: String) extends JavaBeanPlan(team, api, version) {
+  def getId() = o.id.value
+  def getMaxPerSecond() = o.maxPerSecond
+  def getMaxPerDay() = o.maxPerDay
+  def getMaxPerMonth() = o.maxPerMonth
+  def getCurrency() = o.currency.code
+  def getBillingDuration() = new JavaBeanBillingDuration(o.billingDuration)
+  def getCustomName() = o.customName.getOrElse("")
+  def getCustomDescription() = o.customDescription.getOrElse("")
+  def getAllowMultipleKeys() = o.allowMultipleKeys.getOrElse(false)
+  def getVisibility() = o.visibility.name
+  def getAuthorizedTeams() = o.authorizedTeams.map(_.value)
+  def getAutoRotation() = o.autoRotation.getOrElse(false)
+  def getAggregationApiKeysSecurity() = o.aggregationApiKeysSecurity.getOrElse(false)
+}
+class JavaBeanQuotasWithLimits(o: QuotasWithLimits, team: String, api: String, version: String) extends JavaBeanPlan(team, api, version) {
+  def getId() = o.id.value
+  def getMaxPerSecond() = o.maxPerSecond
+  def getMaxPerDay() = o.maxPerDay
+  def getMaxPerMonth() = o.maxPerMonth
+  def getCostPerMonth() = o.costPerMonth
+  def getBillingDuration() = new JavaBeanBillingDuration(o.billingDuration)
+  def getTrialPeriod() = o.trialPeriod.map(p => new JavaBeanBillingDuration(p)).getOrElse("")
+  def getCurrency() = o.currency.code
+  def getCustomName() = o.customName.getOrElse("")
+  def getCustomDescription() = o.customDescription.getOrElse("")
+  def getAllowMultipleKeys() = o.allowMultipleKeys.getOrElse(false)
+  def getVisibility() = UsagePlanVisibilityFormat.writes(o.visibility)
+  def getAuthorizedTeams() = SeqTeamIdFormat.writes(o.authorizedTeams)
+  def getAutoRotation() = o.autoRotation.getOrElse(false)
+  def getAggregationApiKeysSecurity() = o.aggregationApiKeysSecurity.getOrElse(false)
+}
+
+class JavaBeanQuotasWithoutLimits(o: QuotasWithoutLimits, team: String, api: String, version: String) extends JavaBeanPlan(team, api, version) {
+  def getId() = o.id.value
+  def getMaxPerSecond() = o.maxPerSecond
+  def getMaxPerDay() = o.maxPerDay
+  def getMaxPerMonth() = o.maxPerMonth
+  def getCostPerMonth() = o.costPerMonth
+  def getCostPerAdditionalRequest() = o.costPerAdditionalRequest
+  def getBillingDuration() = new JavaBeanBillingDuration(o.billingDuration)
+  def getTrialPeriod() = o.trialPeriod.map(p => new JavaBeanBillingDuration(p)).getOrElse("")
+  def getCurrency() = o.currency.code
+  def getCustomName() = o.customName.getOrElse("")
+  def getCustomDescription() = o.customDescription.getOrElse("")
+  def getAllowMultipleKeys() = o.allowMultipleKeys.getOrElse(false)
+  def getVisibility() = o.visibility.name
+  def getAuthorizedTeams() = o.authorizedTeams.map(_.value)
+  def getAutoRotation() = o.autoRotation.getOrElse(false)
+  def getAggregationApiKeysSecurity() = o.aggregationApiKeysSecurity.getOrElse(false)
+}
+
+class JavaBeanPayPerUse(o: PayPerUse, team: String, api: String, version: String) extends JavaBeanPlan(team, api, version) {
+  def getId() = o.id.value
+  def getCostPerMonth() = o.costPerMonth
+  def getCostPerRequest() = o.costPerRequest
+  def getTrialPeriod() = o.trialPeriod.map(p => new JavaBeanBillingDuration(p)).getOrElse("")
+  def getBillingDuration() = new JavaBeanBillingDuration(o.billingDuration)
+  def getCurrency() = o.currency.code
+  def getCustomName() = o.customName.getOrElse("")
+  def getCustomDescription() = o.customDescription.getOrElse("")
+  def getAllowMultipleKeys() = o.allowMultipleKeys.getOrElse(false)
+  def getVisibility() = o.visibility.name
+  def getAuthorizedTeams() = o.authorizedTeams.map(_.value)
+  def getAutoRotation() = o.autoRotation.getOrElse(false)
+  def getAggregationApiKeysSecurity() = o.aggregationApiKeysSecurity.getOrElse(false)
 }
 
 class JavaBeanDocumentation(documentation: ApiDocumentationPage) {
