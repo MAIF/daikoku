@@ -102,8 +102,8 @@ class HomeController(
         env.dataStore.cmsRepo.forTenant(ctx.tenant).findAll()
           .flatMap(cmsPages => {
             cmsPages
-              .sortBy(_.path.length)(Ordering[Int].reverse)
-              .find(p => ctx.request.path.startsWith(s"/_${p.path}")) match {
+              .sortBy(_.path.map(_.length).getOrElse(0))(Ordering[Int].reverse)
+              .find(p => ctx.request.path.startsWith(s"/_${p.path.getOrElse("")}")) match {
               case Some(r) if r.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
               case Some(r) => r.render(ctx, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
               case None => cmsPageNotFound()

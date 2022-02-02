@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useImperativeHandle, useRef, useState } f
 import { useNavigate, useParams } from 'react-router-dom'
 import moment from 'moment'
 import { SelectInput } from '@maif/react-forms/lib/inputs'
-import { constraints, Form, type } from '@maif/react-forms'
+import { constraints, Form, format, type } from '@maif/react-forms'
 import { I18nContext } from '../../../core'
 
 export default React.memo(
@@ -21,7 +21,8 @@ export default React.memo(
                 visible: true,
                 authenticated: false,
                 metadata: {},
-                tags: []
+                tags: [],
+                isBlockPage: false
             })
         }, [inValue])
 
@@ -46,18 +47,28 @@ export default React.memo(
                     constraints.required()
                 ]
             },
+            isBlockPage: {
+                type: type.bool,
+                label: translateMethod('Is a block ?'),
+            },
             path: {
                 type: type.string,
                 placeholder: '/index',
+                visible: {
+                    ref: 'isBlockPage',
+                    test: v => !v
+                },
                 help: translateMethod('cms.create.path_placeholder'),
                 label: translateMethod('Path'),
                 constraints: [
-                    constraints.matches("^/", translateMethod('cms.create.path_slash_constraints')),
-                    constraints.test(
-                        'path',
-                        translateMethod('cms.create.path_paths_constraints'),
-                        value => value === savePath ? true : !pages.find(p => p.path === value)
-                    )
+                    constraints.when('isBlockPage', v => !!v, [], [
+                        constraints.matches("^/", translateMethod('cms.create.path_slash_constraints')),
+                        constraints.test(
+                            'path',
+                            translateMethod('cms.create.path_paths_constraints'),
+                            value => value === savePath ? true : !pages.find(p => p.path === value)
+                        )
+                    ])
                 ]
             },
             contentType: {
@@ -90,34 +101,33 @@ export default React.memo(
                 label: translateMethod('cms.create.authenticated'),
                 help: translateMethod('cms.create.authenticated_help')
             },
-
-            // metadata: {
-            //     type: type.object,
-            //     array: true,
-            //     label: 'Metadata',
-            //     help: translateMethod('cms.create.metadata_help')
-            // },
-            // tags: {
-            //     type: type.string,
-            //     format: format.select,
-            //     createOption: true,
-            //     isMulti: true,
-            //     label: 'Tags',
-            //     help: translateMethod('cms.create.tags_help')
-            // }
+            metadata: {
+                type: type.object,
+                label: 'Metadata',
+                help: translateMethod('cms.create.metadata_help')
+            },
+            tags: {
+                type: type.string,
+                format: format.select,
+                createOption: true,
+                isMulti: true,
+                label: 'Tags',
+                help: translateMethod('cms.create.tags_help')
+            }
         }
 
         const flow = [
             'name',
+            'isBlockPage',
             'path',
             'contentType',
             'visible',
             'authenticated',
-            // {
-            //     label: translateMethod('cms.create.advanced'),
-            //     flow: ['tags', 'metadata'],
-            //     collapsed: true
-            // }
+            {
+                label: translateMethod('cms.create.advanced'),
+                flow: ['tags', 'metadata'],
+                collapsed: true
+            }
         ]
 
         const [value, setValue] = useState({})

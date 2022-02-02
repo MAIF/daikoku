@@ -1794,7 +1794,7 @@ case class CmsPage(
   contentType: String,
   body: String,
   draft: Option[String] = None,
-  path: String,
+  path: Option[String] = None,
   exact: Boolean = false,
   lastPublishedDate: Option[DateTime] = None
 ) extends CanJson[CmsPage] {
@@ -1833,7 +1833,7 @@ case class CmsPage(
     metadata = Map(),
     contentType = "text/html",
     body = str,
-    path = "/"
+    path = Some("/")
   ).render(ctx), 10.seconds)._1
 
   private def daikokuIncludeBlockHelper(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String, options: Options)
@@ -1881,7 +1881,7 @@ case class CmsPage(
                             (implicit env: Env, ec: ExecutionContext) =
     Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
       case None => "#not-found"
-      case Some(page) => s"/_${page.path}"
+      case Some(page) => s"/_${page.path.getOrElse("")}"
     }
 
   private def daikokuLinks(ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars)

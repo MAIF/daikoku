@@ -208,7 +208,7 @@ export const ContentSideView = ({ value, onChange, pages, rawValues, publish, co
             }}>
                 {selector === "links" && <LinksView editor={ref} onChange={() => setSideView(false)} />}
                 {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Choose the link to the page to insert" editor={ref} onChange={() => setSideView(false)} />}
-                {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Choose the block to insert" editor={ref} onChange={() => setSideView(false)} />}
+                {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Choose the block to render" editor={ref} onChange={() => setSideView(false)} />}
                 <button type="button" className='btn btn-sm btn-outline-secondary mt-1 me-1'
                     onClick={() => setSideView(false)}>Close</button>
             </div>}

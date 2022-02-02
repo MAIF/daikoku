@@ -33,7 +33,11 @@ export const Create = (props) => {
                     if (res.data) {
                         const { draft, ...side } = res.data.cmsPage
                         setInValue({
-                            side,
+                            side: {
+                                ...side,
+                                metadata: side.metadata ? JSON.parse(side.metadata) : {},
+                                isBlockPage: !side.path || side.path.length === 0
+                            },
                             draft
                         })
                         setSavePath(side.path)

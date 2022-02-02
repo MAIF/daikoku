@@ -3285,7 +3285,7 @@ object json {
       "forwardRef" -> o.forwardRef.map(v => v.asJson).getOrElse(JsNull).as[JsValue],
       "body" -> o.body,
       "draft" -> o.draft,
-      "path" -> o.path,
+      "path" -> o.path.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "exact" -> o.exact,
       "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes)
     )
@@ -3304,7 +3304,7 @@ object json {
         draft = (json \ "draft").asOpt[String],
         contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
         forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
-        path = (json \ "path").asOpt[String].getOrElse("-"),
+        path = (json \ "path").asOpt[String],
         exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
         lastPublishedDate = (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads)
       )

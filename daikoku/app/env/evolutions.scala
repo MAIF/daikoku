@@ -155,7 +155,7 @@ object evolution_151 extends EvolutionScript {
                             metadata = Map(),
                             contentType = "text/html",
                             body = if(value.unloggedHome.nonEmpty) value.unloggedHome else "<!DOCTYPE html><html><head></head><body><h1>Home page</h1><a href=\"/apis\">Back office</a></body></html>" ,
-                            path = "/",
+                            path = Some("/"),
                             lastPublishedDate = Some(DateTime.now())
                           ))(ec)
                         dataStore.tenantRepo.save(tenant.copy(style = tenant.style.map(_.copy(homeCmsPage = Some(homeId)))))(ec)
