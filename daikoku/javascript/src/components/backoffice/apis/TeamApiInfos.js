@@ -12,7 +12,7 @@ import {
 
 
 
-export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu, team, tenant }) => {
+export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu, team, tenant, openTestingApiKeyModal, openSubMetadataModal, otoroshiSettings }) => {
   const { translateMethod } = useContext(I18nContext);
 
   const informationForm = teamApiInfoForm(translateMethod, team, tenant)
@@ -47,7 +47,7 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
     {
       id: 'testing',
       label: translateMethod('Testing'),
-      component: TeamApiTesting,
+      component: p => TeamApiTesting({ ...p, openTestingApiKeyModal, openSubMetadataModal, otoroshiSettings}),
       skipTo: 'save',
     }
   ]

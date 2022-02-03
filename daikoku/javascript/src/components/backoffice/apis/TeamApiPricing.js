@@ -39,7 +39,7 @@ const SUBSCRIPTION_PLAN_TYPES = {
 const PUBLIC = 'Public';
 const PRIVATE = 'Private';
 
-const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translateMethod }) => {
+export const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translateMethod }) => {
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState(undefined);
   const [services, setServices] = useState(undefined);

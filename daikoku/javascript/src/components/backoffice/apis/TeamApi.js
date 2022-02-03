@@ -75,14 +75,15 @@ const TeamApiComponent = (props) => {
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
-      Services.allSimpleOtoroshis(props.tenant._id).then((otoroshiSettings) =>
-        setState({
-          ...state,
-          otoroshiSettings,
-          api: location.state.newApi,
-          create: true,
-        })
-      );
+      Services.allSimpleOtoroshis(props.tenant._id)
+        .then((otoroshiSettings) =>
+          setState({
+            ...state,
+            otoroshiSettings,
+            api: location.state.newApi,
+            create: true,
+          })
+        );
     } else {
       reloadState();
     }
@@ -317,28 +318,28 @@ const TeamApiComponent = (props) => {
         </>)
       } else {
         props.injectNavFooter(<>
-            <Link
-              to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
-              className="btn btn-sm btn-access-negative mb-2"
-            >
-              {translateMethod('View this Api')}
-            </Link>
-            <CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
-            <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
-              {translateMethod('Delete this Api')}
-            </button>
-            <Link
-              className="d-flex justify-content-around mt-3 align-items-center"
-              style={{
-                border: 0,
-                background: 'transparent',
-                outline: 'none',
-              }}
-              to={`/${props.currentTeam._humanReadableId}/settings/apis`}
-            >
-              <i className="fas fa-chevron-left" />
-              Back to {props.currentTeam._humanReadableId}
-            </Link>
+          <Link
+            to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
+            className="btn btn-sm btn-access-negative mb-2"
+          >
+            {translateMethod('View this Api')}
+          </Link>
+          <CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
+          <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
+            {translateMethod('Delete this Api')}
+          </button>
+          <Link
+            className="d-flex justify-content-around mt-3 align-items-center"
+            style={{
+              border: 0,
+              background: 'transparent',
+              outline: 'none',
+            }}
+            to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+          >
+            <i className="fas fa-chevron-left" />
+            Back to {props.currentTeam._humanReadableId}
+          </Link>
         </>)
       }
     }
@@ -417,6 +418,9 @@ const TeamApiComponent = (props) => {
                     }
                     expertMode={props.expertMode}
                     injectSubMenu={props.injectSubMenu}
+                    openTestingApiKeyModal={props.openTestingApiKeyModal}
+                    openSubMetadataModal={props.openSubMetadataModal}
+                    otoroshiSettings={state.otoroshiSettings}
                   />
                 )}
                 {editedApi && tab === 'news' && (

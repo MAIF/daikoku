@@ -1,15 +1,16 @@
 import React, { useContext } from 'react';
+import { Form, type, format, constraints } from '@maif/react-forms';
 import faker from 'faker';
-import _ from 'lodash';
+import _, { flow } from 'lodash';
+import { useSelector } from 'react-redux'
 
 import { Option } from '../../utils';
 import * as Services from '../../../services';
-import { BooleanInput, TextInput, SelectInput } from '../../inputs';
 import { I18nContext } from '../../../core';
 
 export const TeamApiTesting = (props) => {
   const testing = props.value.testing;
-
+  const team = useSelector(s => s.context.currentTeam)
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
@@ -18,25 +19,25 @@ export const TeamApiTesting = (props) => {
       testing.config && testing.config.otoroshiSettings
         ? testing.config
         : {
-            otoroshiSettings: null,
-            authorizedEntities: null,
-            clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
-            api: props.value._id,
-            tag: `daikoku_testing_${random}`,
-            metadata: props.metadata,
-          };
+          otoroshiSettings: null,
+          authorizedEntities: null,
+          clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
+          api: props.value._id,
+          tag: `daikoku_testing_${random}`,
+          metadata: props.metadata,
+        };
 
     props.openSubMetadataModal({
       save: (metadata) =>
         props.openTestingApiKeyModal({
           metadata,
           otoroshiSettings: props.otoroshiSettings,
-          teamId: props.teamId,
+          teamId: team._id,
           config: newConfig,
           update: testing.config && testing.config.otoroshiSettings,
           title: translateMethod('Otoroshi settings'),
           onChange: (apiKey, config) => {
-            props.onAction({
+            props.onChange({
               ...props.value,
               testing: {
                 config,
@@ -86,44 +87,47 @@ export const TeamApiTesting = (props) => {
     .map((t) => t.config)
     .exists((c) => c.otoroshiSettings);
 
+  const schema = {
+    enabled: {
+      type: type.bool,
+      label: translateMethod('Enabled'),
+      defaultValue: false
+    },
+    auth: {
+      type: type.string,
+      format: format.buttonsSelect,
+      label: translateMethod('Auth. type'),
+      options: [
+        { label: 'ApiKey', value: 'ApiKey' },
+        { label: 'Basic', value: 'Basic' }
+      ]
+    },
+    name: {
+      type: type.string,
+      label: translateMethod('Auth. name')
+    },
+    username: {
+      type: type.string,
+      label: translateMethod('Client Id')
+    },
+    password: {
+      type: type.string,
+      format: format.password,
+      label: translateMethod('Client secret')
+    }
+  }
+
   return (
     <div className="d-flex">
-      <form className="col-6 section pt-2 pe-2">
-        <BooleanInput
-          value={testing.enabled}
-          label={translateMethod('Enabled')}
-          onChange={(enabled) => setTesting({ ...testing, enabled })}
-        />
-        <SelectInput
-          clearable={false}
-          value={{ label: testing.auth, value: testing.auth }}
-          placeholder={translateMethod('Select a auth type')}
-          label={translateMethod('Auth. type')}
-          possibleValues={[
-            { label: 'ApiKey', value: 'ApiKey' },
-            { label: 'Basic', value: 'Basic' },
-          ]}
-          onChange={(auth) => setTesting({ ...testing, auth })}
-          classNamePrefix="reactSelect"
-          className="reactSelect"
-        />
-        <TextInput
-          value={testing.name}
-          label={translateMethod('Auth. name')}
-          onChange={(name) => setTesting({ ...testing, name })}
-        />
-        <TextInput
-          value={testing.username}
-          label={translateMethod('Client Id')}
-          onChange={(username) => setTesting({ ...testing, username })}
-        />
-        <TextInput
-          value={testing.password}
-          label={translateMethod('Client secret')}
-          type="password"
-          onChange={(password) => setTesting({ ...testing, password })}
-        />
-      </form>
+      <Form
+        schema={schema}
+        onSubmit={testing => props.onChange({ ...props.value, testing })}
+        options={{
+          autosubmit: true
+        }}
+        value={props.value.testing}
+        footer={() => null}
+      />
       {!otoKeyExists && (
         <div className="col-6 d-flex justify-content-center align-items-center">
           <button className="btn btn-outline-success" onClick={handleOtoroshiUsage}>
