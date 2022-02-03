@@ -129,7 +129,6 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
         ...value.groups.map((authGroup) => groups.find((g) => g.value === authGroup)),
         ...value.services.map((authService) => services.find((g) => g.value === authService)),
       ]);
-      console.debug({ value })
       onChange(value);
     }
   };
@@ -1053,6 +1052,9 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       format: format.text,
       label: translateMethod('Description'),
       placeholder: translateMethod('Plan description'),
+      constraints:[
+        constraints.nullable()
+      ]
     },
     ...otoroshiFormSchema,
     ...securityFormSchema,
@@ -1061,6 +1063,9 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
 
 
   const getRightFlow = () => {
+    if (!selected) {
+      return [];
+    }
     switch (selected.type) {
       case 'Admin':
         return adminFlow(selected);
@@ -1074,6 +1079,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
         return quotasWithoutLimitsFlow(selected);
       case 'PayPerUse':
         return payPerUseFlow(selected);
+      default:
+        return [];
     }
   }
 

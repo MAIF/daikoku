@@ -4,6 +4,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
+import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
 
 import jQuery from 'jquery';
 

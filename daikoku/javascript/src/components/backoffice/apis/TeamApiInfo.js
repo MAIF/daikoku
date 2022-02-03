@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import React, { useContext } from 'react';
 import { type, constraints, format } from '@maif/react-forms';
 import * as Services from '../../../services';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
@@ -68,6 +68,9 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       constraints: [
         constraints.nullable()
       ],
+      props: {
+        theme: 'monokai'
+      },
       expert: true
     },
     image: {

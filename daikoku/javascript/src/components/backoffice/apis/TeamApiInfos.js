@@ -25,31 +25,31 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
       schema: informationForm.schema,
       flow: informationForm.flow(expertMode),
     },
-    // {
-    //   id: 'description',
-    //   label: translateMethod('Description'),
-    //   schema: descriptionForm.schema,
-    //   flow: descriptionForm.flow,
-    // },
+    {
+      id: 'description',
+      label: translateMethod('Description'),
+      schema: descriptionForm.schema,
+      flow: descriptionForm.flow,
+    },
     {
       id: 'pricing',
       label: translateMethod('Plans'),
       component: TeamApiPricing,
-      // skipTo: 'swagger',
+      skipTo: 'swagger',
     },
-    // {
-    //   id: 'swagger',
-    //   label: translateMethod('Swagger'),
-    //   component: TeamApiSwagger,
-    //   skipTo: 'save',
-    // },
+    {
+      id: 'swagger',
+      label: translateMethod('Swagger'),
+      component: TeamApiSwagger,
+      skipTo: 'save',
+    },
 
-    // {
-    //   id: 'testing',
-    //   label: translateMethod('Testing'),
-    //   component: TeamApiTesting,
-    //   skipTo: 'save',
-    // }
+    {
+      id: 'testing',
+      label: translateMethod('Testing'),
+      component: TeamApiTesting,
+      skipTo: 'save',
+    }
   ]
 
   if (value.visibility === 'AdminOnly') {
