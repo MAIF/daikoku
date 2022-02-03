@@ -42,12 +42,12 @@ export const Pages = ({ pages, removePage }) => {
             }
         },
         {
-            Header: 'Name',
+            Header: translateMethod('cms.pages.name'),
             style: { textAlign: 'left' },
             accessor: (item) => item.name,
         },
         {
-            Header: 'Path',
+            Header: translateMethod('cms.pages.path'),
             style: {
                 textAlign: 'left',
                 fontStyle: 'italic'
@@ -55,7 +55,7 @@ export const Pages = ({ pages, removePage }) => {
             accessor: (item) => item.path ? item.path : '-',
         },
         {
-            Header: 'Publish Date',
+            Header: translateMethod('cms.pages.publish_date'),
             style: { textAlign: 'left', maxWidth: 220 },
             disableFilters: true,
             accessor: (item) => item.lastPublishedDate ?

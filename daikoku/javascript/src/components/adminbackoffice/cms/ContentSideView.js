@@ -14,18 +14,20 @@ const CONTENT_TYPES_TO_MODE = {
     "text/xml": "xml",
 }
 
-const LinksView = ({ editor, onChange }) => (
-    <>
-        <span>Choose the back office link to insert</span>
+const LinksView = ({ editor, onChange }) => {
+    const { translateMethod } = useContext(I18nContext);
+
+    return <>
+        <span>{translateMethod('cms.content_side_view.choose_link')}</span>
         <Copied>
             {setShow => <SelectInput possibleValues={[
-                { label: "Notifications", value: "notifications" },
-                { label: "Sign in", value: "login" },
-                { label: "Logout", value: "logout" },
-                { label: "Language", value: "language" },
-                { label: "Back office", value: "backoffice" },
-                { label: "Sign up", value: "signup" },
-                { label: 'Home', value: 'home' }
+                { label: translateMethod('cms.content_side_view.notifications'), value: "notifications" },
+                { label: translateMethod('cms.content_side_view.sign_in'), value: "login" },
+                { label: translateMethod('cms.content_side_view.logout'), value: "logout" },
+                { label: translateMethod('cms.content_side_view.language'), value: "language" },
+                { label: translateMethod('cms.content_side_view.back_office'), value: "backoffice" },
+                { label: translateMethod('cms.content_side_view.sign_up'), value: "signup" },
+                { label: translateMethod('cms.content_side_view.home'), value: 'home' }
             ]}
                 onChange={link => {
                     setShow(true)
@@ -35,7 +37,7 @@ const LinksView = ({ editor, onChange }) => (
             />}
         </Copied>
     </>
-)
+}
 
 const Copied = ({ children }) => {
     const { translateMethod } = useContext(I18nContext);
@@ -119,7 +121,8 @@ const TopActions = ({ setSideView, setSelector, publish }) => {
     </div>
 }
 
-export const ContentSideView = ({ value, onChange, pages, rawValues, publish, contentType }) => {
+export const ContentSideView = ({ value, onChange, pages, publish, contentType }) => {
+    const { translateMethod } = useContext(I18nContext)
     const [sideView, setSideView] = useState(false);
     const [selector, setSelector] = useState("");
 
@@ -162,12 +165,10 @@ export const ContentSideView = ({ value, onChange, pages, rawValues, publish, co
             ref.on("mousedown", onMouseDown);
     }, [ref])
 
-    return <div style={{
+    return <div className='d-flex flex-column' style={{
         position: "relative",
         marginTop: "48px",
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column'
+        flex: 1
     }}>
         <TopActions setSelector={setSelector} setSideView={setSideView} publish={publish} />
         <div style={{
@@ -207,8 +208,10 @@ export const ContentSideView = ({ value, onChange, pages, rawValues, publish, co
                 textAlign: 'center'
             }}>
                 {selector === "links" && <LinksView editor={ref} onChange={() => setSideView(false)} />}
-                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url" title="Choose the link to the page to insert" editor={ref} onChange={() => setSideView(false)} />}
-                {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block" title="Choose the block to render" editor={ref} onChange={() => setSideView(false)} />}
+                {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url"
+                    title={translateMethod("cms.content_side_view.link_to_insert")} editor={ref} onChange={() => setSideView(false)} />}
+                {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block"
+                    title={translateMethod("cms.content_side_view.block_to_render")} editor={ref} onChange={() => setSideView(false)} />}
                 <button type="button" className='btn btn-sm btn-outline-secondary mt-1 me-1'
                     onClick={() => setSideView(false)}>Close</button>
             </div>}

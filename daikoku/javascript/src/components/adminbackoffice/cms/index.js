@@ -1,6 +1,6 @@
 import { getApolloContext, gql } from '@apollo/client'
 import React, { useContext, useEffect, useState } from 'react'
-import { Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import { I18nContext } from '../../../core'
 import { UserBackOffice } from '../../backoffice'
 import { Can, manage, tenant } from '../../utils'
@@ -25,6 +25,7 @@ export const CMSOffice = () => {
     const { client } = useContext(getApolloContext())
     const location = useLocation()
     const [pages, setPages] = useState([])
+    const { translateMethod } = useContext(I18nContext)
 
     useEffect(() => {
         reload()
@@ -45,7 +46,7 @@ export const CMSOffice = () => {
         return <div className='pt-2'>
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
-                <Link to="new" className="btn btn-sm btn-primary">New page</Link>
+                <Link to="new" className="btn btn-sm btn-primary">{translateMethod('cms.index.new_page')}</Link>
             </div>
             <Pages pages={pages} removePage={id => setPages(pages.filter(f => f.id !== id))} />
         </div>

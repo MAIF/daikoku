@@ -39,7 +39,6 @@ export default ({ onChange, value, setRef, className = '', readOnly, theme = 'mo
         enableBasicAutocompletion={true}
         enableLiveAutocompletion={true}
         height={props.height}
-        // maxLines={Infinity}
         width={props.width}
     />
 }
