@@ -170,9 +170,6 @@ export default React.memo(
                         display: 'flex',
                         flexDirection: 'column'
                     }}>
-                        <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                            {params.id ? translateMethod('cms.create.edited_page') : translateMethod('cms.create.new_page')}
-                        </h6>
                         <ul className="nav flex-column mb-2 px-3">
                             <li className="nav-item">
                                 <Form

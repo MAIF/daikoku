@@ -900,7 +900,7 @@ export const createCmsPage = (id, cmsPage) => customFetch('/api/cms/pages', {
   body: JSON.stringify({
     ...cmsPage,
     id,
-    path: cmsPage.isBlockPage ? undefined : cms.isBlockPage
+    path: cmsPage.isBlockPage ? undefined : cmsPage.path
   }),
 });
 

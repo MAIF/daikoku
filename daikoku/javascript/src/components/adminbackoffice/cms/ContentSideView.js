@@ -158,8 +158,8 @@ export const ContentSideView = ({ value, onChange, pages, rawValues, publish, co
     }
 
     useEffect(() => {
-        // if (ref)
-        //     ref.on("mousedown", onMouseDown);
+        if (ref)
+            ref.on("mousedown", onMouseDown);
     }, [ref])
 
     return <div style={{

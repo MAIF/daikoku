@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{daikoku-page-url "<id-of-the-css-page>"}}">
+    <script type="text/javascript" src="{{daikoku-page-url "<id-of-the-js-page>"}}"></script>
+</head>
+
+<body>
+    {{daikoku-include-block "<id-of-the-navbar-block>"}}
+        <main>
+            <div class="main-header">
+                <h1>{{title}}</h1>
+            </div>
+            {{children}}
+        </main>
+</body>
+
+{{daikoku-include-block "<id-of-the-footer-block>"}}
+
+</html>

@@ -446,23 +446,29 @@ export function TenantEditComponent(props) {
         <div className="mb-3 row">
           <label className="col-xs-12 col-sm-2 col-form-label" />
           <div className="col-sm-10">
-            <Link to="/settings/pages" className='btn btn-sm btn-outline-success'>
-              <Translation i18nkey="tenant_edit.link_to_cmspages" />
-            </Link>
-            {state.tenant?.style.homePageVisible && state.tenant?.style?.homeCmsPage &&
-              <button className='btn btn-sm btn-outline-primary ms-1'
-                type='button'
-                onClick={() => {
-                  client.query({
-                    query: gql`
+            {state.tenant?.isPrivate ?
+              <span className='badge bg-warning text-dark'>
+                {translateMethod('tenant_edit.cms_warning')}
+              </span> :
+              <>
+                <Link to="/settings/pages" className='btn btn-sm btn-outline-success'>
+                  <Translation i18nkey="tenant_edit.link_to_cmspages" />
+                </Link>
+                {state.tenant?.style.homePageVisible && state.tenant?.style?.homeCmsPage &&
+                  <button className='btn btn-sm btn-outline-primary ms-1'
+                    type='button'
+                    onClick={() => {
+                      client.query({
+                        query: gql`
                 query GetCmsPage {
                     cmsPage(id: "${state.tenant?.style.homeCmsPage}") {
                         path
                     }
                 }`}).then(r => window.open(`/_${r.data.cmsPage.path}`, '_blank'))
-                }}>
-                <Translation i18nkey="tenant_edit.view_home_page" />
-              </button>}
+                    }}>
+                    <Translation i18nkey="tenant_edit.view_home_page" />
+                  </button>}
+              </>}
           </div>
         </div>
       )
