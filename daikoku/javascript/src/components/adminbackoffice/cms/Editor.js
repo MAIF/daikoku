@@ -16,7 +16,7 @@ import 'ace-builds/src-noconflict/ext-language_tools'
 
 export default ({ onChange, value, setRef, className = '', readOnly, theme = 'monokai', mode = 'javascript', ...props }) => {
     return <AceEditor
-        commands={Beautify.commands}
+        commands={Beautify?.commands}
         className={className}
         readOnly={readOnly}
         style={{ zIndex: 0, isolation: 'isolate' }}
