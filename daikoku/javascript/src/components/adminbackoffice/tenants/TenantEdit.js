@@ -947,7 +947,8 @@ export function TenantEditComponent(props) {
                 type="button"
                 className="btn btn-outline-success"
                 {...disabled}
-                onClick={save}>
+                onClick={save}
+              >
                 {!state.create && (
                   <span>
                     <i className="fas fa-save me-1" />

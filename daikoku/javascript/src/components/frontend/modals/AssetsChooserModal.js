@@ -35,7 +35,7 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
         <h5 className="modal-title">
           <Translation i18nkey="Select an asset">Select an asset</Translation>
         </h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal}/>
+        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
       <div className="modal-body">
         <div className="asset-selection-body">
@@ -83,7 +83,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
                   className={classNames('asset-selection', {
                     selected: asset.value === selectedAsset.value,
                   })}
-                  onClick={() => setSelectedAsset(asset)}>
+                  onClick={() => setSelectedAsset(asset)}
+                >
                   <span className="ms-2">{asset.title}</span>
                 </div>
               );

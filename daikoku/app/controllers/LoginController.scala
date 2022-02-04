@@ -363,10 +363,11 @@ class LoginController(DaikokuAction: DaikokuAction,
   val passwordPattern = java.util.regex.Pattern
     .compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[#$^+=!*()@%&]).{8,1000}$")
 
-  def validateUserCreationForm(name: String,
-                               email: String,
-                               password: String,
-                               confirmPassword: String): Either[String, Unit] = {
+  def validateUserCreationForm(
+      name: String,
+      email: String,
+      password: String,
+      confirmPassword: String): Either[String, Unit] = {
 
     if (name.trim().isEmpty()) {
       Left("Name should not be empty")

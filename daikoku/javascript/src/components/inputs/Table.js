@@ -208,47 +208,48 @@ export const Table = React.forwardRef(
       }),
     };
 
-  const tablePagination = (
-    <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
-      <span>
-        {rows.length}{' '}
-        <Translation i18nkey="Result" isPlural={rows.length > 1}>
-          Results
-        </Translation>
-      </span>
-      <Select
-        className="reactSelect reactSelect-pagination col-3 ms-3 me-3"
-        value={{
-          label: translateMethod('Show.results', false, `Show ${pageSize}`, pageSize),
-          value: pageSize,
-        }}
-        options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
-        onChange={(e) => setPageSize(Number(e.value))}
-        classNamePrefix="reactSelect"
-        styles={customStyles}
-      />
-      <Pagination
-        containerClassName="pagination"
-        previousLabel={translateMethod('<')}
-        nextLabel={translateMethod('>')}
-        breakLabel={'...'}
-        breakClassName={'break'}
-        pageCount={pageOptions.length}
-        marginPagesDisplayed={1}
-        pageRangeDisplayed={5}
-        onPageChange={({ selected }) => gotoPage(selected)}
-        pageClassName={'page-selector'}
-        activeClassName={'active'}
-      />
-      <button
-        type="button"
-        className="ms-3 btn btn-sm btn-access-negative float-right"
-        title={translateMethod('Reload the table content')}
-        onClick={update}>
-        <span className="fas fa-sync-alt" />
-      </button>
-    </div>
-  );
+    const tablePagination = (
+      <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
+        <span>
+          {rows.length}{' '}
+          <Translation i18nkey="Result" isPlural={rows.length > 1}>
+            Results
+          </Translation>
+        </span>
+        <Select
+          className="reactSelect reactSelect-pagination col-3 ms-3 me-3"
+          value={{
+            label: translateMethod('Show.results', false, `Show ${pageSize}`, pageSize),
+            value: pageSize,
+          }}
+          options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
+          onChange={(e) => setPageSize(Number(e.value))}
+          classNamePrefix="reactSelect"
+          styles={customStyles}
+        />
+        <Pagination
+          containerClassName="pagination"
+          previousLabel={translateMethod('<')}
+          nextLabel={translateMethod('>')}
+          breakLabel={'...'}
+          breakClassName={'break'}
+          pageCount={pageOptions.length}
+          marginPagesDisplayed={1}
+          pageRangeDisplayed={5}
+          onPageChange={({ selected }) => gotoPage(selected)}
+          pageClassName={'page-selector'}
+          activeClassName={'active'}
+        />
+        <button
+          type="button"
+          className="ms-3 btn btn-sm btn-access-negative float-right"
+          title={translateMethod('Reload the table content')}
+          onClick={update}
+        >
+          <span className="fas fa-sync-alt" />
+        </button>
+      </div>
+    );
 
     return (
       <div>

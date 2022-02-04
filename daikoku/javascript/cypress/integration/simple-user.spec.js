@@ -11,7 +11,7 @@ describe('Login page & login form', () => {
 });
 
 describe('API page', () => {
-  it('load well', () => {
+  it('load well', { scrollBehavior: false }, () => {
     cy
       .visit('http://localhost:9000/testers/test-api/1.0.0')
       .get('h1.jumbotron-heading').should(($div) => {
@@ -35,7 +35,7 @@ describe('Profile page', () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/settings/me')
-      .get('#my_profile_email').should('have.text', 'user@foo.bar');
+      .get('input[name="name"]').should('have.value', 'User');
   });
 });
 
@@ -47,12 +47,12 @@ describe('Team apis page', () => {
   });
 })
 
-describe('Select version of api', () => {
+describe('Select version of api', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/testers/test-api/1.0.0')
       .get('input[name="versions-selector"]').should('have.value', '1.0.0')
-      .get('.reactSelect__control')
+      .get('.api__header .reactSelect__control')
       .click({ multiple: true })
       .get('.reactSelect__menu')
       .find('.reactSelect__option')
@@ -69,9 +69,8 @@ describe('Request api access from api view', () => {
       .visit('http://localhost:9000/apis')
       .get('.btn-outline-success').click({ force: true })
       .url().should('contains', 'http://localhost:9000/auth/Local/login')
-      .get('.form-group:nth-child(2) > .form-control').click({ force: true })
-      .get('.form-group:nth-child(2) > .form-control').type('user@foo.bar')
-      .get('.form-group:nth-child(3) > .form-control').type('password')
+      .get('form input[name="username"]').type('user@foo.bar')
+      .get('form input[name="password"]').type('password')
       .get('.btn').click({ force: true })
       .get('.form-horizontal').submit()
       .url().should('contains', 'http://localhost:9000/')
@@ -81,10 +80,8 @@ describe('Request api access from api view', () => {
       .url().should('contains', 'http://localhost:9000/')
       .get('.btn-outline-success').click({ force: true })
       .url().should('contains', 'http://localhost:9000/auth/Local/login')
-      .get('.form-group:nth-child(2) > .form-control').click({ force: true })
-      .get('.form-group:nth-child(2) > .form-control').type('admin@foo.bar')
-      .get('.form-group:nth-child(3) > .form-control').click({ force: true })
-      .get('.form-group:nth-child(3) > .form-control').type('password')
+      .get('form input[name="username"]').type('admin@foo.bar')
+      .get('form input[name="password"]').type('password')
       .get('.btn').click({ force: true })
       .get('.form-horizontal').submit()
       .url().should('contains', 'http://localhost:9000/apis')

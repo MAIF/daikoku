@@ -293,12 +293,14 @@ const ApiListComponent = (props) => {
         <div className="col-9 d-flex justify-content-end">
           <button
             className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
-            onClick={() => setView(LIST)}>
+            onClick={() => setView(LIST)}
+          >
             <List />
           </button>
           <button
             className={classNames('btn btn-sm btn-access-negative', { active: view === GRID })}
-            onClick={() => setView(GRID)}>
+            onClick={() => setView(GRID)}
+          >
             <Grid />
           </button>
         </div>
@@ -309,8 +311,9 @@ const ApiListComponent = (props) => {
             className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
               'flex-wrap': view === GRID,
-              'row': view === GRID,
-            })}>
+              row: view === GRID,
+            })}
+          >
             {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => (
               <ApiCard

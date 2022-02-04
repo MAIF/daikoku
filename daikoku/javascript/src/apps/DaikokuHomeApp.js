@@ -10,8 +10,7 @@ import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/fronte
 import * as Services from '../services';
 import { I18nContext } from '../locales/i18n-context';
 
-
-const AvatarInput = ({rawValues, value, error, onChange}) => {
+const AvatarInput = ({ rawValues, value, error, onChange }) => {
   const { Translation } = useContext(I18nContext);
 
   const setGravatarLink = () => {
@@ -21,13 +20,15 @@ const AvatarInput = ({rawValues, value, error, onChange}) => {
   };
 
   return (
-    <div className='d-flex flex-row align-items-center'>
+    <div className="d-flex flex-row align-items-center">
       <div className="d-flex flex-column flex-grow-1">
-        <input type="text" className='form-control' value={value} onChange={e => onChange(e.target.value)} />
-        <button
-          type="button"
-          className='btn btn-access btn-block'
-          onClick={setGravatarLink}>
+        <input
+          type="text"
+          className="form-control"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <button type="button" className="btn btn-access btn-block" onClick={setGravatarLink}>
           <i className="fas fa-user-circle mr-1" />
           <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
         </button>
@@ -57,9 +58,7 @@ export const SignupComponent = () => {
     name: {
       type: type.string,
       label: translateMethod('Name'),
-      constraints: [
-        constraints.required(translateMethod('constraints.required.name'))
-      ]
+      constraints: [constraints.required(translateMethod('constraints.required.name'))],
     },
     email: {
       type: type.string,
@@ -67,15 +66,14 @@ export const SignupComponent = () => {
       label: translateMethod('Email address'),
       constraints: [
         constraints.required(translateMethod('constraints.required.email')),
-        constraints.email(translateMethod('constraints.matches.email'))
-      ]
+        constraints.email(translateMethod('constraints.matches.email')),
+      ],
     },
     avatar: {
       type: type.string,
       label: translateMethod('Avatar'),
       defaultValue: defaultAvatar,
-      render: AvatarInput
-
+      render: AvatarInput,
     },
     password: {
       type: type.string,
@@ -83,8 +81,11 @@ export const SignupComponent = () => {
       label: translateMethod('Password'),
       constraints: [
         constraints.required(translateMethod('constraints.required.password')),
-        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, translateMethod('constraint.matches.password'))
-      ]
+        constraints.matches(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/,
+          translateMethod('constraint.matches.password')
+        ),
+      ],
     },
     confirmPassword: {
       type: type.string,
@@ -92,18 +93,15 @@ export const SignupComponent = () => {
       label: translateMethod('Confirm password'),
       constraints: [
         constraints.required(translateMethod('constraints.required.confirmPassword')),
-        constraints.oneOf([constraints.ref('password')], translateMethod('constraint.oneof.confirm.password'))
-      ]
+        constraints.oneOf(
+          [constraints.ref('password')],
+          translateMethod('constraint.oneof.confirm.password')
+        ),
+      ],
     },
   };
 
-  const flow = [
-    'name',
-    'email',
-    'avatar',
-    'password',
-    'confirmPassword',
-  ];
+  const flow = ['name', 'email', 'avatar', 'password', 'confirmPassword'];
 
   const createAccount = (data) => {
     return fetch('/account', {
@@ -147,25 +145,27 @@ export const SignupComponent = () => {
       <h1 className="h1-rwd-reduce text-center">
         <Translation i18nkey="Create account">Create account</Translation>
       </h1>
-      {state === 'error' && error && <div className="alert alert-danger" role="alert">
-        {error}
-      </div>}
+      {state === 'error' && error && (
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
+      )}
       <Form
         schema={schema}
         flow={flow}
         onChange={createAccount}
         footer={({ reset, valid }) => {
-            return (
-              <div className="d-flex justify-content-end">
-                <button className="btn btn-outline-danger m-3" onClick={reset}>
-                  <Translation i18nkey="Cancel">Cancel</Translation>
-                </button>
-                <button className="btn btn-outline-success m-3" onClick={valid}>
-                  <Translation i18nkey="Create account">Create account</Translation>
-                </button>
-              </div>
-            );
-          }}
+          return (
+            <div className="d-flex justify-content-end">
+              <button className="btn btn-outline-danger m-3" onClick={reset}>
+                <Translation i18nkey="Cancel">Cancel</Translation>
+              </button>
+              <button className="btn btn-outline-success m-3" onClick={valid}>
+                <Translation i18nkey="Create account">Create account</Translation>
+              </button>
+            </div>
+          );
+        }}
       />
     </div>
   );
@@ -179,15 +179,14 @@ export const ResetPasswordComponent = (props) => {
   const [error, setError] = useState(undefined);
 
   const schema = {
-
     email: {
       type: type.string,
       format: format.email,
       label: translateMethod('Email address'),
       constraints: [
         constraints.required(translateMethod('constraints.required.email')),
-        constraints.email(translateMethod('constraints.matches.email'))
-      ]
+        constraints.email(translateMethod('constraints.matches.email')),
+      ],
     },
     password: {
       type: type.string,
@@ -195,8 +194,11 @@ export const ResetPasswordComponent = (props) => {
       label: translateMethod('Password'),
       constraints: [
         constraints.required(translateMethod('constraints.required.password')),
-        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, translateMethod('constraints.matches.password'))
-      ]
+        constraints.matches(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/,
+          translateMethod('constraints.matches.password')
+        ),
+      ],
     },
     confirmPassword: {
       type: type.string,
@@ -204,14 +206,17 @@ export const ResetPasswordComponent = (props) => {
       label: translateMethod('Confirm password'),
       constraints: [
         constraints.required(translateMethod('constraints.required.confirmPassword')),
-        constraints.oneOf([constraints.ref('password')], translateMethod('constraint.oneof.confirm.password'))
-      ]
-    }
+        constraints.oneOf(
+          [constraints.ref('password')],
+          translateMethod('constraint.oneof.confirm.password')
+        ),
+      ],
+    },
   };
 
   const flow = ['email', 'password', 'confirmPassword'];
 
-  const resetPassword = data => {
+  const resetPassword = (data) => {
     return fetch('/account/reset', {
       method: 'POST',
       credentials: 'include',
@@ -248,8 +253,8 @@ export const ResetPasswordComponent = (props) => {
         </h1>
         <p className="text-center mt-2">
           <Translation i18nkey="password.reset.done" replacements={[user.email]}>
-            You will receive an email at <b>{user.email}</b> to finish your passsword reset
-            process. You will have 15 minutes from now to finish your password reset process.
+            You will receive an email at <b>{user.email}</b> to finish your passsword reset process.
+            You will have 15 minutes from now to finish your password reset process.
           </Translation>
         </p>
       </div>
@@ -270,18 +275,20 @@ export const ResetPasswordComponent = (props) => {
         flow={flow}
         onChange={resetPassword}
         footer={({ reset, valid }) => {
-            return (
-              <div className="d-flex justify-content-end">
-                <button className="btn btn-outline-primary m-3" onClick={reset}>Cancel</button>
-                <button className="btn btn-outline-danger m-3" onClick={valid}>
-                  <span>
-                    <i className="fas fa-bomb mr-1" />
-                    <Translation i18nkey="Reset password">Reset password</Translation>
-                  </span>
-                </button>
-              </div>
-            );
-          }}
+          return (
+            <div className="d-flex justify-content-end">
+              <button className="btn btn-outline-primary m-3" onClick={reset}>
+                Cancel
+              </button>
+              <button className="btn btn-outline-danger m-3" onClick={valid}>
+                <span>
+                  <i className="fas fa-bomb mr-1" />
+                  <Translation i18nkey="Reset password">Reset password</Translation>
+                </span>
+              </button>
+            </div>
+          );
+        }}
       />
     </div>
   );

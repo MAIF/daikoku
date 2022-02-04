@@ -26,7 +26,8 @@ export function TeamCard(props) {
                   <a
                     href="#"
                     className="ms-3 team__settings"
-                    onClick={props.redirectToTeamSettings}>
+                    onClick={props.redirectToTeamSettings}
+                  >
                     <i className="fas fa-cogs fa-xxs" />
                   </a>
                 </Can>

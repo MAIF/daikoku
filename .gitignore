@@ -22,3 +22,4 @@ daikoku/javascript/cypress/screenshots
 daikoku/javascript/index.json
 .yalc
 yalc.lock
+daikoku/javascript/yarn-error.log

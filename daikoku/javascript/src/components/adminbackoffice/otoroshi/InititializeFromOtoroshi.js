@@ -333,7 +333,8 @@ const Help = () => {
             </li>
           </ul>
         </div>
-      }>
+      }
+    >
       <i className="ms-4 far fa-question-circle" />
     </BeautifulTitle>
   );
