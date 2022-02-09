@@ -39,7 +39,8 @@ export const Create = (props) => {
                                 isBlockPage: !side.path || side.path.length === 0
                             },
                             draft
-                        })
+                        });
+                        setContentType(side.contentType)
                         setSavePath(side.path)
                     }
                 })

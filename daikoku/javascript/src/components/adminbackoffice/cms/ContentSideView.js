@@ -144,18 +144,26 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
 
                 const value = token ? token.value.trim() : "";
 
-                if (['{{daikoku-', '{{#daikoku-'].find(f => value.startsWith(f))) {
+                // if ([
+                //     '{{daikoku-',
+                //     '{{#daikoku-',
+                //     "'{{daikoku-",
+                //     "'{{#daikoku-",
+                // ].find(f => value.startsWith(f))) {
+                try {
                     const id = value
                         .match(/(?:"[^"]*"|^[^"]*$)/)[0]
                         .replace(/"/g, "")
-
+                    console.log(value, id)
+                    const page = window.pages.find(p => p.id === id)
                     setSelectedPage({
                         ...ref.renderer.$cursorLayer.getPixelPosition(),
-                        pageName: window.pages.find(p => p.id === id)?.name,
+                        pageName: page.name,
                         id
                     })
-                } else
+                } catch (err) {
                     setSelectedPage({ top: 0, left: 0, pageName: undefined })
+                }
             }, 10)
         }
     }
