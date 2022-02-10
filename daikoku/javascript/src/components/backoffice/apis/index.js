@@ -14,3 +14,4 @@ export * from './TeamPlanConsumption';
 export * from './TeamApiSubscriptions';
 export * from './TeamApiPost';
 export * from './TeamApiInfos';
+export * from './TeamApiPricings';

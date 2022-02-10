@@ -8,10 +8,11 @@ import { Can, manage, api as API, Spinner } from '../../utils';
 import {
   TeamApiInfos,
   TeamApiPost,
-  TeamApiDocumentation
+  TeamApiDocumentation,
+  TeamApiPricings
 } from '.';
 
-import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext, toggleExpertMode } from '../../../core';
+import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext, toggleExpertMode, openApiSelectModal } from '../../../core';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
@@ -51,16 +52,11 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
 };
 
 const TeamApiComponent = (props) => {
-  const [state, setState] = useState({
-    api: null,
-    create: false,
-    error: null,
-    otoroshiSettings: [],
-    changed: false,
-  });
-
   const params = useParams();
 
+  const [api, setApi] = useState();
+  const [creation, setCreation] = useState(false);
+  const [otoroshiSettings, setOtoroshiSettings] = useState([]);
   const [versions, setApiVersions] = useState([]);
   const [apiVersion, setApiVersion] = useState({
     value: params.versionId,
@@ -76,226 +72,98 @@ const TeamApiComponent = (props) => {
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
       Services.allSimpleOtoroshis(props.tenant._id)
-        .then((otoroshiSettings) =>
-          setState({
-            ...state,
-            otoroshiSettings,
-            api: location.state.newApi,
-            create: true,
-          })
-        );
+        .then((otoroshiSettings) => {
+          setOtoroshiSettings(otoroshiSettings);
+          setApi(location.state.newApi);
+          setCreation(true);
+        });
     } else {
       reloadState();
     }
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
-    if (state.changed) {
-      setState({ ...state, changed: false });
-      save();
-    }
-  }, [state.changed]);
+    document.title = `${props.currentTeam.name} - ${api ? api.name : translateMethod('API')}`;
+  }, [api]);
 
-  useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${state.api ? state.api.name : translateMethod('API')
-      }`;
-  }, [state]);
-
-  function reloadState() {
+  const reloadState = () => {
     Promise.all([
       Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.allSimpleOtoroshis(props.tenant._id),
       Services.getAllApiVersions(props.currentTeam._id, params.apiId),
     ]).then(([api, otoroshiSettings, versions]) => {
-      if (!api.error) setState({ ...state, api, otoroshiSettings });
-      else toastr.error(api.error);
-      setApiVersions(versions.map((v) => ({ label: v, value: v })));
-      setApiVersion({ value: params.versionId, label: params.versionId });
+      if (!api.error) {
+        setApiVersions(versions.map((v) => ({ label: v, value: v })));
+        setApiVersion({ value: params.versionId, label: params.versionId });
+        setApi(api);
+        setOtoroshiSettings(otoroshiSettings);
+      } else {
+        toastr.error(api.error);
+      }
     });
   }
 
-  function save(v) {
-    if (params.tab === 'documentation') teamApiDocumentationRef.current.saveCurrentPage();
+  const save = (editedApi) => {
+    if (params.tab === 'documentation') {
+      teamApiDocumentationRef.current.saveCurrentPage();
+    }
 
-    const editedApi = transformPossiblePlansBack(v || state.api);
-    if (state.create) {
+    if (creation) {
       return Services.createTeamApi(props.currentTeam._id, editedApi)
-        .then((api) => {
-          if (api.name) {
+        .then((createdApi) => {
+          if (createdApi.error) {
+            toastr.error(translateMethod(error))
+          } else if (createdApi.name) {
             toastr.success(
-              translateMethod('api.created.success', false, `Api "${api.name}" created`, api.name)
+              translateMethod('api.created.success', false, `Api "${createdApi.name}" created`, createdApi.name)
             );
-            return api;
-          } else {
-            return Promise.reject(api.error)
-          };
+            setApi(createdApi)
+            setCreation(false)
+          }
         })
-        .then((api) => {
-          setState({ ...state, create: false, api });
-          navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`);
-          return api
-        })
-        .catch((error) => toastr.error(translateMethod(error)));
     } else {
-      return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
+      Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
         .then((r) => {
           if (!r.exists) {
             if (editedApi.currentVersion.split('').find((c) => reservedCharacters.includes(c))) {
-              return toastr.error(
+              toastr.error(
                 "Can't set version with special characters : " + reservedCharacters.join(' | ')
               );
-            } else
-              return Services.saveTeamApiWithId(
+            } else {
+              Services.saveTeamApiWithId(
                 props.currentTeam._id,
                 editedApi,
                 apiVersion.value,
                 editedApi._humanReadableId
               ).then((res) => {
-                if (res.error) toastr.error(translateMethod(res.error));
-                else {
+                if (res.error) {
+                  toastr.error(translateMethod(res.error));
+                } else {
                   toastr.success(translateMethod('Api saved'));
-                  if (
-                    res._humanReadableId !== params.apiId ||
-                    res.currentVersion !== params.versionId
-                  )
-                    navigate(
-                      `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
-                    );
-                  return res
+                  setApi(editedApi)
                 }
               });
+            }
           } else {
-            return toastr.error(`api with name "${editedApi.name}" already exists`)
+            toastr.error(`api with name "${editedApi.name}" already exists`)
           };
         });
     }
   }
 
-  function transformPossiblePlansBack(api) {
-    if (!api) {
-      return api;
-    }
-    const def = {
-      otoroshiTarget: {
-        otoroshiSettings: null,
-        authorizedEntities: { groups: [], services: [] },
-        apikeyCustomization: {
-          clientIdOnly: false,
-          constrainedServicesOnly: false,
-          tags: [],
-          metadata: {},
-          customMetadata: [],
-          restrictions: {
-            enabled: false,
-            allowLast: true,
-            allowed: [],
-            forbidden: [],
-            notFound: [],
-          },
-        },
-      },
-    };
-    const possibleUsagePlans = api.possibleUsagePlans || [];
-    api.possibleUsagePlans = possibleUsagePlans.map((plan) => {
-      plan.otoroshiTarget = plan.otoroshiTarget || { ...def.otoroshiTarget };
-      plan.otoroshiTarget.apikeyCustomization = plan.otoroshiTarget.apikeyCustomization || {
-        ...def.otoroshiTarget.apikeyCustomization,
-      };
-      plan.otoroshiTarget.apikeyCustomization.restrictions = plan.otoroshiTarget.apikeyCustomization
-        .restrictions || { ...def.otoroshiTarget.apikeyCustomization.restrictions };
-      return plan;
-    });
-    return api;
-  }
-
-  function transformPossiblePlans(api) {
-    if (!api) {
-      return api;
-    }
-    const def = {
-      otoroshiTarget: {
-        otoroshiSettings: null,
-        authorizedEntities: { groups: [], services: [] },
-        apikeyCustomization: {
-          clientIdOnly: false,
-          constrainedServicesOnly: false,
-          tags: [],
-          metadata: {},
-          customMetadata: [],
-          restrictions: {
-            enabled: false,
-            allowLast: true,
-            allowed: [],
-            forbidden: [],
-            notFound: [],
-          },
-        },
-      },
-    };
-    const possibleUsagePlans = api.possibleUsagePlans || [];
-    api.possibleUsagePlans = possibleUsagePlans.map((plan) => {
-      plan.otoroshiTarget = plan.otoroshiTarget || { ...def.otoroshiTarget };
-      plan.otoroshiTarget.apikeyCustomization = plan.otoroshiTarget.apikeyCustomization || {
-        ...def.otoroshiTarget.apikeyCustomization,
-      };
-      plan.otoroshiTarget.apikeyCustomization.restrictions = plan.otoroshiTarget.apikeyCustomization
-        .restrictions || { ...def.otoroshiTarget.apikeyCustomization.restrictions };
-      return plan;
-    });
-    return api;
-  }
-
-  function promptVersion() {
-    const { api } = state;
-    window
-      .prompt(
-        'Version number',
-        undefined,
-        false,
-        'Create a new version',
-        `Current version : ${api.currentVersion}`
-      )
-      .then((newVersion) => {
-        if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-          toastr.error(
-            "Can't create version with special characters : " + reservedCharacters.join(' | ')
-          );
-        else createNewVersion(newVersion);
-      });
-  }
-
-  function createNewVersion(newVersion) {
-    Services.createNewApiVersion(
-      state.api._humanReadableId,
-      props.currentTeam._id,
-      newVersion
-    ).then((res) => {
-      if (res.error) toastr.error(res.error);
-      else {
-        toastr.success('New version of api created');
-        navigate(
-          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'
-          }`
-        );
-      }
-    });
-  }
-
   const teamId = props.currentTeam._id;
-  const disabled = {}; //TODO: deepEqual(state.originalApi, state.api) ? { disabled: 'disabled' } : {};
   const tab = params.tab || 'infos';
-  const editedApi = transformPossiblePlans(state.api);
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
     props.setError({ error: { status: 403, message: 'Creation security enabled' } });
   }
 
   useEffect(() => {
-    if (!!state.api) {
+    if (!!api) {
       const deleteApi = () => {
         window.confirm(translateMethod('delete.api.confirm')).then((ok) => {
           if (ok) {
-            Services.deleteTeamApi(props.currentTeam._id, state.api._id)
+            Services.deleteTeamApi(props.currentTeam._id, api._id)
               .then(() => navigate(`/${props.currentTeam._humanReadableId}/settings/apis`))
               .then(() => toastr.success(translateMethod('deletion successful')));
           }
@@ -344,7 +212,7 @@ const TeamApiComponent = (props) => {
       }
     }
     return () => props.injectNavFooter(null)
-  }, [state.api])
+  }, [api])
 
   useEffect(() => {
     if (tab !== 'infos') {
@@ -354,18 +222,18 @@ const TeamApiComponent = (props) => {
 
   return (
     <Can I={manage} a={API} team={props.currentTeam} dispatchError>
-      {!editedApi && <Spinner />}
-      {editedApi && (
+      {!api && <Spinner />}
+      {api && (
         <>
           <div className="d-flex flex-row justify-content-between align-items-center">
-            {state.create ? (
-              <h2>{editedApi.name}</h2>
+            {creation ? (
+              <h2>{api.name}</h2>
             ) : (
               <div
                 className="d-flex align-items-center justify-content-between"
                 style={{ flex: 1 }}>
                 <h2 className='me-2'>
-                  {editedApi.name}
+                  {api.name}
                 </h2>
               </div>
             )}
@@ -377,13 +245,13 @@ const TeamApiComponent = (props) => {
           <div className="row">
             <div className="section col container-api">
               <div className="mt-2">
-                {editedApi && tab === 'documentation' && (
+                {tab === 'documentation' && (
                   <>
                     <TeamApiDocumentation
-                      creationInProgress={state.create}
+                      creationInProgress={creation}
                       team={props.currentTeam}
                       teamId={teamId}
-                      value={editedApi}
+                      value={api}
                       onChange={(api) => setState({ ...state, api })}
                       save={save}
                       versionId={params.versionId}
@@ -407,9 +275,24 @@ const TeamApiComponent = (props) => {
                     </div>
                   </>
                 )}
-                {editedApi && tab === 'infos' && (
+                {tab === 'plans' && (
+                  <TeamApiPricings
+                    value={api}
+                    team={props.currentTeam}
+                    tenant={props.tenant}
+                    save={save}
+                    creation={
+                      location && location.state && !!location.state.newApi
+                    }
+                    otoroshiSettings={otoroshiSettings}
+                    expertMode={props.expertMode}
+                    injectSubMenu={props.injectSubMenu}
+                    openApiSelectModal={props.openApiSelectModal}
+                  />
+                )}
+                {tab === 'infos' && (
                   <TeamApiInfos
-                    value={editedApi}
+                    value={api}
                     team={props.currentTeam}
                     tenant={props.tenant}
                     save={save}
@@ -420,14 +303,14 @@ const TeamApiComponent = (props) => {
                     injectSubMenu={props.injectSubMenu}
                     openTestingApiKeyModal={props.openTestingApiKeyModal}
                     openSubMetadataModal={props.openSubMetadataModal}
-                    otoroshiSettings={state.otoroshiSettings}
+                    otoroshiSettings={otoroshiSettings}
                   />
                 )}
-                {editedApi && tab === 'news' && (
+                {tab === 'news' && (
                   <TeamApiPost
-                    value={editedApi}
+                    value={api}
                     team={props.currentTeam}
-                    api={state.api}
+                    api={api}
                     onChange={(api) => setState({ ...state, api })}
                     params={params}
                   />
@@ -449,7 +332,8 @@ const mapDispatchToProps = {
   setError: (error) => setError(error),
   openSubMetadataModal: (props) => openSubMetadataModal(props),
   openTestingApiKeyModal: (props) => openTestingApiKeyModal(props),
-  toggleExpertMode: () => toggleExpertMode()
+  toggleExpertMode: () => toggleExpertMode(),
+  openApiSelectModal: (props) => openApiSelectModal(props)
 };
 
 export const TeamApi = connect(mapStateToProps, mapDispatchToProps)(TeamApiComponent);

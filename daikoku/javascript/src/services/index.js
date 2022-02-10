@@ -869,15 +869,6 @@ export const getDefaultApiVersion = (apiId) => customFetch(`/api/apis/${apiId}/d
 export const getAllPlanOfApi = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
 
-export const cloneApiPlan = (teamId, apiId, fromApi, plan) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/plans`, {
-    method: 'POST',
-    body: JSON.stringify({
-      plan,
-      api: fromApi,
-    }),
-  });
-
 export const getRootApi = (apiId) => customFetch(`/api/apis/${apiId}/_root`);
 
 export const importApiPages = (teamId, apiId, pages, version) =>

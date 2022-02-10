@@ -32,18 +32,11 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
       flow: descriptionForm.flow,
     },
     {
-      id: 'pricing',
-      label: translateMethod('Plans'),
-      component: TeamApiPricing,
-      skipTo: 'swagger',
-    },
-    {
       id: 'swagger',
       label: translateMethod('Swagger'),
       component: TeamApiSwagger,
       skipTo: 'save',
     },
-
     {
       id: 'testing',
       label: translateMethod('Testing'),

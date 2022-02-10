@@ -4,7 +4,6 @@ import classNames from 'classnames';
 import faker from 'faker';
 import _ from 'lodash';
 import { connect } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -14,7 +13,6 @@ import { Spinner, newPossibleUsagePlan, Option } from '../../utils';
 import * as Services from '../../../services';
 import { Help } from '../../inputs';
 import { I18nContext, openApiSelectModal } from '../../../core';
-import { object, string } from 'prop-types';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -98,7 +96,6 @@ export const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, t
 
   useEffect(() => {
     const otoroshiTarget = rawValues.otoroshiTarget;
-    console.debug({ otoroshiTarget, disabled: !otoroshiTarget || !otoroshiTarget.otoroshiSettings })
     setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
   }, [rawValues.otoroshiTarget.otoroshiSettings]);
 
@@ -192,18 +189,17 @@ function usePrevious(value) {
   return ref.current;
 }
 
-function TeamApiPricingComponent({ value, tenant, ...props }) {
+
+
+
+const TeamApiPricingComponent = ({ value, tenant, ...props }) => {
   const [selected, setSelected] = useState(value.possibleUsagePlans[0]);
-  const [otoroshiSettings, setOtoroshiSettings] = useState([]);
   const params = useParams();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const prevValue = usePrevious(value);
 
-  useEffect(() => {
-    Services.allSimpleOtoroshis(tenant._id).then((settings) => setOtoroshiSettings(settings));
-  }, []);
 
   useEffect(() => {
     if (prevValue) {
@@ -281,13 +277,14 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
           type: type.string,
           format: format.select,
           label: translateMethod('Otoroshi instances'),
-          options: otoroshiSettings.map((s) => ({
+          optionsFrom: Services.allSimpleOtoroshis(tenant._id),
+          transformer: (s) => ({
             label: s.url,
             value: s._id,
-          })),
+          })
         },
         authorizedEntities: {
-          type: type.string,
+          type: type.object,
           visible: {
             ref: 'otoroshiSettings',
             test: v => !!v
@@ -298,94 +295,101 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
           placeholder: translateMethod('Authorized.entities.placeholder'),
           help: translateMethod('authorized.entities.help'),
         },
-        // apikeyCustomization: {
-        //   type: type.object,
-        //   format: format.form,
-        //   label: translateMethod('apikey customisation'), //todo: translation
-        //   visible: {
-        //     ref: 'authorizedEntities',
-        //     test: v => !!v.length
-        //   },
-        //   schema: {
-        //     clientIdOnly: {
-        //       type: type.bool,
-        //       label: translateMethod('Apikey with clientId only'),
-        //     },
-        //     readOnly: {
-        //       type: type.bool,
-        //       label: translateMethod('Read only apikey'),
-        //     },
-        //     constrainedServicesOnly: {
-        //       type: type.bool,
-        //       label: translateMethod('Constrained services only'),
-        //     },
-        //     dynamicPrefix: {
-        //       type: type.string,
-        //       label: translateMethod('Dynamic prefix'),
-        //       help: translateMethod(
-        //         'dynamic.prefix.help',
-        //         false,
-        //         'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
-        //       ),
-        //     },
-        //     metadata: {
-        //       type: type.object,
-        //       label: translateMethod('Automatic API key metadata'),
-        //       help: translateMethod(
-        //         'automatic.metadata.help',
-        //         false,
-        //         'Automatic metadata will be calculated on subscription acceptation'
-        //       ),
-        //     },
-        //     customMetadata: {
-        //       type: object,
-        //       render: CustomMetadataInput,
-        //       label: translateMethod('Custom Apikey metadata'),
-        //       toastr: () => toastr.info(translateMethod('sub.process.update.to.manual')),
-        //       help: translateMethod(
-        //         'custom.metadata.help',
-        //         false,
-        //         'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
-        //       ),
-        //     },
-        //     tags: {
-        //       type: string,
-        //       array: true,
-        //       label: translateMethod('Apikey tags'),
-        //     },
-        //     restrictions: {
-        //       type: type.object,
-        //       format: format.form,
-        //       schema: {
-        //         enabled: {
-        //           type: type.bool,
-        //           label: translateMethod('Enable restrictions'),
-        //         },
-        //         allowLast: {
-        //           type: type.bool,
-        //           visible: {
-        //             ref: 'enabled',
-        //             test: v => !!v
-        //           },
-        //           label: translateMethod('Allow at last'),
-        //           help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
-        //         },
-        //         allowed: {
-        //           label: translateMethod('Allowed pathes'),
-        //           ...pathes
-        //         },
-        //         forbidden: {
-        //           label: translateMethod('Forbidden pathes'),
-        //           ...pathes
-        //         },
-        //         notFound: {
-        //           label: translateMethod('Not found pathes'),
-        //           ...pathes
-        //         },
-        //       }
-        //     }
-        //   }
-        // }
+        apikeyCustomization: {
+          type: type.object,
+          format: format.form,
+          visible: {
+            ref: 'authorizedEntities',
+            test: authorizedEntities => {
+              console.debug({ authorizedEntities})
+              return !!authorizedEntities.groups.length || !!authorizedEntities.services.length
+            }
+          },
+          label: translateMethod('apikey customisation'), //todo: translation
+          visible: {
+            ref: 'authorizedEntities',
+            test: v => !!v.length
+          },
+          schema: {
+            clientIdOnly: {
+              type: type.bool,
+              label: translateMethod('Apikey with clientId only'),
+            },
+            readOnly: {
+              type: type.bool,
+              label: translateMethod('Read only apikey'),
+            },
+            constrainedServicesOnly: {
+              type: type.bool,
+              label: translateMethod('Constrained services only'),
+            },
+            dynamicPrefix: {
+              type: type.string,
+              label: translateMethod('Dynamic prefix'),
+              help: translateMethod(
+                'dynamic.prefix.help',
+                false,
+                'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
+              ),
+            },
+            metadata: {
+              type: type.object,
+              label: translateMethod('Automatic API key metadata'),
+              help: translateMethod(
+                'automatic.metadata.help',
+                false,
+                'Automatic metadata will be calculated on subscription acceptation'
+              ),
+            },
+            customMetadata: {
+              type: type.object,
+              // render: CustomMetadataInput,
+              label: translateMethod('Custom Apikey metadata'),
+              // toastr: () => toastr.info(translateMethod('sub.process.update.to.manual')),
+              help: translateMethod(
+                'custom.metadata.help',
+                false,
+                'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
+              ),
+            },
+            tags: {
+              type: type.string,
+              array: true,
+              label: translateMethod('Apikey tags'),
+            },
+            restrictions: {
+              type: type.object,
+              format: format.form,
+              schema: {
+                enabled: {
+                  type: type.bool,
+                  label: translateMethod('Enable restrictions'),
+                },
+                allowLast: {
+                  type: type.bool,
+                  visible: {
+                    ref: 'enabled',
+                    test: v => !!v
+                  },
+                  label: translateMethod('Allow at last'),
+                  help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
+                },
+                allowed: {
+                  label: translateMethod('Allowed pathes'),
+                  ...pathes
+                },
+                forbidden: {
+                  label: translateMethod('Forbidden pathes'),
+                  ...pathes
+                },
+                notFound: {
+                  label: translateMethod('Not found pathes'),
+                  ...pathes
+                },
+              }
+            }
+          }
+        }
       },
     }
   };
@@ -454,7 +458,6 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
   }
 
   function onChange(v) {
-    console.debug({v})
     if (!v.currency) {
       v.currency = { code: 'EUR' };
     }
@@ -1204,7 +1207,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
               schema={schema}
               onSubmit={onChange}
               options={{
-                autosubmit: true
+                watch: true,
+                // autosubmit: true
               }}
               flow={flow}
               value={selected}
