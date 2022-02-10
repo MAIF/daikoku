@@ -92,6 +92,47 @@ class HomeController(
     Ok(Json.obj("version" -> BuildInfo.version))
   }
 
+  private def getMatchingRoutes(path: String, cmsPaths: Seq[(String, CmsPage)], strictMode: Boolean = false): Seq[CmsPage] = {
+    val paths = path
+      .replace("/_", "")
+      .split("/")
+      .filter(_.nonEmpty)
+
+    println("Search for : " + paths.mkString("|"))
+
+    var matched = false
+
+    paths.foldLeft(cmsPaths.map(r => (
+      r._1.replace("/_/", "").split("/") ++ Array(if(r._2.exact) "" else "*"),
+      r._2
+    ))
+      .map(p => (p._1.filter(_.nonEmpty), p._2))
+      .filter(p => p._1.nonEmpty)
+    ) { (paths, path) => {
+      println(
+        "Loop",
+        paths.map(p => "(" + p._1.mkString("|") + ")")
+      )
+        if (paths.isEmpty || matched)
+          paths
+        else {
+          val matchingRoutes = paths.filter(p => p._1.nonEmpty && (p._1.head == path || p._1.head == "*"))
+          println("matchingRoutes", paths.map(p => "(" + p._1.mkString("|") + ")"), path)
+          if (matchingRoutes.nonEmpty)
+            matchingRoutes.map(p => (p._1.tail, p._2))
+          else  {
+            val matchingRoute = paths.find(p => p._1.isEmpty)
+            println("acc : " + paths.map(p => "(" + p._1.mkString("|") + ")"), paths.length, path)
+            if(matchingRoute.nonEmpty && !strictMode) {
+              matched = true
+              Seq(matchingRoute.get)
+            } else
+              Seq()
+          }
+        }
+    }}.map(_._2)
+  }
+
   def cmsPageByPath(path: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
     val actualPath = if (path.startsWith("/")) {
       path
@@ -103,19 +144,18 @@ class HomeController(
         env.dataStore.cmsRepo.forTenant(ctx.tenant).findAllNotDeleted()
           .map(cmsPages => cmsPages.filter(p => p.path.exists(_.nonEmpty)))
           .flatMap(cmsPages => {
-            val strictPage = cmsPages.filter(_.exact)
-              .sortBy(_.path.map(_.length).getOrElse(0))(Ordering[Int].reverse)
-              .find(p => ctx.request.path.equals(s"/_${p.path.getOrElse("")}"))
+            val strictPage = getMatchingRoutes(ctx.request.path, cmsPages.filter(p => p.exact && p.path.nonEmpty).map(p => (p.path.get, p)), true)
 
-            val page = strictPage match {
-              case Some(p) => Some(p)
-              case None => cmsPages
-                .filter(!_.exact)
-                .sortBy(_.path.map(_.length).getOrElse(0))(Ordering[Int].reverse)
-                .find(p => ctx.request.path.startsWith(s"/_${p.path.map(p => p).getOrElse("")}"))
-            }
+            val page = if(strictPage.nonEmpty)
+              strictPage
+            else
+              getMatchingRoutes(ctx.request.path, cmsPages
+                .filter(p => !p.exact && p.path.nonEmpty).map(p => (p.path.get, p)))
 
-            page match {
+            println("Matched strict route : " + strictPage.headOption.map(_.path.get).getOrElse("null"))
+            println("Matched non strict route : " + page.headOption.map(_.path.get).getOrElse("null"))
+
+            page.headOption match {
               case Some(r) if r.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
               case Some(r) => r.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
               case None => cmsPageNotFound(ctx)
