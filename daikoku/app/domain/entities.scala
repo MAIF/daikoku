@@ -1895,10 +1895,14 @@ case class CmsPage(
       .find(p => ctx.request.path.startsWith(p))
       .map(r => {
         val params = ctx.request.path.split(r).filter(f => f.nonEmpty)
-        if (params.length > 0)
-          params(0).split("/").filter(_.nonEmpty)(Integer.parseInt(id))
-        else
-          s"path param $id not found"
+        try {
+          if (params.length > 0)
+            params(0).split("/").filter(_.nonEmpty)(Integer.parseInt(id))
+          else
+            s"path param $id not found"
+        } catch {
+          case _: Throwable => s"path param $id not found"
+        }
       })
       .getOrElse(s"path param $id not found")
   }

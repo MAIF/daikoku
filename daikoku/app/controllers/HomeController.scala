@@ -112,8 +112,9 @@ class HomeController(
               case None => cmsPages
                 .filter(!_.exact)
                 .sortBy(_.path.map(_.length).getOrElse(0))(Ordering[Int].reverse)
-                .find(p => ctx.request.path.startsWith(s"/_${p.path.getOrElse("")}"))
+                .find(p => ctx.request.path.startsWith(s"/_${p.path.map(p => p).getOrElse("")}"))
             }
+
             page match {
               case Some(r) if r.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
               case Some(r) => r.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
@@ -135,7 +136,8 @@ class HomeController(
 
       optionFoundPage match {
         case Some(p) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(p.notFoundCmsPage.get).flatMap {
-          case Some(page) => page.render(ctx).map(res => Ok(res._1).as(res._2))
+          case Some(page) =>
+            page.render(ctx).map(res => Ok(res._1).as(res._2))
           case _ => Errors.craftResponseResult("Page not found !", Results.NotFound, ctx.request, None, env)
         }
         case _ => Errors.craftResponseResult("Page not found !", Results.NotFound, ctx.request, None, env)
