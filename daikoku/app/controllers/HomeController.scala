@@ -98,8 +98,6 @@ class HomeController(
       .split("/")
       .filter(_.nonEmpty)
 
-    println("Search for : " + paths.mkString("|"))
-
     var matched = false
 
     paths.foldLeft(cmsPaths.map(r => (
@@ -109,20 +107,14 @@ class HomeController(
       .map(p => (p._1.filter(_.nonEmpty), p._2))
       .filter(p => p._1.nonEmpty)
     ) { (paths, path) => {
-      println(
-        "Loop",
-        paths.map(p => "(" + p._1.mkString("|") + ")")
-      )
         if (paths.isEmpty || matched)
           paths
         else {
           val matchingRoutes = paths.filter(p => p._1.nonEmpty && (p._1.head == path || p._1.head == "*"))
-          println("matchingRoutes", paths.map(p => "(" + p._1.mkString("|") + ")"), path)
           if (matchingRoutes.nonEmpty)
             matchingRoutes.map(p => (p._1.tail, p._2))
           else  {
             val matchingRoute = paths.find(p => p._1.isEmpty)
-            println("acc : " + paths.map(p => "(" + p._1.mkString("|") + ")"), paths.length, path)
             if(matchingRoute.nonEmpty && !strictMode) {
               matched = true
               Seq(matchingRoute.get)
