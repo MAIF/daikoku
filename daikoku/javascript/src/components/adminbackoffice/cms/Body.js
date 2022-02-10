@@ -2,6 +2,7 @@ import { Form, type } from '@maif/react-forms';
 import React, { useContext, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { I18nContext } from '../../../core';
 import { ContentSideView } from './ContentSideView';
+import DragAndDropWrapper from './DragAndDropWrapper';
 
 export default React.forwardRef(({ contentType, setFinalValue, show, pages, inValue, publish }, ref) => {
     const { translateMethod } = useContext(I18nContext)
@@ -27,14 +28,26 @@ export default React.forwardRef(({ contentType, setFinalValue, show, pages, inVa
         },
     }));
 
+    const handleDrop = file => {
+        const reader = new FileReader()
+        reader.onload = async (e) => {
+            const text = (e.target.result)
+            setValue({ draft: text })
+        };
+        reader.readAsText(file)
+    }
+
     const schema = {
         draft: {
             type: type.string,
             label: null,
             help: translateMethod('cms.create.draft_help'),
-            render: formProps => <ContentSideView {...formProps} pages={pages} contentType={contentType}
-                publish={publish}
-            />
+            render: formProps =>
+                <DragAndDropWrapper handleDrop={handleDrop}>
+                    <ContentSideView {...formProps} pages={pages} contentType={contentType}
+                        publish={publish}
+                    />
+                </DragAndDropWrapper>
         }
     }
 

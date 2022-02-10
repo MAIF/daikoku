@@ -189,7 +189,7 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                 zIndex: 100,
                 backgroundColor: "#fff",
                 boxShadow: '0 1px 3px rgba(25,25,25.5)',
-                top: selectedPage.top - 36,
+                top: selectedPage.top - 42,
                 left: selectedPage.left
             }}
                 to={`/settings/pages/edit/${selectedPage.id}`}

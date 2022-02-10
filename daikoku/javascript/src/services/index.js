@@ -726,9 +726,9 @@ export const checkConnection = (config, user) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   });
 
@@ -902,6 +902,8 @@ export const createCmsPage = (id, cmsPage) => customFetch('/api/cms/pages', {
     path: cmsPage.isBlockPage ? undefined : cmsPage.path
   }),
 });
+
+export const createCmsPageWithName = name => customFetch(`/api/cms/pages/${name}`, { method: 'POST' });
 
 export const removeCmsPage = id => customFetch(`/api/cms/pages/${id}`, {
   method: 'DELETE'

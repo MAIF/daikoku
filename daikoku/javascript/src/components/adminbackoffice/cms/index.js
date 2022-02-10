@@ -1,11 +1,12 @@
 import { getApolloContext, gql } from '@apollo/client'
 import React, { useContext, useEffect, useState } from 'react'
-import { Link, Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { I18nContext } from '../../../core'
 import { UserBackOffice } from '../../backoffice'
 import { Can, manage, tenant } from '../../utils'
 import { Create } from './Create'
 import { Pages } from './Pages'
+import * as Services from '../../../services'
 
 const getAllPages = () => ({
     query: gql`
@@ -43,10 +44,22 @@ export const CMSOffice = () => {
     }
 
     const Index = ({ }) => {
+        const navigation = useNavigate()
+        const location = useLocation()
+
         return <div className='pt-2'>
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
-                <Link to="new" className="btn btn-sm btn-primary">{translateMethod('cms.index.new_page')}</Link>
+                <button onClick={() => {
+                    window.prompt('Indiquer le nom de la nouvelle page', '', false,
+                        'Création d\'une nouvelle page', 'Nom de la nouvelle page')
+                        .then(newPageName => {
+                            if (newPageName) {
+                                Services.createCmsPageWithName(newPageName)
+                                    .then(res => navigation(`${location.pathname}/edit/${res._id}`))
+                            }
+                        })
+                }} className="btn btn-sm btn-primary">{translateMethod('cms.index.new_page')}</button>
             </div>
             <Pages pages={pages} removePage={id => setPages(pages.filter(f => f.id !== id))} />
         </div>

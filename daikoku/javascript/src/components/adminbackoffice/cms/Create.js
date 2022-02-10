@@ -32,6 +32,9 @@ export const Create = (props) => {
                 .then(res => {
                     if (res.data) {
                         const { draft, ...side } = res.data.cmsPage
+                        setFinalBodyValue(undefined)
+                        setFinalSideValue(undefined)
+                        setFormAction(undefined)
                         setInValue({
                             side: {
                                 ...side,
@@ -143,7 +146,7 @@ export const Create = (props) => {
                         },
                         { title: translateMethod('cms.create.content'), id: 2 }
                     ].map(({ title, id, showPreview }) => (
-                        <TabButton title={title}
+                        !savePath ? null : <TabButton title={title}
                             selected={tab === id}
                             key={`tabButton${id}`}
                             onClick={() => {

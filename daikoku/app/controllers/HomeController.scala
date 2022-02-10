@@ -5,7 +5,7 @@ import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
-import fr.maif.otoroshi.daikoku.domain.{DaikokuStyle, json}
+import fr.maif.otoroshi.daikoku.domain.{CmsPage, CmsPageId, DaikokuStyle, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.Errors
 import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, Json}
@@ -100,7 +100,7 @@ class HomeController(
     }
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> actualPath)).flatMap {
       case None =>
-        env.dataStore.cmsRepo.forTenant(ctx.tenant).findAll()
+        env.dataStore.cmsRepo.forTenant(ctx.tenant).findAllNotDeleted()
           .map(cmsPages => cmsPages.filter(p => p.path.exists(_.nonEmpty)))
           .flatMap(cmsPages => {
             val strictPage = cmsPages.filter(_.exact)
@@ -153,6 +153,34 @@ class HomeController(
 
   def cmsPageById(id: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
     cmsPageByIdWithoutAction(ctx, id)
+  }
+
+  def createCmsPageWithName(name: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent("@{user.name} has created a cms page with name"))(
+      ctx.tenant.id.value,
+      ctx) { (tenant, _) => {
+        val page = CmsPage(
+          id = CmsPageId(BSONObjectID.generate().stringify),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = false,
+          name = name,
+          forwardRef = None,
+          tags = List(),
+          metadata = Map(),
+          contentType = "text/html",
+          body = "<DOCTYPE html>\n<html>\n<head></head>\n<body>\n</body>\n</html>",
+          path = Some("/" + BSONObjectID.generate().stringify)
+        )
+        env.dataStore.cmsRepo.forTenant(tenant)
+          .save(page)
+          .map {
+            case true => Created(page.asJson)
+            case false => BadRequest(Json.obj("error" -> "Error when creating cms page"))
+          }
+      }
+    }
   }
 
   def createCmsPage() = DaikokuAction.async(parse.json) { ctx =>
