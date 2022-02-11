@@ -147,8 +147,9 @@ class HomeController(
             println("Matched strict route : " + strictPage.headOption.map(_.path.get).getOrElse("null"))
             println("Matched non strict route : " + page.headOption.map(_.path.get).getOrElse("null"))
 
+            println(ctx.user)
             page.headOption match {
-              case Some(r) if r.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
+              case Some(r) if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
               case Some(r) => r.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
               case None => cmsPageNotFound(ctx)
             }
