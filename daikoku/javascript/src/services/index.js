@@ -983,3 +983,8 @@ export const graphql = {
     }
   `
 };
+
+export const downloadCmsFiles = () => fetch('/api/cms/download', {
+  method: 'POST',
+  credentials: 'include'
+})

@@ -6,12 +6,15 @@ import { getApolloContext } from '@apollo/client'
 
 import Sidebar from './Sidebar'
 import Body from './Body'
+import { Spinner } from '../..'
 
 export const Create = (props) => {
     const { client } = useContext(getApolloContext())
     const { translateMethod } = useContext(I18nContext)
     const params = useParams()
     const navigate = useNavigate()
+
+    const [loading, setLoading] = useState(true)
     const [tab, setTab] = useState(0)
 
     const sideRef = useRef()
@@ -27,7 +30,8 @@ export const Create = (props) => {
 
     useEffect(() => {
         const id = params.id
-        if (id)
+        if (id) {
+            setLoading(true)
             client.query({ query: Services.graphql.getCmsPage(id) })
                 .then(res => {
                     if (res.data) {
@@ -46,7 +50,9 @@ export const Create = (props) => {
                         setContentType(side.contentType)
                         setSavePath(side.path)
                     }
+                    setLoading(false)
                 })
+        }
     }, [params.id]);
 
     useEffect(() => {
@@ -122,6 +128,9 @@ export const Create = (props) => {
             {onClose && <i className='fas fa-times' />}
         </div>
     )
+
+    if(loading)
+        return <Spinner />
 
     return (
         <>

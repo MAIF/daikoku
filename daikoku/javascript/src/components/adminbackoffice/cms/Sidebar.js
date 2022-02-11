@@ -187,7 +187,7 @@ export default React.memo(
                         </ul>
                         <div className="px-2 mb-4 mt-auto">
                             {value.lastPublishedDate && <div>
-                                <span>{translateMethod('cms.create.last_update')}</span>
+                                <span>{translateMethod('cms.create.last_update')}{' '}</span>
                                 <span>{value.lastPublishedDate && moment(value.lastPublishedDate).format('DD/MM/yy kk:mm')}</span>
                             </div>}
                             <div className='d-flex mt-3'>

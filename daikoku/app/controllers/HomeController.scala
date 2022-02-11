@@ -8,10 +8,14 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain.{CmsPage, CmsPageId, DaikokuStyle, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.Errors
-import play.api.libs.json.{JsError, JsObject, JsString, JsSuccess, Json}
+import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
+import play.api.libs.json.{JsArray, JsError, JsObject, JsString, JsSuccess, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
+import shapeless.syntax.std.tuple.productTupleOps
 
+import java.io.{File, FileOutputStream}
+import java.util.zip.{ZipEntry, ZipOutputStream}
 import scala.concurrent.Future
 
 class HomeController(
@@ -263,4 +267,71 @@ class HomeController(
         }
     }
   }
+
+  def download() = DaikokuAction.async { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent("@{user.nae} has download all files of the cms"))(
+      ctx.tenant.id.value,
+      ctx) { (tenant, _) =>
+        env.dataStore.cmsRepo.forTenant(tenant)
+          .findAllNotDeleted()
+          .map(pages => {
+            val outZip = new File(s"/tmp/${System.currentTimeMillis()}.zip");
+            val out = new ZipOutputStream(new FileOutputStream(outZip));
+
+            val contentTypeToExtension = Map(
+              "application/json" -> "json",
+              "text/html" -> "html",
+              "text/javascript" -> "js",
+              "text/css" -> "css",
+              "text/markdown" -> "md",
+              "text/plain" -> "txt",
+              "text/xml" -> "xml"
+            )
+
+            pages.foreach(page => {
+              val sb = new StringBuilder()
+              sb.append(page.body)
+              val data = sb.toString().getBytes()
+
+              val e = new ZipEntry(s"${page.name}.${contentTypeToExtension.getOrElse(page.contentType, ".txt")}")
+              out.putNextEntry(e)
+
+              out.write(data, 0, data.length)
+            })
+
+            val summary: JsObject = Json.obj(
+              "pages" -> pages.foldLeft(Json.arr()) { (acc, page) => acc ++ Json.arr(page.asJson.as[JsObject] - "body") }
+            )
+
+            val sb = new StringBuilder()
+            sb.append(Json.stringify(summary))
+            val data = sb.toString().getBytes()
+
+            val e = new ZipEntry("summary.json")
+            out.putNextEntry(e)
+            out.write(data, 0, data.length)
+
+            out.closeEntry()
+            out.close()
+
+            Ok.sendFile(outZip)
+          })
+    }
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

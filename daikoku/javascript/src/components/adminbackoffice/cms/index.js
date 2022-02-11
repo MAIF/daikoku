@@ -7,6 +7,7 @@ import { Can, manage, tenant } from '../../utils'
 import { Create } from './Create'
 import { Pages } from './Pages'
 import * as Services from '../../../services'
+import { Spinner } from '../..'
 
 const getAllPages = () => ({
     query: gql`
@@ -27,6 +28,8 @@ export const CMSOffice = () => {
     const location = useLocation()
     const [pages, setPages] = useState([])
     const { translateMethod } = useContext(I18nContext)
+
+    const [downloading, setDownloading] = useState(false)
 
     useEffect(() => {
         reload()
@@ -50,16 +53,35 @@ export const CMSOffice = () => {
         return <div className='pt-2'>
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
-                <button onClick={() => {
-                    window.prompt('Indiquer le nom de la nouvelle page', '', false,
-                        'Création d\'une nouvelle page', 'Nom de la nouvelle page')
-                        .then(newPageName => {
-                            if (newPageName) {
-                                Services.createCmsPageWithName(newPageName)
-                                    .then(res => navigation(`${location.pathname}/edit/${res._id}`))
+                <div>
+                    <button className='btn btn-sm btn-secondary me-1'
+                        onClick={() => {
+                            if (!downloading) {
+                                setDownloading(true)
+                                Services.downloadCmsFiles()
+                                    .then(transfer => transfer.blob())
+                                    .then(bytes => {
+                                        const elm = document.createElement('a');  // CREATE A LINK ELEMENT IN DOM
+                                        elm.href = URL.createObjectURL(bytes);  // SET LINK ELEMENTS CONTENTS
+                                        elm.setAttribute('download', 'cms.zip'); // SET ELEMENT CREATED 'ATTRIBUTE' TO DOWNLOAD, FILENAME PARAM AUTOMATICALLY
+                                        elm.click()
+                                        setDownloading(false)
+                                    })
                             }
-                        })
-                }} className="btn btn-sm btn-primary">{translateMethod('cms.index.new_page')}</button>
+                        }}>
+                        {downloading ? <Spinner heigth={18} /> : translateMethod('cms.export_all')}
+                    </button>
+                    <button onClick={() => {
+                        window.prompt('Indiquer le nom de la nouvelle page', '', false,
+                            'Création d\'une nouvelle page', 'Nom de la nouvelle page')
+                            .then(newPageName => {
+                                if (newPageName) {
+                                    Services.createCmsPageWithName(newPageName)
+                                        .then(res => navigation(`${location.pathname}/edit/${res._id}`))
+                                }
+                            })
+                    }} className="btn btn-sm btn-primary">{translateMethod('cms.index.new_page')}</button>
+                </div>
             </div>
             <Pages pages={pages} removePage={id => setPages(pages.filter(f => f.id !== id))} />
         </div>

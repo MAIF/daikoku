@@ -75,7 +75,7 @@ export const Pages = ({ pages, removePage }) => {
             }) => {
                 const value = original;
                 return (
-                    <div className='d-flex'>
+                    <div className='d-flex justify-content-center'>
                         <Link to={`edit/${value.id}`} className='m-1'>
                             <i className='fas fa-edit fa-lg' style={{ color: "#000" }} />
                         </Link>

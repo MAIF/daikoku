@@ -17,7 +17,7 @@ const CONTENT_TYPES_TO_MODE = {
 const LinksView = ({ editor, onChange }) => {
     const { translateMethod } = useContext(I18nContext);
 
-    return <>
+    return <div className='mt-3'>
         <span>{translateMethod('cms.content_side_view.choose_link')}</span>
         <Copied>
             {setShow => <SelectInput possibleValues={[
@@ -36,7 +36,7 @@ const LinksView = ({ editor, onChange }) => {
                 }}
             />}
         </Copied>
-    </>
+    </div>
 }
 
 const Copied = ({ children }) => {
@@ -64,7 +64,7 @@ const copy = (r, text) => {
 }
 
 const PagesView = ({ editor, pages, prefix, title, onChange }) => (
-    <>
+    <div className='mt-3'>
         <span>{title}</span>
         <Copied>
             {setShow => <SelectInput possibleValues={pages.map(page => ({
@@ -78,34 +78,25 @@ const PagesView = ({ editor, pages, prefix, title, onChange }) => (
                 }}
             />}
         </Copied>
-    </>
+    </div>
 )
 
-const TopActions = ({ setSideView, setSelector, publish }) => {
+const TopActions = ({ setSideView, publish, setSelector }) => {
     const { translateMethod } = useContext(I18nContext);
     const select = id => {
+        setSelector(undefined)
         setSideView(true)
-        setSelector(id);
     }
     return <div style={{
         position: "absolute",
         top: "-36px",
         right: 0
     }}>
-        <button className='btn btn-sm btn-outline-primary'
-            type="button"
-            onClick={() => select("links")}>
-            <i className='fas fa-link' />
-        </button>
-        <button className='btn btn-sm btn-outline-primary mx-1'
-            type="button"
-            onClick={() => select("pages")}>
-            <i className='fas fa-pager' />
-        </button>
         <button className='btn btn-sm btn-outline-primary me-1'
             type="button"
-            onClick={() => select("blocks")}>
-            <i className='fas fa-square' />
+            onClick={select}>
+            <i className='fas fa-plus pe-1' />
+            {translateMethod('cms.content_side.new_action')}
         </button>
         <button className='btn btn-sm btn-outline-success'
             type="button"
@@ -143,18 +134,10 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                 const token = ref.session.getTokenAt(pos.row, pos.column);
 
                 const value = token ? token.value.trim() : "";
-
-                // if ([
-                //     '{{daikoku-',
-                //     '{{#daikoku-',
-                //     "'{{daikoku-",
-                //     "'{{#daikoku-",
-                // ].find(f => value.startsWith(f))) {
                 try {
                     const id = value
                         .match(/(?:"[^"]*"|^[^"]*$)/)[0]
                         .replace(/"/g, "")
-                    console.log(value, id)
                     const page = window.pages.find(p => p.id === id)
                     setSelectedPage({
                         ...ref.renderer.$cursorLayer.getPixelPosition(),
@@ -178,7 +161,7 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
         marginTop: "48px",
         flex: 1
     }}>
-        <TopActions setSelector={setSelector} setSideView={setSideView} publish={publish} />
+        <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector} />
         <div style={{
             position: "relative",
             border: "1px solid rgba(225,225,225,.5)",
@@ -208,20 +191,44 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                 boxShadow: "rgb(25 25 25 / 50%) 3px 3px 3px -2px",
                 position: 'absolute',
                 top: 0,
-                right: '25%',
-                left: '25%',
+                right: '20%',
+                left: '20%',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 textAlign: 'center'
             }}>
+                <div className='d-flex align-items-center justify-content-between mb-3'>
+                    <h5 style={{ textAlign: "left" }} className="mb-0">Insérer</h5>
+                    <i className='fas fa-times'
+                        style={{ cursor: 'pointer', padding: '6px' }}
+                        onClick={() => setSideView(false)} />
+                </div>
+                <div className='d-flex'>
+                    {[
+                        { name: "links", text: translateMethod('cms.content_side_view.choose_link') },
+                        { name: "pages", text: translateMethod('cms.content_side_view.link_to_insert'), className: 'mx-2' },
+                        { name: "blocks", text: translateMethod('cms.content_side_view.block_to_render') }
+                    ].map(({ name, text, className }) => (
+                        <button
+                            key={name}
+                            className={`btn btn-sm btn-outline-${selector === name ? 'primary' : 'secondary'} ${className}`}
+                            style={{ opacity: !selector || selector === name ? 1 : .5, flex: 1 }}
+                            type="button"
+                            onClick={() => setSelector(name)}>
+                            <div className='my-3'>
+                                <span>{text}</span>
+                                <hr />
+                                <span>Choisir</span>
+                            </div>
+                        </button>
+                    ))}
+                </div>
                 {selector === "links" && <LinksView editor={ref} onChange={() => setSideView(false)} />}
                 {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url"
                     title={translateMethod("cms.content_side_view.link_to_insert")} editor={ref} onChange={() => setSideView(false)} />}
                 {selector === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block"
                     title={translateMethod("cms.content_side_view.block_to_render")} editor={ref} onChange={() => setSideView(false)} />}
-                <button type="button" className='btn btn-sm btn-outline-secondary mt-1 me-1'
-                    onClick={() => setSideView(false)}>Close</button>
             </div>}
         </div>
     </div >
