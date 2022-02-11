@@ -69,7 +69,7 @@ export const CMSOffice = () => {
                                     })
                             }
                         }}>
-                        {downloading ? <Spinner heigth={18} /> : translateMethod('cms.export_all')}
+                        {downloading ? <Spinner heigth={18} width={18} /> : translateMethod('cms.export_all')}
                     </button>
                     <button onClick={() => {
                         window.prompt('Indiquer le nom de la nouvelle page', '', false,
