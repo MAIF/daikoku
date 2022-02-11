@@ -151,7 +151,6 @@ class HomeController(
             println("Matched strict route : " + strictPage.headOption.map(_.path.get).getOrElse("null"))
             println("Matched non strict route : " + page.headOption.map(_.path.get).getOrElse("null"))
 
-            println(ctx.user)
             page.headOption match {
               case Some(r) if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
               case Some(r) => r.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
@@ -183,8 +182,8 @@ class HomeController(
 
   private def cmsPageByIdWithoutAction[A](ctx: DaikokuActionMaybeWithoutUserContext[A], id: String) = {
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).flatMap {
-      case None => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
-      case Some(page) if !page.visible => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
+      case None => cmsPageNotFound(ctx)
+      case Some(page) if !page.visible => cmsPageNotFound(ctx)
       case Some(page) if page.authenticated && ctx.user.isEmpty => FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
       case Some(page) => page.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
     }
