@@ -3272,6 +3272,24 @@ object json {
     override def writes(o: CmsPageId): JsValue = JsString(o.value)
   }
 
+  val CmsHistoryFormat = new Format[CmsHistory] {
+    override def writes(o: CmsHistory): JsValue = Json.obj(
+      "id" -> o.id,
+      "date" -> DateTimeFormat.writes(o.date),
+      "diff" -> o.diff
+    )
+    override def reads(o: JsValue): JsResult[CmsHistory] = Try {
+      CmsHistory(
+        id = (o \ "id").as[String],
+        date = (o \ "date").as(DateTimeFormat),
+        diff = (o \ "diff").as[String]
+      )
+    } match {
+      case Failure(exception) => JsError(exception.getMessage)
+      case Success(page) => JsSuccess(page)
+    }
+  }
+
   val CmsPageFormat = new Format[CmsPage] {
     override def writes(o: CmsPage): JsValue = Json.obj(
       "_id" -> o.id.value,
@@ -3289,7 +3307,8 @@ object json {
       "draft" -> o.draft,
       "path" -> o.path.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "exact" -> o.exact,
-      "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes)
+      "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes),
+      "history" -> SeqCmsHistoryFormat.writes(o.history)
     )
     override def reads(json: JsValue): JsResult[CmsPage] = Try {
       CmsPage(
@@ -3303,12 +3322,14 @@ object json {
         tags = (json \ "tags").asOpt[List[String]].getOrElse(List.empty),
         metadata = (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
         body = (json \ "body").asOpt[String].getOrElse(""),
-        draft = (json \ "draft").asOpt[String],
+        draft = (json \ "draft").as[String],
         contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
         forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
         path = (json \ "path").asOpt[String],
         exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
-        lastPublishedDate = (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads)
+        lastPublishedDate = (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads),
+        history = (json \ "history").asOpt(SeqCmsHistoryFormat)
+          .getOrElse(Seq.empty)
       )
     } match {
       case Failure(exception) => JsError(exception.getMessage)
@@ -3321,4 +3342,5 @@ object json {
   val SetOtoroshiServiceGroupsIdFormat =
     Format(Reads.set(OtoroshiServiceGroupIdFormat),
            Writes.set(OtoroshiServiceGroupIdFormat))
+  val SeqCmsHistoryFormat = Format(Reads.seq(CmsHistoryFormat), Writes.seq(CmsHistoryFormat))
 }

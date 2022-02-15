@@ -8,6 +8,7 @@ import { Create } from './Create'
 import { Pages } from './Pages'
 import * as Services from '../../../services'
 import { Spinner } from '../..'
+import Revisions from './Revisions'
 
 const getAllPages = () => ({
     query: gql`
@@ -92,6 +93,7 @@ export const CMSOffice = () => {
             <Can I={manage} a={tenant} dispatchError>
                 <Routes>
                     <Route path={`/new`} element={<Create pages={pages} />} />
+                    <Route path={`/edit/:id/revisions`} element={<Revisions pages={pages} />} />
                     <Route path={`/edit/:id`} element={<Create pages={pages} />} />
                     <Route path="*" element={<Index />} />
                 </Routes>

@@ -1781,6 +1781,8 @@ object CmsPage {
   val pageRenderingEc = ExecutionContext.fromExecutor(Executors.newWorkStealingPool(Runtime.getRuntime.availableProcessors() + 1))
 }
 
+case class CmsHistory(id: String, date: DateTime, diff: String)
+
 case class CmsPage(
   id: CmsPageId,
   tenant: TenantId,
@@ -1794,10 +1796,11 @@ case class CmsPage(
   metadata: Map[String, String],
   contentType: String,
   body: String,
-  draft: Option[String] = None,
+  draft: String,
   path: Option[String] = None,
   exact: Boolean = false,
-  lastPublishedDate: Option[DateTime] = None
+  lastPublishedDate: Option[DateTime] = None,
+  history: Seq[CmsHistory] = Seq.empty
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
@@ -1840,6 +1843,7 @@ case class CmsPage(
     metadata = Map(),
     contentType = "text/html",
     body = str,
+    draft = str,
     path = Some("/")
   ).render(ctx, parentId, fields = fields, jsonToCombine = jsonToCombine), 10.seconds)._1
 
@@ -1878,6 +1882,7 @@ case class CmsPage(
             tags = List(),
             metadata = Map(),
             contentType = "text/html",
+            draft = options.fn.text(),
             body = options.fn.text(),
             path = Some("/")
           ).render(ctx, parentId, fields = tmpFields, jsonToCombine = jsonToCombine)(env), 10.seconds)._1
@@ -2115,7 +2120,7 @@ case class CmsPage(
         enrichHandlebarWithPlanEntity(ctx, Some(page.id.value), handlebars, env, "plan", fields, jsonToCombine)
 
         val c = context.build()
-        val template = if (wantDraft) page.draft.getOrElse(page.body) else page.body
+        val template = if (wantDraft) page.draft else page.body
 
         val result = handlebars.compileInline(template).apply(c)
         c.destroy()

@@ -31,7 +31,8 @@ export const Table = React.forwardRef(
       pageSizee = 15,
       mobileSize = 767,
       header = true,
-      footer = true
+      footer = true,
+      onSelectRow = undefined
     },
     ref
   ) => {
@@ -289,7 +290,12 @@ export const Table = React.forwardRef(
                 {page.map((row, idx) => {
                   prepareRow(row);
                   return (
-                    <tr {...row.getRowProps()} key={`tr-${idx}`}>
+                    <tr {...row.getRowProps()} key={`tr-${idx}`} onClick={() => {
+                      if (onSelectRow)
+                        onSelectRow(row)
+                    }} style={{
+                      cursor: onSelectRow ? 'pointer' : 'inherit'
+                    }}>
                       {row.cells.map((cell, idx) => {
                         return (
                           <td style={cell.column.style} {...cell.getCellProps()} key={`td-${idx}`}>

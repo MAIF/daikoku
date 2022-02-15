@@ -981,10 +981,27 @@ export const graphql = {
             lastPublishedDate
         }
     }
-  `
+  `,
+  getCmsPageHistory: id => gql`
+  query GetCmsPage {
+      cmsPage(id: "${id}") {
+          name
+          history {
+            id
+            date
+          }
+      }
+  }
+`
 };
 
 export const downloadCmsFiles = () => fetch('/api/cms/download', {
   method: 'POST',
   credentials: 'include'
 })
+
+export const getDiffOfCmsPage = (id, diffId) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}`)
+
+export const restoreCmsDiff = (id, diffId) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}`, {
+  method: 'POST'
+});

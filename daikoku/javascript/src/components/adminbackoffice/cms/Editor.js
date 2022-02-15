@@ -1,5 +1,6 @@
 import React from 'react';
-import AceEditor from 'react-ace';
+// import AceEditor from 'react-ace';
+import { CodeInput } from '@maif/react-forms/lib/inputs'
 
 import Beautify from 'ace-builds/src-noconflict/ext-beautify'
 import 'ace-builds/src-noconflict/mode-html'
@@ -14,31 +15,42 @@ import 'ace-builds/src-noconflict/theme-tomorrow'
 import 'ace-builds/src-noconflict/ext-searchbox'
 import 'ace-builds/src-noconflict/ext-language_tools'
 
-export default ({ onChange, value, setRef, className = '', readOnly, theme = 'monokai', mode = 'javascript', ...props }) => {
-    return <AceEditor
-        commands={Beautify?.commands}
+export default ({ onChange, value, setRef, onLoad, className = '', readOnly, theme = 'monokai', mode = 'javascript', ...props }) => {
+    return <CodeInput
         className={className}
         readOnly={readOnly}
-        style={{ zIndex: 0, isolation: 'isolate' }}
         mode={mode}
         theme={theme}
         onChange={onChange}
         value={value}
-        name="scriptParam"
-        editorProps={{ $blockScrolling: true }}
-        onLoad={editorInstance => {
-            setRef(editorInstance)
-            editorInstance.container.style.resize = "both";
-            document.addEventListener("mouseup", e => (
-                editorInstance.resize()
-            ));
-        }}
-        showGutter={true}
-        tabSize={2}
-        highlightActiveLine={true}
-        enableBasicAutocompletion={true}
-        enableLiveAutocompletion={true}
+        onLoad={onLoad}
         height={props.height}
         width={props.width}
     />
+    // return <AceEditor
+    //     commands={Beautify?.commands}
+    //     className={className}
+    //     readOnly={readOnly}
+    //     style={{ zIndex: 0, isolation: 'isolate' }}
+    //     mode={mode}
+    //     theme={theme}
+    //     onChange={onChange}
+    //     value={value}
+    //     name="scriptParam"
+    //     editorProps={{ $blockScrolling: true }}
+    //     onLoad={editorInstance => {
+    //         setRef(editorInstance)
+    //         editorInstance.container.style.resize = "both";
+    //         document.addEventListener("mouseup", e => (
+    //             editorInstance.resize()
+    //         ));
+    //     }}
+    //     showGutter={true}
+    //     tabSize={2}
+    //     highlightActiveLine={true}
+    //     enableBasicAutocompletion={true}
+    //     enableLiveAutocompletion={true}
+    //     height={props.height}
+    //     width={props.width}
+    // />
 }

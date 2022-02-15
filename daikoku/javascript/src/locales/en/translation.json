@@ -1026,6 +1026,8 @@
     "cms.content_side_view.back_office": "Back office",
     "cms.content_side_view.sign_up": "Sign up",
     "cms.content_side_view.home": "Home",
+    "cms.content_side_view.edit": "Edit",
+    "cms.content_side_view.insert": "Insert",
     "cms.index.new_page": "New page",
     "cms.pages.publish_date": "Publish Date",
     "cms.pages.name": "Name",

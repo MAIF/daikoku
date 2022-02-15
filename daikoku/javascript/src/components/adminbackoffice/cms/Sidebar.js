@@ -23,7 +23,8 @@ export default React.memo(
                 metadata: {},
                 tags: [],
                 isBlockPage: false,
-                exact: true
+                exact: true,
+                history: []
             })
         }, [inValue])
 

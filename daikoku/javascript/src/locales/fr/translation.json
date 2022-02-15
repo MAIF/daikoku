@@ -1027,6 +1027,8 @@
   "cms.content_side_view.back_office": "Back office",
   "cms.content_side_view.sign_up": "S'inscrire",
   "cms.content_side_view.home": "Page d'accueil",
+  "cms.content_side_view.edit": "Editer",
+  "cms.content_side_view.insert": "Insérer",
   "cms.index.new_page": "Nouvelle page",
   "cms.pages.publish_date": "Date de publication",
   "cms.pages.name": "Nom",

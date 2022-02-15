@@ -35,7 +35,7 @@ export const Create = (props) => {
             client.query({ query: Services.graphql.getCmsPage(id) })
                 .then(res => {
                     if (res.data) {
-                        const { draft, ...side } = res.data.cmsPage
+                        const { draft, history, ...side } = res.data.cmsPage
                         setFinalBodyValue(undefined)
                         setFinalSideValue(undefined)
                         setFormAction(undefined)
@@ -45,6 +45,7 @@ export const Create = (props) => {
                                 metadata: side.metadata ? JSON.parse(side.metadata) : {},
                                 isBlockPage: !side.path || side.path.length === 0
                             },
+                            history,
                             draft
                         });
                         setContentType(side.contentType)
@@ -129,7 +130,7 @@ export const Create = (props) => {
         </div>
     )
 
-    if(loading)
+    if (loading)
         return <Spinner />
 
     return (
@@ -176,6 +177,7 @@ export const Create = (props) => {
                     contentType={contentType}
                     setFinalValue={setFinalBodyValue}
                     inValue={inValue.draft}
+                    history={inValue.history}
                     publish={onPublish}
                 />
                 {tab === 1 && <iframe className='mt-3' style={{ flex: 1 }} src={`/_${savePath || '/'}?draft=true`} />}

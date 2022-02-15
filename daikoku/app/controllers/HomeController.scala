@@ -5,16 +5,18 @@ import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
-import fr.maif.otoroshi.daikoku.domain.{CmsPage, CmsPageId, DaikokuStyle, json}
+import fr.maif.otoroshi.daikoku.domain.{CmsHistory, CmsPage, CmsPageId, DaikokuStyle, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.Errors
-import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import play.api.libs.json.{JsArray, JsError, JsObject, JsString, JsSuccess, Json}
+import org.joda.time.DateTime
+import play.api.libs.json._
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
-import shapeless.syntax.std.tuple.productTupleOps
+import utils.diff_match_patch
+import utils.diff_match_patch.Operation
 
 import java.io.{File, FileOutputStream}
+import java.util
 import java.util.zip.{ZipEntry, ZipOutputStream}
 import scala.concurrent.Future
 
@@ -193,6 +195,74 @@ class HomeController(
     cmsPageByIdWithoutAction(ctx, id)
   }
 
+  def cmsDiffById(id: String, diffId: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent("@{user.name} has get a cms diff"))(
+      ctx.tenant.id.value,
+      ctx) { (tenant, _) => {
+        val diffMatchPatch = new diff_match_patch()
+
+        env.dataStore.cmsRepo.forTenant(tenant)
+          .findById(id)
+          .map {
+            case None => NotFound(Json.obj("error" -> "cms page not found"))
+            case Some(page) =>
+              var diffReached = diffId == "-1"
+              val items = page.history.reverse.flatMap(item => {
+                if (item.id == diffId) {
+                  diffReached = true
+                  Some(item)
+                } else if (!diffReached)
+                  Some(item)
+                else
+                  None
+              })
+              if (items.nonEmpty) {
+                val diffs = diffMatchPatch.diff_main(
+                  page.draft,
+                  items.foldLeft(page.draft) {
+                    case (text, current) => diffMatchPatch.patch_apply(
+                      new util.LinkedList(diffMatchPatch.patch_fromText(current.diff)),
+                      text
+                    )
+                  })
+                Ok(
+                  Json.obj("html" -> diffMatchPatch.diff_prettyHtml(diffs), "hasDiff" -> !diffs.isEmpty)
+                )
+              }
+              else
+                Ok(Json.obj("html" -> page.draft))
+          }
+      }
+    }
+  }
+
+  def restoreDiff(id: String, diffId: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent("@{user.name} has restore the cms page @{pageName} with revision of @{diffDate}"))(
+      ctx.tenant.id.value,
+      ctx) { (tenant, _) => {
+      env.dataStore.cmsRepo.forTenant(tenant)
+        .findById(id)
+        .flatMap {
+          case Some(page) =>
+              ctx.setCtxValue("pageName", page.name)
+              ctx.setCtxValue("diffDate", page.history.find(_.id == diffId).map(_.date).getOrElse("unknown date"))
+
+              env.dataStore.cmsRepo.forTenant(tenant)
+                .save(page.copy(draft = items.foldLeft(page.draft) {
+                  case (text, current) => diffMatchPatch.patch_apply(
+                    new util.LinkedList(diffMatchPatch.patch_fromText(current.diff)),
+                    text
+                  )
+                }))
+                .map(_ => Ok(Json.obj("done" -> true)))
+          case None => FastFuture.successful(NotFound(Json.obj("error" -> "cms page not found")))
+        }
+    }
+    }
+  }
+
   def createCmsPageWithName(name: String) = DaikokuAction.async { ctx =>
     TenantAdminOnly(
       AuditTrailEvent("@{user.name} has created a cms page with name"))(
@@ -207,6 +277,7 @@ class HomeController(
           forwardRef = None,
           tags = List(),
           metadata = Map(),
+          draft = "<DOCTYPE html>\n<html>\n<head></head>\n<body><h1>My draft page</h1>\n</body>\n</html>",
           contentType = "text/html",
           body = "<DOCTYPE html>\n<html>\n<head></head>\n<body>\n</body>\n</html>",
           path = Some("/" + BSONObjectID.generate().stringify)
@@ -230,14 +301,38 @@ class HomeController(
         val cmsPage = body ++
           Json.obj("_id" -> JsString((body \ "id").asOpt[String].getOrElse(BSONObjectID.generate().stringify))) ++
           Json.obj("_tenant" -> tenant.id.value)
+
+        def diff(a: String, b: String): CmsHistory = {
+          val patchMatch = new utils.diff_match_patch()
+          val diff = patchMatch.patch_toText(patchMatch.patch_make(a, b))
+          CmsHistory(
+            id = BSONObjectID.generate().stringify,
+            date = DateTime.now(),
+            diff = diff
+          )
+        }
+
         json.CmsPageFormat.reads(cmsPage) match {
           case JsSuccess(page, _) =>
-           env.dataStore.cmsRepo.forTenant(tenant)
-              .save(page)
+            env.dataStore.cmsRepo.forTenant(tenant)
+              .findByIdOrHrId(page.id.value)
               .map {
-                case true => Created(Json.obj("created" -> true))
-                case false => BadRequest(Json.obj("error" -> "Error when creating cms page"))
+                case Some(cms) =>
+                  val d = diff(cms.draft, page.draft)
+                  if(d.diff.nonEmpty)
+                    page.copy(history = cms.history :+ d)
+                  else
+                    page
+                case None => page
               }
+              .flatMap(page => {
+                env.dataStore.cmsRepo.forTenant(tenant)
+                  .save(page)
+                  .map {
+                    case true => Created(Json.obj("created" -> true))
+                    case false => BadRequest(Json.obj("error" -> "Error when creating cms page"))
+                  }
+              })
           case e: JsError => FastFuture.successful(BadRequest(JsError.toJson(e)))
         }
       }

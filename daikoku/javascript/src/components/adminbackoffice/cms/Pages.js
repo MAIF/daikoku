@@ -17,6 +17,7 @@ const CONTENT_TYPES = [
 
 export const Pages = ({ pages, removePage }) => {
     const { translateMethod } = useContext(I18nContext)
+    const navigate = useNavigate()
 
     let table;
 
@@ -76,8 +77,8 @@ export const Pages = ({ pages, removePage }) => {
                 const value = original;
                 return (
                     <div className='d-flex justify-content-center'>
-                        <Link to={`edit/${value.id}`} className='m-1'>
-                            <i className='fas fa-edit fa-lg' style={{ color: "#000" }} />
+                        <Link to={`/_${value.path}`} target="_blank" rel="noopener noreferrer" className='m-1'>
+                            <i className='fas fa-eye fa-lg' style={{ color: "#000" }} />
                         </Link>
                         <button className="m-1"
                             style={{
@@ -99,9 +100,6 @@ export const Pages = ({ pages, removePage }) => {
                             }}>
                             <i className='fas fa-trash fa-lg' style={{ color: "var(--danger-color, #dc3545)" }} />
                         </button>
-                        <Link to={`/_${value.path}`} target="_blank" rel="noopener noreferrer" className='m-1'>
-                            <i className='fas fa-eye fa-lg' style={{ color: "#000" }} />
-                        </Link>
                     </div>
                 );
             }
@@ -124,27 +122,11 @@ export const Pages = ({ pages, removePage }) => {
                 defaultSort="path"
                 defaultSortDesc={true}
                 header={false}
-                // footer={false}
+                onSelectRow={row => {
+                    if (row.original)
+                        navigate(`edit/${row.original.id}`)
+                }}
             />
         </div>
     )
 }
-{/* {pages.map(({ id, name, path }) => (
-            <div className="row" key={id}>
-                <div className="col-sm-6">{name}</div>
-                <div className="col-sm-3">{path}</div>
-                <div className="col-sm-3">
-                    <Link to={`/settings/pages/edit/${id}`}>
-                        <i className="fas fa-edit"></i>
-                    </Link>
-                    <Link to={`/_${path}`} target="_blank" rel="noopener noreferrer">
-                        <i className="fas fa-eye"></i>
-                    </Link>
-
-                    <button className="btn btn-sm"
-                        onClick={() => removePage(id)}>
-                        <i className="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        ))} */}

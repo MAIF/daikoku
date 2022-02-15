@@ -1,6 +1,7 @@
 import { SelectInput } from '@maif/react-forms/lib/inputs';
+import moment from 'moment';
 import React, { useContext, useEffect, useState, useRef } from 'react'
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../../core';
 import Editor from './Editor'
 
@@ -83,14 +84,17 @@ const PagesView = ({ editor, pages, prefix, title, onChange }) => (
 
 const TopActions = ({ setSideView, publish, setSelector }) => {
     const { translateMethod } = useContext(I18nContext);
+    const navigate = useNavigate()
     const select = id => {
         setSelector(undefined)
         setSideView(true)
     }
-    return <div style={{
+
+    return <div className="d-flex justify-content-between" style={{
         position: "absolute",
-        top: "-36px",
-        right: 0
+        top: "-42px",
+        right: 0,
+        left: 0
     }}>
         <button className='btn btn-sm btn-outline-primary me-1'
             type="button"
@@ -98,17 +102,22 @@ const TopActions = ({ setSideView, publish, setSelector }) => {
             <i className='fas fa-plus pe-1' />
             {translateMethod('cms.content_side.new_action')}
         </button>
-        <button className='btn btn-sm btn-outline-success'
-            type="button"
-            onClick={() => {
-                window.confirm(translateMethod('cms.content_side.publish_label')).then((ok) => {
-                    if (ok) {
-                        publish()
-                    }
-                });
-            }}>
-            {translateMethod("cms.content_side.publish_button")}
-        </button>
+        <div className='d-flex'>
+            <button className='btn btn-sm btn-outline-primary' onClick={() => navigate('revisions')}>
+                Révisions
+            </button>
+            <button className='btn btn-sm btn-outline-success ms-1'
+                type="button"
+                onClick={() => {
+                    window.confirm(translateMethod('cms.content_side.publish_label')).then((ok) => {
+                        if (ok) {
+                            publish()
+                        }
+                    });
+                }}>
+                {translateMethod("cms.content_side.publish_button")}
+            </button>
+        </div>
     </div>
 }
 
@@ -158,7 +167,7 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
 
     return <div className='d-flex flex-column' style={{
         position: "relative",
-        marginTop: "48px",
+        marginTop: "52px",
         flex: 1
     }}>
         <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector} />
@@ -170,25 +179,35 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
             {selectedPage.pageName && <Link className='btn btn-sm px-1' style={{
                 position: 'absolute',
                 zIndex: 100,
-                backgroundColor: "#fff",
-                boxShadow: '0 1px 3px rgba(25,25,25.5)',
                 top: selectedPage.top - 42,
-                left: selectedPage.left
+                left: selectedPage.left,
+                backgroundColor: '#fff',
+                border: '1px solid #f0f1f6',
+                borderRadius: '3px',
+                boxShadow: '0 1px 3px rgb(0 0 0 / 15%)'
             }}
                 to={`/settings/pages/edit/${selectedPage.id}`}
                 onClick={() => setSelectedPage({ pageName: undefined })}
-            >{`Editer ${selectedPage.pageName}`}</Link>}
+            >{`${translateMethod('cms.content_side_view.edit')} ${selectedPage.pageName}`}</Link>}
             <Editor
                 value={value}
                 onChange={onChange}
-                setRef={setRef}
+                onLoad={editorInstance => {
+                    setRef(editorInstance)
+                    editorInstance.container.style.resize = "both";
+                    document.addEventListener("mouseup", e => (
+                        editorInstance.resize()
+                    ));
+                }}
                 mode={(CONTENT_TYPES_TO_MODE[contentType] || "html")}
                 theme="tomorrow"
                 width="-1" />
 
             {sideView && <div className='p-3' style={{
-                backgroundColor: "#ecf0f1",
-                boxShadow: "rgb(25 25 25 / 50%) 3px 3px 3px -2px",
+                backgroundColor: '#fff',
+                border: '1px solid #f0f1f6',
+                borderRadius: '3px',
+                boxShadow: '0 1px 3px rgb(0 0 0 / 15%)',
                 position: 'absolute',
                 top: 0,
                 right: '20%',
@@ -199,12 +218,14 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                 textAlign: 'center'
             }}>
                 <div className='d-flex align-items-center justify-content-between mb-3'>
-                    <h5 style={{ textAlign: "left" }} className="mb-0">Insérer</h5>
+                    <h5 style={{ textAlign: "left" }} className="mb-0">
+                        {selector === 'history' ? 'Révisions' : translateMethod('cms.content_side_view.insert')}
+                    </h5>
                     <i className='fas fa-times'
                         style={{ cursor: 'pointer', padding: '6px' }}
                         onClick={() => setSideView(false)} />
                 </div>
-                <div className='d-flex'>
+                {selector !== 'history' && <div className='d-flex'>
                     {[
                         { name: "links", text: translateMethod('cms.content_side_view.choose_link') },
                         { name: "pages", text: translateMethod('cms.content_side_view.link_to_insert'), className: 'mx-2' },
@@ -223,7 +244,7 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                             </div>
                         </button>
                     ))}
-                </div>
+                </div>}
                 {selector === "links" && <LinksView editor={ref} onChange={() => setSideView(false)} />}
                 {selector === "pages" && <PagesView pages={pages} prefix="daikoku-page-url"
                     title={translateMethod("cms.content_side_view.link_to_insert")} editor={ref} onChange={() => setSideView(false)} />}

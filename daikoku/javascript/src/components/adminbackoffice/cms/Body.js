@@ -4,7 +4,7 @@ import { I18nContext } from '../../../core';
 import { ContentSideView } from './ContentSideView';
 import DragAndDropWrapper from './DragAndDropWrapper';
 
-export default React.forwardRef(({ contentType, setFinalValue, show, pages, inValue, publish }, ref) => {
+export default React.forwardRef(({ contentType, setFinalValue, show, pages, inValue, publish, history }, ref) => {
     const { translateMethod } = useContext(I18nContext)
     const r = useRef()
 
@@ -44,9 +44,7 @@ export default React.forwardRef(({ contentType, setFinalValue, show, pages, inVa
             help: translateMethod('cms.create.draft_help'),
             render: formProps =>
                 <DragAndDropWrapper handleDrop={handleDrop}>
-                    <ContentSideView {...formProps} pages={pages} contentType={contentType}
-                        publish={publish}
-                    />
+                    <ContentSideView {...formProps} pages={pages} contentType={contentType} publish={publish} />
                 </DragAndDropWrapper>
         }
     }
