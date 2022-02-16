@@ -64,7 +64,7 @@
     "redux-logger": "3.0.6",
     "redux-thunk": "2.4.1",
     "set-value": "4.1.0",
-    "showdown": "1.9.1",
+    "showdown": "2.0.0",
     "swagger-editor": "4.0.6",
     "swagger-ui-dist": "4.4.0",
     "uuid": "8.3.2",
