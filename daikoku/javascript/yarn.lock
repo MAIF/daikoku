@@ -1270,10 +1270,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@maif/react-forms@^1.0.21":
-  version "1.0.21"
-  resolved "https://registry.yarnpkg.com/@maif/react-forms/-/react-forms-1.0.21.tgz#25532c33b4703e3c508a492e41822db79d581752"
-  integrity sha512-qvg2X2T+52OtjiKGCXSaulDUqopuccEhLX464TJR2hwo8U0oHfIw9I1qgTfQ7iC0a/29D2Sq1a3N9mXtSH27VQ==
+"@maif/react-forms@^1.0.23":
+  version "1.0.23"
+  resolved "https://registry.yarnpkg.com/@maif/react-forms/-/react-forms-1.0.23.tgz#bbb012ea160d1f93dd9038d50445004794fdc8a9"
+  integrity sha512-mJlRI/oPT77840z4wj2RUSeLSjQAK1IA4nkvLUQteadJOpAALHIc/D//5WxM0aFUQw6xIqSSFQxoavPkd0wLBA==
   dependencies:
     "@fortawesome/fontawesome-free" "^5.15.3"
     "@hookform/resolvers" "2.4.0"

@@ -55,7 +55,7 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
           return (callBack, _onEvent) => {
             return save(context)
               .then(response => {
-                if (response.error) {
+                if (response?.error) {
                   console.debug({ response })
                   return callBack({ type: 'FAILURE', error: response.error })
                 } else {

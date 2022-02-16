@@ -54,11 +54,7 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
           label: translateMethod('Informations'),
           schema: informationForm.adminSchema,
           flow: informationForm.adminFlow,
-        }, {
-            id: 'pricing',
-            label: translateMethod('Plans'),
-            component: TeamApiPricing
-          },]}
+        }]}
         initial="info"
         creation={creation}
         save={save}

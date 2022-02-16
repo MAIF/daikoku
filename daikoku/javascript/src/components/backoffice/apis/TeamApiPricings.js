@@ -1,13 +1,14 @@
 import React, { useContext, useState, useEffect } from 'react';
-import {useParams} from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import faker from 'faker';
 import { Form, constraints, type, format } from '@maif/react-forms'
 import Select, { components } from 'react-select';
 
 import { I18nContext } from '../../../core';
-import { formatCurrency, getCurrencySymbol, newPossibleUsagePlan, formatPlanType } from '../../utils'
+import { formatCurrency, getCurrencySymbol, newPossibleUsagePlan, formatPlanType, MultiStepForm } from '../../utils'
 import { currencies } from '../../../services/currencies';
 import * as Services from '../../../services'
+import { toastr } from 'react-redux-toastr';
 
 const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translateMethod }) => {
   const [loading, setLoading] = useState(true);
@@ -19,7 +20,6 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
   const { Translation } = useContext(I18nContext);
 
   const params = useParams();
-  console.debug({rawValues})
 
   useEffect(() => {
     Promise.all([
@@ -186,7 +186,7 @@ const Card = ({ plan, isDefault, makeItDefault, toggleVisibility, deletePlan, ed
 
   return (
     <div className="card hoverable-card mb-4 shadow-sm" style={{ position: 'relative' }}>
-      {isDefault && <i className="fas fa-star" style={{ position: 'absolute', fontSize: '20px', top: '15px', right: '15px', zIndex: '100'}}/>}
+      {isDefault && <i className="fas fa-star" style={{ position: 'absolute', fontSize: '20px', top: '15px', right: '15px', zIndex: '100' }} />}
       {!creation && <div className="dropdown" style={{ position: 'absolute', top: '15px', left: '15px', zIndex: '100' }}>
         <i
           className="fa fa-cog cursor-pointer"
@@ -290,10 +290,6 @@ export const TeamApiPricings = (props) => {
     type: type.object,
     format: format.form,
     array: true,
-    visible: {
-      ref: 'enabled',
-      test: v => !!v
-    },
     schema: {
       method: {
         type: type.string,
@@ -846,12 +842,12 @@ export const TeamApiPricings = (props) => {
   }
 
   useEffect(() => {
-    if(mode === possibleMode.creation) {
+    if (mode === possibleMode.creation) {
       setPlanForEdition(undefined)
       setMode(possibleMode.list)
     }
   }, [props.value]);
-  
+
 
   const deletePlan = (plan) => {
     let plans = _.cloneDeep(props.value.possibleUsagePlans).filter((p) => p._id !== plan._id);
@@ -883,7 +879,7 @@ export const TeamApiPricings = (props) => {
       const visibility = originalVisibility === PUBLIC ? PRIVATE : PUBLIC;
       const updatedPlan = { ...plan, visibility };
       const api = props.value
-      const updatedApi = {...api, possibleUsagePlans:[ ...api.possibleUsagePlans.filter(p => p._id !== updatedPlan._id), updatedPlan]}
+      const updatedApi = { ...api, possibleUsagePlans: [...api.possibleUsagePlans.filter(p => p._id !== updatedPlan._id), updatedPlan] }
       props.save(updatedApi)
     }
   }
@@ -914,6 +910,255 @@ export const TeamApiPricings = (props) => {
     });
   }
 
+  const steps = [
+    {
+      id: 'info',
+      label: 'Informations',
+      schema: {
+        type: {
+          type: type.string,
+          format: format.select,
+          label: translateMethod('Type'),
+          options: [
+            {
+              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
+              value: 'FreeWithoutQuotas',
+            },
+            {
+              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
+              value: 'FreeWithQuotas',
+            },
+            {
+              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
+              value: 'QuotasWithLimits',
+            },
+            {
+              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
+              value: 'QuotasWithoutLimits',
+            },
+            {
+              label: translateMethod('PayPerUse', false, 'Pay per use'),
+              value: 'PayPerUse',
+            },
+          ],
+          constraints: [
+            constraints.required('') //todo: message
+          ]
+        },
+        customName: {
+          type: type.string,
+          label: translateMethod('Name'),
+          placeholder: translateMethod('Plan name'),
+        },
+        customDescription: {
+          type: type.string,
+          format: format.text,
+          label: translateMethod('Description'),
+          placeholder: translateMethod('Plan description'),
+          constraints: [
+            constraints.nullable()
+          ]
+        }
+      },
+      flow: ["type", "customName", "customDescription"]
+    },
+    {
+      id: "oto",
+      label: "Otoroshi Settings",
+      schema: {
+        otoroshiTarget: {
+          type: type.object,
+          format: format.form,
+          label: translateMethod('Otoroshi target'),
+          schema: {
+            otoroshiSettings: {
+              type: type.string,
+              format: format.select,
+              label: translateMethod('Otoroshi instances'),
+              options: props.otoroshiSettings,
+              transformer: (s) => ({
+                label: s.url,
+                value: s._id,
+              })
+            },
+            authorizedEntities: {
+              type: type.object,
+              visible: {
+                ref: 'otoroshiTarget.otoroshiSettings',
+                test: v => !!v
+              },
+              render: props => OtoroshiServicesAndGroupSelector({ ...props, translateMethod }),
+              label: translateMethod('Authorized entities'),
+              placeholder: translateMethod('Authorized.entities.placeholder'),
+              help: translateMethod('authorized.entities.help'),
+            },
+          },
+        },
+      },
+      flow: ['otoroshiTarget']
+    },
+    {
+      id: 'customization',
+      label: translateMethod('Otoroshi Customization'),
+      schema: {
+        otoroshiTarget: {
+          type: type.object,
+          format: format.form,
+          label: null,
+          schema: {
+            otoroshiSettings: {
+              type: type.string,
+              visible: false
+            },
+            authorizedEntities: {
+              type: type.object,
+              visible: false,
+            },
+            apikeyCustomization: {
+              type: type.object,
+              format: format.form,
+              label: null,
+              schema: {
+                clientIdOnly: {
+                  type: type.bool,
+                  label: translateMethod('Apikey with clientId only'),
+                },
+                readOnly: {
+                  type: type.bool,
+                  label: translateMethod('Read only apikey'),
+                },
+                constrainedServicesOnly: {
+                  type: type.bool,
+                  label: translateMethod('Constrained services only'),
+                },
+                dynamicPrefix: {
+                  type: type.string,
+                  label: translateMethod('Dynamic prefix'),
+                  help: translateMethod(
+                    'dynamic.prefix.help',
+                    false,
+                    'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
+                  ),
+                },
+                metadata: {
+                  type: type.object,
+                  label: translateMethod('Automatic API key metadata'),
+                  help: translateMethod(
+                    'automatic.metadata.help',
+                    false,
+                    'Automatic metadata will be calculated on subscription acceptation'
+                  ),
+                },
+                customMetadata: {
+                  type: type.object,
+                  label: translateMethod('Custom Apikey metadata'),
+                  onChange: ({value, setValue}) => {
+                    if (value.length === 1) { 
+                      setValue('subscriptionProcess', 'Manual')
+                      toastr.info('set up subscriptionProcess to manual due to have a customMetadata')
+                    }
+                  },
+                  help: translateMethod(
+                    'custom.metadata.help',
+                    false,
+                    'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
+                  ),
+                },
+                tags: {
+                  type: type.string,
+                  array: true,
+                  label: translateMethod('Apikey tags'),
+                },
+                restrictions: {
+                  type: type.object,
+                  format: format.form,
+                  schema: {
+                    enabled: {
+                      type: type.bool,
+                      label: translateMethod('Enable restrictions'),
+                    },
+                    allowLast: {
+                      type: type.bool,
+                      visible: {
+                        ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
+                        test: v => !!v
+                      },
+                      label: translateMethod('Allow at last'),
+                      help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
+                    },
+                    allowed: {
+                      label: translateMethod('Allowed pathes'),
+                      visible: {
+                        ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
+                        test: v => !!v
+                      },
+                      ...pathes
+                    },
+                    forbidden: {
+                      label: translateMethod('Forbidden pathes'),
+                      visible: {
+                        ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
+                        test: v => !!v
+                      },
+                      ...pathes
+                    },
+                    notFound: {
+                      label: translateMethod('Not found pathes'),
+                      visible: {
+                        ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
+                        test: v => !!v
+                      },
+                      ...pathes
+                    },
+                  }
+                }
+              }
+            }
+          },
+        },
+      }
+    },
+    {
+      id: 'security',
+      label: translateMethod('Security'),
+      schema: {
+        otoroshiTarget: {
+          type: type.object,
+          visible: false,
+        },
+        autoRotation: {
+          type: type.bool,
+          label: translateMethod('Force apikey auto-rotation'),
+        },
+        subscriptionProcess: {
+          type: type.string,
+          format: format.buttonsSelect,
+          disabled: ({ rawValues }) => !rawValues.otoroshiTarget.apikeyCustomization.metadata.length,
+          label: translateMethod('Subscription'),
+          options: [
+            {
+              label: translateMethod('Automatic'),
+              value: 'Automatic',
+            },
+            { label: translateMethod('Manual'), value: 'Manual' },
+          ],
+        },
+        integrationProcess: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: translateMethod('Integration'),
+          options: [
+            {
+              label: translateMethod('Automatic'),
+              value: 'Automatic',
+            },
+            { label: translateMethod('ApiKey'), value: 'ApiKey' },
+          ],
+        },
+      }
+    }
+  ]
+
   return (
     <div className="d-flex col flex-column pricing-content">
       <div className="album">
@@ -943,9 +1188,17 @@ export const TeamApiPricings = (props) => {
                 />
               </div>
               <div className="col md-8">
-                <Form
+                <MultiStepForm
+                  value={planForEdition}
+                  steps={steps}
+                  initial="info"
+                  creation={false} //FIXME
+                  save={plan => Promise.resolve(console.debug({ plan }))}
+                  getBreadcrumb={(_, breadcrumb) => props.injectSubMenu(breadcrumb)}
+                />
+                {/* <Form
                   schema={schema}
-                  flow={getRightFlow().filter(x => x) }
+                  flow={getRightFlow().filter(x => x)}
                   onSubmit={(updatedPlan) => {
                     const api = props.value
                     const updatedApi = { ...api, possibleUsagePlans: [...api.possibleUsagePlans.filter(p => p._id !== updatedPlan._id), updatedPlan] }
@@ -963,7 +1216,7 @@ export const TeamApiPricings = (props) => {
                       }
                     }
                   }}
-                />
+                /> */}
               </div>
             </div>
           )}
