@@ -326,8 +326,13 @@ class HomeController(
                   if(d.diff.nonEmpty)
                     page.copy(history = cms.history :+ d)
                   else
+                    page.copy(history = cms.history)
+                case None =>
+                  val d = diff("", page.draft)
+                  if(d.diff.nonEmpty)
+                    page.copy(history = Seq(d))
+                  else
                     page
-                case None => page
               }
               .flatMap(page => {
                 env.dataStore.cmsRepo.forTenant(tenant)
