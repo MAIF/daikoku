@@ -2183,7 +2183,7 @@ public class diff_match_patch {
     public String patch_toText(List<Patch> patches) {
         StringBuilder text = new StringBuilder();
         for (Patch aPatch : patches) {
-            aPatch.diffs.forEach(diff -> {
+            /*aPatch.diffs.forEach(diff -> {
                 if (diff_match_patch.Operation.DELETE == diff.operation)
                     diff.operation = Operation.INSERT;
                 else if (diff_match_patch.Operation.INSERT == diff.operation)
@@ -2196,7 +2196,7 @@ public class diff_match_patch {
                 tmp = aPatch.length1;
                 aPatch.length1 = aPatch.length2;
                 aPatch.length2 = tmp;
-            });
+            });*/
             text.append(aPatch);
         }
         return text.toString();

@@ -986,6 +986,7 @@ export const graphql = {
   query GetCmsPage {
       cmsPage(id: "${id}") {
           name
+          draft
           history {
             id
             date
@@ -1000,7 +1001,7 @@ export const downloadCmsFiles = () => fetch('/api/cms/download', {
   credentials: 'include'
 })
 
-export const getDiffOfCmsPage = (id, diffId) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}`)
+export const getDiffOfCmsPage = (id, diffId, showDiffs) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}?showDiffs=${showDiffs}`)
 
 export const restoreCmsDiff = (id, diffId) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}`, {
   method: 'POST'

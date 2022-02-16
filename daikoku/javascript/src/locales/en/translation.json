@@ -993,7 +993,6 @@
     "cms.create.save_modifications": "Update page",
     "cms.create.create_page": "Create the new page",
     "cms.create.default_body_text": "Home page",
-    "cms.create.default_draft_body": "My draft version",
     "cms.create.name_placeholder": "The name of the page.",
     "cms.create.path_placeholder": "The path where the page will be displayed",
     "cms.create.path_slash_constraints": "the path must start with a slash",

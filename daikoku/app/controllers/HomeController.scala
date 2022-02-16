@@ -207,31 +207,17 @@ class HomeController(
           .map {
             case None => NotFound(Json.obj("error" -> "cms page not found"))
             case Some(page) =>
-              var diffReached = diffId == "-1"
-              val items = page.history.reverse.flatMap(item => {
-                if (item.id == diffId) {
-                  diffReached = true
-                  Some(item)
-                } else if (!diffReached)
-                  Some(item)
-                else
-                  None
-              })
-              if (items.nonEmpty) {
-                val diffs = diffMatchPatch.diff_main(
-                  page.draft,
-                  items.foldLeft(page.draft) {
-                    case (text, current) => diffMatchPatch.patch_apply(
-                      new util.LinkedList(diffMatchPatch.patch_fromText(current.diff)),
-                      text
-                    )
-                  })
+              val historySeq = buildCmsPageFromPatches(page.history, diffId)
+              val diffs = diffMatchPatch.diff_main(
+                page.draft,
+                historySeq
+              )
                 Ok(
-                  Json.obj("html" -> diffMatchPatch.diff_prettyHtml(diffs), "hasDiff" -> !diffs.isEmpty)
+                  Json.obj(
+                    "html" -> (if(ctx.request.getQueryString("showDiffs").exists(_.toBoolean)) diffMatchPatch.diff_prettyHtml(diffs) else historySeq),
+                    "hasDiff" -> !diffs.isEmpty
+                  )
                 )
-              }
-              else
-                Ok(Json.obj("html" -> page.draft))
           }
       }
     }
@@ -245,19 +231,17 @@ class HomeController(
       env.dataStore.cmsRepo.forTenant(tenant)
         .findById(id)
         .flatMap {
-          case Some(page) =>
-              ctx.setCtxValue("pageName", page.name)
-              ctx.setCtxValue("diffDate", page.history.find(_.id == diffId).map(_.date).getOrElse("unknown date"))
-
-              env.dataStore.cmsRepo.forTenant(tenant)
-                .save(page.copy(draft = items.foldLeft(page.draft) {
-                  case (text, current) => diffMatchPatch.patch_apply(
-                    new util.LinkedList(diffMatchPatch.patch_fromText(current.diff)),
-                    text
-                  )
-                }))
-                .map(_ => Ok(Json.obj("done" -> true)))
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "cms page not found")))
+          case Some(page) =>
+            ctx.setCtxValue("pageName", page.name)
+            ctx.setCtxValue("diffDate", page.history.find(_.id == diffId).map(_.date).getOrElse("unknown date"))
+
+            val newContentPage = buildCmsPageFromPatches(page.history, diffId)
+            val history = diff(newContentPage, page.draft)
+
+            env.dataStore.cmsRepo.forTenant(tenant)
+              .save(page.copy(draft = newContentPage, history = page.history :+ history))
+              .map(_ => Ok(Json.obj("restored" -> true)))
         }
     }
     }
@@ -277,9 +261,9 @@ class HomeController(
           forwardRef = None,
           tags = List(),
           metadata = Map(),
-          draft = "<DOCTYPE html>\n<html>\n<head></head>\n<body><h1>My draft page</h1>\n</body>\n</html>",
+          draft = "",
           contentType = "text/html",
-          body = "<DOCTYPE html>\n<html>\n<head></head>\n<body>\n</body>\n</html>",
+          body = "",
           path = Some("/" + BSONObjectID.generate().stringify)
         )
         env.dataStore.cmsRepo.forTenant(tenant)
@@ -292,6 +276,36 @@ class HomeController(
     }
   }
 
+  def diff(a: String, b: String): CmsHistory = {
+    val patchMatch = new utils.diff_match_patch()
+    val diff = patchMatch.patch_toText(patchMatch.patch_make(a, b))
+    CmsHistory(
+      id = BSONObjectID.generate().stringify,
+      date = DateTime.now(),
+      diff = diff
+    )
+  }
+
+  private def buildCmsPageFromPatches(history: Seq[CmsHistory], diffId: String): String = {
+    var diffReached = false
+    val items = history.flatMap(item => {
+      if (item.id == diffId) {
+        diffReached = true
+        Some(item)
+      } else if (!diffReached)
+        Some(item)
+      else
+        None
+    })
+    val diffMatchPatch = new diff_match_patch()
+    items.foldLeft("") {
+      case (text, current) => diffMatchPatch.patch_apply(
+        new util.LinkedList(diffMatchPatch.patch_fromText(current.diff)),
+        text
+      )
+    }
+  }
+
   def createCmsPage() = DaikokuAction.async(parse.json) { ctx =>
     TenantAdminOnly(
       AuditTrailEvent("@{user.name} has created a cms page"))(
@@ -301,16 +315,6 @@ class HomeController(
         val cmsPage = body ++
           Json.obj("_id" -> JsString((body \ "id").asOpt[String].getOrElse(BSONObjectID.generate().stringify))) ++
           Json.obj("_tenant" -> tenant.id.value)
-
-        def diff(a: String, b: String): CmsHistory = {
-          val patchMatch = new utils.diff_match_patch()
-          val diff = patchMatch.patch_toText(patchMatch.patch_make(a, b))
-          CmsHistory(
-            id = BSONObjectID.generate().stringify,
-            date = DateTime.now(),
-            diff = diff
-          )
-        }
 
         json.CmsPageFormat.reads(cmsPage) match {
           case JsSuccess(page, _) =>

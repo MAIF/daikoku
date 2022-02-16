@@ -77,7 +77,7 @@ export const Pages = ({ pages, removePage }) => {
                 const value = original;
                 return (
                     <div className='d-flex justify-content-center'>
-                        <Link to={`/_${value.path}`} target="_blank" rel="noopener noreferrer" className='m-1'>
+                        <Link to={`/_${value.path}`} target="_blank" rel="noopener noreferrer" className='m-1' onClick={e => e.stopPropagation()}>
                             <i className='fas fa-eye fa-lg' style={{ color: "#000" }} />
                         </Link>
                         <button className="m-1"
@@ -85,7 +85,8 @@ export const Pages = ({ pages, removePage }) => {
                                 border: 'none',
                                 background: 'none'
                             }}
-                            onClick={() => {
+                            onClick={e => {
+                                e.stopPropagation()
                                 window.confirm(translateMethod('cms.pages.remove_confirm')).then((ok) => {
                                     if (ok) {
                                         Services.removeCmsPage(value.id)

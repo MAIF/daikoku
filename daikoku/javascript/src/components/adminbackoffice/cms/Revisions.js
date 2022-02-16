@@ -4,6 +4,16 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getApolloContext } from '@apollo/client'
 import moment from 'moment'
 import * as Services from '../../../services'
+import { BooleanInput } from '@maif/react-forms/lib/inputs'
+import { Spinner } from '../../utils/Spinner'
+import { SwitchButton } from '../../inputs'
+
+const CURRENT_VERSION_ITEM = {
+    value: {
+        id: "-1"
+    },
+    label: 'Current version'
+}
 
 export default ({ }) => {
     const { client } = useContext(getApolloContext())
@@ -18,7 +28,10 @@ export default ({ }) => {
         html: "",
         hasDiff: false
     })
-    const [selectedDiff, setSelectedDiff] = useState()
+    const [selectedDiff, setSelectedDiff] = useState(CURRENT_VERSION_ITEM)
+
+    const [latestVersion, setLatestVersion] = useState()
+    const [showDiffs, toggleDiffs] = useState(false)
 
     useEffect(() => {
         const id = params.id
@@ -26,7 +39,16 @@ export default ({ }) => {
             setLoading(true)
             client.query({ query: Services.graphql.getCmsPageHistory(id) })
                 .then(res => {
-                    if (res.data)
+                    if (res.data) {
+                        setSelectedDiff(CURRENT_VERSION_ITEM)
+                        setLatestVersion({
+                            draft: res.data.cmsPage.draft,
+                            ...CURRENT_VERSION_ITEM
+                        })
+                        setHtml({
+                            html: res.data.cmsPage.draft,
+                            hasDiff: false
+                        })
                         setValue(
                             res.data.cmsPage.history.reduce((diffsByMonth, current) => {
                                 const month = moment(current.date).format('MMMM')
@@ -41,40 +63,40 @@ export default ({ }) => {
                                     ]
                                 }
                             }, {
-                                'latest': [{
-                                    value: {
-                                        id: "-1"
-                                    },
-                                    label: 'Current version'
-                                }]
+                                'latest': [CURRENT_VERSION_ITEM]
                             })
                         )
+                    }
                     setLoading(false)
                 })
         }
     }, [params.id, reloading]);
 
-    useEffect(() => {
-        if (value)
-            loadDiff({ value: { id: "-1" } })
-    }, [value])
-
-    const loadDiff = item => {
-        console.log(item)
-        Services.getDiffOfCmsPage(params.id, item.value.id)
-            .then(res => {
-                if (res.html) {
-                    setHtml({
-                        html: res.html.replace(/&para;/g, ''),
-                        hasDiff: res.hasDiff
-                    })
-                }
+    const loadDiff = (item, nearValue) => {
+        if (item.value.id === "-1") {
+            setSelectedDiff(latestVersion)
+            setHtml({
+                html: latestVersion.draft,
+                hasDiff: false
             })
-        setSelectedDiff(item)
+        } else {
+            setLoading(true)
+            Services.getDiffOfCmsPage(params.id, item.value.id, nearValue !== undefined ? nearValue : showDiffs)
+                .then(res => {
+                    if (res.html) {
+                        setHtml({
+                            html: res.html.replace(/&para;/g, ''),
+                            hasDiff: res.hasDiff
+                        })
+                    }
+                    setLoading(false)
+                })
+            setSelectedDiff(item)
+        }
     }
 
     return (
-        <div>
+        <>
             <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
                 <div className="sidebar-sticky d-flex flex-column">
                     <div className='d-flex p-3 align-items-baseline'>
@@ -139,12 +161,23 @@ export default ({ }) => {
                     </div>
                 </div>
             </nav>
-            <div className='p-2 d-flex flex-column' style={{ flex: 1, position: 'relative' }}>
-                <h5 className='py-4' style={{ borderBottom: '1px solid #eee' }}>
-                    {selectedDiff && moment(selectedDiff.value.date).format('DD MMMM, YY, (HH:mm)')}
-                </h5>
-                {html && (html.hasDiff ? <div dangerouslySetInnerHTML={{ __html: html.html }} ></div> : <pre>{html.html}</pre>)}
+            <div className='p-2' style={{ flex: 1, position: 'relative' }}>
+                {loading ? <Spinner /> : <>
+                    <div className='pt-4' style={{ borderBottom: '1px solid #eee' }}>
+                        <h5>{selectedDiff && moment(selectedDiff.value.date).format('DD MMMM, YY, (HH:mm)')}</h5>
+                        {selectedDiff && <div className='d-flex align-items-center pb-3'>
+                            <span className='me-2'>Show differences</span>
+                            <SwitchButton checked={showDiffs}
+                                disabled={selectedDiff.value.id === "-1"}
+                                onSwitch={() => {
+                                    loadDiff(selectedDiff, !showDiffs)
+                                    toggleDiffs(!showDiffs)
+                                }} />
+                        </div>}
+                    </div>
+                    {html && (html.hasDiff ? <div dangerouslySetInnerHTML={{ __html: html.html }} ></div> : <pre>{html.html}</pre>)}
+                </>}
             </div>
-        </div>
+        </>
     )
 }

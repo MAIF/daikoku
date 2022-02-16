@@ -9,15 +9,7 @@ export default React.forwardRef(({ contentType, setFinalValue, show, pages, inVa
     const r = useRef()
 
     useEffect(() => {
-        setValue({
-            draft: inValue || `<DOCTYPE html>
-        <html>
-            <head></head>
-            <body>
-                <h1>${translateMethod('cms.create.default_draft_body')}</h1>
-            </body>
-        </html>`
-        })
+        setValue({ draft: inValue || "" })
     }, [inValue])
 
     const [value, setValue] = useState({});
