@@ -1,12 +1,10 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.ValueType
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
@@ -740,12 +738,9 @@ object SchemaDefinition {
       )
     )
 
-    case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
     lazy val  AuthorizationApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationApi]()
 
-    case class GraphQLApi(api: Api, authorizations: Seq[AuthorizationApi] = Seq.empty)
-
-    lazy val GraphQLApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), GraphQLApi](
+    lazy val GraphQLApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithAuthorizations](
       ObjectTypeDescription("A Daikoku api with the list of teams authorizations"),
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
       ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations))
@@ -1171,77 +1166,7 @@ object SchemaDefinition {
     )
 
     def getVisibleApis(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: Option[String] = None) = {
-      _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx.ctx._2) {
-        val teamRepo = env.dataStore.teamRepo.forTenant(ctx.ctx._2.tenant)
-        (teamId match {
-          case None => teamRepo.findAllNotDeleted()
-          case Some(id) => teamRepo.find(Json.obj("_humanReadableId" -> id))
-        })
-          .map(teams => if (ctx.ctx._2.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.ctx._2.user.id)))
-          .flatMap(teams => {
-            val teamFilter = Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))))
-            val tenant = ctx.ctx._2.tenant
-            val user = ctx.ctx._2.user
-            for {
-              myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
-              apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-              myCurrentRequests <- if (user.isGuest) FastFuture.successful(Seq.empty) else env.dataStore.notificationRepo
-                .forTenant(tenant.id)
-                .findNotDeleted(
-                  Json.obj("action.type" -> "ApiAccess",
-                    "action.team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))),
-                    "status.status" -> "Pending")
-                )
-              publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
-              almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(Json.obj("visibility" -> "PublicWithAuthorizations"))
-              privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-                Json.obj(
-                  "visibility" -> "Private",
-                  "$or" -> Json.arr(
-                    Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
-                    teamFilter
-                  )))
-              adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-                Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
-              )
-            } yield {
-              val sortedApis: Seq[GraphQLApi] = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
-                .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-                .map(api => api
-                  .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))
-                .map(api => {
-                  val authorizations = teams
-                    .filter(t => t.`type` != TeamType.Admin)
-                    .map(team =>
-                      AuthorizationApi(
-                        team = team.id.value,
-                        authorized = api.authorizedTeams.contains(team.id) || api.team == team.id,
-                        pending = myCurrentRequests.exists(notif =>
-                          notif.action.asInstanceOf[ApiAccess].team == team.id && notif.action.asInstanceOf[ApiAccess].api == api.id)
-                      ))
-
-                  api.visibility.name match {
-                    case "PublicWithAuthorizations" | "Private" => GraphQLApi(api, authorizations)
-                    case _ => GraphQLApi(api)
-                  }
-                })
-
-              (if (user.isDaikokuAdmin)
-                adminApis.map(api => GraphQLApi(api, teams.map(team =>
-                  AuthorizationApi(
-                    team = team.id.value,
-                    authorized = user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id),
-                    pending = false
-                  )
-                ))) ++ sortedApis
-              else
-                sortedApis)
-                .groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
-                .map(res => res._2.head)
-                .toSeq
-            }
-          })
-      }.map {
+      CommonServices.getVisibleApis(teamId)(ctx.ctx._2, env, e).map {
         case Left(value) => value
         case Right(r) => throw NotAuthorizedError(r.toString)
       }

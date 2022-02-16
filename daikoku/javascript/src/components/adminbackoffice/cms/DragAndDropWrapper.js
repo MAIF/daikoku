@@ -25,10 +25,10 @@ export default ({ children, handleDrop }) => {
         dropRef.current.addEventListener('drop', handle)
 
         return () => {
-            dropRef.current.removeEventListener('dragenter', handleDrag)
-            dropRef.current.removeEventListener('dragleave', handleDrag)
-            dropRef.current.removeEventListener('dragover', handleDrag)
-            dropRef.current.removeEventListener('drop', handle)
+            dropRef.current?.removeEventListener('dragenter', handleDrag)
+            dropRef.current?.removeEventListener('dragleave', handleDrag)
+            dropRef.current?.removeEventListener('dragover', handleDrag)
+            dropRef.current?.removeEventListener('drop', handle)
         }
     }, [])
 

@@ -123,7 +123,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       ctx.setCtxValue("team.name", team.name)
       ctx.setCtxValue("team.id", team.id)
 
-      FastFuture.successful(Ok(team.toUiPayload))
+      FastFuture.successful(Left(Ok(team.toUiPayload)))
     }
   }
 
@@ -171,7 +171,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                       "_id" -> Json.obj("$in" -> JsArray((s ++ subscriptions).map(_.api.asJson)))
                     )
                   )
-                  .flatMap(apis => FastFuture.successful(Ok(JsArray(apis.map(_.asJson)))))
+                  .flatMap(apis => FastFuture.successful(Left(Ok(JsArray(apis.map(_.asJson))))))
             }
         }
     }
@@ -222,7 +222,7 @@ class ApiController(DaikokuAction: DaikokuAction,
           Ok(betterApis)
         }
 
-        r.value.map(_.merge)
+        r.value.map(_.merge).map(a => Left(a))
     }
   }
 
@@ -1240,40 +1240,11 @@ class ApiController(DaikokuAction: DaikokuAction,
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   def apiOfTeam(teamId: String, apiId: String, version: String) = DaikokuAction.async { ctx =>
-    TeamMemberOnly(
-      AuditTrailEvent(s"@{user.name} has accessed one api @{api.name} - @{api.id} of @{team.name} - @{team.id}")
-    )(teamId, ctx) { team =>
-      var query = Json.obj(
-        "team" -> team.id.value,
-        "$or" -> Json.arr(
-          Json.obj("_id" -> apiId),
-          Json.obj("_humanReadableId" -> apiId),
-        ),
-        "currentVersion" -> version
-      )
-
-      env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
-        .findOneNotDeleted(query)
-        .flatMap {
-          case Some(api) =>
-            ctx.setCtxValue("api.id", api.id)
-            ctx.setCtxValue("api.name", api.name)
-
-            env.dataStore.translationRepo.forTenant(ctx.tenant)
-              .find(Json.obj("element.id" -> api.id.asJson))
-              .map(translations => {
-                val translationAsJsObject = translations
-                  .groupBy(t => t.language)
-                  .map {
-                    case (k, v) => Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
-                  }.fold(Json.obj())(_ deepMerge _)
-                val translation = Json.obj("translation" -> translationAsJsObject)
-                Ok(api.asJson.as[JsObject] ++ translation)
-              })
-          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-        }
-    }
+    CommonServices.apiOfTeam(teamId, apiId, version)(ctx, env, ec)
+      .map {
+        case Left(api) => Ok(api.api.asJson.as[JsObject] ++ api.translation)
+        case Right(error) => AppError.render(error)
+      }
   }
 
   def apisOfTeam(teamId: String) = DaikokuAction.async { ctx =>
@@ -1287,7 +1258,7 @@ class ApiController(DaikokuAction: DaikokuAction,
             )
           )
           .map { apis =>
-            Ok(JsArray(apis.map(_.asJson)))
+            Left(Ok(JsArray(apis.map(_.asJson))))
           }
     }
   }
