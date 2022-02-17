@@ -6,6 +6,7 @@ import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
+import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.libs.json._
 import play.api.mvc.AnyContent
@@ -132,4 +133,19 @@ object CommonServices {
           case None => FastFuture.successful(Right(AppError.ApiNotFound))
         }
     }
+
+
+  def myTeams()(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed his team list"))(ctx) {
+      (if (ctx.user.isDaikokuAdmin)
+        env.dataStore.teamRepo.forTenant(ctx.tenant)
+          .findAllNotDeleted()
+      else
+        env.dataStore.teamRepo.forTenant(ctx.tenant)
+          .findNotDeleted(Json.obj("users.userId" -> ctx.user.id.value))
+        )
+        .map(teams => teams.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0))
+    }
+  }
+
 }

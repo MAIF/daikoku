@@ -60,7 +60,7 @@ export const Pages = ({ pages, removePage }) => {
             style: { textAlign: 'left', maxWidth: 220 },
             disableFilters: true,
             accessor: (item) => item.lastPublishedDate ?
-                moment(item.lastPublishedDate).format('DD/MM/yy kk:mm') :
+                moment(item.lastPublishedDate).format('DD MMM (HH:mm)') :
                 '-',
         },
         {
@@ -78,7 +78,7 @@ export const Pages = ({ pages, removePage }) => {
                 return (
                     <div className='d-flex justify-content-center'>
                         <Link to={`/_${value.path}`} target="_blank" rel="noopener noreferrer" className='m-1' onClick={e => e.stopPropagation()}>
-                            <i className='fas fa-eye fa-lg' style={{ color: "#000" }} />
+                            <i className='fas fa-eye' style={{ color: "#000" }} />
                         </Link>
                         <button className="m-1"
                             style={{
@@ -99,7 +99,7 @@ export const Pages = ({ pages, removePage }) => {
                                     }
                                 });
                             }}>
-                            <i className='fas fa-trash fa-lg' style={{ color: "var(--danger-color, #dc3545)" }} />
+                            <i className='fas fa-trash' style={{ color: "var(--danger-color, #dc3545)" }} />
                         </button>
                     </div>
                 );

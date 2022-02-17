@@ -5,7 +5,7 @@ import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
-import fr.maif.otoroshi.daikoku.domain.{CmsHistory, CmsPage, CmsPageId, DaikokuStyle, json}
+import fr.maif.otoroshi.daikoku.domain.{CmsHistory, CmsPage, CmsPageId, DaikokuStyle, UserId, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.joda.time.DateTime
@@ -237,7 +237,7 @@ class HomeController(
             ctx.setCtxValue("diffDate", page.history.find(_.id == diffId).map(_.date).getOrElse("unknown date"))
 
             val newContentPage = buildCmsPageFromPatches(page.history, diffId)
-            val history = diff(newContentPage, page.draft)
+            val history = diff(newContentPage, page.draft, ctx.user.id)
 
             env.dataStore.cmsRepo.forTenant(tenant)
               .save(page.copy(draft = newContentPage, history = page.history :+ history))
@@ -276,13 +276,14 @@ class HomeController(
     }
   }
 
-  def diff(a: String, b: String): CmsHistory = {
+  def diff(a: String, b: String, userId: UserId): CmsHistory = {
     val patchMatch = new utils.diff_match_patch()
     val diff = patchMatch.patch_toText(patchMatch.patch_make(a, b))
     CmsHistory(
       id = BSONObjectID.generate().stringify,
       date = DateTime.now(),
-      diff = diff
+      diff = diff,
+      user = userId
     )
   }
 
@@ -322,13 +323,13 @@ class HomeController(
               .findByIdOrHrId(page.id.value)
               .map {
                 case Some(cms) =>
-                  val d = diff(cms.draft, page.draft)
+                  val d = diff(cms.draft, page.draft, ctx.user.id)
                   if(d.diff.nonEmpty)
                     page.copy(history = cms.history :+ d)
                   else
                     page.copy(history = cms.history)
                 case None =>
-                  val d = diff("", page.draft)
+                  val d = diff("", page.draft, ctx.user.id)
                   if(d.diff.nonEmpty)
                     page.copy(history = Seq(d))
                   else

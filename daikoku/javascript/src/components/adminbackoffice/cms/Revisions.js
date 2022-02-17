@@ -4,13 +4,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getApolloContext } from '@apollo/client'
 import moment from 'moment'
 import * as Services from '../../../services'
-import { BooleanInput } from '@maif/react-forms/lib/inputs'
 import { Spinner } from '../../utils/Spinner'
 import { SwitchButton } from '../../inputs'
 
 const CURRENT_VERSION_ITEM = {
     value: {
-        id: "-1"
+        id: "LATEST"
     },
     label: 'Current version'
 }
@@ -50,7 +49,7 @@ export default ({ }) => {
                             hasDiff: false
                         })
                         setValue(
-                            res.data.cmsPage.history.reduce((diffsByMonth, current) => {
+                            res.data.cmsPage.history.slice(1).reduce((diffsByMonth, current) => {
                                 const month = moment(current.date).format('MMMM')
                                 return {
                                     ...diffsByMonth,
@@ -73,7 +72,7 @@ export default ({ }) => {
     }, [params.id, reloading]);
 
     const loadDiff = (item, nearValue) => {
-        if (item.value.id === "-1") {
+        if (item.value.id === "LATEST") {
             setSelectedDiff(latestVersion)
             setHtml({
                 html: latestVersion.draft,
@@ -125,7 +124,7 @@ export default ({ }) => {
                                     <span>{`(${moment(diffs[0].value.date).format('YYYY')})`}</span>
                                 </div>
                                 {diffs.map(item => {
-                                    const isCurrentVersion = item.value.id === "-1"
+                                    const isCurrentVersion = item.value.id === "LATEST"
                                     const isSelected = selectedDiff.value.id === item.value.id
 
                                     return <div key={item.value.id}
@@ -134,14 +133,18 @@ export default ({ }) => {
                                             borderBottom: '1px solid rgb(225,225,225)',
                                             borderRight: '1px solid rgb(225,225,225)',
                                             cursor: 'pointer',
-                                            marginBottom: isCurrentVersion ? '12px' : 0
+                                            marginBottom: isCurrentVersion ? '12px' : 0,
+                                            minHeight: '50px'
                                         }}
                                         onClick={() => loadDiff(item)}
-                                        className='p-3'>
-                                        <div className='d-flex align-items-center justify-content-between'>
+                                        className='p-1 px-3 d-flex flex-column'>
+                                        <div className='d-flex align-items-center justify-content-between' style={{ flex: 1 }}>
                                             <span>{item.label}</span>
                                             {isSelected && <i className='fas fa-arrow-right' />}
                                         </div>
+                                        {item.value.user && <div style={{ fontStyle: "italic", fontWeight: "bold" }}>
+                                            <span>{item.value.user.name}</span>
+                                        </div>}
                                         {(!isCurrentVersion && isSelected) &&
                                             <button className='btn btn-sm btn-outline-info mt-2' onClick={() => {
                                                 window.confirm('Are you sure to restore this version ? The current version will be erased.').then((ok) => {
@@ -168,7 +171,7 @@ export default ({ }) => {
                         {selectedDiff && <div className='d-flex align-items-center pb-3'>
                             <span className='me-2'>Show differences</span>
                             <SwitchButton checked={showDiffs}
-                                disabled={selectedDiff.value.id === "-1"}
+                                disabled={selectedDiff.value.id === "LATEST"}
                                 onSwitch={() => {
                                     loadDiff(selectedDiff, !showDiffs)
                                     toggleDiffs(!showDiffs)

@@ -3276,13 +3276,15 @@ object json {
     override def writes(o: CmsHistory): JsValue = Json.obj(
       "id" -> o.id,
       "date" -> DateTimeFormat.writes(o.date),
-      "diff" -> o.diff
+      "diff" -> o.diff,
+      "user" -> UserIdFormat.writes(o.user)
     )
     override def reads(o: JsValue): JsResult[CmsHistory] = Try {
       CmsHistory(
         id = (o \ "id").as[String],
         date = (o \ "date").as(DateTimeFormat),
-        diff = (o \ "diff").as[String]
+        diff = (o \ "diff").as[String],
+        user = (o \ "user").as(UserIdFormat)
       )
     } match {
       case Failure(exception) => JsError(exception.getMessage)

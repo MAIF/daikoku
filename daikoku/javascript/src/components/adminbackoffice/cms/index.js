@@ -37,7 +37,6 @@ export const CMSOffice = () => {
     }, [])
 
     useEffect(() => {
-        console.log(location.state)
         if (location.state && location.state.reload)
             reload()
     }, [location])

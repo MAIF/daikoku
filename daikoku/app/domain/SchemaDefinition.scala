@@ -1109,7 +1109,8 @@ object SchemaDefinition {
 
     val  CmsHistoryType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsHistory](
       ReplaceField("date", Field("date", DateTimeUnitype, resolve = _.value.date)),
-      ReplaceField("diff", Field("diff", StringType, resolve = _.value.diff))
+      ReplaceField("diff", Field("diff", StringType, resolve = _.value.diff)),
+      ReplaceField("user", Field("user", OptionType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.user)))
     )
 
     lazy val  CmsPageType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage](
@@ -1150,16 +1151,7 @@ object SchemaDefinition {
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
-          _UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed his team list"))(ctx.ctx._2) {
-            (if (ctx.ctx._2.user.isDaikokuAdmin)
-              ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant)
-                .findAllNotDeleted()
-            else
-              ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant)
-                .findNotDeleted(Json.obj("users.userId" -> ctx.ctx._2.user.id.value))
-            )
-              .map(teams => teams.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0))
-          }.map {
+          CommonServices.myTeams()(ctx.ctx._2, env, e).map {
             case Left(value) => value
             case Right(r) => throw NotAuthorizedError(r.toString)
           })

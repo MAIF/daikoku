@@ -34,10 +34,22 @@ export default React.forwardRef(({ contentType, setFinalValue, show, pages, inVa
             type: type.string,
             label: null,
             help: translateMethod('cms.create.draft_help'),
-            render: formProps =>
-                <DragAndDropWrapper handleDrop={handleDrop}>
-                    <ContentSideView {...formProps} pages={pages} contentType={contentType} publish={publish} />
+            render: formProps => {
+                const [draft, setDraft] = useState("")
+
+                useEffect(() => {
+                    setDraft(value.draft)
+                }, [value.draft])
+
+                return <DragAndDropWrapper handleDrop={handleDrop}>
+                    <ContentSideView {...formProps} pages={pages} contentType={contentType} publish={publish}
+                        value={draft}
+                        onChange={e => {
+                            setDraft(e)
+                            formProps.onChange(e)
+                        }} />
                 </DragAndDropWrapper>
+            }
         }
     }
 

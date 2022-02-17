@@ -7,8 +7,9 @@ import controllers.AppError
 import controllers.AppError.toJson
 import domain.JsonNodeValueResolver
 import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
-import fr.maif.otoroshi.daikoku.audit.KafkaConfig
+import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamMemberOnly, _TeamMemberOnly}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -1785,7 +1786,7 @@ object CmsPage {
   val pageRenderingEc = ExecutionContext.fromExecutor(Executors.newWorkStealingPool(Runtime.getRuntime.availableProcessors() + 1))
 }
 
-case class CmsHistory(id: String, date: DateTime, diff: String)
+case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
 
 case class CmsPage(
   id: CmsPageId,
@@ -1808,27 +1809,12 @@ case class CmsPage(
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
-  def enrichHandlebarsWithOwnedApis(ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String], handlebars: Handlebars, env: Env, tenant: Tenant, name: String,
-                                    fields: Map[String, Any],
-                                    jsonToCombine: Map[String, JsValue])
-                                   (implicit ec: ExecutionContext): Handlebars = {
-    val ctxUserContext: DaikokuActionContext[JsValue] = DaikokuActionContext(
-        request = ctx.request.asInstanceOf[Request[JsValue]],
-        user = ctx.user.getOrElse(User(UserId("Unauthenticated user"),
-        tenants = Set.empty,
-        origins = Set.empty,
-        name = "Unauthenticated user",
-        email = "unauthenticated@foo.bar",
-        personalToken = None,
-        lastTenant = None,
-        defaultLanguage = None)),
-      tenant = ctx.tenant,
-      session = ctx.session.orNull,
-      impersonator = ctx.impersonator,
-      isTenantAdmin = ctx.isTenantAdmin,
-      apiCreationPermitted = ctx.apiCreationPermitted,
-      ctx = ctx.ctx
-    )
+  def enrichHandlebarsWithOwnedApis[A](ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String],
+                                      handlebars: Handlebars,
+                                      fields: Map[String, Any],
+                                      jsonToCombine: Map[String, JsValue])(implicit env: Env, ec: ExecutionContext): Handlebars = {
+    val ctxUserContext = maybeWithoutUserToUserContext(ctx)
+    val name = "owned-api"
 
     handlebars.registerHelper(s"daikoku-${name}s", (_: CmsPage, options: Options) => {
       val visibility = options.hash.getOrDefault("visibility", "All").asInstanceOf[String]
@@ -1841,15 +1827,15 @@ case class CmsPage(
               options.fn.text(),
               fields = fields,
               jsonToCombine = jsonToCombine ++ Map("api" -> api.api.asJson)
-            )(env, ec))
+            ))
               .mkString("\n")
         case Right(error) => AppError.render(error)
       }
     })
     handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
-      val renderedParameter = renderString(ctx, parentId, id, fields, jsonToCombine)(env, ec)
+      val renderedParameter = renderString(ctx, parentId, id, fields, jsonToCombine)
       val version = options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
-      val optApi = Await.result(env.dataStore.apiRepo.findByVersion(tenant, renderedParameter, version)(env, ec), 10.seconds)
+      val optApi = Await.result(env.dataStore.apiRepo.findByVersion(ctx.tenant, renderedParameter, version), 10.seconds)
 
       optApi match {
         case Some(api) =>
@@ -1858,16 +1844,16 @@ case class CmsPage(
             case Left(api) => renderString(ctx, parentId,
               options.fn.text(),
               fields = fields,
-              jsonToCombine = jsonToCombine ++ Map("api" -> api.api.asJson))(env, ec)
+              jsonToCombine = jsonToCombine ++ Map("api" -> api.api.asJson))
             case Right(error) => AppError.render(error)
           }, 10.seconds)
         case None => AppError.render(AppError.ApiNotFound)
       }
     })
     handlebars.registerHelper(s"daikoku-json-$name", (id: String, options: Options) => {
-      val renderedParameter = renderString(ctx, parentId, id, fields, jsonToCombine)(env, ec)
+      val renderedParameter = renderString(ctx, parentId, id, fields, jsonToCombine)
       val version = options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
-      val optApi = Await.result(env.dataStore.apiRepo.findByVersion(tenant, renderedParameter, version)(env, ec), 10.seconds)
+      val optApi = Await.result(env.dataStore.apiRepo.findByVersion(ctx.tenant, renderedParameter, version), 10.seconds)
 
       optApi match {
         case Some(api) =>
@@ -1882,6 +1868,82 @@ case class CmsPage(
     handlebars.registerHelper(s"daikoku-json-${name}s", (_: CmsPage, _: Options) =>
       Await.result(CommonServices.getVisibleApis()(ctxUserContext, env, ec).map {
         case Left(apis) => JsArray(apis.map(_.api.asJson))
+        case Right(error) => toJson(error)
+      }, 10.seconds)
+    )
+  }
+
+  private def maybeWithoutUserToUserContext(ctx: DaikokuActionMaybeWithoutUserContext[_]): DaikokuActionContext[JsValue] = DaikokuActionContext(
+    request = ctx.request.asInstanceOf[Request[JsValue]],
+    user = ctx.user.getOrElse(User(UserId("Unauthenticated user"),
+      tenants = Set.empty,
+      origins = Set.empty,
+      name = "Unauthenticated user",
+      email = "unauthenticated@foo.bar",
+      personalToken = None,
+      lastTenant = None,
+      defaultLanguage = None)),
+    tenant = ctx.tenant,
+    session = ctx.session.orNull,
+    impersonator = ctx.impersonator,
+    isTenantAdmin = ctx.isTenantAdmin,
+    apiCreationPermitted = ctx.apiCreationPermitted,
+    ctx = ctx.ctx
+  )
+
+  def enrichHandlebarsWithOwnedTeams[A](ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String],
+                                       handlebars: Handlebars,
+                                       fields: Map[String, Any],
+                                       jsonToCombine: Map[String, JsValue])(implicit env: Env, ec: ExecutionContext): Handlebars = {
+    val ctxUserContext = maybeWithoutUserToUserContext(ctx)
+
+    handlebars.registerHelper(s"daikoku-owned-teams", (_: CmsPage, options: Options) => {
+      Await.result(CommonServices.myTeams()(ctxUserContext, env, ec), 10.seconds) match {
+        case Left(teams) =>
+          teams
+            .map(team => renderString(ctx,
+              parentId,
+              options.fn.text(),
+              fields = fields,
+              jsonToCombine = jsonToCombine ++ Map("api" -> team.asJson)
+            )(env, ec))
+            .mkString("\n")
+        case Right(error) => AppError.render(error)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-owned-team", (id: String, options: Options) => {
+      val teamId = renderString(ctx, parentId, id, fields, jsonToCombine)
+
+      Await.result(
+        _TeamMemberOnly(teamId, AuditTrailEvent("@{user.name} has accessed on of his team @{team.name} - @{team.id}"))(ctxUserContext) { team =>
+          ctx.setCtxValue("team.name", team.name)
+          ctx.setCtxValue("team.id", team.id)
+
+          FastFuture.successful(Left(renderString(ctx, parentId, options.fn.text(), fields = fields,
+            jsonToCombine = jsonToCombine ++ Map("team" ->  team.toUiPayload()))))
+
+      }, 10.seconds) match {
+        case Left(team) => team
+        case Right(error) => toJson(error)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-json-owned-team", (id: String, options: Options) => {
+      val teamId = renderString(ctx, parentId, id, fields, jsonToCombine)
+
+      Await.result(
+        _TeamMemberOnly(teamId, AuditTrailEvent("@{user.name} has accessed on of his team @{team.name} - @{team.id}"))(ctxUserContext) { team =>
+          ctx.setCtxValue("team.name", team.name)
+          ctx.setCtxValue("team.id", team.id)
+
+          FastFuture.successful(Left(team.toUiPayload()))
+        }, 10.seconds)match {
+        case Left(jsonTeam) => jsonTeam
+        case Right(error) => toJson(error)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-json-owned-teams", (_: CmsPage, _: Options) =>
+      Await.result(CommonServices.myTeams()(ctxUserContext, env, ec).map {
+        case Left(teams) => JsArray(teams.map(_.asJson))
         case Right(error) => toJson(error)
       }, 10.seconds)
     )
@@ -2191,7 +2253,8 @@ case class CmsPage(
         handlebars.registerHelper("daikoku-include-block", (id: String, options: Options) => daikokuIncludeBlockHelper(ctx, Some(page.id.value), id, options, fields, jsonToCombine))
         handlebars.registerHelper("daikoku-template-wrapper", (id: String, options: Options) => daikokuTemplateWrapper(ctx, Some(page.id.value), id, options, fields, jsonToCombine))
 
-        enrichHandlebarsWithOwnedApis(ctx, Some(page.id.value), handlebars, env, ctx.tenant, "owned-api", fields, jsonToCombine)
+        enrichHandlebarsWithOwnedApis(ctx, Some(page.id.value), handlebars, fields, jsonToCombine)
+        enrichHandlebarsWithOwnedTeams(ctx, Some(page.id.value), handlebars, fields, jsonToCombine)
 
         enrichHandlebarsWithEntity(ctx, Some(page.id.value), handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo,
           (api: Api) => api.asJson,

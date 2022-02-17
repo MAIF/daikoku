@@ -18,7 +18,7 @@ export const getVisibleApiWithId = (id) => customFetch(`/api/me/visible-apis/${i
 export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}/${version}`);
 export const getTeamVisibleApi = (teamId, apiId, version) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
-export const myTeams = () => customFetch('/api/me/teams');
+// export const myTeams = () => customFetch('/api/me/teams');
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 
 export const teamAllNotifications = (teamId, page = 0) =>
@@ -990,6 +990,9 @@ export const graphql = {
           history {
             id
             date
+            user {
+              name
+            }
           }
       }
   }
