@@ -9,6 +9,7 @@ import fr.maif.otoroshi.daikoku.domain.{CmsHistory, CmsPage, CmsPageId, DaikokuS
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.joda.time.DateTime
+import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
@@ -26,10 +27,12 @@ class HomeController(
     DaikokuAction: DaikokuAction,
     env: Env,
     cc: ControllerComponents)
-    extends AbstractController(cc) {
+    extends AbstractController(cc)
+    with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val e = env
+  implicit val m = messagesApi
 
   def actualIndex[A](ctx: DaikokuActionMaybeWithoutUserContext[A]): Future[Result] = {
     ctx.user match {
@@ -152,13 +155,13 @@ class HomeController(
 
             page.headOption match {
               case Some(r) if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
-              case Some(r) => r.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
+              case Some(r) => r.render(ctx, None, ctx.request.getQueryString("draft").contains("true")).map(res => Ok(res._1).as(res._2))
               case None => cmsPageNotFound(ctx)
             }
           })
       case Some(page) if !page.visible => cmsPageNotFound(ctx)
       case Some(page) if page.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
-      case Some(page) => page.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
+      case Some(page) => page.render(ctx, None, ctx.request.getQueryString("draft").contains("true")).map(res => Ok(res._1).as(res._2))
     }
   }
 
@@ -184,7 +187,7 @@ class HomeController(
       case None => cmsPageNotFound(ctx)
       case Some(page) if !page.visible => cmsPageNotFound(ctx)
       case Some(page) if page.authenticated && ctx.user.isEmpty => FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
-      case Some(page) => page.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
+      case Some(page) => page.render(ctx, None, ctx.request.getQueryString("draft").contains("true")).map(res => Ok(res._1).as(res._2))
     }
   }
 
