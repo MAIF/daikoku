@@ -922,7 +922,7 @@ export const TeamApiPricings = (props) => {
     },
     {
       id: 'security',
-      label: translateMethod('Security'),
+      label: translateMethod('Settings'),
       schema: {
         otoroshiTarget: {
           type: type.object,
@@ -932,13 +932,20 @@ export const TeamApiPricings = (props) => {
           type: type.bool,
           label: translateMethod('Force apikey auto-rotation'),
         },
+        aggregationApiKeysSecurity: {
+          type: type.bool,
+          visible: !!props.tenant.aggregationApiKeysSecurity,
+          label: translateMethod('aggregation api keys security'),
+          help: translateMethod('aggregation_apikeys.security.help'),
+        },
+        allowMutlipleApiKeys: {
+          type: type.bool,
+          label: translateMethod('Allow multiple apiKey demands'),
+        },
         subscriptionProcess: {
           type: type.string,
           format: format.buttonsSelect,
-          disabled: ({ rawValues }) => {
-            console.debug({rawValues, test: !!rawValues.otoroshiTarget.apikeyCustomization.customMetadata.length})
-            return !!rawValues.otoroshiTarget.apikeyCustomization.customMetadata.length
-          },
+          disabled: ({ rawValues }) => !!rawValues.otoroshiTarget.apikeyCustomization.customMetadata.length,
           label: ({ rawValues }) => translateMethod('Subscription') + (!!rawValues.otoroshiTarget.apikeyCustomization.customMetadata.length ? ` (${translateMethod('Subscription.manual.help')})` : ""),
           options: [
             {
@@ -960,7 +967,20 @@ export const TeamApiPricings = (props) => {
             { label: translateMethod('ApiKey'), value: 'ApiKey' },
           ],
         },
-      }
+      },
+      flow: [
+        {
+          label: translateMethod('Security'),
+          flow: [
+            'autoRotation',
+            'allowMutlipleApiKeys',
+            'aggregationApiKeysSecurity'
+          ],
+          inline: true
+        },
+        'subscriptionProcess',
+        'integrationProcess'
+      ]
     }
   ]
 
