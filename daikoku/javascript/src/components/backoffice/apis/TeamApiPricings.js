@@ -223,7 +223,6 @@ const CustomMetadataInput = ({ value, onChange, setValue }) => {
 
         <div className="col-sm-10">
           <button
-            //FIXME:  disabled={props.disabled} 
             type="button"
             className="btn btn-outline-primary"
             onClick={addFirst}
@@ -257,7 +256,6 @@ const CustomMetadataInput = ({ value, onChange, setValue }) => {
               classNamePrefix="reactSelect"
             />
             <button
-              // disabled={props.disabled}
               type="button"
               className="input-group-text btn btn-outline-danger"
               onClick={(e) => remove(e, key)}>
@@ -265,7 +263,6 @@ const CustomMetadataInput = ({ value, onChange, setValue }) => {
             </button>
             {idx === value.length - 1 && (
               <button
-                // disabled={props.disabled}
                 type="button"
                 className="input-group-text btn btn-outline-primary"
                 onClick={addNext}>
@@ -448,7 +445,7 @@ export const TeamApiPricings = (props) => {
     }
   ];
 
-  const quotasWithLimitsFlow =[
+  const quotasWithLimitsFlow = [
       {
         label: translateMethod('Quotas'),
         collapsed: false,
@@ -507,7 +504,7 @@ export const TeamApiPricings = (props) => {
       }
     ];
 
-  const getRightBillingFlow = (plan) => {
+  const getRightBillingFlow = (plan, expertMode) => {
     if (!plan) {
       return [];
     }
@@ -1034,6 +1031,7 @@ export const TeamApiPricings = (props) => {
             },
             { label: translateMethod('ApiKey'), value: 'ApiKey' },
           ],
+          expert: true
         },
       },
       flow: [
