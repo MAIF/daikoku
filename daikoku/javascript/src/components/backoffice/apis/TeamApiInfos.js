@@ -5,7 +5,6 @@ import { MultiStepForm } from '../../utils';
 import {
   teamApiInfoForm,
   teamApiDescriptionForm,
-  TeamApiPricing,
   TeamApiSwagger,
   TeamApiTesting,
 } from '.';
@@ -59,6 +58,12 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
         creation={creation}
         save={save}
         getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
+        labels={{
+          previous: translateMethod('Previous'),
+          skip: translateMethod('Skip'),
+          next: translateMethod('Next'),
+          save: translateMethod('Save'),
+        }}
       />
     );
   }
@@ -70,6 +75,12 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
       creation={creation}
       save={save}
       getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
+      labels={{
+        previous: translateMethod('Previous'),
+        skip: translateMethod('Skip'),
+        next: translateMethod('Next'),
+        save: translateMethod('Save'),
+      }}
     />
   );
 };

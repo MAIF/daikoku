@@ -7,7 +7,7 @@ import _ from 'lodash';
 
 import { Spinner, Option } from '../utils';
 
-export const MultiStepForm = ({ value, steps, initial, creation, report, getBreadcrumb, save }) => {
+export const MultiStepForm = ({ value, steps, initial, creation, report, getBreadcrumb, save, labels }) => {
   const ref = useRef();
 
   const tos = steps.reduce((acc, step) => {
@@ -23,9 +23,9 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
   const states = steps.reduce((acc, step, i) => {
     const nextStep = steps[i + 1];
     const previousStep = steps[i - 1];
-    const skipStep = !!step.skipTo ? {
+    const skipStep = !!step.skipTo || !creation ? {
       SKIP: {
-        target: step.skipTo
+        target: step.skipTo || (nextStep ? nextStep.id : 'save')
       }
     } : {}
     const previousStepObj = previousStep ? {
@@ -35,15 +35,15 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
     } : {}
 
     const disableStep = !!step.disabled ? {
-      '': [
+      always: [
         { target: nextStep ? nextStep.id : 'save', cond: `guard_${step.id}` },
       ]
     } : {}
 
 
     acc[step.id] = {
+      ...disableStep,
       on: {
-        ...disableStep,
         NEXT: {
           target: nextStep ? nextStep.id : 'save',
           actions: ['setValue']
@@ -115,6 +115,21 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
     }
   ), [])
 
+  console.debug(JSON.stringify({
+    id: 'foo',
+    context: value,
+    initial,
+    states
+  }),
+    JSON.stringify({
+      guards,
+      actions: {
+        setValue: assign((context, response) => {
+          return { ...context, ...response.value }
+        }),
+      }
+    }))
+
   const [current, send] = useMachine(machine);
 
   useEffect(() => {
@@ -172,11 +187,11 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
         {!!report && report(current.context.value, current.value)}
       </div>
       <div className="d-flex justify-content-between">
-        {steps.findIndex(s => s.id === step.id) !== 0 && <button className="btn btn-outline-danger m-3" disabled={step.id === initial} onClick={() => send("PREVIOUS")}>previous</button>}
+        {steps.findIndex(s => s.id === step.id) !== 0 && <button className="btn btn-outline-danger m-3" disabled={step.id === initial} onClick={() => send("PREVIOUS")}>{labels?.previous || 'Previous'}</button>}
         <div className="flex-grow-1 d-flex justify-content-end">
-          {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button className="btn btn-outline-primary m-3" disabled={!!creation && !step.skipTo} onClick={() => send('SKIP')}>skip</button>}
-          {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button className="btn btn-outline-success m-3" onClick={() => ref.current.handleSubmit()}>next</button>}
-          {steps.findIndex(s => s.id === step.id) === steps.length - 1 && <button className="btn btn-outline-success m-3" onClick={() => ref.current.handleSubmit()}>save</button>}
+          {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button className="btn btn-outline-primary m-3" disabled={!!creation && !step.skipTo} onClick={() => send('SKIP')}>{labels?.skip || 'Skip'}</button>}
+          {steps.findIndex(s => s.id === step.id) !== steps.length - 1 && <button className="btn btn-outline-success m-3" onClick={() => ref.current.handleSubmit()}>{labels?.next || 'Next'}</button>}
+          {steps.findIndex(s => s.id === step.id) === steps.length - 1 && <button className="btn btn-outline-success m-3" onClick={() => ref.current.handleSubmit()}>{labels?.save || 'Save'}</button>}
         </div>
       </div>
 

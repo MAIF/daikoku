@@ -181,7 +181,7 @@ const TeamApiComponent = (props) => {
             to={`/${props.currentTeam._humanReadableId}/settings/apis`}
           >
             <i className="fas fa-chevron-left" />
-            Back to {props.currentTeam._humanReadableId}
+            {translateMethod("back.to.team", false, `Back to {props.currentTeam._humanReadableId}`, props.currentTeam.name)}
           </Link>
         </>)
       } else {
@@ -206,7 +206,7 @@ const TeamApiComponent = (props) => {
             to={`/${props.currentTeam._humanReadableId}/settings/apis`}
           >
             <i className="fas fa-chevron-left" />
-            Back to {props.currentTeam._humanReadableId}
+            {translateMethod("back.to.team", false, `Back to {props.currentTeam._humanReadableId}`, props.currentTeam.name)}
           </Link>
         </>)
       }
