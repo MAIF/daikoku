@@ -979,7 +979,7 @@
   "constraint.matches.password": "Votre mots de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spéciale (#$^+=!*()@%&).",
   "constraint.oneof.confirm.password": "La confirmation du mots de passe doit être identique au mots de passe",
   "constraints.reserved.char.version": "Certains caractères sont reservé pour la version (%s)",
-  "SEO":"SEO",
+  "SEO": "SEO",
   "Robot.txt.label": "Contenu  du Robot.txt",
   "Robot.txt.content": "Le contenu du fichier Robot.txt file servi par Daikoku",
   "Mode": "Mode",
@@ -991,5 +991,6 @@
   "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
   "incorrect password": "Mots de passe incorrect",
   "Standard mode": "Mode standard",
-  "Expert mode": "Mode expert"
+  "Expert mode": "Mode expert",
+  "Subscription.manual.help": "valeur obligatoire en raison de la configuration des métadonnées personnalisées"
 }

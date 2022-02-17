@@ -989,5 +989,6 @@
     "updated password can't be saved": "Updated password can't be saved",
     "incorrect password": "Incorrect password",
     "Standard mode": "Standard mode",
-    "Expert mode": "Expert mode"
+    "Expert mode": "Expert mode",
+    "Subscription.manual.help": "mandatory value due to custom metadata set up"
 }

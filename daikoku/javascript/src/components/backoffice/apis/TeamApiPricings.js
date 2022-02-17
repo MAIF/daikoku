@@ -1,11 +1,12 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import faker from 'faker';
-import { Form, constraints, type, format } from '@maif/react-forms'
+import { constraints, type, format } from '@maif/react-forms'
 import Select, { components } from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 
 import { I18nContext } from '../../../core';
-import { formatCurrency, getCurrencySymbol, newPossibleUsagePlan, formatPlanType, MultiStepForm } from '../../utils'
+import { formatCurrency, getCurrencySymbol, newPossibleUsagePlan, formatPlanType, MultiStepForm, Option } from '../../utils'
 import { currencies } from '../../../services/currencies';
 import * as Services from '../../../services'
 import { toastr } from 'react-redux-toastr';
@@ -154,6 +155,111 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
   );
 };
 
+const CustomMetadataInput = ({ value, onChange, setValue }) => {
+  const changeValue = (possibleValues, key) => {
+    const oldValue = Option(value.find((x) => x.key === key)).getOrElse({ '': '' });
+    const newValues = [
+      ...value.filter((x) => x.key !== key),
+      { ...oldValue, key, possibleValues },
+    ];
+    onChange(newValues);
+  };
+
+  const changeKey = (e, oldName) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const oldValue = Option(value.find((x) => x.key === oldName)).getOrElse({ '': '' });
+    const newValues = [
+      ...value.filter((x) => x.key !== oldName),
+      { ...oldValue, key: e.target.value },
+    ];
+    onChange(newValues);
+  };
+
+  const addFirst = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!value || value.length === 0) {
+      onChange([{ key: '', possibleValues: [] }]);
+      setValue('subscriptionProcess', 'Manual')
+      toastr.info('set up subscriptionProcess to manual due to have a customMetadata')
+    }
+  };
+
+  const addNext = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const newItem = { key: '', possibleValues: [] };
+    const newValues = [...value, newItem];
+    onChange(newValues);
+  };
+
+  const remove = (e, key) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    onChange(value.filter((x) => x.key !== key));
+  };
+
+  return (
+    <div>
+      {!value?.length && (
+
+        <div className="col-sm-10">
+          <button
+            //FIXME:  disabled={props.disabled} 
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={addFirst}
+          >
+            <i className="fas fa-plus" />{' '}
+          </button>
+        </div>
+      )}
+      {(value || []).map(({ key, possibleValues }, idx) => (
+        <div className="col-sm-10">
+          <div className="input-group">
+            <input
+              // disabled={props.disabled}
+              type="text"
+              className="form-control col-5 me-1"
+              // placeholder={props.placeholderKey}
+              value={key}
+              onChange={(e) => changeKey(e, key)}
+            />
+            <CreatableSelect
+              isMulti
+              onChange={(e) =>
+                changeValue(
+                  e.map(({ value }) => value),
+                  key
+                )
+              }
+              options={undefined}
+              value={possibleValues.map((value) => ({ label: value, value }))}
+              className="input-select reactSelect flex-grow-1"
+              classNamePrefix="reactSelect"
+            />
+            <button
+              // disabled={props.disabled}
+              type="button"
+              className="input-group-text btn btn-outline-danger"
+              onClick={(e) => remove(e, key)}>
+              <i className="fas fa-trash" />
+            </button>
+            {idx === value.length - 1 && (
+              <button
+                // disabled={props.disabled}
+                type="button"
+                className="input-group-text btn btn-outline-primary"
+                onClick={addNext}>
+                <i className="fas fa-plus" />{' '}
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const Card = ({ plan, isDefault, makeItDefault, toggleVisibility, deletePlan, editPlan, duplicatePlan, creation }) => {
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -274,17 +380,8 @@ export const TeamApiPricings = (props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION' }
   const [planForEdition, setPlanForEdition] = useState();
   const [mode, setMode] = useState('LIST');
+  const [creation, setCreation] = useState(false);
   const { translateMethod } = useContext(I18nContext);
-
-  const otoroshiFormFlow = [
-    {
-      label: translateMethod('Otoroshi'),
-      collapsed: true,
-      flow: [
-        'otoroshiTarget'
-      ]
-    }
-  ]
 
   const pathes = {
     type: type.object,
@@ -320,444 +417,44 @@ export const TeamApiPricings = (props) => {
     flow: ['method', 'path']
   }
 
-  const otoroshiFormSchema = {
-    otoroshiTarget: {
-      type: type.object,
-      format: format.form,
-      label: translateMethod('Otoroshi target'),
-      schema: {
-        otoroshiSettings: {
-          type: type.string,
-          format: format.select,
-          label: translateMethod('Otoroshi instances'),
-          options: props.otoroshiSettings,
-          transformer: (s) => ({
-            label: s.url,
-            value: s._id,
-          })
-        },
-        authorizedEntities: {
-          type: type.object,
-          visible: {
-            ref: 'otoroshiSettings',
-            test: v => !!v
-          },
-          render: props => OtoroshiServicesAndGroupSelector({ ...props, translateMethod }),
-          // render: props => <button className='btn btn-outline-primary' onClick={() => console.debug({ props })}>test</button>,
-          label: translateMethod('Authorized entities'),
-          placeholder: translateMethod('Authorized.entities.placeholder'),
-          help: translateMethod('authorized.entities.help'),
-        },
-        apikeyCustomization: {
-          type: type.object,
-          format: format.form,
-          visible: {
-            ref: 'authorizedEntities',
-            test: authorizedEntities => {
-              console.debug({ authorizedEntities })
-              return !!authorizedEntities.groups.length || !!authorizedEntities.services.length
-            }
-          },
-          label: translateMethod('apikey customisation'), //todo: translation
-          visible: {
-            ref: 'authorizedEntities',
-            test: v => !!v.length
-          },
-          schema: {
-            clientIdOnly: {
-              type: type.bool,
-              label: translateMethod('Apikey with clientId only'),
-            },
-            readOnly: {
-              type: type.bool,
-              label: translateMethod('Read only apikey'),
-            },
-            constrainedServicesOnly: {
-              type: type.bool,
-              label: translateMethod('Constrained services only'),
-            },
-            dynamicPrefix: {
-              type: type.string,
-              label: translateMethod('Dynamic prefix'),
-              help: translateMethod(
-                'dynamic.prefix.help',
-                false,
-                'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
-              ),
-            },
-            metadata: {
-              type: type.object,
-              label: translateMethod('Automatic API key metadata'),
-              help: translateMethod(
-                'automatic.metadata.help',
-                false,
-                'Automatic metadata will be calculated on subscription acceptation'
-              ),
-            },
-            customMetadata: {
-              type: type.object,
-              // render: CustomMetadataInput,
-              label: translateMethod('Custom Apikey metadata'),
-              // toastr: () => toastr.info(translateMethod('sub.process.update.to.manual')),
-              help: translateMethod(
-                'custom.metadata.help',
-                false,
-                'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
-              ),
-            },
-            tags: {
-              type: type.string,
-              array: true,
-              label: translateMethod('Apikey tags'),
-            },
-            restrictions: {
-              type: type.object,
-              format: format.form,
-              schema: {
-                enabled: {
-                  type: type.bool,
-                  label: translateMethod('Enable restrictions'),
-                },
-                allowLast: {
-                  type: type.bool,
-                  visible: {
-                    ref: 'enabled',
-                    test: v => !!v
-                  },
-                  label: translateMethod('Allow at last'),
-                  help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
-                },
-                allowed: {
-                  label: translateMethod('Allowed pathes'),
-                  ...pathes
-                },
-                forbidden: {
-                  label: translateMethod('Forbidden pathes'),
-                  ...pathes
-                },
-                notFound: {
-                  label: translateMethod('Not found pathes'),
-                  ...pathes
-                },
-              }
-            }
-          }
-        }
-      },
-    }
-  };
-
-
-  const securityFormFlow = [
+  const freeWithQuotasFlow = [
     {
-      label: translateMethod('Security'),
-      collapsed: true,
+      label: translateMethod('Quotas'),
+      collapsed: false,
       flow: [
-        'autoRotation',
-        'subscriptionProcess',
-        'integrationProcess',
+        'maxPerSecond',
+        'maxPerDay',
+        'maxPerMonth',
       ]
     }
   ];
 
-  const securityFormSchema = {
-    autoRotation: {
-      type: type.bool,
-      label: translateMethod('Force apikey auto-rotation'),
-    },
-    subscriptionProcess: {
-      type: type.string,
-      format: format.buttonsSelect,
-      disabled: false, //FIXME ===> disable if customMetatda.legnth ==> react-form v1.0.16
-      label: translateMethod('Subscription'),
-      options: [
-        {
-          label: translateMethod('Automatic'),
-          value: 'Automatic',
-        },
-        { label: translateMethod('Manual'), value: 'Manual' },
-      ],
-    },
-    integrationProcess: {
-      type: type.string,
-      format: format.buttonsSelect,
-      label: translateMethod('Integration'),
-      options: [
-        {
-          label: translateMethod('Automatic'),
-          value: 'Automatic',
-        },
-        { label: translateMethod('ApiKey'), value: 'ApiKey' },
-      ],
-    },
-  };
-
-  const schema = {
-    type: {
-      type: type.string,
-      format: format.select,
-      label: translateMethod('Type'),
-      options: [
-        {
-          label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
-          value: 'FreeWithoutQuotas',
-        },
-        {
-          label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
-          value: 'FreeWithQuotas',
-        },
-        {
-          label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
-          value: 'QuotasWithLimits',
-        },
-        {
-          label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
-          value: 'QuotasWithoutLimits',
-        },
-        {
-          label: translateMethod('PayPerUse', false, 'Pay per use'),
-          value: 'PayPerUse',
-        },
-      ],
-      constraints: [
-        constraints.required('') //todo: message
-      ]
-    },
-    'billingDuration': {
-      type: type.object,
-      format: format.form,
-      label: translateMethod('Billing'), //todo: translate
-      schema: {
-        value: {
-          type: type.number,
-          label: translateMethod('Billing every'),
-          constraints: [
-            constraints.positive() //todo: message
-          ]
-        },
-        unit: {
-          type: type.string,
-          format: format.select,
-          label: translateMethod('Billing every'),
-          options: [
-            { label: translateMethod('Hours'), value: 'Hour' },
-            { label: translateMethod('Days'), value: 'Day' },
-            { label: translateMethod('Months'), value: 'Month' },
-            { label: translateMethod('Years'), value: 'Year' },
-          ],
-        }
-      },
-      flow: ['value', 'unit']
-    },
-    allowMultipleKeys: {
-      type: type.bool,
-      label: translateMethod('Allow multiple apiKey demands'),
-    },
-    aggregationApiKeysSecurity: {
-      type: type.bool,
-      label: translateMethod('aggregation api keys security'),
-      help: translateMethod('aggregation_apikeys.security.help'),
-    },
-    trialPeriod: {
-      type: type.object,
-      label: translateMethod('Trial'), //todo: translation,
-      schema: {
-        value: {
-          type: type.number,
-          label: translateMethod('Trial period'),
-          placeholder: translateMethod('The trial period'),
-          constraints: [
-            constraints.positive() //todo: message
-          ]
-        },
-        unit: {
-          type: type.string,
-          format: format.select,
-          label: translateMethod('Trial period unit'),
-          possibleValues: [
-            { label: translateMethod('Hours'), value: 'Hour' },
-            { label: translateMethod('Days'), value: 'Day' },
-            { label: translateMethod('Months'), value: 'Month' },
-            { label: translateMethod('Years'), value: 'Year' },
-          ],
-        }
-      },
-      flow: ['value', 'unit']
-    },
-    maxPerSecond: {
-      type: type.number,
-      label: translateMethod('Max. per second'),
-      placeholder: translateMethod('Max. requests per second'),
-      constraints: [
-        constraints.positive() //todo: message
-      ]
-    },
-    maxPerDay: {
-      type: type.number,
-      label: translateMethod('Max. per day'),
-      placeholder: translateMethod('Max. requests per day'),
-      constraints: [
-        constraints.positive() //todo: message
-      ]
-    },
-    maxPerMonth: {
-      type: type.number,
-      label: translateMethod('Max. per month'),
-      placeholder: translateMethod('Max. requests per month'),
-      constraints: [
-        constraints.positive() //todo: message
-      ]
-    },
-    costPerMonth: {
-      type: type.number,
-      label: translateMethod('Cost per month'),
-      placeholder: translateMethod('Cost per month'),
-      constraints: [
-        constraints.positive() //todo: message
-      ]
-    },
-    costPerAdditionalRequest: {
-      type: type.number,
-      label: translateMethod('Cost per add. req.'),
-      placeholder: translateMethod('Cost per additionnal request'),
-      constraints: [
-        constraints.positive() //todo: message
-      ]
-    },
-    'currency.code': {
-      type: type.string,
-      format: format.select,
-      label: translateMethod('Currency'),
-      possibleValues: currencies.map((c) => ({
-        label: `${c.name} (${c.symbol})`,
-        value: c.code,
-      })),
-    },
-    customName: {
-      type: type.string,
-      label: translateMethod('Name'),
-      placeholder: translateMethod('Plan name'),
-    },
-    customDescription: {
-      type: type.string,
-      format: format.text,
-      label: translateMethod('Description'),
-      placeholder: translateMethod('Plan description'),
-      constraints: [
-        constraints.nullable()
-      ]
-    },
-    ...otoroshiFormSchema,
-    ...securityFormSchema,
-  };
-
-  const adminFlow = (plan) => {
-    //FIXME
-    const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
-    if (!found.otoroshiTarget) {
-      found.otoroshiTarget = {
-        otoroshiSettings: null,
-        authorizedEntities: [],
-      };
-    }
-  }
-
-  const freeWithoutQuotasFlow = (plan) => {
-    return [
-      'type',
-      'customName',
-      'customDescription',
-      'allowMultipleKeys',
-      plan.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : props.tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
-      ...otoroshiFormFlow,
-      ...securityFormFlow,
-    ];
-  }
-
-  const freeWithQuotasFlow = (plan) => {
-    return [
-      'type',
-      'customName',
-      'customDescription',
-      'allowMultipleKeys',
-      plan.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : props.tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
+  const quotasWithLimitsFlow =[
       {
         label: translateMethod('Quotas'),
-        collapsed: true,
+        collapsed: false,
         flow: [
           'maxPerSecond',
           'maxPerDay',
           'maxPerMonth',
-        ]
-      },
-      ...otoroshiFormFlow,
-      ...securityFormFlow,
-    ];
-  }
-
-  const quotasWithLimitsFlow = (plan) => {
-    return [
-      'type',
-      'customName',
-      'customDescription',
-      'allowMultipleKeys',
-      plan.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : props.tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
-      {
-        label: translateMethod('Quotas'),
-        collapsed: true,
-        flow: [
-          'maxPerSecond',
-          'maxPerDay',
-          'maxPerMonth',
-        ]
-      },
-      {
-        label: translateMethod('Trial'),
-        collapsed: true,
-        flow: [
-          'trialPeriod',
         ]
       },
       {
         label: translateMethod('Billing'),
-        collapsed: true,
+        collapsed: false,
         flow: [
-          'costPerMonth',
-          'currency.code',
+          'trialPeriod',
           'billingDuration',
+          'costPerMonth',
+          'currency',
         ]
       },
-      ...otoroshiFormFlow,
-      ...securityFormFlow,
     ];
-  }
 
-  const quotasWithoutLimitsFlow = (plan) => {
-    return [
-      'type',
-      'customName',
-      'customDescription',
-      'allowMultipleKeys',
-      plan.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : props.tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
+  const quotasWithoutLimitsFlow = [
       {
         label: translateMethod('Quotas'),
-        collapsed: true,
+        collapsed: false,
         flow: [
           'maxPerSecond',
           'maxPerDay',
@@ -765,77 +462,45 @@ export const TeamApiPricings = (props) => {
         ]
       },
       {
-        label: translateMethod('Trial'),
-        collapsed: true,
+        label: translateMethod('Billing'),
+        collapsed: false,
         flow: [
           'trialPeriod',
-        ]
-      },
-      {
-        label: translateMethod('Billing'),
-        collapsed: true,
-        flow: [
+          'billingDuration',
           'costPerMonth',
           'costPerAdditionalRequest',
-          'currency.code',
-          'billingDuration',
+          'currency',
         ]
-      },
-      ...otoroshiFormFlow,
-      ...securityFormFlow,
+      }
     ];
-  }
 
-  const payPerUseFlow = (plan) => {
-    return [
-      'type',
-      'customName',
-      'customDescription',
-      'allowMultipleKeys',
-      plan.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : props.tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
-      {
-        label: translateMethod('Trial'),
-        collapsed: true,
-        flow: [
-          'trialPeriod',
-        ]
-      },
+  const payPerUseFlow = [
       {
         label: translateMethod('Billing'),
-        collapsed: true,
+        collapsed: false,
         flow: [
+          'trialPeriod',
+          'billingDuration',
           'costPerMonth',
           'costPerAdditionalRequest',
-          'currency.code',
-          'billingDuration',
+          'currency',
         ]
-      },
-      ...otoroshiFormFlow,
-      ...securityFormFlow,
+      }
     ];
-  }
 
-  const getRightFlow = () => {
-    if (!planForEdition) {
+  const getRightBillingFlow = (plan) => {
+    if (!plan) {
       return [];
     }
-    switch (planForEdition.type) {
-      case 'Admin':
-        return adminFlow(planForEdition);
-      case 'FreeWithoutQuotas':
-        return freeWithoutQuotasFlow(planForEdition);
+    switch (plan.type) {
       case 'FreeWithQuotas':
-        return freeWithQuotasFlow(planForEdition);
+        return freeWithQuotasFlow;
       case 'QuotasWithLimits':
-        return quotasWithLimitsFlow(planForEdition);
+        return quotasWithLimitsFlow;
       case 'QuotasWithoutLimits':
-        return quotasWithoutLimitsFlow(planForEdition);
+        return quotasWithoutLimitsFlow;
       case 'PayPerUse':
-        return payPerUseFlow(planForEdition);
+        return payPerUseFlow;
       default:
         return [];
     }
@@ -860,6 +525,7 @@ export const TeamApiPricings = (props) => {
     const newPlan = newPossibleUsagePlan(faker.commerce.productName() + ' plan');
     setPlanForEdition(newPlan);
     setMode(possibleMode.creation);
+    setCreation(true)
   }
   const editPlan = (plan) => {
     setPlanForEdition(plan);
@@ -878,10 +544,14 @@ export const TeamApiPricings = (props) => {
       const originalVisibility = plan.visibility;
       const visibility = originalVisibility === PUBLIC ? PRIVATE : PUBLIC;
       const updatedPlan = { ...plan, visibility };
-      const api = props.value
-      const updatedApi = { ...api, possibleUsagePlans: [...api.possibleUsagePlans.filter(p => p._id !== updatedPlan._id), updatedPlan] }
-      props.save(updatedApi)
+      savePlan(updatedPlan)
     }
+  }
+
+  const savePlan = (updatedPlan) => {
+    const api = props.value
+    const updatedApi = { ...api, possibleUsagePlans: [...api.possibleUsagePlans.filter(p => p._id !== updatedPlan._id), updatedPlan] }
+    props.save(updatedApi)
   }
 
   const clonePlanAndEdit = (plan) => {
@@ -892,9 +562,10 @@ export const TeamApiPricings = (props) => {
     };
     setPlanForEdition(clone);
     setMode(possibleMode.creation);
+    setCreation(true)
   }
 
-  function importPlan() {
+  const importPlan = () => {
     props.openApiSelectModal({
       api: props.value,
       teamId: props.team._id,
@@ -906,8 +577,15 @@ export const TeamApiPricings = (props) => {
         }
         setPlanForEdition(clone);
         setMode(possibleMode.creation)
+        setCreation(true)
       },
     });
+  }
+
+  const cancelEdition = () => {
+    setPlanForEdition(undefined);
+    setMode(possibleMode.list);
+    setCreation(false);
   }
 
   const steps = [
@@ -1051,13 +729,9 @@ export const TeamApiPricings = (props) => {
                 },
                 customMetadata: {
                   type: type.object,
+                  array: true,
                   label: translateMethod('Custom Apikey metadata'),
-                  onChange: ({value, setValue}) => {
-                    if (value.length === 1) { 
-                      setValue('subscriptionProcess', 'Manual')
-                      toastr.info('set up subscriptionProcess to manual due to have a customMetadata')
-                    }
-                  },
+                  render: props => CustomMetadataInput({ ...props, translateMethod }),
                   help: translateMethod(
                     'custom.metadata.help',
                     false,
@@ -1119,6 +793,134 @@ export const TeamApiPricings = (props) => {
       }
     },
     {
+      id: 'quotasAndBilling',
+      label: 'Quotas & Billing',
+      disabled: (plan) => plan.type === 'FreeWithoutQuotas',
+      flow: getRightBillingFlow,
+      schema: {
+        maxPerSecond: {
+          type: type.number,
+          label: translateMethod('Max. per second'),
+          placeholder: translateMethod('Max. requests per second'),
+          constraints: [
+            constraints.positive() //todo: message
+          ]
+        },
+        maxPerDay: {
+          type: type.number,
+          label: translateMethod('Max. per day'),
+          placeholder: translateMethod('Max. requests per day'),
+          constraints: [
+            constraints.positive() //todo: message
+          ]
+        },
+        maxPerMonth: {
+          type: type.number,
+          label: translateMethod('Max. per month'),
+          placeholder: translateMethod('Max. requests per month'),
+          constraints: [
+            constraints.positive() //todo: message
+          ]
+        },
+        costPerMonth: {
+          type: type.number,
+          label: translateMethod('Cost per month'),
+          placeholder: translateMethod('Cost per month'),
+          constraints: [
+            constraints.positive() //todo: message
+          ]
+        },
+        costPerAdditionalRequest: {
+          type: type.number,
+          label: translateMethod('Cost per add. req.'),
+          placeholder: translateMethod('Cost per additionnal request'),
+          constraints: [
+            constraints.positive() //todo: message
+          ]
+        },
+        currency: {
+          type: type.object,
+          format: format.form,
+          label: null,
+          schema: {
+            code: {
+              type: type.string,
+              format: format.select,
+              label: translateMethod('Currency'),
+              defaultValue: 'EUR',
+              options: currencies.map((c) => ({
+                label: `${c.name} (${c.symbol})`,
+                value: c.code,
+              })),
+            }
+          }
+
+        },
+        billingDuration: {
+          type: type.object,
+          format: format.form,
+          label: translateMethod('Billing every'),
+          schema: {
+            value: {
+              type: type.number,
+              label: translateMethod('Trial period'),
+              placeholder: translateMethod('The trial period'),
+              constraints: [
+                constraints.positive(), //todo: message & integer
+                constraints.integer()
+              ],
+              props: {
+                step: 1,
+                min: 0
+              }
+            },
+            unit: {
+              type: type.string,
+              format: format.select,
+              label: translateMethod('Trial period unit'),
+              options: [
+                { label: translateMethod('Hours'), value: 'Hour' },
+                { label: translateMethod('Days'), value: 'Day' },
+                { label: translateMethod('Months'), value: 'Month' },
+                { label: translateMethod('Years'), value: 'Year' },
+              ],
+            }
+          }
+        },
+        trialPeriod: {
+          type: type.object,
+          format: format.form,
+          label: translateMethod('Trial'), //todo: translation,
+          schema: {
+            value: {
+              type: type.number,
+              label: translateMethod('Trial period'),
+              placeholder: translateMethod('The trial period'),
+              constraints: [
+                constraints.positive(), //todo: message
+                constraints.integer()
+              ],
+              props: {
+                step: 1,
+                min: 0
+              }
+            },
+            unit: {
+              type: type.string,
+              format: format.select,
+              label: translateMethod('Trial period unit'),
+              options: [
+                { label: translateMethod('Hours'), value: 'Hour' },
+                { label: translateMethod('Days'), value: 'Day' },
+                { label: translateMethod('Months'), value: 'Month' },
+                { label: translateMethod('Years'), value: 'Year' },
+              ],
+            }
+          }
+        },
+      }
+    },
+    {
       id: 'security',
       label: translateMethod('Security'),
       schema: {
@@ -1133,8 +935,11 @@ export const TeamApiPricings = (props) => {
         subscriptionProcess: {
           type: type.string,
           format: format.buttonsSelect,
-          disabled: ({ rawValues }) => !rawValues.otoroshiTarget.apikeyCustomization.metadata.length,
-          label: translateMethod('Subscription'),
+          disabled: ({ rawValues }) => {
+            console.debug({rawValues, test: !!rawValues.otoroshiTarget.apikeyCustomization.customMetadata.length})
+            return !!rawValues.otoroshiTarget.apikeyCustomization.customMetadata.length
+          },
+          label: ({ rawValues }) => translateMethod('Subscription') + (!!rawValues.otoroshiTarget.apikeyCustomization.customMetadata.length ? ` (${translateMethod('Subscription.manual.help')})` : ""),
           options: [
             {
               label: translateMethod('Automatic'),
@@ -1146,7 +951,7 @@ export const TeamApiPricings = (props) => {
         integrationProcess: {
           type: type.string,
           format: format.buttonsSelect,
-          label: translateMethod('Integration'),
+          label: () => translateMethod('Integration'),
           options: [
             {
               label: translateMethod('Automatic'),
@@ -1176,8 +981,19 @@ export const TeamApiPricings = (props) => {
                 {translateMethod('import a plan')}
               </button>
             )}
+            {planForEdition && mode === possibleMode.creation && (
+              <div className='flex-grow-1 d-flex justify-content-end'>
+                <button
+                  onClick={cancelEdition}
+                  type="button"
+                  className="btn btn-outline-danger me-1"
+                  style={{ marginTop: 0 }}>
+                  {translateMethod('Cancel')}
+                </button>
+              </div>
+            )}
           </div>
-          {mode === possibleMode.creation && (
+          {planForEdition && mode === possibleMode.creation && (
             <div className="row">
               <div className="col-md-4">
                 <Card
@@ -1192,31 +1008,10 @@ export const TeamApiPricings = (props) => {
                   value={planForEdition}
                   steps={steps}
                   initial="info"
-                  creation={false} //FIXME
-                  save={plan => Promise.resolve(console.debug({ plan }))}
+                  creation={creation}
+                  save={savePlan}
                   getBreadcrumb={(_, breadcrumb) => props.injectSubMenu(breadcrumb)}
                 />
-                {/* <Form
-                  schema={schema}
-                  flow={getRightFlow().filter(x => x)}
-                  onSubmit={(updatedPlan) => {
-                    const api = props.value
-                    const updatedApi = { ...api, possibleUsagePlans: [...api.possibleUsagePlans.filter(p => p._id !== updatedPlan._id), updatedPlan] }
-                    props.save(updatedApi)
-                  }}
-                  value={planForEdition}
-                  options={{
-                    actions: {
-                      cancel: {
-                        display: true,
-                        action: () => {
-                          setPlanForEdition(undefined)
-                          setMode(possibleMode.list)
-                        }
-                      }
-                    }
-                  }}
-                /> */}
               </div>
             </div>
           )}

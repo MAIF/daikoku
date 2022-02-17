@@ -70,12 +70,6 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
       creation={creation}
       save={save}
       getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
-    // report={(value, current)  => (
-    //   <div className='col-5'>
-    //     <h4>{current}</h4>
-    //     <CodeInput value={JSON.stringify(value, null, 4)} mode='json'/>
-    //   </div>
-    // )} 
     />
   );
 };

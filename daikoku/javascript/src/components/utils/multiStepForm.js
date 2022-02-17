@@ -5,7 +5,7 @@ import { useMachine } from "@xstate/react";
 import { Form } from '@maif/react-forms';
 import _ from 'lodash';
 
-import { Spinner } from '../utils';
+import { Spinner, Option } from '../utils';
 
 export const MultiStepForm = ({ value, steps, initial, creation, report, getBreadcrumb, save }) => {
   const ref = useRef();
@@ -34,9 +34,16 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
       }
     } : {}
 
+    const disableStep = !!step.disabled ? {
+      '': [
+        { target: nextStep ? nextStep.id : 'save', cond: `guard_${step.id}` },
+      ]
+    } : {}
+
 
     acc[step.id] = {
       on: {
+        ...disableStep,
         NEXT: {
           target: nextStep ? nextStep.id : 'save',
           actions: ['setValue']
@@ -58,8 +65,6 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
                 if (response?.error) {
                   console.debug({ response })
                   return callBack({ type: 'FAILURE', error: response.error })
-                } else {
-                  return callBack({ type: 'DONE' })
                 }
               })
               .catch((error) => {
@@ -70,9 +75,6 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
         },
       },
       on: {
-        DONE: {
-          target: initial,
-        },
         FAILURE: {
           target: 'failure',
           actions: assign({
@@ -84,6 +86,18 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
     failure: { type: 'final' }
   })
 
+  const guards = steps.filter(s => !!s.disabled).reduce((acc, step) => {
+    return {
+      ...acc,
+      [`guard_${step.id}`]: (context, event) => {
+        if (typeof step.disabled === 'function') {
+          return step.disabled(context)
+        } else {
+          return !!step.disabled
+        }
+      }
+    }
+  }, {})
   const machine = useMemo(() => createMachine(
     {
       id: 'foo',
@@ -92,6 +106,7 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
       states
     },
     {
+      guards,
       actions: {
         setValue: assign((context, response) => {
           return { ...context, ...response.value }
@@ -105,6 +120,7 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
   useEffect(() => {
     if (!!getBreadcrumb) {
       getBreadcrumb(current.value, <Breadcrumb
+        context={current.context}
         steps={steps}
         currentStep={current.value}
         chooseStep={s => send(`TO_${s}`, { value: current.context.value })}
@@ -148,7 +164,7 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
           }}
           onError={(errors, e) => console.error(errors, e)}
           schema={step.schema}
-          flow={step.flow}
+          flow={typeof step.flow === 'function' ? step.flow(current.context) : step.flow}
           ref={ref}
           value={current.context}
           footer={() => (null)}
@@ -185,11 +201,11 @@ const ComponentedForm = React.forwardRef(({ value, valid, component }, ref) => {
   )
 })
 
-const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction }) => {
+const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction, context }) => {
   const currentIdx = steps.findIndex(s => s.id === currentStep)
 
-  const handleChooseStep = idx => {
-    if (!creation || idx < currentIdx) {
+  const handleChooseStep = (idx, disabled) => {
+    if (!disabled && (!creation || idx < currentIdx)) {
       chooseStep(steps[idx].id.toUpperCase())
     }
   }
@@ -197,14 +213,15 @@ const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction }) => 
   return (
     <div className={classNames('d-flex steps', { 'flex-column': direction === 'vertical', 'flex-row': direction !== 'vertical' })}>
       {steps.map((step, idx) => {
+        const disabled = Option(step.disabled).map(d => typeof d === 'function' ? d(context) : d).getOrElse(false)
         return (
           <div
             className={classNames('step d-flex cursor-pointer ', {
               'active': currentIdx === idx,
               'finished': currentIdx > idx,
               'wait': currentIdx < idx,
-              'cursor-forbidden': creation && idx > currentIdx
-            })} key={idx} onClick={() => handleChooseStep(idx)}>
+              'cursor-forbidden': disabled || (creation && idx > currentIdx),
+            })} key={idx} onClick={() => handleChooseStep(idx, disabled)}>
             <div className='step-content'>
               {step.label}
             </div>
