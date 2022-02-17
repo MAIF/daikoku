@@ -9,7 +9,7 @@ import domain.JsonNodeValueResolver
 import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamMemberOnly, _TeamMemberOnly}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{PublicUserAccess, TeamMemberOnly, _TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -24,6 +24,7 @@ import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
 import storage.TenantCapableRepo
 
+import java.util
 import java.util.concurrent.{Executors, TimeUnit}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -1809,6 +1810,30 @@ case class CmsPage(
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
+  def enrichHandlebarsWithPublicUserEntity[A](ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String],
+                                        handlebars: Handlebars,
+                                        fields: Map[String, Any],
+                                        jsonToCombine: Map[String, JsValue])(implicit env: Env, ec: ExecutionContext): Handlebars = {
+
+    handlebars.registerHelper(s"daikoku-user", (id: String, options: Options) => {
+      val userId = renderString(ctx, parentId, id, fields, jsonToCombine)
+      val optUser = Await.result(env.dataStore.userRepo.findById(userId), 10.seconds)
+
+      optUser match {
+        case Some(user) => renderString(ctx, parentId,
+          options.fn.text(),
+          fields = fields,
+          jsonToCombine = jsonToCombine ++ Map("user" -> Json.obj(
+            "_id" -> user.id.value,
+            "name" -> user.name,
+            "email" -> user.email,
+            "picture" -> user.picture,
+          )))
+        case None => AppError.render(AppError.UserNotFound)
+      }
+    })
+  }
+
   def enrichHandlebarsWithOwnedApis[A](ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String],
                                       handlebars: Handlebars,
                                       fields: Map[String, Any],
@@ -1905,25 +1930,31 @@ case class CmsPage(
               parentId,
               options.fn.text(),
               fields = fields,
-              jsonToCombine = jsonToCombine ++ Map("api" -> team.asJson)
+              jsonToCombine = jsonToCombine ++ Map("team" -> team.asJson)
             )(env, ec))
             .mkString("\n")
         case Right(error) => AppError.render(error)
       }
     })
-    handlebars.registerHelper(s"daikoku-owned-team", (id: String, options: Options) => {
-      val teamId = renderString(ctx, parentId, id, fields, jsonToCombine)
-
-      Await.result(
-        _TeamMemberOnly(teamId, AuditTrailEvent("@{user.name} has accessed on of his team @{team.name} - @{team.id}"))(ctxUserContext) { team =>
-          ctx.setCtxValue("team.name", team.name)
-          ctx.setCtxValue("team.id", team.id)
-
-          FastFuture.successful(Left(renderString(ctx, parentId, options.fn.text(), fields = fields,
-            jsonToCombine = jsonToCombine ++ Map("team" ->  team.toUiPayload()))))
-
+    handlebars.registerHelper(s"daikoku-owned-team", (_: String, options: Options) => {
+      Await.result(_UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed its first team on @{tenant.name}"))(ctxUserContext) {
+        env.dataStore.teamRepo
+          .forTenant(ctx.tenant.id)
+          .findOne(
+            Json.obj(
+              "_deleted" -> false,
+              "type" -> TeamType.Personal.name,
+              "users.userId" -> ctx.user.get.id.value
+            )
+          )
+          .map {
+            case None => AppError.TeamNotFound
+            case Some(team) if team.includeUser(ctx.user.get.id) => renderString(ctx, parentId, options.fn.text(), fields = fields,
+              jsonToCombine = jsonToCombine ++ Map("team" ->  team.asSimpleJson))
+            case _ => AppError.TeamUnauthorized
+          }
       }, 10.seconds) match {
-        case Left(team) => team
+        case Left(e) => e
         case Right(error) => toJson(error)
       }
     })
@@ -2218,6 +2249,30 @@ case class CmsPage(
             override def escape(value: CharSequence): String = value.toString
           })
 
+        handlebars.registerHelper("for", (variable: String, options: Options) => {
+          val s =  renderString(ctx, parentId, variable, fields, jsonToCombine)
+          val field = options.hash.getOrDefault("field", "object").toString
+
+          try {
+            Json.parse(s).as[JsArray]
+              .value.map(p => {
+                renderString(ctx, parentId, options.fn.text(), fields, jsonToCombine ++ Map(field -> p))
+              })
+              .mkString("\n")
+          } catch {
+            case e: Throwable => Json.obj()
+          }
+        })
+
+        handlebars.registerHelper("size", (variable: String, _: Options) => {
+          val s =  renderString(ctx, parentId, variable, fields, jsonToCombine)
+          try {
+            String.valueOf(Json.parse(s).asInstanceOf[JsArray].value.length)
+          } catch {
+            case e: Throwable => "0"
+          }
+        })
+
         handlebars.registerHelper("ifeq", (variable: String, options: Options) => {
           if (renderString(ctx, parentId, variable, fields, jsonToCombine) ==
               renderString(ctx, parentId, options.params(0).toString, fields, jsonToCombine))
@@ -2266,6 +2321,7 @@ case class CmsPage(
           jsonToCombine)
         enrichHandlebarWithDocumentationEntity(ctx, Some(page.id.value), handlebars, env, ctx.tenant, "documentation", fields, jsonToCombine)
         enrichHandlebarWithPlanEntity(ctx, Some(page.id.value), handlebars, env, "plan", fields, jsonToCombine)
+        enrichHandlebarsWithPublicUserEntity(ctx, Some(page.id.value), handlebars, fields, jsonToCombine)
 
         val c = context.build()
         val template = if (wantDraft) page.draft else page.body

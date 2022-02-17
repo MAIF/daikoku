@@ -150,9 +150,6 @@ class HomeController(
               getMatchingRoutes(ctx.request.path, cmsPages
                 .filter(p => !p.exact && p.path.nonEmpty).map(p => (p.path.get, p)))
 
-            println("Matched strict route : " + strictPage.headOption.map(_.path.get).getOrElse("null"))
-            println("Matched non strict route : " + page.headOption.map(_.path.get).getOrElse("null"))
-
             page.headOption match {
               case Some(r) if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
               case Some(r) => r.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))(env).map(res => Ok(res._1).as(res._2))
