@@ -2228,7 +2228,7 @@ case class CmsPage(
         implicit val ec = CmsPage.pageRenderingEc
 
         // TODO - in tenant form, add field to setup a cms page when the user needs to be logged
-        if(page.authenticated)
+        if(page.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)))
           FastFuture.successful(("Need to be logged", page.contentType))
         else if (parentId.nonEmpty && page.id.value == parentId.get)
           FastFuture.successful(("", page.contentType))

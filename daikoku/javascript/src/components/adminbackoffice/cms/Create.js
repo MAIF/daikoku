@@ -122,7 +122,6 @@ export const Create = (props) => {
             alignItems: 'center',
             boxShadow: selected ? '0 1px 3px rgba(25,25,25,.5)' : 'none',
             backgroundColor: 'var(--sidebar-bg-color, #f8f9fa)',
-            borderRadius: '4px',
             zIndex: selected ? 2 : 0
         }} onClick={onClick} className='px-3'>
             <button className='btn btn-sm' type="button">{title}</button>
