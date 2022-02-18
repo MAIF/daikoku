@@ -240,7 +240,7 @@ class HomeController(
             val history = diff(newContentPage, page.draft, ctx.user.id)
 
             env.dataStore.cmsRepo.forTenant(tenant)
-              .save(page.copy(draft = newContentPage, history = page.history :+ history))
+              .save(page.copy(draft = newContentPage, history = (page.history :+ history).take(tenant.style.map(_.cmsHistoryLength).getOrElse(10) + 1)))
               .map(_ => Ok(Json.obj("restored" -> true)))
         }
     }
@@ -337,7 +337,7 @@ class HomeController(
               }
               .flatMap(page => {
                 env.dataStore.cmsRepo.forTenant(tenant)
-                  .save(page)
+                  .save(page.copy(history = page.history.takeRight(tenant.style.map(_.cmsHistoryLength).getOrElse(10) + 1)))
                   .map {
                     case true => Created(Json.obj("created" -> true))
                     case false => BadRequest(Json.obj("error" -> "Error when creating cms page"))

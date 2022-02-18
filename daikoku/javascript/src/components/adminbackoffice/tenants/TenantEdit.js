@@ -314,6 +314,7 @@ export function TenantEditComponent(props) {
     'style.homePageVisible',
     'style.homeCmsPage',
     'style.notFoundCmsPage',
+    'style.cmsHistoryLength',
     'linkToCmsPages',
     `>>> ${translateMethod('SEO')}`,
     'robotTxt',
@@ -439,6 +440,13 @@ export function TenantEditComponent(props) {
         label: translateMethod('tenant_edit.404_page'),
         disabled: !state.tenant?.style.homePageVisible,
         possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
+      }
+    },
+    'style.cmsHistoryLength': {
+      type: 'number',
+      props: {
+        label: translateMethod('tenant_edit.cms_history_length'),
+        help: translateMethod('tenant_edit.cms_history_length.help')
       }
     },
     linkToCmsPages: {

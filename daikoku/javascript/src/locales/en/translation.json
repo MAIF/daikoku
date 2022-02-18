@@ -278,6 +278,8 @@
     "tenant_edit.link_to_cmspages": "Edit the pages",
     "tenant_edit.home_page": "Home page",
     "tenant_edit.404_page": "404 page",
+    "tenant_edit.cms_history_length": "History length",
+    "tenant_edit.cms_history_length.help": "The number of revisions kept in the database.",
     "tenant_edit.view_home_page": "View home page",
     "Session max. age": "Session max. age",
     "Second": {
