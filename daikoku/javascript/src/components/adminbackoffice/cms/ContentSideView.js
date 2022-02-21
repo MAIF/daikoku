@@ -1,9 +1,9 @@
 import { CodeInput, SelectInput } from '@maif/react-forms/lib/inputs';
-import moment from 'moment';
-import React, { useContext, useEffect, useState, useRef } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../../core';
 import Editor from './Editor'
+import Helpers from './helpers.json'
 
 const CONTENT_TYPES_TO_MODE = {
     "application/json": "json",
@@ -95,7 +95,7 @@ const TopActions = ({ setSideView, publish, setSelector }) => {
         top: "-42px",
         right: 0,
         left: 0
-    }}>
+    }} id="content_sideview_parent">
         <button className='btn btn-sm btn-outline-primary me-1'
             type="button"
             onClick={select}>
@@ -122,23 +122,31 @@ const TopActions = ({ setSideView, publish, setSelector }) => {
 }
 
 const HelperView = ({ content, onChange, editor }) => {
-    const { text, parameters, example } = content
-    const [value, setValue] = useState(example)
+    const [value, setValue] = useState(content.example)
+    const { translateMethod } = useContext(I18nContext)
+
+    useEffect(() => {
+        setValue(content.example)
+    }, [content.example])
+
     return <div>
-        <h5>{text}</h5>
-        <div>
+        <h5>{translateMethod(`cms.content_side_view.${content.name}`)}</h5>
+        {content.parameters && <div>
             <h6>Parameters</h6>
             <ul>
-                {parameters.map(name => (
+                {(content.parameters || []).map(name => (
                     <li key={`${name}`}>{name}</li>
                 ))}
             </ul>
-        </div>
+        </div>}
+        {content.link && <a className='btn btn-sm btn-outline-info my-2'
+            href={`https://maif.github.io/daikoku/swagger-ui/index.html${content.link}`} target="_blank" rel="noreferrer noopener">Link to the model</a>}
         <CodeInput
             onChange={setValue}
             value={value}
             width="-1"
             height='180px'
+            useWrapMode={true}
         />
         <button className='btn btn-sm btn-outline-success mt-3' onClick={() => {
             onChange()
@@ -159,6 +167,19 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
         left: 0,
         pageName: undefined
     })
+
+    const [height, setHeight] = useState(500);
+
+    useEffect(() => {
+        searchHeight()
+    }, [])
+
+    const searchHeight = () => {
+        if (!document.getElementById("content_sideview_parent"))
+            setTimeout(searchHeight, 250)
+        else
+            setHeight(window.innerHeight - document.getElementById("content_sideview_parent").getBoundingClientRect().top - 75)
+    }
 
     window.pages = pages
 
@@ -226,6 +247,7 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                 }}
                 mode={(CONTENT_TYPES_TO_MODE[contentType] || "html")}
                 theme="tomorrow"
+                height={height}
                 width="-1" />
             {sideView && <div style={{
                 backgroundColor: '#fff',
@@ -236,98 +258,33 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                     {selector !== 'history' && <div className="p-3" style={{
                         flex: .75, backgroundColor: '#efefef', overflowY: 'scroll'
                     }}>
-                        <h5 style={{ textAlign: "left" }}>
-                            {translateMethod('cms.content_side_view.insert')}
-                        </h5>
                         <div className='d-flex flex-column'>
-                            {[
-                                { name: "links", text: translateMethod('cms.content_side_view.choose_link') },
-                                { name: "pages", text: translateMethod('cms.content_side_view.link_to_insert') },
-                                { name: "blocks", text: translateMethod('cms.content_side_view.block_to_render') },
-                                {
-                                    name: "daikoku-user",
-                                    text: "Get user information (name, email and picture)",
-                                    parameters: [
-                                        'id of the user, String value expected'
-                                    ],
-                                    example: '{{#daikoku-user \'{{userId}}\'}}\n<div>\n<span>{{user.name}}</span>\n<img src="{{user.picture}}"/>\n</div>\n{{/daikoku-user}}'
-                                },
-                                {
-                                    name: "daikoku-owned-apis",
-                                    text: 'Get owned apis',
-                                    parameters: [
-                                        'The visibility value : Private, Public or All'
-                                    ],
-                                    example: '{{#daikoku-owned-apis visibility="Private"}}\n<span>Mon api : {{api.name}}\n{{/daikoku-owned-apis}}'
-                                },
-                                {
-                                    name: "daikoku-owned-api",
-                                    text: 'Get owned api',
-                                    parameters: [
-                                        'The id of the api, String value expected',
-                                        'The version, as named parameter, optional or set as 1.0.0 by default'
-                                    ],
-                                    example: '{{#daikoku-owned-api \'{{apiId}}\' version=\'1.0.0\'}}\n<span>Mon api : {{api.name}}\n{{/daikoku-owned-api}}'
-                                },
-                                {
-                                    name: "daikoku-json-owned-apis",
-                                    text: 'Get owned apis as stringified JSON format',
-                                    parameters: [
-                                        'The visibility value : Private, Public or All'
-                                    ],
-                                    example: '{{#daikoku-json-owned-apis visibility="Private"}}{{/daikoku-json-owned-apis}}'
-                                },
-                                {
-                                    name: "daikoku-json-owned-api",
-                                    text: 'Get owned api as stringified JSON format',
-                                    parameters: [
-                                        'The id of the api, String value expected',
-                                        'The version, as named parameter, optional or set as 1.0.0 by default'
-                                    ],
-                                    example: '{{#daikoku-json-owned-api \'{{apiId}}\' version=\'1.0.0\'}}{{/daikoku-json-owned-api}}'
-                                },
-                                {
-                                    name: "daikoku-owned-teams",
-                                    text: 'Get owned teams',
-                                    parameters: [],
-                                    example: '{{#daikoku-owned-teams}}\n<span>Ma team : {{team.name}}\n{{/daikoku-owned-teams}}'
-                                },
-                                {
-                                    name: "daikoku-owned-team",
-                                    text: 'Get owned team',
-                                    parameters: ['The id of the team, String value expected'],
-                                    example: '{{#daikoku-owned-team \'{{teamId}}\'}}\n<span>Mon team : {{team.name}}\n{{/daikoku-owned-team}}'
-                                },
-                                {
-                                    name: "daikoku-json-owned-teams",
-                                    text: 'Get owned apis as stringified JSON format',
-                                    parameters: [],
-                                    example: '{{#daikoku-json-owned-teams}}{{/daikoku-json-owned-teams}}'
-                                },
-                                {
-                                    name: "daikoku-json-owned-team",
-                                    text: 'Get owned team as stringified JSON format',
-                                    parameters: ['The id of the team, String value expected'],
-                                    example: '{{#daikoku-json-owned-team \'{{teamId}}\'}}{{/daikoku-json-owned-team}}'
-                                }
-                            ].map(props => (
-                                <button
-                                    type="button"
-                                    key={props.name}
-                                    className="py-2 mb-1 ps-3"
-                                    style={{
-                                        textAlign: 'left',
-                                        flex: 1,
-                                        width: '100%',
-                                        border: 'none',
-                                        backgroundColor: selector?.name === props.name ? '#eee' : '#ddd',
-                                        borderRight: `${selector?.name === props.name ? 2 : 0}px solid`,
-                                        fontSize: '14px'
-                                    }}
-                                    onClick={() => setSelector(props)}>
-                                    {props.text}
-                                </button>
-                            ))}
+                            {Helpers
+                                .reduce((acc, curr) => curr.category ? [curr, ...acc] : [...acc, curr], [])
+                                .sort((a, b) => a.category > b.category ? 1 : -1)
+                                .map(props => (
+                                    <div className='d-flex mb-1 align-items-center'>
+                                        <div style={{ minWidth: 54 }}>
+                                            {props.category && <span className="badge bg-dark me-2">{props.category}</span>}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            key={props.name}
+                                            className="py-2 ps-3"
+                                            style={{
+                                                textAlign: 'left',
+                                                flex: 1,
+                                                width: '100%',
+                                                border: 'none',
+                                                backgroundColor: selector?.name === props.name ? '#eee' : '#ddd',
+                                                borderRight: `${selector?.name === props.name ? 2 : 0}px solid`,
+                                                fontSize: '14px'
+                                            }}
+                                            onClick={() => setSelector(props)}>
+                                            {translateMethod(`cms.content_side_view.${props.name}`)}
+                                        </button>
+                                    </div>
+                                ))}
                         </div>
                     </div>}
                     <div style={{ flex: 1 }} className="ms-2 p-3">
@@ -345,7 +302,8 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                             title={translateMethod("cms.content_side_view.link_to_insert")} editor={ref} onChange={() => setSideView(false)} />}
                         {selector?.name === "blocks" && <PagesView pages={pages} prefix="daikoku-include-block"
                             title={translateMethod("cms.content_side_view.block_to_render")} editor={ref} onChange={() => setSideView(false)} />}
-                        {selector?.name.startsWith("daikoku") && <HelperView editor={ref} onChange={() => setSideView(false)} content={selector} />}
+                        {((selector?.name.startsWith("daikoku") || (!['links', 'blocks', 'pages'].includes(selector?.name))) && selector) &&
+                            <HelperView editor={ref} onChange={() => setSideView(false)} content={selector} />}
                     </div>
                 </div>
             </div>}

@@ -57,7 +57,8 @@ export default React.forwardRef(({ contentType, setFinalValue, show, pages, inVa
 
     return (
         <div style={{
-            display: show ? 'block' : 'none'
+            display: show ? 'block' : 'none',
+            flex: 1
         }}>
             <Form
                 schema={schema}

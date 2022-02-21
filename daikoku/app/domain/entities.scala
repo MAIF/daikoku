@@ -2125,13 +2125,13 @@ case class CmsPage(
                                             fields: Map[String, Any],
                                             jsonToCombine: Map[String, JsValue])
                                            (implicit ec: ExecutionContext, messagesApi: MessagesApi, env: Env): Handlebars = {
-    handlebars.registerHelper(s" $name-json", (id: String, _: Options) => {
+    handlebars.registerHelper(s" ${name}s-json", (id: String, _: Options) => {
       Await.result(getApi(ctx, parentId, id, fields, jsonToCombine), 10.seconds)
         .map(_.possibleUsagePlans).getOrElse(Seq())
         .map(_.asJson)
     })
 
-    handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
+    handlebars.registerHelper(s"daikoku-${name}s", (id: String, options: Options) => {
       Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)(env, ec, messagesApi), 10.seconds)
         .map(api => {
           api.possibleUsagePlans
@@ -2237,7 +2237,7 @@ case class CmsPage(
             .newBuilder(this)
             .resolver(JsonNodeValueResolver.INSTANCE)
             .combine("tenant", ctx.tenant.asJson)
-            .combine("admin", ctx.isTenantAdmin)
+            .combine("is_admin", ctx.isTenantAdmin)
             .combine("connected", ctx.user.map(!_.isGuest).getOrElse(false))
             .combine("user", ctx.user.map(u => u.asSimpleJson).getOrElse(""))
             .combine("request", EntitiesToMap.request(ctx.request))
