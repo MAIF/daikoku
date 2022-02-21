@@ -52,15 +52,15 @@ When the CMS cannot find a page for a specific path, it displays a simple Daikok
 
 ## Define and use a block
 
-As a classical CMS, you can create an infinity number of pages but also reusable blocks. A block is composed of the same attributes than a page, with the exception of the path field. Indeed, a block cannot be displayed on a specific route but can be included in the others cms pages. 
+As a classical CMS, you can create an infinity number of pages but also reusable blocks. A block is composed of the same attributes than a page, with the exception of the path field. Indeed, a block cannot be displayed on a specific route but can be included in the others cms pages.
 
 1. **Create** a new page from the `https://<your-domain>/settings/pages` page
 2. **Activate** the `Is a block?` button
 3. **Publish** your block
 4. **Return** to the list of pages
 5. **Edit** your home page
-6. On the top of the main input, **click** on the `square` button
-7. In the appeared modal, **select** the created block (it will be added at your cursor position)
+6. On the top of the main input, **click** on the `Add an element` button
+7. **select** in the list `Render a block` item, **select** the concerned block and **click** on the `insert` button
 8. **Click** on the `Viewed draft page`
 9. If everything works, the block appears
 10. **Return** to the draft tab and **Publish** your version
@@ -69,7 +69,7 @@ As a classical CMS, you can create an infinity number of pages but also reusable
 
 In your pages and blocks, you can add a link to the back and frontoffice of Daikoku. 
 
-Once on a page, on the top of the main input **select** the first button (with the link icon). In the appeared modal, **choose** the desired link.
+Once on a page, on the top of the main input **click** on the `Add an element` buton . In the appeared modal, **choose** `Choose a link to the back office` and **click** on the `insert` button.
 
 The following text `{{daikoku-links-<name-of-the-link>}}` has beed added at your cursor position. This Handlebars instruction will be modified, during the rendering process, by the url to the page. To use this link, you must wrap it in a link html tag, as in the following example :
 
@@ -79,7 +79,7 @@ The following text `{{daikoku-links-<name-of-the-link>}}` has beed added at your
 
 ## Navigate between cms page
 
-You can navigate between your created pages using the `{{daikoku-page-url "id-of-the-page"}}` instruction. To simple add a link to a page, you can use the second button at the top of the main input. In the appeared modal, **select** the link page you want to add and wrap it in a link html tag.
+You can navigate between your created pages using the `{{daikoku-page-url "id-of-the-page"}}` instruction. To simple add a link to a page, you can get back to the `Add an element` list, **select** `Insert a link to a cms page` item and **click** on `insert` button.
 
 ```
 <a href="{{daikoku-page-url "61fbaa95320100dbfca04d11"}}">See my apis</a>
@@ -104,71 +104,12 @@ See the following example to create a page to display an Daikoku api:
 <div class="api-block">
     {{#daikoku-api "{{daikoku-path-param '0'}}" }}
     <div class="api-name"></div>
-    <span>{{name}}</span>
+    <span>{{api.name}}</span>
     <div class="api-description">
         <h3>Description de l'API</h3>
-        <div> {{description}} </div>
+        <div> {{api.description}} </div>
     </div>
     {{/daikoku-api}}
-</div>
-```
-
-## Handlebars instructions
-
-You can include all of these instructions in your pages and blocks.
-
-* `daikoku-asset-url`: link to a tenant asset - `/tenant-assets/<name-of-the-asset>`
-* `daikoku-page-url`:  link where the page is rendered - `/_</path>`
-* `daikoku-generic-page-url`: generic link to a cms page - `/cms/page/<id-of-the-page>` 
-* `daikoku-page-preview-url`: generic link to the draft of a cms page - `/cms/page/<id-of-the-page>?draft=true`
-* `daikoku-include-block`: renders the block of id, as a string
-* `daikoku-template-wrapper`: wraps a content. This block takes the id of the block as a parameter and supports the `{{children}}` parameter
-* `daikoku-query-param`: retrieve the query param of 'id' - `{{daikoku-query-param '<id-of-the-query-param>'}}`
-* `daikoku-api`: take a string id of api in parameter and retrieve the `name`, `id`, `description` and `small description` of the api
-* `daikoku-apis`: retrieve the list of APIs with `name`, `id`, `description` and the `small description` for each API
-* `daikoku-json-api`: retrieve an API in JSON format
-* `daikoku-json-apis`: retrieve the list of APIs in JSON format
-* `daikoku-path-param`: take the index of the path param and retrieve the value of the path param
-* `daikoku-team`: retrieve the `name` and `id` of a team
-* `daikoku-teams`: retrieve the list of teams with id and team for each team
-* `daikoku-json-team`: retrieve a team in JSON format
-* `daikoku-json-teams`: retrieve the list of teams in JSON format
-* `daikoku-documentations`: retrieve the documentations pages of an API with `id`, `title`, `content type` and the `content` for each page
-* `daikoku-documentations-json`: retrieve a documentation page of an API in JSON format
-* `daikoku-documentations-page`: retrieve the documentations pages of an API in JSON format
-* `daikoku-documentations-page-id`: retrieve the page of an api of id passed in parameter
-* `daikoku-plans`: retrieve the plans of an API 
-* `daikoku-plans-json`: retrieve the list of plans of an API in JSON format
-* `connected`: true if the user is connected
-* `tenant`: get field of the `tenant` : the name
-* `admin`: true if the connected user is a tenant administrator
-* `user`: get the `name` and the `email` of the connected user
-* `request`: get the `path`, `method` and the `headers` of the request
-
-For all of these statements, you can pass named parameters. With the following example, we are passing parameters between the home page and the two information blocks.
-
-```html
-<!-- The home page -->
-<DOCTYPE html>
-<html>
-    <head>
-      <title>My page</title>
-    </head>
-    <body>
-        <h1>My home page</h1>
-        <div>
-            <h2>Multiples blocks information</h2>
-            {{daikoku-include-block "<id-of-the-information-block>" title="My first block"}}
-            {{daikoku-include-block "<id-of-the-information-block>" title="My second block"}}
-        </div>
-    </body>
-</html>
-```
-
-```html
-<!-- The information block -->
-<div>
-    <span>The parameter received : {{title}}</span>
 </div>
 ```
 
