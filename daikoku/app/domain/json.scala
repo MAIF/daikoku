@@ -3326,7 +3326,7 @@ object json {
         tags = (json \ "tags").asOpt[List[String]].getOrElse(List.empty),
         metadata = (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
         body = (json \ "body").asOpt[String].getOrElse(""),
-        draft = (json \ "draft").as[String],
+        draft = (json \ "draft").asOpt[String].getOrElse(""),
         contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
         forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
         path = (json \ "path").asOpt[String],

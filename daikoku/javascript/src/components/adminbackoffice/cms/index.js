@@ -1,5 +1,5 @@
 import { getApolloContext, gql } from '@apollo/client'
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { I18nContext } from '../../../core'
 import { UserBackOffice } from '../../backoffice'
@@ -30,6 +30,8 @@ export const CMSOffice = () => {
     const [pages, setPages] = useState([])
     const { translateMethod } = useContext(I18nContext)
 
+    const importRef = useRef()
+
     const [downloading, setDownloading] = useState(false)
 
     useEffect(() => {
@@ -46,6 +48,13 @@ export const CMSOffice = () => {
             .then(r => setPages(r.data.pages))
     }
 
+    const loadFiles = e => {
+        console.log(e.target.files, e.target.files.length)
+        if (e.target.files.length === 1)
+            Services.uploadZip(e.target.files[0])
+                .then(reload)
+    }
+
     const Index = ({ }) => {
         const navigation = useNavigate()
         const location = useLocation()
@@ -54,7 +63,17 @@ export const CMSOffice = () => {
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
                 <div>
-                    <button className='btn btn-sm btn-secondary me-1'
+                    <input
+                        ref={importRef}
+                        type="file"
+                        accept=".zip"
+                        className="form-control hide"
+                        onChange={loadFiles}
+                    />
+                    <button className='btn btn-sm btn-secondary' onClick={() => importRef.current.click()}>
+                        {translateMethod('cms.import_all')}
+                    </button>
+                    <button className='btn btn-sm btn-secondary mx-1'
                         onClick={() => {
                             if (!downloading) {
                                 setDownloading(true)

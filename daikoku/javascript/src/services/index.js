@@ -1009,3 +1009,14 @@ export const getDiffOfCmsPage = (id, diffId, showDiffs) => customFetch(`/api/cms
 export const restoreCmsDiff = (id, diffId) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}`, {
   method: 'POST'
 });
+
+export const uploadZip = file => {
+  const formData = new FormData()
+  formData.append("file", file);
+
+  return fetch('/api/cms/import', {
+    method: 'POST',
+    credentials: 'include',
+    body: formData
+  })
+}

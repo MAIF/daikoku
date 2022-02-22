@@ -1,10 +1,13 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.javadsl.FileIO
+import com.nimbusds.jose.util.StandardCharset
 import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
+import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
 import fr.maif.otoroshi.daikoku.domain.{CmsHistory, CmsPage, CmsPageId, DaikokuStyle, UserId, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.Errors
@@ -16,9 +19,10 @@ import reactivemongo.bson.BSONObjectID
 import utils.diff_match_patch
 import utils.diff_match_patch.Operation
 
-import java.io.{File, FileOutputStream}
+import java.io.{ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
+import java.nio.file.Paths
 import java.util
-import java.util.zip.{ZipEntry, ZipOutputStream}
+import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 import scala.concurrent.Future
 
 class HomeController(
@@ -372,6 +376,16 @@ class HomeController(
     }
   }
 
+  private val contentTypeToExtension = Map(
+    "application/json" -> "json",
+    "text/html" -> "html",
+    "text/javascript" -> "js",
+    "text/css" -> "css",
+    "text/markdown" -> "md",
+    "text/plain" -> "txt",
+    "text/xml" -> "xml"
+  )
+
   def download() = DaikokuAction.async { ctx =>
     TenantAdminOnly(
       AuditTrailEvent("@{user.nae} has download all files of the cms"))(
@@ -380,18 +394,8 @@ class HomeController(
         env.dataStore.cmsRepo.forTenant(tenant)
           .findAllNotDeleted()
           .map(pages => {
-            val outZip = new File(s"/tmp/${System.currentTimeMillis()}.zip");
-            val out = new ZipOutputStream(new FileOutputStream(outZip));
-
-            val contentTypeToExtension = Map(
-              "application/json" -> "json",
-              "text/html" -> "html",
-              "text/javascript" -> "js",
-              "text/css" -> "css",
-              "text/markdown" -> "md",
-              "text/plain" -> "txt",
-              "text/xml" -> "xml"
-            )
+            val outZip = new File(s"/tmp/${System.currentTimeMillis()}.zip")
+            val out = new ZipOutputStream(new FileOutputStream(outZip))
 
             pages.foreach(page => {
               val sb = new StringBuilder()
@@ -405,7 +409,7 @@ class HomeController(
             })
 
             val summary: JsObject = Json.obj(
-              "pages" -> pages.foldLeft(Json.arr()) { (acc, page) => acc ++ Json.arr(page.asJson.as[JsObject] - "body") }
+              "pages" -> pages.foldLeft(Json.arr()) { (acc, page) => acc ++ Json.arr(page.asJson.as[JsObject] - "body" - "draft" - "history") }
             )
 
             val sb = new StringBuilder()
@@ -421,6 +425,69 @@ class HomeController(
 
             Ok.sendFile(outZip)
           })
+    }
+  }
+
+  def importFromZip() = DaikokuAction.async(parse.multipartFormData) { ctx =>
+    try {
+      ctx.request
+        .body
+        .file("file") match {
+        case Some(zip) =>
+          val out = new ZipInputStream(new FileInputStream(zip.ref))
+          var files = Map.empty[String, String]
+
+          var zipEntry: ZipEntry = null
+          while ( {
+            zipEntry = out.getNextEntry
+            Option(zipEntry).isDefined
+          }) {
+            val size = if(zipEntry.getCompressedSize.toInt > 0) zipEntry.getCompressedSize.toInt else 4096
+            if(size > 0) {
+              val outputStream: ByteArrayOutputStream = new ByteArrayOutputStream()
+              val buffer: Array[Byte] = Array.ofDim(size)
+              var length = 0
+
+              while ( {
+                length = out.read(buffer)
+                length != -1
+              }) {
+                outputStream.write(buffer, 0, length)
+              }
+
+              files = files + (zipEntry.getName -> outputStream.toString(StandardCharset.UTF_8))
+              outputStream.close()
+            }
+          }
+          out.close()
+
+          if (files.isEmpty)
+            FastFuture.successful(BadRequest(Json.obj("error" -> "the zip file is empty")))
+          else {
+            files.find(file => file._1 == "summary.json") match {
+              case None => FastFuture.successful(BadRequest(Json.obj("error" -> "summary json file missing")))
+              case Some((_, summaryContent)) =>
+                val jsonSummary = Json.parse(summaryContent)
+                val pages: Seq[CmsPage] = (jsonSummary \ "pages").as(Format(Reads.seq(CmsPageFormat), Writes.seq(CmsPageFormat)))
+                Future.sequence(pages.map { page =>
+                  val filename = s"${page.name}.${contentTypeToExtension.getOrElse(page.contentType, ".txt")}"
+                  val optFile = files.find(f => f._1 == filename)
+                  val content = optFile match {
+                    case Some((_, value)) => value
+                    case None => page.draft
+                  }
+                  env.dataStore.cmsRepo.forTenant(ctx.tenant)
+                    .save(page.copy(draft = content, body = content))
+                })
+                  .map { _ => Ok(Json.obj("done" -> true)) }
+            }
+          }
+        case _ => FastFuture.successful(BadRequest(Json.obj("error" -> "missing zip")))
+      }
+    } catch {
+      case e: Throwable =>
+        e.printStackTrace(System.out)
+        FastFuture.successful(Ok(Json.obj("done" -> true)))
     }
   }
 }
