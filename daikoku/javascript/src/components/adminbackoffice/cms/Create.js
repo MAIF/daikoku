@@ -111,7 +111,7 @@ export const Create = (props) => {
 
     const onPublish = () => {
         setFormAction("publish");
-        [bodyRef, sideRef].map(r => r.current.handleSubmit())
+        setTimeout(() => [bodyRef, sideRef].map(r => r.current.handleSubmit()), 250)
     }
 
     const TabButton = ({ title, onClose, onClick, selected }) => (

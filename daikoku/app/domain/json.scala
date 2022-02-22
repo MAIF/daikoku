@@ -1529,6 +1529,7 @@ object json {
               (json \ "homePageVisible").asOpt[Boolean].getOrElse(false),
             homeCmsPage = (json \ "homeCmsPage").asOpt[String],
             notFoundCmsPage = (json \ "notFoundCmsPage").asOpt[String],
+            authenticatedCmsPage = (json \ "authenticatedCmsPage").asOpt[String],
             cmsHistoryLength = (json \ "cmsHistoryLength").asOpt[Int].getOrElse(10),
             logo = (json \ "logo")
               .asOpt[String]
@@ -1559,6 +1560,7 @@ object json {
       "unloggedHome" -> o.unloggedHome,
       "homeCmsPage" -> o.homeCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "notFoundCmsPage" -> o.notFoundCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "authenticatedCmsPage" -> o.authenticatedCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "homePageVisible" -> o.homePageVisible,
       "cmsHistoryLength" -> o.cmsHistoryLength,
       "logo" -> o.logo,

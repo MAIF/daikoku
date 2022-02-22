@@ -93,6 +93,7 @@ case class DaikokuStyle(
     homePageVisible: Boolean = false,
     homeCmsPage: Option[String] = None,
     notFoundCmsPage: Option[String] = None,
+    authenticatedCmsPage: Option[String] = None,
     cmsHistoryLength: Int = 10,
     logo: String = "/assets/images/daikoku.svg",
     footer: Option[String] = None
@@ -2227,9 +2228,16 @@ case class CmsPage(
         import com.github.jknack.handlebars.EscapingStrategy
         implicit val ec = CmsPage.pageRenderingEc
 
-        // TODO - in tenant form, add field to setup a cms page when the user needs to be logged
         if(page.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)))
-          FastFuture.successful(("Need to be logged", page.contentType))
+          ctx.tenant.style.flatMap(_.authenticatedCmsPage) match {
+            case Some(value) =>
+              val optPage = Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(value)(ec), 10.seconds)
+              optPage match {
+                case Some(value) => value.render(ctx, parentId, wantDraft, fields, jsonToCombine)
+                case None => FastFuture.successful(("Need to be logged", page.contentType))
+              }
+            case None => FastFuture.successful(("Need to be logged", page.contentType))
+          }
         else if (parentId.nonEmpty && page.id.value == parentId.get)
           FastFuture.successful(("", page.contentType))
         else {

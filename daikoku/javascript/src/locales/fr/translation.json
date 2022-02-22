@@ -964,6 +964,8 @@
   "tenant_edit.cms_warning": "Passer la sécurité du tenant en public pour commencer à utiliser le système de gestionnaire de contenu",
   "tenant_edit.home_page": "Page d'accueil",
   "tenant_edit.404_page": "404 page",
+  "tenant_edit.authenticated_cmspage": "Page authentifié",
+  "tenant_edit.authenticated_cmspage_help": "Affiché quand un utilisateur non connecté accède à une page nécessitant d'être connecté",
   "tenant_edit.cms_history_length": "Longueur de l'historique",
   "tenant_edit.cms_history_length.help": "Nombre de modifications gardées en base",
   "tenant_edit.view_home_page": "Voir la page d'accueil",
