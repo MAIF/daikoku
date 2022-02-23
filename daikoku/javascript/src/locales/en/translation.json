@@ -280,6 +280,8 @@
     "tenant_edit.404_page": "404 page",
     "tenant_edit.authenticated_cmspage": "Authenticated page",
     "tenant_edit.authenticated_cmspage_help": "Display when an unlogged user navigates to a page with authentification",
+    "tenant_edit.cache_help": "During this time, the cms pages will be not re-rendered. Can improve the SEO and performances.",
+    "tenant_edit.cache": "Time to live of the cache (ms)",
     "tenant_edit.cms_history_length": "History length",
     "tenant_edit.cms_history_length.help": "The number of revisions kept in the database.",
     "tenant_edit.view_home_page": "View home page",

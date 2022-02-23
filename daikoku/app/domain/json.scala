@@ -1535,7 +1535,8 @@ object json {
               .asOpt[String]
               .getOrElse("/assets/images/daikoku.svg"),
             footer = (json \ "footer")
-              .asOpt[String]
+              .asOpt[String],
+            cacheTTL = (json \ "cacheTTL").asOpt[Int].getOrElse(60000)
           ))
       } recover {
         case e => JsError(e.getMessage)
@@ -1561,6 +1562,7 @@ object json {
       "homeCmsPage" -> o.homeCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "notFoundCmsPage" -> o.notFoundCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "authenticatedCmsPage" -> o.authenticatedCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "cacheTTL" -> o.cacheTTL,
       "homePageVisible" -> o.homePageVisible,
       "cmsHistoryLength" -> o.cmsHistoryLength,
       "logo" -> o.logo,

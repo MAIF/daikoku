@@ -246,7 +246,6 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                     ));
                 }}
                 mode={(CONTENT_TYPES_TO_MODE[contentType] || "html")}
-                theme="tomorrow"
                 height={height}
                 width="-1" />
             {sideView && <div style={{

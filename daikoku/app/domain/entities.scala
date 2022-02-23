@@ -94,6 +94,7 @@ case class DaikokuStyle(
     homeCmsPage: Option[String] = None,
     notFoundCmsPage: Option[String] = None,
     authenticatedCmsPage: Option[String] = None,
+    cacheTTL: Int = 60000,
     cmsHistoryLength: Int = 10,
     logo: String = "/assets/images/daikoku.svg",
     footer: Option[String] = None

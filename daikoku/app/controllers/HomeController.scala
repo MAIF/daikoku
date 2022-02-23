@@ -1,14 +1,13 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.javadsl.FileIO
 import com.nimbusds.jose.util.StandardCharset
 import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
-import fr.maif.otoroshi.daikoku.domain.{CmsHistory, CmsPage, CmsPageId, DaikokuStyle, UserId, json}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.joda.time.DateTime
@@ -17,12 +16,11 @@ import play.api.libs.json._
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 import utils.diff_match_patch
-import utils.diff_match_patch.Operation
 
 import java.io.{ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
-import java.nio.file.Paths
 import java.util
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
 
 class HomeController(
@@ -37,6 +35,10 @@ class HomeController(
   implicit val ec = env.defaultExecutionContext
   implicit val e = env
   implicit val m = messagesApi
+
+  case class CmsPageCache(contentType: String, content: String, lastUpdate: Long)
+
+  private val cache = new TrieMap[String, CmsPageCache]()
 
   def actualIndex[A](ctx: DaikokuActionMaybeWithoutUserContext[A]): Future[Result] = {
     ctx.user match {
@@ -159,13 +161,13 @@ class HomeController(
 
             page.headOption match {
               case Some(r) if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
-              case Some(r) => r.render(ctx, None, ctx.request.getQueryString("draft").contains("true")).map(res => Ok(res._1).as(res._2))
+              case Some(r) => render(ctx, r)
               case None => cmsPageNotFound(ctx)
             }
           })
       case Some(page) if !page.visible => cmsPageNotFound(ctx)
       case Some(page) if page.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
-      case Some(page) => page.render(ctx, None, ctx.request.getQueryString("draft").contains("true")).map(res => Ok(res._1).as(res._2))
+      case Some(page) => render(ctx, page)
     }
   }
 
@@ -186,12 +188,26 @@ class HomeController(
       }
   }
 
+  private def render[A](ctx: DaikokuActionMaybeWithoutUserContext[A], r: CmsPage) = {
+    val cacheId = s"${ctx.user.map(_.id.value).getOrElse("")}-${r.id.value}"
+    (cache.find(p => p._1 == cacheId), ctx.tenant.style.map(_.cacheTTL)) match {
+      case (Some(value), c) if c.isDefined && c.get > 0 && (value._2.lastUpdate + c.get) >= DateTime.now().getMillis =>
+        FastFuture.successful(Ok(value._2.content).as(value._2.contentType))
+      case _ =>
+        r.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))
+        .map(res => {
+          cache.put(cacheId, CmsPageCache(content = res._1, contentType = res._2, lastUpdate = DateTime.now().getMillis))
+          Ok(res._1).as(res._2)
+        })
+    }
+  }
+
   private def cmsPageByIdWithoutAction[A](ctx: DaikokuActionMaybeWithoutUserContext[A], id: String) = {
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).flatMap {
       case None => cmsPageNotFound(ctx)
       case Some(page) if !page.visible => cmsPageNotFound(ctx)
       case Some(page) if page.authenticated && ctx.user.isEmpty => FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
-      case Some(page) => page.render(ctx, None, ctx.request.getQueryString("draft").contains("true")).map(res => Ok(res._1).as(res._2))
+      case Some(page) => render(ctx, page)
     }
   }
 
@@ -476,8 +492,9 @@ class HomeController(
                     case Some((_, value)) => value
                     case None => page.draft
                   }
+                  val d = diff("", content, ctx.user.id)
                   env.dataStore.cmsRepo.forTenant(ctx.tenant)
-                    .save(page.copy(draft = content, body = content))
+                    .save(page.copy(draft = content, body = content, history = if (d.diff.nonEmpty) Seq(d) else Seq.empty))
                 })
                   .map { _ => Ok(Json.obj("done" -> true)) }
             }
