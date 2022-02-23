@@ -49,7 +49,6 @@ export const CMSOffice = () => {
     }
 
     const loadFiles = e => {
-        console.log(e.target.files, e.target.files.length)
         if (e.target.files.length === 1)
             Services.uploadZip(e.target.files[0])
                 .then(reload)
@@ -63,33 +62,39 @@ export const CMSOffice = () => {
             <div className="d-flex flex-row align-items-center justify-content-between mb-2">
                 <h1 className="mb-0">Pages</h1>
                 <div>
-                    <input
-                        ref={importRef}
-                        type="file"
-                        accept=".zip"
-                        className="form-control hide"
-                        onChange={loadFiles}
-                    />
-                    <button className='btn btn-sm btn-secondary' onClick={() => importRef.current.click()}>
-                        {translateMethod('cms.import_all')}
-                    </button>
-                    <button className='btn btn-sm btn-secondary mx-1'
-                        onClick={() => {
-                            if (!downloading) {
-                                setDownloading(true)
-                                Services.downloadCmsFiles()
-                                    .then(transfer => transfer.blob())
-                                    .then(bytes => {
-                                        const elm = document.createElement('a');  // CREATE A LINK ELEMENT IN DOM
-                                        elm.href = URL.createObjectURL(bytes);  // SET LINK ELEMENTS CONTENTS
-                                        elm.setAttribute('download', 'cms.zip'); // SET ELEMENT CREATED 'ATTRIBUTE' TO DOWNLOAD, FILENAME PARAM AUTOMATICALLY
-                                        elm.click()
-                                        setDownloading(false)
-                                    })
-                            }
-                        }}>
-                        {downloading ? <Spinner heigth={18} width={18} /> : translateMethod('cms.export_all')}
-                    </button>
+                    <div className="btn-group dropstart">
+                        <button type="button" className="btn btn-sm me-1 btn-secondary"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i className='fas fa-cog'></i>
+                        </button>
+                        <ul className="dropdown-menu">
+                            <li className='dropdown-item' onClick={() => importRef.current.click()}><input
+                                ref={importRef}
+                                type="file"
+                                accept=".zip"
+                                className="form-control hide"
+                                onChange={loadFiles}
+                            />
+                                {translateMethod('cms.import_all')}
+                            </li>
+                            <li className='dropdown-item' onClick={() => {
+                                if (!downloading) {
+                                    setDownloading(true)
+                                    Services.downloadCmsFiles()
+                                        .then(transfer => transfer.blob())
+                                        .then(bytes => {
+                                            const elm = document.createElement('a');
+                                            elm.href = URL.createObjectURL(bytes);
+                                            elm.setAttribute('download', 'cms.zip');
+                                            elm.click()
+                                            setDownloading(false)
+                                        })
+                                }
+                            }}>
+                                {downloading ? <Spinner heigth={18} width={18} /> : translateMethod('cms.export_all')}
+                            </li>
+                        </ul>
+                    </div>
                     <button onClick={() => {
                         window.prompt('Indiquer le nom de la nouvelle page', '', false,
                             'Création d\'une nouvelle page', 'Nom de la nouvelle page')

@@ -154,18 +154,6 @@ export default React.memo(
 
         return (
             <>
-                <button
-                    id="toggle-sidebar"
-                    type="button"
-                    className="navbar-toggle btn btn-sm btn-access-negative float-left me-2"
-                    data-toggle="collapse"
-                    data-target="#sidebar"
-                    aria-expanded="false"
-                    aria-controls="sidebar"
-                >
-                    <span className="sr-only">Toggle sidebar</span>
-                    <span className="chevron" />
-                </button>
                 <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
                     <div className="sidebar-sticky" style={{
                         display: 'flex',

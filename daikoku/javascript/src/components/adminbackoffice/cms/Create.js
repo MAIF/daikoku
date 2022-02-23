@@ -75,6 +75,7 @@ export const Create = (props) => {
                         setInValue({
                             draft, side
                         })
+                        reset()
                     })
             } else {
                 Services.createCmsPage(params.id, {
@@ -82,6 +83,7 @@ export const Create = (props) => {
                     ...finalBodyValue
                 })
                     .then(res => {
+                        reset()
                         if (!res.error && !params.id)
                             navigate('/settings/pages', {
                                 state: {
@@ -97,12 +99,14 @@ export const Create = (props) => {
                             setTimeout(() => setTab(1), 100)
                     })
             }
-
-            setFormAction(undefined)
-            setFinalSideValue(undefined)
-            setFinalBodyValue(undefined)
         }
     }, [action, finalSideValue, finalBodyValue]);
+
+    const reset = () => {
+        setFormAction(undefined)
+        setFinalSideValue(undefined)
+        setFinalBodyValue(undefined)
+    }
 
     const updatePage = () => {
         setFormAction("update");
@@ -111,7 +115,7 @@ export const Create = (props) => {
 
     const onPublish = () => {
         setFormAction("publish");
-        setTimeout(() => [bodyRef, sideRef].map(r => r.current.handleSubmit()), 250)
+        [bodyRef, sideRef].map(r => r.current.handleSubmit())
     }
 
     const TabButton = ({ title, onClose, onClick, selected }) => (

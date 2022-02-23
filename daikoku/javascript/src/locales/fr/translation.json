@@ -1077,7 +1077,7 @@
   "cms.pages.name": "Nom",
   "cms.pages.path": "Chemin",
   "cms.content_side.new_action": "Ajouter un élément",
-  "cms.export_all": "Tout exporter",
+  "cms.export_all": "Exporter",
   "cms.import_all": "Importer",
   "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
   "incorrect password": "Mots de passe incorrect"

@@ -189,12 +189,14 @@ class HomeController(
   }
 
   private def render[A](ctx: DaikokuActionMaybeWithoutUserContext[A], r: CmsPage) = {
+    val isDraftRender = ctx.request.getQueryString("draft").contains("true")
     val cacheId = s"${ctx.user.map(_.id.value).getOrElse("")}-${r.id.value}"
-    (cache.find(p => p._1 == cacheId), ctx.tenant.style.map(_.cacheTTL)) match {
-      case (Some(value), c) if c.isDefined && c.get > 0 && (value._2.lastUpdate + c.get) >= DateTime.now().getMillis =>
+
+    (isDraftRender, cache.find(p => p._1 == cacheId), ctx.tenant.style.map(_.cacheTTL)) match {
+      case (false, Some(value), c) if c.isDefined && c.get > 0 && (value._2.lastUpdate + c.get) >= DateTime.now().getMillis =>
         FastFuture.successful(Ok(value._2.content).as(value._2.contentType))
       case _ =>
-        r.render(ctx, None, ctx.request.getQueryString("draft").contains("true"))
+        r.render(ctx, None, isDraftRender)
         .map(res => {
           cache.put(cacheId, CmsPageCache(content = res._1, contentType = res._2, lastUpdate = DateTime.now().getMillis))
           Ok(res._1).as(res._2)
