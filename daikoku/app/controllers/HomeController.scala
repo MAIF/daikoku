@@ -190,7 +190,7 @@ class HomeController(
 
   private def render[A](ctx: DaikokuActionMaybeWithoutUserContext[A], r: CmsPage) = {
     val isDraftRender: Boolean = ctx.request.getQueryString("draft").contains("true")
-    val cacheId = s"${ctx.user.map(_.id.value).getOrElse("")}-${r.id.value}-$isDraftRender"
+    val cacheId = s"${ctx.user.map(_.id.value).getOrElse("")}-${r.path.getOrElse("")}"
 
     if (isDraftRender)
       r.render(ctx, None, isDraftRender).map(res => Ok(res._1).as(res._2))
