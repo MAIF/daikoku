@@ -190,10 +190,12 @@ class HomeController(
 
   private def render[A](ctx: DaikokuActionMaybeWithoutUserContext[A], r: CmsPage) = {
     val isDraftRender: Boolean = ctx.request.getQueryString("draft").contains("true")
+    val forceReloading: Boolean = ctx.request.getQueryString("force_reloading").contains("true")
+
     val cacheId = s"${ctx.user.map(_.id.value).getOrElse("")}-${r.path.getOrElse("")}"
 
-    if (isDraftRender)
-      r.render(ctx, None, isDraftRender).map(res => Ok(res._1).as(res._2))
+    if (isDraftRender || forceReloading)
+      r.render(ctx, None).map(res => Ok(res._1).as(res._2))
     else
       (cache.find(p => p._1 == cacheId), ctx.tenant.style.map(_.cacheTTL)) match {
         case (Some(value), c) if c.isDefined && c.get > 0 && (value._2.lastUpdate + c.get) >= DateTime.now().getMillis =>

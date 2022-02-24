@@ -2217,7 +2217,6 @@ case class CmsPage(
 
   def render(ctx: DaikokuActionMaybeWithoutUserContext[_],
              parentId: Option[String] = None,
-             wantDraft: Boolean = false,
              fields: Map[String, Any] = Map.empty,
              jsonToCombine: Map[String, JsValue] = Map.empty)
             (implicit env: Env, messagesApi: MessagesApi): Future[(String, String)] = {
@@ -2234,7 +2233,7 @@ case class CmsPage(
             case Some(value) =>
               val optPage = Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(value)(ec), 10.seconds)
               optPage match {
-                case Some(value) => value.render(ctx, parentId, wantDraft, fields, jsonToCombine)
+                case Some(value) => value.render(ctx, parentId, fields, jsonToCombine)
                 case None => FastFuture.successful(("Need to be logged", page.contentType))
               }
             case None => FastFuture.successful(("Need to be logged", page.contentType))
@@ -2339,7 +2338,7 @@ case class CmsPage(
           enrichHandlebarsWithPublicUserEntity(ctx, Some(page.id.value), handlebars, fields, jsonToCombine)
 
           val c = context.build()
-          val template = if (wantDraft) page.draft else page.body
+          val template = if (ctx.request.getQueryString("draft").contains("true")) page.draft else page.body
 
           val result = handlebars.compileInline(template).apply(c)
           c.destroy()

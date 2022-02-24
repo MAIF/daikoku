@@ -184,7 +184,7 @@ export const Create = (props) => {
                     publish={onPublish}
                 />
                 {tab === 1 && <iframe className='mt-3' style={{ flex: 1 }} src={`/_${savePath || '/'}?draft=true`} />}
-                {tab === 2 && <iframe className='mt-3' style={{ flex: 1 }} src={`/_${savePath || '/'}`} />}
+                {tab === 2 && <iframe className='mt-3' style={{ flex: 1 }} src={`/_${savePath || '/'}?force_reloading=true`} />}
             </div>
         </>
     )
