@@ -6,6 +6,7 @@ import moment from 'moment'
 import * as Services from '../../../services'
 import { Spinner } from '../../utils/Spinner'
 import { SwitchButton } from '../../inputs'
+import { I18nContext } from '../../../core'
 
 const CURRENT_VERSION_ITEM = {
     value: {
@@ -18,6 +19,7 @@ export default ({ }) => {
     const { client } = useContext(getApolloContext())
     const params = useParams()
     const navigate = useNavigate()
+    const { translateMethod } = useContext(I18nContext)
 
     const [reloading, setReloading] = useState(false);
 
@@ -110,7 +112,7 @@ export default ({ }) => {
                             onClick={() => navigate(-1)}>
                             <i className='fas fa-arrow-left' />
                         </div>
-                        <h5 className='m-0'>Version history</h5>
+                        <h5 className='m-0'>{translateMethod("cms.revisions.version_history")}</h5>
                     </div>
                     <div>
                         {Object.entries(value).map(([month, diffs]) => {
@@ -147,14 +149,14 @@ export default ({ }) => {
                                         </div>}
                                         {(!isCurrentVersion && isSelected) &&
                                             <button className='btn btn-sm btn-outline-info mt-2' onClick={() => {
-                                                window.confirm('Are you sure to restore this version ? The current version will be erased.').then((ok) => {
+                                                window.confirm(translateMethod('cms.revisions.delete_sentence')).then((ok) => {
                                                     if (ok) {
                                                         Services.restoreCmsDiff(params.id, item.value.id)
                                                             .then(() => setReloading(true))
                                                     }
                                                 });
                                             }}>
-                                                Restore this version
+                                                {translateMethod('cms.revisions.restore')}
                                             </button>
                                         }
                                     </div>

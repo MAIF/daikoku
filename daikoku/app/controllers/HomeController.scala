@@ -189,19 +189,22 @@ class HomeController(
   }
 
   private def render[A](ctx: DaikokuActionMaybeWithoutUserContext[A], r: CmsPage) = {
-    val isDraftRender = ctx.request.getQueryString("draft").contains("true")
-    val cacheId = s"${ctx.user.map(_.id.value).getOrElse("")}-${r.id.value}"
+    val isDraftRender: Boolean = ctx.request.getQueryString("draft").contains("true")
+    val cacheId = s"${ctx.user.map(_.id.value).getOrElse("")}-${r.id.value}-$isDraftRender"
 
-    (isDraftRender, cache.find(p => p._1 == cacheId), ctx.tenant.style.map(_.cacheTTL)) match {
-      case (false, Some(value), c) if c.isDefined && c.get > 0 && (value._2.lastUpdate + c.get) >= DateTime.now().getMillis =>
-        FastFuture.successful(Ok(value._2.content).as(value._2.contentType))
-      case _ =>
-        r.render(ctx, None, isDraftRender)
-        .map(res => {
-          cache.put(cacheId, CmsPageCache(content = res._1, contentType = res._2, lastUpdate = DateTime.now().getMillis))
-          Ok(res._1).as(res._2)
-        })
-    }
+    if (isDraftRender)
+      r.render(ctx, None, isDraftRender).map(res => Ok(res._1).as(res._2))
+    else
+      (cache.find(p => p._1 == cacheId), ctx.tenant.style.map(_.cacheTTL)) match {
+        case (Some(value), c) if c.isDefined && c.get > 0 && (value._2.lastUpdate + c.get) >= DateTime.now().getMillis =>
+          FastFuture.successful(Ok(value._2.content).as(value._2.contentType))
+        case _ =>
+          r.render(ctx, None)
+          .map(res => {
+            cache.put(cacheId, CmsPageCache(content = res._1, contentType = res._2, lastUpdate = DateTime.now().getMillis))
+            Ok(res._1).as(res._2)
+          })
+      }
   }
 
   private def cmsPageByIdWithoutAction[A](ctx: DaikokuActionMaybeWithoutUserContext[A], id: String) = {
@@ -215,6 +218,21 @@ class HomeController(
 
   def cmsPageById(id: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
     cmsPageByIdWithoutAction(ctx, id)
+  }
+
+  def getCmsPage(id: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent("@{user.name} get the cms page @{pageName}"))(
+      ctx.tenant.id.value,
+      ctx) { (tenant, _) => {
+      env.dataStore.cmsRepo.forTenant(tenant)
+        .findById(id)
+        .map {
+          case None => NotFound(Json.obj("error" -> "cms page not found"))
+          case Some(page) => Ok(page.asJson)
+        }
+      }
+    }
   }
 
   def cmsDiffById(id: String, diffId: String) = DaikokuAction.async { ctx =>
@@ -265,7 +283,7 @@ class HomeController(
               .save(page.copy(draft = newContentPage, history = (page.history :+ history).take(tenant.style.map(_.cmsHistoryLength).getOrElse(10) + 1)))
               .map(_ => Ok(Json.obj("restored" -> true)))
         }
-    }
+      }
     }
   }
 
@@ -335,8 +353,9 @@ class HomeController(
       ctx.tenant.id.value,
       ctx) { (tenant, _) => {
         val body =  ctx.request.body.as[JsObject]
+
         val cmsPage = body ++
-          Json.obj("_id" -> JsString((body \ "id").asOpt[String].getOrElse(BSONObjectID.generate().stringify))) ++
+          Json.obj("_id" -> JsString((body \ "id").asOpt[String].getOrElse((body \ "_id").asOpt[String].getOrElse(BSONObjectID.generate().stringify)))) ++
           Json.obj("_tenant" -> tenant.id.value)
 
         json.CmsPageFormat.reads(cmsPage) match {
@@ -368,15 +387,6 @@ class HomeController(
           case e: JsError => FastFuture.successful(BadRequest(JsError.toJson(e)))
         }
       }
-    }
-  }
-
-  def updateCmsPage(id: String) = DaikokuAction.async(parse.json) { ctx =>
-    TenantAdminOnly(
-      AuditTrailEvent("@{user.name} has updated a cms page"))(
-      ctx.tenant.id.value,
-      ctx) { (_, _) =>
-      FastFuture.successful(Ok(Json.obj("" -> "")))
     }
   }
 

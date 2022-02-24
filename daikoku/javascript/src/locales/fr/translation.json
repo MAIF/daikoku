@@ -1079,6 +1079,9 @@
   "cms.content_side.new_action": "Ajouter un élément",
   "cms.export_all": "Exporter",
   "cms.import_all": "Importer",
+  "cms.revisions.restore": "Restaurer cette version",
+  "cms.revisions.delete_sentence": "Êtes-vous sûr de vouloir restaurer cette version ?",
+  "cms.revisions.version_history": "Historique",
   "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
   "incorrect password": "Mots de passe incorrect"
 }

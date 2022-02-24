@@ -116,6 +116,7 @@ object utils {
           .forAllTenant()
           .deleteAll()
         _ <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
+        _ <- daikokuComponents.env.dataStore.cmsRepo.forAllTenant().deleteAll()
         _ <- daikokuComponents.env.dataStore.messageRepo
           .forAllTenant()
           .deleteAll()
@@ -136,7 +137,8 @@ object utils {
         creations: Seq[AccountCreation] = Seq.empty,
         messages: Seq[Message] = Seq.empty,
         issues: Seq[ApiIssue] = Seq.empty,
-        posts: Seq[ApiPost] = Seq.empty
+        posts: Seq[ApiPost] = Seq.empty,
+        cmsPages: Seq[CmsPage] = Seq.empty
     ): Unit = {
       setupEnv(
         tenants,
@@ -152,7 +154,8 @@ object utils {
         creations,
         messages,
         issues,
-        posts
+        posts,
+        cmsPages
       ).futureValue
 //      await(0.1.seconds)
     }
@@ -171,7 +174,8 @@ object utils {
         creations: Seq[AccountCreation] = Seq.empty,
         messages: Seq[Message] = Seq.empty,
         issues: Seq[ApiIssue] = Seq.empty,
-        posts: Seq[ApiPost] = Seq.empty
+        posts: Seq[ApiPost] = Seq.empty,
+        cmsPages: Seq[CmsPage] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -266,6 +270,14 @@ object utils {
           .mapAsync(1)(
             i =>
               daikokuComponents.env.dataStore.apiPostRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(cmsPages.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.cmsRepo
                 .forAllTenant()
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
@@ -959,6 +971,22 @@ object utils {
       ),
       defaultUsagePlan = UsagePlanId("1")
     )
+
+    val defaultCmsPage: CmsPage = CmsPage(
+      id = CmsPageId(BSONObjectID.generate().stringify),
+      tenant = tenant.id,
+      visible = true,
+      authenticated = false,
+      name = "foo",
+      forwardRef = None,
+      tags = List(),
+      metadata = Map(),
+      draft = "<h1>draft content</h1>",
+      contentType = "text/html",
+      body = "<h1>production content</h1>",
+      path = Some("/" + BSONObjectID.generate().stringify)
+    )
+
 
     val defaultApi: Api =
       generateApi("default", tenant.id, teamOwnerId, Seq.empty)

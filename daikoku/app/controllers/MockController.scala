@@ -779,6 +779,7 @@ class MockController(DaikokuAction: DaikokuAction,
       _ <- env.dataStore.consumptionRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.apiPostRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.apiIssueRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.cmsRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.tenantRepo.save(
         Tenant(
           id = Tenant.Default,

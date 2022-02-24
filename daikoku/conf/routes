@@ -10,8 +10,8 @@ POST    /api/cms/download                               fr.maif.otoroshi.daikoku
 POST    /api/cms/import                                 fr.maif.otoroshi.daikoku.ctrls.HomeController.importFromZip()
 POST    /api/cms/pages/:pageName                        fr.maif.otoroshi.daikoku.ctrls.HomeController.createCmsPageWithName(pageName)
 POST    /api/cms/pages                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.createCmsPage()
-PUT     /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.updateCmsPage(id)
 DELETE  /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.deleteCmsPage(id)
+GET     /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.getCmsPage(id)
 
 ### NoDocs ###
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
