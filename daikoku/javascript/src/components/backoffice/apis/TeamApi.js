@@ -115,7 +115,7 @@ const TeamApiComponent = (props) => {
             toastr.success(
               translateMethod('api.created.success', false, `Api "${createdApi.name}" created`, createdApi.name)
             );
-            setApi(editedApi)
+            navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`)
           }
         })
     } else {
@@ -138,6 +138,10 @@ const TeamApiComponent = (props) => {
                 } else {
                   toastr.success(translateMethod('Api saved'));
                   setApi(editedApi)
+
+                  if (res._humanReadableId !== editedApi._humanReadableId) {
+                    navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`)
+                  }
                 }
               });
             }
