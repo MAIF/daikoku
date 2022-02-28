@@ -122,7 +122,7 @@ const TeamApiComponent = (props) => {
           }
         })
     } else {
-      Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
+      return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
         .then((r) => {
           if (!r.exists) {
             if (editedApi.currentVersion.split('').find((c) => reservedCharacters.includes(c))) {
@@ -252,7 +252,7 @@ const TeamApiComponent = (props) => {
                       team={props.currentTeam}
                       teamId={teamId}
                       value={api}
-                      onChange={(api) => setState({ ...state, api })}
+                      onChange={(api) => setApi(api)}
                       save={save}
                       versionId={params.versionId}
                       params={params}
@@ -264,7 +264,7 @@ const TeamApiComponent = (props) => {
                         <button
                           type="button"
                           className="btn btn-outline-success ms-1"
-                          onClick={() => save()}
+                          onClick={() => save(api)} //FIXME: don't work without api
                         >
                           <span>
                             <i className="fas fa-save me-1" />

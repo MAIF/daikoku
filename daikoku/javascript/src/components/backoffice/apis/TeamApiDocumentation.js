@@ -157,9 +157,10 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   useEffect(() => {
     if (selected || deletedPage) {
       setDeletedPage(false);
-      props.save().then(() => {
-        updateDetails();
-      });
+      props.save(value)
+        .then(() => {
+          updateDetails();
+        });
     }
   }, [value]);
 
@@ -202,7 +203,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         const newValue = _.cloneDeep(value);
         newValue.documentation.pages = pages;
         props.onChange(newValue);
-        props.save().then(() => {
+        props.save(newValue).then(() => {
           updateDetails();
         });
       }
@@ -218,7 +219,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         const newValue = _.cloneDeep(value);
         newValue.documentation.pages = pages;
         props.onChange(newValue);
-        props.save().then(() => {
+        props.save(newValue).then(() => {
           updateDetails();
         });
       }
@@ -245,7 +246,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       pages.splice(index, 0, page._id);
       const newValue = _.cloneDeep(value);
       newValue.documentation.pages = pages;
-
       setSelected(page);
       props.onChange(newValue);
     });
