@@ -531,7 +531,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             <Route
               path={`/apis/:apiId/:versionId/:tab/*`}
               element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu}/>} />
-            <Route path={`/apis/:apiId/:versionId`} element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu} creation/>} />
+            <Route path={`/apis/:apiId/:tab`} element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu} creation/>} />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />
           </Routes>

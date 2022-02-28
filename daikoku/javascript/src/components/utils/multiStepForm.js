@@ -10,6 +10,11 @@ import { Spinner, Option } from '../utils';
 export const MultiStepForm = ({ value, steps, initial, creation, report, getBreadcrumb, save, labels }) => {
   const ref = useRef();
 
+  useEffect(() => {
+    send('RESET', { value })
+  }, [value])
+  
+
   const tos = steps.reduce((acc, step) => {
     return {
       ...acc,
@@ -80,6 +85,10 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
           actions: assign({
             error: (_context, { error }) => error,
           })
+        },
+        RESET: {
+          target: initial,
+          actions: ['reset']
         }
       }
     },
@@ -111,24 +120,12 @@ export const MultiStepForm = ({ value, steps, initial, creation, report, getBrea
         setValue: assign((context, response) => {
           return { ...context, ...response.value }
         }),
+        reset: assign((_, response) => {
+          return { ...response.value }
+        })
       }
     }
   ), [])
-
-  console.debug(JSON.stringify({
-    id: 'foo',
-    context: value,
-    initial,
-    states
-  }),
-    JSON.stringify({
-      guards,
-      actions: {
-        setValue: assign((context, response) => {
-          return { ...context, ...response.value }
-        }),
-      }
-    }))
 
   const [current, send] = useMachine(machine);
 

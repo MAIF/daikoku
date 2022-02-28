@@ -55,9 +55,8 @@ const TeamApiComponent = (props) => {
   const params = useParams();
 
   const [api, setApi] = useState();
-  const [creation, setCreation] = useState(false);
   const [otoroshiSettings, setOtoroshiSettings] = useState([]);
-  const [versions, setApiVersions] = useState([]);
+  const [apiVersions, setApiVersions] = useState([]);
   const [apiVersion, setApiVersion] = useState({
     value: params.versionId,
     label: params.versionId,
@@ -75,7 +74,6 @@ const TeamApiComponent = (props) => {
         .then((otoroshiSettings) => {
           setOtoroshiSettings(otoroshiSettings);
           setApi(location.state.newApi);
-          setCreation(true);
         });
     } else {
       reloadState();
@@ -108,7 +106,7 @@ const TeamApiComponent = (props) => {
       teamApiDocumentationRef.current.saveCurrentPage();
     }
 
-    if (creation) {
+    if (props.creation) {
       return Services.createTeamApi(props.currentTeam._id, editedApi)
         .then((createdApi) => {
           if (createdApi.error) {
@@ -117,8 +115,7 @@ const TeamApiComponent = (props) => {
             toastr.success(
               translateMethod('api.created.success', false, `Api "${createdApi.name}" created`, createdApi.name)
             );
-            setApi(createdApi)
-            setCreation(false)
+            setApi(editedApi)
           }
         })
     } else {
@@ -226,7 +223,7 @@ const TeamApiComponent = (props) => {
       {api && (
         <>
           <div className="d-flex flex-row justify-content-between align-items-center">
-            {creation ? (
+            {props.creation ? (
               <h2>{api.name}</h2>
             ) : (
               <div
@@ -248,7 +245,7 @@ const TeamApiComponent = (props) => {
                 {tab === 'documentation' && (
                   <>
                     <TeamApiDocumentation
-                      creationInProgress={creation}
+                      creationInProgress={props.creation}
                       team={props.currentTeam}
                       teamId={teamId}
                       value={api}
@@ -264,7 +261,7 @@ const TeamApiComponent = (props) => {
                         <button
                           type="button"
                           className="btn btn-outline-success ms-1"
-                          onClick={() => save(api)} //FIXME: don't work without api
+                          onClick={() => save(api)}
                         >
                           <span>
                             <i className="fas fa-save me-1" />
@@ -281,9 +278,7 @@ const TeamApiComponent = (props) => {
                     team={props.currentTeam}
                     tenant={props.tenant}
                     save={save}
-                    creation={
-                      location && location.state && !!location.state.newApi
-                    }
+                    creation={props.creation}
                     otoroshiSettings={otoroshiSettings}
                     expertMode={props.expertMode}
                     injectSubMenu={props.injectSubMenu}
@@ -296,9 +291,7 @@ const TeamApiComponent = (props) => {
                     team={props.currentTeam}
                     tenant={props.tenant}
                     save={save}
-                    creation={
-                      location && location.state && !!location.state.newApi
-                    }
+                    creation={props.creation}
                     expertMode={props.expertMode}
                     injectSubMenu={props.injectSubMenu}
                     openTestingApiKeyModal={props.openTestingApiKeyModal}
