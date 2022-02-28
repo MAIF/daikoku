@@ -7,11 +7,43 @@ import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
 import 'swagger-editor/dist/swagger-editor.css';
 
+const defaultSwaggerContent = {
+  swagger: "2.0",
+  info: {
+    description: "description",
+    version: "1.0.0",
+    title: "title",
+    termsOfService: "terms",
+    contact: {
+      email: "email@eamil.to"
+    },
+    license: {
+      name: "Apache 2.0",
+      url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  host: "localhost",
+  schemes: ['https', 'http'],
+  paths: {
+    '/': {
+      get: {
+        summary: "Add a new pet to the store",
+        responses: {
+          "405": {
+            description: "Invalid input"
+          }
+        }
+          
+      }
+    }
+  }
+
+}
+
 const SwaggerEditorInput = ({ setValue, rawValues, value, error, onChange }) => {
   let unsubscribe;
 
   useEffect(() => {
-    console.debug({value})
     initSwaggerEditor(value);
 
     return () => {
@@ -20,7 +52,6 @@ const SwaggerEditorInput = ({ setValue, rawValues, value, error, onChange }) => 
   }, []);
 
   const initSwaggerEditor = (content) => {
-    console.debug({content})
     window.editor = SwaggerEditor({
       // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
@@ -29,9 +60,9 @@ const SwaggerEditorInput = ({ setValue, rawValues, value, error, onChange }) => 
       swagger2GeneratorUrl: 'https://generator.swagger.io/api/swagger.json',
       oas3GeneratorUrl: 'https://generator3.swagger.io/openapi.json',
       swagger2ConverterUrl: 'https://converter.swagger.io/api/convert',
-      spec: content,
+      spec: content || JSON.stringify(defaultSwaggerContent, null, 2),
     });
-    window.editor.specActions.updateSpec(content);
+    window.editor.specActions.updateSpec(content || JSON.stringify(defaultSwaggerContent, null, 2));
     unsubscribe = window.editor.getStore().subscribe(() => {
       const content = window.editor.specSelectors.specStr();
       onChange(content);
@@ -47,7 +78,7 @@ const SwaggerEditorInput = ({ setValue, rawValues, value, error, onChange }) => 
   };
 
   return (
-    <div id="swagger-editor" style={{height: window.outerHeight - 60 -58}}/>
+    <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }} />
   )
 }
 
