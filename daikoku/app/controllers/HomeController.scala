@@ -113,31 +113,36 @@ class HomeController(
       .split("/")
       .filter(_.nonEmpty)
 
-    var matched = false
+    if (paths.isEmpty)
+      Seq()
+    else {
+      var matched = false
 
-    paths.foldLeft(cmsPaths.map(r => (
-      r._1.replace("/_/", "").split("/") ++ Array(if(r._2.exact) "" else "*"),
-      r._2
-    ))
-      .map(p => (p._1.filter(_.nonEmpty), p._2))
-      .filter(p => p._1.nonEmpty)
-    ) { (paths, path) => {
+      paths.foldLeft(cmsPaths.map(r => (
+        r._1.replace("/_/", "").split("/") ++ Array(if (r._2.exact) "" else "*"),
+        r._2
+      ))
+        .map(p => (p._1.filter(_.nonEmpty), p._2))
+        .filter(p => p._1.nonEmpty)
+      ) { (paths, path) => {
         if (paths.isEmpty || matched)
           paths
         else {
           val matchingRoutes = paths.filter(p => p._1.nonEmpty && (p._1.head == path || p._1.head == "*"))
           if (matchingRoutes.nonEmpty)
             matchingRoutes.map(p => (p._1.tail, p._2))
-          else  {
+          else {
             val matchingRoute = paths.find(p => p._1.isEmpty)
-            if(matchingRoute.nonEmpty && !strictMode) {
+            if (matchingRoute.nonEmpty && !strictMode) {
               matched = true
               Seq(matchingRoute.get)
             } else
               Seq()
           }
         }
-    }}.map(_._2)
+      }
+      }.map(_._2)
+    }
   }
 
   def cmsPageByPath(path: String) = DaikokuActionMaybeWithoutUser.async { ctx =>
@@ -146,28 +151,37 @@ class HomeController(
     } else {
       s"/$path"
     }
-    env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> actualPath)).flatMap {
-      case None =>
-        env.dataStore.cmsRepo.forTenant(ctx.tenant).findAllNotDeleted()
-          .map(cmsPages => cmsPages.filter(p => p.path.exists(_.nonEmpty)))
-          .flatMap(cmsPages => {
-            val strictPage = getMatchingRoutes(ctx.request.path, cmsPages.filter(p => p.exact && p.path.nonEmpty).map(p => (p.path.get, p)), true)
 
-            val page = if(strictPage.nonEmpty)
-              strictPage
-            else
-              getMatchingRoutes(ctx.request.path, cmsPages
-                .filter(p => !p.exact && p.path.nonEmpty).map(p => (p.path.get, p)))
+    if(ctx.request.getQueryString("draft").contains("true") && !ctx.isTenantAdmin && !ctx.user.exists(_.isDaikokuAdmin)) {
+      Errors.craftResponseResult("User not found :-(",
+        Results.NotFound,
+        ctx.request,
+        None,
+        env)
+    } else {
+      env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> actualPath)).flatMap {
+        case None =>
+          env.dataStore.cmsRepo.forTenant(ctx.tenant).findAllNotDeleted()
+            .map(cmsPages => cmsPages.filter(p => p.path.exists(_.nonEmpty)))
+            .flatMap(cmsPages => {
+              val strictPage = getMatchingRoutes(ctx.request.path, cmsPages.filter(p => p.exact && p.path.nonEmpty).map(p => (p.path.get, p)), true)
 
-            page.headOption match {
-              case Some(r) if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
-              case Some(r) => render(ctx, r)
-              case None => cmsPageNotFound(ctx)
-            }
-          })
-      case Some(page) if !page.visible => cmsPageNotFound(ctx)
-      case Some(page) if page.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
-      case Some(page) => render(ctx, page)
+              val page = if (strictPage.nonEmpty)
+                strictPage
+              else
+                getMatchingRoutes(ctx.request.path, cmsPages
+                  .filter(p => !p.exact && p.path.nonEmpty).map(p => (p.path.get, p)))
+
+              page.headOption match {
+                case Some(r) if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
+                case Some(r) => render(ctx, r)
+                case None => cmsPageNotFound(ctx)
+              }
+            })
+        case Some(page) if !page.visible => cmsPageNotFound(ctx)
+        case Some(page) if page.authenticated && ctx.user.isEmpty => redirectToLoginPage(ctx)
+        case Some(page) => render(ctx, page)
+      }
     }
   }
 

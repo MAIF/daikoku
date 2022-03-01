@@ -161,6 +161,7 @@ export class SelectInput extends Component {
               isDisabled={this.props.disabled}
               placeholder={this.props.placeholder}
               options={this.state.values}
+              isClearable={this.props.isClearable}
               onChange={this.onChange}
               classNamePrefix="reactSelect"
               className="reactSelect"

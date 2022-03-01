@@ -53,7 +53,12 @@ export const Pages = ({ pages, removePage }) => {
                 textAlign: 'left',
                 fontStyle: 'italic'
             },
-            accessor: (item) => item.path ? item.path : '-',
+            accessor: (item) => item.path,
+            Cell: ({
+                cell: {
+                    row: { original },
+                },
+            }) => original.path || <span className='badge bg-dark'>{translateMethod('cms.pages.block')}</span>
         },
         {
             Header: translateMethod('cms.pages.publish_date'),

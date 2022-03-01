@@ -159,7 +159,8 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
     const { translateMethod } = useContext(I18nContext)
     const [sideView, setSideView] = useState(false);
     const [selector, setSelector] = useState("");
-
+    const [search, setSearch] = useState("")
+    const [helpersList, setHelpers] = useState([])
     const [ref, setRef] = useState();
 
     const [selectedPage, setSelectedPage] = useState({
@@ -171,6 +172,23 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
     const [height, setHeight] = useState(500);
 
     useEffect(() => {
+        setHelpers(Helpers
+            .reduce((acc, curr) => ({
+                ...acc,
+                [curr.important || curr.category]: {
+                    collapsed: true,
+                    helpers: [
+                        ...((acc[curr.important || curr.category] || {}).helpers || []),
+                        {
+                            ...curr,
+                            term: translateMethod(`cms.content_side_view.${curr.name}`)
+                                .toLowerCase()
+                                .replace(/[\[\]&]+/g, '')
+                        }
+                    ]
+                }
+            }), {}))
+
         searchHeight()
     }, [])
 
@@ -212,12 +230,38 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
             ref.on("mousedown", onMouseDown);
     }, [ref])
 
+    const filterHelpers = value => {
+        const term = value.toLowerCase()
+            .replace(/[\[\]&]+/g, '')
+        setSearch(value)
+
+        setHelpers(Object.fromEntries(
+            Object.entries(helpersList)
+                .map(([g, { helpers, ...rest }]) => [
+                    g,
+                    {
+                        ...rest,
+                        collapsed: term.length > 0 ? false : true,
+                        helpers: helpers.map(helper => ({
+                            ...helper,
+                            filtered: term.length === 0 ? false : !helper.term.includes(term)
+                        }))
+                    }])
+        ))
+    }
+
+    console.log(helpersList)
+
     return <div className='d-flex flex-column' style={{
         position: "relative",
         marginTop: "52px",
         flex: 1
     }}>
         <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector} />
+        <span style={{
+            fontStyle: "italic",
+            fontSize: "13px"
+        }}>{translateMethod('cms.body.drag_and_drop_advice')}</span>
         <div style={{
             position: "relative",
             border: "1px solid rgba(225,225,225,.5)",
@@ -255,38 +299,64 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
             }}>
                 <div className='d-flex' style={{ height: '100%', position: 'relative' }}>
                     {selector !== 'history' && <div className="p-3" style={{
-                        flex: .75, backgroundColor: '#efefef', overflowY: 'scroll'
+                        flex: !selector ? 1 : .75, backgroundColor: '#efefef', overflowY: 'scroll'
                     }}>
+                        <div>
+                            <input
+                                type="text"
+                                className="form-control mb-2"
+                                placeholder={translateMethod('Search your directive...')}
+                                value={search}
+                                onChange={e => filterHelpers(e.target.value)}
+                                style={{ border: 'none' }}
+                            />
+                        </div>
                         <div className='d-flex flex-column'>
-                            {Helpers
-                                .reduce((acc, curr) => curr.category ? [curr, ...acc] : [...acc, curr], [])
-                                .sort((a, b) => a.category > b.category ? 1 : -1)
-                                .map(props => (
-                                    <div className='d-flex mb-1 align-items-center'>
-                                        <div style={{ minWidth: 54 }}>
-                                            {props.category && <span className="badge bg-dark me-2">{props.category}</span>}
-                                        </div>
-                                        <button
+                            {Object.entries(helpersList).map(([groupName, { helpers, collapsed }]) => (
+                                <div onClick={() => setHelpers(Object.fromEntries(Object.entries(helpersList)
+                                    .map(([g, { collapsed, ...rest }]) => {
+                                        if (g === groupName)
+                                            return [g, { ...rest, collapsed: !collapsed, helpers: rest.helpers.map(helper => ({ ...helper, filtered: false })) }]
+                                        return [g, { ...rest, collapsed }]
+                                    }))
+                                )}>
+                                    {helpers
+                                        .filter(helper => !helper.filtered)
+                                        .length > 0 && <div style={{
+                                            background: '#fff'
+                                        }} className="p-2 px-3 mb-1 d-flex justify-content-between align-items-center">
+                                            <span>{groupName}</span>
+                                            <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
+                                        </div>}
+                                    {!collapsed && helpers
+                                        .filter(helper => !helper.filtered)
+                                        .map(helper => <button
+                                            id={helper.name}
                                             type="button"
-                                            key={props.name}
-                                            className="py-2 ps-3"
+                                            key={helper.name}
+                                            className="py-2 ps-3 mb-2"
                                             style={{
                                                 textAlign: 'left',
                                                 flex: 1,
                                                 width: '100%',
                                                 border: 'none',
-                                                backgroundColor: selector?.name === props.name ? '#eee' : '#ddd',
-                                                borderRight: `${selector?.name === props.name ? 2 : 0}px solid`,
+                                                backgroundColor: selector?.name === helper.name ? '#bdc3c7' : '#ddd',
+                                                borderRight: `${selector?.name === helper.name ? 2 : 0}px solid`,
                                                 fontSize: '14px'
                                             }}
-                                            onClick={() => setSelector(props)}>
-                                            {translateMethod(`cms.content_side_view.${props.name}`)}
+                                            onClick={e => {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                setSelector(helper)
+                                            }}>
+                                            {translateMethod(`cms.content_side_view.${helper.name}`)}
                                         </button>
-                                    </div>
-                                ))}
+                                        )}
+                                </div>
+                            ))}
                         </div>
                     </div>}
-                    <div style={{ flex: 1 }} className="ms-2 p-3">
+                    <div style={{ flex: selector ? 1 : 0 }} className="ms-2 p-3">
                         <i className='fas fa-times'
                             style={{
                                 cursor: 'pointer',

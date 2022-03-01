@@ -201,9 +201,6 @@ function ThemeUpdatorFromUI(props) {
 }
 
 function HomePageVisibilitySwitch(props) {
-  if (props.rawValue.isPrivate) {
-    return null;
-  }
   return (
     <BooleanInput
       key="style.homePageVisible"
@@ -430,6 +427,7 @@ export function TenantEditComponent(props) {
       type: 'select',
       visible: () => state.tenant?.style.homePageVisible,
       props: {
+        isClearable: true,
         label: translateMethod('tenant_edit.home_page'),
         disabled: !state.tenant?.style.homePageVisible,
         possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
@@ -439,6 +437,7 @@ export function TenantEditComponent(props) {
       type: 'select',
       visible: () => state.tenant?.style.homePageVisible,
       props: {
+        isClearable: true,
         label: translateMethod('tenant_edit.404_page'),
         disabled: !state.tenant?.style.homePageVisible,
         possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
@@ -448,6 +447,7 @@ export function TenantEditComponent(props) {
       type: 'select',
       visible: () => state.tenant?.style.homePageVisible,
       props: {
+        isClearable: true,
         label: translateMethod('tenant_edit.authenticated_cmspage'),
         help: translateMethod('tenant_edit.authenticated_cmspage_help'),
         disabled: !state.tenant?.style.homePageVisible,
@@ -465,6 +465,7 @@ export function TenantEditComponent(props) {
     },
     'style.cmsHistoryLength': {
       type: 'number',
+      visible: () => state.tenant?.style.homePageVisible,
       props: {
         label: translateMethod('tenant_edit.cms_history_length'),
         help: translateMethod('tenant_edit.cms_history_length.help')
@@ -475,29 +476,25 @@ export function TenantEditComponent(props) {
         <div className="mb-3 row">
           <label className="col-xs-12 col-sm-2 col-form-label" />
           <div className="col-sm-10">
-            {state.tenant?.isPrivate ?
-              <span className='badge bg-warning text-dark'>
-                {translateMethod('tenant_edit.cms_warning')}
-              </span> :
-              <>
-                <Link to="/settings/pages" className='btn btn-sm btn-outline-success'>
-                  <Translation i18nkey="tenant_edit.link_to_cmspages" />
-                </Link>
-                {state.tenant?.style.homePageVisible && state.tenant?.style?.homeCmsPage &&
-                  <button className='btn btn-sm btn-outline-primary ms-1'
-                    type='button'
-                    onClick={() => {
-                      client.query({
-                        query: gql`
+            <>
+              <Link to="/settings/pages" className='btn btn-sm btn-outline-success'>
+                <Translation i18nkey="tenant_edit.link_to_cmspages" />
+              </Link>
+              {state.tenant?.style.homePageVisible && state.tenant?.style?.homeCmsPage &&
+                <button className='btn btn-sm btn-outline-primary ms-1'
+                  type='button'
+                  onClick={() => {
+                    client.query({
+                      query: gql`
                 query GetCmsPage {
                     cmsPage(id: "${state.tenant?.style.homeCmsPage}") {
                         path
                     }
                 }`}).then(r => window.open(`/_${r.data.cmsPage.path}`, '_blank'))
-                    }}>
-                    <Translation i18nkey="tenant_edit.view_home_page" />
-                  </button>}
-              </>}
+                  }}>
+                  <Translation i18nkey="tenant_edit.view_home_page" />
+                </button>}
+            </>
           </div>
         </div>
       )

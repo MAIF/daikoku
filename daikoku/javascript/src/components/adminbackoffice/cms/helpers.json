@@ -1,15 +1,18 @@
 [
     {
         "name": "links",
-        "category": "LINK"
+        "category": "LINK",
+        "important": "MUST USEFUL"
     },
     {
         "name": "pages",
-        "category": "LINK"
+        "category": "LINK",
+        "important": "MUST USEFUL"
     },
     {
         "name": "blocks",
-        "category": "HTML"
+        "category": "HTML",
+        "important": "MUST USEFUL"
     },
     {
         "name": "daikoku-user",
@@ -98,12 +101,13 @@
     {
         "name": "is_admin",
         "example": "{{is_admin}}",
-        "category": "BOOL"
+        "category": "USER"
     },
     {
         "name": "connected",
         "example": "{{connected}}",
-        "category": "BOOL"
+        "category": "USER",
+        "important": "MUST USEFUL"
     },
     {
         "name": "user",
@@ -122,7 +126,7 @@
     {
         "name": "request",
         "example": "{{request.path}} - {{request.method}} - {{request.headers}}",
-        "category": "REQ"
+        "category": "REQUEST"
     },
     {
         "name": "daikoku-css",
@@ -135,32 +139,32 @@
             "the fieldname used in the helper content"
         ],
         "example": "{{#for '{{team.users}}' field='myuser' }}\n{{myuser.userId}}{{/for}}",
-        "category": "OP"
+        "category": "OPERATION"
     },
     {
         "name": "size",
         "example": "{{size '{{team.users}}'}}",
-        "category": "OP"
+        "category": "OPERATION"
     },
     {
         "name": "ifeq",
         "example": "{{#ifeq \"{{plan.type}}\" \"FreeWithoutQuotas\"}}You'll pay nothing and do whatever you want :){{/ifeq}}",
-            "category": "OP"
+            "category": "OPERATION"
     },
     {
         "name": "ifnoteq",
         "example": "{{#ifnoteq \"{{plan.type}}\" \"FreeWithoutQuotas\"}}You'll pay nothing and do whatever you want :){{/ifnoteq}}",
-            "category": "OP"
+            "category": "OPERATION"
     },
     {
         "name": "getOrElse",
         "example": "{{getOrElse \"{{plan.customName}}\" \"Un plan\"}}",
-            "category": "OP"
+            "category": "OPERATION"
     },
     {
         "name": "translate",
         "example": "{{translate 'Logout'}}}",
-        "category": "OP"
+        "category": "OPERATION"
     },
     {
         "name": "daikoku-path-param",
@@ -168,7 +172,7 @@
             "the position of the path params"
         ],
         "example": "{{daikoku-path-param '0'}}",
-        "category": "OP"
+        "category": "OPERATION"
     },
     {
         "name": "daikoku-query-param",
@@ -176,7 +180,7 @@
             "the name of the query param"
         ],
         "example": "{{daikoku-query-param 'my-query-param'}}",
-        "category": "OP"
+        "category": "OPERATION"
     },
     {
         "name": "daikoku-template-wrapper",
@@ -185,13 +189,15 @@
             "All defined named parameters inside the block"
         ],
         "category": "HTML",
-        "example": "{{#daikoku-template-wrapper '<wrapper-id>' <named-parameter>=\"<value>\" }} #child content {{/daikoku-template-wrapper}}"
+        "example": "{{#daikoku-template-wrapper '<wrapper-id>' <named-parameter>=\"<value>\" }} #child content {{/daikoku-template-wrapper}}",
+        "important": "MUST USEFUL"
     },
     {
         "name": "daikoku-apis",
         "category": "API",
         "link": "#/api/apis.findAll",
-        "example": "{{#daikoku-apis}}\n<span>Api : {{api.name}}\n{{/daikoku-apis}}"
+        "example": "{{#daikoku-apis}}\n<span>Api : {{api.name}}\n{{/daikoku-apis}}",
+        "important": "MUST USEFUL"
     },
     {
         "name": "daikoku-api",
@@ -221,7 +227,8 @@
         "name": "daikoku-teams",
         "category": "TEAM",
         "link": "#/team/teams.findAll",
-        "example": "{{#daikoku-teams}}\n<span>Team : {{team.name}}\n{{/daikoku-teams}}"
+        "example": "{{#daikoku-teams}}\n<span>Team : {{team.name}}\n{{/daikoku-teams}}",
+        "important": "MUST USEFUL"
     },
     {
         "name": "daikoku-team",
@@ -249,7 +256,7 @@
     },
     {
         "name": "daikoku-documentations",
-        "category": "DOC",
+        "category": "DOCUMENTATION",
         "parameters": [
             "The id of the api, String value expected"
         ],
@@ -258,7 +265,7 @@
     },
     {
         "name": "daikoku-documentations-page",
-        "category": "DOC",
+        "category": "DOCUMENTATION",
         "parameters": [
             "The id of the api, String value expected",
             "The named page parameter as String value"
@@ -268,7 +275,7 @@
     },
     {
         "name": "daikoku-documentations-page-id",
-        "category": "DOC",
+        "category": "DOCUMENTATION",
         "parameters": [
             "The id of the team, String value expected",
             "The named page parameter corresponding to the id of the expected page"

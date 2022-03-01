@@ -51,7 +51,7 @@ export default React.memo(
             },
             isBlockPage: {
                 type: type.bool,
-                label: translateMethod('Is a block ?')
+                label: translateMethod('cms.sidebar.is_block_page')
             },
             path: {
                 type: type.string,
@@ -61,7 +61,7 @@ export default React.memo(
                     test: v => !v
                 },
                 help: translateMethod('cms.create.path_placeholder'),
-                label: translateMethod('Path'),
+                label: translateMethod('cms.create.path'),
                 constraints: [
                     constraints.when('isBlockPage', v => !!v, [
                         constraints.nullable()
@@ -77,7 +77,7 @@ export default React.memo(
             },
             exact: {
                 type: type.bool,
-                label: translateMethod('Exact path'),
+                label: translateMethod('cms.create.exact'),
                 help: translateMethod('cms.create.exact'),
                 visible: {
                     ref: 'isBlockPage',
@@ -180,11 +180,11 @@ export default React.memo(
                                 <span>{value.lastPublishedDate && moment(value.lastPublishedDate).format('DD/MM/yy kk:mm')}</span>
                             </div>}
                             <div className='d-flex mt-3'>
-                                <button className="btn btn-sm btn-primary me-1" style={{ flex: 1 }} type="button"
+                                <button className="btn btn-sm btn-outline-primary me-1" style={{ flex: 1 }} type="button"
                                     onClick={() => navigate('/settings/pages', { state: { reload: true } })}>
                                     {translateMethod('cms.create.back_to_pages')}
                                 </button>
-                                <button className="btn btn-sm btn-success" style={{ flex: 1 }} type="button"
+                                <button className="btn btn-sm btn-outline-success" style={{ flex: 1 }} type="button"
                                     onClick={updatePage}>
                                     {params.id ? translateMethod('cms.create.save_modifications') : translateMethod('cms.create.create_page')}
                                 </button>
