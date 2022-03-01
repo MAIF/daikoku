@@ -15,7 +15,7 @@ const Image = ({ setValue, rawValues, value, error, onChange, tenant, team }) =>
         <input
           type="text"
           className="form-control"
-          value={value}
+          value={value || ''}
           onChange={(e) => onChange(e.target.value)}
         />
         <div className="d-flex mt-1 justify-content-end">
@@ -47,7 +47,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       placeholder: 'New Api',
       constraints: [
         constraints.required(translateMethod('constraints.required.name')),
-        constraints.test('name_already_exist', translateMethod("api.already.exists"), (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then(r => !r.exists))
+        constraints.test('name_already_exist', translateMethod("api.already.exists"), (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then(r => !r.exists)),
       ]
     },
     smallDescription: {

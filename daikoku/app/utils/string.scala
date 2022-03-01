@@ -22,14 +22,10 @@ object StringImplicits {
     }
     def urlPathSegmentSanitized: String = {
       import java.text.Normalizer
-      StringUtils
-        .replaceChars(
-          Normalizer
-            .normalize(s, Normalizer.Form.NFD)
-            .replaceAll("[\\p{InCombiningDiacriticalMarks}]", ""),
-          " -._~!$'()*,;&=@:/#[]",
-          "-"
-        )
+      Normalizer
+        .normalize(s, Normalizer.Form.NFD)
+        .replaceAll("[\\p{InCombiningDiacriticalMarks}]", "")
+        .replaceAll("[^A-Za-z0-9_.\\-~]", "-")
         .replaceAll("--", "-")
         .replaceAll("---", "-")
         .replaceAll("----", "-")

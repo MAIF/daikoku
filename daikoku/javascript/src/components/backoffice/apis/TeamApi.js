@@ -110,7 +110,8 @@ const TeamApiComponent = (props) => {
       return Services.createTeamApi(props.currentTeam._id, editedApi)
         .then((createdApi) => {
           if (createdApi.error) {
-            toastr.error(translateMethod(error))
+            toastr.error(translateMethod(createdApi.error))
+            return createdApi
           } else if (createdApi.name) {
             toastr.success(
               translateMethod('api.created.success', false, `Api "${createdApi.name}" created`, createdApi.name)
@@ -119,36 +120,24 @@ const TeamApiComponent = (props) => {
           }
         })
     } else {
-      return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
-        .then((r) => {
-          if (!r.exists) {
-            if (editedApi.currentVersion.split('').find((c) => reservedCharacters.includes(c))) {
-              toastr.error(
-                "Can't set version with special characters : " + reservedCharacters.join(' | ')
-              );
-            } else {
-              Services.saveTeamApiWithId(
-                props.currentTeam._id,
-                editedApi,
-                apiVersion.value,
-                editedApi._humanReadableId
-              ).then((res) => {
-                if (res.error) {
-                  toastr.error(translateMethod(res.error));
-                } else {
-                  toastr.success(translateMethod('Api saved'));
-                  setApi(editedApi)
+      return Services.saveTeamApiWithId(
+        props.currentTeam._id,
+        editedApi,
+        apiVersion.value,
+        editedApi._humanReadableId
+      ).then((res) => {
+        if (res.error) {
+          toastr.error(translateMethod(res.error));
+          return res
+        } else {
+          toastr.success(translateMethod('Api saved'));
+          setApi(editedApi)
 
-                  if (res._humanReadableId !== editedApi._humanReadableId) {
-                    navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`)
-                  }
-                }
-              });
-            }
-          } else {
-            toastr.error(`api with name "${editedApi.name}" already exists`)
-          };
-        });
+          if (res._humanReadableId !== editedApi._humanReadableId) {
+            navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`)
+          }
+        }
+      });
     }
   }
 

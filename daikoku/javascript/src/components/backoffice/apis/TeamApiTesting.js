@@ -51,7 +51,7 @@ export const TeamApiTesting = (props) => {
           },
         }),
       config: testing.config,
-      api: props.value._id,
+      api: props.value,
       description: <div>Description</div>,
     });
   };

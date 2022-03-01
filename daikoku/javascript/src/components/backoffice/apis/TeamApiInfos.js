@@ -39,7 +39,7 @@ export const TeamApiInfos = ({ value, save, creation, expertMode, injectSubMenu,
     {
       id: 'testing',
       label: translateMethod('Testing'),
-      component: p => TeamApiTesting({ ...p, openTestingApiKeyModal, openSubMetadataModal, otoroshiSettings}),
+      component: p => TeamApiTesting({ ...p, openTestingApiKeyModal, openSubMetadataModal, otoroshiSettings }),
       skipTo: 'save',
     }
   ]
