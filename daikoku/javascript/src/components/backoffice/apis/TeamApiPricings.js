@@ -874,8 +874,7 @@ export const TeamApiPricings = (props) => {
             min: 0
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer')
+            constraints.positive('constraints.positive')
           ]
         },
         costPerAdditionalRequest: {
@@ -887,8 +886,7 @@ export const TeamApiPricings = (props) => {
             min: 0
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer')
+            constraints.positive('constraints.positive')
           ]
         },
         currency: {
