@@ -26,9 +26,7 @@ object StringImplicits {
         .normalize(s, Normalizer.Form.NFD)
         .replaceAll("[\\p{InCombiningDiacriticalMarks}]", "")
         .replaceAll("[^A-Za-z0-9_.\\-~]", "-")
-        .replaceAll("--", "-")
-        .replaceAll("---", "-")
-        .replaceAll("----", "-")
+        .replaceAll("-+", "-")
         .toLowerCase
         .trim
     }
