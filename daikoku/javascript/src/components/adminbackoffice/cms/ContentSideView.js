@@ -305,7 +305,7 @@ export const ContentSideView = ({ value, onChange, pages, publish, contentType }
                             <input
                                 type="text"
                                 className="form-control mb-2"
-                                placeholder={translateMethod('Search your directive...')}
+                                placeholder={translateMethod('cms.content_side_view.search_text')}
                                 value={search}
                                 onChange={e => filterHelpers(e.target.value)}
                                 style={{ border: 'none' }}

@@ -2095,7 +2095,12 @@ case class CmsPage(
                             (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) =
     Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
       case None => "#not-found"
-      case Some(page) => s"/_${page.path.getOrElse("")}"
+      case Some(page) =>
+        val wantDraft = ctx.request.getQueryString("draft").contains("true")
+        if (wantDraft)
+          s"/_${page.path.getOrElse("")}?draft=true"
+        else
+          s"/_${page.path.getOrElse("")}"
     }
 
   private def daikokuLinks(ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars)

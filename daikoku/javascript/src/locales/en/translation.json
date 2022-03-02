@@ -1070,6 +1070,7 @@
     "cms.content_side_view.daikoku-documentations-page": "Get a specific page of the documentation of an api",
     "cms.content_side_view.daikoku-documentations-page-id": "Get a specific page of the documentation of an api by id",
     "cms.content_side_view.daikoku-plans": "Get the plans of an api",
+    "cms.content_side_view.search_text": "Search your directive...",
     "cms.index.new_page": "New page",
     "cms.pages.block": "BLOCK",
     "cms.sidebar.is_block_page": "Is a block ?",

@@ -1071,6 +1071,7 @@
   "cms.content_side_view.daikoku-documentations-page": "Récupére la n-ième page de documentation d'une api souhaitée",
   "cms.content_side_view.daikoku-documentations-page-id": "Récupére la page de documentation d'une api souhaitée (via Id)",
   "cms.content_side_view.daikoku-plans": "Récupére les plans d'une API",
+  "cms.content_side_view.search_text": "Tapez le nom de la directive",
   "cms.body.drag_and_drop_advice": "Dépose un fichier dans l'éditeur pour importer le contenu directement",
   "cms.index.new_page": "Nouvelle page",
   "cms.pages.publish_date": "Date de publication",
