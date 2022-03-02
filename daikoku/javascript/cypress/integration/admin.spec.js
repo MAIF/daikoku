@@ -63,24 +63,24 @@ describe('teams page', () => {
   });
 });
 
-describe('tenants page', () => {
+describe('tenants page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Tenants').click()
       .url().should('include', '/settings/tenants')
       .get('.avatar-with-action').should('have.length', 1)
-      .visit('http://localhost:9000/settings/tenants/evil-corp')
+      .visit('http://localhost:9000/settings/tenants/evil-corp.')
       .get('main h1').should('have.text', 'Evil Corp.');
   });
 });
 
-describe('users page', () => {
+describe('users page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Users').click()
       .url().should('include', '/settings/users')
       .get('.avatar-with-action').should('have.length', 3)
-      .visit('http://localhost:9000/settings/users/adminfoobar')
+      .visit('http://localhost:9000/settings/users/admin-foo.bar')
       .get('main h1').should('have.text', 'Admin - admin@foo.bar');
   });
 });
@@ -98,7 +98,6 @@ describe('create new api version', () => {
       .get('.form-control:nth-child(2)').click()
       .get('.form-control:nth-child(2)').type(version)
       .get('.modal-footer > .btn-outline-success').click()
-      .get('.fa-save').click()
       .visit(`http://localhost:9000/testers/test-api/${version}`)
       .url().should('include', `/testers/test-api/${version}`)
       .get('.badge').first().should('have.text', version)
