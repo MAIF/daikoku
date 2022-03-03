@@ -21,12 +21,12 @@ describe('API page', { scrollBehavior: false }, () => {
       .get('.card').should('have.length', 2)
       .get('a.nav-link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
-      .get('a.nav-link').contains('Api Reference').click()
+      .get('a.nav-link').contains('API Reference').click()
       .get('#redoc-container h1').should(($title) => {
         const text = $title.text();
         expect(text).to.include('Swagger Petstore (1.0.0)');
       })
-      .get('a.nav-link').contains('Try it !').click()
+      .get('a.nav-link').contains('Try it!').click()
       .get('#swagger-ui').should('be.visible');
   });
 });
@@ -116,9 +116,9 @@ describe('Team back-office', { scrollBehavior: false }, () => {
 
   it('Team Api keys works', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('Api keys').click()
+      .get('nav#sidebar a.nav-link').contains('API keys').click()
       .url().should('include', '/testers/settings/apikeys')
-      .get('main h1').should('have.text', 'Subscribed Apis')
+      .get('main h1').should('have.text', 'Subscribed APIs')
       .get('table tbody tr').should('have.length', 1)
       .get('table tbody tr a.btn').first().click()
       .url().should('include', '/testers/settings/apikeys/test-api')
