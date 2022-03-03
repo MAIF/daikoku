@@ -153,6 +153,7 @@ a.nav-link.active {
 .changePicture {
    position:absolute;
    display:none;
+   top: 0;
 }
 
 img:hover+.changePicture,.changePicture:hover{
