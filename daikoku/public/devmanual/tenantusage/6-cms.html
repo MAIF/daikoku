@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.5.0
+1.5.1
 </div>
 </div>
 <div class="nav-toc">
@@ -124,7 +124,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.5.0
+1.5.1
 </div>
 </div>
 <div class="nav-toc">
@@ -251,27 +251,27 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li>Save your tenant and try to call an invalid cms page : <code>https://&lt;your-domain&gt;/_/unknown-page</code></li>
 </ol>
 <h2><a href="#define-and-use-a-block" name="define-and-use-a-block" class="anchor"><span class="anchor-link"></span></a>Define and use a block</h2>
-<p>As a classical CMS, you can create an infinity number of pages but also reusable blocks. A block is composed of the same attributes than a page, with the exception of the path field. Indeed, a block cannot be displayed on a specific route but can be included in the others cms pages. </p>
+<p>As a classical CMS, you can create an infinity number of pages but also reusable blocks. A block is composed of the same attributes than a page, with the exception of the path field. Indeed, a block cannot be displayed on a specific route but can be included in the others cms pages.</p>
 <ol>
   <li><strong>Create</strong> a new page from the <code>https://&lt;your-domain&gt;/settings/pages</code> page</li>
   <li><strong>Activate</strong> the <code>Is a block?</code> button</li>
   <li><strong>Publish</strong> your block</li>
   <li><strong>Return</strong> to the list of pages</li>
   <li><strong>Edit</strong> your home page</li>
-  <li>On the top of the main input, <strong>click</strong> on the <code>square</code> button</li>
-  <li>In the appeared modal, <strong>select</strong> the created block (it will be added at your cursor position)</li>
+  <li>On the top of the main input, <strong>click</strong> on the <code>Add an element</code> button</li>
+  <li><strong>select</strong> in the list <code>Render a block</code> item, <strong>select</strong> the concerned block and <strong>click</strong> on the <code>insert</code> button</li>
   <li><strong>Click</strong> on the <code>Viewed draft page</code></li>
   <li>If everything works, the block appears</li>
   <li><strong>Return</strong> to the draft tab and <strong>Publish</strong> your version</li>
 </ol>
 <h2><a href="#add-a-link-to-the-back-office-page" name="add-a-link-to-the-back-office-page" class="anchor"><span class="anchor-link"></span></a>Add a link to the back office page</h2>
 <p>In your pages and blocks, you can add a link to the back and frontoffice of Daikoku. </p>
-<p>Once on a page, on the top of the main input <strong>select</strong> the first button (with the link icon). In the appeared modal, <strong>choose</strong> the desired link.</p>
+<p>Once on a page, on the top of the main input <strong>click</strong> on the <code>Add an element</code> buton . In the appeared modal, <strong>choose</strong> <code>Choose a link to the back office</code> and <strong>click</strong> on the <code>insert</code> button.</p>
 <p>The following text <code>{{daikoku-links-&lt;name-of-the-link&gt;}}</code> has beed added at your cursor position. This Handlebars instruction will be modified, during the rendering process, by the url to the page. To use this link, you must wrap it in a link html tag, as in the following example :</p>
 <pre><code>&lt;a href=&quot;{{daikoku-links-notifications}}&quot;&gt;My notifications&lt;/a&gt;
 </code></pre>
 <h2><a href="#navigate-between-cms-page" name="navigate-between-cms-page" class="anchor"><span class="anchor-link"></span></a>Navigate between cms page</h2>
-<p>You can navigate between your created pages using the <code>{{daikoku-page-url &quot;id-of-the-page&quot;}}</code> instruction. To simple add a link to a page, you can use the second button at the top of the main input. In the appeared modal, <strong>select</strong> the link page you want to add and wrap it in a link html tag.</p>
+<p>You can navigate between your created pages using the <code>{{daikoku-page-url &quot;id-of-the-page&quot;}}</code> instruction. To simple add a link to a page, you can get back to the <code>Add an element</code> list, <strong>select</strong> <code>Insert a link to a cms page</code> item and <strong>click</strong> on <code>insert</code> button.</p>
 <pre><code>&lt;a href=&quot;{{daikoku-page-url &quot;61fbaa95320100dbfca04d11&quot;}}&quot;&gt;See my apis&lt;/a&gt;
 </code></pre>
 <h2><a href="#custom-path-with-path-params" name="custom-path-with-path-params" class="anchor"><span class="anchor-link"></span></a>Custom path with path params</h2>
@@ -290,52 +290,12 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <pre class="prettyprint"><code class="language-html">&lt;div class=&quot;api-block&quot;&gt;
     {{#daikoku-api &quot;{{daikoku-path-param &#39;0&#39;}}&quot; }}
     &lt;div class=&quot;api-name&quot;&gt;&lt;/div&gt;
-    &lt;span&gt;{{name}}&lt;/span&gt;
+    &lt;span&gt;{{api.name}}&lt;/span&gt;
     &lt;div class=&quot;api-description&quot;&gt;
         &lt;h3&gt;Description de l&#39;API&lt;/h3&gt;
-        &lt;div&gt; {{description}} &lt;/div&gt;
+        &lt;div&gt; {{api.description}} &lt;/div&gt;
     &lt;/div&gt;
     {{/daikoku-api}}
-&lt;/div&gt;
-</code></pre>
-<h2><a href="#handlebars-instructions" name="handlebars-instructions" class="anchor"><span class="anchor-link"></span></a>Handlebars instructions</h2>
-<p>You can include all of these instructions in your pages and blocks.</p>
-<ul>
-  <li><code>daikoku-asset-url</code>: link to a tenant asset - <code>/tenant-assets/&lt;name-of-the-asset&gt;</code></li>
-  <li><code>daikoku-page-url</code>: link where the page is rendered - <code>/_&lt;/path&gt;</code></li>
-  <li><code>daikoku-generic-page-url</code>: generic link to a cms page - <code>/cms/page/&lt;id-of-the-page&gt;</code></li>
-  <li><code>daikoku-page-preview-url</code>: generic link to the draft of a cms page - <code>/cms/page/&lt;id-of-the-page&gt;?draft=true</code></li>
-  <li><code>daikoku-include-block</code>: renders the block of id, as a string</li>
-  <li><code>daikoku-template-wrapper</code>: wraps a content. This block takes the id of the block as a parameter and supports the <code>{{children}}</code> parameter</li>
-  <li><code>daikoku-query-param</code>: get the query param of &lsquo;id&rsquo; - <code>{{daikoku-query-param &#39;&lt;id-of-the-query-param&gt;&#39;}}</code></li>
-  <li><code>daikoku-api</code>: take a string id of api in parameter and get the name, id, description and small description of the api</li>
-  <li><code>daikoku-path-param</code>: take the index of the path param and get the value of the path param</li>
-  <li><code>connected</code>: true if the user is connected</li>
-  <li><code>tenant</code>: get field of the <code>tenant</code> : the name</li>
-  <li><code>admin</code>: true if the connected user is a tenant administrator</li>
-  <li><code>user</code>: get the <code>name</code> and the <code>email</code> of the connected user</li>
-  <li><code>request</code>: get the <code>path</code>, <code>method</code> and the <code>headers</code> of the request</li>
-</ul>
-<p>For all of these statements, you can pass named parameters. With the following example, we are passing parameters between the home page and the two information blocks.</p>
-<pre class="prettyprint"><code class="language-html">&lt;!-- The home page --&gt;
-&lt;DOCTYPE html&gt;
-&lt;html&gt;
-    &lt;head&gt;
-      &lt;title&gt;My page&lt;/title&gt;
-    &lt;/head&gt;
-    &lt;body&gt;
-        &lt;h1&gt;My home page&lt;/h1&gt;
-        &lt;div&gt;
-            &lt;h2&gt;Multiples blocks information&lt;/h2&gt;
-            {{daikoku-include-block &quot;&lt;id-of-the-information-block&gt;&quot; title=&quot;My first block&quot;}}
-            {{daikoku-include-block &quot;&lt;id-of-the-information-block&gt;&quot; title=&quot;My second block&quot;}}
-        &lt;/div&gt;
-    &lt;/body&gt;
-&lt;/html&gt;
-</code></pre>
-<pre class="prettyprint"><code class="language-html">&lt;!-- The information block --&gt;
-&lt;div&gt;
-    &lt;span&gt;The parameter received : {{title}}&lt;/span&gt;
 &lt;/div&gt;
 </code></pre>
 <h2><a href="#a-complete-example" name="a-complete-example" class="anchor"><span class="anchor-link"></span></a>A complete example</h2>
@@ -601,7 +561,6 @@ footer (block)
     <li><a href="../tenantusage/6-cms.html#add-a-link-to-the-back-office-page" class="header">Add a link to the back office page</a></li>
     <li><a href="../tenantusage/6-cms.html#navigate-between-cms-page" class="header">Navigate between cms page</a></li>
     <li><a href="../tenantusage/6-cms.html#custom-path-with-path-params" class="header">Custom path with path params</a></li>
-    <li><a href="../tenantusage/6-cms.html#handlebars-instructions" class="header">Handlebars instructions</a></li>
     <li><a href="../tenantusage/6-cms.html#a-complete-example" class="header">A complete example</a></li>
   </ul></li>
 </ul>
@@ -670,7 +629,7 @@ footer (block)
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.5.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.5.1', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>
