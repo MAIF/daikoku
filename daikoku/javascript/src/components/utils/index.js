@@ -17,3 +17,4 @@ export * from './BeautifulTitle';
 export * from './entities';
 export * from './Discussion';
 export * from './function';
+export * from './multiStepForm';

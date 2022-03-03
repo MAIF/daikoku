@@ -492,7 +492,7 @@ function MyProfileComponent(props) {
               onSubmit={save}
               footer={({ valid }) => {
                 return (
-                  <div className="d-flex" style={{ justifyContent: 'flex-end' }}>
+                  <div className="d-flex mt-3" style={{ justifyContent: 'flex-end' }}>
                     <a
                       className="btn btn-outline-primary"
                       href="#"

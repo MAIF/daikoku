@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import jQuery from 'jquery';
+import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
 
 import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';

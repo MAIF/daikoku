@@ -1,12 +1,12 @@
 import React, { Component, useEffect, useState, useImperativeHandle, useContext } from 'react';
-import _ from 'lodash';
-import * as Services from '../../../services';
+import { useParams } from 'react-router-dom';
 import faker from 'faker';
-
-import { Spinner } from '../../utils';
-
-import { AssetChooserByModal } from '../../frontend';
+import _ from 'lodash';
 import { connect } from 'react-redux';
+
+import * as Services from '../../../services';
+import { Spinner } from '../../utils';
+import { AssetChooserByModal } from '../../frontend';
 import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -77,7 +77,8 @@ function AssetButton(props) {
 }
 
 const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
-  const { team, value, versionId, creationInProgress, params } = props;
+  const { team, value, versionId, creationInProgress } = props;
+  const params = useParams();
 
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(undefined);
@@ -156,9 +157,10 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   useEffect(() => {
     if (selected || deletedPage) {
       setDeletedPage(false);
-      props.save().then(() => {
-        updateDetails();
-      });
+      props.save(value)
+        .then(() => {
+          updateDetails();
+        });
     }
   }, [value]);
 
@@ -201,7 +203,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         const newValue = _.cloneDeep(value);
         newValue.documentation.pages = pages;
         props.onChange(newValue);
-        props.save().then(() => {
+        props.save(newValue).then(() => {
           updateDetails();
         });
       }
@@ -217,7 +219,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         const newValue = _.cloneDeep(value);
         newValue.documentation.pages = pages;
         props.onChange(newValue);
-        props.save().then(() => {
+        props.save(newValue).then(() => {
           updateDetails();
         });
       }
@@ -244,7 +246,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       pages.splice(index, 0, page._id);
       const newValue = _.cloneDeep(value);
       newValue.documentation.pages = pages;
-
       setSelected(page);
       props.onChange(newValue);
     });

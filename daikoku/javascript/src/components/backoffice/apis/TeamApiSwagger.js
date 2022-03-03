@@ -1,28 +1,55 @@
 import React, { useState, useEffect, useContext } from 'react';
 import SwaggerEditor, { plugins } from 'swagger-editor';
+import { Form, type, format, constraints } from "@maif/react-forms";
+
 import { I18nContext } from '../../../core';
 import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
 import 'swagger-editor/dist/swagger-editor.css';
-import { ensurePluginOrder } from 'react-table';
 
-export const TeamApiSwagger = ({ value, onChange }) => {
-  const [lastContent, setLastContent] = useState(undefined);
-  let unsubscribe = () => {};
+const defaultSwaggerContent = {
+  swagger: "2.0",
+  info: {
+    description: "description",
+    version: "1.0.0",
+    title: "title",
+    termsOfService: "terms",
+    contact: {
+      email: "email@eamil.to"
+    },
+    license: {
+      name: "Apache 2.0",
+      url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  host: "localhost",
+  schemes: ['https', 'http'],
+  paths: {
+    '/': {
+      get: {
+        summary: "Add a new pet to the store",
+        responses: {
+          "405": {
+            description: "Invalid input"
+          }
+        }
+          
+      }
+    }
+  }
 
-  const { translateMethod } = useContext(I18nContext);
+}
+
+const SwaggerEditorInput = ({ setValue, rawValues, value, error, onChange }) => {
+  let unsubscribe;
 
   useEffect(() => {
-    if (value.swagger && value.swagger.content) {
-      initSwaggerEditor(value.swagger.content);
-    } else {
-      killSwaggerEditor();
-    }
+    initSwaggerEditor(value);
 
     return () => {
       killSwaggerEditor();
     };
-  }, [value]);
+  }, []);
 
   const initSwaggerEditor = (content) => {
     window.editor = SwaggerEditor({
@@ -33,83 +60,89 @@ export const TeamApiSwagger = ({ value, onChange }) => {
       swagger2GeneratorUrl: 'https://generator.swagger.io/api/swagger.json',
       oas3GeneratorUrl: 'https://generator3.swagger.io/openapi.json',
       swagger2ConverterUrl: 'https://converter.swagger.io/api/convert',
-      // spec: content,
+      spec: content || JSON.stringify(defaultSwaggerContent, null, 2),
     });
-    window.editor.specActions.updateSpec(content);
-    setLastContent(content);
+    window.editor.specActions.updateSpec(content || JSON.stringify(defaultSwaggerContent, null, 2));
     unsubscribe = window.editor.getStore().subscribe(() => {
-      const ctt = window.editor.specSelectors.specStr();
-      if (ctt !== lastContent) {
-        updateStateFromSwaggerEditor();
-        setLastContent(ctt);
-        localStorage.removeItem('swagger-editor-content');
-      }
+      const content = window.editor.specSelectors.specStr();
+      onChange(content);
     });
-  };
-
-  const updateStateFromSwaggerEditor = () => {
-    const content = window.editor.specSelectors.specStr();
-    onChange({ ...value, swagger: { ...value.swagger, content } });
   };
 
   const killSwaggerEditor = () => {
     if (unsubscribe) {
       unsubscribe();
     }
+    window.editor = null;
+    localStorage.removeItem('swagger-editor-content');
   };
 
+  return (
+    <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }} />
+  )
+}
+
+
+export const TeamApiSwagger = ({ value, onChange }) => {
+  const { translateMethod } = useContext(I18nContext);
   const swagger = value.swagger;
-  if (!swagger) {
-    return null;
+
+  const schema = {
+    url: {
+      type: type.string,
+      label: translateMethod('URL'),
+      visible: {
+        ref: 'useContent',
+        test: v => !v
+      },
+      constraints: [
+        constraints.nullable(),
+        constraints.matches(
+          /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/mg,
+          translateMethod('constraints.format.url', false, '', translateMethod('Url')))
+      ]
+    },
+    headers: {
+      type: type.object,
+      label: translateMethod('Headers'),
+      visible: {
+        ref: 'useContent',
+        test: v => !v
+      },
+      constraints: [
+        constraints.nullable()
+      ]
+    },
+    useContent: {
+      type: type.bool,
+      label: translateMethod('Use swagger content'),
+      defaultValue: !!swagger.content
+    },
+    content: {
+      type: type.string,
+      format: format.code,
+      label: 'swagger-content',
+      visible: {
+        ref: 'useContent',
+        test: v => !!v
+      },
+      render: v => SwaggerEditorInput(v),
+      constraints: [
+        constraints.nullable()
+      ]
+    }
   }
 
+
   return (
-    <form>
-      {!swagger.content && (
-        <TextInput
-          key={'test'}
-          label={translateMethod('URL')}
-          placeholder="The url of the swagger file"
-          value={swagger.url}
-          onChange={(url) => onChange({ ...value, swagger: { ...value.swagger, url } })}
-        />
-      )}
-      {!swagger.content && (
-        <ObjectInput
-          label={translateMethod('Headers')}
-          value={swagger.headers}
-          onChange={(headers) => onChange({ ...value, swagger: { ...value.swagger, headers } })}
-        />
-      )}
-      <BooleanInput
-        label={translateMethod('Use swagger content')}
-        value={!!swagger.content}
-        onChange={(e) => {
-          let content;
-          if (e) {
-            content = JSON.stringify(
-              {
-                swagger: '2.0',
-                info: {
-                  description: '...',
-                  version: '1.0.0',
-                  title: '...',
-                },
-                host: 'api.foo.bar',
-                basePath: '/',
-              },
-              null,
-              2
-            );
-          } else {
-            content = null;
-          }
-          onChange({ ...value, swagger: { ...value.swagger, content } });
-        }}
-      />
-      {!!swagger.content && (
-        <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }}></div>
-      )}
-    </form>
-  );
+    <Form
+      schema={schema}
+      options={{
+        autosubmit: true
+      }}
+      onSubmit={swagger => onChange({ ...value, swagger })}
+      value={value.swagger}
+      footer={() => null}
+    />
+  )
 };

@@ -4,6 +4,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
+import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
 
 import jQuery from 'jquery';
 
@@ -50,12 +51,14 @@ export function init(
   isTenantAdmin,
   apiCreationPermitted
 ) {
+  const expertMode = JSON.parse(localStorage.getItem('expertMode') || false)
   const storeInst = store({
     connectedUser: user,
     tenant,
     impersonator,
     isTenantAdmin,
     apiCreationPermitted,
+    expertMode
   });
 
   customizeFetch(storeInst);
