@@ -1005,12 +1005,14 @@
   "constraints.oneof.sub.process": "Merci de sélectionner une valeur correct pour le processus de souscription (Automatique or Manuel)",
   "constraints.oneof.integration.process": "Merci de sélectionner une valeur correct pour le processus d'intégration (Automatique or Clef d'API)",
   "constraints.required.period.unit": "L'unité de periode est requise",
+  "constraint.match.path": "La valeur doit être un chemin valide",
   "Edit plan": "Modifier le plan",
   "back.to.team": "Retour à %s",
   "Otoroshi Settings": "Paramètres Otoroshi",
   "Otoroshi Customization": "Personnalisation Otoroshi",
   "Quotas & Billing": "Quotas & Facturation",
   "Skip": "Passer",
-  "Otoroshi target": "Otoroshi cible"
-  
+  "Otoroshi target": "Otoroshi cible",
+  "http.method": "Méthode HTTP",
+  "http.path": "Chemin"
 }

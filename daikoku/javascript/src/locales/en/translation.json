@@ -1003,11 +1003,14 @@
     "constraints.oneof.sub.process": "Please, select a correct subscription process (Automatic or Manual)",
     "constraints.oneof.integration.process": "Please, select a correct integration process (Automatic or ApiKey)",
     "constraints.required.period.unit": "The unit of period is required",
+    "constraint.match.path": "value must be a valid path",
     "Edit plan": "Edit plan",
     "back.to.team": "Back to %s",
     "Otoroshi Settings": "Otoroshi Settings",
     "Otoroshi Customization": "Otoroshi Customization",
     "Quotas & Billing": "Quotas & Billing",
     "Skip": "Skip",
-    "Otoroshi target": "Otoroshi target"
+    "Otoroshi target": "Otoroshi target",
+    "http.method": "HTTP method",
+    "http.path": "Path"
 }

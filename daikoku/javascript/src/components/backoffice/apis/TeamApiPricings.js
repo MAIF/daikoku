@@ -407,7 +407,7 @@ export const TeamApiPricings = (props) => {
       method: {
         type: type.string,
         format: format.select,
-        label: translateMethod('http.method'), //todo: translation
+        label: translateMethod('http.method'),
         options: [
           '*',
           'GET',
@@ -423,10 +423,10 @@ export const TeamApiPricings = (props) => {
       },
       'path': {
         type: type.string,
-        label: translateMethod('http.path'), //todo:trabnslation
+        label: translateMethod('http.path'),
         defaultValue: '/',
         constraints: [
-          constraints.matches(/^\/([^\s]\w*)*$/, 'constraint.match.path') //todo:  trabnslation
+          constraints.matches(/^\/([^\s]\w*)*$/, translateMethod('constraint.match.path'))
         ]
       }
     },
