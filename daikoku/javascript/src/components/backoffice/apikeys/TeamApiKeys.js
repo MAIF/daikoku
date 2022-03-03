@@ -55,7 +55,8 @@ export function TeamApiKeysComponent(props) {
             <div style={{ minWidth: 100 }}>
               <Link
                 to={`/${props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
-                className="btn btn-sm btn-access-negative">
+                className="btn btn-sm btn-access-negative"
+              >
                 <i className="fas fa-eye me-1" />
                 <Translation i18nkey="Api keys">Api keys</Translation>
               </Link>
@@ -95,7 +96,8 @@ export function TeamApiKeysComponent(props) {
           </h1>
           <Link
             to={`/${props.currentTeam._humanReadableId}/settings/consumption`}
-            className="btn btn-sm btn-access-negative mb-2">
+            className="btn btn-sm btn-access-negative mb-2"
+          >
             <i className="fas fa-chart-bar me-1" />
             <Translation i18nkey="See Stats">See Stats</Translation>
           </Link>

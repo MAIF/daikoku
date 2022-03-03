@@ -28,7 +28,7 @@ function Alert(props) {
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">{props.title ? props.title : 'Alert'}</h5>
-              <button type="button" className="btn-close" onClick={props.close}/>
+              <button type="button" className="btn-close" onClick={props.close} />
             </div>
             <div className="modal-body">
               <div className="modal-description">
@@ -81,7 +81,7 @@ function Confirm(props) {
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Confirm</h5>
-              <button type="button" className="btn-close" onClick={props.cancel}/>
+              <button type="button" className="btn-close" onClick={props.cancel} />
             </div>
             <div className="modal-body">
               <div className="modal-description">
@@ -137,7 +137,7 @@ function Prompt(props) {
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">{props.title || 'Confirm'}</h5>
-              <button type="button" className="btn-close" onClick={props.cancel}/>
+              <button type="button" className="btn-close" onClick={props.cancel} />
             </div>
             <div className="modal-body">
               <div className="modal-description">

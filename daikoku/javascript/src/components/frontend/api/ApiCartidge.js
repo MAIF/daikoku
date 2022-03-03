@@ -58,8 +58,7 @@ export function ApiCartidge(props) {
       <Separator />
       <span>
         <Translation i18nkey="Visibility">Visibility</Translation>
-        <span
-          className={`badge ms-1 ${api.visibility === 'Public' ? 'bg-success' : 'bg-danger'}`}>
+        <span className={`badge ms-1 ${api.visibility === 'Public' ? 'bg-success' : 'bg-danger'}`}>
           {translateMethod(api.visibility)}
         </span>
       </span>

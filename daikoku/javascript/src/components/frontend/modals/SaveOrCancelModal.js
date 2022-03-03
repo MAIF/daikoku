@@ -15,7 +15,7 @@ export const SaverOrCancelModal = (props) => {
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{props.title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
       </div>
       <div className="modal-body">
         <div className="modal-description">{props.message}</div>

@@ -230,7 +230,8 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
               <>
                 <button
                   className="btn btn-outline-secondary me-1"
-                  onClick={() => handleEdition(true)}>
+                  onClick={() => handleEdition(true)}
+                >
                   {translateMethod('Edit')}
                 </button>
                 <Link
@@ -247,7 +248,8 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
       <div className="d-flex align-items-center pb-3 mb-3">
         <div
           style={styles.getStatus(issue.open)}
-          className="d-flex justify-content-center align-items-center me-3">
+          className="d-flex justify-content-center align-items-center me-3"
+        >
           <i className="fa fa-exclamation-circle me-2" style={{ color: '#fff' }} />
           {issue.open ? translateMethod('issues.open') : translateMethod('issues.closed')}
         </div>

@@ -102,7 +102,12 @@ function ApiPricingCardComponent(props) {
         <span>
           <Translation
             i18nkey="pay.per.use.desc.default"
-            replacements={[props.plan.costPerRequest, currency(props.plan)]}
+            replacements={[
+              props.plan.costPerMonth,
+              currency(props.plan),
+              props.plan.costPerRequest,
+              currency(props.plan),
+            ]}
           >
             You'll be charged {props.plan.costPerRequest}
             <Curreny plan={props.plan} /> per request

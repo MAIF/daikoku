@@ -10,7 +10,7 @@ describe('Login page & login form', () => {
   });
 });
 
-describe('API page', () => {
+describe('API page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/testers/test-api/1.0.0')
@@ -46,11 +46,11 @@ describe('Profile page', () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/settings/me')
-      .get('#my_profile_email').should('have.text', 'tester@foo.bar');
+      .get('input[name="email"]').should('have.value', 'tester@foo.bar');
   });
 });
 
-describe('Team apis page', () => {
+describe('Team apis page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/testers')
@@ -58,7 +58,7 @@ describe('Team apis page', () => {
   });
 })
 
-describe('Team back-office', () => {
+describe('Team back-office', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/testers/settings')
