@@ -188,6 +188,18 @@ case class PostgresTenantCapableMessageRepo(
   override def repo(): PostgresRepo[Message, DatastoreId] = _repo()
 }
 
+case class PostgresTenantCapableCmsPageRepo(
+     _repo: () => PostgresRepo[CmsPage, CmsPageId],
+     _tenantRepo: TenantId => PostgresTenantAwareRepo[CmsPage, CmsPageId]
+) extends PostgresTenantCapableRepo[CmsPage, CmsPageId]
+  with CmsPageRepo {
+  override def tenantRepo(
+     tenant: TenantId): PostgresTenantAwareRepo[CmsPage, CmsPageId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[CmsPage, CmsPageId] = _repo()
+}
+
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption,
@@ -295,7 +307,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     "user_sessions" -> false,
     "api_posts" -> true,
     "api_issues" -> true,
-    "evolutions" -> false
+    "evolutions" -> false,
+    "cmspages" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -447,6 +460,11 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       () => new PostgresMessageRepo(env, reactivePg),
       t => new PostgresTenantMessageRepo(env, reactivePg, t)
     )
+  private val _cmsPageRepo: CmsPageRepo =
+    PostgresTenantCapableCmsPageRepo(
+      () => new PostgresCmsPageRepo(env, reactivePg),
+      t => new PostgresTenantCmsPageRepo(env, reactivePg, t)
+    )
   private val _evolutionRepo: EvolutionRepo =
     new PostgresEvolutionRepo(env, reactivePg)
 
@@ -482,6 +500,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   override def translationRepo: TranslationRepo = _translationRepo
 
   override def messageRepo: MessageRepo = _messageRepo
+
+  override def cmsRepo: CmsPageRepo = _cmsPageRepo
 
   override def evolutionRepo: EvolutionRepo = _evolutionRepo
 
@@ -767,6 +787,19 @@ class PostgresTenantMessageRepo(env: Env,
   override def extractId(value: Message): String = value.id.value
 }
 
+class PostgresTenantCmsPageRepo(env: Env,
+                                reactivePg: ReactivePg,
+                                tenant: TenantId)
+  extends PostgresTenantAwareRepo[CmsPage, CmsPageId](env,
+    reactivePg,
+    tenant) {
+  override def tableName: String = "cmspages"
+
+  override def format: Format[CmsPage] = json.CmsPageFormat
+
+  override def extractId(value: CmsPage): String = value.id.value
+}
+
 class PostgresTenantApiSubscriptionRepo(env: Env,
                                         reactivePg: ReactivePg,
                                         tenant: TenantId)
@@ -913,6 +946,15 @@ class PostgresMessageRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[Message] = json.MessageFormat
 
   override def extractId(value: Message): String = value.id.value
+}
+
+class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[CmsPage, CmsPageId](env, reactivePg) {
+  override def tableName: String = "cmspages"
+
+  override def format: Format[CmsPage] = json.CmsPageFormat
+
+  override def extractId(value: CmsPage): String = value.id.value
 }
 
 class PostgresApiRepo(env: Env, reactivePg: ReactivePg)

@@ -263,6 +263,8 @@ sealed trait Env {
   def identityFilters(implicit mat: Materializer,
                       ec: ExecutionContext): Seq[EssentialFilter]
 
+  def translator: Translator
+
   def expositionFilters(implicit mat: Materializer,
                         ec: ExecutionContext): Seq[EssentialFilter]
 
@@ -274,7 +276,7 @@ class DaikokuEnv(ws: WSClient,
                  configuration: Configuration,
                  context: Context,
                  messagesApi: MessagesApi,
-                 translator: Translator)
+                 interpreter: Translator)
     extends Env {
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
@@ -286,7 +288,7 @@ class DaikokuEnv(ws: WSClient,
 
   val auditActor: ActorRef =
     actorSystem.actorOf(
-      AuditActorSupervizer.props(this, messagesApi, translator))
+      AuditActorSupervizer.props(this, messagesApi, interpreter))
 
   private val daikokuConfig = new Config(configuration)
 
@@ -314,6 +316,8 @@ class DaikokuEnv(ws: WSClient,
   override def wsClient: WSClient = ws
 
   override def config: Config = daikokuConfig
+
+  override def translator: Translator = interpreter
 
   override def assetsStore: AssetsDataStore = s3assetsStore
 

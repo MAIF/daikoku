@@ -1,0 +1,15 @@
+{{#daikoku-template-wrapper "<id-of-the-layout-page>" title="API Description"}}
+<div class="api-block">
+    {{#daikoku-api "{{daikoku-path-param '0'}}" }}
+    <div class="api-name"></div>
+    <span>{{name}}</span>
+    <div class="api-description">
+        <h3>API description</h3>
+        <div> {{description}} </div>
+    </div>
+    <button>
+        <a href="{{daikoku-links-home}}">Return to APIS list</a>
+    </button>
+    {{/daikoku-api}}
+</div>
+{{/daikoku-template-wrapper}}

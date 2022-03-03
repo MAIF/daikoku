@@ -33,7 +33,7 @@ const defaultSwaggerContent = {
             description: "Invalid input"
           }
         }
-          
+
       }
     }
   }

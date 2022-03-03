@@ -66,7 +66,7 @@ describe('teams page', () => {
 describe('tenants page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('Tenants').click()
+      .get('nav#sidebar a.nav-link').contains('Tenants').click({ force: true })
       .url().should('include', '/settings/tenants')
       .get('.avatar-with-action').should('have.length', 1)
       .visit('http://localhost:9000/settings/tenants/evil-corp.')
@@ -77,7 +77,7 @@ describe('tenants page', { scrollBehavior: false }, () => {
 describe('users page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('Users').click()
+      .get('nav#sidebar a.nav-link').contains('Users').click({ force: true })
       .url().should('include', '/settings/users')
       .get('.avatar-with-action').should('have.length', 3)
       .visit('http://localhost:9000/settings/users/admin-foo.bar')

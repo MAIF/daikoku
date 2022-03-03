@@ -6,11 +6,7 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
@@ -24,7 +20,7 @@ import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object json {
   implicit class RegexOps(sc: StringContext) {
@@ -1531,11 +1527,16 @@ object json {
             unloggedHome = (json \ "unloggedHome").asOpt[String].getOrElse(""),
             homePageVisible =
               (json \ "homePageVisible").asOpt[Boolean].getOrElse(false),
+            homeCmsPage = (json \ "homeCmsPage").asOpt[String],
+            notFoundCmsPage = (json \ "notFoundCmsPage").asOpt[String],
+            authenticatedCmsPage = (json \ "authenticatedCmsPage").asOpt[String],
+            cmsHistoryLength = (json \ "cmsHistoryLength").asOpt[Int].getOrElse(10),
             logo = (json \ "logo")
               .asOpt[String]
               .getOrElse("/assets/images/daikoku.svg"),
             footer = (json \ "footer")
-              .asOpt[String]
+              .asOpt[String],
+            cacheTTL = (json \ "cacheTTL").asOpt[Int].getOrElse(60000)
           ))
       } recover {
         case e => JsError(e.getMessage)
@@ -1558,7 +1559,12 @@ object json {
       "title" -> o.title,
       "description" -> o.description,
       "unloggedHome" -> o.unloggedHome,
+      "homeCmsPage" -> o.homeCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "notFoundCmsPage" -> o.notFoundCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "authenticatedCmsPage" -> o.authenticatedCmsPage.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "cacheTTL" -> o.cacheTTL,
       "homePageVisible" -> o.homePageVisible,
+      "cmsHistoryLength" -> o.cmsHistoryLength,
       "logo" -> o.logo,
       "footer" -> o.footer
         .map(JsString.apply)
@@ -3260,10 +3266,89 @@ object json {
 
     override def writes(o: JsObject): JsValue = o
   }
+
+  val CmsPageIdFormat = new Format[CmsPageId] {
+    override def reads(json: JsValue): JsResult[CmsPageId] =
+      Try {
+        JsSuccess(CmsPageId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: CmsPageId): JsValue = JsString(o.value)
+  }
+
+  val CmsHistoryFormat = new Format[CmsHistory] {
+    override def writes(o: CmsHistory): JsValue = Json.obj(
+      "id" -> o.id,
+      "date" -> DateTimeFormat.writes(o.date),
+      "diff" -> o.diff,
+      "user" -> UserIdFormat.writes(o.user)
+    )
+    override def reads(o: JsValue): JsResult[CmsHistory] = Try {
+      CmsHistory(
+        id = (o \ "id").as[String],
+        date = (o \ "date").as(DateTimeFormat),
+        diff = (o \ "diff").as[String],
+        user = (o \ "user").as(UserIdFormat)
+      )
+    } match {
+      case Failure(exception) => JsError(exception.getMessage)
+      case Success(page) => JsSuccess(page)
+    }
+  }
+
+  val CmsPageFormat = new Format[CmsPage] {
+    override def writes(o: CmsPage): JsValue = Json.obj(
+      "_id" -> o.id.value,
+      "_tenant" -> o.tenant.value,
+      "_deleted" -> o.deleted,
+      "visible" -> o.visible,
+      "authenticated" -> o.authenticated,
+      "name" -> o.name,
+      "picture" -> o.picture.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "tags" -> o.tags,
+      "metadata" -> o.metadata,
+      "contentType" -> o.contentType,
+      "forwardRef" -> o.forwardRef.map(v => v.asJson).getOrElse(JsNull).as[JsValue],
+      "body" -> o.body,
+      "draft" -> o.draft,
+      "path" -> o.path.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "exact" -> o.exact,
+      "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes),
+      "history" -> SeqCmsHistoryFormat.writes(o.history)
+    )
+    override def reads(json: JsValue): JsResult[CmsPage] = Try {
+      CmsPage(
+        id = (json \ "_id").as(CmsPageIdFormat),
+        tenant = (json \ "_tenant").as(TenantIdFormat),
+        deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
+        visible = (json \ "visible").asOpt[Boolean].getOrElse(false),
+        authenticated = (json \ "authenticated").asOpt[Boolean].getOrElse(false),
+        name = (json \ "name").as[String],
+        picture = (json \ "picture").asOpt[String].filter(_.trim.nonEmpty),
+        tags = (json \ "tags").asOpt[List[String]].getOrElse(List.empty),
+        metadata = (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
+        body = (json \ "body").asOpt[String].getOrElse(""),
+        draft = (json \ "draft").asOpt[String].getOrElse(""),
+        contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
+        forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
+        path = (json \ "path").asOpt[String],
+        exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
+        lastPublishedDate = (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads),
+        history = (json \ "history").asOpt(SeqCmsHistoryFormat)
+          .getOrElse(Seq.empty)
+      )
+    } match {
+      case Failure(exception) => JsError(exception.getMessage)
+      case Success(page) => JsSuccess(page)
+    }
+  }
   val SetOtoroshiServicesIdFormat =
     Format(Reads.set(OtoroshiServiceIdFormat),
            Writes.set(OtoroshiServiceIdFormat))
   val SetOtoroshiServiceGroupsIdFormat =
     Format(Reads.set(OtoroshiServiceGroupIdFormat),
            Writes.set(OtoroshiServiceGroupIdFormat))
+  val SeqCmsHistoryFormat = Format(Reads.seq(CmsHistoryFormat), Writes.seq(CmsHistoryFormat))
 }

@@ -12,14 +12,18 @@ export const MaybeHomePage = ({ tenant }) => {
     if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
       navigate('/apis');
     }
+    else
+      window.location.replace("/_/")
   }, []);
 
-  return (
-    <div className="row">
-      <div
-        className="tenant-home-page"
-        dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.unloggedHome || '') }}
-      />
-    </div>
-  );
+  return null
+
+  // return (
+  //   <div className="row">
+  //     <div
+  //       className="tenant-home-page"
+  //       dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.unloggedHome || '') }}
+  //     />
+  //   </div>
+  // );
 };

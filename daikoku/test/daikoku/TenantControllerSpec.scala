@@ -1,31 +1,16 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import com.typesafe.config.ConfigFactory
-import fr.maif.otoroshi.daikoku.domain.{
-  ApiId,
-  ApiVisibility,
-  ConsoleMailerSettings,
-  DaikokuStyle,
-  OtoroshiSettings,
-  OtoroshiSettingsId,
-  TeamId,
-  TeamPermission,
-  TeamType,
-  Tenant,
-  TenantId,
-  UserId,
-  UserWithPermission
-}
+import fr.maif.otoroshi.daikoku.domain.json.SeqCmsHistoryFormat
+import fr.maif.otoroshi.daikoku.domain.{ApiId, ApiVisibility, CmsPageId, ConsoleMailerSettings, DaikokuStyle, OtoroshiSettings, OtoroshiSettingsId, TeamId, TeamPermission, TeamType, Tenant, TenantId, UserId, UserWithPermission}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.{Configuration, Logger}
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
+
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
 class TenantControllerSpec()
     extends PlaySpec
@@ -487,7 +472,6 @@ class TenantControllerSpec()
       resp.status mustBe 409
     }
   }
-
   "a tenant admin" can {
     "not list all full tenants" in {
       val tenant2 = tenant.copy(
@@ -1074,8 +1058,500 @@ class TenantControllerSpec()
       val resp = httpJsonCallBlocking(s"/api/admin/auditTrail")(tenant, session)
       resp.status mustBe 200
     }
-  }
+    "create a cms page" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
 
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = "/api/cms/pages",
+        method = "POST",
+        body = Some(defaultCmsPage.asJson)
+      )(tenant, session)
+
+      resp.status mustBe 201
+    }
+    "delete a cms page" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        cmsPages = Seq(defaultCmsPage),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/api/cms/pages/${defaultCmsPage.id.value}",
+        method = "DELETE")(tenant, session)
+
+      resp.status mustBe 200
+    }
+    "get the production content of a cms page by id" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        cmsPages = Seq(defaultCmsPage),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/cms/pages/${defaultCmsPage.id.value}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe "<h1>production content</h1>"
+    }
+    "get the draft content of a cms page by id" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        cmsPages = Seq(defaultCmsPage),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/cms/pages/${defaultCmsPage.id.value}?draft=true",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe defaultCmsPage.draft
+    }
+    "get the production content of a cms page by path" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        cmsPages = Seq(defaultCmsPage),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${defaultCmsPage.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe defaultCmsPage.body
+    }
+    "get the draft content of a cms page by path" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        cmsPages = Seq(defaultCmsPage),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${defaultCmsPage.path.get}?draft=true",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe defaultCmsPage.draft
+    }
+    "navigate to an unknown cms page" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${defaultCmsPage.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 404
+    }
+    "navigate to an unknown cms page with the 404 cms page defined" in {
+      val notFoundPage = defaultCmsPage.copy(name = "404 page", id = CmsPageId("404_page_id"))
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(style = Some(tenant.style.get.copy(notFoundCmsPage = Some(notFoundPage.id.value))))),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(notFoundPage),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${defaultCmsPage.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe notFoundPage.body
+    }
+    "navigate to a cms page with only exact path" in {
+      val page = defaultCmsPage.copy(path = Some("/home"), exact = true)
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      var resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+
+      resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}/foo",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 404
+    }
+    "get a path param from cms page" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("foo-page"),
+        path = Some("/foo"),
+        body = "{{daikoku-path-param '0'}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}/bar",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe "bar"
+    }
+    "get the query params from cms page" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("query-params"),
+        path = Some("/test"),
+        body = "{{daikoku-query-param 'foo'}}-{{daikoku-query-param 'bar'}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}?bar=foo&foo=bar",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe "bar-foo"
+    }
+    "validate size helper" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("size-helper"),
+        path = Some("/size"),
+        body = "{{size '[{ \"foo\": \"bar\" }, { \"foo\": \"bar\" }]'}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe "2"
+    }
+    "validate ifeq helper" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("ifeq-helper"),
+        path = Some("/ifeq"),
+        body = "{{#ifeq 'foo' 'foo'}}foobar{{/ifeq}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe "foobar"
+    }
+    "validate ifnoteq helper" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("ifnoteq-helper"),
+        path = Some("/ifnoteq"),
+        body = "{{#ifnoteq 'foo' 'bar'}}foobar{{/ifnoteq}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe "foobar"
+    }
+    "validate getOrElse helper" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("getOrElse-helper"),
+        path = Some("/getOrElse"),
+        body = "{{getOrElse '' 'foobar'}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe "foobar"
+    }
+    "validate daikoku-include-block helper" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("daikoku-include-block-helper"),
+        path = Some("/daikoku-include-block"),
+        body = s"{{daikoku-include-block '${defaultCmsPage.id.value}'}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(defaultCmsPage, page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe defaultCmsPage.body
+    }
+    "validate daikoku-template-wrapper helper" in {
+      val wrapper = defaultCmsPage.copy(
+        id = CmsPageId("wrapper page"),
+        path = Some("/wrapper"),
+        body = "<div><h1>Wrapper</h1>{{children}}</div>"
+      )
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("daikoku-templat-wrapper-helper"),
+        path = Some("/daikoku-template-wrapper"),
+        body = s"{{#daikoku-template-wrapper '${wrapper.id.value}'}}{{daikoku-include-block '${defaultCmsPage.id.value}'}}{{/daikoku-template-wrapper}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(defaultCmsPage, wrapper, page),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe s"""<div><h1>Wrapper</h1>${defaultCmsPage.body}</div>"""
+    }
+    "validate daikoku-apis helper" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("daikoku-apis-helper"),
+        path = Some("/daikoku-apis"),
+        body = s"{{#daikoku-apis}}{{api.name}}{{/daikoku-apis}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi, defaultApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      assert(resp.body == s"${defaultApi.name}\n${adminApi.name}" || resp.body == s"${adminApi.name}\n${defaultApi.name}")
+    }
+    "validate daikoku-json-apis helper" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("daikoku-json-apis-helper"),
+        path = Some("/daikoku-json-apis"),
+        body = s"{{daikoku-json-apis}}"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(adminApi, defaultApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}"
+      )(tenant, session)
+
+      resp.status mustBe 200
+
+      Json.parse(resp.body).as[JsArray].value.size mustBe 2
+    }
+    "validate daikoku-plans helper" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("daikoku-plans-helper"),
+        path = Some("/daikoku-plans"),
+        body = s"""{{#daikoku-plans "${defaultApi.id.value}"}}{{plan._id}}{{/daikoku-plans}}"""
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        cmsPages = Seq(page),
+        apis = Seq(defaultApi)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/_${page.path.get}",
+        headers = Map("accept" -> "text/html")
+      )(tenant, session)
+
+      resp.status mustBe 200
+      resp.body mustBe s"${defaultApi.possibleUsagePlans.map(_.id.value).mkString("\n")}"
+    }
+    "create, update and restore version of a cms page" in {
+      val page = defaultCmsPage.copy(
+        id = CmsPageId("create-update-restore-page"),
+        path = Some("/create-update-restore-page"),
+        draft = "first"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(defaultApi),
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      httpJsonCallBlocking(
+        s"/api/cms/pages",
+        "POST",
+        body = Some(page.asJson)
+      )(tenant, session)
+
+      def mustBeEquals(value: String) = {
+        val getPage = httpJsonCallBlocking(s"/_${page.path.get}?draft=true")(tenant, session)
+        getPage.status mustBe 200
+        getPage.body mustBe value
+      }
+
+      mustBeEquals("first")
+
+      Await.result(httpJsonCall(
+        s"/api/cms/pages",
+        "POST",
+        body = Some(page.copy(draft = "second", body = "second").asJson)
+      )(tenant, session), atMost = 10.seconds)
+
+      mustBeEquals("second")
+
+      val res = httpJsonCallBlocking(s"/api/cms/pages/${page.id.value}")(tenant, session)
+      val updatedPage = (res.json \ "history").as(SeqCmsHistoryFormat)
+
+      httpJsonCallBlocking(
+        path = s"/api/cms/pages/${page.id.value}/diffs/${updatedPage.head.id}",
+        method = "POST"
+      )(tenant, session)
+
+      mustBeEquals("first")
+
+    }
+  }
   "a simple user" can {
     "not list all full tenants" in {
       val tenant2 = tenant.copy(
@@ -1365,3 +1841,4 @@ class TenantControllerSpec()
     }
   }
 }
+

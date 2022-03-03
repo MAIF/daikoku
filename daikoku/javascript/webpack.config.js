@@ -176,7 +176,7 @@ module.exports = (env, argv) => {
       plugins: [
         ...config.plugins
       ],
-      devtool: 'eval-source-map'
+      devtool: 'eval'
     };
   }
 };

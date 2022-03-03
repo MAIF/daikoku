@@ -1,25 +1,33 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
-import fr.maif.otoroshi.daikoku.audit.KafkaConfig
+import com.github.jknack.handlebars.{Context, Handlebars, Options}
+import controllers.AppError
+import controllers.AppError.toJson
+import domain.JsonNodeValueResolver
+import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
+import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.env.{DaikokuMode, Env}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
+import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
+import play.api.mvc.Request
 import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
-import sangria.schema.ObjectType
+import storage.TenantCapableRepo
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
+import java.util.concurrent.{Executors, TimeUnit}
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 trait CanJson[A] {
   def asJson: JsValue
@@ -83,6 +91,11 @@ case class DaikokuStyle(
     description: String = "A new organization to host very fine APIs",
     unloggedHome: String = "",
     homePageVisible: Boolean = false,
+    homeCmsPage: Option[String] = None,
+    notFoundCmsPage: Option[String] = None,
+    authenticatedCmsPage: Option[String] = None,
+    cacheTTL: Int = 60000,
+    cmsHistoryLength: Int = 10,
     logo: String = "/assets/images/daikoku.svg",
     footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
@@ -1763,4 +1776,602 @@ case class Message(id: DatastoreId,
                    send: Boolean = false)
     extends CanJson[Message] {
   override def asJson: JsValue = json.MessageFormat.writes(this)
+}
+
+case class ApiWithAuthorizations(api: Api, authorizations: Seq[AuthorizationApi] = Seq.empty)
+
+case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
+
+case class CmsPageId(value: String) extends ValueType with CanJson[CmsPageId] {
+  def asJson: JsValue = JsString(value)
+}
+
+object CmsPage {
+  val pageRenderingEc = ExecutionContext.fromExecutor(Executors.newWorkStealingPool(Runtime.getRuntime.availableProcessors() + 1))
+}
+
+case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
+
+case class CmsPage(
+  id: CmsPageId,
+  tenant: TenantId,
+  deleted: Boolean = false,
+  visible: Boolean,
+  authenticated: Boolean,
+  name: String,
+  picture: Option[String] = None,
+  forwardRef: Option[CmsPageId],
+  tags: List[String],
+  metadata: Map[String, String],
+  contentType: String,
+  body: String,
+  draft: String,
+  path: Option[String] = None,
+  exact: Boolean = false,
+  lastPublishedDate: Option[DateTime] = None,
+  history: Seq[CmsHistory] = Seq.empty
+) extends CanJson[CmsPage]  {
+  override def asJson: JsValue = json.CmsPageFormat.writes(this)
+
+  def enrichHandlebarsWithPublicUserEntity[A](ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String],
+                                        handlebars: Handlebars,
+                                        fields: Map[String, Any],
+                                        jsonToCombine: Map[String, JsValue])(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi): Handlebars = {
+
+    handlebars.registerHelper(s"daikoku-user", (id: String, options: Options) => {
+      val userId = renderString(ctx, parentId, id, fields, jsonToCombine)
+      val optUser = Await.result(env.dataStore.userRepo.findById(userId), 10.seconds)
+
+      optUser match {
+        case Some(user) => renderString(ctx, parentId,
+          options.fn.text(),
+          fields = fields,
+          jsonToCombine = jsonToCombine ++ Map("user" -> Json.obj(
+            "_id" -> user.id.value,
+            "name" -> user.name,
+            "email" -> user.email,
+            "picture" -> user.picture,
+          )))
+        case None => AppError.render(AppError.UserNotFound)
+      }
+    })
+  }
+
+  def enrichHandlebarsWithOwnedApis[A](ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String],
+                                      handlebars: Handlebars,
+                                      fields: Map[String, Any],
+                                      jsonToCombine: Map[String, JsValue])(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi): Handlebars = {
+    val ctxUserContext = maybeWithoutUserToUserContext(ctx)
+    val name = "owned-api"
+
+    handlebars.registerHelper(s"daikoku-${name}s", (_: CmsPage, options: Options) => {
+      val visibility = options.hash.getOrDefault("visibility", "All").asInstanceOf[String]
+      Await.result(CommonServices.getVisibleApis()(ctxUserContext, env, ec), 10.seconds) match {
+        case Left(apis) =>
+          apis
+            .filter(api => if(visibility == "All") true else api.api.visibility.name == visibility)
+            .map(api => renderString(ctx,
+              parentId,
+              options.fn.text(),
+              fields = fields,
+              jsonToCombine = jsonToCombine ++ Map("api" -> api.api.asJson)
+            ))
+              .mkString("\n")
+        case Right(error) => AppError.render(error)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
+      val renderedParameter = renderString(ctx, parentId, id, fields, jsonToCombine)
+      val version = options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
+      val optApi = Await.result(env.dataStore.apiRepo.findByVersion(ctx.tenant, renderedParameter, version), 10.seconds)
+
+      optApi match {
+        case Some(api) =>
+          Await.result(CommonServices.apiOfTeam(api.team.value, api.id.value, version)(ctx.asInstanceOf[DaikokuActionContext[Any]], env, ec)
+          .map {
+            case Left(api) => renderString(ctx, parentId,
+              options.fn.text(),
+              fields = fields,
+              jsonToCombine = jsonToCombine ++ Map("api" -> api.api.asJson))
+            case Right(error) => AppError.render(error)
+          }, 10.seconds)
+        case None => AppError.render(AppError.ApiNotFound)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-json-$name", (id: String, options: Options) => {
+      val renderedParameter = renderString(ctx, parentId, id, fields, jsonToCombine)
+      val version = options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
+      val optApi = Await.result(env.dataStore.apiRepo.findByVersion(ctx.tenant, renderedParameter, version), 10.seconds)
+
+      optApi match {
+        case Some(api) =>
+          Await.result(CommonServices.apiOfTeam(api.team.value, api.id.value, version)(ctx.asInstanceOf[DaikokuActionContext[Any]], env, ec)
+            .map {
+              case Left(api) => api.api.asJson
+              case Right(error) => AppError.render(error)
+            }, 10.seconds)
+        case None => toJson(AppError.ApiNotFound)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-json-${name}s", (_: CmsPage, _: Options) =>
+      Await.result(CommonServices.getVisibleApis()(ctxUserContext, env, ec).map {
+        case Left(apis) => JsArray(apis.map(_.api.asJson))
+        case Right(error) => toJson(error)
+      }, 10.seconds)
+    )
+  }
+
+  private def maybeWithoutUserToUserContext(ctx: DaikokuActionMaybeWithoutUserContext[_]): DaikokuActionContext[JsValue] = DaikokuActionContext(
+    request = ctx.request.asInstanceOf[Request[JsValue]],
+    user = ctx.user.getOrElse(User(UserId("Unauthenticated user"),
+      tenants = Set.empty,
+      origins = Set.empty,
+      name = "Unauthenticated user",
+      email = "unauthenticated@foo.bar",
+      personalToken = None,
+      lastTenant = None,
+      defaultLanguage = None)),
+    tenant = ctx.tenant,
+    session = ctx.session.orNull,
+    impersonator = ctx.impersonator,
+    isTenantAdmin = ctx.isTenantAdmin,
+    apiCreationPermitted = ctx.apiCreationPermitted,
+    ctx = ctx.ctx
+  )
+
+  def enrichHandlebarsWithOwnedTeams[A](ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String],
+                                       handlebars: Handlebars,
+                                       fields: Map[String, Any],
+                                       jsonToCombine: Map[String, JsValue])(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi): Handlebars = {
+    val ctxUserContext = maybeWithoutUserToUserContext(ctx)
+
+    handlebars.registerHelper(s"daikoku-owned-teams", (_: CmsPage, options: Options) => {
+      Await.result(CommonServices.myTeams()(ctxUserContext, env, ec), 10.seconds) match {
+        case Left(teams) =>
+          teams
+            .map(team => renderString(ctx,
+              parentId,
+              options.fn.text(),
+              fields = fields,
+              jsonToCombine = jsonToCombine ++ Map("team" -> team.asJson)
+            )(env, ec, messagesApi))
+            .mkString("\n")
+        case Right(error) => AppError.render(error)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-owned-team", (_: String, options: Options) => {
+      Await.result(_UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed its first team on @{tenant.name}"))(ctxUserContext) {
+        env.dataStore.teamRepo
+          .forTenant(ctx.tenant.id)
+          .findOne(
+            Json.obj(
+              "_deleted" -> false,
+              "type" -> TeamType.Personal.name,
+              "users.userId" -> ctx.user.get.id.value
+            )
+          )
+          .map {
+            case None => AppError.TeamNotFound
+            case Some(team) if team.includeUser(ctx.user.get.id) => renderString(ctx, parentId, options.fn.text(), fields = fields,
+              jsonToCombine = jsonToCombine ++ Map("team" ->  team.asSimpleJson))
+            case _ => AppError.TeamUnauthorized
+          }
+      }, 10.seconds) match {
+        case Left(e) => e
+        case Right(error) => toJson(error)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-json-owned-team", (id: String, options: Options) => {
+      val teamId = renderString(ctx, parentId, id, fields, jsonToCombine)
+
+      Await.result(
+        _TeamMemberOnly(teamId, AuditTrailEvent("@{user.name} has accessed on of his team @{team.name} - @{team.id}"))(ctxUserContext) { team =>
+          ctx.setCtxValue("team.name", team.name)
+          ctx.setCtxValue("team.id", team.id)
+
+          FastFuture.successful(Left(team.toUiPayload()))
+        }, 10.seconds)match {
+        case Left(jsonTeam) => jsonTeam
+        case Right(error) => toJson(error)
+      }
+    })
+    handlebars.registerHelper(s"daikoku-json-owned-teams", (_: CmsPage, _: Options) =>
+      Await.result(CommonServices.myTeams()(ctxUserContext, env, ec).map {
+        case Left(teams) => JsArray(teams.map(_.asJson))
+        case Right(error) => toJson(error)
+      }, 10.seconds)
+    )
+  }
+
+  def enrichHandlebarsWithEntity[A](ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String], handlebars: Handlebars, name: String,
+                                    getRepo: Env => TenantCapableRepo[A, _],
+                                    stringify: A => JsValue,
+                                    fields: Map[String, Any],
+                                    jsonToCombine: Map[String, JsValue])
+                                   (implicit ec: ExecutionContext, messagesApi: MessagesApi, env: Env): Handlebars = {
+    val repo: TenantCapableRepo[A, _] = getRepo(env)
+    handlebars.registerHelper(s"daikoku-${name}s", (_: CmsPage, options: Options) => {
+      val apis = Await.result(repo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+      apis.map(api => renderString(ctx, parentId, options.fn.text(), fields = fields, jsonToCombine = jsonToCombine ++ Map(name -> stringify(api))))
+        .mkString("\n")
+    })
+    handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
+      Await.result(repo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(renderString(ctx, parentId, id, fields, jsonToCombine)), 10.seconds)
+        .map(api => renderString(ctx, parentId, options.fn.text(), fields = fields, jsonToCombine = jsonToCombine ++ Map(name -> stringify(api))))
+        .getOrElse("")
+    })
+    handlebars.registerHelper(s"daikoku-json-$name", (id: String, _: Options) =>
+      Await.result(repo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds).map(stringify).getOrElse("")
+    )
+    handlebars.registerHelper(s"daikoku-json-${name}s", (_: CmsPage, _: Options) =>
+      JsArray(Await.result(repo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds).map(stringify))
+    )
+  }
+
+  private def renderString(ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String], str: String,
+                           fields: Map[String, Any],
+                           jsonToCombine: Map[String, JsValue])
+                          (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = Await.result(CmsPage(
+    id = CmsPageId(BSONObjectID.generate().stringify),
+    tenant = ctx.tenant.id,
+    visible = true,
+    authenticated = false,
+    name = "generated",
+    forwardRef = None,
+    tags = List(),
+    metadata = Map(),
+    contentType = "text/html",
+    body = str,
+    draft = str,
+    path = Some("/")
+  ).render(ctx, parentId, fields = fields, jsonToCombine = jsonToCombine), 10.seconds)._1
+
+  private def daikokuIncludeBlockHelper(ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String],
+                                        id: String, options: Options,
+                                        fields: Map[String, Any],
+                                        jsonToCombine: Map[String, JsValue])
+                                       (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
+    val outFields = getAttrs(ctx, parentId, options, fields, jsonToCombine)
+
+    Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+      case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> renderString(ctx, parentId, id, outFields, jsonToCombine))), 10.seconds) match {
+        case None => s"block '$id' not found"
+        case Some(page) => Await.result(page.render(ctx, parentId, fields = outFields, jsonToCombine = jsonToCombine).map(t => t._1), 10.seconds)
+      }
+      case Some(page) => Await.result(page.render(ctx, parentId, fields = outFields, jsonToCombine = jsonToCombine).map(t => t._1), 10.seconds)
+    }
+  }
+
+  private def daikokuTemplateWrapper(ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String], id: String, options: Options,
+                                     fields: Map[String, Any],
+                                     jsonToCombine: Map[String, JsValue])
+                                    (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
+    Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+      case None => "page not found"
+      case Some(page) =>
+        val tmpFields = getAttrs(ctx, parentId, options, fields, jsonToCombine)
+        val outFields = getAttrs(ctx, parentId, options, tmpFields ++ Map(
+          "children" -> Await.result(CmsPage(
+            id = CmsPageId(BSONObjectID.generate().stringify),
+            tenant = ctx.tenant.id,
+            visible = true,
+            authenticated = false,
+            name = "generated",
+            forwardRef = None,
+            tags = List(),
+            metadata = Map(),
+            contentType = "text/html",
+            draft = options.fn.text(),
+            body = options.fn.text(),
+            path = Some("/")
+          ).render(ctx, parentId, fields = tmpFields, jsonToCombine = jsonToCombine)(env, messagesApi), 10.seconds)._1
+        ), jsonToCombine)
+        Await.result(page.render(ctx, parentId, fields = outFields, jsonToCombine = jsonToCombine).map(t => t._1), 10.seconds)
+    }
+  }
+
+  private def daikokuPathParam(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String)
+                              (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
+    val pagesPath = Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findWithProjection(Json.obj(), Json.obj("path" -> true)), 10.seconds)
+      .map(r => s"/_${(r \ "path").as[String]}")
+      .sortBy(_.length)(Ordering[Int].reverse)
+    pagesPath
+      .find(p => ctx.request.path.startsWith(p))
+      .map(r => {
+        val params = ctx.request.path.split(r).filter(f => f.nonEmpty)
+        try {
+          if (params.length > 0)
+            params(0).split("/").filter(_.nonEmpty)(Integer.parseInt(id))
+          else
+            s"path param $id not found"
+        } catch {
+          case _: Throwable => s"path param $id not found"
+        }
+      })
+      .getOrElse(s"path param $id not found")
+  }
+
+  private def daikokuPageUrl(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String)
+                            (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) =
+    Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+      case None => "#not-found"
+      case Some(page) =>
+        val wantDraft = ctx.request.getQueryString("draft").contains("true")
+        if (wantDraft)
+          s"/_${page.path.getOrElse("")}?draft=true"
+        else
+          s"/_${page.path.getOrElse("")}"
+    }
+
+  private def daikokuLinks(ctx: DaikokuActionMaybeWithoutUserContext[_], handlebars: Handlebars)
+                          (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
+    val links = Map(
+      "login" -> s"/auth/${ctx.tenant.authProvider.name}/login",
+      "logout" -> "/logout",
+      "language" -> ctx.user.map(_.defaultLanguage).getOrElse(ctx.tenant.defaultLanguage.getOrElse("en")),
+      "signup" -> (if(ctx.tenant.authProvider.name == "Local") "/signup" else s"/auth/${ctx.tenant.authProvider.name}/login"),
+      "backoffice" -> "/apis",
+      "notifications" -> "/notifications",
+      "home" -> "/"
+    )
+    links.map { case (name, link) => handlebars.registerHelper(s"daikoku-links-$name", (_: Object, _: Options) => link) }
+  }
+
+  private def getAttrs(ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String], options: Options,
+                       fields: Map[String, Any],
+                       jsonToCombine: Map[String, JsValue])
+                      (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi): Map[String, Any] = {
+    import scala.jdk.CollectionConverters._
+    fields ++ options.hash.asScala.map {
+      case (k, v) => (k, renderString(ctx, parentId, v.toString, fields, jsonToCombine = jsonToCombine)(env, ec, messagesApi))
+    }
+      .toMap
+  }
+
+  private def enrichHandlebarWithPlanEntity(ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String], handlebars: Handlebars, name: String,
+                                            fields: Map[String, Any],
+                                            jsonToCombine: Map[String, JsValue])
+                                           (implicit ec: ExecutionContext, messagesApi: MessagesApi, env: Env): Handlebars = {
+    handlebars.registerHelper(s" ${name}s-json", (id: String, _: Options) => {
+      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine), 10.seconds)
+        .map(_.possibleUsagePlans).getOrElse(Seq())
+        .map(_.asJson)
+    })
+
+    handlebars.registerHelper(s"daikoku-${name}s", (id: String, options: Options) => {
+      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)(env, ec, messagesApi), 10.seconds)
+        .map(api => {
+          api.possibleUsagePlans
+            .map(p => renderString(ctx, parentId, options.fn.text(), fields = fields, jsonToCombine = jsonToCombine ++ Map(name -> p.asJson)))
+            .mkString("\n")
+        })
+        .getOrElse("")
+    })
+  }
+
+  private def getApi(ctx: DaikokuActionMaybeWithoutUserContext[_], parentId: Option[String], id: String, fields: Map[String, Any], jsonToCombine: Map[String, JsValue])
+                    (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(
+    renderString(ctx, parentId, id, fields, jsonToCombine = jsonToCombine)(env, ec, messagesApi)
+  )
+
+  private def enrichHandlebarWithDocumentationEntity(ctx: DaikokuActionMaybeWithoutUserContext[_],
+                                                     parentId: Option[String], handlebars: Handlebars, name: String,
+                                                     fields: Map[String, Any],
+                                                     jsonToCombine: Map[String, JsValue])
+                                        (implicit ec: ExecutionContext, messagesApi: MessagesApi, env: Env): Handlebars = {
+
+    def jsonToFields(pages: Seq[ApiDocumentationPage], options: Options) = pages
+      .map(doc => renderString(ctx, parentId, options.fn.text(), fields, jsonToCombine = jsonToCombine ++ Map(name -> doc.asJson)))
+      .mkString("\n")
+
+    val repo = env.dataStore.apiDocumentationPageRepo
+    handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
+      val pages = Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)
+          .flatMap {
+            case Some(api) => Future.sequence(api.documentation.pages.map(repo.forTenant(ctx.tenant).findById(_)))
+            case _ => FastFuture.successful(Seq())
+          }, 10.seconds)
+        .flatten
+
+      jsonToFields(pages, options)
+    })
+
+
+    handlebars.registerHelper(s"daikoku-$name-json", (id: String, options: Options) => {
+      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)
+        .flatMap {
+          case Some(api) => Future.sequence(api.documentation.pages.map(repo.forTenant(ctx.tenant).findById(_)))
+          case _ => FastFuture.successful(Seq())
+        }, 10.seconds)
+        .flatten
+        .map(_.asJson)
+    })
+
+    handlebars.registerHelper(s"daikoku-$name-page", (id: String, options: Options) => {
+      val attrs = getAttrs(ctx, parentId, options, fields, jsonToCombine)
+
+      val page: Int = attrs.get("page").map(n => n.toString.toInt).getOrElse(0)
+      val pages = Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)
+        .flatMap {
+          case Some(api) => Future.sequence(api.documentation.pages.slice(page, page+1).map(repo.forTenant(ctx.tenant).findById(_)))
+          case _ => FastFuture.successful(Seq())
+        }, 10.seconds)
+        .flatten
+
+      jsonToFields(pages, options)
+    })
+
+    handlebars.registerHelper(s"daikoku-$name-page-id", (id: String, options: Options) => {
+      val attrs = getAttrs(ctx, parentId, options, fields, jsonToCombine)
+      val page = attrs.getOrElse("page", "")
+      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)
+        .flatMap {
+          case Some(api) => api.documentation.pages.find(_.value == page).map(repo.forTenant(ctx.tenant).findById(_))
+            .getOrElse(FastFuture.successful(None))
+          case _ => FastFuture.successful(None)
+        }, 10.seconds)
+        .map(doc => renderString(ctx, parentId, options.fn.text(), fields = fields, jsonToCombine = jsonToCombine ++ Map(name  -> doc.asJson)))
+        .getOrElse("")
+    })
+  }
+
+  def combineFieldsToContext(context: Context.Builder, fields: Map[String, Any], jsonToCombine: Map[String, JsValue]): Context.Builder =
+    (fields ++ jsonToCombine).foldLeft(context) {
+      (acc, item) => acc.combine(item._1, item._2)
+    }
+
+  def render(ctx: DaikokuActionMaybeWithoutUserContext[_],
+             parentId: Option[String] = None,
+             fields: Map[String, Any] = Map.empty,
+             jsonToCombine: Map[String, JsValue] = Map.empty)
+            (implicit env: Env, messagesApi: MessagesApi): Future[(String, String)] = {
+    (forwardRef match {
+      case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)(env.defaultExecutionContext).map(_.getOrElse(this))(env.defaultExecutionContext)
+      case None => FastFuture.successful(this)
+    }).flatMap { page =>
+      try {
+        import com.github.jknack.handlebars.EscapingStrategy
+        implicit val ec = CmsPage.pageRenderingEc
+
+        if(page.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)))
+          ctx.tenant.style.flatMap(_.authenticatedCmsPage) match {
+            case Some(value) =>
+              val optPage = Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(value)(ec), 10.seconds)
+              optPage match {
+                case Some(value) => value.render(ctx, parentId, fields, jsonToCombine)
+                case None => FastFuture.successful(("Need to be logged", page.contentType))
+              }
+            case None => FastFuture.successful(("Need to be logged", page.contentType))
+          }
+        else if (parentId.nonEmpty && page.id.value == parentId.get)
+          FastFuture.successful(("", page.contentType))
+        else {
+          val context = combineFieldsToContext(Context
+            .newBuilder(this)
+            .resolver(JsonNodeValueResolver.INSTANCE)
+            .combine("tenant", ctx.tenant.asJson)
+            .combine("is_admin", ctx.isTenantAdmin)
+            .combine("connected", ctx.user.map(!_.isGuest).getOrElse(false))
+            .combine("user", ctx.user.map(u => u.asSimpleJson).getOrElse(""))
+            .combine("request", EntitiesToMap.request(ctx.request))
+            .combine("daikoku-css", {
+              if (env.config.mode == DaikokuMode.Dev)
+                s"${env.getDaikokuUrl(ctx.tenant, "/daikoku.css")}"
+              else if (env.config.mode == DaikokuMode.Prod)
+                s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
+            }), fields, jsonToCombine)
+
+          val handlebars = new Handlebars().`with`(
+            new EscapingStrategy() {
+              override def escape(value: CharSequence): String = value.toString
+            })
+
+          handlebars.registerHelper("for", (variable: String, options: Options) => {
+            val s = renderString(ctx, parentId, variable, fields, jsonToCombine)
+            val field = options.hash.getOrDefault("field", "object").toString
+
+            try {
+              Json.parse(s).as[JsArray]
+                .value.map(p => {
+                renderString(ctx, parentId, options.fn.text(), fields, jsonToCombine ++ Map(field -> p))
+              })
+                .mkString("\n")
+            } catch {
+              case _: Throwable => Json.obj()
+            }
+          })
+
+          handlebars.registerHelper("size", (variable: String, _: Options) => {
+            val s = renderString(ctx, parentId, variable, fields, jsonToCombine)
+            try {
+              String.valueOf(Json.parse(s).asInstanceOf[JsArray].value.length)
+            } catch {
+              case _: Throwable => "0"
+            }
+          })
+          handlebars.registerHelper("ifeq", (variable: String, options: Options) => {
+            if (renderString(ctx, parentId, variable, fields, jsonToCombine) ==
+              renderString(ctx, parentId, options.params(0).toString, fields, jsonToCombine))
+              options.fn.apply(renderString(ctx, parentId, options.fn.text(), fields, jsonToCombine))
+            else
+              ""
+          })
+          handlebars.registerHelper("ifnoteq", (variable: String, options: Options) => {
+            if (renderString(ctx, parentId, variable, fields, jsonToCombine) !=
+              renderString(ctx, parentId, options.params(0).toString, fields, jsonToCombine))
+              options.fn.apply(renderString(ctx, parentId, options.fn.text(), fields, jsonToCombine))
+            else
+              ""
+          })
+          handlebars.registerHelper("getOrElse", (variable: String, options: Options) => {
+            val str = renderString(ctx, parentId, variable, fields, jsonToCombine)
+            if (str != "null" && str.nonEmpty)
+              str
+            else
+              renderString(ctx, parentId, options.params(0).toString, fields, jsonToCombine)
+          })
+          handlebars.registerHelper("translate", (variable: String, _: Options) => {
+            val str = renderString(ctx, parentId, variable, fields, jsonToCombine)
+            Await.result(env.translator.translate(str, ctx.tenant)(messagesApi, ctx.user
+              .map(_.defaultLanguage.getOrElse(ctx.tenant.defaultLanguage.getOrElse("en")))
+              .getOrElse("en"), env), 10.seconds)
+          })
+          handlebars.registerHelper("daikoku-asset-url", (context: String, _: Options) => s"/tenant-assets/$context")
+          handlebars.registerHelper("daikoku-page-url", (id: String, _: Options) => daikokuPageUrl(ctx, id))
+          handlebars.registerHelper("daikoku-generic-page-url", (id: String, _: Options) => s"/cms/pages/$id")
+          handlebars.registerHelper("daikoku-page-preview-url", (id: String, _: Options) => s"/cms/pages/$id?draft=true")
+          handlebars.registerHelper("daikoku-path-param", (id: String, _: Options) => daikokuPathParam(ctx, id))
+          handlebars.registerHelper("daikoku-query-param", (id: String, _: Options) => ctx.request.queryString.get(id).map(_.head).getOrElse("id param not found"))
+          daikokuLinks(ctx, handlebars)
+
+          handlebars.registerHelper("daikoku-include-block", (id: String, options: Options) => daikokuIncludeBlockHelper(ctx, Some(page.id.value), id, options, fields, jsonToCombine))
+          handlebars.registerHelper("daikoku-template-wrapper", (id: String, options: Options) => daikokuTemplateWrapper(ctx, Some(page.id.value), id, options, fields, jsonToCombine))
+
+          enrichHandlebarsWithOwnedApis(ctx, Some(page.id.value), handlebars, fields, jsonToCombine)
+          enrichHandlebarsWithOwnedTeams(ctx, Some(page.id.value), handlebars, fields, jsonToCombine)
+
+          enrichHandlebarsWithEntity(ctx, Some(page.id.value), handlebars, "api", _.dataStore.apiRepo,
+            (api: Api) => api.asJson,
+            fields,
+            jsonToCombine)
+          enrichHandlebarsWithEntity(ctx, Some(page.id.value), handlebars, "team", _.dataStore.teamRepo,
+            (team: Team) => team.asJson,
+            fields,
+            jsonToCombine)
+          enrichHandlebarWithDocumentationEntity(ctx, Some(page.id.value), handlebars, "documentation", fields, jsonToCombine)
+          enrichHandlebarWithPlanEntity(ctx, Some(page.id.value), handlebars, "plan", fields, jsonToCombine)
+          enrichHandlebarsWithPublicUserEntity(ctx, Some(page.id.value), handlebars, fields, jsonToCombine)
+
+          val c = context.build()
+          val template = if (ctx.request.getQueryString("draft").contains("true")) page.draft else page.body
+
+          val result = handlebars.compileInline(template).apply(c)
+          c.destroy()
+          FastFuture.successful((result, page.contentType))
+        }
+      } catch {
+          case t: Throwable =>
+            t.printStackTrace()
+            FastFuture.successful((s"""
+            <!DOCTYPE html>
+            <html>
+              <body>
+               <h1 style="text-align: center">Server error</h1>
+               <div>
+                <pre><code style="white-space: pre-line;font-size: 18px">${t.getMessage}</code></pre>
+               <div>
+             </body>
+            </html>
+            """, "text/html"))
+        }
+    }(env.defaultExecutionContext)
+  }
+}
+
+object EntitiesToMap {
+  def request(req: Request[_]) = Json.obj(
+    "path" ->  req.path,
+    "method" ->  req.method,
+    "headers" -> req.headers.toSimpleMap
+  )
 }

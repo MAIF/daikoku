@@ -174,6 +174,17 @@ case class MongoTenantCapableMessageRepo(
   override def repo(): MongoRepo[Message, DatastoreId] = _repo()
 }
 
+case class MongoTenantCapableCmsPageRepo(
+    _repo: () => MongoRepo[CmsPage, CmsPageId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[CmsPage, CmsPageId]
+  ) extends MongoTenantCapableRepo[CmsPage, CmsPageId]
+  with CmsPageRepo {
+  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[CmsPage, CmsPageId] =
+    _tenantRepo(tenant)
+
+  override def repo(): MongoRepo[CmsPage, CmsPageId] = _repo()
+}
+
 case class MongoTenantCapableConsumptionRepo(
     _repo: () => MongoRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => MongoTenantAwareRepo[ApiKeyConsumption,
@@ -337,6 +348,11 @@ class MongoDataStore(context: Context, env: Env)
       () => new MongoMessageRepo(env, reactiveMongoApi),
       t => new MongoTenantMessageRepo(env, reactiveMongoApi, t)
     )
+  private val _cmsRepo: CmsPageRepo =
+    MongoTenantCapableCmsPageRepo(
+      () => new MongoCmsPageRepo(env, reactiveMongoApi),
+      t => new MongoTenantCmsPageRepo(env, reactiveMongoApi, t)
+    )
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -372,6 +388,8 @@ class MongoDataStore(context: Context, env: Env)
   override def translationRepo: TranslationRepo = _translationRepo
 
   override def messageRepo: MessageRepo = _messageRepo
+
+  override def cmsRepo: CmsPageRepo = _cmsRepo
 
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
@@ -604,6 +622,19 @@ class MongoTenantMessageRepo(env: Env,
   override def extractId(value: Message): String = value.id.value
 }
 
+class MongoTenantCmsPageRepo(env: Env,
+                             reactiveMongoApi: ReactiveMongoApi,
+                             tenant: TenantId)
+  extends MongoTenantAwareRepo[CmsPage, CmsPageId](env,
+    reactiveMongoApi,
+    tenant) {
+  override def collectionName: String = "CmsPages"
+
+  override def format: Format[CmsPage] = json.CmsPageFormat
+
+  override def extractId(value: CmsPage): String = value.id.value
+}
+
 class MongoTenantApiSubscriptionRepo(env: Env,
                                      reactiveMongoApi: ReactiveMongoApi,
                                      tenant: TenantId)
@@ -747,6 +778,15 @@ class MongoMessageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[Message] = json.MessageFormat
 
   override def extractId(value: Message): String = value.id.value
+}
+
+class MongoCmsPageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+  extends MongoRepo[CmsPage, CmsPageId](env, reactiveMongoApi) {
+  override def collectionName: String = "CmsPages"
+
+  override def format: Format[CmsPage] = json.CmsPageFormat
+
+  override def extractId(value: CmsPage): String = value.id.value
 }
 
 class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)

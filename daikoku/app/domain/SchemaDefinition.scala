@@ -1,12 +1,10 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._UberPublicUserAccess
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.ValueType
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
@@ -740,12 +738,9 @@ object SchemaDefinition {
       )
     )
 
-    case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
     lazy val  AuthorizationApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationApi]()
 
-    case class GraphQLApi(api: Api, authorizations: Seq[AuthorizationApi] = Seq.empty)
-
-    lazy val GraphQLApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), GraphQLApi](
+    lazy val GraphQLApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithAuthorizations](
       ObjectTypeDescription("A Daikoku api with the list of teams authorizations"),
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
       ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations))
@@ -1112,103 +1107,58 @@ object SchemaDefinition {
       )
     )
 
+    val  CmsHistoryType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsHistory](
+      ReplaceField("date", Field("date", DateTimeUnitype, resolve = _.value.date)),
+      ReplaceField("diff", Field("diff", StringType, resolve = _.value.diff)),
+      ReplaceField("user", Field("user", OptionType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.user)))
+    )
+
+    lazy val  CmsPageType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage](
+      "CmsPage",
+      "A CMS page",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), CmsPage](
+        Field("id", StringType, resolve = _.value.id.value),
+        Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant)),
+        Field("forwardRef", OptionType(CmsPageType), resolve = ctx => ctx.value.forwardRef match {
+          case Some(ref) => ctx.ctx._1.cmsRepo.forTenant(ctx.value.tenant).findById(ref)
+          case None => None
+        }),
+        Field("deleted", BooleanType, resolve = _.value.deleted),
+        Field("visible", BooleanType, resolve = _.value.visible),
+        Field("authenticated", BooleanType, resolve = _.value.authenticated),
+        Field("name", StringType, resolve = _.value.name),
+        Field("picture", OptionType(StringType), resolve = _.value.picture),
+        Field("tags", ListType(StringType), resolve = _.value.tags),
+        Field("metadata", MapType, resolve = _.value.metadata),
+        Field("contentType", StringType, resolve = _.value.contentType),
+        Field("body", StringType, resolve = _.value.body),
+        Field("draft", OptionType(StringType), resolve = _.value.draft),
+        Field("path", OptionType(StringType), resolve = _.value.path),
+        Field("exact", BooleanType, resolve = _.value.exact),
+        Field("lastPublishedDate", OptionType(LongType), resolve = _.value.lastPublishedDate.map(p => p.getMillis)),
+        Field("history", ListType(CmsHistoryType), resolve = _.value.history.sortBy(_.date.toInstant.getMillis)(Ordering[Long].reverse))
+      )
+    )
+
     val ID: Argument[String] = Argument("id", StringType, description = "The id of element")
     val TEAM_ID: Argument[String] = Argument("teamId", StringType, description = "The id of the team")
     val LIMIT: Argument[Int] = Argument("limit", IntType,
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
+    val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
 
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
-          _UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed his team list"))(ctx.ctx._2) {
-            (if (ctx.ctx._2.user.isDaikokuAdmin)
-              ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant)
-                .findAllNotDeleted()
-            else
-              ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant)
-                .findNotDeleted(Json.obj("users.userId" -> ctx.ctx._2.user.id.value))
-            )
-              .map(teams => teams.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0))
-          }.map {
+          CommonServices.myTeams()(ctx.ctx._2, env, e).map {
             case Left(value) => value
             case Right(r) => throw NotAuthorizedError(r.toString)
           })
     )
 
     def getVisibleApis(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: Option[String] = None) = {
-      _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx.ctx._2) {
-        val teamRepo = env.dataStore.teamRepo.forTenant(ctx.ctx._2.tenant)
-        (teamId match {
-          case None => teamRepo.findAllNotDeleted()
-          case Some(id) => teamRepo.find(Json.obj("_humanReadableId" -> id))
-        })
-          .map(teams => if (ctx.ctx._2.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.ctx._2.user.id)))
-          .flatMap(teams => {
-            val teamFilter = Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))))
-            val tenant = ctx.ctx._2.tenant
-            val user = ctx.ctx._2.user
-            for {
-              myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
-              apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-              myCurrentRequests <- if (user.isGuest) FastFuture.successful(Seq.empty) else env.dataStore.notificationRepo
-                .forTenant(tenant.id)
-                .findNotDeleted(
-                  Json.obj("action.type" -> "ApiAccess",
-                    "action.team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))),
-                    "status.status" -> "Pending")
-                )
-              publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
-              almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(Json.obj("visibility" -> "PublicWithAuthorizations"))
-              privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-                Json.obj(
-                  "visibility" -> "Private",
-                  "$or" -> Json.arr(
-                    Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
-                    teamFilter
-                  )))
-              adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-                Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
-              )
-            } yield {
-              val sortedApis: Seq[GraphQLApi] = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
-                .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-                .map(api => api
-                  .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))
-                .map(api => {
-                  val authorizations = teams
-                    .filter(t => t.`type` != TeamType.Admin)
-                    .map(team =>
-                      AuthorizationApi(
-                        team = team.id.value,
-                        authorized = api.authorizedTeams.contains(team.id) || api.team == team.id,
-                        pending = myCurrentRequests.exists(notif =>
-                          notif.action.asInstanceOf[ApiAccess].team == team.id && notif.action.asInstanceOf[ApiAccess].api == api.id)
-                      ))
-
-                  api.visibility.name match {
-                    case "PublicWithAuthorizations" | "Private" => GraphQLApi(api, authorizations)
-                    case _ => GraphQLApi(api)
-                  }
-                })
-
-              (if (user.isDaikokuAdmin)
-                adminApis.map(api => GraphQLApi(api, teams.map(team =>
-                  AuthorizationApi(
-                    team = team.id.value,
-                    authorized = user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id),
-                    pending = false
-                  )
-                ))) ++ sortedApis
-              else
-                sortedApis)
-                .groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
-                .map(res => res._2.head)
-                .toSeq
-            }
-          })
-      }.map {
+      CommonServices.getVisibleApis(teamId)(ctx.ctx._2, env, e).map {
         case Left(value) => value
         case Right(r) => throw NotAuthorizedError(r.toString)
       }
@@ -1223,13 +1173,26 @@ object SchemaDefinition {
       })
     )
 
+    def cmsPageFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("pages", ListType(CmsPageType), arguments = DELETED :: Nil, resolve = ctx => {
+        _TenantAdminAccessTenant(AuditTrailEvent(s"@{user.name} has accessed the list of cms page"))(ctx.ctx._2) {
+          ctx.ctx._1.cmsRepo.forTenant(ctx.ctx._2.tenant).find(Json.obj(
+            "_deleted" -> ctx.arg(DELETED)
+          ))
+        }.map {
+          case Left(value) => value
+          case Right(r) => throw NotAuthorizedError(r.toString)
+        }
+      })
+    )
+
     def getRepoFields[Out, Of, Id <: ValueType](
                                                fieldName: String,
                                                fieldType: OutputType[Out],
                                                repo: Context[(DataStore, DaikokuActionContext[JsValue]), Unit] => Repo[Of, Id]): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
-        Field(fieldName, OptionType(fieldType), arguments = List(ID),
-          resolve = ctx => repo(ctx).findById(ctx arg ID).asInstanceOf[Option[Out]]),
+        Field(fieldName, OptionType(fieldType), arguments = ID :: Nil,
+          resolve = ctx => repo(ctx).findById(ctx.arg(ID)).asInstanceOf[Future[Option[Out]]]),
         Field(s"${fieldName}s", ListType(fieldType), arguments = LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             (ctx.arg(LIMIT), ctx.arg(OFFSET)) match {
@@ -1263,11 +1226,12 @@ object SchemaDefinition {
       getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo) ++
       getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo) ++
       getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo) ++
+      getTenantFields("cmsPage", CmsPageType, ctx => ctx.ctx._1.cmsRepo) ++
       getTenantFields("auditEvent", AuditEventType, ctx => ctx.ctx._1.auditTrailRepo):_*)
 
     (
       Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields():_*)
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields() ++ cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher)
     )

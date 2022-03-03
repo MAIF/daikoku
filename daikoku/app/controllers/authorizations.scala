@@ -3,11 +3,8 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
-import controllers.AppError.Unauthorized
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuActionContext,
-  DaikokuTenantActionContext
-}
+import controllers.AppError.{ForbiddenAction, TeamForbidden, TeamNotFound, Unauthorized}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain._
@@ -80,7 +77,7 @@ object authorizations {
         implicit ec: ExecutionContext,
         env: Env): Future[Result] = {
       async.TeamMemberOnly(audit)(teamId, ctx) { team =>
-        FastFuture.successful(f(team))
+        FastFuture.successful(Left(f(team)))
       }
     }
 
@@ -212,10 +209,22 @@ object authorizations {
       }
     }
 
+
     def TenantAdminAccessTenant[T](audit: AuditEvent)(
-        ctx: DaikokuActionContext[T])(f: => Future[Result])(
+      ctx: DaikokuActionContext[T])(f: => Future[Result])(
+                                    implicit ec: ExecutionContext,
+                                    env: Env): Future[Result] = {
+      _TenantAdminAccessTenant(audit)(ctx)(f)
+        .map {
+          case Left(value)  => value
+          case Right(value) => AppError.render(value)
+        }
+    }
+
+    def _TenantAdminAccessTenant[T, B](audit: AuditEvent)(
+        ctx: DaikokuActionContext[T])(f: => Future[B])(
         implicit ec: ExecutionContext,
-        env: Env): Future[Result] = {
+        env: Env): Future[Either[B, AppError]] = {
       val tenant = ctx.tenant
       val session = UserSession(
         id = DatastoreId(BSONObjectID.generate().stringify),
@@ -247,7 +256,7 @@ object authorizations {
                   ctx.request,
                   ctx.ctx,
                   AuthorizationLevel.AuthorizedDaikokuAdmin)
-            }
+            }.flatMap(f => FastFuture.successful(Left(f)))
           case Some(team)
               if team.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator) =>
@@ -262,7 +271,7 @@ object authorizations {
                   ctx.request,
                   ctx.ctx,
                   AuthorizationLevel.AuthorizedTenantAdmin)
-            }
+            }.flatMap(f => FastFuture.successful(Left(f)))
           case Some(team)
               if !team.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator) =>
@@ -274,8 +283,7 @@ object authorizations {
                                       ctx.request,
                                       ctx.ctx,
                                       AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(
-              Results.Forbidden(Json.obj("error" -> "Access Forbidden")))
+            FastFuture.successful(Right(ForbiddenAction))
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
                                       ctx.user,
@@ -283,8 +291,7 @@ object authorizations {
                                       ctx.request,
                                       ctx.ctx,
                                       AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(Results.NotFound(Json.obj(
-              "error" -> "Tenant admin team not found, please contact your administrator")))
+            FastFuture.successful(Right(Unauthorized))
         }
     }
 
@@ -469,11 +476,10 @@ object authorizations {
 
     }
 
-    def TeamMemberOnly[T](audit: AuditEvent)(
-        teamId: String,
-        ctx: DaikokuActionContext[T])(f: Team => Future[Result])(
-        implicit ec: ExecutionContext,
-        env: Env): Future[Result] = {
+    def _TeamMemberOnly[T, B](teamId: String, audit: AuditEvent)(
+      ctx: DaikokuActionContext[T])(f: Team => Future[Either[B, AppError]])(
+                               implicit ec: ExecutionContext,
+                               env: Env): Future[Either[B, AppError]] = {
       env.dataStore.teamRepo
         .forTenant(ctx.tenant.id)
         .findByIdOrHrId(teamId)
@@ -491,9 +497,10 @@ object authorizations {
                   ctx.ctx,
                   AuthorizationLevel.AuthorizedDaikokuAdmin)
             }
+              .flatMap(f => FastFuture.successful(f))
           case Some(team)
-              if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(
-                ctx.user.id) =>
+            if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(
+              ctx.user.id) =>
             ctx.setCtxValue("team.id", team.id)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
@@ -506,31 +513,40 @@ object authorizations {
                   ctx.ctx,
                   AuthorizationLevel.AuthorizedTeamMember)
             }
+              .flatMap(f => FastFuture.successful(f))
           case Some(team)
-              if ctx.user.tenants.contains(ctx.tenant.id) && !team.includeUser(
-                ctx.user.id) =>
+            if ctx.user.tenants.contains(ctx.tenant.id) && !team.includeUser(
+              ctx.user.id) =>
             ctx.setCtxValue("team.id", team.id)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(ctx.tenant,
-                                      ctx.user,
-                                      ctx.session,
-                                      ctx.request,
-                                      ctx.ctx,
-                                      AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(
-              Results.Forbidden(
-                Json.obj("error" -> "You're not part of the team",
-                         "status" -> 403)))
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized)
+
+            FastFuture.successful(Right(TeamForbidden))
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
-                                      ctx.user,
-                                      ctx.session,
-                                      ctx.request,
-                                      ctx.ctx,
-                                      AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(
-              Results.NotFound(
-                Json.obj("error" -> "Team not found", "status" -> 404)))
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized)
+            FastFuture.successful(Right(TeamNotFound))
+        }
+    }
+
+    def TeamMemberOnly[T](audit: AuditEvent)(
+        teamId: String,
+        ctx: DaikokuActionContext[T])(f: Team => Future[Either[Result, AppError]])(
+        implicit ec: ExecutionContext,
+        env: Env): Future[Result] = {
+      _TeamMemberOnly(teamId, audit)(ctx)(f)
+        .map {
+          case Left(value)  => value
+          case Right(value) => AppError.render(value)
         }
     }
 

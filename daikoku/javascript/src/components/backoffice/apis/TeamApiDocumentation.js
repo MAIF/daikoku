@@ -329,7 +329,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                       className={isSelected(page) ? 'planSelected' : ''}
                       onClick={() => select(page)}
                     >
-                      <span>
+                      <div className='d-flex justify-content-between'>
                         {index + 1} - {page.title}
                         <button
                           type="button"
@@ -337,7 +337,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                         >
                           <i className="fas fa-edit" />
                         </button>
-                      </span>
+                      </div>
                     </td>
                   </tr>
                 );

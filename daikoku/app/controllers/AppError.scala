@@ -31,6 +31,7 @@ object AppError {
   case object MissingParentSubscription extends AppError
   case object TranslationNotFound extends AppError
   case object Unauthorized extends AppError
+  case object TeamForbidden extends AppError
 
   def render(error: AppError): mvc.Result = error match {
     case ApiVersionConflict => Conflict(toJson(ApiVersionConflict))
@@ -44,6 +45,9 @@ object AppError {
     case TeamUnauthorized =>
       play.api.mvc.Results
         .Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
+    case TeamForbidden =>
+      play.api.mvc.Results
+        .Forbidden(Json.obj("error" -> "You're not part of the team"))
     case ApiUnauthorized =>
       play.api.mvc.Results.Unauthorized(
         Json.obj("error" -> "You're not authorized on this api",

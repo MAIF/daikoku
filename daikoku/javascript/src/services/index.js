@@ -18,7 +18,7 @@ export const getVisibleApiWithId = (id) => customFetch(`/api/me/visible-apis/${i
 export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}/${version}`);
 export const getTeamVisibleApi = (teamId, apiId, version) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
-export const myTeams = () => customFetch('/api/me/teams');
+// export const myTeams = () => customFetch('/api/me/teams');
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 
 export const teamAllNotifications = (teamId, page = 0) =>
@@ -726,9 +726,9 @@ export const checkConnection = (config, user) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   });
 
@@ -885,6 +885,21 @@ export const getAllApiDocumentation = (teamId, apiId, version) =>
 export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
+export const createCmsPage = (id, cmsPage) => customFetch('/api/cms/pages', {
+  method: 'POST',
+  body: JSON.stringify({
+    ...cmsPage,
+    id,
+    path: cmsPage.isBlockPage ? undefined : cmsPage.path
+  }),
+});
+
+export const createCmsPageWithName = name => customFetch(`/api/cms/pages/${name}`, { method: 'POST' });
+
+export const removeCmsPage = id => customFetch(`/api/cms/pages/${id}`, {
+  method: 'DELETE'
+});
+
 export const graphql = {
   myTeams: gql`
     query MyTeams {
@@ -941,4 +956,58 @@ export const graphql = {
     }
     `),
   myVisibleApisOfTeam: (teamId) => graphql.myVisibleApis(teamId),
+  getCmsPage: id => gql`
+    query GetCmsPage {
+        cmsPage(id: "${id}") {
+            name
+            path
+            draft
+            body
+            exact
+            visible
+            authenticated
+            metadata
+            contentType
+            tags
+            lastPublishedDate
+        }
+    }
+  `,
+  getCmsPageHistory: id => gql`
+  query GetCmsPage {
+      cmsPage(id: "${id}") {
+          name
+          draft
+          history {
+            id
+            date
+            user {
+              name
+            }
+          }
+      }
+  }
+`
 };
+
+export const downloadCmsFiles = () => fetch('/api/cms/download', {
+  method: 'POST',
+  credentials: 'include'
+})
+
+export const getDiffOfCmsPage = (id, diffId, showDiffs) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}?showDiffs=${showDiffs}`)
+
+export const restoreCmsDiff = (id, diffId) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}`, {
+  method: 'POST'
+});
+
+export const uploadZip = file => {
+  const formData = new FormData()
+  formData.append("file", file);
+
+  return fetch('/api/cms/import', {
+    method: 'POST',
+    credentials: 'include',
+    body: formData
+  })
+}

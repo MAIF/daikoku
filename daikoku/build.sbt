@@ -80,6 +80,7 @@ libraryDependencies ++= Seq(
   "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1",
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.893",
   "commons-logging" % "commons-logging" % "1.1.1",
+  "com.github.jknack" % "handlebars" % "4.3.0",
   "org.sangria-graphql" % "sangria_2.13" % "2.1.3",
   "org.sangria-graphql" % "sangria-play-json_2.13" % "2.0.2" excludeAll ExclusionRule(
     organization = "com.typesafe.play"

@@ -556,7 +556,14 @@ const UserBackOfficeComponent = ({
     }
   }, [title]);
 
+  const location = useLocation()
   const { translateMethod, Translation } = useContext(I18nContext);
+
+  if (location.pathname !== "/settings/pages" && location.pathname.startsWith("/settings/pages"))
+    return <main role="main" className="col-md-9 offset-md-3 d-flex">
+      <div className={classNames('back-office-overlay', { active: isLoading })} />
+      {!error.status && children}
+    </main>
 
   return (
     <div className="row">
@@ -679,6 +686,15 @@ const UserBackOfficeComponent = ({
                 >
                   <i className="fas fa-language" />
                   <Translation i18nkey="Internationalization">Internationalization</Translation>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}
+                  to={'/settings/pages'}
+                >
+                  <i className="fas fa-pager" />
+                  <Translation i18nkey="Pages">Pages</Translation>
                 </NavLink>
               </li>
             </ul>

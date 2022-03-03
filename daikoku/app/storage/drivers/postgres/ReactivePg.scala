@@ -87,16 +87,18 @@ class ReactivePg(pool: Pool, configuration: Configuration)(
     val isRead = query.toLowerCase().trim.startsWith("select")
     (if (isRead) {
        pool
-         .withConnection(
-           c =>
+         .withConnection(c =>
              c.preparedQuery(query)
-               .execute(io.vertx.sqlclient.Tuple.from(params.toArray)))
+               .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+         )
          .scala
      } else {
-       pool
-         .preparedQuery(query)
-         .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
-         .scala
+      pool
+        .withConnection(c =>
+          c.preparedQuery(query)
+            .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+      )
+        .scala
      })
       .flatMap { _rows =>
         Try {
@@ -136,7 +138,9 @@ class ReactivePg(pool: Pool, configuration: Configuration)(
 
   def query(sql: String, params: Seq[AnyRef] = Seq.empty) =
     pool
-      .preparedQuery(sql)
-      .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+      .withConnection(c =>
+        c.preparedQuery(sql)
+          .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+      )
       .scala
 }
