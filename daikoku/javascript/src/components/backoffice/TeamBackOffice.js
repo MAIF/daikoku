@@ -7,6 +7,8 @@ import {
   useLocation,
   useNavigate,
   NavLink,
+  useResolvedPath,
+  useMatch
 } from 'react-router-dom';
 import classNames from 'classnames';
 import Select from 'react-select';
@@ -148,50 +150,22 @@ function TeamBackOfficeHomeComponent(props) {
   );
 }
 
-const NavItem = ({ to, icon, name, subItem }) => (
-  <li className="nav-item">
-    <NavLink className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')} to={to}>
-      <i className={`fas fa-${icon}`} style={{ marginLeft: subItem ? '12px' : 0 }} />
-      {name}
-    </NavLink>
-  </li>
-);
-
-const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
-  const { translateMethod } = useContext(I18nContext);
-  const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-
-  const navigate = useNavigate();
-
-  const promptVersion = () => {
-    window
-      .prompt('Version number', undefined, false, 'New version', `Current version : ${versionId}`)
-      .then((newVersion) => {
-        if (newVersion) {
-          if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-            toastr.error(
-              "Can't create version with special characters : " + reservedCharacters.join(' | ')
-            );
-          else createNewVersion(newVersion);
-        }
-      });
-  };
-
-  const createNewVersion = (newVersion) => {
-    Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
-      if (res.error) toastr.error(res.error);
-      else {
-        toastr.success('New version of api created');
-        navigate(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
-      }
-    });
-  };
+const NavItem = ({ to, icon, name, subItem, injectedSubMenu }) => {
+  const resolved = useResolvedPath(to);
+  const match = useMatch({ path: resolved.pathname, end: true });
 
   return (
-    <button onClick={promptVersion} className="btn btn-sm btn-outline-primary">
-      {translateMethod('teamapi.new_version')}
-    </button>
-  );
+    <li className="nav-item">
+      <NavLink className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')} to={to}>
+        <i className={`fas fa-${icon}`} style={{ marginLeft: subItem ? '12px' : 0 }} />
+        {name}
+      </NavLink>
+
+      {!!match && !!injectedSubMenu && <div className='ms-4 mt-2'>
+        {injectedSubMenu}
+      </div>}
+    </li>
+  )
 };
 
 const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
@@ -219,6 +193,10 @@ const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
 };
 
 const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title }) => {
+
+  const [injectedSubMenu, setInjectedSubMenu] = useState();
+  const [injectedNavFooter, setInjectedNavFooter] = useState();
+
   useEffect(() => {
     if (title) {
       document.title = title;
@@ -234,46 +212,27 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const ApiSidebar = () => {
+  const ApiSidebar = ({ path, injectedFooter, injectedSubMenu, creation }) => {
     const sidebarParams = useParams();
 
-    const to = `/${currentTeam._humanReadableId}/settings/apis/${sidebarParams.apiId}/${sidebarParams.versionId}`;
+    const realPath = `/${currentTeam._humanReadableId}/settings` + path.replace(':apiId', sidebarParams.apiId).replace(':versionId', sidebarParams.versionId);
 
     return (
       <>
         <VersionsButton {...sidebarParams} currentTeam={currentTeam} />
         {[
-          { route: 'infos', icon: 'info', name: translateMethod('Informations') },
-          { route: 'description', icon: 'file-alt', name: translateMethod('Description') },
-          { route: 'plans', icon: 'dollar-sign', name: translateMethod('Plans') },
-          { route: 'swagger', icon: 'file-code', name: translateMethod('Swagger') },
-          { route: 'testing', icon: 'vial', name: translateMethod('Testing') },
-          { route: 'documentation', icon: 'book', name: translateMethod('Documentation') },
-          { route: 'news', icon: 'newspaper', name: translateMethod('News') },
-        ].map((item, i) => (
-          <NavItem {...item} to={`${to}/${item.route}`} key={`item-${i}`} />
+          { route: 'infos', icon: 'info', name: translateMethod('Informations'), onCreation: true },
+          { route: 'plans', icon: 'euro-sign', name: translateMethod('Plans'), onCreation: false },
+          { route: 'documentation', icon: 'book', name: translateMethod('Documentation'), onCreation: false },
+          { route: 'news', icon: 'newspaper', name: translateMethod('News'), onCreation: false },
+        ]
+        .filter(item => creation || item.onCreation)
+        .map((item, i) => (
+          <NavItem {...item} to={realPath.replace(':tab', item.route)} key={`item-${i}`} injectedSubMenu={injectedSubMenu} />
         ))}
 
         <div className="px-3 mb-4 mt-auto d-flex flex-column">
-          <Link
-            to={`/${currentTeam._humanReadableId}/${sidebarParams.apiId}/${sidebarParams.versionId}`}
-            className="btn btn-sm btn-access-negative mb-2"
-          >
-            {translateMethod('View this Api')}
-          </Link>
-          <CreateNewVersionButton {...sidebarParams} currentTeam={currentTeam} />
-          <Link
-            className="d-flex justify-content-around mt-3 align-items-center"
-            style={{
-              border: 0,
-              background: 'transparent',
-              outline: 'none',
-            }}
-            to={`/${currentTeam._humanReadableId}/settings/apis`}
-          >
-            <i className="fas fa-chevron-left" />
-            Back to {currentTeam._humanReadableId}
-          </Link>
+          {injectedNavFooter}
         </div>
       </>
     );
@@ -310,6 +269,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
                       icon="info"
                       name={translateMethod('Informations')}
                       subItem={true}
+                      injectedSubMenu={injectedSubMenu}
                     />
                   </Can>
                   {currentTeam.type === 'Organization' && (
@@ -504,23 +464,6 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
     );
   };
 
-  const NewApiBar = () => (
-    <div className="px-3 mb-4 mt-auto d-flex flex-column">
-      <Link
-        className="d-flex justify-content-around mt-3 align-items-center"
-        style={{
-          border: 0,
-          background: 'transparent',
-          outline: 'none',
-        }}
-        to={`/${currentTeam._humanReadableId}/settings/apis`}
-      >
-        <i className="fas fa-chevron-left" />
-        Back to {currentTeam._humanReadableId}
-      </Link>
-    </div>
-  );
-
   return (
     <div className="row">
       <button
@@ -535,15 +478,17 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
         <span className="sr-only">Toggle sidebar</span>
         <span className="chevron" />
       </button>
-      <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
+      <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
         <div className="sidebar-sticky d-flex flex-column p-0">
           <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
             {currentTeam.name}
           </span>
           <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
             <Routes>
-              <Route path="/apis/:apiId/:versionId/:tab*" element={<ApiSidebar />} />
-              <Route path={`/apis/:apiId/:tab`} element={<NewApiBar />} />
+              <Route
+                path="/apis/:apiId/:versionId/:tab/*"
+                element={<ApiSidebar path="/apis/:apiId/:versionId/:tab" injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} creation/>} />
+              <Route path={`/apis/:apiId/:tab`} element={<ApiSidebar path={`/apis/:apiId/:tab`} injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} />} />
               <Route path={`/apikeys/:apiId/:versionId`} element={<ApiKeysBar />} />
               <Route
                 path={`/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
@@ -554,7 +499,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
           </ul>
         </div>
       </nav>
-      <main role="main" className="col-md-9 offset-md-3 ml-sm-auto px-4 mt-3">
+      <main role="main" className="col-md-9 offset-md-2 ml-sm-auto px-4 mt-3">
         <div
           className={classNames('back-office-overlay', {
             active: isLoading && !error.status,
@@ -583,8 +528,10 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             />
             <Route path={`/members`} element={<TeamMembers />} />
             <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
-            <Route path={`/apis/:apiId/:versionId/:tab*`} element={<TeamApi />} />
-            <Route path={`/apis/:apiId/:versionId`} element={<TeamApi />} />
+            <Route
+              path={`/apis/:apiId/:versionId/:tab/*`}
+              element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu}/>} />
+            <Route path={`/apis/:apiId/:tab`} element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu} creation/>} />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />
           </Routes>
@@ -625,7 +572,7 @@ const UserBackOfficeComponent = ({
         <span className="sr-only">Toggle sidebar</span>
         <span className="chevron" />
       </button>
-      <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
+      <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
         <div className="sidebar-sticky">
           <ul className="nav flex-column mt-3">
             <li className="nav-item">
@@ -683,7 +630,8 @@ const UserBackOfficeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`me-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
-                  to={'/settings/admins'}>
+                  to={'/settings/admins'}
+                >
                   <i className="fas fa-user-shield me-1" />
                   <Translation i18nkey="Admins">Admins</Translation>
                 </Link>
@@ -784,7 +732,7 @@ const UserBackOfficeComponent = ({
           </Can>
         </div>
       </nav>
-      <main role="main" className="col-md-9 offset-md-3 px-4">
+      <main role="main" className="col-md-9 offset-md-2 px-4">
         <div className={classNames('back-office-overlay', { active: isLoading })} />
         <BackOfficeContent error={error}>{children}</BackOfficeContent>
       </main>

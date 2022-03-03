@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { Route, Link, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Route, Link, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Spinner } from '../..';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
@@ -41,7 +41,8 @@ const ApiPost = ({ publishPost, params, team }) => {
       <div className="d-flex justify-content-end my-3">
         <Link
           className="btn btn-outline-danger me-1"
-          to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}>
+          to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}
+        >
           {translateMethod('Cancel')}
         </Link>
         <button className="btn btn-outline-success" onClick={() => publishPost(selected)}>
@@ -52,9 +53,10 @@ const ApiPost = ({ publishPost, params, team }) => {
   );
 };
 
-export function TeamApiPost({ team, params, api, ...props }) {
+export function TeamApiPost({ team, api, ...props }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
   const { translateMethod } = useContext(I18nContext);
 
   const [state, setState] = useState({
@@ -201,13 +203,15 @@ export function TeamApiPost({ team, params, api, ...props }) {
                         {post.isOpen && (
                           <button
                             className="btn btn-outline-success me-1"
-                            onClick={() => savePost(i)}>
+                            onClick={() => savePost(i)}
+                          >
                             <i className="fas fa-save" />
                           </button>
                         )}
                         <button
                           className="btn btn-outline-danger me-1"
-                          onClick={() => removePost(post._id, i)}>
+                          onClick={() => removePost(post._id, i)}
+                        >
                           <i className="fas fa-trash" />
                         </button>
                         <button className="btn btn-outline-info" onClick={() => togglePost(i)}>

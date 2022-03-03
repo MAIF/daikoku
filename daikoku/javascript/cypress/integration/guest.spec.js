@@ -9,7 +9,7 @@ describe('Login page & login form', () => {
   });
 });
 
-describe('API page', () => {
+describe('API page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/testers/test-api/1.0.0')

@@ -90,12 +90,13 @@ export class ObjectInput extends Component {
                   value={value[1]}
                   onChange={(e) => this.changeValue(e, value[0])}
                 />
-                
+
                 <button
                   disabled={this.props.disabled}
                   type="button"
                   className="input-group-text btn btn-outline-danger"
-                  onClick={(e) => this.remove(e, value[0])}>
+                  onClick={(e) => this.remove(e, value[0])}
+                >
                   <i className="fas fa-trash" />
                 </button>
                 {idx === values.length - 1 && (
@@ -103,11 +104,11 @@ export class ObjectInput extends Component {
                     disabled={this.props.disabled}
                     type="button"
                     className="input-group-text btn btn-outline-primary"
-                    onClick={this.addNext}>
+                    onClick={this.addNext}
+                  >
                     <i className="fas fa-plus" />{' '}
                   </button>
                 )}
-                
               </div>
             </div>
           </div>
@@ -181,7 +182,8 @@ export class VerticalObjectInput extends Component {
           <div
             key={`from-group-${idx}`}
             className="mb-3 row"
-            style={{ marginBottom: 5, flexWrap: 'nowrap' }}>
+            style={{ marginBottom: 5, flexWrap: 'nowrap' }}
+          >
             <div className="col-xs-12">
               {idx === 0 && (
                 <label className="col-form-label">

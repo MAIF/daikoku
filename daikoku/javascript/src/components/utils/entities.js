@@ -5,7 +5,7 @@ export const newPossibleUsagePlan = (customName) => ({
   type: 'FreeWithQuotas',
   currency: { code: 'EUR' },
   customName,
-  customDescription: null,
+  customDescription: 'Free plan with limited number of calls per day and per month',
   maxPerSecond: 10,
   maxPerDay: 1000,
   maxPerMonth: 1000,

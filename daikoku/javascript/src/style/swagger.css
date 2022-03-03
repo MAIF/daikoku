@@ -31,6 +31,10 @@
   width: 107% !important;
 }
 
+#swagger-editor .SplitPane {
+  position: static !important
+}
+
 #swagger-ui .response-col_status {
   width: 20% !important;
 }

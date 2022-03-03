@@ -350,7 +350,8 @@ const ApiKeyCard = ({
                     disabled={!subscription.enabled}
                     type="button"
                     className="btn btn-sm btn-access-negative ms-2"
-                    onClick={() => setEditMode(true)}>
+                    onClick={() => setEditMode(true)}
+                  >
                     <i className="fas fa-pen cursor-pointer a-fake" />
                   </button>
                 </>
@@ -383,7 +384,8 @@ const ApiKeyCard = ({
             ) : (
               <span
                 className="badge bg-secondary"
-                style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}>
+                style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
+              >
                 {Option(plan.customName).getOrElse(formatPlanType(plan, translateMethod))}
               </span>
             )}
@@ -432,7 +434,8 @@ const ApiKeyCard = ({
                       <button
                         type="button"
                         className="btn btn-sm btn-access-negative ms-1"
-                        onClick={() => setSettingMode(true)}>
+                        onClick={() => setSettingMode(true)}
+                      >
                         <i className="fas fa-history" />
                       </button>
                     </BeautifulTitle>
@@ -459,7 +462,8 @@ const ApiKeyCard = ({
                       <button
                         type="button"
                         className="btn btn-sm ms-1 btn-outline-danger"
-                        onClick={makeUniqueApiKey}>
+                        onClick={makeUniqueApiKey}
+                      >
                         <i className="fas fa-share" />
                       </button>
                     </BeautifulTitle>
@@ -689,7 +693,8 @@ const ApiKeyCard = ({
                   disabled={
                     !subscription.enabled || Object.keys(error).length ? 'disabled' : undefined
                   }
-                  onClick={handleChanges}>
+                  onClick={handleChanges}
+                >
                   <i className="fas fa-save me-1"></i>
                   <Translation i18nkey="Save">Save</Translation>
                 </button>

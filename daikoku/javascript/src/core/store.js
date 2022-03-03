@@ -9,10 +9,9 @@ export const store = (context) => {
   let composeEnhancers = compose;
   let middleware = [thunkMiddleware];
 
-  // if (process.env.NODE_ENV !== 'production') {
-  //   composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
-  //   middleware = [...middleware, createLogger(), routerMiddleware(history)];
-  // }
+  if (process.env.NODE_ENV !== 'production') {
+    composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose
+  }
 
   return createStore(reducers(), { context }, composeEnhancers(applyMiddleware(...middleware)));
 };

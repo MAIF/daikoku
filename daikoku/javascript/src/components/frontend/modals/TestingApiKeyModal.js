@@ -227,7 +227,7 @@ export const TestingApiKeyModal = (props) => {
     <div className="modal-content" style={{ fontWeight: 'normal' }}>
       <div className="modal-header">
         <h5 className="modal-title">{props.title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
       </div>
       <div className="modal-body">
         <React.Suspense fallback={<Spinner />}>

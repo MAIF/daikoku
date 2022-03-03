@@ -30,7 +30,12 @@ export const LoginOrRegisterModal = (props) => {
       {!props.showOnlyMessage && (
         <div className="modal-header">
           <h5 className="modal-title">{translateMethod('consume.apikey')}</h5>
-          <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
+          <button
+            type="button"
+            className="btn-close"
+            aria-label="Close"
+            onClick={props.closeModal}
+          />
         </div>
       )}
       <div className="modal-body">

@@ -74,7 +74,7 @@ export function TenantListComponent(props) {
                     setState({ ...state, search: e.target.value });
                   }}
                 />
-              </div>  
+              </div>
             </div>
             <PaginatedComponent
               items={_.sortBy(filteredTenants, [(tenant) => tenant.name.toLowerCase()])}

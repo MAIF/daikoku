@@ -51,9 +51,9 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       (parentSubscriptionId match {
         case None => FastFuture.successful(generatedApiKey)
         case Some(id) => env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).findById(id.value)
-            .flatMap {
-              case Some(sub) => FastFuture.successful(sub.apiKey)
-              case None => FastFuture.successful(generatedApiKey)
+            .map {
+              case Some(sub) => sub.apiKey
+              case None => generatedApiKey //todo: NotFound
             }
       })
         .flatMap { k =>
@@ -69,7 +69,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
           val apiSubscription = ApiSubscription(
             id = ApiSubscriptionId(BSONObjectID.generate().stringify),
             tenant = tenant.id,
-            apiKey = OtoroshiApiKey(otoroshiApiKey.clientName, otoroshiApiKey.clientId, otoroshiApiKey.clientSecret),
+            apiKey = otoroshiApiKey,
             plan = plan.id,
             createdAt = DateTime.now(),
             team = team.id,
@@ -136,7 +136,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
               .getOrElse(Map.empty[String, String])
               ++ customMetadata
               .flatMap(_.asOpt[Map[String, String]])
-              .getOrElse(Map.empty[String, String]),
+              .getOrElse(Map.empty[String, String]), //todo: extends parents metadata
             rotation = plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
           )
 
@@ -174,10 +174,10 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                       e.copy(authorizedEntities = AuthorizedEntities(
                         groups = e.authorizedEntities.groups ++ authorizedEntities.groups,
                         services = e.authorizedEntities.services ++ authorizedEntities.services
-                      ))
+                      ))//todo: map to update sub
                     )
                   }
-              case _ => EitherT(otoroshiClient.createApiKey(tunedApiKey))
+              case _ => EitherT(otoroshiClient.createApiKey(tunedApiKey)) //todo: map with create sub
             }
             _ <- optSubscription match {
               case Some(sub) =>
