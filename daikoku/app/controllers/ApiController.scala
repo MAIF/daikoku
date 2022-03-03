@@ -1263,38 +1263,39 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def checkApiNameUniqueness(id: Option[String], name: String, tenant: TenantId): Future[Boolean] = {
+    val apiRepo = env.dataStore.apiRepo.forTenant(tenant)
+    val maybeHumanReadableId = name.urlPathSegmentSanitized
+
+    id match {
+      case Some(value) =>
+        apiRepo.findByIdNotDeleted(value)
+          .flatMap {
+            case None => apiRepo
+              .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId))
+            case Some(api) =>
+              val v = api.parent match {
+                case Some(parent) => parent.value
+                case None => value
+              }
+              apiRepo
+                .exists(Json.obj("parent" -> JsNull, "_humanReadableId" -> maybeHumanReadableId, "_id" -> Json.obj("$ne" -> v)))
+          }
+      case None => apiRepo
+        .exists(Json.obj("parent" -> JsNull, "_humanReadableId" -> maybeHumanReadableId))
+    }
+  }
+
   def verifyNameUniqueness() = DaikokuAction.async(parse.json) { ctx =>
     PublicUserAccess(
       AuditTrailEvent(s"@{user.name} is checking if api name (@{api.name}) is unique")
     )(ctx) {
-      import fr.maif.otoroshi.daikoku.utils.StringImplicits._
-
       val name = (ctx.request.body.as[JsObject] \ "name").as[String].toLowerCase.trim
       val id = (ctx.request.body.as[JsObject] \ "id").asOpt[String].map(_.trim)
       ctx.setCtxValue("api.name", name)
 
-      val maybeHumanReadableId = name.urlPathSegmentSanitized
-
-      val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-
-      id match {
-        case Some(value) =>
-          apiRepo.findByIdNotDeleted(value)
-            .flatMap {
-              case None => FastFuture.successful(Ok(Json.obj("exists" -> false)))
-              case Some(api) =>
-                val v = api.parent match {
-                  case Some(parent) => parent.value
-                  case None => value
-                }
-                apiRepo
-                  .exists(Json.obj("parent" -> JsNull, "_humanReadableId" -> maybeHumanReadableId, "_id" -> Json.obj("$ne" -> v)))
-                  .map(exists => Ok(Json.obj("exists" -> exists)))
-            }
-        case None => apiRepo
-          .exists(Json.obj("parent" -> JsNull, "_humanReadableId" -> maybeHumanReadableId))
-          .map(exists => Ok(Json.obj("exists" -> exists)))
-      }
+      checkApiNameUniqueness(id, name, ctx.tenant.id)
+        .map(exists => Ok(Json.obj("exists" -> exists)))
     }
   }
 
@@ -1325,7 +1326,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def cloneDocumentation(teamId: String, apiId: String, version: String) = DaikokuAction.async(parse.json) { ctx =>
     TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has imported pages from $version in @{api.name} @{team.id}"))(teamId, ctx) {
-      team => {
+      _ => {
         val pages = (ctx.request.body \ "pages").as[Seq[JsObject]]
 
         (for {
@@ -1466,6 +1467,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
 
     val name = (finalBody \ "name").as[String].toLowerCase.trim
+    val id = (finalBody \ "_id").asOpt[String].map(_.trim)
 
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} want to create an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})")
@@ -1473,28 +1475,21 @@ class ApiController(DaikokuAction: DaikokuAction,
       ctx.tenant.creationSecurity match {
         case Some(true) if !team.apisCreationPermission.getOrElse(false) =>
           FastFuture.successful(Forbidden(Json.obj("error" -> "Team forbidden to create api on current tenant")))
-        case _ => env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findAllNotDeleted()
-          .map { apis =>
-            val withSameName = apis.filter(api => api.name.toLowerCase.trim == name)
-            withSameName.nonEmpty
-          }
-          .flatMap {
-            case true => FastFuture.successful(Conflict("Resource with same name already exists ..."))
-            case false =>
-              ApiFormat.reads(finalBody) match {
+        case _ => ApiFormat.reads(finalBody) match {
                 case JsError(e) =>
                   FastFuture
                     .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
-                case JsSuccess(api, _) => {
-                  ctx.setCtxValue("api.id", api.id)
-                  ctx.setCtxValue("api.name", api.name)
-                  env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(api).map { _ =>
-                    Created(api.asJson)
-                  }
-                }
-              }
+                case JsSuccess(api, _) =>
+                  checkApiNameUniqueness(id, name, ctx.tenant.id)
+                    .flatMap {
+                      case true => FastFuture.successful(Conflict(Json.obj("error" -> "Resource with same name already exists")))
+                      case false =>
+                        ctx.setCtxValue("api.id", api.id)
+                        ctx.setCtxValue("api.name", api.name)
+                        env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(api).map { _ =>
+                          Created(api.asJson)
+                        }
+                    }
           }
       }
     }
@@ -1536,40 +1531,45 @@ class ApiController(DaikokuAction: DaikokuAction,
                     }
                 }
               case JsSuccess(api, _) =>
-                val flippedPlans = api.possibleUsagePlans.filter(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.visibility != pp.visibility))
-                val untouchedPlans = api.possibleUsagePlans.diff(flippedPlans)
+                checkApiNameUniqueness(Some(api.id.value), api.name, ctx.tenant.id)
+                  .flatMap {
+                    case true => FastFuture.successful(Conflict(Json.obj("error" -> "Resource with same name already exists")))
+                    case false => val flippedPlans = api.possibleUsagePlans.filter(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.visibility != pp.visibility))
+                      val untouchedPlans = api.possibleUsagePlans.diff(flippedPlans)
 
-                val newPlans = api.possibleUsagePlans.map(_.id)
-                val oldPlans = oldApi.possibleUsagePlans.map(_.id)
-                val deletedPlansId = oldPlans.diff(newPlans)
-                val deletedPlans = oldApi.possibleUsagePlans.filter(pp => deletedPlansId.contains(pp.id))
+                      val newPlans = api.possibleUsagePlans.map(_.id)
+                      val oldPlans = oldApi.possibleUsagePlans.map(_.id)
+                      val deletedPlansId = oldPlans.diff(newPlans)
+                      val deletedPlans = oldApi.possibleUsagePlans.filter(pp => deletedPlansId.contains(pp.id))
 
-                env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-                   .exists(Json.obj(
-                     "_humanReadableId" -> api.humanReadableId,
-                     "currentVersion" -> api.currentVersion.asJson,
-                     "_id" -> Json.obj("$ne" -> api.id.value)
-                   ))
-                   .flatMap {
-                     case true  => FastFuture.successful(AppError.render(ApiVersionConflict))
-                     case false =>
-                       for {
-                         plans <- changePlansVisibility(flippedPlans, api, ctx.tenant)
-                         _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
-                         apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
-                         _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
-                         _ <- otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)) //launch synhro to maybe update customeMetadata & authorizedEntities
-                         _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
-                         _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
-                         _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)
-                         _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
-                       } yield {
-                         ctx.setCtxValue("api.name", api.name)
-                         ctx.setCtxValue("api.id", api.id)
+                      env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+                        .exists(Json.obj(
+                          "_humanReadableId" -> api.humanReadableId,
+                          "currentVersion" -> api.currentVersion.asJson,
+                          "_id" -> Json.obj("$ne" -> api.id.value)
+                        ))
+                        .flatMap {
+                          case true  => FastFuture.successful(AppError.render(ApiVersionConflict))
+                          case false =>
+                            for {
+                              plans <- changePlansVisibility(flippedPlans, api, ctx.tenant)
+                              _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
+                              apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
+                              _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
+                              _ <- otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)) //launch synhro to maybe update customeMetadata & authorizedEntities
+                              _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                              _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
+                              _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)
+                              _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
+                            } yield {
+                              ctx.setCtxValue("api.name", api.name)
+                              ctx.setCtxValue("api.id", api.id)
 
-                         Ok(apiToSave.asJson)
-                       }
-                   }
+                              Ok(apiToSave.asJson)
+                            }
+                        }
+                  }
+
             }
       }
     }

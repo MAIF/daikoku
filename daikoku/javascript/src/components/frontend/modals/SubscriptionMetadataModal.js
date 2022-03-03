@@ -97,15 +97,19 @@ export const SubscriptionMetadataModal = (props) => {
   }, [metadata, customMetadata]);
 
   useEffect(() => {
-    Services.getVisibleApiWithId(props.api).then((api) => {
-      if (api.error) {
-        toastr.error(api.error);
-        props.closeModal();
-      } else {
-        setApi(api);
-      }
-      setLoading(false);
-    });
+    if (!!props.api && typeof props.api === 'object') {
+      setApi(props.api)
+    } else {
+      Services.getVisibleApiWithId(props.api).then((api) => {
+        if (api.error) {
+          toastr.error(api.error);
+          props.closeModal();
+        } else {
+          setApi(api);
+        }
+        setLoading(false);
+      });
+    }
   }, []);
 
   const actionAndClose = (action) => {

@@ -1,28 +1,15 @@
 import React, { Suspense } from 'react';
-import PropTypes from 'prop-types';
+import {type, format} from '@maif/react-forms';
 
-const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
-export const TeamApiDescription = (props) => (
-  <div>
-    <Suspense fallback={<div>loading ...</div>}>
-      <LazySingleMarkdownInput
-        team={props.team}
-        height={window.innerHeight - 300 + 'px'}
-        value={props.value.description}
-        onChange={(code) => {
-          const newValue = props.value;
-          newValue.description = code;
-          props.onChange(newValue);
-        }}
-        fullWidth={true}
-      />
-    </Suspense>
-  </div>
-);
-
-TeamApiDescription.propTypes = {
-  team: PropTypes.object,
-  value: PropTypes.object.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
+export const teamApiDescriptionForm = (translateMethod) => {
+  const schema = {
+    description: {
+      type: type.string,
+      format: format.markdown,
+      label: translateMethod('Description')
+    }
+  }
+  const flow = ['description'];
+  return {schema, flow}
+}

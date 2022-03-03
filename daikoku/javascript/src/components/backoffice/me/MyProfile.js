@@ -232,8 +232,8 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
     return null;
   }
   return (
-    <div className="d-flex flex-row align-items-center">
-      <div className="d-flex align-items-center">
+    <div className="">
+      <div className='float-right mb-4 position-relative'>
         <img
           src={`${rawValues?.picture}${
             rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
@@ -241,15 +241,14 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
           style={{
             width: 100,
             borderRadius: '50%',
-            backgroundColor: 'white',
-            position: 'relative',
+            backgroundColor: 'white'
           }}
           alt="avatar"
           className="mx-3"
         />
         <PictureUpload setFiles={setFiles} />
       </div>
-      <div className="d-flex flex-column flex-grow-1">
+      <div className="">
         <input
           type="text"
           className="form-control"
@@ -465,7 +464,7 @@ function MyProfileComponent(props) {
   return (
     <UserBackOffice tab="Me" isLoading={!user}>
       <div className="col">
-        <div className="">
+        <div className="row">
           <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
             <li className="nav-item">
               <span
@@ -492,7 +491,7 @@ function MyProfileComponent(props) {
               onSubmit={save}
               footer={({ valid }) => {
                 return (
-                  <div className="d-flex" style={{ justifyContent: 'flex-end' }}>
+                  <div className="d-flex mt-3" style={{ justifyContent: 'flex-end' }}>
                     <a
                       className="btn btn-outline-primary"
                       href="#"
@@ -527,38 +526,34 @@ function MyProfileComponent(props) {
             />
           )}
           {tab === 'security' && (
-            <div className="d-flex flex-row">
-              <div className="col-sm-6 d-flex flex-column flex-grow-1">
-                <h4>
-                  <Translation i18nkey="profile.security.updatePassword">
-                    Update password
-                  </Translation>
-                </h4>
-                <Form
-                  schema={changePasswordSchema}
-                  onSubmit={updatePassword}
-                  footer={({ valid }) => {
-                    return (
-                      <div className="d-flex flex-row align-items-center">
-                        <button
-                          style={{ marginLeft: 5 }}
-                          type="button"
-                          className="btn btn-outline-success"
-                          onClick={valid}
-                        >
-                          <span>
-                            <Translation i18nkey="profile.security.updatePassword">
-                              Update password
-                            </Translation>
-                          </span>
-                        </button>
-                        {/* TODO: forgot password link */}
-                      </div>
-                    );
-                  }}
-                />
+            <div className='row'>
+              <div className='col-sm-6'>
+                <div className='row'>
+                  <h4>
+                    <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                  </h4>
+                  <Form
+                    schema={changePasswordSchema}
+                    onSubmit={updatePassword}
+                    footer={({ valid }) => {
+                      return (
+                        <div className='d-flex justify-content-end'>
+                          <button
+                            type="button"
+                            className="btn btn-outline-success mb-2"
+                            onClick={valid}>
+                            <span>
+                              <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                            </span>
+                          </button>
+                          {/* TODO: forgot password link */}
+                        </div>
+                      );
+                    }}
+                  />
+                </div>
               </div>
-              <div className="d-flex flex-column  flex-grow-1">
+              <div className='col-sm-6'>
                 <h4>
                   <Translation i18nkey="2fa">Two-factor authentication</Translation>
                 </h4>

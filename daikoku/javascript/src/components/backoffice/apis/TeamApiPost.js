@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { Route, Link, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Route, Link, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Spinner } from '../..';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
@@ -53,9 +53,10 @@ const ApiPost = ({ publishPost, params, team }) => {
   );
 };
 
-export function TeamApiPost({ team, params, api, ...props }) {
+export function TeamApiPost({ team, api, ...props }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
   const { translateMethod } = useContext(I18nContext);
 
   const [state, setState] = useState({
