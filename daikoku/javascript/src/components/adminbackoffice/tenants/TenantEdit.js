@@ -425,47 +425,47 @@ export function TenantEditComponent(props) {
     },
     'style.homeCmsPage': {
       type: 'select',
-      visible: () => state.tenant?.style.homePageVisible,
+      visible: () => state.tenant?.style?.homePageVisible,
       props: {
         isClearable: true,
         label: translateMethod('tenant_edit.home_page'),
-        disabled: !state.tenant?.style.homePageVisible,
+        disabled: !state.tenant?.style?.homePageVisible,
         possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
       }
     },
     'style.notFoundCmsPage': {
       type: 'select',
-      visible: () => state.tenant?.style.homePageVisible,
+      visible: () => state.tenant?.style?.homePageVisible,
       props: {
         isClearable: true,
         label: translateMethod('tenant_edit.404_page'),
-        disabled: !state.tenant?.style.homePageVisible,
+        disabled: !state.tenant?.style?.homePageVisible,
         possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
       }
     },
     'style.authenticatedCmsPage': {
       type: 'select',
-      visible: () => state.tenant?.style.homePageVisible,
+      visible: () => state.tenant?.style?.homePageVisible,
       props: {
         isClearable: true,
         label: translateMethod('tenant_edit.authenticated_cmspage'),
         help: translateMethod('tenant_edit.authenticated_cmspage_help'),
-        disabled: !state.tenant?.style.homePageVisible,
+        disabled: !state.tenant?.style?.homePageVisible,
         possibleValues: cmsPages.map(t => ({ label: `${t.name}`, value: t.id }))
       }
     },
     'style.cacheTTL': {
       type: 'number',
-      visible: () => state.tenant?.style.homePageVisible,
+      visible: () => state.tenant?.style?.homePageVisible,
       props: {
         label: translateMethod('tenant_edit.cache'),
         help: translateMethod('tenant_edit.cache_help'),
-        disabled: !state.tenant?.style.homePageVisible
+        disabled: !state.tenant?.style?.homePageVisible
       }
     },
     'style.cmsHistoryLength': {
       type: 'number',
-      visible: () => state.tenant?.style.homePageVisible,
+      visible: () => state.tenant?.style?.homePageVisible,
       props: {
         label: translateMethod('tenant_edit.cms_history_length'),
         help: translateMethod('tenant_edit.cms_history_length.help')

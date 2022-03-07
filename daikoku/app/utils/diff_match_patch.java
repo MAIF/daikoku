@@ -1,4 +1,4 @@
-package utils;
+package fr.maif.otoroshi.daikoku.utils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;

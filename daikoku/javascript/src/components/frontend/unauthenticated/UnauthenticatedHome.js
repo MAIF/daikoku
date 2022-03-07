@@ -13,9 +13,6 @@ export function UnauthenticatedHomeComponent(props) {
   const content = props.tenant.unloggedHome || '';
   const pathname = location ? location.pathname : '';
   const displayInformation = pathname !== '/2fa' && pathname !== '/signup';
-  
-  if(props.tenant.homePageVisible)
-    return navigate('/_/')
 
   return (
     <main role="main">

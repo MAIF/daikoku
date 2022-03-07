@@ -9,19 +9,20 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.Errors
+import fr.maif.otoroshi.daikoku.utils.{Errors, diff_match_patch}
 import org.joda.time.DateTime
 import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
-import utils.diff_match_patch
+import com.github.blemale.scaffeine.{Cache, Scaffeine}
 
 import java.io.{ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
 import java.util
+import java.util.concurrent.TimeUnit
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
-import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class HomeController(
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
@@ -36,9 +37,12 @@ class HomeController(
   implicit val e = env
   implicit val m = messagesApi
 
-  case class CmsPageCache(contentType: String, content: String, lastUpdate: Long)
+  case class CmsPageCache(contentType: String, content: String)
 
-  private val cache = new TrieMap[String, CmsPageCache]()
+  private val cache: Cache[String, CmsPageCache] = Scaffeine()
+    .expireAfterWrite(60.seconds)
+    .maximumSize(100)
+    .build[String, CmsPageCache]()
 
   def actualIndex[A](ctx: DaikokuActionMaybeWithoutUserContext[A]): Future[Result] = {
     ctx.user match {
@@ -78,7 +82,11 @@ class HomeController(
     ctx.tenant.style match {
       case Some(value) if value.homePageVisible =>
         value.homeCmsPage match {
-          case Some(pageId) => cmsPageByIdWithoutAction(ctx, pageId)
+          case Some(pageId) =>
+            if (!ctx.tenant.isPrivate || ctx.user.exists(!_.isGuest))
+              cmsPageByIdWithoutAction(ctx, pageId)
+            else
+              FastFuture.successful(Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)))
           case _ => FastFuture.successful(redirectTo)
         }
       case _ => FastFuture.successful(redirectTo)
@@ -208,16 +216,23 @@ class HomeController(
 
     val cacheId = s"${ctx.user.map(_.id.value).getOrElse("")}-${r.path.getOrElse("")}"
 
+    cache.policy.expireAfterWrite().ifPresent(eviction => {
+      val ttl: Long = ctx.tenant.style.map(_.cacheTTL).getOrElse(60000).asInstanceOf[Number].longValue
+      if(eviction.getExpiresAfter(TimeUnit.MILLISECONDS) != ttl) {
+        cache.invalidateAll()
+        eviction.setExpiresAfter(ttl, TimeUnit.MILLISECONDS)
+      }
+    })
+
     if (isDraftRender || forceReloading)
       r.render(ctx, None).map(res => Ok(res._1).as(res._2))
     else
-      (cache.find(p => p._1 == cacheId), ctx.tenant.style.map(_.cacheTTL)) match {
-        case (Some(value), c) if c.isDefined && c.get > 0 && (value._2.lastUpdate + c.get) >= DateTime.now().getMillis =>
-          FastFuture.successful(Ok(value._2.content).as(value._2.contentType))
+      cache.getIfPresent(cacheId) match {
+        case Some(value) => FastFuture.successful(Ok(value.content).as(value.contentType))
         case _ =>
           r.render(ctx, None)
           .map(res => {
-            cache.put(cacheId, CmsPageCache(content = res._1, contentType = res._2, lastUpdate = DateTime.now().getMillis))
+            cache.put(cacheId, CmsPageCache(content = res._1, contentType = res._2))
             Ok(res._1).as(res._2)
           })
       }
@@ -333,7 +348,7 @@ class HomeController(
   }
 
   def diff(a: String, b: String, userId: UserId): CmsHistory = {
-    val patchMatch = new utils.diff_match_patch()
+    val patchMatch = new diff_match_patch()
     val diff = patchMatch.patch_toText(patchMatch.patch_make(a, b))
     CmsHistory(
       id = BSONObjectID.generate().stringify,
