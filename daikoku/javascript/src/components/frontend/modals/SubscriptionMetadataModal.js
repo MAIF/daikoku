@@ -261,7 +261,7 @@ export const SubscriptionMetadataModal = (props) => {
                     return (
                       <div className="d-flex flex-row mb-1" key={idx}>
                         <input
-                          className="form-control col-5 me-1"
+                          className="form-control me-1"
                           value={key}
                           disabled="disabled"
                         />

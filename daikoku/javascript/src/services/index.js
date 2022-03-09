@@ -105,10 +105,10 @@ export const makeUniqueApiKey = (teamId, subscriptionId) =>
     method: 'POST',
   });
 
-export const toggleApiKeyRotation = (teamId, subscriptionId, rotationEvery, gracePeriod) =>
+export const toggleApiKeyRotation = (teamId, subscriptionId, enabled, rotationEvery, gracePeriod) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
     method: 'POST',
-    body: JSON.stringify({ rotationEvery, gracePeriod }),
+    body: JSON.stringify({ enabled, rotationEvery, gracePeriod }),
   });
 
 export const regenerateApiKeySecret = (teamId, subscriptionId) =>
@@ -919,6 +919,33 @@ export const graphql = {
       }
     }
   `,
+  apisByIds: gql(`
+      query filteredApis ($ids: [String!]) {
+        apis (ids: $ids) {
+          _id
+          _humanReadableId
+          currentVersion
+          name
+        }
+      }
+    `),
+  apisByIdsWithPlans: gql(`
+      query filteredApis ($ids: [String!]) {
+        apis (ids: $ids) {
+          _id
+          _humanReadableId
+          currentVersion
+          name
+          possibleUsagePlans {
+            _id
+            otoroshiTarget {
+              otoroshiSettings
+            }
+            aggregationApiKeysSecurity
+          }
+        }
+      }
+    `),
   myVisibleApis: (teamId) =>
     gql(`
     query AllVisibleApis {

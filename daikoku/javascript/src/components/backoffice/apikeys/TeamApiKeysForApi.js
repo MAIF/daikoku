@@ -4,6 +4,8 @@ import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
 import { sortBy } from 'lodash';
+import { getApolloContext } from '@apollo/client';
+import { Form, constraints, format, type } from '@maif/react-forms';
 
 import * as Services from '../../../services';
 import {
@@ -26,20 +28,33 @@ function TeamApiKeysForApiComponent(props) {
   const [subscriptions, setSubscriptions] = useState([]);
   const [searched, setSearched] = useState('');
 
+  const [subscribedApis, setSubscribedApis] = useState([]);
+
   const location = useLocation();
   const params = useParams();
-
+  const { client } = useContext(getApolloContext());
   const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     Promise.all([
       Services.getTeamVisibleApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId),
-    ]).then(([api, subscriptions]) => {
-      setSubscriptions(subscriptions);
-      setApi(api);
-      Services.team(api.team).then((apiTeam) => setApiTeam(apiTeam));
-    });
+    ])
+      .then(([api, subscriptions]) =>
+        Promise.all([
+          client.query({
+            query: Services.graphql.apisByIds,
+            variables: { ids: [... new Set(subscriptions.map(s => s.api))] }
+          }),
+          Services.team(api.team),
+          Promise.resolve({ api, subscriptions })
+        ]))
+      .then(([{ data }, apiTeam, { api, subscriptions }]) => {
+        setSubscribedApis(data.apis)
+        setApiTeam(apiTeam)
+        setSubscriptions(subscriptions);
+        setApi(api);
+      });
   }, [location]);
 
   useEffect(() => {
@@ -59,16 +74,21 @@ function TeamApiKeysForApiComponent(props) {
   };
 
   const makeUniqueApiKey = (subscription) => {
-    window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique')).then((ok) => {
-      if (ok)
-        Services.makeUniqueApiKey(props.currentTeam._id, subscription._id).then(() =>
-          Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
-        );
-      then((subs) => setSubscriptions(subs));
-    });
+    window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique'))
+      .then((ok) => {
+        if (ok)
+          Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
+            .then(() =>
+              Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+            )
+            .then((subs) => {
+              toastr.success('team_apikey_for_api.ask_for_make_unique.success_message')
+              setSubscriptions(subs)
+            });
+      });
   };
 
-  const toggleApiKeyRotation = (subscription, plan, rotationEvery, gracePeriod) => {
+  const toggleApiKeyRotation = (subscription, plan, enabled, rotationEvery, gracePeriod) => {
     if (plan.autoRotation) {
       return toastr.error(
         translateMethod('Error', false, 'Error'),
@@ -83,6 +103,7 @@ function TeamApiKeysForApiComponent(props) {
     return Services.toggleApiKeyRotation(
       props.currentTeam._id,
       subscription._id,
+      enabled,
       rotationEvery,
       gracePeriod
     )
@@ -114,11 +135,7 @@ function TeamApiKeysForApiComponent(props) {
   };
 
   const currentPlan = (subscription) => {
-    try {
-      return api.possibleUsagePlans.filter((p) => p._id === subscription.plan)[0];
-    } catch (e) {
-      return '--';
-    }
+    return api.possibleUsagePlans.find((p) => p._id === subscription.plan);
   };
 
   const showApiKey = CanIDoAction(props.connectedUser, read, apikey, props.currentTeam);
@@ -128,18 +145,18 @@ function TeamApiKeysForApiComponent(props) {
     search === ''
       ? subscriptions
       : subscriptions.filter((subs) => {
-          const plan = currentPlan(subs);
+        const plan = currentPlan(subs);
 
-          if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
-            return true;
-          } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
-            return true;
-          } else {
-            return formatPlanType(currentPlan(subs), translateMethod)
-              .toLowerCase()
-              .includes(search);
-          }
-        });
+        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
+          return true;
+        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
+          return true;
+        } else {
+          return formatPlanType(currentPlan(subs), translateMethod)
+            .toLowerCase()
+            .includes(search);
+        }
+      });
 
   const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
   const sortedApiKeys = sorted
@@ -148,9 +165,9 @@ function TeamApiKeysForApiComponent(props) {
       (acc, sub) => {
         return acc.find((a) => a._id === sub.parent)
           ? acc.map((a) => {
-              if (a._id === sub.parent) a.children.push(sub);
-              return a;
-            })
+            if (a._id === sub.parent) a.children.push(sub);
+            return a;
+          })
           : [...acc, { ...sub, children: [] }];
       },
       sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] }))
@@ -189,6 +206,9 @@ function TeamApiKeysForApiComponent(props) {
               count={5}
               formatter={(subscription) => {
                 const plan = currentPlan(subscription);
+                if (!plan) {
+                  return null
+                }
 
                 return (
                   <ApiKeyCard
@@ -200,14 +220,15 @@ function TeamApiKeysForApiComponent(props) {
                     showApiKey={showApiKey}
                     plan={plan}
                     api={api}
+                    subscribedApis={subscribedApis}
                     updateCustomName={(name) => updateCustomName(subscription, name)}
                     archiveApiKey={() => archiveApiKey(subscription)}
                     makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
-                    toggleRotation={(rotationEvery, gracePeriod) =>
-                      toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)
+                    toggleRotation={(enabled, rotationEvery, gracePeriod) =>
+                      toggleApiKeyRotation(subscription, plan, enabled, rotationEvery, gracePeriod)
                     }
                     regenerateSecret={() => regenerateApiKeySecret(subscription)}
-                    disableRotation={api.visibility === 'AdminOnly'}
+                    disableRotation={api.visibility === 'AdminOnly' || plan.autoRotation}
                   />
                 );
               }}
@@ -237,30 +258,16 @@ const ApiKeyCard = ({
   regenerateSecret,
   currentTeam,
   disableRotation,
+  subscribedApis
 }) => {
-  //todo: maybe use showApikey props somewhere
   const [hide, setHide] = useState(true);
   const [settingMode, setSettingMode] = useState(false);
   const [customName, setCustomName] = useState(
     subscription.customName || plan.customName || plan.type
   );
-  const [rotation, setRotation] = useState(
-    Option(subscription.rotation)
-      .map((r) => r.enabled)
-      .getOrElse(false)
-  );
+
   const [editMode, setEditMode] = useState(false);
-  const [rotationEvery, setRotationEvery] = useState(
-    Option(subscription.rotation)
-      .map((r) => r.rotationEvery)
-      .getOrElse(744)
-  );
-  const [gracePeriod, setGracePeriod] = useState(
-    Option(subscription.rotation)
-      .map((r) => r.gracePeriod)
-      .getOrElse(168)
-  );
-  const [error, setError] = useState({});
+
   const [activeTab, setActiveTab] = useState(
     plan.integrationProcess === 'Automatic' ? 'token' : 'apikey'
   );
@@ -280,36 +287,42 @@ const ApiKeyCard = ({
     }
   }, [editMode]);
 
-  useEffect(() => {
-    if (rotationEvery < 0) {
-      setError({ ...error, rotationEvery: "value can't be negative" });
-    } else {
-      delete error.rotationEvery;
-      setError(error);
-    }
-  }, [rotationEvery]);
 
-  useEffect(() => {
-    if (gracePeriod < 0) {
-      setError({ ...error, gracePeriod: "value can't be negative" });
-    } else if (gracePeriod > rotationEvery) {
-      setError({ ...error, gracePeriod: "value can't be bigger than rotationEvery" });
-    } else {
-      delete error.gracePeriod;
-      setError(error);
+  const settingsSchema = {
+    enabled: {
+      type: type.bool,
+      label: translateMethod('Enabled'),
+      help: translateMethod('help.apikey.rotation'),
+      disabled: plan.autoRotation
+    },
+    rotationEvery: {
+      type: type.number,
+      label: translateMethod('Rotation period'),
+      help: translateMethod('help.apikey.rotation.period'),
+      disabled: ({ rawValues }) => !rawValues.enabled,
+      props: { steps: 1, min: 0 },
+      constraints: [
+        constraints.positive()
+      ]
+    },
+    gracePeriod: {
+      type: type.number,
+      label: translateMethod('Grace period'),
+      help: translateMethod('help.apikey.grace.period'),
+      disabled: ({ rawValues }) => !rawValues.enabled,
+      props: {steps: 1, min: 0},
+      constraints: [
+        constraints.positive(),
+        constraints.lessThan(constraints.ref('rotationEvery'), translateMethod('constraint.apikey.grace.period'))
+      ]
     }
-  }, [gracePeriod]);
+  }
 
   const handleCustomNameChange = () => {
     updateCustomName(customName.trim()).then(() => setEditMode(false));
   };
 
   const abort = () => {
-    setRotation(
-      Option(subscription.rotation)
-        .map((rotation) => rotation.enabled)
-        .getOrElse(false)
-    );
     setSettingMode(false);
   };
 
@@ -318,9 +331,10 @@ const ApiKeyCard = ({
     setEditMode(false);
   };
 
-  const handleChanges = () => {
-    if (subscription.enabled && !Object.keys(error).length) {
-      toggleRotation(rotationEvery, gracePeriod).then(() => setSettingMode(false));
+  const handleChanges = (rotation) => {
+    if (subscription.enabled) {
+      toggleRotation(rotation.enabled, rotation.rotationEvery, rotation.gracePeriod)
+        .then(() => setSettingMode(false));
     }
   };
 
@@ -440,7 +454,7 @@ const ApiKeyCard = ({
                       </button>
                     </BeautifulTitle>
                   )}
-                  <BeautifulTitle title={translateMethod('Enable/Disable')}>
+                  {!subscription.parent && <BeautifulTitle title={translateMethod('Enable/Disable')}>
                     <button
                       type="button"
                       disabled={subscription.parent ? !subscription.parentUp : false}
@@ -456,7 +470,7 @@ const ApiKeyCard = ({
                     >
                       <i className="fas fa-power-off" />
                     </button>
-                  </BeautifulTitle>
+                  </BeautifulTitle>}
                   {subscription.parent && (
                     <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
                       <button
@@ -569,22 +583,24 @@ const ApiKeyCard = ({
                     <div className="text-center">
                       <h5 className="modal-title">Aggregate plans</h5>
                       <div>
-                        {subscription.children.map((aggregate) => (
-                          <div key={aggregate._id}>
-                            <Link
-                              to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}`}
-                            >
-                              {`${aggregate.apiName}/${aggregate.customName || aggregate.planType}`}
-                            </Link>
-                          </div>
-                        ))}
+                        {subscription.children.map((aggregate) => {
+                          const api = subscribedApis.find(a => a._id === aggregate.api)
+                          return (
+                            <div key={aggregate._id}>
+                              <Link
+                                to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api.currentVersion}`}
+                              >
+                                {`${aggregate.apiName}/${aggregate.customName || aggregate.planType}`}
+                              </Link>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
                   <button
-                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${
-                      showAggregatePlan ? 'mt-3' : ''
-                    }`}
+                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? 'mt-3' : ''
+                      }`}
                     onClick={() => setAggregatePlan(!showAggregatePlan)}
                   >
                     {showAggregatePlan
@@ -610,95 +626,27 @@ const ApiKeyCard = ({
           {settingMode && (
             <div className="d-flex flex-column flex-grow-0">
               {!plan.autoRotation && (
-                <form>
-                  <div className="d-flex flex-row align-items-center mb-3">
-                    <div className="col-6">
-                      <Translation i18nkey="Enabled">Enabled</Translation>
-                      <Help
-                        message={translateMethod(
-                          'help.apikey.rotation',
-                          false,
-                          'If rotation is enabled then secret will be reseted every months'
-                        )}
-                      />
-                    </div>
-                    <div className="col-6 d-flex justify-content-end">
-                      <SwitchButton
-                        disabled={!subscription.enabled}
-                        checked={rotation}
-                        onSwitch={(v) => setRotation(v)}
-                      />
-                    </div>
-                  </div>
-                  <div className="d-flex flex-row align-items-center mb-3">
-                    <div className="col-9">
-                      <Translation i18nkey="Rotation Period">Rotation Every</Translation>
-                      <Help
-                        message={translateMethod(
-                          'help.apikey.rotation.period',
-                          false,
-                          'Period after which the client secret will be automatically changed'
-                        )}
-                      />
-                    </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      className={classNames('form-control col-3', {
-                        'on-error': !!error.rotationEvery,
-                      })}
-                      value={rotationEvery}
-                      disabled={!subscription.enabled || !rotation ? 'disabled' : undefined}
-                      onChange={(e) => setRotationEvery(Number(e.target.value))}
-                    />
-                    {error.rotationEvery && (
-                      <small className="invalid-input-info">{error.rotationEvery}</small>
-                    )}
-                  </div>
-                  <div className="d-flex flex-row align-items-center mb-3">
-                    <div className="col-9">
-                      <Translation i18nkey="Grace Period">Grace Period</Translation>
-                      <Help
-                        message={translateMethod(
-                          'help.apikey.grace.period',
-                          false,
-                          'Period during which the new client secret and the old are both active. The rotation period includes this period.'
-                        )}
-                      />
-                    </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      className={classNames('form-control col-3', {
-                        'on-error': !!error.gracePeriod,
-                      })}
-                      value={gracePeriod}
-                      disabled={!subscription.enabled || !rotation ? 'disabled' : undefined}
-                      onChange={(e) => setGracePeriod(Number(e.target.value))}
-                    />
-                    {error.gracePeriod && (
-                      <small className="invalid-info">{error.gracePeriod}</small>
-                    )}
-                  </div>
-                </form>
+                <Form
+                  schema={settingsSchema}
+                  onSubmit={handleChanges}
+                  value={Option(subscription.rotation).getOrElse({ enabled: false, rotationEvery: 744, gracePeriod: 168 })}
+                  footer={({ valid }) => {
+                    return (
+                      <div className="d-flex justify-content-end mt-3">
+                        <button className="btn btn-outline-danger" onClick={abort}>
+                          <Translation i18nkey="Back">Back</Translation>
+                        </button>
+                        <button
+                          className="btn btn-outline-success ms-2"
+                          onClick={valid}>
+                          <i className="fas fa-save me-1"></i>
+                          <Translation i18nkey="Save">Save</Translation>
+                        </button>
+                      </div>
+                    )
+                  }}
+                />
               )}
-              <div className="d-flex justify-content-end">
-                <button className="btn btn-outline-danger" onClick={abort}>
-                  <Translation i18nkey="Back">Back</Translation>
-                </button>
-                <button
-                  className="btn btn-outline-success ms-2"
-                  disabled={
-                    !subscription.enabled || Object.keys(error).length ? 'disabled' : undefined
-                  }
-                  onClick={handleChanges}
-                >
-                  <i className="fas fa-save me-1"></i>
-                  <Translation i18nkey="Save">Save</Translation>
-                </button>
-              </div>
             </div>
           )}
         </div>

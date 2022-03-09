@@ -691,9 +691,19 @@ class ApiController(DaikokuAction: DaikokuAction,
                                       .flatMap {
                                         case Some(sub) if sub.parent.isDefined =>
                                           FastFuture.successful(AppError.toJson(SubscriptionParentExisted))
-                                        case Some(_) if (plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity.exists(a => !a)) =>
+                                        case Some(_) if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity.exists(a => !a) =>
                                           FastFuture.successful(AppError.toJson(SubscriptionAggregationDisabled))
-                                        case Some(_) => process()
+                                        case Some(sub) if sub.team != team.id =>
+                                          FastFuture.successful(AppError.toJson(SubscriptionAggregationTeamConflict))
+                                        case Some(sub) =>
+                                          env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(sub.api).flatMap {
+                                            case Some(parentApi) => parentApi.possibleUsagePlans.find(p => p.id == sub.plan) match {
+                                              case Some(parentPlan) if parentPlan.otoroshiTarget.map(_.otoroshiSettings) != plan.otoroshiTarget.map(_.otoroshiSettings) =>
+                                                FastFuture.successful(AppError.toJson(SubscriptionAggregationOtoroshiConflict))
+                                              case _ => process()
+                                            }
+                                            case None => FastFuture.successful(AppError.toJson(ApiNotFound))
+                                          }
                                         case None => FastFuture.successful(AppError.toJson(SubscriptionNotFound))
                                       }
                                     case _ => process()
@@ -1069,9 +1079,12 @@ class ApiController(DaikokuAction: DaikokuAction,
     TeamApiKeyAction(
       AuditTrailEvent(s"@{user.name} has archived api subscription @{subscription.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
-      apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
+      apiSubscriptionAction(ctx.tenant, team, subscriptionId, (_: Api, plan: UsagePlan, subscription: ApiSubscription) => {
         ctx.setCtxValue("subscription", subscription)
-        toggleSubscription(plan, subscription, ctx.tenant, enabled.getOrElse(false))
+        subscription.parent match {
+          case Some(_) => FastFuture.successful(Left(ForbiddenAction))
+          case None => toggleSubscription(plan, subscription, ctx.tenant, enabled.getOrElse(false))
+        }
       })
     }
   }
@@ -1081,28 +1094,18 @@ class ApiController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(s"@{user.name} has made unique aggregate api subscription @{subscription.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
-        /*if (subscription.parent.isEmpty)
-            FastFuture.successful(Left(MissingParentSubscription))
-        else*/
-          plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+        subscription.parent match {
+          case None => EitherT.leftT[Future, JsObject](MissingParentSubscription).value
+          case Some(parentSubscriptionId) => plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
             ctx.tenant.otoroshiSettings.find(_.id == id)
           } match {
             case None => FastFuture.successful(Left(OtoroshiSettingsNotFound))
             case Some(otoroshiSettings) =>
-              implicit val o = otoroshiSettings
+              implicit val o: OtoroshiSettings = otoroshiSettings
               import cats.implicits._
-
               (for {
-                apiKey        <- EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId)(o))
-                _             <- EitherT(toggleSubscription(plan, subscription, ctx.tenant, enabled = false))
-                createdApiKey <- EitherT(otoroshiClient.createApiKey(apiKey.copy(
-                  clientId = IdGenerator.token(32),
-                  clientSecret = IdGenerator.token(64),
-                  clientName = s"daikoku-api-key-${api.humanReadableId}-${
-                    plan.customName
-                      .getOrElse(plan.typeName)
-                      .urlPathSegmentSanitized
-                  }-${team.humanReadableId}-${System.currentTimeMillis()}"))(o))
+                apikey <- EitherT(apiService.extractSubscriptionFromAggregation(subscription, ctx.tenant, ctx.user))
+                createdApiKey <- EitherT(otoroshiClient.createApiKey(apikey)(o))
                 _             <- EitherT.right[AppError](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
                   .save(subscription.copy(
                     parent = None,
@@ -1115,6 +1118,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                 Json.obj("created" -> true)
               }).value
           }
+        }
       })
     }
   }
@@ -1146,7 +1150,10 @@ class ApiController(DaikokuAction: DaikokuAction,
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
         ctx.setCtxValue("subscription", subscription)
-        apiService.toggleApiKeyRotation(ctx.tenant, subscription, plan, api, team, (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long], (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long])
+        val enabled = (ctx.request.body.as[JsObject] \ "enabled").as[Boolean]
+        val rotationEvery = (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long]
+        val gracePeriod = (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long]
+        apiService.toggleApiKeyRotation(ctx.tenant, subscription, plan, api, enabled, rotationEvery, gracePeriod)
       })
     }
   }
@@ -1434,7 +1441,6 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def deleteApiOfTeam(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
     implicit val mat: Materializer = env.defaultMaterializer
-
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} has delete api @{api.name} - @{api.id} of team @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
@@ -1502,18 +1508,14 @@ class ApiController(DaikokuAction: DaikokuAction,
     )(teamId, ctx) { team =>
       env.dataStore.apiRepo
         .findByVersion(ctx.tenant, apiId, version) flatMap {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-        case Some(oldApi) =>
-          if(oldApi.team != team.id)
-            FastFuture.successful(AppError.render(ApiNotFound))
-          else
-            ApiFormat.reads(finalBody) match {
+        case None                               => FastFuture.successful(AppError.render(ApiNotFound))
+        case Some(oldApi) if oldApi.team != team.id => FastFuture.successful(AppError.render(ApiNotFound))
+        case Some(oldApi)                       => ApiFormat.reads(finalBody) match {
               case JsError(e) =>
-                FastFuture
-                  .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
+                FastFuture.successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
               case JsSuccess(api, _) if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&
                 api.possibleUsagePlans.exists(plan => plan.aggregationApiKeysSecurity.exists(identity)) =>
-                FastFuture.successful(BadRequest(AppError.toJson(SubscriptionAggregationDisabled)))
+                FastFuture.successful(AppError.render(SubscriptionAggregationDisabled))
               case JsSuccess(api, _) if oldApi.visibility == ApiVisibility.AdminOnly =>
                 val oldAdminPlan = oldApi.possibleUsagePlans.head
                 val planToSave = api.possibleUsagePlans.find(_.id == oldAdminPlan.id)
@@ -1533,8 +1535,12 @@ class ApiController(DaikokuAction: DaikokuAction,
               case JsSuccess(api, _) =>
                 checkApiNameUniqueness(Some(api.id.value), api.name, ctx.tenant.id)
                   .flatMap {
-                    case true => FastFuture.successful(Conflict(Json.obj("error" -> "Resource with same name already exists")))
-                    case false => val flippedPlans = api.possibleUsagePlans.filter(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.visibility != pp.visibility))
+                    case true   => FastFuture.successful(Conflict(Json.obj("error" -> "Resource with same name already exists")))
+                    //it's forbidden to update otoroshi target, must use migration API instead
+                    case false if api.possibleUsagePlans.exists(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.otoroshiTarget.isDefined && oldPp.otoroshiTarget.map(_.otoroshiSettings) != pp.otoroshiTarget.map(_.otoroshiSettings) )) =>
+                      AppError.renderF(AppError.ForbiddenAction)
+                    case false  =>
+                      val flippedPlans = api.possibleUsagePlans.filter(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.visibility != pp.visibility))
                       val untouchedPlans = api.possibleUsagePlans.diff(flippedPlans)
 
                       val newPlans = api.possibleUsagePlans.map(_.id)
@@ -1549,7 +1555,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                           "_id" -> Json.obj("$ne" -> api.id.value)
                         ))
                         .flatMap {
-                          case true  => FastFuture.successful(AppError.render(ApiVersionConflict))
+                          case true  => AppError.renderF(ApiVersionConflict)
                           case false =>
                             for {
                               plans <- changePlansVisibility(flippedPlans, api, ctx.tenant)
@@ -1775,6 +1781,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     }))
   }
 
+
   def deleteApiSubscriptionsAsFlow(tenant: Tenant, api: Api, user: User) = Flow[(UsagePlan, Seq[ApiSubscription])]
     .map(tuple => {
       tuple._2.map(subscription => {
@@ -1789,16 +1796,52 @@ class ApiController(DaikokuAction: DaikokuAction,
       })
     })
     .flatMapConcat(seq => Source(seq.toList))
-    .mapAsync(5)(sub => {
+    //todo: update to 5 parralelism if team.subscriptions is no more used
+    .mapAsync(1)(sub => {
       val plan = sub._1
       val subscription = sub._2
       val notification = sub._3
-      env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team).flatMap {
-        case None => FastFuture.successful(false) //todo: change it !!!
-        case Some(subscriberTeam) => env.dataStore.notificationRepo.forTenant(tenant).save(notification)
-          .flatMap(_ => apiKeyStatsJob.syncForSubscription(subscription, tenant))
-          .flatMap(_ => apiService.deleteApiKey(tenant, subscription, plan, api, subscriberTeam))
-          .flatMap(_ => env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteByIdLogically(subscription.id))
+
+      plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+        tenant.otoroshiSettings.find(_.id == id)
+      } match {
+        case None => FastFuture.successful(false)
+        case Some(otoSettings) =>
+          implicit val otoroshiSettings: OtoroshiSettings = otoSettings
+          env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team).flatMap {
+            case None => FastFuture.successful(false)
+            case Some(subscriberTeam) => for {
+              _       <- env.dataStore.notificationRepo.forTenant(tenant).save(notification)
+              _       <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
+              childs  <- env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+                .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
+            } yield subscription.parent match {
+              case Some(_)                    => for {
+                _ <- apiService.extractSubscriptionFromAggregation(subscription, tenant, user)
+                _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteByIdLogically(subscription.id)
+                _ <- env.dataStore.teamRepo
+                  .forTenant(tenant.id)
+                  .save(subscriberTeam.copy(subscriptions = subscriberTeam.subscriptions.filterNot(_ == subscription.id)))
+              } yield ()
+              case None if childs.nonEmpty    =>
+                childs match {
+                  case newParent :: newChilds => for {
+                    subRepo <- env.dataStore.apiSubscriptionRepo.forTenantF(tenant)
+                    _ <- subRepo.save(newParent.copy(parent = None))
+                    _ <- subRepo.updateManyByQuery(
+                      Json.obj("_id" -> Json.obj("$in" -> JsArray(newChilds.map(_.id.asJson)))),
+                      Json.obj("$set" -> Json.obj("parent" -> newParent.id.asJson)))
+                    _ <- subRepo.deleteByIdLogically(subscription.id)
+                    _ <- env.dataStore.teamRepo
+                      .forTenant(tenant.id)
+                      .save(subscriberTeam.copy(subscriptions = subscriberTeam.subscriptions.filterNot(_ == subscription.id)))
+                    _ <- otoroshiSynchronisator.verify(Json.obj("_id" -> newParent.id.asJson))
+
+                  } yield ()
+                }
+              case _ => apiService.deleteApiKey(tenant, subscription, plan, api, subscriberTeam)
+            }
+          }
       }
     })
 

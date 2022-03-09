@@ -21,7 +21,6 @@ export const newPossibleUsagePlan = (customName) => ({
     otoroshiSettings: null,
     authorizedEntities: { groups: [], services: [] },
     apikeyCustomization: {
-      dynamicPrefix: 'daikoku_',
       clientIdOnly: false,
       constrainedServicesOnly: false,
       tags: [],

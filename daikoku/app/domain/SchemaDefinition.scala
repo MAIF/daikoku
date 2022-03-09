@@ -14,7 +14,9 @@ import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
+import sangria.marshalling.FromInput
 import sangria.schema.{Context, _}
+import sangria.util.tag.@@
 import sangria.validation.ValueCoercionViolation
 import storage.{DataStore, _}
 
@@ -1147,6 +1149,7 @@ object SchemaDefinition {
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
     val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
+    val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
 
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
@@ -1189,18 +1192,24 @@ object SchemaDefinition {
     def getRepoFields[Out, Of, Id <: ValueType](
                                                fieldName: String,
                                                fieldType: OutputType[Out],
-                                               repo: Context[(DataStore, DaikokuActionContext[JsValue]), Unit] => Repo[Of, Id]): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+                                               repo: Context[(DataStore, DaikokuActionContext[JsValue]), Unit] => Repo[Of, Id]): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
+      def toQuery(ids: Seq[String]): JsObject = {
+        if(ids.isEmpty) Json.obj() else Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString))))
+      }
+
+
       List(
         Field(fieldName, OptionType(fieldType), arguments = ID :: Nil,
           resolve = ctx => repo(ctx).findById(ctx.arg(ID)).asInstanceOf[Future[Option[Out]]]),
-        Field(s"${fieldName}s", ListType(fieldType), arguments = LIMIT :: OFFSET :: Nil,
+        Field(s"${fieldName}s", ListType(fieldType), arguments = LIMIT :: OFFSET :: IDS :: Nil,
           resolve = ctx => {
-            (ctx.arg(LIMIT), ctx.arg(OFFSET)) match {
-              case (-1, _) => repo(ctx).findAll().map(_.asInstanceOf[Seq[Out]])
-              case (limit, offset) => repo(ctx).findWithPagination(Json.obj(), offset, limit).map(_._1.asInstanceOf[Seq[Out]])
+            (ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(IDS)) match {
+              case (-1, _, ids) => repo(ctx).find(toQuery(ids.getOrElse(Seq.empty))).map(_.asInstanceOf[Seq[Out]])
+              case (limit, offset, ids) => repo(ctx).findWithPagination(toQuery(ids.getOrElse(Seq.empty)), offset, limit).map(_._1.asInstanceOf[Seq[Out]])
             }
           })
       )
+    }
 
     def getTenantFields[Out, Of, Id <: ValueType](
                                                fieldName: String,

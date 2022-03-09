@@ -1,33 +1,17 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
-import fr.maif.otoroshi.daikoku.domain.{
-  DatastoreId,
-  SchemaDefinition,
-  User,
-  UserId,
-  UserSession,
-  UserSessionId
-}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, SchemaDefinition, User, UserId, UserSession, UserSessionId}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.admin.DaikokuApiAction
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsObject, JsValue, Json}
-import sangria.execution.{
-  ExceptionHandler,
-  Executor,
-  HandledException,
-  MaxQueryDepthReachedError,
-  QueryReducer
-}
+import sangria.execution.{ExceptionHandler, Executor, HandledException, MaxQueryDepthReachedError, QueryReducer}
 import storage.DataStore
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
@@ -59,7 +43,7 @@ class GraphQLController(
 
   def adminApiSearch() = DaikokuApiAction.async(parse.json) { ctx =>
     val query = (ctx.request.body \ "query").as[String]
-    val variables = (ctx.request.body \ "variables").asOpt[String]
+    val variables = (ctx.request.body \ "variables").asOpt[JsValue]
     val operation = (ctx.request.body \ "operation").asOpt[String]
 
     val user = User(
@@ -99,7 +83,7 @@ class GraphQLController(
 
     executeQuery(generatedContext,
                  query,
-                 variables map parseVariables,
+                 variables,
                  operation)
   }
 
@@ -109,18 +93,14 @@ class GraphQLController(
 
   def search() = DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
     val query = (ctx.request.body \ "query").as[String]
-    val variables = (ctx.request.body \ "variables").asOpt[String]
+    val variables = (ctx.request.body \ "variables").asOpt[JsValue]
     val operation = (ctx.request.body \ "operation").asOpt[String]
-    executeQuery(ctx, query, variables map parseVariables, operation)
+    executeQuery(ctx, query, variables, operation)
   }
 
   def renderSchema = DaikokuAction {
     Ok(SchemaRenderer.renderSchema(schema))
   }
-
-  private def parseVariables(variables: String) =
-    if (variables.trim == "" || variables.trim == "null") Json.obj()
-    else Json.parse(variables).as[JsObject]
 
   case object TooComplexQueryError extends Exception("Query is too expensive.")
 
@@ -134,7 +114,7 @@ class GraphQLController(
 
   private def executeQuery(ctx: DaikokuActionContext[JsValue],
                            query: String,
-                           variables: Option[JsObject],
+                           variables: Option[JsValue],
                            operation: Option[String]) =
     QueryParser.parse(query) match {
       case Success(queryAst) =>

@@ -4,7 +4,6 @@ import faker from 'faker';
 import * as Services from '../../../../services';
 
 const apikeyCustomization = {
-  dynamicPrefix: null,
   clientIdOnly: false,
   constrainedServicesOnly: false,
   readOnly: false,

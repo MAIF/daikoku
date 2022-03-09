@@ -12,6 +12,7 @@ import { logout, updateNotications, updateTenant } from '../../core/context/acti
 import { Can, manage, daikoku, tenant } from '../utils';
 import { MessagesTopBarTools } from '../backoffice/messages';
 import { I18nContext } from '../../locales/i18n-context';
+import { toastr } from 'react-redux-toastr';
 
 const GuestUserMenu = ({ loginProvider }) => {
   const { translateMethod } = useContext(I18nContext);
@@ -335,6 +336,21 @@ const TopBarComponent = (props) => {
                     {props.tenant.mode === 'Dev' && (
                       <a className="dropdown-item" href="#" onClick={reset}>
                         <i className="fas fa-skull-crossbones" /> {translateMethod('Reset')}
+                      </a>
+                    )}
+                    {props.tenant.mode === 'Dev' && (
+                      <a className="dropdown-item" href="#" onClick={() => {
+                        fetch('/api/jobs/otoroshi/_sync?key=secret', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: '',
+                        }).then(() => {
+                          toastr.success("sync ok ;)")
+                        });
+                      }}>
+                        <i className="fas fa-skull-crossbones" /> run sync
                       </a>
                     )}
                     <a className="dropdown-item" href="/logout">

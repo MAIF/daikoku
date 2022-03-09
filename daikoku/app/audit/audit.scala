@@ -216,7 +216,8 @@ case class TenantAuditEvent(evt: AuditEvent,
             "isDaikokuAdmin" -> a.isDaikokuAdmin
         ))
       .getOrElse(JsNull)
-      .as[JsValue]
+      .as[JsValue],
+    "details" -> details
     // TODO: add complete tenant ?
     // TODO: add complete user ?
   )

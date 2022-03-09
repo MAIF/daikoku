@@ -406,7 +406,6 @@ case class CustomMetadata(key: String, possibleValues: Set[String] = Set.empty)
   def asJson: JsValue = json.CustomMetadataFormat.writes(this)
 }
 case class ApikeyCustomization(
-    dynamicPrefix: Option[String] = None,
     clientIdOnly: Boolean = false,
     readOnly: Boolean = false,
     constrainedServicesOnly: Boolean = false,
@@ -427,7 +426,7 @@ object OtoroshiTarget {
       case v if v.contains("${") =>
         scala.util.Try {
           OtoroshiTarget.expressionReplacer.replaceOn(value) { expression =>
-            context.get(expression).getOrElse("--")
+            context.getOrElse(expression, "--")
           }
         } recover {
           case e =>
@@ -1433,7 +1432,15 @@ case class ApiSubscriptionRotation(
     rotationEvery: Long = 31 * 24,
     gracePeriod: Long = 7 * 24,
     pendingRotation: Boolean = false
-)
+) {
+  def toApiKeyRotation: ApiKeyRotation = {
+    ApiKeyRotation(
+      enabled = enabled,
+      rotationEvery= rotationEvery,
+      gracePeriod = gracePeriod,
+    )
+  }
+}
 
 case class ApiSubscription(
     id: ApiSubscriptionId,
@@ -1523,6 +1530,7 @@ case class ActualOtoroshiApiKey(
     rotation: Option[ApiKeyRotation])
     extends CanJson[OtoroshiApiKey] {
   override def asJson: JsValue = json.ActualOtoroshiApiKeyFormat.writes(this)
+  def asOtoroshiApiKey: OtoroshiApiKey = OtoroshiApiKey(clientName = clientName, clientId = clientId, clientSecret = clientSecret)
 }
 
 sealed trait NotificationStatus

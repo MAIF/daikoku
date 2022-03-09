@@ -1,8 +1,11 @@
 package controllers
 
+import akka.http.scaladsl.util.FastFuture
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc
 import play.api.mvc.Results._
+
+import scala.concurrent.Future
 
 sealed trait AppError
 
@@ -27,12 +30,15 @@ object AppError {
   case object ApiKeyCustomMetadataNotPrivided extends AppError
   case object SubscriptionNotFound extends AppError
   case object SubscriptionParentExisted extends AppError
+  case object SubscriptionAggregationTeamConflict extends AppError
+  case object SubscriptionAggregationOtoroshiConflict extends AppError
   case object SubscriptionAggregationDisabled extends AppError
   case object MissingParentSubscription extends AppError
   case object TranslationNotFound extends AppError
   case object Unauthorized extends AppError
   case object TeamForbidden extends AppError
 
+  def renderF(error: AppError): Future[mvc.Result] = FastFuture.successful(render(error))
   def render(error: AppError): mvc.Result = error match {
     case ApiVersionConflict => Conflict(toJson(ApiVersionConflict))
     case ApiNotFound        => NotFound(Json.obj("error" -> "Api not found"))
@@ -78,6 +84,10 @@ object AppError {
       Conflict(toJson(SubscriptionParentExisted))
     case SubscriptionAggregationDisabled =>
       BadRequest(toJson(SubscriptionAggregationDisabled))
+    case SubscriptionAggregationTeamConflict =>
+      Conflict(toJson(SubscriptionAggregationTeamConflict))
+    case SubscriptionAggregationOtoroshiConflict =>
+      Conflict(toJson(SubscriptionAggregationOtoroshiConflict))
     case MissingParentSubscription =>
       NotFound(toJson(MissingParentSubscription))
     case TranslationNotFound => NotFound(toJson(TranslationNotFound))
@@ -114,6 +124,10 @@ object AppError {
             "The subscription already has a subscription parent - it cannot be extended any further"
           case SubscriptionAggregationDisabled =>
             "Aggregation of api keys is disabled on plan or on tenant"
+          case SubscriptionAggregationTeamConflict =>
+            "The new subscription has another team of the parent subscription"
+          case SubscriptionAggregationOtoroshiConflict =>
+            "The subscribed plan has another otoroshi of the parent plan"
           case MissingParentSubscription =>
             "The parent of this subscription is missing"
           case TranslationNotFound => "Translation not found"

@@ -3419,6 +3419,7 @@ class ApiControllerSpec()
             method = "POST",
             body = Some(
               Json.obj(
+                "enabled" -> true,
                 "rotationEvery" -> 24,
                 "gracePeriod" -> 12
               )
@@ -3978,7 +3979,7 @@ class ApiControllerSpec()
             id = parentSubId,
             tenant = tenant.id,
             apiKey = OtoroshiApiKey("name", parentApiKeyClientId, "secret"),
-            plan = UsagePlanId("5"),
+            plan = UsagePlanId("4"),
             createdAt = DateTime.now(),
             team = teamConsumerId,
             api = defaultApi.id,
@@ -4003,6 +4004,7 @@ class ApiControllerSpec()
       )(tenant, loginWithBlocking(user, tenant))
 
       resp.status mustBe Status.OK
+      logger.warn(Json.prettyPrint(resp.json))
 
       ApiSubscriptionFormat
         .reads((resp.json.as[JsArray].head \ "subscription").get)
@@ -4079,7 +4081,7 @@ class ApiControllerSpec()
         method = "POST"
       )(tenant, loginWithBlocking(user, tenant))
 
-      resp.status mustBe 200
+      resp.status mustBe 404
     }
     "be transform in unique api key" in {
       val parentSub = ApiSubscription(
@@ -4181,7 +4183,7 @@ class ApiControllerSpec()
                   ).asJson
                 )
               )
-              .withStatus(201)
+              .withStatus(200)
           )
       )
       stubFor(
@@ -4205,7 +4207,7 @@ class ApiControllerSpec()
                   ).asJson
                 )
               )
-              .withStatus(201)
+              .withStatus(200)
           )
       )
       stubFor(
@@ -4312,6 +4314,65 @@ class ApiControllerSpec()
           .apiKey
           .clientSecret
       )
+    }
+    "failed when aggregagted apikey has an otoroshi target different than parent" in {
+      val parentSubId = ApiSubscriptionId("parent")
+      val parentApiKeyClientId = "clientId"
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(aggregationApiKeysSecurity = Some(true))),
+        users = Seq(user),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(
+          defaultApi.copy(
+            possibleUsagePlans = defaultApi.possibleUsagePlans.map {
+              case p: Admin => p.copy(aggregationApiKeysSecurity = Some(true))
+              case p: FreeWithoutQuotas =>
+                p.copy(aggregationApiKeysSecurity = Some(true))
+              case p: FreeWithQuotas =>
+                p.copy(aggregationApiKeysSecurity = Some(true))
+              case p: QuotasWithLimits =>
+                p.copy(aggregationApiKeysSecurity = Some(true))
+              case p: QuotasWithoutLimits =>
+                p.copy(aggregationApiKeysSecurity = Some(true))
+              case p: PayPerUse =>
+                p.copy(aggregationApiKeysSecurity = Some(true))
+              case p => p
+            }
+          )
+        ),
+        subscriptions = Seq(
+          ApiSubscription(
+            id = parentSubId,
+            tenant = tenant.id,
+            apiKey = OtoroshiApiKey("name", parentApiKeyClientId, "secret"),
+            plan = UsagePlanId("5"),
+            createdAt = DateTime.now(),
+            team = teamConsumerId,
+            api = defaultApi.id,
+            by = userTeamAdminId,
+            customName = None,
+            rotation = None,
+            integrationToken = "parent"
+          )
+        )
+      )
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${defaultApi.id.value}/subscriptions/${parentSubId.value}",
+        method = "PUT",
+        body = Some(
+          Json.obj(
+            "plan" -> defaultApi.possibleUsagePlans.head.id.value,
+            "teams" -> Seq(teamConsumerId.value)
+          )
+        )
+      )(tenant, loginWithBlocking(user, tenant))
+
+      resp.status mustBe Status.OK
+      logger.warn(Json.prettyPrint(resp.json))
+
+      (resp.json.as[JsArray].head \ "error").as[String] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
   }
 }

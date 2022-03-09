@@ -105,6 +105,12 @@ a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
   }
 }
 
+.card {
+  #dropdownMenuButton {
+    color: $menu-text-hover-color;
+  }
+}
+
 
 .api-card {
   .plan-body {
@@ -137,55 +143,6 @@ a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
 }
 
 .card-img-top:hover .btn { display: block;}
-
-/* backoffice card */
-// .hoverable-card {
-//   position: relative;
-//   .test {
-//     position: absolute;
-//     height: 0;
-//     opacity: 0;
-//     background-color: $menu-bg-color;
-//     border: 1px solid $navbar-bg-color;
-//     border-radius: 5px 5px 0 0;
-//     padding-left: 15px;
-//     padding-top: 15px;
-//     top: 0;
-//     bottom: 0;
-//     left: 0;
-//     right: 0;
-//     display: flex;
-//     align-items: flex-start;
-//     justify-content: flex-start;
-//     flex-direction: column;
-//     flex-wrap: wrap;
-
-//     button {
-//       opacity: 0;
-//       width: 33%;
-//       text-align: left;
-//     }
-
-//     button+button {
-//       margin-top: 5px;
-//     } 
-//   }
-
-//   &:hover {
-//     .test {
-//       height: 100%;
-//       opacity: 1;
-//       transition: height .3s ease-in-out;
-
-//       button {
-//         opacity: 1;
-//         transition: opacity 0s ease-in-out .1s;
-//       }
-//     }
-//   }
-
-
-// }
 
 .burger-menu {
   width: 60px;

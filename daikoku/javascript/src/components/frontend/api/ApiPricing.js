@@ -1,11 +1,12 @@
 import React, { useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import _ from 'lodash';
-import { currencies } from '../../../services/currencies';
+import { getApolloContext } from '@apollo/client';
 
+import { currencies } from '../../../services/currencies';
 import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
-import { Can, access, apikey, getCurrencySymbol, formatCurrency, manage } from '../../utils';
+import { Can, access, apikey, getCurrencySymbol, formatCurrency, manage, Option } from '../../utils';
 import { openLoginOrRegisterModal, openApiKeySelectModal, I18nContext } from '../../../core';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
@@ -25,8 +26,9 @@ const currency = (plan) => {
   return `${cur.name}(${cur.symbol})`;
 };
 
-function ApiPricingCardComponent(props) {
+const ApiPricingCardComponent = (props) => {
   const { Translation } = useContext(I18nContext);
+  const { client } = useContext(getApolloContext());
 
   const renderFreeWithoutQuotas = () => (
     <span>
@@ -120,16 +122,35 @@ function ApiPricingCardComponent(props) {
   const showApiKeySelectModal = (team) => {
     const { api, plan } = props;
 
-    Services.getAllTeamSubscriptions(team).then((apiKeys) => {
-      if (!plan.aggregationApiKeysSecurity || apiKeys.length <= 0) props.askForApikeys(team, plan);
-      else
-        props.openApiKeySelectModal({
-          plan,
-          apiKeys,
-          onSubscribe: () => props.askForApikeys(team, plan),
-          extendApiKey: (apiKey) => props.askForApikeys(team, plan, apiKey),
-        });
-    });
+    Services.getAllTeamSubscriptions(team)
+      .then((subscriptions) => client.query({
+        query: Services.graphql.apisByIdsWithPlans,
+        variables: { ids: [... new Set(subscriptions.map(s => s.api))] }
+      }).then(({data}) => ({apis: data.apis, subscriptions})))
+      .then(({ apis, subscriptions }) => {
+        const filteredApiKeys = subscriptions.map(subscription => {
+          const api = apis.find(a => a._id === subscription.api)
+          const plan = Option(api?.possibleUsagePlans)
+            .flatMap(plans => Option(plans.find(plan => plan._id === subscription.plan)))
+            .getOrNull()
+          return {subscription, api, plan}
+        })
+          .filter(infos => infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity)
+          .map(infos => infos.subscription)
+
+
+        if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
+          props.askForApikeys(team, plan);
+        }
+        else {
+          props.openApiKeySelectModal({
+            plan,
+            apiKeys: filteredApiKeys,
+            onSubscribe: () => props.askForApikeys(team, plan),
+            extendApiKey: (apiKey) => props.askForApikeys(team, plan, apiKey),
+          });
+        }
+      });
   };
 
   const plan = props.plan;

@@ -1156,7 +1156,6 @@ object json {
       Try {
         JsSuccess(
           ApikeyCustomization(
-            dynamicPrefix = (json \ "dynamicPrefix").asOpt[String],
             clientIdOnly =
               (json \ "clientIdOnly").asOpt[Boolean].getOrElse(false),
             readOnly = (json \ "readOnly").asOpt[Boolean].getOrElse(false),
@@ -1176,10 +1175,6 @@ object json {
       } get
 
     override def writes(o: ApikeyCustomization): JsValue = Json.obj(
-      "dynamicPrefix" -> o.dynamicPrefix
-        .map(JsString.apply)
-        .getOrElse(JsNull)
-        .as[JsValue],
       "clientIdOnly" -> o.clientIdOnly,
       "constrainedServicesOnly" -> o.constrainedServicesOnly,
       "readOnly" -> o.readOnly,

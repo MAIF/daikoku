@@ -311,7 +311,7 @@ const Card = ({ plan, isDefault, makeItDefault, toggleVisibility, deletePlan, ed
       {isDefault && <i className="fas fa-star" style={{ position: 'absolute', fontSize: '20px', top: '15px', right: '15px', zIndex: '100' }} />}
       {!creation && <div className="dropdown" style={{ position: 'absolute', top: '15px', left: '15px', zIndex: '100' }}>
         <i
-          className="fa fa-cog cursor-pointer"
+          className="fa fa-cog cursor-pointer dropdown-menu-button"
           style={{ fontSize: '20px' }}
           data-bs-toggle="dropdown"
           aria-expanded="false"
@@ -397,7 +397,7 @@ export const TeamApiPricings = (props) => {
   const [planForEdition, setPlanForEdition] = useState();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, language } = useContext(I18nContext);
 
   const pathes = {
     type: type.object,
@@ -668,6 +668,7 @@ export const TeamApiPricings = (props) => {
             otoroshiSettings: {
               type: type.string,
               format: format.select,
+              disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translateMethod('Otoroshi instances'),
               options: props.otoroshiSettings,
               transformer: (s) => ({
@@ -727,24 +728,39 @@ export const TeamApiPricings = (props) => {
               schema: {
                 clientIdOnly: {
                   type: type.bool,
-                  label: translateMethod('Apikey with clientId only'),
+                  label: ({ rawValues }) => {
+                    if (!!rawValues.aggregationApiKeysSecurity) {
+                      return `${translateMethod('Read only apikey')} (${translateMethod('disabled.due.to.aggregation.security')})`
+                    } else {
+                      return translateMethod('Apikey with clientId only')
+                    }
+                  },
+                  disabled: ({ rawValues }) => !!rawValues.aggregationApiKeysSecurity,
+                  onChange: ({ setValue, value }) => {
+                    if (value) {
+                      setValue('aggregationApiKeysSecurity', false);
+                    }
+                  }
                 },
                 readOnly: {
                   type: type.bool,
-                  label: translateMethod('Read only apikey'),
+                  label: ({ rawValues }) => {
+                    if (!!rawValues.aggregationApiKeysSecurity) {
+                      return `${translateMethod('Read only apikey')} (${translateMethod('disabled.due.to.aggregation.security')})`
+                    } else {
+                      return translateMethod('Read only apikey')
+                    }
+                  },
+                  disabled: ({ rawValues }) => !!rawValues.aggregationApiKeysSecurity,
+                  onChange: ({ setValue, value }) => {
+                    if (value) {
+                      setValue('aggregationApiKeysSecurity', false);
+                    }
+                  }
                 },
                 constrainedServicesOnly: {
                   type: type.bool,
                   label: translateMethod('Constrained services only'),
-                },
-                dynamicPrefix: {
-                  type: type.string,
-                  label: translateMethod('Dynamic prefix'),
-                  help: translateMethod(
-                    'dynamic.prefix.help',
-                    false,
-                    'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
-                  ),
                 },
                 metadata: {
                   type: type.object,
@@ -997,6 +1013,17 @@ export const TeamApiPricings = (props) => {
           visible: !!props.tenant.aggregationApiKeysSecurity,
           label: translateMethod('aggregation api keys security'),
           help: translateMethod('aggregation_apikeys.security.help'),
+          onChange: ({ value, setValue }) => {
+            if (value)
+              window.confirm(
+                translateMethod('aggregation.api_key.security.notification')
+              ).then((ok) => {
+                if (ok) {
+                  setValue('otoroshiTarget.apikeyCustomization.readOnly', false)
+                  setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false)
+                }
+              });;
+          }
         },
         allowMutlipleApiKeys: {
           type: type.bool,

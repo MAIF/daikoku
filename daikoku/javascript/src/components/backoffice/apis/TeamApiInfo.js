@@ -163,7 +163,6 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
     {
       label: 'Basic',
       flow: [
-        'isDefault',
         'published',
         'name',
         'smallDescription',
@@ -175,6 +174,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
     {
       label: translateMethod('Versions and tags'),
       flow: [
+        'isDefault',
         'currentVersion',
         'supportedVersions',
         'tags',
