@@ -277,3 +277,13 @@ We'd like to thank all the contributors who worked on this release!
 - Swagger page in team back office is broken [#380](https://github.com/MAIF/daikoku/issues/380)
 - email links in outlook don't work [#369](https://github.com/MAIF/daikoku/issues/369)
 
+## [v1.5.2] - 2022-03-21
+
+## :star: New Features
+
+- [CMS] Provide a CMS to full customize the front-office of a tenant [#394](https://github.com/MAIF/daikoku/issues/394)
+
+## :beetle: Bug Fixes
+
+- Merge apikey metadata (and other key props) during apikey aggregation [#397](https://github.com/MAIF/daikoku/issues/397)
+
