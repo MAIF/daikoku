@@ -8,7 +8,7 @@ import {
   useNavigate,
   NavLink,
   useResolvedPath,
-  useMatch
+  useMatch,
 } from 'react-router-dom';
 import classNames from 'classnames';
 import Select from 'react-select';
@@ -161,11 +161,9 @@ const NavItem = ({ to, icon, name, subItem, injectedSubMenu }) => {
         {name}
       </NavLink>
 
-      {!!match && !!injectedSubMenu && <div className='ms-4 mt-2'>
-        {injectedSubMenu}
-      </div>}
+      {!!match && !!injectedSubMenu && <div className="ms-4 mt-2">{injectedSubMenu}</div>}
     </li>
-  )
+  );
 };
 
 const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
@@ -193,7 +191,6 @@ const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
 };
 
 const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title }) => {
-
   const [injectedSubMenu, setInjectedSubMenu] = useState();
   const [injectedNavFooter, setInjectedNavFooter] = useState();
 
@@ -215,7 +212,9 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
   const ApiSidebar = ({ path, injectedFooter, injectedSubMenu, creation }) => {
     const sidebarParams = useParams();
 
-    const realPath = `/${currentTeam._humanReadableId}/settings` + path.replace(':apiId', sidebarParams.apiId).replace(':versionId', sidebarParams.versionId);
+    const realPath =
+      `/${currentTeam._humanReadableId}/settings` +
+      path.replace(':apiId', sidebarParams.apiId).replace(':versionId', sidebarParams.versionId);
 
     return (
       <>
@@ -223,17 +222,25 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
         {[
           { route: 'infos', icon: 'info', name: translateMethod('Informations'), onCreation: true },
           { route: 'plans', icon: 'euro-sign', name: translateMethod('Plans'), onCreation: false },
-          { route: 'documentation', icon: 'book', name: translateMethod('Documentation'), onCreation: false },
+          {
+            route: 'documentation',
+            icon: 'book',
+            name: translateMethod('Documentation'),
+            onCreation: false,
+          },
           { route: 'news', icon: 'newspaper', name: translateMethod('News'), onCreation: false },
         ]
-        .filter(item => creation || item.onCreation)
-        .map((item, i) => (
-          <NavItem {...item} to={realPath.replace(':tab', item.route)} key={`item-${i}`} injectedSubMenu={injectedSubMenu} />
-        ))}
+          .filter((item) => creation || item.onCreation)
+          .map((item, i) => (
+            <NavItem
+              {...item}
+              to={realPath.replace(':tab', item.route)}
+              key={`item-${i}`}
+              injectedSubMenu={injectedSubMenu}
+            />
+          ))}
 
-        <div className="px-3 mb-4 mt-auto d-flex flex-column">
-          {injectedNavFooter}
-        </div>
+        <div className="px-3 mb-4 mt-auto d-flex flex-column">{injectedNavFooter}</div>
       </>
     );
   };
@@ -487,8 +494,25 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             <Routes>
               <Route
                 path="/apis/:apiId/:versionId/:tab/*"
-                element={<ApiSidebar path="/apis/:apiId/:versionId/:tab" injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} creation/>} />
-              <Route path={`/apis/:apiId/:tab`} element={<ApiSidebar path={`/apis/:apiId/:tab`} injectedFooter={injectedNavFooter} injectedSubMenu={injectedSubMenu} />} />
+                element={
+                  <ApiSidebar
+                    path="/apis/:apiId/:versionId/:tab"
+                    injectedFooter={injectedNavFooter}
+                    injectedSubMenu={injectedSubMenu}
+                    creation
+                  />
+                }
+              />
+              <Route
+                path={`/apis/:apiId/:tab`}
+                element={
+                  <ApiSidebar
+                    path={`/apis/:apiId/:tab`}
+                    injectedFooter={injectedNavFooter}
+                    injectedSubMenu={injectedSubMenu}
+                  />
+                }
+              />
               <Route path={`/apikeys/:apiId/:versionId`} element={<ApiKeysBar />} />
               <Route
                 path={`/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
@@ -530,8 +554,23 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
             <Route
               path={`/apis/:apiId/:versionId/:tab/*`}
-              element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu}/>} />
-            <Route path={`/apis/:apiId/:tab`} element={<TeamApi injectNavFooter={setInjectedNavFooter} injectSubMenu={setInjectedSubMenu} creation/>} />
+              element={
+                <TeamApi
+                  injectNavFooter={setInjectedNavFooter}
+                  injectSubMenu={setInjectedSubMenu}
+                />
+              }
+            />
+            <Route
+              path={`/apis/:apiId/:tab`}
+              element={
+                <TeamApi
+                  injectNavFooter={setInjectedNavFooter}
+                  injectSubMenu={setInjectedSubMenu}
+                  creation
+                />
+              }
+            />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />
           </Routes>
@@ -556,14 +595,16 @@ const UserBackOfficeComponent = ({
     }
   }, [title]);
 
-  const location = useLocation()
+  const location = useLocation();
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  if (location.pathname !== "/settings/pages" && location.pathname.startsWith("/settings/pages"))
-    return <main role="main" className="col-md-9 offset-md-3 d-flex">
-      <div className={classNames('back-office-overlay', { active: isLoading })} />
-      {!error.status && children}
-    </main>
+  if (location.pathname !== '/settings/pages' && location.pathname.startsWith('/settings/pages'))
+    return (
+      <main role="main" className="col-md-9 offset-md-3 d-flex">
+        <div className={classNames('back-office-overlay', { active: isLoading })} />
+        {!error.status && children}
+      </main>
+    );
 
   return (
     <div className="row">

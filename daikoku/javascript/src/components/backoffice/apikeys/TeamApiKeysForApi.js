@@ -44,14 +44,15 @@ function TeamApiKeysForApiComponent(props) {
         Promise.all([
           client.query({
             query: Services.graphql.apisByIds,
-            variables: { ids: [... new Set(subscriptions.map(s => s.api))] }
+            variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
           }),
           Services.team(api.team),
-          Promise.resolve({ api, subscriptions })
-        ]))
+          Promise.resolve({ api, subscriptions }),
+        ])
+      )
       .then(([{ data }, apiTeam, { api, subscriptions }]) => {
-        setSubscribedApis(data.apis)
-        setApiTeam(apiTeam)
+        setSubscribedApis(data.apis);
+        setApiTeam(apiTeam);
         setSubscriptions(subscriptions);
         setApi(api);
       });
@@ -74,18 +75,17 @@ function TeamApiKeysForApiComponent(props) {
   };
 
   const makeUniqueApiKey = (subscription) => {
-    window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique'))
-      .then((ok) => {
-        if (ok)
-          Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
-            .then(() =>
-              Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
-            )
-            .then((subs) => {
-              toastr.success('team_apikey_for_api.ask_for_make_unique.success_message')
-              setSubscriptions(subs)
-            });
-      });
+    window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique')).then((ok) => {
+      if (ok)
+        Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
+          .then(() =>
+            Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+          )
+          .then((subs) => {
+            toastr.success('team_apikey_for_api.ask_for_make_unique.success_message');
+            setSubscriptions(subs);
+          });
+    });
   };
 
   const toggleApiKeyRotation = (subscription, plan, enabled, rotationEvery, gracePeriod) => {
@@ -145,18 +145,18 @@ function TeamApiKeysForApiComponent(props) {
     search === ''
       ? subscriptions
       : subscriptions.filter((subs) => {
-        const plan = currentPlan(subs);
+          const plan = currentPlan(subs);
 
-        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
-          return true;
-        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
-          return true;
-        } else {
-          return formatPlanType(currentPlan(subs), translateMethod)
-            .toLowerCase()
-            .includes(search);
-        }
-      });
+          if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
+            return true;
+          } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
+            return true;
+          } else {
+            return formatPlanType(currentPlan(subs), translateMethod)
+              .toLowerCase()
+              .includes(search);
+          }
+        });
 
   const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
   const sortedApiKeys = sorted
@@ -165,9 +165,9 @@ function TeamApiKeysForApiComponent(props) {
       (acc, sub) => {
         return acc.find((a) => a._id === sub.parent)
           ? acc.map((a) => {
-            if (a._id === sub.parent) a.children.push(sub);
-            return a;
-          })
+              if (a._id === sub.parent) a.children.push(sub);
+              return a;
+            })
           : [...acc, { ...sub, children: [] }];
       },
       sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] }))
@@ -207,7 +207,7 @@ function TeamApiKeysForApiComponent(props) {
               formatter={(subscription) => {
                 const plan = currentPlan(subscription);
                 if (!plan) {
-                  return null
+                  return null;
                 }
 
                 return (
@@ -258,7 +258,7 @@ const ApiKeyCard = ({
   regenerateSecret,
   currentTeam,
   disableRotation,
-  subscribedApis
+  subscribedApis,
 }) => {
   const [hide, setHide] = useState(true);
   const [settingMode, setSettingMode] = useState(false);
@@ -287,13 +287,12 @@ const ApiKeyCard = ({
     }
   }, [editMode]);
 
-
   const settingsSchema = {
     enabled: {
       type: type.bool,
       label: translateMethod('Enabled'),
       help: translateMethod('help.apikey.rotation'),
-      disabled: plan.autoRotation
+      disabled: plan.autoRotation,
     },
     rotationEvery: {
       type: type.number,
@@ -301,22 +300,23 @@ const ApiKeyCard = ({
       help: translateMethod('help.apikey.rotation.period'),
       disabled: ({ rawValues }) => !rawValues.enabled,
       props: { steps: 1, min: 0 },
-      constraints: [
-        constraints.positive()
-      ]
+      constraints: [constraints.positive()],
     },
     gracePeriod: {
       type: type.number,
       label: translateMethod('Grace period'),
       help: translateMethod('help.apikey.grace.period'),
       disabled: ({ rawValues }) => !rawValues.enabled,
-      props: {steps: 1, min: 0},
+      props: { steps: 1, min: 0 },
       constraints: [
         constraints.positive(),
-        constraints.lessThan(constraints.ref('rotationEvery'), translateMethod('constraint.apikey.grace.period'))
-      ]
-    }
-  }
+        constraints.lessThan(
+          constraints.ref('rotationEvery'),
+          translateMethod('constraint.apikey.grace.period')
+        ),
+      ],
+    },
+  };
 
   const handleCustomNameChange = () => {
     updateCustomName(customName.trim()).then(() => setEditMode(false));
@@ -333,8 +333,9 @@ const ApiKeyCard = ({
 
   const handleChanges = (rotation) => {
     if (subscription.enabled) {
-      toggleRotation(rotation.enabled, rotation.rotationEvery, rotation.gracePeriod)
-        .then(() => setSettingMode(false));
+      toggleRotation(rotation.enabled, rotation.rotationEvery, rotation.gracePeriod).then(() =>
+        setSettingMode(false)
+      );
     }
   };
 
@@ -454,23 +455,25 @@ const ApiKeyCard = ({
                       </button>
                     </BeautifulTitle>
                   )}
-                  {!subscription.parent && <BeautifulTitle title={translateMethod('Enable/Disable')}>
-                    <button
-                      type="button"
-                      disabled={subscription.parent ? !subscription.parentUp : false}
-                      className={classNames('btn btn-sm ms-1', {
-                        'btn-outline-danger':
-                          subscription.enabled &&
-                          (subscription.parent ? subscription.parentUp : true),
-                        'btn-outline-success':
-                          !subscription.enabled &&
-                          (subscription.parent ? subscription.parentUp : true),
-                      })}
-                      onClick={archiveApiKey}
-                    >
-                      <i className="fas fa-power-off" />
-                    </button>
-                  </BeautifulTitle>}
+                  {!subscription.parent && (
+                    <BeautifulTitle title={translateMethod('Enable/Disable')}>
+                      <button
+                        type="button"
+                        disabled={subscription.parent ? !subscription.parentUp : false}
+                        className={classNames('btn btn-sm ms-1', {
+                          'btn-outline-danger':
+                            subscription.enabled &&
+                            (subscription.parent ? subscription.parentUp : true),
+                          'btn-outline-success':
+                            !subscription.enabled &&
+                            (subscription.parent ? subscription.parentUp : true),
+                        })}
+                        onClick={archiveApiKey}
+                      >
+                        <i className="fas fa-power-off" />
+                      </button>
+                    </BeautifulTitle>
+                  )}
                   {subscription.parent && (
                     <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
                       <button
@@ -584,23 +587,26 @@ const ApiKeyCard = ({
                       <h5 className="modal-title">Aggregate plans</h5>
                       <div>
                         {subscription.children.map((aggregate) => {
-                          const api = subscribedApis.find(a => a._id === aggregate.api)
+                          const api = subscribedApis.find((a) => a._id === aggregate.api);
                           return (
                             <div key={aggregate._id}>
                               <Link
                                 to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api.currentVersion}`}
                               >
-                                {`${aggregate.apiName}/${aggregate.customName || aggregate.planType}`}
+                                {`${aggregate.apiName}/${
+                                  aggregate.customName || aggregate.planType
+                                }`}
                               </Link>
                             </div>
-                          )
+                          );
                         })}
                       </div>
                     </div>
                   )}
                   <button
-                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? 'mt-3' : ''
-                      }`}
+                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${
+                      showAggregatePlan ? 'mt-3' : ''
+                    }`}
                     onClick={() => setAggregatePlan(!showAggregatePlan)}
                   >
                     {showAggregatePlan
@@ -629,21 +635,23 @@ const ApiKeyCard = ({
                 <Form
                   schema={settingsSchema}
                   onSubmit={handleChanges}
-                  value={Option(subscription.rotation).getOrElse({ enabled: false, rotationEvery: 744, gracePeriod: 168 })}
+                  value={Option(subscription.rotation).getOrElse({
+                    enabled: false,
+                    rotationEvery: 744,
+                    gracePeriod: 168,
+                  })}
                   footer={({ valid }) => {
                     return (
                       <div className="d-flex justify-content-end mt-3">
                         <button className="btn btn-outline-danger" onClick={abort}>
                           <Translation i18nkey="Back">Back</Translation>
                         </button>
-                        <button
-                          className="btn btn-outline-success ms-2"
-                          onClick={valid}>
+                        <button className="btn btn-outline-success ms-2" onClick={valid}>
                           <i className="fas fa-save me-1"></i>
                           <Translation i18nkey="Save">Save</Translation>
                         </button>
                       </div>
-                    )
+                    );
                   }}
                 />
               )}

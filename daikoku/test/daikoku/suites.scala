@@ -987,7 +987,6 @@ object utils {
       path = Some("/" + BSONObjectID.generate().stringify)
     )
 
-
     val defaultApi: Api =
       generateApi("default", tenant.id, teamOwnerId, Seq.empty)
   }

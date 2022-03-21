@@ -1,9 +1,27 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain.json.SeqCmsHistoryFormat
-import fr.maif.otoroshi.daikoku.domain.{ApiId, ApiVisibility, CmsPageId, ConsoleMailerSettings, DaikokuStyle, OtoroshiSettings, OtoroshiSettingsId, TeamId, TeamPermission, TeamType, Tenant, TenantId, UserId, UserWithPermission}
+import fr.maif.otoroshi.daikoku.domain.{
+  ApiId,
+  ApiVisibility,
+  CmsPageId,
+  ConsoleMailerSettings,
+  DaikokuStyle,
+  OtoroshiSettings,
+  OtoroshiSettingsId,
+  TeamId,
+  TeamPermission,
+  TeamType,
+  Tenant,
+  TenantId,
+  UserId,
+  UserWithPermission
+}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
@@ -1187,10 +1205,13 @@ class TenantControllerSpec()
       resp.status mustBe 404
     }
     "navigate to an unknown cms page with the 404 cms page defined" in {
-      val notFoundPage = defaultCmsPage.copy(name = "404 page", id = CmsPageId("404_page_id"))
+      val notFoundPage =
+        defaultCmsPage.copy(name = "404 page", id = CmsPageId("404_page_id"))
 
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(style = Some(tenant.style.get.copy(notFoundCmsPage = Some(notFoundPage.id.value))))),
+        tenants = Seq(
+          tenant.copy(style = Some(tenant.style.get
+            .copy(notFoundCmsPage = Some(notFoundPage.id.value))))),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam),
         cmsPages = Seq(notFoundPage),
@@ -1411,7 +1432,8 @@ class TenantControllerSpec()
       val page = defaultCmsPage.copy(
         id = CmsPageId("daikoku-templat-wrapper-helper"),
         path = Some("/daikoku-template-wrapper"),
-        body = s"{{#daikoku-template-wrapper '${wrapper.id.value}'}}{{daikoku-include-block '${defaultCmsPage.id.value}'}}{{/daikoku-template-wrapper}}"
+        body =
+          s"{{#daikoku-template-wrapper '${wrapper.id.value}'}}{{daikoku-include-block '${defaultCmsPage.id.value}'}}{{/daikoku-template-wrapper}}"
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1453,7 +1475,8 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      assert(resp.body == s"${defaultApi.name}\n${adminApi.name}" || resp.body == s"${adminApi.name}\n${defaultApi.name}")
+      assert(
+        resp.body == s"${defaultApi.name}\n${adminApi.name}" || resp.body == s"${adminApi.name}\n${defaultApi.name}")
     }
     "validate daikoku-json-apis helper" in {
       val page = defaultCmsPage.copy(
@@ -1483,7 +1506,8 @@ class TenantControllerSpec()
       val page = defaultCmsPage.copy(
         id = CmsPageId("daikoku-plans-helper"),
         path = Some("/daikoku-plans"),
-        body = s"""{{#daikoku-plans "${defaultApi.id.value}"}}{{plan._id}}{{/daikoku-plans}}"""
+        body =
+          s"""{{#daikoku-plans "${defaultApi.id.value}"}}{{plan._id}}{{/daikoku-plans}}"""
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1525,7 +1549,9 @@ class TenantControllerSpec()
       )(tenant, session)
 
       def mustBeEquals(value: String) = {
-        val getPage = httpJsonCallBlocking(s"/_${page.path.get}?draft=true")(tenant, session)
+        val getPage =
+          httpJsonCallBlocking(s"/_${page.path.get}?draft=true")(tenant,
+                                                                 session)
         getPage.status mustBe 200
         getPage.body mustBe value
       }
@@ -1533,14 +1559,18 @@ class TenantControllerSpec()
       mustBeEquals("first")
 
       Await.result(httpJsonCall(
-        s"/api/cms/pages",
-        "POST",
-        body = Some(page.copy(draft = "second", body = "second").asJson)
-      )(tenant, session), atMost = 10.seconds)
+                     s"/api/cms/pages",
+                     "POST",
+                     body =
+                       Some(page.copy(draft = "second", body = "second").asJson)
+                   )(tenant, session),
+                   atMost = 10.seconds)
 
       mustBeEquals("second")
 
-      val res = httpJsonCallBlocking(s"/api/cms/pages/${page.id.value}")(tenant, session)
+      val res =
+        httpJsonCallBlocking(s"/api/cms/pages/${page.id.value}")(tenant,
+                                                                 session)
       val updatedPage = (res.json \ "history").as(SeqCmsHistoryFormat)
 
       httpJsonCallBlocking(
@@ -1841,4 +1871,3 @@ class TenantControllerSpec()
     }
   }
 }
-

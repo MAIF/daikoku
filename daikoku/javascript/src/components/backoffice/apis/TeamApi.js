@@ -5,14 +5,16 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { Can, manage, api as API, Spinner } from '../../utils';
-import {
-  TeamApiInfos,
-  TeamApiPost,
-  TeamApiDocumentation,
-  TeamApiPricings
-} from '.';
+import { TeamApiInfos, TeamApiPost, TeamApiDocumentation, TeamApiPricings } from '.';
 
-import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext, toggleExpertMode, openApiSelectModal } from '../../../core';
+import {
+  setError,
+  openSubMetadataModal,
+  openTestingApiKeyModal,
+  I18nContext,
+  toggleExpertMode,
+  openApiSelectModal,
+} from '../../../core';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
@@ -70,11 +72,10 @@ const TeamApiComponent = (props) => {
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
-      Services.allSimpleOtoroshis(props.tenant._id)
-        .then((otoroshiSettings) => {
-          setOtoroshiSettings(otoroshiSettings);
-          setApi(location.state.newApi);
-        });
+      Services.allSimpleOtoroshis(props.tenant._id).then((otoroshiSettings) => {
+        setOtoroshiSettings(otoroshiSettings);
+        setApi(location.state.newApi);
+      });
     } else {
       reloadState();
     }
@@ -99,7 +100,7 @@ const TeamApiComponent = (props) => {
         toastr.error(api.error);
       }
     });
-  }
+  };
 
   const save = (editedApi) => {
     if (params.tab === 'documentation') {
@@ -107,18 +108,24 @@ const TeamApiComponent = (props) => {
     }
 
     if (props.creation) {
-      return Services.createTeamApi(props.currentTeam._id, editedApi)
-        .then((createdApi) => {
-          if (createdApi.error) {
-            toastr.error(translateMethod(createdApi.error))
-            return createdApi
-          } else if (createdApi.name) {
-            toastr.success(
-              translateMethod('api.created.success', false, `Api "${createdApi.name}" created`, createdApi.name)
-            );
-            navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`)
-          }
-        })
+      return Services.createTeamApi(props.currentTeam._id, editedApi).then((createdApi) => {
+        if (createdApi.error) {
+          toastr.error(translateMethod(createdApi.error));
+          return createdApi;
+        } else if (createdApi.name) {
+          toastr.success(
+            translateMethod(
+              'api.created.success',
+              false,
+              `Api "${createdApi.name}" created`,
+              createdApi.name
+            )
+          );
+          navigate(
+            `/${props.currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`
+          );
+        }
+      });
     } else {
       return Services.saveTeamApiWithId(
         props.currentTeam._id,
@@ -128,18 +135,20 @@ const TeamApiComponent = (props) => {
       ).then((res) => {
         if (res.error) {
           toastr.error(translateMethod(res.error));
-          return res
+          return res;
         } else {
           toastr.success(translateMethod('Api saved'));
-          setApi(editedApi)
+          setApi(editedApi);
 
           if (res._humanReadableId !== editedApi._humanReadableId) {
-            navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`)
+            navigate(
+              `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
+            );
           }
         }
       });
     }
-  }
+  };
 
   const teamId = props.currentTeam._id;
   const tab = params.tab || 'infos';
@@ -158,57 +167,71 @@ const TeamApiComponent = (props) => {
               .then(() => toastr.success(translateMethod('deletion successful')));
           }
         });
-      }
+      };
       if (props.creation) {
-        props.injectNavFooter(<>
-          <Link
-            className="d-flex justify-content-around mt-3 align-items-center"
-            style={{
-              border: 0,
-              background: 'transparent',
-              outline: 'none',
-            }}
-            to={`/${props.currentTeam._humanReadableId}/settings/apis`}
-          >
-            <i className="fas fa-chevron-left" />
-            {translateMethod("back.to.team", false, `Back to {props.currentTeam._humanReadableId}`, props.currentTeam.name)}
-          </Link>
-        </>)
+        props.injectNavFooter(
+          <>
+            <Link
+              className="d-flex justify-content-around mt-3 align-items-center"
+              style={{
+                border: 0,
+                background: 'transparent',
+                outline: 'none',
+              }}
+              to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+            >
+              <i className="fas fa-chevron-left" />
+              {translateMethod(
+                'back.to.team',
+                false,
+                `Back to {props.currentTeam._humanReadableId}`,
+                props.currentTeam.name
+              )}
+            </Link>
+          </>
+        );
       } else {
-        props.injectNavFooter(<>
-          <Link
-            to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
-            className="btn btn-sm btn-access-negative mb-2"
-          >
-            {translateMethod('View this Api')}
-          </Link>
-          <CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
-          <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
-            {translateMethod('Delete this Api')}
-          </button>
-          <Link
-            className="d-flex justify-content-around mt-3 align-items-center"
-            style={{
-              border: 0,
-              background: 'transparent',
-              outline: 'none',
-            }}
-            to={`/${props.currentTeam._humanReadableId}/settings/apis`}
-          >
-            <i className="fas fa-chevron-left" />
-            {translateMethod("back.to.team", false, `Back to {props.currentTeam._humanReadableId}`, props.currentTeam.name)}
-          </Link>
-        </>)
+        props.injectNavFooter(
+          <>
+            <Link
+              to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
+              className="btn btn-sm btn-access-negative mb-2"
+            >
+              {translateMethod('View this Api')}
+            </Link>
+            <CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
+            <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
+              {translateMethod('Delete this Api')}
+            </button>
+            <Link
+              className="d-flex justify-content-around mt-3 align-items-center"
+              style={{
+                border: 0,
+                background: 'transparent',
+                outline: 'none',
+              }}
+              to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+            >
+              <i className="fas fa-chevron-left" />
+              {translateMethod(
+                'back.to.team',
+                false,
+                `Back to {props.currentTeam._humanReadableId}`,
+                props.currentTeam.name
+              )}
+            </Link>
+          </>
+        );
       }
     }
-    return () => props.injectNavFooter(null)
-  }, [api])
+    return () => props.injectNavFooter(null);
+  }, [api]);
 
   useEffect(() => {
     if (tab !== 'infos') {
       props.injectSubMenu(null);
     }
-  }, [tab])
+  }, [tab]);
 
   return (
     <Can I={manage} a={API} team={props.currentTeam} dispatchError>
@@ -221,15 +244,17 @@ const TeamApiComponent = (props) => {
             ) : (
               <div
                 className="d-flex align-items-center justify-content-between"
-                style={{ flex: 1 }}>
-                <h2 className='me-2'>
-                  {api.name}
-                </h2>
+                style={{ flex: 1 }}
+              >
+                <h2 className="me-2">{api.name}</h2>
               </div>
             )}
-            <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
-              {props.expertMode && translateMethod("Standard mode")}
-              {!props.expertMode && translateMethod("Expert mode")}
+            <button
+              onClick={() => props.toggleExpertMode()}
+              className="btn btn-sm btn-outline-primary"
+            >
+              {props.expertMode && translateMethod('Standard mode')}
+              {!props.expertMode && translateMethod('Expert mode')}
             </button>
           </div>
           <div className="row">
@@ -308,7 +333,7 @@ const TeamApiComponent = (props) => {
       )}
     </Can>
   );
-}
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,
@@ -319,7 +344,7 @@ const mapDispatchToProps = {
   openSubMetadataModal: (props) => openSubMetadataModal(props),
   openTestingApiKeyModal: (props) => openTestingApiKeyModal(props),
   toggleExpertMode: () => toggleExpertMode(),
-  openApiSelectModal: (props) => openApiSelectModal(props)
+  openApiSelectModal: (props) => openApiSelectModal(props),
 };
 
 export const TeamApi = connect(mapStateToProps, mapDispatchToProps)(TeamApiComponent);

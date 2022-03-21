@@ -6,4 +6,4 @@ export * from './sessions';
 export * from './importexport';
 export * from './teams';
 export * from './messages';
-export * from './cms'
+export * from './cms';

@@ -10,32 +10,31 @@ export const ApiSelectModal = ({ closeModal, teamId, api, onClose }) => {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.getAllPlanOfApi(teamId, api._humanReadableId, api.currentVersion)
-      .then((apis) => {
-        setApis(
-          apis.flatMap((api) =>
-            api.possibleUsagePlans.reduce((a, plan) => {
-              const groupName = `${api._humanReadableId}/${api.currentVersion}`;
-              const optGroup = a.find((grp) => grp.label === groupName);
-              if (!optGroup)
-                return [
-                  ...a,
-                  {
-                    options: [{ label: plan.customName || plan.type, value: plan }],
-                    label: groupName,
-                  },
-                ];
+    Services.getAllPlanOfApi(teamId, api._humanReadableId, api.currentVersion).then((apis) => {
+      setApis(
+        apis.flatMap((api) =>
+          api.possibleUsagePlans.reduce((a, plan) => {
+            const groupName = `${api._humanReadableId}/${api.currentVersion}`;
+            const optGroup = a.find((grp) => grp.label === groupName);
+            if (!optGroup)
+              return [
+                ...a,
+                {
+                  options: [{ label: plan.customName || plan.type, value: plan }],
+                  label: groupName,
+                },
+              ];
 
-              return a.map((group) => {
-                if (group.label === groupName)
-                  group.options.push({ label: plan.customName || plan.type, value: plan });
+            return a.map((group) => {
+              if (group.label === groupName)
+                group.options.push({ label: plan.customName || plan.type, value: plan });
 
-                return group;
-              });
-            }, [])
-          )
-        );
-      });
+              return group;
+            });
+          }, [])
+        )
+      );
+    });
   }, []);
 
   function clonePlan() {

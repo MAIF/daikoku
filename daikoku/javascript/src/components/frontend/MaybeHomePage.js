@@ -11,12 +11,10 @@ export const MaybeHomePage = ({ tenant }) => {
   useEffect(() => {
     if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
       navigate('/apis');
-    }
-    else
-      window.location.replace("/_/")
+    } else window.location.replace('/_/');
   }, []);
 
-  return null
+  return null;
 
   // return (
   //   <div className="row">

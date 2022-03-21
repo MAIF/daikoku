@@ -38,7 +38,8 @@ object AppError {
   case object Unauthorized extends AppError
   case object TeamForbidden extends AppError
 
-  def renderF(error: AppError): Future[mvc.Result] = FastFuture.successful(render(error))
+  def renderF(error: AppError): Future[mvc.Result] =
+    FastFuture.successful(render(error))
   def render(error: AppError): mvc.Result = error match {
     case ApiVersionConflict => Conflict(toJson(ApiVersionConflict))
     case ApiNotFound        => NotFound(Json.obj("error" -> "Api not found"))

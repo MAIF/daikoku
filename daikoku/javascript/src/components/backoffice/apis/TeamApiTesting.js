@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Form, type, format, constraints } from '@maif/react-forms';
 import faker from 'faker';
 import _, { flow } from 'lodash';
-import { useSelector } from 'react-redux'
+import { useSelector } from 'react-redux';
 
 import { Option } from '../../utils';
 import * as Services from '../../../services';
@@ -10,7 +10,7 @@ import { I18nContext } from '../../../core';
 
 export const TeamApiTesting = (props) => {
   const testing = props.value.testing;
-  const team = useSelector(s => s.context.currentTeam)
+  const team = useSelector((s) => s.context.currentTeam);
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
@@ -19,13 +19,13 @@ export const TeamApiTesting = (props) => {
       testing.config && testing.config.otoroshiSettings
         ? testing.config
         : {
-          otoroshiSettings: null,
-          authorizedEntities: null,
-          clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
-          api: props.value._id,
-          tag: `daikoku_testing_${random}`,
-          metadata: props.metadata,
-        };
+            otoroshiSettings: null,
+            authorizedEntities: null,
+            clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
+            api: props.value._id,
+            tag: `daikoku_testing_${random}`,
+            metadata: props.metadata,
+          };
 
     props.openSubMetadataModal({
       save: (metadata) =>
@@ -91,7 +91,7 @@ export const TeamApiTesting = (props) => {
     enabled: {
       type: type.bool,
       label: translateMethod('Enabled'),
-      defaultValue: false
+      defaultValue: false,
     },
     auth: {
       type: type.string,
@@ -99,40 +99,40 @@ export const TeamApiTesting = (props) => {
       label: translateMethod('Auth. type'),
       options: [
         { label: 'ApiKey', value: 'ApiKey' },
-        { label: 'Basic', value: 'Basic' }
-      ]
+        { label: 'Basic', value: 'Basic' },
+      ],
     },
     name: {
       type: type.string,
       label: translateMethod('Auth. name'),
       constraints: [
-        constraints.nullable() //todo: use when constraint based of enabled
-      ]
+        constraints.nullable(), //todo: use when constraint based of enabled
+      ],
     },
     username: {
       type: type.string,
       label: translateMethod('Client Id'),
       constraints: [
-        constraints.nullable() //todo: use when constraint based of enabled
-      ]
+        constraints.nullable(), //todo: use when constraint based of enabled
+      ],
     },
     password: {
       type: type.string,
       format: format.password,
       label: translateMethod('Client secret'),
       constraints: [
-        constraints.nullable() //todo: use when constraint based of enabled
-      ]
-    }
-  }
+        constraints.nullable(), //todo: use when constraint based of enabled
+      ],
+    },
+  };
 
   return (
     <div className="d-flex">
       <Form
         schema={schema}
-        onSubmit={testing => props.onChange({ ...props.value, testing })}
+        onSubmit={(testing) => props.onChange({ ...props.value, testing })}
         options={{
-          autosubmit: true
+          autosubmit: true,
         }}
         value={props.value.testing}
         footer={() => null}

@@ -1,14 +1,21 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import faker from 'faker';
-import { constraints, type, format } from '@maif/react-forms'
+import { constraints, type, format } from '@maif/react-forms';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
 import { I18nContext } from '../../../core';
-import { formatCurrency, getCurrencySymbol, newPossibleUsagePlan, formatPlanType, MultiStepForm, Option } from '../../utils'
+import {
+  formatCurrency,
+  getCurrencySymbol,
+  newPossibleUsagePlan,
+  formatPlanType,
+  MultiStepForm,
+  Option,
+} from '../../utils';
 import { currencies } from '../../../services/currencies';
-import * as Services from '../../../services'
+import * as Services from '../../../services';
 import { toastr } from 'react-redux-toastr';
 
 const SUBSCRIPTION_PLAN_TYPES = {
@@ -91,7 +98,6 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
       );
     }
   }, [rawValues, groups, services]);
-
 
   const onValueChange = (v) => {
     if (!v) {
@@ -177,10 +183,7 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
 const CustomMetadataInput = ({ value, onChange, setValue }) => {
   const changeValue = (possibleValues, key) => {
     const oldValue = Option(value.find((x) => x.key === key)).getOrElse({ '': '' });
-    const newValues = [
-      ...value.filter((x) => x.key !== key),
-      { ...oldValue, key, possibleValues },
-    ];
+    const newValues = [...value.filter((x) => x.key !== key), { ...oldValue, key, possibleValues }];
     onChange(newValues);
   };
 
@@ -199,8 +202,8 @@ const CustomMetadataInput = ({ value, onChange, setValue }) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!value || value.length === 0) {
       onChange([{ key: '', possibleValues: [] }]);
-      setValue('subscriptionProcess', 'Manual')
-      toastr.info('set up subscriptionProcess to manual due to have a customMetadata')
+      setValue('subscriptionProcess', 'Manual');
+      toastr.info('set up subscriptionProcess to manual due to have a customMetadata');
     }
   };
 
@@ -220,13 +223,8 @@ const CustomMetadataInput = ({ value, onChange, setValue }) => {
   return (
     <div>
       {!value?.length && (
-
         <div className="col-sm-10">
-          <button
-            type="button"
-            className="btn btn-outline-primary"
-            onClick={addFirst}
-          >
+          <button type="button" className="btn btn-outline-primary" onClick={addFirst}>
             <i className="fas fa-plus" />{' '}
           </button>
         </div>
@@ -258,14 +256,16 @@ const CustomMetadataInput = ({ value, onChange, setValue }) => {
             <button
               type="button"
               className="input-group-text btn btn-outline-danger"
-              onClick={(e) => remove(e, key)}>
+              onClick={(e) => remove(e, key)}
+            >
               <i className="fas fa-trash" />
             </button>
             {idx === value.length - 1 && (
               <button
                 type="button"
                 className="input-group-text btn btn-outline-primary"
-                onClick={addNext}>
+                onClick={addNext}
+              >
                 <i className="fas fa-plus" />{' '}
               </button>
             )}
@@ -276,7 +276,16 @@ const CustomMetadataInput = ({ value, onChange, setValue }) => {
   );
 };
 
-const Card = ({ plan, isDefault, makeItDefault, toggleVisibility, deletePlan, editPlan, duplicatePlan, creation }) => {
+const Card = ({
+  plan,
+  isDefault,
+  makeItDefault,
+  toggleVisibility,
+  deletePlan,
+  editPlan,
+  duplicatePlan,
+  creation,
+}) => {
   const { translateMethod, Translation } = useContext(I18nContext);
 
   let pricing = translateMethod('Free');
@@ -301,60 +310,70 @@ const Card = ({ plan, isDefault, makeItDefault, toggleVisibility, deletePlan, ed
   const deleteWithConfirm = () => {
     window.confirm(translateMethod('delete.plan.confirm')).then((ok) => {
       if (ok) {
-        deletePlan()
+        deletePlan();
       }
     });
-  }
+  };
 
   return (
     <div className="card hoverable-card mb-4 shadow-sm" style={{ position: 'relative' }}>
-      {isDefault && <i className="fas fa-star" style={{ position: 'absolute', fontSize: '20px', top: '15px', right: '15px', zIndex: '100' }} />}
-      {!creation && <div className="dropdown" style={{ position: 'absolute', top: '15px', left: '15px', zIndex: '100' }}>
+      {isDefault && (
         <i
-          className="fa fa-cog cursor-pointer dropdown-menu-button"
-          style={{ fontSize: '20px' }}
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          id="dropdownMenuButton" />
+          className="fas fa-star"
+          style={{
+            position: 'absolute',
+            fontSize: '20px',
+            top: '15px',
+            right: '15px',
+            zIndex: '100',
+          }}
+        />
+      )}
+      {!creation && (
         <div
-          className="dropdown-menu"
-          aria-labelledby="dropdownMenuButton"
+          className="dropdown"
+          style={{ position: 'absolute', top: '15px', left: '15px', zIndex: '100' }}
         >
-          {!isDefault && plan.visibility !== PRIVATE && <span className="dropdown-item cursor-pointer"
-            onClick={makeItDefault}>
-            <Translation i18nkey="Make default plan">Make default plan</Translation>
-          </span>}
-          {!isDefault && (
-            <span
-              onClick={toggleVisibility}
-              className="dropdown-item cursor-pointer">
-              {plan.visibility === PUBLIC && (
-                <Translation i18nkey="Make it private">Make it private</Translation>
-              )}
-              {plan.visibility === PRIVATE && (
-                <Translation i18nkey="Make it public">Make it public</Translation>
-              )}
+          <i
+            className="fa fa-cog cursor-pointer dropdown-menu-button"
+            style={{ fontSize: '20px' }}
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            id="dropdownMenuButton"
+          />
+          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            {!isDefault && plan.visibility !== PRIVATE && (
+              <span className="dropdown-item cursor-pointer" onClick={makeItDefault}>
+                <Translation i18nkey="Make default plan">Make default plan</Translation>
+              </span>
+            )}
+            {!isDefault && (
+              <span onClick={toggleVisibility} className="dropdown-item cursor-pointer">
+                {plan.visibility === PUBLIC && (
+                  <Translation i18nkey="Make it private">Make it private</Translation>
+                )}
+                {plan.visibility === PRIVATE && (
+                  <Translation i18nkey="Make it public">Make it public</Translation>
+                )}
+              </span>
+            )}
+            <div className="dropdown-divider" />
+            <span className="dropdown-item cursor-pointer" onClick={duplicatePlan}>
+              <Translation i18nkey="Duplicate plan">duplicate</Translation>
             </span>
-          )}
-          <div className="dropdown-divider" />
-          <span
-            className="dropdown-item cursor-pointer"
-            onClick={duplicatePlan}>
-            <Translation i18nkey="Duplicate plan">duplicate</Translation>
-          </span>
-          <span
-            className="dropdown-item cursor-pointer"
-            onClick={editPlan}>
-            <Translation i18nkey="Edit plan">Edit</Translation>
-          </span>
-          <div className="dropdown-divider" />
-          <span
-            className="dropdown-item cursor-pointer btn-danger-negative"
-            onClick={deleteWithConfirm} >
-            <Translation i18nkey="Delete plan">delete</Translation>
-          </span>
+            <span className="dropdown-item cursor-pointer" onClick={editPlan}>
+              <Translation i18nkey="Edit plan">Edit</Translation>
+            </span>
+            <div className="dropdown-divider" />
+            <span
+              className="dropdown-item cursor-pointer btn-danger-negative"
+              onClick={deleteWithConfirm}
+            >
+              <Translation i18nkey="Delete plan">delete</Translation>
+            </span>
+          </div>
         </div>
-      </div>}
+      )}
       <div className="card-img-top card-link card-skin" data-holder-rendered="true">
         <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
       </div>
@@ -385,15 +404,15 @@ const Card = ({ plan, isDefault, makeItDefault, toggleVisibility, deletePlan, ed
           </span>
         </div>
       </div>
-    </div >
-  )
-}
+    </div>
+  );
+};
 
 const PUBLIC = 'Public';
 const PRIVATE = 'Private';
 
 export const TeamApiPricings = (props) => {
-  const possibleMode = { list: 'LIST', creation: 'CREATION' }
+  const possibleMode = { list: 'LIST', creation: 'CREATION' };
   const [planForEdition, setPlanForEdition] = useState();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
@@ -419,90 +438,73 @@ export const TeamApiPricings = (props) => {
           'OPTIONS',
           'TRACE',
           'PATCH',
-        ]
+        ],
       },
-      'path': {
+      path: {
         type: type.string,
         label: translateMethod('http.path'),
         defaultValue: '/',
         constraints: [
-          constraints.matches(/^\/([^\s]\w*)*$/, translateMethod('constraint.match.path'))
-        ]
-      }
+          constraints.matches(/^\/([^\s]\w*)*$/, translateMethod('constraint.match.path')),
+        ],
+      },
     },
-    flow: ['method', 'path']
-  }
+    flow: ['method', 'path'],
+  };
 
   const freeWithQuotasFlow = [
     {
       label: translateMethod('Quotas'),
       collapsed: false,
-      flow: [
-        'maxPerSecond',
-        'maxPerDay',
-        'maxPerMonth',
-      ]
-    }
+      flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
+    },
   ];
 
   const quotasWithLimitsFlow = [
-      {
-        label: translateMethod('Quotas'),
-        collapsed: false,
-        flow: [
-          'maxPerSecond',
-          'maxPerDay',
-          'maxPerMonth',
-        ]
-      },
-      {
-        label: translateMethod('Billing'),
-        collapsed: false,
-        flow: [
-          'trialPeriod',
-          'billingDuration',
-          'costPerMonth',
-          'currency',
-        ]
-      },
-    ];
+    {
+      label: translateMethod('Quotas'),
+      collapsed: false,
+      flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
+    },
+    {
+      label: translateMethod('Billing'),
+      collapsed: false,
+      flow: ['trialPeriod', 'billingDuration', 'costPerMonth', 'currency'],
+    },
+  ];
 
   const quotasWithoutLimitsFlow = [
-      {
-        label: translateMethod('Quotas'),
-        collapsed: false,
-        flow: [
-          'maxPerSecond',
-          'maxPerDay',
-          'maxPerMonth',
-        ]
-      },
-      {
-        label: translateMethod('Billing'),
-        collapsed: false,
-        flow: [
-          'trialPeriod',
-          'billingDuration',
-          'costPerMonth',
-          'costPerAdditionalRequest',
-          'currency',
-        ]
-      }
-    ];
+    {
+      label: translateMethod('Quotas'),
+      collapsed: false,
+      flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
+    },
+    {
+      label: translateMethod('Billing'),
+      collapsed: false,
+      flow: [
+        'trialPeriod',
+        'billingDuration',
+        'costPerMonth',
+        'costPerAdditionalRequest',
+        'currency',
+      ],
+    },
+  ];
 
   const payPerUseFlow = [
-      {
-        label: translateMethod('Billing'),
-        collapsed: false,
-        flow: [
-          'trialPeriod',
-          'billingDuration',
-          'costPerMonth',
-          'costPerAdditionalRequest',
-          'currency',
-        ]
-      }
-    ];
+    {
+      label: translateMethod('Billing'),
+      collapsed: false,
+      flow: [
+        'trialPeriod',
+        'billingDuration',
+        'costPerMonth',
+        'costPerAdditionalRequest',
+        'currency',
+      ],
+    },
+  ];
 
   const getRightBillingFlow = (plan, expertMode) => {
     if (!plan) {
@@ -520,55 +522,60 @@ export const TeamApiPricings = (props) => {
       default:
         return [];
     }
-  }
+  };
 
   useEffect(() => {
     if (mode === possibleMode.creation) {
-      setPlanForEdition(undefined)
-      setMode(possibleMode.list)
+      setPlanForEdition(undefined);
+      setMode(possibleMode.list);
     }
   }, [props.value]);
-
 
   const deletePlan = (plan) => {
     let plans = _.cloneDeep(props.value.possibleUsagePlans).filter((p) => p._id !== plan._id);
     const newValue = _.cloneDeep(props.value);
     newValue.possibleUsagePlans = plans;
     props.save(newValue);
-  }
+  };
 
   const createNewPlan = () => {
     const newPlan = newPossibleUsagePlan(faker.commerce.productName() + ' plan');
     setPlanForEdition(newPlan);
     setMode(possibleMode.creation);
-    setCreation(true)
-  }
+    setCreation(true);
+  };
   const editPlan = (plan) => {
     setPlanForEdition(plan);
     setMode(possibleMode.creation);
-  }
+  };
 
   const makePlanDefault = (plan) => {
     if (props.value.defaultUsagePlan !== plan._id && plan.visibility !== PRIVATE) {
-      const updatedApi = { ...props.value, defaultUsagePlan: plan._id }
-      props.save(updatedApi)
+      const updatedApi = { ...props.value, defaultUsagePlan: plan._id };
+      props.save(updatedApi);
     }
-  }
+  };
 
   const toggleVisibility = (plan) => {
     if (props.value.defaultUsagePlan !== plan._id) {
       const originalVisibility = plan.visibility;
       const visibility = originalVisibility === PUBLIC ? PRIVATE : PUBLIC;
       const updatedPlan = { ...plan, visibility };
-      savePlan(updatedPlan)
+      savePlan(updatedPlan);
     }
-  }
+  };
 
   const savePlan = (updatedPlan) => {
-    const api = props.value
-    const updatedApi = { ...api, possibleUsagePlans: [...api.possibleUsagePlans.filter(p => p._id !== updatedPlan._id), updatedPlan] }
-    props.save(updatedApi)
-  }
+    const api = props.value;
+    const updatedApi = {
+      ...api,
+      possibleUsagePlans: [
+        ...api.possibleUsagePlans.filter((p) => p._id !== updatedPlan._id),
+        updatedPlan,
+      ],
+    };
+    props.save(updatedApi);
+  };
 
   const clonePlanAndEdit = (plan) => {
     const clone = {
@@ -578,8 +585,8 @@ export const TeamApiPricings = (props) => {
     };
     setPlanForEdition(clone);
     setMode(possibleMode.creation);
-    setCreation(true)
-  }
+    setCreation(true);
+  };
 
   const importPlan = () => {
     props.openApiSelectModal({
@@ -590,27 +597,27 @@ export const TeamApiPricings = (props) => {
           ..._.cloneDeep(plan),
           _id: faker.random.alphaNumeric(32),
           customName: `${plan.customName} (import)`,
-        }
+        };
         setPlanForEdition(clone);
-        setMode(possibleMode.creation)
-        setCreation(true)
+        setMode(possibleMode.creation);
+        setCreation(true);
       },
     });
-  }
+  };
 
   const cancelEdition = () => {
     setPlanForEdition(undefined);
     setMode(possibleMode.list);
     setCreation(false);
-  }
+  };
 
   const planTypes = [
-    "FreeWithoutQuotas",
-    "FreeWithQuotas",
-    "QuotasWithLimits",
-    "QuotasWithoutLimits",
-    "PayPerUse"
-  ]
+    'FreeWithoutQuotas',
+    'FreeWithQuotas',
+    'QuotasWithLimits',
+    'QuotasWithoutLimits',
+    'PayPerUse',
+  ];
   const steps = [
     {
       id: 'info',
@@ -620,45 +627,41 @@ export const TeamApiPricings = (props) => {
           type: type.string,
           format: format.select,
           label: translateMethod('Type'),
-          onChange: ({rawValues, setValue, value}) => {
+          onChange: ({ rawValues, setValue, value }) => {
             const isDescIsDefault = Object.entries(SUBSCRIPTION_PLAN_TYPES)
-              .map(([_, { defaultDescription}]) => defaultDescription)
-              .some(d => !rawValues.customDescription || d === rawValues.customDescription);
-            
+              .map(([_, { defaultDescription }]) => defaultDescription)
+              .some((d) => !rawValues.customDescription || d === rawValues.customDescription);
+
             if (isDescIsDefault) {
-              setValue('customDescription', SUBSCRIPTION_PLAN_TYPES[value].defaultDescription)
+              setValue('customDescription', SUBSCRIPTION_PLAN_TYPES[value].defaultDescription);
             }
           },
           options: planTypes,
-          transformer: value => ({label: translateMethod(value), value}),
+          transformer: (value) => ({ label: translateMethod(value), value }),
           constraints: [
             constraints.required(translateMethod('constraints.required.type')),
-            constraints.oneOf(planTypes, translateMethod('constraints.oneof.plan.type'))
-          ]
+            constraints.oneOf(planTypes, translateMethod('constraints.oneof.plan.type')),
+          ],
         },
         customName: {
           type: type.string,
           label: translateMethod('Name'),
           placeholder: translateMethod('Plan name'),
-          constraints: [
-            constraints.nullable()
-          ]
+          constraints: [constraints.nullable()],
         },
         customDescription: {
           type: type.string,
           format: format.text,
           label: translateMethod('Description'),
           placeholder: translateMethod('Plan description'),
-          constraints: [
-            constraints.nullable()
-          ]
-        }
+          constraints: [constraints.nullable()],
+        },
       },
-      flow: ["type", "customName", "customDescription"]
+      flow: ['type', 'customName', 'customDescription'],
     },
     {
-      id: "oto",
-      label: translateMethod("Otoroshi Settings"),
+      id: 'oto',
+      label: translateMethod('Otoroshi Settings'),
       schema: {
         otoroshiTarget: {
           type: type.object,
@@ -675,28 +678,24 @@ export const TeamApiPricings = (props) => {
                 label: s.url,
                 value: s._id,
               }),
-              constraints: [
-                constraints.nullable()
-              ]
+              constraints: [constraints.nullable()],
             },
             authorizedEntities: {
               type: type.object,
               visible: {
                 ref: 'otoroshiTarget.otoroshiSettings',
-                test: v => !!v
+                test: (v) => !!v,
               },
-              render: props => OtoroshiServicesAndGroupSelector({ ...props, translateMethod }),
+              render: (props) => OtoroshiServicesAndGroupSelector({ ...props, translateMethod }),
               label: translateMethod('Authorized entities'),
               placeholder: translateMethod('Authorized.entities.placeholder'),
               help: translateMethod('authorized.entities.help'),
-              constraints: [
-                constraints.nullable()
-              ]
+              constraints: [constraints.nullable()],
             },
           },
         },
       },
-      flow: ['otoroshiTarget']
+      flow: ['otoroshiTarget'],
     },
     {
       id: 'customization',
@@ -710,16 +709,12 @@ export const TeamApiPricings = (props) => {
             otoroshiSettings: {
               type: type.string,
               visible: false,
-              constraints: [
-                constraints.nullable()
-              ]
+              constraints: [constraints.nullable()],
             },
             authorizedEntities: {
               type: type.object,
               visible: false,
-              constraints: [
-                constraints.nullable()
-              ]
+              constraints: [constraints.nullable()],
             },
             apikeyCustomization: {
               type: type.object,
@@ -730,9 +725,11 @@ export const TeamApiPricings = (props) => {
                   type: type.bool,
                   label: ({ rawValues }) => {
                     if (!!rawValues.aggregationApiKeysSecurity) {
-                      return `${translateMethod('Read only apikey')} (${translateMethod('disabled.due.to.aggregation.security')})`
+                      return `${translateMethod('Read only apikey')} (${translateMethod(
+                        'disabled.due.to.aggregation.security'
+                      )})`;
                     } else {
-                      return translateMethod('Apikey with clientId only')
+                      return translateMethod('Apikey with clientId only');
                     }
                   },
                   disabled: ({ rawValues }) => !!rawValues.aggregationApiKeysSecurity,
@@ -740,15 +737,17 @@ export const TeamApiPricings = (props) => {
                     if (value) {
                       setValue('aggregationApiKeysSecurity', false);
                     }
-                  }
+                  },
                 },
                 readOnly: {
                   type: type.bool,
                   label: ({ rawValues }) => {
                     if (!!rawValues.aggregationApiKeysSecurity) {
-                      return `${translateMethod('Read only apikey')} (${translateMethod('disabled.due.to.aggregation.security')})`
+                      return `${translateMethod('Read only apikey')} (${translateMethod(
+                        'disabled.due.to.aggregation.security'
+                      )})`;
                     } else {
-                      return translateMethod('Read only apikey')
+                      return translateMethod('Read only apikey');
                     }
                   },
                   disabled: ({ rawValues }) => !!rawValues.aggregationApiKeysSecurity,
@@ -756,7 +755,7 @@ export const TeamApiPricings = (props) => {
                     if (value) {
                       setValue('aggregationApiKeysSecurity', false);
                     }
-                  }
+                  },
                 },
                 constrainedServicesOnly: {
                   type: type.bool,
@@ -775,7 +774,7 @@ export const TeamApiPricings = (props) => {
                   type: type.object,
                   array: true,
                   label: translateMethod('Custom Apikey metadata'),
-                  render: props => CustomMetadataInput({ ...props, translateMethod }),
+                  render: (props) => CustomMetadataInput({ ...props, translateMethod }),
                   help: translateMethod(
                     'custom.metadata.help',
                     false,
@@ -799,42 +798,45 @@ export const TeamApiPricings = (props) => {
                       type: type.bool,
                       visible: {
                         ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                        test: v => !!v
+                        test: (v) => !!v,
                       },
                       label: translateMethod('Allow at last'),
-                      help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
+                      help: translateMethod(
+                        'allow.least.help',
+                        'Allowed path will be evaluated at last'
+                      ),
                     },
                     allowed: {
                       label: translateMethod('Allowed pathes'),
                       visible: {
                         ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                        test: v => !!v
+                        test: (v) => !!v,
                       },
-                      ...pathes
+                      ...pathes,
                     },
                     forbidden: {
                       label: translateMethod('Forbidden pathes'),
                       visible: {
                         ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                        test: v => !!v
+                        test: (v) => !!v,
                       },
-                      ...pathes
+                      ...pathes,
                     },
                     notFound: {
                       label: translateMethod('Not found pathes'),
                       visible: {
                         ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                        test: v => !!v
+                        test: (v) => !!v,
                       },
-                      ...pathes
+                      ...pathes,
                     },
-                  }
-                }
-              }
-            }
+                  },
+                },
+              },
+            },
           },
         },
-      }
+      },
     },
     {
       id: 'quotasAndBilling',
@@ -848,12 +850,12 @@ export const TeamApiPricings = (props) => {
           placeholder: translateMethod('Max. requests per second'),
           props: {
             step: 1,
-            min: 0
+            min: 0,
           },
           constraints: [
             constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer')
-          ]
+            constraints.integer('constraints.integer'),
+          ],
         },
         maxPerDay: {
           type: type.number,
@@ -861,12 +863,12 @@ export const TeamApiPricings = (props) => {
           placeholder: translateMethod('Max. requests per day'),
           props: {
             step: 1,
-            min: 0
+            min: 0,
           },
           constraints: [
             constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer')
-          ]
+            constraints.integer('constraints.integer'),
+          ],
         },
         maxPerMonth: {
           type: type.number,
@@ -874,24 +876,23 @@ export const TeamApiPricings = (props) => {
           placeholder: translateMethod('Max. requests per month'),
           props: {
             step: 1,
-            min: 0
+            min: 0,
           },
           constraints: [
             constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer')
-          ]
+            constraints.integer('constraints.integer'),
+          ],
         },
         costPerMonth: {
           type: type.number,
-          label: ({ rawValues }) => translateMethod(`Cost per ${rawValues.billingDuration.unit.toLocaleLowerCase()}`),
+          label: ({ rawValues }) =>
+            translateMethod(`Cost per ${rawValues.billingDuration.unit.toLocaleLowerCase()}`),
           placeholder: translateMethod('Cost per billing period'),
           props: {
             step: 1,
-            min: 0
+            min: 0,
           },
-          constraints: [
-            constraints.positive('constraints.positive')
-          ]
+          constraints: [constraints.positive('constraints.positive')],
         },
         costPerAdditionalRequest: {
           type: type.number,
@@ -899,11 +900,9 @@ export const TeamApiPricings = (props) => {
           placeholder: translateMethod('Cost per additionnal request'),
           props: {
             step: 1,
-            min: 0
+            min: 0,
           },
-          constraints: [
-            constraints.positive('constraints.positive')
-          ]
+          constraints: [constraints.positive('constraints.positive')],
         },
         currency: {
           type: type.object,
@@ -919,9 +918,8 @@ export const TeamApiPricings = (props) => {
                 label: `${c.name} (${c.symbol})`,
                 value: c.code,
               })),
-            }
-          }
-
+            },
+          },
         },
         billingDuration: {
           type: type.object,
@@ -934,13 +932,13 @@ export const TeamApiPricings = (props) => {
               placeholder: translateMethod('The Billing period'),
               props: {
                 step: 1,
-                min: 0
+                min: 0,
               },
               constraints: [
                 constraints.positive('constraints.positive'),
                 constraints.integer('constraints.integer'),
-                constraints.required('constraints.required.billing.period')
-              ]
+                constraints.required('constraints.required.billing.period'),
+              ],
             },
             unit: {
               type: type.string,
@@ -954,10 +952,13 @@ export const TeamApiPricings = (props) => {
               ],
               constraints: [
                 constraints.required('constraints.required.billing.period'),
-                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translateMethod('constraints.oneof.period'))
-              ]
-            }
-          }
+                constraints.oneOf(
+                  ['Hour', 'Day', 'Month', 'Year'],
+                  translateMethod('constraints.oneof.period')
+                ),
+              ],
+            },
+          },
         },
         trialPeriod: {
           type: type.object,
@@ -970,12 +971,16 @@ export const TeamApiPricings = (props) => {
               placeholder: translateMethod('The trial period'),
               props: {
                 step: 1,
-                min: 0
+                min: 0,
               },
               constraints: [
                 constraints.integer(translateMethod('constraints.integer')),
-                constraints.test('positive', translateMethod('constraints.positive'), v => v >= 0)
-              ]
+                constraints.test(
+                  'positive',
+                  translateMethod('constraints.positive'),
+                  (v) => v >= 0
+                ),
+              ],
             },
             unit: {
               type: type.string,
@@ -988,13 +993,16 @@ export const TeamApiPricings = (props) => {
                 { label: translateMethod('Years'), value: 'Year' },
               ],
               constraints: [
-                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translateMethod('constraints.oneof.period')),
+                constraints.oneOf(
+                  ['Hour', 'Day', 'Month', 'Year'],
+                  translateMethod('constraints.oneof.period')
+                ),
                 // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translateMethod('constraints.oneof.period'))]) //FIXME
-              ]
-            }
-          }
+              ],
+            },
+          },
         },
-      }
+      },
     },
     {
       id: 'security',
@@ -1015,15 +1023,15 @@ export const TeamApiPricings = (props) => {
           help: translateMethod('aggregation_apikeys.security.help'),
           onChange: ({ value, setValue }) => {
             if (value)
-              window.confirm(
-                translateMethod('aggregation.api_key.security.notification')
-              ).then((ok) => {
-                if (ok) {
-                  setValue('otoroshiTarget.apikeyCustomization.readOnly', false)
-                  setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false)
-                }
-              });;
-          }
+              window
+                .confirm(translateMethod('aggregation.api_key.security.notification'))
+                .then((ok) => {
+                  if (ok) {
+                    setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
+                    setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false);
+                  }
+                });
+          },
         },
         allowMutlipleApiKeys: {
           type: type.bool,
@@ -1032,8 +1040,13 @@ export const TeamApiPricings = (props) => {
         subscriptionProcess: {
           type: type.string,
           format: format.buttonsSelect,
-          disabled: ({ rawValues }) => !!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length,
-          label: ({ rawValues }) => translateMethod('Subscription') + (!!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length ? ` (${translateMethod('Subscription.manual.help')})` : ""),
+          disabled: ({ rawValues }) =>
+            !!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length,
+          label: ({ rawValues }) =>
+            translateMethod('Subscription') +
+            (!!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length
+              ? ` (${translateMethod('Subscription.manual.help')})`
+              : ''),
           options: [
             {
               label: translateMethod('Automatic'),
@@ -1042,8 +1055,11 @@ export const TeamApiPricings = (props) => {
             { label: translateMethod('Manual'), value: 'Manual' },
           ],
           constraints: [
-            constraints.oneOf(['Automatic', 'Manual'], translateMethod('constraints.oneof.sub.process'))
-          ]
+            constraints.oneOf(
+              ['Automatic', 'Manual'],
+              translateMethod('constraints.oneof.sub.process')
+            ),
+          ],
         },
         integrationProcess: {
           type: type.string,
@@ -1056,24 +1072,20 @@ export const TeamApiPricings = (props) => {
             },
             { label: translateMethod('ApiKey'), value: 'ApiKey' },
           ],
-          expert: true
+          expert: true,
         },
       },
       flow: [
         {
           label: translateMethod('Security'),
-          flow: [
-            'autoRotation',
-            'allowMutlipleApiKeys',
-            'aggregationApiKeysSecurity'
-          ],
-          inline: true
+          flow: ['autoRotation', 'allowMutlipleApiKeys', 'aggregationApiKeysSecurity'],
+          inline: true,
         },
         'subscriptionProcess',
-        'integrationProcess'
-      ]
-    }
-  ]
+        'integrationProcess',
+      ],
+    },
+  ];
 
   return (
     <div className="d-flex col flex-column pricing-content">
@@ -1088,17 +1100,19 @@ export const TeamApiPricings = (props) => {
                 onClick={importPlan}
                 type="button"
                 className="btn btn-outline-primary me-1"
-                style={{ marginTop: 0 }}>
+                style={{ marginTop: 0 }}
+              >
                 {translateMethod('import a plan')}
               </button>
             )}
             {planForEdition && mode === possibleMode.creation && (
-              <div className='flex-grow-1 d-flex justify-content-end'>
+              <div className="flex-grow-1 d-flex justify-content-end">
                 <button
                   onClick={cancelEdition}
                   type="button"
                   className="btn btn-outline-danger me-1"
-                  style={{ marginTop: 0 }}>
+                  style={{ marginTop: 0 }}
+                >
                   {translateMethod('Cancel')}
                 </button>
               </div>
@@ -1132,24 +1146,26 @@ export const TeamApiPricings = (props) => {
               </div>
             </div>
           )}
-          {mode === possibleMode.list && <div className="row">
-            {props.value.possibleUsagePlans.map((plan) => (
-              <div key={plan._id} className="col-md-4">
-                <Card
-                  api={props.value}
-                  plan={plan}
-                  isDefault={plan._id === props.value.defaultUsagePlan}
-                  makeItDefault={() => makePlanDefault(plan)}
-                  toggleVisibility={() => toggleVisibility(plan)}
-                  deletePlan={() => deletePlan(plan)}
-                  editPlan={() => editPlan(plan)}
-                  duplicatePlan={() => clonePlanAndEdit(plan)}
-                />
-              </div>
-            ))}
-          </div>}
+          {mode === possibleMode.list && (
+            <div className="row">
+              {props.value.possibleUsagePlans.map((plan) => (
+                <div key={plan._id} className="col-md-4">
+                  <Card
+                    api={props.value}
+                    plan={plan}
+                    isDefault={plan._id === props.value.defaultUsagePlan}
+                    makeItDefault={() => makePlanDefault(plan)}
+                    toggleVisibility={() => toggleVisibility(plan)}
+                    deletePlan={() => deletePlan(plan)}
+                    editPlan={() => editPlan(plan)}
+                    duplicatePlan={() => clonePlanAndEdit(plan)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

@@ -233,7 +233,7 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
   }
   return (
     <div className="">
-      <div className='float-right mb-4 position-relative'>
+      <div className="float-right mb-4 position-relative">
         <img
           src={`${rawValues?.picture}${
             rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
@@ -241,7 +241,7 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
           style={{
             width: 100,
             borderRadius: '50%',
-            backgroundColor: 'white'
+            backgroundColor: 'white',
           }}
           alt="avatar"
           className="mx-3"
@@ -526,24 +526,29 @@ function MyProfileComponent(props) {
             />
           )}
           {tab === 'security' && (
-            <div className='row'>
-              <div className='col-sm-6'>
-                <div className='row'>
+            <div className="row">
+              <div className="col-sm-6">
+                <div className="row">
                   <h4>
-                    <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                    <Translation i18nkey="profile.security.updatePassword">
+                      Update password
+                    </Translation>
                   </h4>
                   <Form
                     schema={changePasswordSchema}
                     onSubmit={updatePassword}
                     footer={({ valid }) => {
                       return (
-                        <div className='d-flex justify-content-end'>
+                        <div className="d-flex justify-content-end">
                           <button
                             type="button"
                             className="btn btn-outline-success mb-2"
-                            onClick={valid}>
+                            onClick={valid}
+                          >
                             <span>
-                              <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                              <Translation i18nkey="profile.security.updatePassword">
+                                Update password
+                              </Translation>
                             </span>
                           </button>
                           {/* TODO: forgot password link */}
@@ -553,7 +558,7 @@ function MyProfileComponent(props) {
                   />
                 </div>
               </div>
-              <div className='col-sm-6'>
+              <div className="col-sm-6">
                 <h4>
                   <Translation i18nkey="2fa">Two-factor authentication</Translation>
                 </h4>

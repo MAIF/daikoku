@@ -5,16 +5,29 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import controllers.AppError.{
+  SubscriptionAggregationDisabled,
+  SubscriptionParentExisted
+}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  ApiSubscriptionFormat,
+  SeqApiSubscriptionFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -96,8 +109,7 @@ class ApiControllerSpec()
 
       //no api created ==> resp = []
       result.forall(tuple =>
-        !apis.exists(api => api.name == tuple._1 && tuple._2)
-      ) mustBe true
+        !apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
     }
 
     "initialize tenant apis" in {
@@ -129,16 +141,14 @@ class ApiControllerSpec()
         .map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
 
       result.forall(tuple =>
-        apis.exists(api => api.name == tuple._1 && tuple._2)
-      ) mustBe true
+        apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
     }
 
     "not initialize subscriptions for a tenant for which he's not admin" in {
       setupEnvBlocking(
         tenants = Seq(tenant, tenant2),
         users = Seq(tenantAdmin),
-        teams =
-          Seq(defaultAdminTeam, teamOwner, teamConsumer, tenant2AdminTeam),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer, tenant2AdminTeam),
         apis = Seq.empty
       )
 
@@ -280,13 +290,13 @@ class ApiControllerSpec()
       resp.status mustBe 201
       val result = resp.json.as[JsArray].value.map(_.as[String])
 
-      result.forall(res =>
-        apikeys.exists(apikey =>
-          (apikey \ "apikey")
-            .as(json.OtoroshiApiKeyFormat)
-            .clientName == res
-        )
-      ) mustBe true
+      result.forall(
+        res =>
+          apikeys.exists(
+            apikey =>
+              (apikey \ "apikey")
+                .as(json.OtoroshiApiKeyFormat)
+                .clientName == res)) mustBe true
 
       val sessionTest = loginWithBlocking(userAdmin, tenant)
       val respTestApis = httpJsonCallBlocking(
@@ -310,9 +320,7 @@ class ApiControllerSpec()
       resultTestSubscriptions.get.length mustBe 5
       Seq("1", "2", "3", "4", "5")
         .map(UsagePlanId)
-        .forall(id =>
-          resultTestSubscriptions.get.exists(sub => sub.plan == id)
-        ) mustBe true
+        .forall(id => resultTestSubscriptions.get.exists(sub => sub.plan == id)) mustBe true
 
       val respTestMySubscriptions = httpJsonCallBlocking(
         s"/api/me/subscriptions/${defaultApi.humanReadableId}/${defaultApi.currentVersion.value}"
@@ -631,8 +639,9 @@ class ApiControllerSpec()
 
       val respGet =
         httpJsonCallBlocking(path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
-        )(tenant, session)
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
+          tenant,
+          session)
 
       respGet.status mustBe 200
       val resultAsApi =
@@ -893,8 +902,8 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               FreeWithoutQuotas(
                 id = UsagePlanId("1"),
                 billingDuration = BillingDuration(1, BillingTimeUnit.Month),
@@ -906,8 +915,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -916,8 +924,7 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            )
-          )
+            ))
         ),
         subscriptions = Seq(sub)
       )
@@ -964,8 +971,8 @@ class ApiControllerSpec()
           )
         ),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               FreeWithoutQuotas(
                 id = UsagePlanId("1"),
                 billingDuration = BillingDuration(1, BillingTimeUnit.Month),
@@ -977,8 +984,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -987,8 +993,7 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            )
-          )
+            ))
         ),
         subscriptions = Seq(sub)
       )
@@ -1099,8 +1104,8 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               FreeWithoutQuotas(
                 id = UsagePlanId("1"),
                 billingDuration = BillingDuration(1, BillingTimeUnit.Month),
@@ -1112,8 +1117,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -1122,8 +1126,7 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            )
-          )
+            ))
         ),
         subscriptions = Seq(sub)
       )
@@ -1206,8 +1209,8 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamConsumer, teamOwner),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               QuotasWithLimits(
                 UsagePlanId("3"),
                 10000,
@@ -1224,8 +1227,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     ),
                     ApikeyCustomization(
                       customMetadata = Seq(
@@ -1239,8 +1241,7 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            )
-          )
+            ))
         ),
         notifications = Seq(
           untreatedNotification.copy(
@@ -1511,8 +1512,9 @@ class ApiControllerSpec()
 
       val respGet =
         httpJsonCallBlocking(path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
-        )(tenant, session)
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
+          tenant,
+          session)
 
       respGet.status mustBe 200
       val resultAsApi =
@@ -1634,8 +1636,9 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userApiEditor, tenant)
       var resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
-      )(tenant, session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+        tenant,
+        session)
 
       resp.status mustBe Status.OK
       ApiFormat.reads(resp.json).get.possibleUsagePlans.size mustBe 0
@@ -1654,8 +1657,9 @@ class ApiControllerSpec()
       resp.status mustBe Status.OK
 
       resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
-      )(tenant, session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+        tenant,
+        session)
       resp.status mustBe Status.OK
 
       ApiFormat.reads(resp.json).get.possibleUsagePlans.size mustBe 1
@@ -1694,8 +1698,9 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userApiEditor, tenant)
       var resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
-      )(tenant, session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+        tenant,
+        session)
 
       resp.status mustBe Status.OK
       ApiFormat.reads(resp.json).get.documentation.pages.size mustBe 0
@@ -2144,8 +2149,8 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               QuotasWithLimits(
                 UsagePlanId("1"),
                 10000,
@@ -2162,8 +2167,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2172,8 +2176,7 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            )
-          )
+            ))
         )
       )
 
@@ -2570,8 +2573,8 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               PayPerUse(
                 UsagePlanId("1"),
                 BigDecimal(10.0),
@@ -2586,8 +2589,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2597,8 +2599,7 @@ class ApiControllerSpec()
                 subscriptionProcess = SubscriptionProcess.Automatic,
                 integrationProcess = IntegrationProcess.ApiKey
               )
-            )
-          )
+            ))
         )
       )
 
@@ -2632,8 +2633,8 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               PayPerUse(
                 UsagePlanId("1"),
                 BigDecimal(10.0),
@@ -2648,8 +2649,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2659,8 +2659,7 @@ class ApiControllerSpec()
                 subscriptionProcess = SubscriptionProcess.Automatic,
                 integrationProcess = IntegrationProcess.ApiKey
               )
-            )
-          )
+            ))
         )
       )
 
@@ -2780,8 +2779,8 @@ class ApiControllerSpec()
           teamConsumer.copy(subscriptions = Seq(payperUseSub.id))
         ),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               PayPerUse(
                 UsagePlanId("1"),
                 BigDecimal(10.0),
@@ -2796,8 +2795,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2808,16 +2806,16 @@ class ApiControllerSpec()
                 subscriptionProcess = SubscriptionProcess.Automatic,
                 integrationProcess = IntegrationProcess.ApiKey
               )
-            )
-          )
+            ))
         ),
         subscriptions = Seq(payperUseSub)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
       val respGetSubsStart = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
+        tenant,
+        session)
       respGetSubsStart.status mustBe 200
       val resultStart =
         fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
@@ -2835,8 +2833,9 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respGetSubs = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
+        tenant,
+        session)
       respGetSubs.status mustBe 200
       val result = fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
         .reads(respGetSubs.json)
@@ -2868,8 +2867,8 @@ class ApiControllerSpec()
           teamConsumer.copy(subscriptions = Seq(payperUseSub.id))
         ),
         apis = Seq(
-          defaultApi.copy(possibleUsagePlans =
-            Seq(
+          defaultApi.copy(
+            possibleUsagePlans = Seq(
               PayPerUse(
                 UsagePlanId("1"),
                 BigDecimal(10.0),
@@ -2884,8 +2883,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2896,16 +2894,16 @@ class ApiControllerSpec()
                 subscriptionProcess = SubscriptionProcess.Automatic,
                 integrationProcess = IntegrationProcess.ApiKey
               )
-            )
-          )
+            ))
         ),
         subscriptions = Seq(payperUseSub)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
       val respGetSubsStart = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
+        tenant,
+        session)
       respGetSubsStart.status mustBe 200
       val resultStart =
         fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
@@ -2920,8 +2918,9 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respGetSubs = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
+        tenant,
+        session)
       respGetSubs.status mustBe 404
 
       val respGetTeam = httpJsonCallBlocking(
@@ -4126,26 +4125,26 @@ class ApiControllerSpec()
         get(
           urlMatching(s"${otoroshiGetApikeyPath(childSub.apiKey.clientId)}.*")
         ).willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  ActualOtoroshiApiKey(
-                    clientId = childSub.apiKey.clientId,
-                    clientSecret = childSub.apiKey.clientSecret,
-                    clientName = childSub.apiKey.clientName,
-                    authorizedEntities = AuthorizedEntities(),
-                    throttlingQuota = 10L,
-                    dailyQuota = 10L,
-                    monthlyQuota = 10L,
-                    tags = Seq(),
-                    restrictions = ApiKeyRestrictions(),
-                    metadata = Map(),
-                    rotation = None
-                  ).asJson
-                )
+          aResponse()
+            .withBody(
+              Json.stringify(
+                ActualOtoroshiApiKey(
+                  clientId = childSub.apiKey.clientId,
+                  clientSecret = childSub.apiKey.clientSecret,
+                  clientName = childSub.apiKey.clientName,
+                  authorizedEntities = AuthorizedEntities(),
+                  throttlingQuota = 10L,
+                  dailyQuota = 10L,
+                  monthlyQuota = 10L,
+                  tags = Seq(),
+                  restrictions = ApiKeyRestrictions(),
+                  metadata = Map(),
+                  rotation = None
+                ).asJson
               )
-              .withStatus(200)
-          )
+            )
+            .withStatus(200)
+        )
       )
       stubFor(
         get(urlMatching(s"$otoroshiPathStats.*"))
@@ -4165,26 +4164,26 @@ class ApiControllerSpec()
             s"${otoroshiUpdateApikeyPath(childSub.apiKey.clientId)}.*"
           )
         ).willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  ActualOtoroshiApiKey(
-                    clientId = childSub.apiKey.clientId,
-                    clientSecret = childSub.apiKey.clientSecret,
-                    clientName = childSub.apiKey.clientName,
-                    authorizedEntities = AuthorizedEntities(),
-                    throttlingQuota = 10L,
-                    dailyQuota = 10L,
-                    monthlyQuota = 10L,
-                    tags = Seq(),
-                    restrictions = ApiKeyRestrictions(),
-                    metadata = Map(),
-                    rotation = None
-                  ).asJson
-                )
+          aResponse()
+            .withBody(
+              Json.stringify(
+                ActualOtoroshiApiKey(
+                  clientId = childSub.apiKey.clientId,
+                  clientSecret = childSub.apiKey.clientSecret,
+                  clientName = childSub.apiKey.clientName,
+                  authorizedEntities = AuthorizedEntities(),
+                  throttlingQuota = 10L,
+                  dailyQuota = 10L,
+                  monthlyQuota = 10L,
+                  tags = Seq(),
+                  restrictions = ApiKeyRestrictions(),
+                  metadata = Map(),
+                  rotation = None
+                ).asJson
               )
-              .withStatus(200)
-          )
+            )
+            .withStatus(200)
+        )
       )
       stubFor(
         put(urlMatching(s"/api/apikeys/.*"))
@@ -4264,24 +4263,24 @@ class ApiControllerSpec()
             s"${otoroshiPathApiKeyQuotas(childSub.apiKey.clientId)}.*"
           )
         ).willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  ApiKeyQuotas(
-                    authorizedCallsPerSec = 10L,
-                    currentCallsPerSec = 10L,
-                    remainingCallsPerSec = 10L,
-                    authorizedCallsPerDay = 10L,
-                    currentCallsPerDay = 10L,
-                    remainingCallsPerDay = 10L,
-                    authorizedCallsPerMonth = 10L,
-                    currentCallsPerMonth = 10L,
-                    remainingCallsPerMonth = 10L
-                  ).asJson
-                )
+          aResponse()
+            .withBody(
+              Json.stringify(
+                ApiKeyQuotas(
+                  authorizedCallsPerSec = 10L,
+                  currentCallsPerSec = 10L,
+                  remainingCallsPerSec = 10L,
+                  authorizedCallsPerDay = 10L,
+                  currentCallsPerDay = 10L,
+                  remainingCallsPerDay = 10L,
+                  authorizedCallsPerMonth = 10L,
+                  currentCallsPerMonth = 10L,
+                  remainingCallsPerMonth = 10L
+                ).asJson
               )
-              .withStatus(200)
-          )
+            )
+            .withStatus(200)
+        )
       )
 
       val resp = httpJsonCallBlocking(
@@ -4372,7 +4371,8 @@ class ApiControllerSpec()
       resp.status mustBe Status.OK
       logger.warn(Json.prettyPrint(resp.json))
 
-      (resp.json.as[JsArray].head \ "error").as[String] mustBe "The subscribed plan has another otoroshi of the parent plan"
+      (resp.json.as[JsArray].head \ "error")
+        .as[String] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
   }
 }

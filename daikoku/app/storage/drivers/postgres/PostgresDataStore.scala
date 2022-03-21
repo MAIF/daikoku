@@ -189,12 +189,12 @@ case class PostgresTenantCapableMessageRepo(
 }
 
 case class PostgresTenantCapableCmsPageRepo(
-     _repo: () => PostgresRepo[CmsPage, CmsPageId],
-     _tenantRepo: TenantId => PostgresTenantAwareRepo[CmsPage, CmsPageId]
+    _repo: () => PostgresRepo[CmsPage, CmsPageId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[CmsPage, CmsPageId]
 ) extends PostgresTenantCapableRepo[CmsPage, CmsPageId]
-  with CmsPageRepo {
+    with CmsPageRepo {
   override def tenantRepo(
-     tenant: TenantId): PostgresTenantAwareRepo[CmsPage, CmsPageId] =
+      tenant: TenantId): PostgresTenantAwareRepo[CmsPage, CmsPageId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[CmsPage, CmsPageId] = _repo()
@@ -790,9 +790,7 @@ class PostgresTenantMessageRepo(env: Env,
 class PostgresTenantCmsPageRepo(env: Env,
                                 reactivePg: ReactivePg,
                                 tenant: TenantId)
-  extends PostgresTenantAwareRepo[CmsPage, CmsPageId](env,
-    reactivePg,
-    tenant) {
+    extends PostgresTenantAwareRepo[CmsPage, CmsPageId](env, reactivePg, tenant) {
   override def tableName: String = "cmspages"
 
   override def format: Format[CmsPage] = json.CmsPageFormat
@@ -949,7 +947,7 @@ class PostgresMessageRepo(env: Env, reactivePg: ReactivePg)
 }
 
 class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
-  extends PostgresRepo[CmsPage, CmsPageId](env, reactivePg) {
+    extends PostgresRepo[CmsPage, CmsPageId](env, reactivePg) {
   override def tableName: String = "cmspages"
 
   override def format: Format[CmsPage] = json.CmsPageFormat

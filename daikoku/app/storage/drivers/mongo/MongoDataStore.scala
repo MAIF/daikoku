@@ -177,9 +177,10 @@ case class MongoTenantCapableMessageRepo(
 case class MongoTenantCapableCmsPageRepo(
     _repo: () => MongoRepo[CmsPage, CmsPageId],
     _tenantRepo: TenantId => MongoTenantAwareRepo[CmsPage, CmsPageId]
-  ) extends MongoTenantCapableRepo[CmsPage, CmsPageId]
-  with CmsPageRepo {
-  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[CmsPage, CmsPageId] =
+) extends MongoTenantCapableRepo[CmsPage, CmsPageId]
+    with CmsPageRepo {
+  override def tenantRepo(
+      tenant: TenantId): MongoTenantAwareRepo[CmsPage, CmsPageId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[CmsPage, CmsPageId] = _repo()
@@ -625,9 +626,9 @@ class MongoTenantMessageRepo(env: Env,
 class MongoTenantCmsPageRepo(env: Env,
                              reactiveMongoApi: ReactiveMongoApi,
                              tenant: TenantId)
-  extends MongoTenantAwareRepo[CmsPage, CmsPageId](env,
-    reactiveMongoApi,
-    tenant) {
+    extends MongoTenantAwareRepo[CmsPage, CmsPageId](env,
+                                                     reactiveMongoApi,
+                                                     tenant) {
   override def collectionName: String = "CmsPages"
 
   override def format: Format[CmsPage] = json.CmsPageFormat
@@ -781,7 +782,7 @@ class MongoMessageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoCmsPageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[CmsPage, CmsPageId](env, reactiveMongoApi) {
+    extends MongoRepo[CmsPage, CmsPageId](env, reactiveMongoApi) {
   override def collectionName: String = "CmsPages"
 
   override def format: Format[CmsPage] = json.CmsPageFormat

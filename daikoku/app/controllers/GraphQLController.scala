@@ -1,8 +1,19 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, SchemaDefinition, User, UserId, UserSession, UserSessionId}
+import fr.maif.otoroshi.daikoku.domain.{
+  DatastoreId,
+  SchemaDefinition,
+  User,
+  UserId,
+  UserSession,
+  UserSessionId
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -11,7 +22,13 @@ import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsObject, JsValue, Json}
-import sangria.execution.{ExceptionHandler, Executor, HandledException, MaxQueryDepthReachedError, QueryReducer}
+import sangria.execution.{
+  ExceptionHandler,
+  Executor,
+  HandledException,
+  MaxQueryDepthReachedError,
+  QueryReducer
+}
 import storage.DataStore
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
@@ -81,10 +98,7 @@ class GraphQLController(
       apiCreationPermitted = true
     )
 
-    executeQuery(generatedContext,
-                 query,
-                 variables,
-                 operation)
+    executeQuery(generatedContext, query, variables, operation)
   }
 
   def adminApiSchema = DaikokuApiAction {

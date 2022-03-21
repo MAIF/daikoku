@@ -98,7 +98,7 @@ export const SubscriptionMetadataModal = (props) => {
 
   useEffect(() => {
     if (!!props.api && typeof props.api === 'object') {
-      setApi(props.api)
+      setApi(props.api);
     } else {
       Services.getVisibleApiWithId(props.api).then((api) => {
         if (api.error) {
@@ -260,11 +260,7 @@ export const SubscriptionMetadataModal = (props) => {
                   ({ key, possibleValues }, idx) => {
                     return (
                       <div className="d-flex flex-row mb-1" key={idx}>
-                        <input
-                          className="form-control me-1"
-                          value={key}
-                          disabled="disabled"
-                        />
+                        <input className="form-control me-1" value={key} disabled="disabled" />
                         {renderInput(key, possibleValues)}
                       </div>
                     );

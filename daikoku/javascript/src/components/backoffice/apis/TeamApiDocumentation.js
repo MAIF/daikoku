@@ -157,10 +157,9 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   useEffect(() => {
     if (selected || deletedPage) {
       setDeletedPage(false);
-      props.save(value)
-        .then(() => {
-          updateDetails();
-        });
+      props.save(value).then(() => {
+        updateDetails();
+      });
     }
   }, [value]);
 
@@ -329,7 +328,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                       className={isSelected(page) ? 'planSelected' : ''}
                       onClick={() => select(page)}
                     >
-                      <div className='d-flex justify-content-between'>
+                      <div className="d-flex justify-content-between">
                         {index + 1} - {page.title}
                         <button
                           type="button"

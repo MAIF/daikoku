@@ -6,7 +6,7 @@ import {
   UPDATE_TEAM,
   UPDATE_TENANT,
   UPDATE_USER,
-  TOGGLE_EXPERT_MODE
+  TOGGLE_EXPERT_MODE,
 } from './';
 
 export const login =
@@ -75,6 +75,6 @@ export const updateUser = (user) => (dispatch) => {
 
 export const toggleExpertMode = () => (dispatch) => {
   return dispatch({
-    type: TOGGLE_EXPERT_MODE
+    type: TOGGLE_EXPERT_MODE,
   });
 };

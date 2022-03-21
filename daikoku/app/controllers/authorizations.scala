@@ -3,8 +3,16 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
-import controllers.AppError.{ForbiddenAction, TeamForbidden, TeamNotFound, Unauthorized}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuTenantActionContext}
+import controllers.AppError.{
+  ForbiddenAction,
+  TeamForbidden,
+  TeamNotFound,
+  Unauthorized
+}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionContext,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain._
@@ -209,11 +217,10 @@ object authorizations {
       }
     }
 
-
     def TenantAdminAccessTenant[T](audit: AuditEvent)(
-      ctx: DaikokuActionContext[T])(f: => Future[Result])(
-                                    implicit ec: ExecutionContext,
-                                    env: Env): Future[Result] = {
+        ctx: DaikokuActionContext[T])(f: => Future[Result])(
+        implicit ec: ExecutionContext,
+        env: Env): Future[Result] = {
       _TenantAdminAccessTenant(audit)(ctx)(f)
         .map {
           case Left(value)  => value
@@ -248,30 +255,32 @@ object authorizations {
             ctx.setCtxValue("tenant.id", tenant.id)
             ctx.setCtxValue("tenant.name", tenant.name)
             f.andThen {
-              case _ =>
-                audit.logTenantAuditEvent(
-                  ctx.tenant,
-                  ctx.user,
-                  session,
-                  ctx.request,
-                  ctx.ctx,
-                  AuthorizationLevel.AuthorizedDaikokuAdmin)
-            }.flatMap(f => FastFuture.successful(Left(f)))
+                case _ =>
+                  audit.logTenantAuditEvent(
+                    ctx.tenant,
+                    ctx.user,
+                    session,
+                    ctx.request,
+                    ctx.ctx,
+                    AuthorizationLevel.AuthorizedDaikokuAdmin)
+              }
+              .flatMap(f => FastFuture.successful(Left(f)))
           case Some(team)
               if team.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator) =>
             ctx.setCtxValue("tenant.id", tenant.id)
             ctx.setCtxValue("tenant.name", tenant.name)
             f.andThen {
-              case _ =>
-                audit.logTenantAuditEvent(
-                  ctx.tenant,
-                  ctx.user,
-                  session,
-                  ctx.request,
-                  ctx.ctx,
-                  AuthorizationLevel.AuthorizedTenantAdmin)
-            }.flatMap(f => FastFuture.successful(Left(f)))
+                case _ =>
+                  audit.logTenantAuditEvent(
+                    ctx.tenant,
+                    ctx.user,
+                    session,
+                    ctx.request,
+                    ctx.ctx,
+                    AuthorizationLevel.AuthorizedTenantAdmin)
+              }
+              .flatMap(f => FastFuture.successful(Left(f)))
           case Some(team)
               if !team.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator) =>
@@ -477,9 +486,9 @@ object authorizations {
     }
 
     def _TeamMemberOnly[T, B](teamId: String, audit: AuditEvent)(
-      ctx: DaikokuActionContext[T])(f: Team => Future[Either[B, AppError]])(
-                               implicit ec: ExecutionContext,
-                               env: Env): Future[Either[B, AppError]] = {
+        ctx: DaikokuActionContext[T])(f: Team => Future[Either[B, AppError]])(
+        implicit ec: ExecutionContext,
+        env: Env): Future[Either[B, AppError]] = {
       env.dataStore.teamRepo
         .forTenant(ctx.tenant.id)
         .findByIdOrHrId(teamId)
@@ -487,60 +496,62 @@ object authorizations {
           case Some(team) if ctx.user.isDaikokuAdmin =>
             ctx.setCtxValue("team.id", team.id)
             ctx.setCtxValue("team.name", team.name)
-            f(team).andThen {
-              case _ =>
-                audit.logTenantAuditEvent(
-                  ctx.tenant,
-                  ctx.user,
-                  ctx.session,
-                  ctx.request,
-                  ctx.ctx,
-                  AuthorizationLevel.AuthorizedDaikokuAdmin)
-            }
+            f(team)
+              .andThen {
+                case _ =>
+                  audit.logTenantAuditEvent(
+                    ctx.tenant,
+                    ctx.user,
+                    ctx.session,
+                    ctx.request,
+                    ctx.ctx,
+                    AuthorizationLevel.AuthorizedDaikokuAdmin)
+              }
               .flatMap(f => FastFuture.successful(f))
           case Some(team)
-            if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(
-              ctx.user.id) =>
+              if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(
+                ctx.user.id) =>
             ctx.setCtxValue("team.id", team.id)
             ctx.setCtxValue("team.name", team.name)
-            f(team).andThen {
-              case _ =>
-                audit.logTenantAuditEvent(
-                  ctx.tenant,
-                  ctx.user,
-                  ctx.session,
-                  ctx.request,
-                  ctx.ctx,
-                  AuthorizationLevel.AuthorizedTeamMember)
-            }
+            f(team)
+              .andThen {
+                case _ =>
+                  audit.logTenantAuditEvent(
+                    ctx.tenant,
+                    ctx.user,
+                    ctx.session,
+                    ctx.request,
+                    ctx.ctx,
+                    AuthorizationLevel.AuthorizedTeamMember)
+              }
               .flatMap(f => FastFuture.successful(f))
           case Some(team)
-            if ctx.user.tenants.contains(ctx.tenant.id) && !team.includeUser(
-              ctx.user.id) =>
+              if ctx.user.tenants.contains(ctx.tenant.id) && !team.includeUser(
+                ctx.user.id) =>
             ctx.setCtxValue("team.id", team.id)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized)
+                                      ctx.user,
+                                      ctx.session,
+                                      ctx.request,
+                                      ctx.ctx,
+                                      AuthorizationLevel.NotAuthorized)
 
             FastFuture.successful(Right(TeamForbidden))
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized)
+                                      ctx.user,
+                                      ctx.session,
+                                      ctx.request,
+                                      ctx.ctx,
+                                      AuthorizationLevel.NotAuthorized)
             FastFuture.successful(Right(TeamNotFound))
         }
     }
 
-    def TeamMemberOnly[T](audit: AuditEvent)(
-        teamId: String,
-        ctx: DaikokuActionContext[T])(f: Team => Future[Either[Result, AppError]])(
+    def TeamMemberOnly[T](audit: AuditEvent)(teamId: String,
+                                             ctx: DaikokuActionContext[T])(
+        f: Team => Future[Either[Result, AppError]])(
         implicit ec: ExecutionContext,
         env: Env): Future[Result] = {
       _TeamMemberOnly(teamId, audit)(ctx)(f)

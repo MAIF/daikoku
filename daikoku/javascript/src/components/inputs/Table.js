@@ -32,7 +32,7 @@ export const Table = React.forwardRef(
       mobileSize = 767,
       header = true,
       footer = true,
-      onSelectRow = undefined
+      onSelectRow = undefined,
     },
     ref
   ) => {
@@ -256,12 +256,14 @@ export const Table = React.forwardRef(
       <div>
         <div>
           <div className="rrow section">
-            {header && <div className="row" style={{ marginBottom: 10 }}>
-              <div className="col-md-12 d-flex">
-                {injectTopBar && <div style={{ fontSize: 14 }}>{injectTopBar()}</div>}
-                {tablePagination}
+            {header && (
+              <div className="row" style={{ marginBottom: 10 }}>
+                <div className="col-md-12 d-flex">
+                  {injectTopBar && <div style={{ fontSize: 14 }}>{injectTopBar()}</div>}
+                  {tablePagination}
+                </div>
               </div>
-            </div>}
+            )}
             <table {...getTableProps()} className="reactTableV7">
               <thead>
                 {headerGroups.map((headerGroup, idx) => (
@@ -290,12 +292,16 @@ export const Table = React.forwardRef(
                 {page.map((row, idx) => {
                   prepareRow(row);
                   return (
-                    <tr {...row.getRowProps()} key={`tr-${idx}`} onClick={() => {
-                      if (onSelectRow)
-                        onSelectRow(row)
-                    }} style={{
-                      cursor: onSelectRow ? 'pointer' : 'inherit'
-                    }}>
+                    <tr
+                      {...row.getRowProps()}
+                      key={`tr-${idx}`}
+                      onClick={() => {
+                        if (onSelectRow) onSelectRow(row);
+                      }}
+                      style={{
+                        cursor: onSelectRow ? 'pointer' : 'inherit',
+                      }}
+                    >
                       {row.cells.map((cell, idx) => {
                         return (
                           <td style={cell.column.style} {...cell.getCellProps()} key={`td-${idx}`}>

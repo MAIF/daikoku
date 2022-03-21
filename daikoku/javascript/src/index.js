@@ -51,14 +51,14 @@ export function init(
   isTenantAdmin,
   apiCreationPermitted
 ) {
-  const expertMode = JSON.parse(localStorage.getItem('expertMode') || false)
+  const expertMode = JSON.parse(localStorage.getItem('expertMode') || false);
   const storeInst = store({
     connectedUser: user,
     tenant,
     impersonator,
     isTenantAdmin,
     apiCreationPermitted,
-    expertMode
+    expertMode,
   });
 
   customizeFetch(storeInst);

@@ -726,9 +726,9 @@ export const checkConnection = (config, user) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-        config,
-        user,
-      })
+          config,
+          user,
+        })
       : JSON.stringify(config),
   });
 
@@ -885,20 +885,23 @@ export const getAllApiDocumentation = (teamId, apiId, version) =>
 export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
-export const createCmsPage = (id, cmsPage) => customFetch('/api/cms/pages', {
-  method: 'POST',
-  body: JSON.stringify({
-    ...cmsPage,
-    id,
-    path: cmsPage.isBlockPage ? undefined : cmsPage.path
-  }),
-});
+export const createCmsPage = (id, cmsPage) =>
+  customFetch('/api/cms/pages', {
+    method: 'POST',
+    body: JSON.stringify({
+      ...cmsPage,
+      id,
+      path: cmsPage.isBlockPage ? undefined : cmsPage.path,
+    }),
+  });
 
-export const createCmsPageWithName = name => customFetch(`/api/cms/pages/${name}`, { method: 'POST' });
+export const createCmsPageWithName = (name) =>
+  customFetch(`/api/cms/pages/${name}`, { method: 'POST' });
 
-export const removeCmsPage = id => customFetch(`/api/cms/pages/${id}`, {
-  method: 'DELETE'
-});
+export const removeCmsPage = (id) =>
+  customFetch(`/api/cms/pages/${id}`, {
+    method: 'DELETE',
+  });
 
 export const graphql = {
   myTeams: gql`
@@ -983,7 +986,7 @@ export const graphql = {
     }
     `),
   myVisibleApisOfTeam: (teamId) => graphql.myVisibleApis(teamId),
-  getCmsPage: id => gql`
+  getCmsPage: (id) => gql`
     query GetCmsPage {
         cmsPage(id: "${id}") {
             name
@@ -1000,7 +1003,7 @@ export const graphql = {
         }
     }
   `,
-  getCmsPageHistory: id => gql`
+  getCmsPageHistory: (id) => gql`
   query GetCmsPage {
       cmsPage(id: "${id}") {
           name
@@ -1014,27 +1017,30 @@ export const graphql = {
           }
       }
   }
-`
+`,
 };
 
-export const downloadCmsFiles = () => fetch('/api/cms/download', {
-  method: 'POST',
-  credentials: 'include'
-})
+export const downloadCmsFiles = () =>
+  fetch('/api/cms/download', {
+    method: 'POST',
+    credentials: 'include',
+  });
 
-export const getDiffOfCmsPage = (id, diffId, showDiffs) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}?showDiffs=${showDiffs}`)
+export const getDiffOfCmsPage = (id, diffId, showDiffs) =>
+  customFetch(`/api/cms/pages/${id}/diffs/${diffId}?showDiffs=${showDiffs}`);
 
-export const restoreCmsDiff = (id, diffId) => customFetch(`/api/cms/pages/${id}/diffs/${diffId}`, {
-  method: 'POST'
-});
+export const restoreCmsDiff = (id, diffId) =>
+  customFetch(`/api/cms/pages/${id}/diffs/${diffId}`, {
+    method: 'POST',
+  });
 
-export const uploadZip = file => {
-  const formData = new FormData()
-  formData.append("file", file);
+export const uploadZip = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
 
   return fetch('/api/cms/import', {
     method: 'POST',
     credentials: 'include',
-    body: formData
-  })
-}
+    body: formData,
+  });
+};

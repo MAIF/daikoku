@@ -7,7 +7,8 @@ import { I18nContext } from '../../../core';
 const Image = ({ setValue, rawValues, value, error, onChange, tenant, team }) => {
   const { translateMethod } = useContext(I18nContext);
   const domain = tenant?.domain || window.location.origin;
-  const origin = window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+  const origin =
+    window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
 
   return (
     <div className="d-flex flex-row align-items-center">
@@ -39,7 +40,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
     isDefault: {
       type: type.bool,
       label: translateMethod('team_api_info.isDefault'),
-      expert: true
+      expert: true,
     },
     name: {
       type: type.string,
@@ -47,8 +48,13 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       placeholder: 'New Api',
       constraints: [
         constraints.required(translateMethod('constraints.required.name')),
-        constraints.test('name_already_exist', translateMethod("api.already.exists"), (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then(r => !r.exists)),
-      ]
+        constraints.test(
+          'name_already_exist',
+          translateMethod('api.already.exists'),
+          (name, context) =>
+            Services.checkIfApiNameIsUnique(name, context.parent._id).then((r) => !r.exists)
+        ),
+      ],
     },
     smallDescription: {
       type: type.string,
@@ -65,26 +71,25 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
         `Use {{title}} to insert API title, {{ description }} to insert API small description.
          Add "btn-edit" class to link to admin API edition admin page.`
       ),
-      constraints: [
-        constraints.nullable()
-      ],
+      constraints: [constraints.nullable()],
       props: {
-        theme: 'monokai'
+        theme: 'monokai',
       },
-      expert: true
+      expert: true,
     },
     image: {
       type: type.string,
       label: translateMethod('Image'),
       //todo: render custom for image from asset
-      render: v => Image({ ...v, team, tenant }),
+      render: (v) => Image({ ...v, team, tenant }),
       constraints: [
         constraints.nullable(),
         constraints.matches(
-          /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/mg, 
-          translateMethod('constraints.format.url', false, '', translateMethod('Image')))
+          /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
+          translateMethod('constraints.format.url', false, '', translateMethod('Image'))
+        ),
       ],
-      expert: true
+      expert: true,
     },
     currentVersion: {
       type: type.string,
@@ -92,15 +97,21 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       constraints: [
         constraints.test(
           'reservedChar',
-          translateMethod('constraints.reserved.char.version', false, '', reservedVersionCharacters.join(' ')),
-          name => (name || '').split('').every((c) => !reservedVersionCharacters.includes(c)))
-      ]
+          translateMethod(
+            'constraints.reserved.char.version',
+            false,
+            '',
+            reservedVersionCharacters.join(' ')
+          ),
+          (name) => (name || '').split('').every((c) => !reservedVersionCharacters.includes(c))
+        ),
+      ],
     },
     supportedVersions: {
       type: type.string,
       array: true,
       label: translateMethod('Supported versions'),
-      expert: true
+      expert: true,
     },
     published: {
       type: type.bool,
@@ -109,13 +120,13 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
     testable: {
       type: type.bool,
       label: translateMethod('Testable'),
-      expert: true
+      expert: true,
     },
     tags: {
       type: type.string,
       array: true,
       label: translateMethod('Tags'),
-      expert: true
+      expert: true,
     },
     categories: {
       type: type.string,
@@ -125,7 +136,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       label: translateMethod('Categories'),
       optionsFrom: '/api/categories',
       transformer: (t) => ({ label: t, value: t }),
-      expert: true
+      expert: true,
     },
     visibility: {
       type: type.string,
@@ -135,7 +146,8 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
         { label: translateMethod('Public'), value: 'Public' },
         { label: translateMethod('Private'), value: 'Private' },
         {
-          label: translateMethod('PublicWithAuthorizations'), value: 'PublicWithAuthorizations',
+          label: translateMethod('PublicWithAuthorizations'),
+          value: 'PublicWithAuthorizations',
         },
       ],
     },
@@ -146,7 +158,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       defaultValue: [],
       visible: {
         ref: 'visibility',
-        test: v => v !== 'Public'
+        test: (v) => v !== 'Public',
       },
       label: translateMethod('Authorized teams'),
       optionsFrom: '/api/teams',
@@ -154,45 +166,31 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
     },
   };
 
-
   const simpleOrExpertMode = (entry, expert) => {
-    return !!expert || !schema[entry]?.expert
-  }
+    return !!expert || !schema[entry]?.expert;
+  };
 
   const flow = (expert) => [
     {
       label: 'Basic',
-      flow: [
-        'published',
-        'name',
-        'smallDescription',
-        'image',
-        'header',
-      ].filter((entry => simpleOrExpertMode(entry, expert))),
-      collapsed: false
+      flow: ['published', 'name', 'smallDescription', 'image', 'header'].filter((entry) =>
+        simpleOrExpertMode(entry, expert)
+      ),
+      collapsed: false,
     },
     {
       label: translateMethod('Versions and tags'),
-      flow: [
-        'isDefault',
-        'currentVersion',
-        'supportedVersions',
-        'tags',
-        'categories',
-      ].filter((entry => simpleOrExpertMode(entry, expert))),
-      collapsed: true
+      flow: ['isDefault', 'currentVersion', 'supportedVersions', 'tags', 'categories'].filter(
+        (entry) => simpleOrExpertMode(entry, expert)
+      ),
+      collapsed: true,
     },
     {
       label: translateMethod('Visibility'),
-      flow: [
-        'visibility',
-        'authorizedTeams'
-      ].filter((entry => simpleOrExpertMode(entry, expert))),
-      collapsed: true
-    }
+      flow: ['visibility', 'authorizedTeams'].filter((entry) => simpleOrExpertMode(entry, expert)),
+      collapsed: true,
+    },
   ];
-
-  
 
   const adminFlow = ['name', 'smallDescription'];
 
@@ -210,5 +208,5 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
     },
   };
 
-  return { schema, flow: (expert) => flow(expert), adminFlow, adminSchema }
-}
+  return { schema, flow: (expert) => flow(expert), adminFlow, adminSchema };
+};

@@ -1,16 +1,16 @@
 import React, { Component } from 'react';
 import { Help } from './Help';
 import AceEditor from 'react-ace';
-import Beautify from 'ace-builds/src-noconflict/ext-beautify'
-import 'ace-builds/src-noconflict/mode-html'
-import 'ace-builds/src-noconflict/mode-json'
-import 'ace-builds/src-noconflict/mode-javascript'
-import 'ace-builds/src-noconflict/mode-css'
-import 'ace-builds/src-noconflict/mode-markdown'
-import 'ace-builds/src-noconflict/theme-monokai'
-import 'ace-builds/src-noconflict/theme-tomorrow'
-import 'ace-builds/src-noconflict/ext-searchbox'
-import 'ace-builds/src-noconflict/ext-language_tools'
+import Beautify from 'ace-builds/src-noconflict/ext-beautify';
+import 'ace-builds/src-noconflict/mode-html';
+import 'ace-builds/src-noconflict/mode-json';
+import 'ace-builds/src-noconflict/mode-javascript';
+import 'ace-builds/src-noconflict/mode-css';
+import 'ace-builds/src-noconflict/mode-markdown';
+import 'ace-builds/src-noconflict/theme-monokai';
+import 'ace-builds/src-noconflict/theme-tomorrow';
+import 'ace-builds/src-noconflict/ext-searchbox';
+import 'ace-builds/src-noconflict/ext-language_tools';
 
 import hljs from 'highlight.js';
 
@@ -42,18 +42,16 @@ export default class CodeInput extends Component {
         <div className="col-sm-10">
           <AceEditor
             commands={Beautify.commands}
-            mode={this.props.mode || "javascript"}
+            mode={this.props.mode || 'javascript'}
             theme="monokai"
             onChange={this.onChange}
             value={code}
             name="scriptParam"
             editorProps={{ $blockScrolling: true }}
-            onLoad={editorInstance => {
-              editorInstance.container.style.resize = "both";
+            onLoad={(editorInstance) => {
+              editorInstance.container.style.resize = 'both';
               // mouseup = css resize end
-              document.addEventListener("mouseup", e => (
-                editorInstance.resize()
-              ));
+              document.addEventListener('mouseup', (e) => editorInstance.resize());
             }}
             height={this.props.height}
             width={this.props.width}

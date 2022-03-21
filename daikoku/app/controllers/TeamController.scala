@@ -673,13 +673,14 @@ class TeamController(DaikokuAction: DaikokuAction,
       } yield {
         ctx.setCtxValue("team.id", team.id)
         ctx.setCtxValue("team.name", team.name)
-        Left(Ok(
-          team.asJson.as[JsObject] ++ Json.obj(
-            "apisCount" -> apis.size,
-            "subscriptionsCount" -> subscriptions.size,
-            "notificationCount" -> notifications.size
-          )
-        ))
+        Left(
+          Ok(
+            team.asJson.as[JsObject] ++ Json.obj(
+              "apisCount" -> apis.size,
+              "subscriptionsCount" -> subscriptions.size,
+              "notificationCount" -> notifications.size
+            )
+          ))
       }
     }
   }

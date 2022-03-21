@@ -4,11 +4,28 @@ import akka.Done
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, CmsPageIdFormat, TenantFormat}
-import fr.maif.otoroshi.daikoku.domain.{CmsPage, CmsPageId, DatastoreId, Evolution, TenantId}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  CmsPageIdFormat,
+  TenantFormat
+}
+import fr.maif.otoroshi.daikoku.domain.{
+  CmsPage,
+  CmsPageId,
+  DatastoreId,
+  Evolution,
+  TenantId
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
-import play.api.libs.json.{JsArray, JsError, JsObject, JsString, JsSuccess, Json}
+import play.api.libs.json.{
+  JsArray,
+  JsError,
+  JsObject,
+  JsString,
+  JsSuccess,
+  Json
+}
 import reactivemongo.bson.BSONObjectID
 import storage.DataStore
 
@@ -118,9 +135,9 @@ object evolution_151 extends EvolutionScript {
   override def version: String = "1.5.1"
 
   override def script: (Option[DatastoreId],
-    DataStore,
-    Materializer,
-    ExecutionContext) => Future[Done] =
+                        DataStore,
+                        Materializer,
+                        ExecutionContext) => Future[Done] =
     (_: Option[DatastoreId],
      dataStore: DataStore,
      mat: Materializer,
@@ -154,12 +171,20 @@ object evolution_151 extends EvolutionScript {
                             tags = List(),
                             metadata = Map(),
                             contentType = "text/html",
-                            body = if(value.unloggedHome.nonEmpty) value.unloggedHome else "<!DOCTYPE html><html><head></head><body><h1>Home page</h1><a href=\"/apis\">Back office</a></body></html>" ,
-                            draft = if(value.unloggedHome.nonEmpty) value.unloggedHome else "<!DOCTYPE html><html><head></head><body><h1>Home page</h1><a href=\"/apis\">Back office</a></body></html>" ,
+                            body =
+                              if (value.unloggedHome.nonEmpty)
+                                value.unloggedHome
+                              else "<!DOCTYPE html><html><head></head><body><h1>Home page</h1><a href=\"/apis\">Back office</a></body></html>",
+                            draft =
+                              if (value.unloggedHome.nonEmpty)
+                                value.unloggedHome
+                              else "<!DOCTYPE html><html><head></head><body><h1>Home page</h1><a href=\"/apis\">Back office</a></body></html>",
                             path = Some("/"),
                             lastPublishedDate = Some(DateTime.now())
                           ))(ec)
-                        dataStore.tenantRepo.save(tenant.copy(style = tenant.style.map(_.copy(homeCmsPage = Some(homeId)))))(ec)
+                        dataStore.tenantRepo.save(
+                          tenant.copy(style = tenant.style.map(
+                            _.copy(homeCmsPage = Some(homeId)))))(ec)
                     }(ec)
                 case None => FastFuture.successful(())
               }
@@ -173,7 +198,8 @@ object evolution_151 extends EvolutionScript {
 }
 
 object evolutions {
-  val list: Set[EvolutionScript] = Set(evolution_102, evolution_150, evolution_151)
+  val list: Set[EvolutionScript] =
+    Set(evolution_102, evolution_150, evolution_151)
   def run(dataStore: DataStore)(implicit ec: ExecutionContext,
                                 mat: Materializer): Future[Done] =
     Source(list)

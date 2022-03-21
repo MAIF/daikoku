@@ -6,7 +6,15 @@ import { getApolloContext } from '@apollo/client';
 import { currencies } from '../../../services/currencies';
 import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
-import { Can, access, apikey, getCurrencySymbol, formatCurrency, manage, Option } from '../../utils';
+import {
+  Can,
+  access,
+  apikey,
+  getCurrencySymbol,
+  formatCurrency,
+  manage,
+  Option,
+} from '../../utils';
 import { openLoginOrRegisterModal, openApiKeySelectModal, I18nContext } from '../../../core';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
@@ -123,26 +131,33 @@ const ApiPricingCardComponent = (props) => {
     const { api, plan } = props;
 
     Services.getAllTeamSubscriptions(team)
-      .then((subscriptions) => client.query({
-        query: Services.graphql.apisByIdsWithPlans,
-        variables: { ids: [... new Set(subscriptions.map(s => s.api))] }
-      }).then(({data}) => ({apis: data.apis, subscriptions})))
+      .then((subscriptions) =>
+        client
+          .query({
+            query: Services.graphql.apisByIdsWithPlans,
+            variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
+          })
+          .then(({ data }) => ({ apis: data.apis, subscriptions }))
+      )
       .then(({ apis, subscriptions }) => {
-        const filteredApiKeys = subscriptions.map(subscription => {
-          const api = apis.find(a => a._id === subscription.api)
-          const plan = Option(api?.possibleUsagePlans)
-            .flatMap(plans => Option(plans.find(plan => plan._id === subscription.plan)))
-            .getOrNull()
-          return {subscription, api, plan}
-        })
-          .filter(infos => infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity)
-          .map(infos => infos.subscription)
-
+        const filteredApiKeys = subscriptions
+          .map((subscription) => {
+            const api = apis.find((a) => a._id === subscription.api);
+            const plan = Option(api?.possibleUsagePlans)
+              .flatMap((plans) => Option(plans.find((plan) => plan._id === subscription.plan)))
+              .getOrNull();
+            return { subscription, api, plan };
+          })
+          .filter(
+            (infos) =>
+              infos.plan?.otoroshiTarget?.otoroshiSettings ===
+                plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
+          )
+          .map((infos) => infos.subscription);
 
         if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
           props.askForApikeys(team, plan);
-        }
-        else {
+        } else {
           props.openApiKeySelectModal({
             plan,
             apiKeys: filteredApiKeys,
@@ -314,7 +329,7 @@ const ApiPricingCardComponent = (props) => {
       </div>
     </div>
   );
-}
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,
