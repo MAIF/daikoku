@@ -29,7 +29,7 @@ function MyHomeComponent(props) {
     setState({ ...state, loading: true });
     Promise.all([
       client.query({
-        query: Services.graphql.myVisibleApis(),
+        query: Services.graphql.myVisibleApis,
       }),
       Services.teams(),
       client.query({

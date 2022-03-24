@@ -72,3 +72,90 @@ a.navbar-brand, #teamSelector:hover {
     color:$navbar-text-hover-color;
   }
 }
+
+
+
+
+///////////////////// new navbar
+
+.navbar-next {
+  height: '100vh';
+  background-color: $navbar-bg-color;
+  position: 'relative';
+  color: $navbar-text-color
+}
+
+.navbar-panel {
+  position: absolute;
+  overflow: hidden;
+  width: 0;
+  height: 100vh;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  background-color: #fff;
+  color: #000;
+
+  transition: width .2s ease-in-out;
+
+  &.opened {
+    width: 35vw;
+  }
+
+  .navbar-panel__back {
+    height: 40px;
+    width: 40px;
+    &:hover {
+      border-radius: 50%;
+      background-color: #EBECF0;
+    }
+  }
+}
+
+.navbar-panel-background {
+  position: absolute;
+  width: 0;
+  height: 100vh;
+  z-index: 1000;
+  top: 0; right: 0;
+  background-color: #000;
+  opacity: 0.3;
+  width: 0;
+
+  transition: width .2s ease-in-out;
+
+  &.opened {
+    width: 65vw;
+  }
+}
+
+/// search panel
+
+.panel {
+  .blocks {
+    .block {
+      .block__category {
+        color: gray;
+        text-transform: capitalize;
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      .block__entries {
+        .block__entry__link {
+          cursor: pointer;
+          font-size: 14px;
+          color: #000;
+          margin-bottom: 5px;
+          line-height: 40px;
+          border-radius: 4px;
+          padding-left: .5rem;
+
+          &:hover {
+            background-color: #EBECF0;
+          }
+        }
+      }
+    }
+  }
+}

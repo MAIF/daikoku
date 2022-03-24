@@ -41,7 +41,8 @@ function TeamIncomeComponent(props) {
         state.date.endOf('month').valueOf()
       ),
       client.query({
-        query: Services.graphql.myVisibleApisOfTeam(team._id),
+        query: Services.graphql.myVisibleApis,
+        variables: { teamId: team._id }
       }),
       Services.teams(),
     ]).then(

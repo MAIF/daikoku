@@ -56,39 +56,7 @@ const ApiListComponent = (props) => {
     computeTops(props.apis);
   }, [props.apis]);
 
-  const createNewApi = (teamId) => {
-    if (props.apiCreationPermitted) {
-      const team = props.myTeams.find((t) => teamId.includes(t._id));
-
-      Services.fetchNewApi()
-        .then((e) => {
-          const verb = faker.hacker.verb();
-          const apiName =
-            verb.charAt(0).toUpperCase() +
-            verb.slice(1) +
-            ' ' +
-            faker.hacker.adjective() +
-            ' ' +
-            faker.hacker.noun() +
-            ' api';
-
-          e.name = apiName;
-          e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
-          return e;
-        })
-        .then((newApi) => {
-          navigate(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
-            state: {
-              newApi: { ...newApi, team: team._id },
-            },
-          });
-        });
-    }
-  };
-
-  const createNewteam = () => {
-    Services.fetchNewTeam().then((team) => props.openCreationTeamModal({ team }));
-  };
+  
 
   const redirectToTeam = (team) => {
     navigate(`/${team._humanReadableId}/settings`);
@@ -360,7 +328,6 @@ const ApiListComponent = (props) => {
             <YourTeams
               teams={props.myTeams}
               redirectToTeam={redirectToTeam}
-              createNewTeam={createNewteam}
             />
           )}
           {!!tags.length && (
@@ -436,7 +403,7 @@ const Top = (props) => {
   );
 };
 
-const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
+const YourTeams = ({ teams, redirectToTeam, ...props }) => {
   const { translateMethod } = useContext(I18nContext);
 
   const [searchedTeam, setSearchedTeam] = useState();
@@ -452,18 +419,11 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
           {translateMethod('your teams', language)}
         </h5>
       </div>
-      <div className="input-group">
-        <input
-          placeholder={translateMethod('find team', language)}
-          className="form-control"
-          onChange={(e) => setSearchedTeam(e.target.value)}
-        />
-        <div className="input-group-append">
-          <button className="btn btn-access-negative" onClick={() => createNewTeam()}>
-            <i className="fas fa-plus-square" />
-          </button>
-        </div>
-      </div>
+      <input
+        placeholder={translateMethod('find team', language)}
+        className="form-control"
+        onChange={(e) => setSearchedTeam(e.target.value)}
+      />
       <div className="d-flex flex-column">
         {_.sortBy(maybeTeams, (team) => team.name.toLowerCase())
           .slice(0, 5)

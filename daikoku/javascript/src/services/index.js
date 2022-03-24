@@ -949,10 +949,9 @@ export const graphql = {
         }
       }
     `),
-  myVisibleApis: (teamId) =>
-    gql(`
-    query AllVisibleApis {
-      visibleApis: ${teamId ? `visibleApisOfTeam(teamId: "${teamId}")` : 'visibleApis'} {
+  myVisibleApis: gql(`
+    query AllVisibleApis ($teamId: String) {
+      visibleApis (teamId: $teamId) {
         api {
           name
           _humanReadableId
@@ -983,9 +982,7 @@ export const graphql = {
           pending
         }
       }
-    }
-    `),
-  myVisibleApisOfTeam: (teamId) => graphql.myVisibleApis(teamId),
+    }`),
   getCmsPage: (id) => gql`
     query GetCmsPage {
         cmsPage(id: "${id}") {
