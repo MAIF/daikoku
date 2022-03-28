@@ -85,6 +85,7 @@ export const SettingsPanel = ({ }) => {
           <div className="mb-1 block__category">{connectedUser.email}</div>
           <div className='ms-2 block__entries d-flex flex-column'>
             <Link to='/settings/me' className='block__entry__link'>{translateMethod('My profile')}</Link>
+            <Link to='/logout' className='block__entry__link'>{translateMethod('Logout')}</Link>
           </div>
           <div className="dropdown-divider" />
         </div>
@@ -104,7 +105,6 @@ export const SettingsPanel = ({ }) => {
             <span className='block__entry__link' onClick={toggleMaintenanceMode}>
               {translateMethod(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
             </span>
-            <Link to='/logout' className='block__entry__link'>{translateMethod('Logout')}</Link>
           </div>
           <div className="dropdown-divider" />
         </div>

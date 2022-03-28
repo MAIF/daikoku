@@ -23,42 +23,39 @@ const state = {
   closed: 'CLOSED'
 }
 
-const SideBarComponent = (props) => {
+export const SideBar = (props) => {
   const [teams, setTeams] = useState([]);
   const [daikokuVersion, setVersion] = useState(null);
   const [panelState, setPanelState] = useState(state.closed)
   const [panelContent, setPanelContent] = useState()
 
 
-  const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => state.context)
+  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useSelector((state) => state.context)
+  const dispatch = useDispatch();
 
   const location = useLocation();
   const { totalUnread } = useContext(MessagesContext);
-  const { translateMethod, setLanguage, language, isTranslationMode, languages } = useContext(I18nContext);
-  const { setMode, navMode, setBackOfficeMode, setFrontOfficeMode, ...context } = useContext(NavContext)
+  const { translateMethod } = useContext(I18nContext);
+  const { setMode, navMode, setBackOfficeMode, setFrontOfficeMode, ...navContext } = useContext(NavContext)
 
 
   useEffect(() => {
     setPanelState(state.closed);
   }, [location]);
 
-  const isMaintenanceMode =
-    props.tenant.tenantMode && props.tenant.tenantMode !== 'Default' && !isTranslationMode;
-
   useEffect(() => {
     Promise.all([
       Services.myUnreadNotificationsCount(),
       Services.teams()
     ]).then(
-      ([unreadNotifications, teams]) => {
-        props.updateNotificationsCount(unreadNotifications.count);
+      ([notifCount, teams]) => {
+        updateNotificationsCount(notifCount.count)(dispatch);
         setTeams(teams);
       }
     );
   }, []);
 
 
-  const { impersonator, unreadNotificationsCount } = props; //todo: get it from state is better way
 
   const impersonatorStyle = impersonator
     ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }
@@ -79,7 +76,7 @@ const SideBarComponent = (props) => {
             width: '40px',
           }}>
           <img
-            src={props.tenant.logo}
+            src={tenant.logo}
           />
         </Link>
 
@@ -101,7 +98,7 @@ const SideBarComponent = (props) => {
 
       <div className="navbar_bottom">
         <div className="nav_item mb-3">
-          {(connectedUser.isDaikokuAdmin || props.isTenantAdmin) && (
+          {(connectedUser.isDaikokuAdmin || isTenantAdmin) && (
             <Link
               to="/settings/messages"
               className={classNames('messages-link cursor-pointer', {
@@ -128,7 +125,7 @@ const SideBarComponent = (props) => {
         <div className="nav_item mb-3" style={{ color: '#fff' }}>
           <img
             style={{ width: '35px', ...impersonatorStyle }}
-            src={props.connectedUser.picture}
+            src={connectedUser.picture}
             className="logo-anonymous user-logo"
             onClick={() => {
               if (!connectedUser.isGuest) {
@@ -141,10 +138,10 @@ const SideBarComponent = (props) => {
             }}
             title={
               impersonator
-                ? `${props.connectedUser.name} (${props.connectedUser.email
+                ? `${connectedUser.name} (${connectedUser.email
                 }) ${translateMethod('Impersonated by')} ${impersonator.name} (${impersonator.email
                 })`
-                : props.connectedUser.name
+                : connectedUser.name
             }
             alt="user menu"
           />
@@ -382,15 +379,3 @@ const SideBarComponent = (props) => {
   //   </header>
   // );
 };
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  logout: () => logout(),
-  updateNotificationsCount: (count) => updateNotications(count),
-  updateTenant: (t) => updateTenant(t),
-};
-
-export const SideBar = connect(mapStateToProps, mapDispatchToProps)(SideBarComponent);
