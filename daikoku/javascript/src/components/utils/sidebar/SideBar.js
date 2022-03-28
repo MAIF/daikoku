@@ -6,345 +6,36 @@ import classNames from 'classnames';
 import faker from 'faker';
 import { Sun, Moon, Search, Plus, MessageSquare, Bell, ArrowLeft } from 'react-feather';
 
-import * as Services from '../../services';
-import { logout, updateNotications, updateTenant } from '../../core/context/actions';
-import { openCreationTeamModal, openTeamSelectorModal } from '../../core/modal'
-import { Can, manage, daikoku, tenant, CanIDoAction, api as API } from '../utils';
-import { MessagesTopBarTools } from '../backoffice/messages';
-import { I18nContext } from '../../locales/i18n-context';
+import * as Services from '../../../services';
+import { logout, updateNotications, updateTenant } from '../../../core/context/actions';
+import { openCreationTeamModal, openTeamSelectorModal } from '../../../core/modal'
+import { Can, manage, daikoku, tenant, CanIDoAction, api as API } from '..';
+import { MessagesTopBarTools } from '../../backoffice/messages';
+import { I18nContext } from '../../../locales/i18n-context';
 import { toastr } from 'react-redux-toastr';
-import { MessagesContext } from '../backoffice';
-import { NavContext } from '../../contexts';
+import { MessagesContext } from '../../backoffice';
+import { NavContext } from '../../../contexts';
+
+import {AddPanel, GuestPanel, SearchPanel, SettingsPanel} from './panels'
 
 const state = {
   opened: 'OPENED',
   closed: 'CLOSED'
 }
 
-const GuestUserMenu = ({ loginProvider }) => {
-  const { translateMethod } = useContext(I18nContext);
-
-  return (
-    <>
-      <a
-        href={`/auth/${loginProvider}/login`}
-        className="btn btn-outline-success mx-1 login-button"
-      >
-        {translateMethod('Login')}
-      </a>
-      <a
-        href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-        className="btn btn-success register-button"
-      >
-        {translateMethod('Register')}
-      </a>
-    </>
-  );
-};
-
-const DarkModeActivator = ({ initialDark }) => {
-
-  const { translateMethod } = useContext(I18nContext);
-
-  const DARK = 'DARK';
-  const LIGHT = 'LIGHT';
-
-  const [theme, setTheme] = useState(initialDark || localStorage.getItem('theme') || LIGHT);
-
-  useEffect(() => {
-    if (theme === DARK) {
-      document.documentElement.setAttribute('data-theme', DARK);
-      localStorage.setItem('theme', DARK);
-    } else {
-      document.documentElement.setAttribute('data-theme', LIGHT);
-      localStorage.setItem('theme', LIGHT);
-    }
-  }, [theme]);
-
-  return (
-    <div
-      className="block__entry__link"
-      onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}
-    >
-      {theme === DARK ? translateMethod('Light mode') : translateMethod('Dark mode')}
-    </div>
-  );
-};
-
-const SearchPanel = ({ teams }) => {
-  const [results, setResults] = useState([]);
-
-  const { translateMethod } = useContext(I18nContext);
-
-  const { tenant, connectedUser } = useSelector((state) => state.context)
-
-  useEffect(() => {
-    debouncedSearch("")
-  }, []);
-
-
-  const search = (inputValue) => {
-    const options = [
-      {
-        value: 'me',
-        label: translateMethod('My profile'),
-        type: 'link',
-        url: '/settings/me',
-      },
-    ];
-    if (connectedUser?.isDaikokuAdmin)
-      options.push({
-        value: 'daikoku',
-        label: translateMethod('Daikoku settings'),
-        type: 'link',
-        url: `/settings/tenants/${tenant._humanReadableId}`,
-      });
-
-    const utils = {
-      label: 'Daikoku',
-      options: options.filter((i) => i.label.toLowerCase().includes(inputValue.toLowerCase())),
-    };
-
-    return Services.search(inputValue)
-      .then((result) => setResults([
-        utils,
-        ...result.map((item) => ({ ...item, label: translateMethod(item.label) })),
-      ]));
-  };
-
-  const debouncedSearch = _.debounce(search, 100, { leading: true })
-
-  return (
-    <div className='ms-3 mt-2 col-10 d-flex flex-column panel'>
-      <input
-        placeholder='Search for API, team and more... '
-        className='mb-3 form-control'
-        onChange={e => debouncedSearch(e.target.value)} />
-      <div className="blocks">
-        {results.map((r, idx) => {
-          if (!r.options.length) {
-            return null;
-          }
-          return (
-            <div key={idx} className="mb-3 block">
-              <div className="mb-1 block__category">{r.label}</div>
-              <div className='ms-2 block__entries d-flex flex-column'>
-                {r.options.map((option) => {
-                  const team = teams.find((t) => t._id === option.team);
-                  switch (option.type) {
-                    case 'link':
-                      return (
-                        <Link
-                          to={option.url}
-                          className='block__entry__link'
-                          key={option.value}
-                        >{option.label}</Link>
-                      )
-                    case 'tenant':
-                      return (
-                        <Link
-                          to={`/settings/tenants/${option.value}`}
-                          className='block__entry__link'
-                          key={option.value}
-                        >{option.label}</Link>
-                      )
-                    case 'team':
-                      return (
-                        <Link
-                          to={`/${option.value}`}
-                          className='block__entry__link'
-                          key={option.value}
-                        >{option.label}</Link>
-                      )
-                    case 'api':
-                      return (
-                        <Link
-                          to={`/${team ? team._humanReadableId : option.team}/${option.value}/${option.version}`}
-                          className='block__entry__link'
-                          key={option.value}
-                        >{option.label}</Link>
-                      )
-                  }
-
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-const AddPanel = ({ teams }) => {
-  const { translateMethod } = useContext(I18nContext);
-  const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => state.context)
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const myTeams = teams.filter(t => connectedUser.isDaikokuAdmin || t.users.some(u => u.userId === connectedUser._id))
-
-  const createTeam = () => {
-    Services.fetchNewTeam()
-      .then((team) => openCreationTeamModal({ team })(dispatch));
-  };
-
-  const createApi = (teamId) => {
-    if (apiCreationPermitted) {
-      if (!teamId) {
-        return openTeamSelectorModal({
-          allTeamSelector: false,
-          title: translateMethod('api.creation.title.modal'),
-          description: translateMethod('api.creation.description.modal'),
-          teams: myTeams
-            .filter((t) => t.type !== 'Admin')
-            .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
-            .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
-          action: teams => createApi(teams[0]),
-        })(dispatch)
-      } else {
-        const team = myTeams.find((t) => teamId === t._id);
-
-        return Services.fetchNewApi()
-          .then((e) => {
-            const verb = faker.hacker.verb();
-            const name =
-              verb.charAt(0).toUpperCase() +
-              verb.slice(1) +
-              ' ' +
-              faker.hacker.adjective() +
-              ' ' +
-              faker.hacker.noun() +
-              ' api';
-
-            const _humanReadableId = name.replace(/\s/gi, '-').toLowerCase().trim();
-            return { ...e, name, _humanReadableId, team: team._id };
-          })
-          .then((newApi) => navigate(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`,
-            { state: { newApi } })
-          );
-      }
-    }
-  };
-
-  return (
-    <div className='ms-3 mt-2 col-10 d-flex flex-column panel'>
-      {/* todo: add a title if API page or tenant or Team */}
-      <div className='mb-3' style={{ height: '40px' }}></div>
-      <div className="blocks">
-        <div className="mb-3 block">
-          <div className="mb-1 block__category">create</div>
-          <div className='ms-2 block__entries d-flex flex-column'>
-            {connectedUser.isDaikokuAdmin && <strong className='block__entry__link'>tenant</strong>}
-            <strong className='block__entry__link' onClick={createTeam}>team</strong>
-            <strong className='block__entry__link' onClick={() => createApi()}>API</strong>
-          </div>
-        </div>
-        {/* todo: add a block in function of context to create plan...otoroshi or whatever */}
-      </div>
-    </div>
-  )
-}
-
-const SettingsPanel = ({ }) => {
-  const [version, setVersion] = useState();
-
-  const { translateMethod, isTranslationMode } = useContext(I18nContext);
-  const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => state.context)
-
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    Services.getDaikokuVersion()
-      .then((res) => setVersion(res.version));
-  }, []);
-
-  const reset = () => {
-    fetch('/api/reset', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: '',
-    }).then(() => {
-      window.location.reload();
-    });
-  };
-
-
-  const isMaintenanceMode = tenant?.tenantMode !== 'Default' && !isTranslationMode;
-  const toggleMaintenanceMode = () => {
-    const toggleApi = isMaintenanceMode
-      ? Services.disableMaintenanceMode
-      : Services.enableMaintenanceMode;
-
-    toggleApi()
-      .then((maybeTenant) => {
-        if (maybeTenant._id) {
-          updateTenant(maybeTenant)(dispatch);
-        }
-      });
-  };
-
-
-  return (
-    <div className='ms-3 mt-2 col-10 d-flex flex-column panel'>
-      <div className='mb-3 panel__title' style={{ height: '40px' }}>
-        {translateMethod('Settings')}
-      </div>
-      <div className="blocks">
-        <div className="mb-3 block">
-          <div className="mb-1 block__category">{connectedUser.email}</div>
-          <div className='ms-2 block__entries d-flex flex-column'>
-            <Link to='/settings/me' className='block__entry__link'>{translateMethod('My profile')}</Link>
-          </div>
-          <div className="dropdown-divider" />
-        </div>
-        <div className="mb-3 block">
-          <div className="mb-1 block__category">{translateMethod('settings')}</div>
-          <div className='ms-2 block__entries d-flex flex-column'>
-            <Link to='/settings/teams' className='block__entry__link'>{tenant.name}{' '}{translateMethod('settings')}</Link>
-            <Link to='/settings/tenants' className='block__entry__link'>{translateMethod('Daikoku settings')}</Link>
-          </div>
-          <div className="dropdown-divider" />
-        </div>
-        <div className="mb-3 block">
-          <div className="mb-1 block__category">{translateMethod('actions')}</div>
-          <div className='ms-2 block__entries d-flex flex-column'>
-            <DarkModeActivator />
-            <span className='block__entry__link' onClick={reset}>{translateMethod('Reset')}</span>
-            <span className='block__entry__link' onClick={toggleMaintenanceMode}>
-              {translateMethod(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
-            </span>
-            <Link to='/logout' className='block__entry__link'>{translateMethod('Logout')}</Link>
-          </div>
-          <div className="dropdown-divider" />
-        </div>
-        <div className="mb-3 block">
-          <div className="mb-1 block__category">{translateMethod('version')}</div>
-          <div className='ms-2 block__entries d-flex flex-column'>
-            <span className='block__entry__link'>{ translateMethod('Version used') } : {version || '?.??.??'}</span>
-          </div>
-          <div className="dropdown-divider" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const TopBarComponent = (props) => {
+const SideBarComponent = (props) => {
   const [teams, setTeams] = useState([]);
   const [daikokuVersion, setVersion] = useState(null);
-
   const [panelState, setPanelState] = useState(state.closed)
   const [panelContent, setPanelContent] = useState()
 
 
+  const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => state.context)
 
   const location = useLocation();
   const { totalUnread } = useContext(MessagesContext);
   const { translateMethod, setLanguage, language, isTranslationMode, languages } = useContext(I18nContext);
-  const { setMode, navMode, setBackOfficeMode, setFrontOfficeMode, api, team, tenant } = useContext(NavContext)
+  const { setMode, navMode, setBackOfficeMode, setFrontOfficeMode, ...context } = useContext(NavContext)
 
 
   useEffect(() => {
@@ -366,40 +57,8 @@ const TopBarComponent = (props) => {
     );
   }, []);
 
-  const getDaikokuVersion = () => {
-    Services.getDaikokuVersion()
-      .then((res) => setVersion(res.version));
-  }
 
-  const toggleMaintenanceMode = () => {
-    const toggleApi = isMaintenanceMode
-      ? Services.disableMaintenanceMode
-      : Services.enableMaintenanceMode;
-
-    toggleApi().then((maybeTenant) => {
-      if (maybeTenant._id) {
-        props.updateTenant(maybeTenant);
-      }
-    });
-  };
-
-  const reset = () => {
-    fetch('/api/reset', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: '',
-    }).then(() => {
-      window.location.reload();
-    });
-  };
-
-  if (!props.connectedUser) {
-    return null;
-  }
-
-  const { impersonator, unreadNotificationsCount } = props;
+  const { impersonator, unreadNotificationsCount } = props; //todo: get it from state is better way
 
   const impersonatorStyle = impersonator
     ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }
@@ -424,23 +83,25 @@ const TopBarComponent = (props) => {
           />
         </Link>
 
-        <div className="nav_item mb-3 cursor-pointer">
-          <Search className='notification-link' onClick={() => {
-            setPanelState(state.opened)
-            setPanelContent(<SearchPanel teams={teams} />)
-          }} />
-        </div>
-        <div className="nav_item mb-3 cursor-pointer">
-          <Plus className='notification-link' onClick={() => {
-            setPanelState(state.opened)
-            setPanelContent(<AddPanel teams={teams} />)
-          }} />
-        </div>
+        {!connectedUser.isGuest &&  <>
+          <div className="nav_item mb-3 cursor-pointer">
+            <Search className='notification-link' onClick={() => {
+              setPanelState(state.opened)
+              setPanelContent(<SearchPanel teams={teams} />)
+            }} />
+          </div>
+          <div className="nav_item mb-3 cursor-pointer">
+            <Plus className='notification-link' onClick={() => {
+              setPanelState(state.opened)
+              setPanelContent(<AddPanel teams={teams} />)
+            }} />
+          </div>
+        </>}
       </div>
 
       <div className="navbar_bottom">
         <div className="nav_item mb-3">
-          {(props.connectedUser.isDaikokuAdmin || props.isTenantAdmin) && (
+          {(connectedUser.isDaikokuAdmin || props.isTenantAdmin) && (
             <Link
               to="/settings/messages"
               className={classNames('messages-link cursor-pointer', {
@@ -452,7 +113,7 @@ const TopBarComponent = (props) => {
             </Link>
           )}
         </div>
-        <div className="nav_item mb-3">
+        {!connectedUser.isGuest && <div className="nav_item mb-3">
           <Link
             className={classNames({
               'notification-link': true,
@@ -463,15 +124,20 @@ const TopBarComponent = (props) => {
           >
             <Bell />
           </Link>
-        </div>
+        </div>}
         <div className="nav_item mb-3" style={{ color: '#fff' }}>
           <img
             style={{ width: '35px', ...impersonatorStyle }}
             src={props.connectedUser.picture}
             className="logo-anonymous user-logo"
             onClick={() => {
-              setPanelState(state.opened)
-              setPanelContent(<SettingsPanel />)
+              if (!connectedUser.isGuest) {
+                setPanelState(state.opened)
+                setPanelContent(<SettingsPanel />)
+              } else {
+                setPanelState(state.opened)
+                setPanelContent(<GuestPanel />)
+              }
             }}
             title={
               impersonator
@@ -727,4 +393,4 @@ const mapDispatchToProps = {
   updateTenant: (t) => updateTenant(t),
 };
 
-export const TopBar = connect(mapStateToProps, mapDispatchToProps)(TopBarComponent);
+export const SideBar = connect(mapStateToProps, mapDispatchToProps)(SideBarComponent);

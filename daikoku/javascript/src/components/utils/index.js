@@ -1,4 +1,3 @@
-export * from './TopBar';
 export * from './login';
 export * from './Recharts';
 export * from './OtoroshiStatsVizualisation';
@@ -18,3 +17,4 @@ export * from './entities';
 export * from './Discussion';
 export * from './function';
 export * from './multiStepForm';
+export * from './sidebar';

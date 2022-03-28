@@ -5,7 +5,7 @@ import { connect, useDispatch, useSelector } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
-import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
+import { SideBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise, history, setError } from '../core';
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
@@ -103,7 +103,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
       <MessagesProvider>
         <NavProvider>
           <div className="d-flex flex-row">
-            <TopBar loginAction={loginAction} loginProvider={loginProvider} />
+            <SideBar loginAction={loginAction} loginProvider={loginProvider} />
             <div className="wrapper flex-grow-1" style={{ height: '100vh', overflow: 'scroll' }}>
               <Routes>
                 <Route
