@@ -8,7 +8,7 @@ export const GuestPanel = () => {
   const loginProvider = useSelector((state) => state.context.tenant.authProvider)
 
   return (
-    <div className='ms-3 mt-2 col-10 d-flex flex-column panel'>
+    <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
 
       <div className='mb-3' style={{ height: '40px' }}></div>
       <div className="blocks">

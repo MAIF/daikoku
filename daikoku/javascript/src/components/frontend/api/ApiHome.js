@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import Select from 'react-select';
 
 import * as Services from '../../../services';
 import {
@@ -19,12 +21,12 @@ import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option, ActionWithTeamSelector } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal, updateUser, I18nContext } from '../../../core';
+import StarsButton from './StarsButton';
+import { LoginOrRegisterModal } from '../modals';
+import { useApiFrontOffice } from '../../../contexts'
 
 import 'highlight.js/styles/monokai.css';
-import StarsButton from './StarsButton';
-import Select from 'react-select';
-import { LoginOrRegisterModal } from '../modals';
-import { getApolloContext } from '@apollo/client';
+
 window.hljs = hljs;
 
 const ApiDescription = ({ api }) => {
@@ -44,39 +46,17 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({ api, ownerTeam, editUrl, connectedUser, toggleStar, tab }) => {
+const ApiHeader = ({ api, ownerTeam, connectedUser, toggleStar, tab }) => {
   const navigate = useNavigate();
   const params = useParams();
-
-  const handleBtnEditClick = () => navigate(editUrl);
 
   const [versions, setApiVersions] = useState([]);
 
   useEffect(() => {
-    //fo custom header component
-    var els = document.querySelectorAll('.btn-edit');
-
-    if (els.length) {
-      els.forEach((el) => el.addEventListener('click', handleBtnEditClick, false));
-      return () => {
-        els.forEach((el) => el.removeEventListener('click', handleBtnEditClick, false));
-      };
-    }
-
     Services.getAllApiVersions(ownerTeam._id, params.apiId).then((versions) =>
       setApiVersions(versions.map((v) => ({ label: v, value: v })))
     );
   }, []);
-
-  const EditButton = () => (
-    <Can I={manage} a={API} team={ownerTeam}>
-      <Link to={editUrl} className="team__settings ms-2">
-        <button type="button" className="btn btn-sm btn-access-negative">
-          <i className="fas fa-edit" />
-        </button>
-      </Link>
-    </Can>
-  );
 
   if (api.header) {
     const apiHeader = api.header
@@ -97,7 +77,6 @@ const ApiHeader = ({ api, ownerTeam, editUrl, connectedUser, toggleStar, tab }) 
         <div className="container">
           <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
             {api.name}
-            <EditButton />
             <div
               style={{ position: 'absolute', right: 0, bottom: 0 }}
               className="d-flex align-items-center"
@@ -133,7 +112,6 @@ const ApiHeader = ({ api, ownerTeam, editUrl, connectedUser, toggleStar, tab }) 
 };
 
 const ApiHomeComponent = ({
-  tab,
   openContactModal,
   setError,
   connectedUser,
@@ -149,12 +127,13 @@ const ApiHomeComponent = ({
   const [showGuestModal, setGuestModal] = useState(false);
 
   const navigate = useNavigate();
-
   const params = useParams();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const { client } = useContext(getApolloContext());
+
+  const tab = useApiFrontOffice(api, ownerTeam)
 
   useEffect(() => {
     updateSubscriptions(params.apiId);
@@ -162,7 +141,8 @@ const ApiHomeComponent = ({
 
   useEffect(() => {
     if (api) {
-      Services.team(api.team).then((ownerTeam) => setOwnerTeam(ownerTeam));
+      Services.team(api.team)
+        .then((ownerTeam) => setOwnerTeam(ownerTeam));
     }
   }, [api, params.versionId]);
 
@@ -250,24 +230,6 @@ const ApiHomeComponent = ({
         });
       })
       .then(() => updateSubscriptions(api._id));
-  };
-
-  const editUrl = (api) => {
-    const matchingFrontAndBackOfficeRoutes = {
-      pricing: 'plans',
-      redoc: 'swagger',
-      swagger: 'testing',
-      news: 'news',
-      description: 'infos',
-    };
-
-    return Option(myTeams.find((team) => api.team === team._id)).fold(
-      () => '#',
-      (adminTeam) =>
-        `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${
-          api.currentVersion
-        }/${matchingFrontAndBackOfficeRoutes[tab] || tab}`
-    );
   };
 
   const toggleStar = () => {
@@ -376,81 +338,10 @@ const ApiHomeComponent = ({
       <ApiHeader
         api={api}
         ownerTeam={ownerTeam}
-        editUrl={editUrl(api)}
         connectedUser={connectedUser}
         toggleStar={toggleStar}
         tab={tab}
       />
-      <div className="container">
-        <div className="row">
-          <div className="col mt-3 onglets">
-            <ul className="nav nav-tabs flex-column flex-sm-row">
-              <li className="nav-item">
-                <Link
-                  className={`nav-link ${tab === 'description' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}`}
-                >
-                  <Translation i18nkey="Description">Description</Translation>
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/pricing`}
-                >
-                  <Translation i18nkey="Plan" isPlural={true}>
-                    Plans
-                  </Translation>
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  className={`nav-link ${
-                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                  }`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/documentation`}
-                >
-                  <Translation i18nkey="Documentation">Documentation</Translation>
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/redoc`}
-                >
-                  <Translation i18nkey="Api Reference">Api Reference</Translation>
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/swagger`}
-                >
-                  <Translation i18nkey="Try it !">Try it !</Translation>
-                </Link>
-              </li>
-              {!!api.posts.length && (
-                <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'news' ? 'active' : ''}`}
-                    to={`/${params.teamId}/${apiId}/${versionId}/news`}
-                  >
-                    <Translation i18nkey="News">News</Translation>
-                  </Link>
-                </li>
-              )}
-              <li className="nav-item">
-                <Link
-                  className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
-                  to={`/${params.teamId}/${apiId}/${versionId}/issues`}
-                >
-                  <Translation i18nkey="issues">Issues</Translation>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
       <div className="album py-2 col-12 min-vh-100">
         <div className="container">
           <div className="row pt-3">

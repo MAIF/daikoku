@@ -76,7 +76,7 @@ export const SettingsPanel = ({ }) => {
 
 
   return (
-    <div className='ms-3 mt-2 col-10 d-flex flex-column panel'>
+    <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
       <div className='mb-3 panel__title' style={{ height: '40px' }}>
         {translateMethod('Settings')}
       </div>

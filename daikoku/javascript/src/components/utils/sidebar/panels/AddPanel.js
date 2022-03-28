@@ -60,7 +60,7 @@ export const AddPanel = ({ teams }) => {
   };
 
   return (
-    <div className='ms-3 mt-2 col-10 d-flex flex-column panel'>
+    <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
       {/* todo: add a title if API page or tenant or Team */}
       <div className='mb-3' style={{ height: '40px' }}></div>
       <div className="blocks">

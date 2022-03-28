@@ -49,7 +49,7 @@ export const SearchPanel = ({ teams }) => {
   const debouncedSearch = _.debounce(search, 100, { leading: true })
 
   return (
-    <div className='ms-3 mt-2 col-10 d-flex flex-column panel'>
+    <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
       <input
         placeholder='Search for API, team and more... '
         className='mb-3 form-control'
