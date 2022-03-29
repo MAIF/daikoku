@@ -295,3 +295,9 @@ We'd like to thank all the contributors who worked on this release!
 - A big space can be display for nothing in API list [#321](https://github.com/MAIF/daikoku/issues/321)
 - CORS issue with font family stock as tenant asset [#319](https://github.com/MAIF/daikoku/issues/319)
 
+## [v1.5.3] - 2022-03-29
+
+## :beetle: Bug Fixes
+
+- Daikoku 1.5.2 - User creation not working [#404](https://github.com/MAIF/daikoku/issues/404)
+
