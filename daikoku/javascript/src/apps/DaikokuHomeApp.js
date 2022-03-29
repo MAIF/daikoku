@@ -153,7 +153,7 @@ export const SignupComponent = () => {
       <Form
         schema={schema}
         flow={flow}
-        onChange={createAccount}
+        onSubmit={createAccount}
         footer={({ reset, valid }) => {
           return (
             <div className="d-flex justify-content-end">
@@ -273,7 +273,7 @@ export const ResetPasswordComponent = (props) => {
       <Form
         schema={schema}
         flow={flow}
-        onChange={resetPassword}
+        onSubmit={resetPassword}
         footer={({ reset, valid }) => {
           return (
             <div className="d-flex justify-content-end">
