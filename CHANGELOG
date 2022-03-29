@@ -287,3 +287,11 @@ We'd like to thank all the contributors who worked on this release!
 
 - Merge apikey metadata (and other key props) during apikey aggregation [#397](https://github.com/MAIF/daikoku/issues/397)
 
+## [v1.1.5] - 2022-03-29
+
+## :beetle: Bug Fixes
+
+- UI is broken ? [#324](https://github.com/MAIF/daikoku/issues/324)
+- A big space can be display for nothing in API list [#321](https://github.com/MAIF/daikoku/issues/321)
+- CORS issue with font family stock as tenant asset [#319](https://github.com/MAIF/daikoku/issues/319)
+
