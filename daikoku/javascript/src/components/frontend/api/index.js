@@ -4,7 +4,6 @@ export * from './ApiPricing';
 export * from './ApiDocumentation';
 export * from './ApiSwagger';
 export * from './ApiRedoc';
-export * from './ApiConsole';
 export * from './ApiCard';
 export * from './ApiPost';
 export * from './issues/ApiIssue';

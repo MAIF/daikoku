@@ -42,7 +42,7 @@ export function ApiIssues({ filter, api, selectedVersion }) {
               ></i>
               <div>
                 <div>
-                  <Link to={`issues/${_id}`} className="me-2">
+                  <Link to={`${_id}`} className="me-2">
                     {title}
                   </Link>
                   {tags

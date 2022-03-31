@@ -987,6 +987,8 @@
   "constraints.required.oldPassword": "L'ancien mot de passe est requis",
   "constraints.required.newPassword": "Le nouveau mot de passe est requis",
   "constraints.required.confirmPassword": "Le mot de passe de confirmation est requis",
+  "constraints.required.title": "Le titre est requis",
+  "constraints.required.version": "La version est requise",
   "constraints.format.url": "%s doit être une URL valide",
   "constraints.matches.email": "Votre courriel doit être une addresse électronique valide",
   "constraint.matches.password": "Votre mot de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spécial (#$^+=!*()@%&).",

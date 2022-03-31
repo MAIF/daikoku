@@ -98,7 +98,7 @@ const TeamHomeComponent = (props) => {
       const route = (version) =>
         `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${
           api._humanReadableId
-        }/${version}`;
+        }/${version}/description`;
 
       navigate(route(api.currentVersion));
     }

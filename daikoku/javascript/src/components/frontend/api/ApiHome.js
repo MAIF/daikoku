@@ -8,8 +8,6 @@ import Select from 'react-select';
 
 import * as Services from '../../../services';
 import {
-  ApiCartidge,
-  ApiConsole,
   ApiDocumentation,
   ApiPricing,
   ApiSwagger,
@@ -18,7 +16,7 @@ import {
   ApiIssue,
 } from '.';
 import { converter } from '../../../services/showdown';
-import { Can, manage, api as API, Option, ActionWithTeamSelector } from '../../utils';
+import { Can, manage, apikey, ActionWithTeamSelector, CanIDoAction } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal, updateUser, I18nContext } from '../../../core';
 import StarsButton from './StarsButton';
@@ -133,7 +131,7 @@ const ApiHomeComponent = ({
 
   const { client } = useContext(getApolloContext());
 
-  const tab = useApiFrontOffice(api, ownerTeam)
+  const { addMenu } = useApiFrontOffice(api, ownerTeam)
 
   useEffect(() => {
     updateSubscriptions(params.apiId);
@@ -145,8 +143,43 @@ const ApiHomeComponent = ({
         .then((ownerTeam) => setOwnerTeam(ownerTeam));
     }
   }, [api, params.versionId]);
+  
+
+  useEffect(() => {
+    if (myTeams && subscriptions) {
+      const subscribingTeams = myTeams
+        .filter((team) => subscriptions.some((sub) => sub.team === team._id));
+      const viewApiKeyLink = (
+        <Can I={manage} a={apikey} teams={subscribingTeams}>
+          <ActionWithTeamSelector
+            title={translateMethod(
+              'teamapi.select.title',
+              false,
+              'Select the team to view your api key'
+            )}
+            teams={subscribingTeams.filter((t) =>
+              CanIDoAction(connectedUser, manage, apikey, t)
+            )}
+            action={(teams) => {
+              const team = myTeams.find((t) => teams.includes(t._id))
+              navigate(`/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`);
+            }}
+            withAllTeamSelector={false}
+          >
+            <span className="block__entry__link">
+              <Translation i18nkey="View your api keys">View your api keys</Translation>
+            </span>
+          </ActionWithTeamSelector>
+        </Can>
+      )
+
+      addMenu({ blocks: { actions: { links: { viewApiKey: { label: 'view apikey', component: viewApiKeyLink } } } }})
+    }
+  }, [subscriptions, myTeams])
+
 
   const updateSubscriptions = (apiId) => {
+    console.debug({params})
     Promise.all([
       Services.getVisibleApi(apiId, params.versionId),
       Services.getMySubscriptions(apiId, params.versionId),
@@ -275,7 +308,7 @@ const ApiHomeComponent = ({
         <h1 style={{ margin: 0 }}>{translateMethod(showAccessModal.error)}</h1>
         {(teams.length === 1 &&
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
-        showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
+          showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
             <h2 className="text-center my-3">{translateMethod('request_already_pending')}</h2>
             <button
@@ -322,14 +355,7 @@ const ApiHomeComponent = ({
   if (!api || !ownerTeam) {
     return null;
   }
-  const apiId = api._humanReadableId;
-  const versionId = params.versionId;
   const teamId = params.teamId;
-
-  //for contact modal
-  const { isGuest, name, email } = connectedUser;
-  const userName = isGuest ? undefined : name;
-  const userEmail = isGuest ? undefined : email;
 
   document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
@@ -340,34 +366,15 @@ const ApiHomeComponent = ({
         ownerTeam={ownerTeam}
         connectedUser={connectedUser}
         toggleStar={toggleStar}
-        tab={tab}
+        tab={params.tab}
       />
       <div className="album py-2 col-12 min-vh-100">
         <div className="container">
           <div className="row pt-3">
-            {['pricing', 'description'].includes(tab) && (
-              <ApiCartidge
-                connectedUser={connectedUser}
-                myTeams={myTeams}
-                ownerTeam={ownerTeam}
-                api={api}
-                subscriptions={subscriptions}
-                askForApikeys={(teams, plan) => askForApikeys(teams, plan)}
-                tenant={tenant}
-                openContactModal={() =>
-                  openContactModal(userName, userEmail, tenant._id, api.team, api._id)
-                }
-                redirectToApiKeysPage={(team) => {
-                  navigate(
-                    `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`
-                  );
-                }}
-              />
-            )}
-            {tab === 'description' && (
+            {params.tab === 'description' && (
               <ApiDescription api={api} ownerTeam={ownerTeam} subscriptions={subscriptions} />
             )}
-            {tab === 'pricing' && (
+            {params.tab === 'pricing' && (
               <ApiPricing
                 connectedUser={connectedUser}
                 api={api}
@@ -380,9 +387,8 @@ const ApiHomeComponent = ({
                 tenant={tenant}
               />
             )}
-            {tab === 'documentation' && <ApiDocumentation api={api} ownerTeam={ownerTeam} />}
-            {tab === 'documentation-page' && <ApiDocumentation api={api} ownerTeam={ownerTeam} />}
-            {tab === 'swagger' && (
+            {params.tab === 'documentation' && <ApiDocumentation api={api} ownerTeam={ownerTeam} />}
+            {params.tab === 'testing' && (
               <ApiSwagger
                 api={api}
                 teamId={teamId}
@@ -392,7 +398,7 @@ const ApiHomeComponent = ({
                 connectedUser={connectedUser}
               />
             )}
-            {tab === 'redoc' && (
+            {params.tab === 'swagger' && (
               <ApiRedoc
                 api={api}
                 teamId={teamId}
@@ -401,19 +407,10 @@ const ApiHomeComponent = ({
                 connectedUser={connectedUser}
               />
             )}
-            {tab === 'console' && (
-              <ApiConsole
-                api={api}
-                teamId={teamId}
-                ownerTeam={ownerTeam}
-                subscriptions={subscriptions}
-                updateSubscriptions={updateSubscriptions}
-              />
-            )}
-            {tab === 'news' && (
+            {params.tab === 'news' && (
               <ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />
             )}
-            {tab === 'issues' && (
+            {(params.tab === 'issues' || params.tab === 'labels') && (
               <ApiIssue
                 api={api}
                 onChange={(editedApi) => setApi(editedApi)}

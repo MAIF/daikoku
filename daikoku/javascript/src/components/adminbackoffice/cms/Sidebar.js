@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import moment from 'moment';
-import { SelectInput } from '@maif/react-forms/lib/inputs';
+import { SelectInput } from '@maif/react-forms';
 import { constraints, Form, format, type } from '@maif/react-forms';
 import { I18nContext } from '../../../core';
 

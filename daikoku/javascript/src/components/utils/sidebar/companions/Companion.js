@@ -4,37 +4,17 @@ import classNames from 'classnames';
 import { ChevronLeft, ChevronRight } from 'react-feather';
 
 import { state } from '..'
-import { NavContext, navMode, officeMode } from '../../../../contexts';
-import { ApiFrontOffice, ApiBackOffice, TeamBackOffice, TenantBackOffice } from './'
+import { NavContext, navMode } from '../../../../contexts';
 
 export const Companion = () => {
   const [companionState, setCompanionState] = useState(state.closed);
-  const { mode, office, api, team, tenant } = useContext(NavContext);
+  const { mode, menu } = useContext(NavContext);
 
   useEffect(() => {
     if (mode !== navMode.initial) {
       setCompanionState(state.opened);
     }
   }, [mode]);
-
-  const renderContent = () => {
-    switch (office) {
-      case officeMode.front:
-        switch (mode) {
-          case navMode.api:
-            return api && <ApiFrontOffice />
-        }
-      case officeMode.back:
-        switch (mode) {
-          case navMode.api:
-            return api && <ApiFrontOffice />
-          case navMode.team:
-            return team && <TeamBackOffice />
-          case navMode.tenant:
-            return tenant && <TenantBackOffice />
-        }
-    }
-  }
 
 
   if (mode === navMode.initial) {
@@ -50,7 +30,36 @@ export const Companion = () => {
         {companionState === state.closed && <ChevronRight />}
         {companionState === state.opened && <ChevronLeft />}
       </span>
-      {renderContent()}
+      <div className='companion-content'>
+        <div className="companion-title">
+          <h3>{menu?.title}</h3>
+        </div>
+        <div className="blocks d-flex flex-column justify-content-between">
+          {Object.values(menu?.blocks || {})
+            .sort((a, b) => a.order - b.order)
+            .map((block, idx) => {
+              return (
+                <div key={`${performance.now}${idx}`} className="block">
+                  <div className='d-flex flex-column block__entries'>
+                    {Object.values(block.links).map((entry, idx) => {
+                      if (entry.action) {
+                        return (
+                          <span key={`${performance.now}-link-${idx}`} className={classNames('block__entry__link', entry.className)} onClick={() => entry.action()}>{entry.label}</span>
+                        )
+                      } else if (entry.link) {
+                        return (
+                          <Link key={`${performance.now}-link-${idx}`} className={classNames('block__entry__link', entry.className)} to={entry.link}>{entry.label}</Link>
+                        )
+                      } else if (entry.component) {
+                        return React.cloneElement(entry.component, { key: `${performance.now}-link-${idx}` })
+                      }
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+        </div>
+      </div>
     </div>
   )
 }

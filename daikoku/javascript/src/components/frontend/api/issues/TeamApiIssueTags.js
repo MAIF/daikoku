@@ -1,13 +1,16 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SketchPicker } from 'react-color';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../../core';
 
-export function TeamApiIssueTags({ value, onChange }) {
+export function TeamApiIssueTags({ value, onChange, basePath }) {
   const [showTagForm, showNewTagForm] = useState(false);
   const [api, setApi] = useState(value);
+  const [updated, setUpdated] = useState(false);
 
   const { translateMethod } = useContext(I18nContext);
+  const navigate = useNavigate()
 
   function deleteTag(id) {
     setApi({
@@ -22,7 +25,9 @@ export function TeamApiIssueTags({ value, onChange }) {
         <NewTag
           issuesTags={api.issuesTags}
           handleCreate={(newTag) => {
-            setApi({ ...api, issuesTags: [...api.issuesTags, newTag] });
+            const updatedApi = { ...api, issuesTags: [...api.issuesTags, newTag] }
+            setApi(updatedApi);
+            onChange(updatedApi);
             showNewTagForm(false);
           }}
           onCancel={() => showNewTagForm(false)}
@@ -31,7 +36,7 @@ export function TeamApiIssueTags({ value, onChange }) {
         <div className="mb-3 row">
           <label className="col-xs-12 col-sm-2">Actions</label>
           <div className="col-sm-10">
-            <button className="btn btn-success" onClick={() => showNewTagForm(true)}>
+            <button className="btn btn-outline-success" onClick={() => showNewTagForm(true)}>
               {translateMethod('issues.new_tag')}
             </button>
           </div>
@@ -43,11 +48,10 @@ export function TeamApiIssueTags({ value, onChange }) {
           {api.issuesTags.map((issueTag, i) => (
             <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
               <span
-                className="badge bg-primary d-flex align-items-center justify-content-center px-3 py-2"
+                className="badge d-flex align-items-center justify-content-center px-3 py-2"
                 style={{
                   backgroundColor: issueTag.color,
-                  color: '#fff',
-                  borderRadius: '12px',
+                  color: '#fff'
                 }}
               >
                 {issueTag.name}
@@ -56,7 +60,7 @@ export function TeamApiIssueTags({ value, onChange }) {
                 type="text"
                 className="form-control mx-3"
                 value={issueTag.name}
-                onChange={(e) =>
+                onChange={(e) => {
                   setApi({
                     ...api,
                     issuesTags: api.issuesTags.map((issue, j) => {
@@ -64,6 +68,8 @@ export function TeamApiIssueTags({ value, onChange }) {
                       return issue;
                     }),
                   })
+                  setUpdated(true)
+                }
                 }
               />
               <ColorTag
@@ -94,19 +100,16 @@ export function TeamApiIssueTags({ value, onChange }) {
           {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
         </div>
       </div>
-      <div className="mb-3 row">
-        <label className="col-xs-12 col-sm-2" />
-        <div className="col-sm-10 d-flex">
-          <button className="btn btn-success ml-auto" onClick={() => onChange(api)}>
-            {translateMethod('Save')}
-          </button>
-        </div>
-      </div>
+      {updated && <div className="col-sm-12 d-flex justify-content-end">
+        <button className="btn btn-outline-success ml-auto" onClick={() => { onChange(api); setUpdated(false) }}>
+          {translateMethod('Save')}
+        </button>
+      </div>}
     </div>
   );
 }
 
-function NewTag({ issuesTags, handleCreate, onCancel }) {
+const NewTag = ({ issuesTags, handleCreate, onCancel }) => {
   const [tag, setTag] = useState({ name: '', color: '#2980b9' });
 
   const { translateMethod } = useContext(I18nContext);

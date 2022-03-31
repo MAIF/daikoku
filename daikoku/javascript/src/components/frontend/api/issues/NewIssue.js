@@ -1,159 +1,106 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 import { useNavigate } from 'react-router-dom';
-import Select from 'react-select';
+import { useSelector } from 'react-redux';
+import { Form, type, format, constraints } from '@maif/react-forms';
 
 import { I18nContext } from '../../../../core';
-const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 import * as Services from '../../../../services';
-import { Can, manage } from '../../../utils';
-import { api as API } from '../../../utils/permissions';
+import { manage, CanIDoAction, api as API } from '../../../utils';
 
-const styles = {
-  commentHeader: {
-    backgroundColor: '#eee',
-    borderTopLeftRadius: '8px',
-    borderTopRightRadius: '8px',
-  },
-  bold: {
-    fontWeight: 'bold',
-  },
-};
-
-export function NewIssue({ user, api, ...props }) {
+export const NewIssue = ({ basePath, api }) => {
   const { issuesTags, team, _humanReadableId } = api;
   const [issue, setIssue] = useState(null);
   const [availableApiVersions, setApiVersions] = useState([]);
+
+  const { currentTeam, connectedUser } = useSelector(state => state.context)
 
   const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    Services.fetchNewIssue().then((template) => setIssue(template));
-
-    Services.getAllApiVersions(team, api._humanReadableId).then(setApiVersions);
+    Promise.all([
+      Services.fetchNewIssue(),
+      Services.getAllApiVersions(team, api._humanReadableId)
+    ])
+      .then(([template, apiVersions]) => {
+        setIssue(template);
+        setApiVersions(apiVersions);
+      });
   }, []);
 
-  function createIssue() {
-    if (issue.title.length === 0 || issue.comments[0].content.length === 0)
-      toastr.error('Title or content are too short');
-    else if (!issue.apiVersion) toastr.error('Select a version to continue');
-    else {
-      Services.createNewIssue(_humanReadableId, team, {
-        ...issue,
-        apiVersion: issue.apiVersion.value,
-        tags: issue.tags.map((tag) => tag.value.id),
-      }).then((res) => {
-        if (res.error) toastr.error(res.error);
-        else {
+  const createIssue = (issue) => {
+    Services.createNewIssue(_humanReadableId, team, issue)
+      .then((res) => {
+        if (res.error) {
+          toastr.error(res.error);
+        } else {
           toastr.success('Issue created');
-          navigate(`${props.basePath}/issues`);
+          navigate(basePath);
         }
       });
+  }
+
+  const schema = {
+    title: {
+      type: type.string,
+      label: translateMethod('Title'),
+      placeholder: translateMethod('Title'),
+      constraints: [
+        constraints.required(translateMethod("constraints.required.title"))
+      ]
+    },
+    apiVersion: {
+      type: type.string,
+      format: format.select,
+      label: translateMethod('issues.apiVersion'),
+      options: availableApiVersions.map(x => ({ label: x, value: x })),
+      constraints: [
+        constraints.required(translateMethod("constraints.required.version"))
+      ]
+    },
+    tags: {
+      type: type.string,
+      label: translateMethod('issues.tags'),
+      format: format.select,
+      options: issuesTags,
+      transformer: ({ value, name }) => ({ value, label: name }),
+      isMulti: true,
+      visible: CanIDoAction(connectedUser, manage, API, currentTeam)
+    },
+    comments: {
+      type: type.object,
+      label: translateMethod('issues.new_comment'),
+      format: format.form,
+      array: true,
+      schema: {
+        content: {
+          type: type.string,
+          format: format.markdown,
+          label: null,
+          // constraints: [
+          //   constraints.length(1, "message")
+          // ]
+        }
+      },
+      constraints: [
+        constraints.length(1, 'Just one comment please')
+      ]
     }
   }
 
+
   return issue ? (
     <div className="d-flex">
-      <div className="dropdown pe-2">
-        <img
-          style={{ width: 42 }}
-          src={user.picture}
-          className="dropdown-toggle logo-anonymous user-logo"
-          data-toggle="dropdown"
-          alt="user menu"
-        />
-      </div>
-      <div>
-        <div className="px-3 py-2" style={styles.commentHeader}>
-          <div>
-            <label htmlFor="title">{translateMethod('Title')}</label>
-            <input
-              id="title"
-              type="text"
-              className="form-control"
-              placeholder={translateMethod('Title')}
-              value={issue.title}
-              onChange={(e) => setIssue({ ...issue, title: e.target.value })}
-            />
-          </div>
-          <div className="py-2">
-            <label htmlFor="apiVersion">{translateMethod('issues.apiVersion')}</label>
-            <Select
-              id="apiVersion"
-              onChange={(apiVersion) =>
-                setIssue({
-                  ...issue,
-                  apiVersion,
-                })
-              }
-              options={availableApiVersions.map((iss) => ({ value: iss, label: iss }))}
-              value={issue.apiVersion}
-              className="input-select reactSelect"
-              classNamePrefix="reactSelect"
-              styles={{
-                menu: (provided) => ({ ...provided, zIndex: 9999 }),
-              }}
-            />
-          </div>
-          <Can I={manage} a={API} team={props.currentTeam}>
-            <div className="py-2">
-              <label htmlFor="tags">{translateMethod('issues.tags')}</label>
-              <Select
-                id="tags"
-                isMulti
-                onChange={(values) =>
-                  setIssue({
-                    ...issue,
-                    tags: [...values],
-                  })
-                }
-                options={issuesTags.map((iss) => ({ value: iss, label: iss.name }))}
-                value={issue.tags}
-                className="input-select reactSelect"
-                classNamePrefix="reactSelect"
-                styles={{
-                  menu: (provided) => ({ ...provided, zIndex: 9999 }),
-                }}
-              />
-            </div>
-          </Can>
-        </div>
-        <div
-          className="p-3"
-          style={{
-            border: '1px solid #eee',
-            borderBottomLeftRadius: '8px',
-            borderBottomRightRadius: '8px',
-            backgroundColor: '#fff',
-          }}
-        >
-          <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
-            <LazySingleMarkdownInput
-              fullWidth
-              height="300px"
-              value={issue.comments[0].content}
-              fixedWitdh="0px"
-              onChange={(content) =>
-                setIssue({
-                  ...issue,
-                  comments: [
-                    {
-                      ...issue.comments[0],
-                      content,
-                    },
-                  ],
-                })
-              }
-            />
-          </React.Suspense>
-          <div className="d-flex mt-3 justify-content-end">
-            <button className="btn btn-success" onClick={createIssue}>
-              {translateMethod('issues.submit_new_issue')}
-            </button>
-          </div>
-        </div>
-      </div>
+      <Form
+        schema={schema}
+        onSubmit={createIssue}
+        onError={console.error}
+        value={issue}
+        actions={{
+          cancel: { display: true, action: () => navigate(basePath), label: translateMethod('Cancel') }
+        }}
+      />
     </div>
   ) : (
     <p>{translateMethod('loading')}</p>

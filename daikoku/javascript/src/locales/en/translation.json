@@ -984,6 +984,8 @@
     "constraints.required.oldPassword": "Old password is required",
     "constraints.required.newPassword": "New password is required",
     "constraints.required.confirmPassword": "Confirm password is required",
+    "constraints.required.title": "Title is required",
+    "constraints.required.version": "Version is required",
     "constraints.format.url": "%s must be a valid URL",
     "constraints.matches.email": "Your mail must be a valid email address",
     "constraint.matches.password": "Your password must have 8 letters min with capital, number and special character (#$^+=!*()@%&)",

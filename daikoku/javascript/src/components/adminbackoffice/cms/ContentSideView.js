@@ -1,4 +1,4 @@
-import { CodeInput, SelectInput } from '@maif/react-forms/lib/inputs';
+import { CodeInput, SelectInput } from '@maif/react-forms';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../../core';

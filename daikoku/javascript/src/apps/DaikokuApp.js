@@ -354,88 +354,15 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                   />
                 )}
 
-                <Route path="/:teamId/settings/*" element={<TeamBackOfficeRouter tenant={tenant} />} />
 
-                <Route
-                  path="/:teamId/:apiId/:versionId/documentation/:pageId"
-                  element={
-                    <FrontOfficeRoute>
-                      <ApiHome tab="documentation-page" />
-                    </FrontOfficeRoute>
-                  }
-                />
-                <Route
-                  path="/:teamId/:apiId/:versionId/documentation"
-                  element={
-                    <FrontOfficeRoute>
-                      <ApiHome tab="documentation" />
-                    </FrontOfficeRoute>
-                  }
-                />
-                <Route
-                  path="/:teamId/:apiId/:versionId/pricing"
-                  element={
-                    <FrontOfficeRoute>
-                      <ApiHome tab="pricing" />
-                    </FrontOfficeRoute>
-                  }
-                />
-                <Route
-                  path="/:teamId/:apiId/:versionId/swagger"
-                  element={
-                    <FrontOfficeRoute>
-                      <ApiHome tab="swagger" />
-                    </FrontOfficeRoute>
-                  }
-                />
-                <Route
-                  path="/:teamId/:apiId/:versionId/redoc"
-                  element={
-                    <FrontOfficeRoute>
-                      <ApiHome tab="redoc" />
-                    </FrontOfficeRoute>
-                  }
-                />
-                <Route
-                  path="/:teamId/:apiId/:versionId/console"
-                  element={
-                    <FrontOfficeRoute>
-                      <ApiHome tab="console" />
-                    </FrontOfficeRoute>
-                  }
-                />
-                {['/:teamId/:apiId/:versionId/labels', '/:teamId/:apiId/:versionId/issues*'].map(
-                  (r) => (
-                    <Route
-                      key={r}
-                      path={r}
-                      element={
-                        <FrontOfficeRoute>
-                          <ApiHome tab="issues" />
-                        </FrontOfficeRoute>
-                      }
-                    />
-                  )
-                )}
-                {['/:teamId/:apiId/:versionId', '/:teamId/:apiId/:versionId/description'].map((r) => (
-                  <Route
-                    key={r}
-                    path={r}
-                    element={
-                      <FrontOfficeRoute>
-                        <ApiHome tab="description" />
-                      </FrontOfficeRoute>
-                    }
-                  />
-                ))}
-                <Route
-                  path="/:teamId/:apiId/:versionId/news"
-                  element={
-                    <FrontOfficeRoute>
-                      <ApiHome tab="news" />
-                    </FrontOfficeRoute>
-                  }
-                />
+                <Route 
+                  path="/:teamId/settings/*" 
+                  element={<TeamBackOfficeRouter tenant={tenant} />} />
+
+                <Route 
+                  path='/:teamId/:apiId/:versionId/:tab/*' 
+                  element={<FrontOfficeRoute> <ApiHome /> </FrontOfficeRoute>} />
+
                 <Route
                   path="/:teamId"
                   element={

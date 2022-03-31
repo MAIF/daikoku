@@ -173,12 +173,13 @@ a.navbar-brand, #teamSelector:hover {
 
 .navbar-companion {
   z-index: 1000;
-  background-color: tomato;
+  background-color: $aside-bg-color;
   height: 100vh;
   position: relative;
   min-width: 20px;
   width: 20px; height: 100vh;
   transition: width .2s ease-in-out;
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
 
   &.opened {
     width: 240px;
@@ -190,6 +191,7 @@ a.navbar-brand, #teamSelector:hover {
   }
 
   .companion-content {
+    overflow-y: auto;
     opacity: 0;
     transition: opacity 0s 0s;
     padding: .5rem 1rem 0 1rem;
@@ -199,12 +201,13 @@ a.navbar-brand, #teamSelector:hover {
 
     .companion-title {
       height: 40px;
+      min-height: 40px;
       margin-bottom: 1rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.14286;
-      color: #fff;
+      color: $aside-text-color;
       font-weight: 600;
     }
 
@@ -217,19 +220,24 @@ a.navbar-brand, #teamSelector:hover {
           .block__entry__link {
             cursor: pointer;
             font-size: 14px;
-            color: #000;
+            color: $aside-text-color;
             margin-bottom: 5px;
             line-height: 40px;
             border-radius: 4px;
             padding-left: .5rem;
 
             &.active {
-              background-color: #EBECF0;
-              color: tomato;
+              background-color: $menu-text-hover-bg-color;
+              color: $menu-text-hover-color;
+            }
+
+            &.disabled {
+              color: lighten(#000, 50%);
+              cursor: default;
             }
 
             &:hover {
-              background-color: #EBECF0;
+              background-color: $menu-text-hover-bg-color;
             }
           }
         }
