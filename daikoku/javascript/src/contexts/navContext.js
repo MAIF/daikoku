@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 
 import { I18nContext, openContactModal } from '../core'
-import { Can, manage, api as API} from '../components/utils'
+import { Can, manage, api as API } from '../components/utils'
 
 export const navMode = {
   initial: "INITIAL",
@@ -68,19 +68,19 @@ export const useApiFrontOffice = (api, team) => {
           description: { label: translateMethod("Description"), action: () => navigateTo('description'), className: { active: currentTab === 'description' } },
           pricings: { label: translateMethod("Pricings"), action: () => navigateTo('pricing'), className: { active: currentTab === 'pricing' } },
           documentation: { label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
-          swagger: { 
-            label: translateMethod("Swaggger"), 
-            action: () => { if (api?.swagger?.content || api?.swagger?.url) navigateTo('swagger')}, 
+          swagger: {
+            label: translateMethod("Swaggger"),
+            action: () => { if (api?.swagger?.content || api?.swagger?.url) navigateTo('swagger') },
             className: { active: currentTab === 'swagger', disabled: !api?.swagger?.content && !api?.swagger?.url }
           },
-          testing: { 
-            label: translateMethod("Testing"), 
-            action: () => { if (api?.testing?.enabled) navigateTo('testing')}, 
+          testing: {
+            label: translateMethod("Testing"),
+            action: () => { if (api?.testing?.enabled) navigateTo('testing') },
             className: { active: currentTab === 'testing', disabled: !api?.testing?.enabled }
           },
-          news: { 
-            label: translateMethod("News"), 
-            action: () => { if (api?.posts?.length) ('news')}, 
+          news: {
+            label: translateMethod("News"),
+            action: () => { if (api?.posts?.length) ('news') },
             className: { active: currentTab === 'news', disabled: !api?.posts?.length }
           },
           issues: { label: translateMethod("Issues"), action: () => navigateTo('issues'), className: { active: currentTab === 'issues' || currentTab === 'labels' } }
@@ -107,7 +107,7 @@ export const useApiFrontOffice = (api, team) => {
 
   useEffect(() => {
     if (params.tab) {
-      addMenu(schema(params.tab))
+      setMenu(schema(params.tab))
     }
   }, [params.tab, api, team])
 
@@ -130,36 +130,134 @@ export const useApiFrontOffice = (api, team) => {
   return { addMenu };
 }
 
-export const useApiBackOffice = (api, team) => {
-  const { setMode, setOffice, setApi, setTeam } = useContext(NavContext)
+export const useApiBackOffice = (api) => {
+  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext)
+  const { translateMethod } = useContext(I18nContext);
+
+  const { currentTeam } = useSelector(state => state.context)
+
+  const navigate = useNavigate();
+  const params = useParams();
+
+  const schema = currentTab => ({
+    title: api?.name,
+    blocks: {
+      links: {
+        order: 2,
+        links: {
+          version: { component: <></> },
+          informations: { label: translateMethod("Informations"), action: () => navigateTo('infos'), className: { active: currentTab === 'infos' } },
+          plans: { label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
+          documentation: { label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
+          news: { label: translateMethod("News"), action: () => navigateTo('news'), className: { active: currentTab === 'news' } }
+        }
+      }
+    }
+  })
+
+  const navigateTo = (navTab) => {
+    navigate(`/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`)
+  }
 
   useEffect(() => {
-    setMode(navMode.api)
-    setOffice(officeMode.back)
-    setApi(api)
-    setTeam(team)
+    if (params.tab) {
+        addMenu(schema(params.tab))
+    }
+  }, [params.tab, api])
 
+  useEffect(() => {
+    if (api) {
+      setMode(navMode.api)
+      setOffice(officeMode.back)
+      setApi(api)
+      setTeam(currentTeam)
+    }
     return () => {
       setMode(navMode.initial)
       setApi(undefined)
       setTeam(undefined)
+      setMenu({})
     }
-  }, [api, team])
+  }, [api])
+
+  return { addMenu };
 }
 
 export const useTeamBackOffice = (team) => {
-  const { setMode, setOffice, setTeam } = useContext(NavContext)
+  const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext)
+  const { translateMethod } = useContext(I18nContext);
+
+  const { currentTeam } = useSelector(state => state.context)
+
+  const navigate = useNavigate();
+  const params = useParams();
+
+  const schema = currentTab => ({
+    title: team.name,
+    blocks: {
+      links: {
+        order: 1,
+        links: {
+          settings: { 
+            label: translateMethod("Settings"), 
+            action: () => navigateTo(''), 
+            className: { active: !currentTab || ['edition', 'assets'].includes(currentTab) },
+            childs: {
+              informations: { label: translateMethod("Informations"), action: () => navigateTo('edition') },
+              assets: { label: translateMethod("Assets"), action: () => navigateTo('assets') },
+            }
+          },
+          apis: { 
+            label: translateMethod("Apis"), 
+            action: () => navigateTo('apis'), 
+            className: { active: 'apis' === currentTab },
+          },
+          apikeys: { 
+            label: translateMethod("Plans"), 
+            action: () => navigateTo('plans'), 
+            className: { active: ['plans', 'consumption'].includes(currentTab) },
+            childs: {
+              stats: { label: translateMethod("Global stats"), action: () => navigateTo('consumption') }
+            }
+          },
+          billing: { 
+            label: translateMethod("Billing"), 
+            action: () => navigateTo('documentation'), 
+            className: { active: currentTab === 'documentation' },
+            childs: {
+              income: { label: translateMethod("Income"), action: () => navigateTo('income') }
+            }
+          },
+        }
+      }
+    }
+  })
+
+  const navigateTo = (navTab) => {
+    navigate(`/${currentTeam._humanReadableId}/settings/${navTab}`)
+  }
 
   useEffect(() => {
-    setMode(navMode.team)
-    setOffice(officeMode.front)
-    setTeam(team)
+    console.debug(params)
+    if (params.tab) {
+      addMenu(schema(params.tab))
+    }
+  }, [params.tab, team])
 
+  useEffect(() => {
+    if (team) {
+      setMode(navMode.team)
+      setOffice(officeMode.back)
+      setTeam(team)
+    }
     return () => {
       setMode(navMode.initial)
       setTeam(undefined)
+      setMenu({})
     }
   }, [team])
+
+  return { addMenu };
 }
 
 export const useTenantBackOffice = (tenant) => {

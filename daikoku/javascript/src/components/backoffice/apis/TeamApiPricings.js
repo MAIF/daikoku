@@ -418,6 +418,14 @@ export const TeamApiPricings = (props) => {
   const [creation, setCreation] = useState(false);
   const { translateMethod, language } = useContext(I18nContext);
 
+  useEffect(() => {
+    return () => {
+      props.injectSubMenu(null)
+    }
+  }, []);
+  
+  
+
   const pathes = {
     type: type.object,
     format: format.form,

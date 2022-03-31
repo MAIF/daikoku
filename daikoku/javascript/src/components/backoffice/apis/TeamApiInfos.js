@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { I18nContext } from '../../../core';
 import { MultiStepForm } from '../../utils';
 
@@ -20,6 +20,13 @@ export const TeamApiInfos = ({
 
   const informationForm = teamApiInfoForm(translateMethod, team, tenant);
   const descriptionForm = teamApiDescriptionForm(translateMethod);
+
+  useEffect(() => {
+    return () => {
+      injectSubMenu(null)
+    }
+  }, [])
+  
 
   const steps = [
     {

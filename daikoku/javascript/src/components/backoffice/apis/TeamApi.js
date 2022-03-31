@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation, useParams, Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import Select from 'react-select';
 
 import * as Services from '../../../services';
 import { Can, manage, api as API, Spinner } from '../../utils';
 import { TeamApiInfos, TeamApiPost, TeamApiDocumentation, TeamApiPricings } from '.';
+import { useApiBackOffice } from '../../../contexts';
 
 import {
   setError,
@@ -53,29 +55,33 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
   );
 };
 
+
 const TeamApiComponent = (props) => {
   const params = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [api, setApi] = useState();
   const [otoroshiSettings, setOtoroshiSettings] = useState([]);
-  const [apiVersions, setApiVersions] = useState([]);
   const [apiVersion, setApiVersion] = useState({
     value: params.versionId,
     label: params.versionId,
   });
 
   const teamApiDocumentationRef = useRef();
-
+  
   const { translateMethod, Translation } = useContext(I18nContext);
-  const location = useLocation();
-  const navigate = useNavigate();
+
+  const { addMenu } = useApiBackOffice(api)
+
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
-      Services.allSimpleOtoroshis(props.tenant._id).then((otoroshiSettings) => {
-        setOtoroshiSettings(otoroshiSettings);
-        setApi(location.state.newApi);
-      });
+      Services.allSimpleOtoroshis(props.tenant._id)
+        .then((otoroshiSettings) => {
+          setOtoroshiSettings(otoroshiSettings);
+          setApi(location.state.newApi);
+        });
     } else {
       reloadState();
     }
@@ -92,10 +98,34 @@ const TeamApiComponent = (props) => {
       Services.getAllApiVersions(props.currentTeam._id, params.apiId),
     ]).then(([api, otoroshiSettings, versions]) => {
       if (!api.error) {
-        setApiVersions(versions.map((v) => ({ label: v, value: v })));
+        const versions = (versions || []).map((v) => ({ label: v, value: v }))
         setApiVersion({ value: params.versionId, label: params.versionId });
         setApi(api);
         setOtoroshiSettings(otoroshiSettings);
+
+        addMenu({
+          blocks: {
+            links: {
+              links: {
+                version: {
+                  component: <Select
+                    name="versions-selector"
+                    value={{ value: params.versionId, label: params.versionId }}
+                    options={versions}
+                    onChange={(e) => navigate(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
+                    classNamePrefix="reactSelect"
+                    className="mb-4"
+                    menuPlacement="auto"
+                    menuPosition="fixed"
+                  />
+                },
+              }
+            },
+            actions: {
+
+            }
+          }
+        })
       } else {
         toastr.error(api.error);
       }
@@ -168,70 +198,72 @@ const TeamApiComponent = (props) => {
           }
         });
       };
+
+      const backButton = (
+        <Link
+          className="d-flex justify-content-around mt-3 align-items-center"
+          style={{
+            border: 0,
+            background: 'transparent',
+            outline: 'none',
+          }}
+          to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+        >
+          <i className="fas fa-chevron-left" />
+          {translateMethod(
+            'back.to.team',
+            false,
+            `Back to {props.currentTeam._humanReadableId}`,
+            props.currentTeam.name
+          )}
+        </Link>
+      )
       if (props.creation) {
-        props.injectNavFooter(
-          <>
-            <Link
-              className="d-flex justify-content-around mt-3 align-items-center"
-              style={{
-                border: 0,
-                background: 'transparent',
-                outline: 'none',
-              }}
-              to={`/${props.currentTeam._humanReadableId}/settings/apis`}
-            >
-              <i className="fas fa-chevron-left" />
-              {translateMethod(
-                'back.to.team',
-                false,
-                `Back to {props.currentTeam._humanReadableId}`,
-                props.currentTeam.name
-              )}
-            </Link>
-          </>
-        );
+        addMenu({
+          blocks: {
+            actions: {
+              links: {
+                back: {
+                  component: backButton
+                }
+              }
+            }
+          }
+        })
       } else {
-        props.injectNavFooter(
-          <>
-            <Link
-              to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
-              className="btn btn-sm btn-access-negative mb-2"
-            >
-              {translateMethod('View this Api')}
-            </Link>
-            <CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
-            <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
-              {translateMethod('Delete this Api')}
-            </button>
-            <Link
-              className="d-flex justify-content-around mt-3 align-items-center"
-              style={{
-                border: 0,
-                background: 'transparent',
-                outline: 'none',
-              }}
-              to={`/${props.currentTeam._humanReadableId}/settings/apis`}
-            >
-              <i className="fas fa-chevron-left" />
-              {translateMethod(
-                'back.to.team',
-                false,
-                `Back to {props.currentTeam._humanReadableId}`,
-                props.currentTeam.name
-              )}
-            </Link>
-          </>
-        );
+        addMenu({
+          blocks: {
+            actions: {
+              links: {
+                view: {
+                  component: (
+                    <Link
+                      to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
+                      className="btn btn-sm btn-access-negative mb-2"
+                    >
+                      {translateMethod('View this Api')}
+                    </Link>)
+                },
+                newVersion: {
+                  component: < CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
+                },
+                delete: {
+                  component: (
+                    <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
+                      {translateMethod('Delete this Api')}
+                    </button>
+                  )
+                },
+                back: {
+                  component: backButton
+                }
+              }
+            }
+          }
+        });
       }
     }
-    return () => props.injectNavFooter(null);
   }, [api]);
-
-  useEffect(() => {
-    if (tab !== 'infos') {
-      props.injectSubMenu(null);
-    }
-  }, [tab]);
 
   return (
     <Can I={manage} a={API} team={props.currentTeam} dispatchError>
@@ -299,7 +331,7 @@ const TeamApiComponent = (props) => {
                     creation={props.creation}
                     otoroshiSettings={otoroshiSettings}
                     expertMode={props.expertMode}
-                    injectSubMenu={props.injectSubMenu}
+                    injectSubMenu={component => addMenu({ blocks: { links: { links: { plans: { childs: { menu: {component} } } } } } })}
                     openApiSelectModal={props.openApiSelectModal}
                   />
                 )}
@@ -311,7 +343,7 @@ const TeamApiComponent = (props) => {
                     save={save}
                     creation={props.creation}
                     expertMode={props.expertMode}
-                    injectSubMenu={props.injectSubMenu}
+                    injectSubMenu={component => addMenu({ blocks: { links: { links: { informations: { childs: { menu: { component } } } } } } })}
                     openTestingApiKeyModal={props.openTestingApiKeyModal}
                     openSubMetadataModal={props.openSubMetadataModal}
                     otoroshiSettings={otoroshiSettings}

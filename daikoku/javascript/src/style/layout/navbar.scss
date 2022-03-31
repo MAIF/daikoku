@@ -240,6 +240,11 @@ a.navbar-brand, #teamSelector:hover {
               background-color: $menu-text-hover-bg-color;
             }
           }
+
+          .entry__submenu {
+            margin-left: 1rem;
+            font-size: 14px;
+          }
         }
       }
     }

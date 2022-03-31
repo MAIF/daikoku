@@ -84,10 +84,10 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       render: (v) => Image({ ...v, team, tenant }),
       constraints: [
         constraints.nullable(),
-        constraints.matches(
-          /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
-          translateMethod('constraints.format.url', false, '', translateMethod('Image'))
-        ),
+        // constraints.matches(
+        //   /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
+        //   translateMethod('constraints.format.url', false, '', translateMethod('Image'))
+        // ),
       ],
       expert: true,
     },

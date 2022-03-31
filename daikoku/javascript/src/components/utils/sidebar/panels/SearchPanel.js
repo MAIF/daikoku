@@ -93,7 +93,7 @@ export const SearchPanel = ({ teams }) => {
                     case 'api':
                       return (
                         <Link
-                          to={`/${team ? team._humanReadableId : option.team}/${option.value}/${option.version}`}
+                          to={`/${team ? team._humanReadableId : option.team}/${option.value}/${option.version}/description`}
                           className='block__entry__link'
                           key={option.value}
                         >{option.label}</Link>

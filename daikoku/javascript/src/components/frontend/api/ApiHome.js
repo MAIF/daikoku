@@ -179,7 +179,6 @@ const ApiHomeComponent = ({
 
 
   const updateSubscriptions = (apiId) => {
-    console.debug({params})
     Promise.all([
       Services.getVisibleApi(apiId, params.versionId),
       Services.getMySubscriptions(apiId, params.versionId),

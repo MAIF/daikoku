@@ -354,9 +354,8 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                   />
                 )}
 
-
                 <Route 
-                  path="/:teamId/settings/*" 
+                  path='/:teamId/settings*'
                   element={<TeamBackOfficeRouter tenant={tenant} />} />
 
                 <Route 

@@ -41,18 +41,33 @@ export const Companion = () => {
               return (
                 <div key={`${performance.now}${idx}`} className="block">
                   <div className='d-flex flex-column block__entries'>
-                    {Object.values(block.links).map((entry, idx) => {
+                    {block.links && Object.values(block.links).map((entry, idx) => {
+                      let link = null
                       if (entry.action) {
-                        return (
-                          <span key={`${performance.now}-link-${idx}`} className={classNames('block__entry__link', entry.className)} onClick={() => entry.action()}>{entry.label}</span>
-                        )
+                        link =  <span key={`${performance.now}-link-${idx}`} className={classNames('block__entry__link', entry.className)} onClick={() => entry.action()}>{entry.label}</span>
                       } else if (entry.link) {
-                        return (
-                          <Link key={`${performance.now}-link-${idx}`} className={classNames('block__entry__link', entry.className)} to={entry.link}>{entry.label}</Link>
-                        )
+                          link = <Link key={`${performance.now}-link-${idx}`} className={classNames('block__entry__link', entry.className)} to={entry.link}>{entry.label}</Link>
                       } else if (entry.component) {
-                        return React.cloneElement(entry.component, { key: `${performance.now}-link-${idx}` })
+                        link = React.cloneElement(entry.component, { key: `${performance.now}-link-${idx}` })
                       }
+                      return (
+                        <>
+                          {link}
+                          {entry.childs && (
+                            <div className="entry__submenu" key={`${performance.now}-submenu-${idx}`}>
+                              {Object.values(entry.childs).map((entry, idx) => {
+                                if (entry.action) {
+                                  return <span key={`${performance.now}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} onClick={() => entry.action()}>{entry.label}</span>
+                                } else if (entry.link) {
+                                  return <Link key={`${performance.now}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} to={entry.link}>{entry.label}</Link>
+                                } else if (entry.component) {
+                                  return React.cloneElement(entry.component, { key: `${performance.now}-child-${idx}` })
+                                }
+                              })}
+                            </div>
+                          )}
+                        </>
+                      )
                     })}
                   </div>
                 </div>

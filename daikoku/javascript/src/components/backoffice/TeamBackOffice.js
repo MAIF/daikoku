@@ -49,6 +49,7 @@ import {
 
 import { I18nContext } from '../../core';
 import { toastr } from 'react-redux-toastr';
+import { useTeamBackOffice } from '../../contexts';
 
 const BackOfficeContent = (props) => {
   return (
@@ -166,33 +167,11 @@ const NavItem = ({ to, icon, name, subItem, injectedSubMenu }) => {
   );
 };
 
-const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
-  const [versions, setVersions] = useState([]);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    Services.getAllApiVersions(currentTeam._id, apiId).then((res) =>
-      setVersions(res.map((v) => ({ label: v, value: v })))
-    );
-  }, []);
 
-  return (
-    <Select
-      name="versions-selector"
-      value={{ label: versionId, value: versionId }}
-      options={versions}
-      onChange={(e) => navigate(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
-      classNamePrefix="reactSelect"
-      className="m-2"
-      menuPlacement="auto"
-      menuPosition="fixed"
-    />
-  );
-};
+const TeamBackOfficeComponent = ({ currentTeam, isLoading, error, title }) => {
 
-const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title }) => {
-  const [injectedSubMenu, setInjectedSubMenu] = useState();
-  const [injectedNavFooter, setInjectedNavFooter] = useState();
+  useTeamBackOffice(currentTeam)
 
   useEffect(() => {
     if (title) {
@@ -200,276 +179,10 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
     }
   }, [title]);
 
-  const { Translation, translateMethod } = useContext(I18nContext);
 
   if (!currentTeam) {
     return null;
   }
-
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const ApiSidebar = ({ path, injectedFooter, injectedSubMenu, creation }) => {
-    const sidebarParams = useParams();
-
-    const realPath =
-      `/${currentTeam._humanReadableId}/settings` +
-      path.replace(':apiId', sidebarParams.apiId).replace(':versionId', sidebarParams.versionId);
-
-    return (
-      <>
-        <VersionsButton {...sidebarParams} currentTeam={currentTeam} />
-        {[
-          { route: 'infos', icon: 'info', name: translateMethod('Informations'), onCreation: true },
-          { route: 'plans', icon: 'euro-sign', name: translateMethod('Plans'), onCreation: false },
-          {
-            route: 'documentation',
-            icon: 'book',
-            name: translateMethod('Documentation'),
-            onCreation: false,
-          },
-          { route: 'news', icon: 'newspaper', name: translateMethod('News'), onCreation: false },
-        ]
-          .filter((item) => creation || item.onCreation)
-          .map((item, i) => (
-            <NavItem
-              {...item}
-              to={realPath.replace(':tab', item.route)}
-              key={`item-${i}`}
-              injectedSubMenu={injectedSubMenu}
-            />
-          ))}
-
-        <div className="px-3 mb-4 mt-auto d-flex flex-column">{injectedNavFooter}</div>
-      </>
-    );
-  };
-
-  const TeamSidebar = () => {
-    const tab = location.pathname.split('/').slice(-1)[0];
-    const isOnHomePage = tab === 'settings';
-
-    return (
-      <>
-        <Can I={read} a={api} team={currentTeam}>
-          <li className="nav-item">
-            <Link
-              className={`nav-link ${isOnHomePage ? 'active' : ''}`}
-              to={`/${currentTeam._humanReadableId}/settings`}
-            >
-              <i className="fas fa-cog" />
-              <Translation i18nkey="Settings">Settings</Translation>
-            </Link>
-          </li>
-        </Can>
-
-        <Routes>
-          {['/', '/edition', '/members', '/assets'].map((r, i) => (
-            <Route
-              key={`route-${r}-${i}`}
-              path={r}
-              element={
-                <>
-                  <Can I={read} a={api} team={currentTeam}>
-                    <NavItem
-                      to={`/${currentTeam._humanReadableId}/settings/edition`}
-                      icon="info"
-                      name={translateMethod('Informations')}
-                      subItem={true}
-                      injectedSubMenu={injectedSubMenu}
-                    />
-                  </Can>
-                  {currentTeam.type === 'Organization' && (
-                    <Can I={manage} a={team} team={currentTeam}>
-                      <NavItem
-                        to={`/${currentTeam._humanReadableId}/settings/members`}
-                        icon="users"
-                        name={translateMethod('Member', true)}
-                        subItem={true}
-                      />
-                    </Can>
-                  )}
-                  {currentTeam.type !== 'Admin' && (
-                    <Can I={manage} a={asset} team={currentTeam}>
-                      <NavItem
-                        to={`/${currentTeam._humanReadableId}/settings/assets`}
-                        icon="tools"
-                        name={translateMethod('Assets')}
-                        subItem={true}
-                      />
-                    </Can>
-                  )}
-                </>
-              }
-            />
-          ))}
-        </Routes>
-
-        {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
-          <Can I={read} a={api} team={currentTeam}>
-            <NavItem
-              to={`/${currentTeam._humanReadableId}/settings/apis`}
-              icon="atlas"
-              name={translateMethod('Apis')}
-            />
-          </Can>
-        )}
-        <Can I={read} a={apikey} team={currentTeam}>
-          <NavItem
-            to={`/${currentTeam._humanReadableId}/settings/apikeys`}
-            icon="key"
-            name={translateMethod('Api keys')}
-          />
-        </Can>
-
-        <Routes>
-          {['/apikeys', '/apikeys/:apiId/:versionId', '/consumption'].map((r) => (
-            <Route
-              key={r}
-              path={r}
-              element={
-                <>
-                  <Can I={read} a={stat} team={currentTeam}>
-                    <NavItem
-                      to={`/${currentTeam._humanReadableId}/settings/consumption`}
-                      icon="file-invoice-dollar"
-                      name={translateMethod('Global stats')}
-                      subItem={true}
-                    />
-                  </Can>
-                </>
-              }
-            />
-          ))}
-        </Routes>
-
-        <Can I={read} a={stat} team={currentTeam}>
-          <NavItem
-            to={`/${currentTeam._humanReadableId}/settings/billing`}
-            icon="file-invoice-dollar"
-            name={translateMethod('Billing')}
-          />
-        </Can>
-
-        <Routes>
-          {['/billing', '/income'].map((r) => (
-            <Route
-              key={r}
-              path={r}
-              element={
-                <>
-                  {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
-                    <Can I={read} a={api} team={currentTeam}>
-                      <NavItem
-                        to={`/${currentTeam._humanReadableId}/settings/income`}
-                        icon="file-invoice-dollar"
-                        name={translateMethod('Income')}
-                        subItem={true}
-                      />
-                    </Can>
-                  )}
-                </>
-              }
-            />
-          ))}
-          <Route
-            path="/apis"
-            element={
-              <div className="px-3 mb-4 mt-auto d-flex flex-column">
-                <button
-                  onClick={() => {
-                    Services.fetchNewApi()
-                      .then((e) => {
-                        const verb = faker.hacker.verb();
-                        const apiName =
-                          verb.charAt(0).toUpperCase() +
-                          verb.slice(1) +
-                          ' ' +
-                          faker.hacker.adjective() +
-                          ' ' +
-                          faker.hacker.noun() +
-                          ' api';
-
-                        e.name = apiName;
-                        e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
-                        return e;
-                      })
-                      .then((newApi) => {
-                        navigate(
-                          `/${currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
-                          {
-                            state: {
-                              newApi: { ...newApi, team: currentTeam._id },
-                            },
-                          }
-                        );
-                      });
-                  }}
-                  className="btn btn-outline-primary mb-2"
-                >
-                  {translateMethod('Create a new API')}
-                </button>
-              </div>
-            }
-          />
-        </Routes>
-      </>
-    );
-  };
-
-  const ConsumptionsBar = () => {
-    const params = useParams();
-    return (
-      <>
-        <Can I={read} a={apikey} team={currentTeam}>
-          <NavItem
-            to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${params.sub}/consumptions`}
-            icon="key"
-            name={translateMethod('Consumptions')}
-          />
-        </Can>
-        <Link
-          className="d-flex justify-content-around mb-4 mt-auto align-items-center"
-          style={{
-            border: 0,
-            background: 'transparent',
-            outline: 'none',
-          }}
-          to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}
-        >
-          <i className="fas fa-chevron-left" />
-          Back to apikeys
-        </Link>
-      </>
-    );
-  };
-
-  const ApiKeysBar = () => {
-    const params = useParams();
-    return (
-      <>
-        <Can I={read} a={apikey} team={currentTeam}>
-          <NavItem
-            to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}
-            icon="key"
-            name={translateMethod('Api keys')}
-          />
-        </Can>
-        <Link
-          className="d-flex justify-content-around mb-4 mt-auto align-items-center"
-          style={{
-            border: 0,
-            background: 'transparent',
-            outline: 'none',
-          }}
-          to={`/${currentTeam._humanReadableId}/settings/apikeys`}
-        >
-          <i className="fas fa-chevron-left" />
-          Back to apis
-        </Link>
-      </>
-    );
-  };
 
   return (
     <div className="row">
@@ -485,45 +198,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
         <span className="sr-only">Toggle sidebar</span>
         <span className="chevron" />
       </button>
-      <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
-        <div className="sidebar-sticky d-flex flex-column p-0">
-          <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
-            {currentTeam.name}
-          </span>
-          <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
-            <Routes>
-              <Route
-                path="/apis/:apiId/:versionId/:tab/*"
-                element={
-                  <ApiSidebar
-                    path="/apis/:apiId/:versionId/:tab"
-                    injectedFooter={injectedNavFooter}
-                    injectedSubMenu={injectedSubMenu}
-                    creation
-                  />
-                }
-              />
-              <Route
-                path={`/apis/:apiId/:tab`}
-                element={
-                  <ApiSidebar
-                    path={`/apis/:apiId/:tab`}
-                    injectedFooter={injectedNavFooter}
-                    injectedSubMenu={injectedSubMenu}
-                  />
-                }
-              />
-              <Route path={`/apikeys/:apiId/:versionId`} element={<ApiKeysBar />} />
-              <Route
-                path={`/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
-                element={<ConsumptionsBar />}
-              />
-              <Route path="*" element={<TeamSidebar />} />
-            </Routes>
-          </ul>
-        </div>
-      </nav>
-      <main role="main" className="col-md-9 offset-md-2 ml-sm-auto px-4 mt-3">
+      <main role="main" className="ml-sm-auto px-4 mt-3">
         <div
           className={classNames('back-office-overlay', {
             active: isLoading && !error.status,
@@ -555,20 +230,13 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             <Route
               path={`/apis/:apiId/:versionId/:tab/*`}
               element={
-                <TeamApi
-                  injectNavFooter={setInjectedNavFooter}
-                  injectSubMenu={setInjectedSubMenu}
-                />
+                <TeamApi />
               }
             />
             <Route
               path={`/apis/:apiId/:tab`}
               element={
-                <TeamApi
-                  injectNavFooter={setInjectedNavFooter}
-                  injectSubMenu={setInjectedSubMenu}
-                  creation
-                />
+                <TeamApi creation/>
               }
             />
             <Route path={`/apis`} element={<TeamApis />} />
