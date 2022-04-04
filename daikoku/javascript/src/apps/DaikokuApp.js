@@ -107,6 +107,14 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             <div className="wrapper flex-grow-1" style={{ height: '100vh', overflow: 'scroll' }}>
               <Routes>
                 <Route
+                  path="/me"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('My profile')}`}>
+                      <MyProfile />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
                   path="/2fa"
                   element={
                     <UnauthenticatedRoute
@@ -270,14 +278,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                   }
                 />
                 <Route
-                  path="/settings/me"
-                  element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('My profile')}`}>
-                      <MyProfile />
-                    </RouteWithTitle>
-                  }
-                />
-                <Route
                   path="/settings/teams/:teamSettingId"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team')}`}>
@@ -387,10 +387,9 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             <Route path="/*" element={<Discussion />} />
           </Routes>
           <Routes>
-            {['/settings', '/notifications', '/:teamId/settings'].map((r) => (
+            {['/settings', '/notifications', '/me', '/:teamId/settings'].map((r) => (
               <Route key={r} path={r} element={<></>} />
             ))}
-
             <Route path="/" element={<Footer isBackOffice={false} />} />
           </Routes>
           <Error />

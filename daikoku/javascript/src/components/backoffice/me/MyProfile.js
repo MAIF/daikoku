@@ -3,13 +3,13 @@ import * as Services from '../../../services';
 import md5 from 'js-md5';
 import { toastr } from 'react-redux-toastr';
 import { Form, type, format, constraints } from '@maif/react-forms';
-import { connect } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import { UserBackOffice } from '../../backoffice';
 import { I18nContext, updateUser } from '../../../core';
+import { useUserBackOffice } from '../../../contexts';
 
-function TwoFactorAuthentication({ user }) {
+const TwoFactorAuthentication = ({ user }) => {
   const [modal, setModal] = useState(false);
   const [error, setError] = useState();
   const [backupCodes, setBackupCodes] = useState('');
@@ -235,9 +235,8 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
     <div className="">
       <div className="float-right mb-4 position-relative">
         <img
-          src={`${rawValues?.picture}${
-            rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
-          }`}
+          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
+            }`}
           style={{
             width: 100,
             borderRadius: '50%',
@@ -279,7 +278,7 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
   );
 };
 
-function PictureUpload(props) {
+const PictureUpload = (props) => {
   const [uploading, setUploading] = useState(false);
 
   const { Translation } = useContext(I18nContext);
@@ -323,9 +322,14 @@ function PictureUpload(props) {
   );
 }
 
-function MyProfileComponent(props) {
+export const MyProfile = () => {
+  useUserBackOffice()
+
   const [user, setUser] = useState();
   const [tab, setTab] = useState('infos');
+
+  const { tenant, connectedUser } = useSelector(state => state.context);
+  const dispatch = useDispatch();
 
   const { translateMethod, setLanguage, language, Translation, languages } =
     useContext(I18nContext);
@@ -350,7 +354,7 @@ function MyProfileComponent(props) {
     picture: {
       type: type.string,
       label: translateMethod('Avatar'),
-      render: (v) => Avatar({ ...v, tenant: props.tenant }),
+      render: (v) => Avatar({ ...v, tenant: tenant }),
       constraints: [
         constraints.required(translateMethod('constraints.required.avatar')),
         constraints.url(
@@ -362,7 +366,7 @@ function MyProfileComponent(props) {
       type: type.string,
       format: format.select,
       label: translateMethod('Default language'),
-      defaultValue: languages.find((l) => l.value === props.tenant.defaultLanguage),
+      defaultValue: languages.find((l) => l.value === tenant.defaultLanguage),
       options: languages,
       constraints: [constraints.nullable()],
     },
@@ -404,7 +408,7 @@ function MyProfileComponent(props) {
   };
 
   useEffect(() => {
-    Services.me(props.connectedUser._id).then((user) => {
+    Services.me(connectedUser._id).then((user) => {
       setUser(user);
       if (user.defaultLanguage && user.defaultLanguage !== language)
         setLanguage(user.defaultLanguage);
@@ -414,7 +418,7 @@ function MyProfileComponent(props) {
   const save = (data) => {
     Services.updateUserById(data).then((user) => {
       setUser(user);
-      props.updateUser(user);
+      updateUser(user)(dispatch);
 
       if (language !== user.defaultLanguage) setLanguage(user.defaultLanguage);
 
@@ -448,7 +452,7 @@ function MyProfileComponent(props) {
         toastr.error(translateMethod(user.error, false));
       } else {
         setUser(user);
-        props.updateUser(user);
+        updateUser(user)(dispatch);
 
         toastr.success(
           translateMethod(
@@ -462,122 +466,102 @@ function MyProfileComponent(props) {
   };
 
   return (
-    <UserBackOffice tab="Me" isLoading={!user}>
-      <div className="col">
-        <div className="row">
-          <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
-            <li className="nav-item">
-              <span
-                className={`nav-link cursor-pointer ${tab === 'infos' ? 'active' : ''}`}
-                onClick={() => setTab('infos')}
-              >
-                <Translation i18nkey="Informations">Informations</Translation>
-              </span>
-            </li>
-            <li className="nav-item">
-              <span
-                className={`nav-link cursor-pointer ${tab === 'security' ? 'active' : ''}`}
-                onClick={() => setTab('security')}
-              >
-                <Translation i18nkey="Security">AccountSecurity</Translation>
-              </span>
-            </li>
-          </ul>
-          {tab === 'infos' && (
-            <Form
-              flow={formFlow}
-              schema={formSchema}
-              value={user}
-              onSubmit={save}
-              footer={({ valid }) => {
-                return (
-                  <div className="d-flex mt-3" style={{ justifyContent: 'flex-end' }}>
-                    <a
-                      className="btn btn-outline-primary"
-                      href="#"
-                      onClick={() => props.history.goBack()}
-                    >
-                      <i className="fas fa-chevron-left me-1" />
-                      <Translation i18nkey="Back">Back</Translation>
-                    </a>
-                    <button
-                      type="button"
-                      className="btn btn-outline-danger"
-                      style={{ marginLeft: 5 }}
-                      onClick={removeUser}
-                    >
-                      <i className="fas fa-trash me-1" />
-                      <Translation i18nkey="Delete my profile">Delete my profile</Translation>
-                    </button>
-                    <button
-                      style={{ marginLeft: 5 }}
-                      type="button"
-                      className="btn btn-outline-success"
-                      onClick={valid}
-                    >
-                      <span>
-                        <i className="fas fa-save me-1" />
-                        <Translation i18nkey="Save">Save</Translation>
-                      </span>
-                    </button>
-                  </div>
-                );
-              }}
-            />
-          )}
-          {tab === 'security' && (
-            <div className="row">
-              <div className="col-sm-6">
-                <div className="row">
-                  <h4>
-                    <Translation i18nkey="profile.security.updatePassword">
-                      Update password
-                    </Translation>
-                  </h4>
-                  <Form
-                    schema={changePasswordSchema}
-                    onSubmit={updatePassword}
-                    footer={({ valid }) => {
-                      return (
-                        <div className="d-flex justify-content-end">
-                          <button
-                            type="button"
-                            className="btn btn-outline-success mb-2"
-                            onClick={valid}
-                          >
-                            <span>
-                              <Translation i18nkey="profile.security.updatePassword">
-                                Update password
-                              </Translation>
-                            </span>
-                          </button>
-                          {/* TODO: forgot password link */}
-                        </div>
-                      );
-                    }}
-                  />
+    <div className="container-fluid">
+      <div className="row">
+        <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
+          <li className="nav-item">
+            <span
+              className={`nav-link cursor-pointer ${tab === 'infos' ? 'active' : ''}`}
+              onClick={() => setTab('infos')}
+            >
+              <Translation i18nkey="Informations">Informations</Translation>
+            </span>
+          </li>
+          <li className="nav-item">
+            <span
+              className={`nav-link cursor-pointer ${tab === 'security' ? 'active' : ''}`}
+              onClick={() => setTab('security')}
+            >
+              <Translation i18nkey="Security">AccountSecurity</Translation>
+            </span>
+          </li>
+        </ul>
+        {tab === 'infos' && (
+          <Form
+            flow={formFlow}
+            schema={formSchema}
+            value={user}
+            onSubmit={save}
+            footer={({ valid }) => {
+              return (
+                <div className="d-flex mt-3" style={{ justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger"
+                    style={{ marginLeft: 5 }}
+                    onClick={removeUser}
+                  >
+                    <i className="fas fa-trash me-1" />
+                    <Translation i18nkey="Delete my profile">Delete my profile</Translation>
+                  </button>
+                  <button
+                    style={{ marginLeft: 5 }}
+                    type="button"
+                    className="btn btn-outline-success"
+                    onClick={valid}
+                  >
+                    <span>
+                      <i className="fas fa-save me-1" />
+                      <Translation i18nkey="Save">Save</Translation>
+                    </span>
+                  </button>
                 </div>
-              </div>
-              <div className="col-sm-6">
+              );
+            }}
+          />
+        )}
+        {tab === 'security' && (
+          <div className="row">
+            <div className="col-sm-6">
+              <div className="row">
                 <h4>
-                  <Translation i18nkey="2fa">Two-factor authentication</Translation>
+                  <Translation i18nkey="profile.security.updatePassword">
+                    Update password
+                  </Translation>
                 </h4>
-                <TwoFactorAuthentication user={user} />
+                <Form
+                  schema={changePasswordSchema}
+                  onSubmit={updatePassword}
+                  footer={({ valid }) => {
+                    return (
+                      <div className="d-flex justify-content-end">
+                        <button
+                          type="button"
+                          className="btn btn-outline-success mb-2"
+                          onClick={valid}
+                        >
+                          <span>
+                            <Translation i18nkey="profile.security.updatePassword">
+                              Update password
+                            </Translation>
+                          </span>
+                        </button>
+                        {/* TODO: forgot password link */}
+                      </div>
+                    );
+                  }}
+                />
               </div>
             </div>
-          )}
-        </div>
+            <div className="col-sm-6">
+              <h4>
+                <Translation i18nkey="2fa">Two-factor authentication</Translation>
+              </h4>
+              <TwoFactorAuthentication user={user} />
+            </div>
+          </div>
+        )}
       </div>
-    </UserBackOffice>
+    </div>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  updateUser: (u) => updateUser(u),
-};
-
-export const MyProfile = connect(mapStateToProps, mapDispatchToProps)(MyProfileComponent);

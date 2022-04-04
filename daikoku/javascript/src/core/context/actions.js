@@ -52,7 +52,7 @@ export const updateTeamPromise = (team) => (dispatch) => {
   );
 };
 
-export const updateNotications = (unreadNotificationsCount) => (dispatch) => {
+export const updateNotifications = (unreadNotificationsCount) => (dispatch) => {
   return dispatch({
     type: UPDATE_NOTIFS,
     unreadNotificationsCount,

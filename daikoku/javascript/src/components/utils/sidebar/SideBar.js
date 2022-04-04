@@ -7,7 +7,7 @@ import faker from 'faker';
 import { Sun, Moon, Search, Plus, MessageSquare, Bell, ArrowLeft, ChevronLeft, ChevronRight } from 'react-feather';
 
 import * as Services from '../../../services';
-import { logout, updateNotications, updateTenant } from '../../../core/context/actions';
+import { logout, updateNotifications, updateTenant } from '../../../core/context/actions';
 import { openCreationTeamModal, openTeamSelectorModal } from '../../../core/modal'
 import { Can, manage, daikoku, tenant, CanIDoAction, api as API } from '..';
 import { MessagesTopBarTools } from '../../backoffice/messages';
@@ -49,7 +49,7 @@ export const SideBar = () => {
       Services.teams()
     ]).then(
       ([notifCount, teams]) => {
-        updateNotications(notifCount.count)(dispatch);
+        updateNotifications(notifCount.count)(dispatch);
         setTeams(teams);
       }
     );

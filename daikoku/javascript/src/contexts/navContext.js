@@ -10,6 +10,8 @@ import { Can, manage, api as API } from '../components/utils'
 export const navMode = {
   initial: "INITIAL",
   api: "API",
+  user: 'USER',
+  daikoku: 'DAIKOKU',
   tenant: 'TENANT',
   team: "TEAM",
 }
@@ -161,7 +163,6 @@ export const useApiBackOffice = (api) => {
   }
 
   useEffect(() => {
-    console.debug({menu})
     if (params.tab && !_.isEmpty(menu)) {
       addMenu(schema(params.tab))
     }
@@ -206,7 +207,7 @@ export const useTeamBackOffice = (team) => {
             action: () => navigateTo(''),
             className: { active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab) },
             childs: {
-              informations: { label: translateMethod("Informations"), action: () => navigateTo('edition'), className: {active: currentTab === 'edition'} },
+              informations: { label: translateMethod("Informations"), action: () => navigateTo('edition'), className: { active: currentTab === 'edition' } },
               assets: { label: translateMethod("Assets"), action: () => navigateTo('assets'), className: { active: currentTab === 'assets' } },
               members: { label: translateMethod("Members"), action: () => navigateTo('members'), className: { active: currentTab === 'members' } },
             }
@@ -264,18 +265,157 @@ export const useTeamBackOffice = (team) => {
   return { addMenu };
 }
 
-export const useTenantBackOffice = (tenant) => {
-  const { setMode, setOffice, setTenant } = useContext(NavContext)
+export const useTenantBackOffice = () => {
+  const { setMode, setOffice, addMenu, setMenu, menu, setTenant } = useContext(NavContext)
+  const { translateMethod } = useContext(I18nContext);
+
+  const navigate = useNavigate();
+  const match = useMatch('/settings/:tab*');
+
+  const tenant = useSelector(state => state.context.tenant)
+
+  const schema = currentTab => ({
+    title: tenant.name,
+    blocks: {
+      links: {
+        order: 1,
+        links: {
+          message: { label: translateMethod("Message", true), action: () => navigateTo('messages'), className: { active: currentTab === 'messages' } },
+          otoroshi: { label: translateMethod("Otoroshi instance", true), action: () => navigateTo('otoroshis'), className: { active: currentTab === 'otoroshis' } },
+          admins: { label: translateMethod("Admins"), action: () => navigateTo('admins'), className: { active: currentTab === 'admins' } },
+          audit: { label: translateMethod("Audit trail"), action: () => navigateTo('audit'), className: { active: currentTab === 'audit' } },
+          teams: { label: translateMethod("Teams"), action: () => navigateTo('teams'), className: { active: currentTab === 'teams' } },
+          assets: { label: translateMethod("Tenant assets"), action: () => navigateTo('assets'), className: { active: currentTab === 'assets' } },
+          init: { label: translateMethod("Initialization"), action: () => navigateTo('init'), className: { active: currentTab === 'init' } },
+          internationalization: { label: translateMethod("Internationalization"), action: () => navigateTo('internationalization/mail'), className: { active: currentTab === 'internationalization' } },
+          pages: { label: translateMethod("Pages"), action: () => navigateTo('pages'), className: { active: currentTab === 'pages' } },
+        }
+      }
+    }
+  })
+
+  const navigateTo = (navTab) => {
+    navigate(`/settings/${navTab}`)
+  }
 
   useEffect(() => {
+    if (match.params.tab && !_.isEmpty(menu)) {
+      addMenu(schema(match.params.tab))
+    }
+  }, [match.params.tab, tenant])
+
+  useEffect(() => {
+    setMenu(schema(match.params.tab))
     setMode(navMode.tenant)
-    setOffice(officeMode.front)
+    setOffice(officeMode.back)
     setTenant(tenant)
 
     return () => {
       setMode(navMode.initial)
-      setTenant(tenant)
+      setTenant(undefined)
+      setMenu({})
     }
   }, [tenant])
+
+  return { addMenu };
+}
+
+export const useDaikokuBackOffice = () => {
+  const { setMode, setOffice, addMenu, setMenu, menu } = useContext(NavContext)
+  const { translateMethod } = useContext(I18nContext);
+
+
+  const navigate = useNavigate();
+  const match = useMatch('/settings/:tab*');
+
+  const schema = currentTab => ({
+    title: tenant.name,
+    blocks: {
+      links: {
+        order: 1,
+        links: {
+          tenants: { label: translateMethod("Tenants"), action: () => navigateTo('tenants'), className: { active: currentTab === 'tenants' } },
+          users: { label: translateMethod("Users"), action: () => navigateTo('users'), className: { active: currentTab === 'users' } },
+          sessions: { label: translateMethod("User sessions"), action: () => navigateTo('sessions'), className: { active: currentTab === 'sessions' } },
+          importexport: { label: translateMethod("Import / Expor"), action: () => navigateTo('import-export'), className: { active: currentTab === 'import-export' } },
+        }
+      }
+    }
+  })
+  
+  const navigateTo = (navTab) => {
+    navigate(`/settings/${navTab}`)
+  }
+
+  useEffect(() => {
+    if (match.params.tab && !_.isEmpty(menu)) {
+      addMenu(schema(match.params.tab))
+    }
+  }, [match.params.tab, api])
+
+
+  useEffect(() => {
+    setMode(navMode.daikoku)
+    setOffice(officeMode.back)
+    setTenant(tenant)
+    setMenu(schema(match.params.tab))
+
+    return () => {
+      setMode(navMode.initial)
+      setTenant(undefined)
+      setMenu({})
+    }
+  }, [tenant])
+
+  return { addMenu };
+}
+
+export const useUserBackOffice = () => {
+  const { setMode, setOffice, addMenu, setMenu, menu } = useContext(NavContext)
+  const { translateMethod } = useContext(I18nContext);
+
+  const { connectedUser } = useSelector(state => state.context)
+
+  const navigate = useNavigate();
+  const match = useMatch('/:tab');
+
+ 
+
+  const schema = currentTab => ({
+    title: connectedUser.name,
+    blocks: {
+      links: {
+        order: 1,
+        links: {
+          profile: { label: translateMethod("My profile"), action: () => navigateTo('me'), className: { active: currentTab === 'me' } },
+          notification: { label: translateMethod("Notifications"), action: () => navigateTo('notifications'), className: { active: currentTab === 'notifications' } },
+        }
+      }
+    }
+  })
+
+  const navigateTo = (navTab) => {
+    navigate(`/${navTab}`)
+  }
+
+  useEffect(() => {
+    if (match.params.tab && !_.isEmpty(menu)) {
+      addMenu(schema(match.params.tab))
+    }
+  }, [match.params.tab])
+
+  useEffect(() => {
+    setMode(navMode.user)
+    setOffice(officeMode.back)
+    setMenu(schema(match.params.tab))
+
+    return () => {
+      setMode(navMode.initial)
+      setTenant(undefined)
+      setMenu({})
+    }
+  }, [])
+
+  return { addMenu };
 }
 

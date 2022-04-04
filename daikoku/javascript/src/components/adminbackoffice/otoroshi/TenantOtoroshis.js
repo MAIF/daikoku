@@ -1,28 +1,33 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { connect } from 'react-redux';
+import { connect, useSelector } from 'react-redux';
 import { v4 as uuid } from 'uuid';
 import faker from 'faker';
 
 import * as Services from '../../../services';
 import { Table } from '../../inputs';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, tenant } from '../../utils';
+import { Can, manage, tenant as TENANT } from '../../utils';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../locales/i18n-context';
+import { useTenantBackOffice } from '../../../contexts';
 
-export function TenantOtoroshisComponent(props) {
+export const TenantOtoroshis = () => {
+  const { tenant, connectedUser } = useSelector(s => s.context);
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
-  const [isTenantAdmin, setIsTenantAdmin] = useState(props.connectedUser.isDaikokuAdmin);
+  useTenantBackOffice();
+
+  const [isTenantAdmin, setIsTenantAdmin] = useState(connectedUser.isDaikokuAdmin);
 
   useEffect(() => {
     if (!isTenantAdmin)
-      Services.tenantAdmins(props.tenant._id).then((res) => {
-        if (res.admins)
-          setIsTenantAdmin(res.admins.find((admin) => admin._id === props.connectedUser._id));
-      });
+      Services.tenantAdmins(tenant._id)
+        .then((res) => {
+          if (res.admins)
+            setIsTenantAdmin(res.admins.find((admin) => admin._id === connectedUser._id));
+        });
   }, []);
 
   let table;
@@ -82,7 +87,7 @@ export function TenantOtoroshisComponent(props) {
   const onDelete = (id) => {
     window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
       if (ok) {
-        Services.deleteOtoroshiSettings(props.tenant._id, id).then(() => {
+        Services.deleteOtoroshiSettings(tenant._id, id).then(() => {
           toastr.success(translateMethod('otoroshi.settings.deleted.success'));
           table.update();
         });
@@ -106,48 +111,34 @@ export function TenantOtoroshisComponent(props) {
   };
 
   return (
-    <UserBackOffice tab="Otoroshi">
-      <Can I={manage} a={tenant} dispatchError>
-        <div className="row">
-          <div className="col">
-            <h1>
-              <Translation i18nkey="Otoroshi settings">Otoroshi settings</Translation>
-              <a
-                className="btn btn-sm btn-access-negative mb-1 ms-1"
-                title={translateMethod('Create new settings')}
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  createNewSettings();
-                }}
-              >
-                <i className="fas fa-plus-circle" />
-              </a>
-            </h1>
-            <div className="section p-2">
-              <Table
-                selfUrl="otoroshis"
-                defaultTitle="Otoroshi instances"
-                defaultValue={() => ({})}
-                defaultSort="Url"
-                itemName="otoroshi"
-                columns={columns}
-                fetchItems={() => Services.allOtoroshis(props.tenant._id)}
-                showActions={false}
-                showLink={false}
-                extractKey={(item) => item._id}
-                injectTable={(t) => (table = t)}
-              />
-            </div>
+    <Can I={manage} a={TENANT} dispatchError>
+        <div>
+          <button
+            type='button'
+            className="btn btn-sm btn-access-negative mb-1 ms-1"
+            title={translateMethod('Create new settings')}
+            onClick={(e) => {
+              createNewSettings();
+            }}
+          >
+            Create new setting
+          </button>
+          <div className="section p-2">
+            <Table
+              selfUrl="otoroshis"
+              defaultTitle="Otoroshi instances"
+              defaultValue={() => ({})}
+              defaultSort="Url"
+              itemName="otoroshi"
+              columns={columns}
+              fetchItems={() => Services.allOtoroshis(tenant._id)}
+              showActions={false}
+              showLink={false}
+              extractKey={(item) => item._id}
+              injectTable={(t) => (table = t)}
+            />
           </div>
         </div>
-      </Can>
-    </UserBackOffice>
+    </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TenantOtoroshis = connect(mapStateToProps)(TenantOtoroshisComponent);
