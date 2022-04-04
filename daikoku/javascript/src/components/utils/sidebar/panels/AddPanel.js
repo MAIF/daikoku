@@ -1,18 +1,22 @@
 import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useMatch } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import faker from 'faker';
 
 import * as Services from '../../../../services';
 import { openCreationTeamModal, openTeamSelectorModal } from '../../../../core/modal'
-import { manage, CanIDoAction, api as API } from '../..';
+import { manage, CanIDoAction, api as API, Option } from '../..';
 import { I18nContext } from '../../../../locales/i18n-context';
+import { NavContext } from '../../../../contexts';
 
 export const AddPanel = ({ teams }) => {
   const { translateMethod } = useContext(I18nContext);
+  const { team } = useContext(NavContext);
+
   const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => state.context)
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const match = useMatch('/:teamId/settings/*')
 
   const myTeams = teams.filter(t => connectedUser.isDaikokuAdmin || t.users.some(u => u.userId === connectedUser._id))
 
@@ -59,6 +63,14 @@ export const AddPanel = ({ teams }) => {
     }
   };
 
+  const maybeTeam = Option(match)
+    .map(m => m.params)
+    .map(p => p.teamId)
+    .map(id => myTeams.find(t => t._humanReadableId === id))
+    .filter(t => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
+    .map(t => t._id)
+    .getOrNull();
+
   return (
     <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
       {/* todo: add a title if API page or tenant or Team */}
@@ -69,7 +81,7 @@ export const AddPanel = ({ teams }) => {
           <div className='ms-2 block__entries d-flex flex-column'>
             {connectedUser.isDaikokuAdmin && <strong className='block__entry__link'>tenant</strong>}
             <strong className='block__entry__link' onClick={createTeam}>team</strong>
-            <strong className='block__entry__link' onClick={() => createApi()}>API</strong>
+            <strong className='block__entry__link' onClick={() => createApi(maybeTeam)}>API</strong>
           </div>
         </div>
         {/* todo: add a block in function of context to create plan...otoroshi or whatever */}

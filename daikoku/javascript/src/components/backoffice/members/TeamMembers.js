@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -7,6 +7,7 @@ import classnames from 'classnames';
 
 import * as Services from '../../../services';
 import { openInvitationTeamModal, updateTeamPromise, I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 import {
   Option,
   PaginatedComponent,
@@ -35,6 +36,8 @@ export function TeamMembersSimpleComponent(props) {
   });
 
   const { translateMethod, Translation } = useContext(I18nContext);
+
+  useTeamBackOffice(props.currentTeam);
 
   useEffect(() => {
     updateMembers(props.currentTeam);

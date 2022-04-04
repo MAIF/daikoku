@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import moment from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
@@ -11,6 +11,7 @@ import { OtoroshiStatsVizualization } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
 const Currency = ({ plan }) => {
   const cur = _.find(currencies, (c) => c.code === plan.currency.code);
@@ -30,7 +31,7 @@ const sumGlobalInformations = (data) =>
       return acc;
     }, {});
 
-function TeamApiConsumptionComponent(props) {
+export const TeamApiConsumption = () => {
   const [state, setState] = useState({
     api: null,
     consumptions: null,
@@ -41,8 +42,12 @@ function TeamApiConsumptionComponent(props) {
     viewByPlan: true,
   });
 
+  const {currentTeam} = useSelector(state => state.context);
+  useTeamBackOffice(currentTeam);
+
   const navigate = useNavigate();
   const params = useParams();
+
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const mappers = [
@@ -95,14 +100,14 @@ function TeamApiConsumptionComponent(props) {
             <div key={plan._id} className="col-sm-4 col-lg-3">
               <PlanLightConsumption
                 api={state.api}
-                team={props.currentTeam}
+                team={currentTeam}
                 key={plan._id}
                 plan={plan}
                 data={sumGlobalInformations(data.filter((d) => d.plan === plan._id))}
                 period={state.period}
                 handleClick={() =>
                   navigate(
-                    `/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${state.api._humanReadableId}/${state.api.currentVersion}/plan/${plan._id}`
+                    `/${currentTeam._humanReadableId}/settings/consumptions/apis/${state.api._humanReadableId}/${state.api.currentVersion}/plan/${plan._id}`
                   )
                 }
               />
@@ -116,14 +121,14 @@ function TeamApiConsumptionComponent(props) {
   useEffect(() => {
     Promise.all([
       Services.teams(),
-      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
+      Services.teamApi(currentTeam._id, params.apiId, params.versionId),
     ]).then(([teams, api]) => setState({ ...state, teams, api }));
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('API consumption')}`;
+    document.title = `${currentTeam.name} - ${translateMethod('API consumption')}`;
   }, []);
 
   return (
-    <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
+    <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
       {!!state.api && (
         <div className="d-flex col flex-column pricing-content">
           <div className="row">
@@ -136,11 +141,11 @@ function TeamApiConsumptionComponent(props) {
             </div>
             <div className="col section p-2">
               <OtoroshiStatsVizualization
-                sync={() => Services.syncApiConsumption(params.apiId, props.currentTeam._id)}
+                sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
                 fetchData={(from, to) =>
                   Services.apiGlobalConsumption(
                     params.apiId,
-                    props.currentTeam._id,
+                    currentTeam._id,
                     from.valueOf(),
                     to.valueOf()
                   )
@@ -155,13 +160,7 @@ function TeamApiConsumptionComponent(props) {
   );
 }
 
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamApiConsumption = connect(mapStateToProps)(TeamApiConsumptionComponent);
-
-function PlanLightConsumption(props) {
+const PlanLightConsumption = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   const renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;

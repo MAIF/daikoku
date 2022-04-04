@@ -3,29 +3,18 @@ import {
   Link,
   Route,
   Routes,
-  useParams,
   useLocation,
-  useNavigate,
   NavLink,
   useResolvedPath,
   useMatch,
 } from 'react-router-dom';
 import classNames from 'classnames';
-import Select from 'react-select';
-import { connect } from 'react-redux';
-import faker from 'faker';
+import { connect, useSelector } from 'react-redux';
 
 import * as Services from '../../services';
 import {
-  Error,
   Can,
   manage,
-  read,
-  api,
-  apikey,
-  stat,
-  team,
-  asset,
   daikoku,
   tenant as TENANT,
 } from '../utils';
@@ -42,13 +31,12 @@ import {
   TeamConsumption,
   TeamBilling,
   TeamIncome,
-  AssetsList,
   TeamApiSubscriptions,
   TeamEdit,
+  TeamAssets
 } from '../backoffice';
 
 import { I18nContext } from '../../core';
-import { toastr } from 'react-redux-toastr';
 import { useTeamBackOffice } from '../../contexts';
 
 const BackOfficeContent = (props) => {
@@ -59,14 +47,18 @@ const BackOfficeContent = (props) => {
   );
 };
 
-function TeamBackOfficeHomeComponent(props) {
+const TeamBackOfficeHome = () => {
+  const {currentTeam} = useSelector(state => state.context);
+  useTeamBackOffice(currentTeam);
+
   const { Translation } = useContext(I18nContext);
   const [team, setTeam] = useState();
 
   useEffect(() => {
-    Services.teamHome(props.currentTeam._id).then(setTeam);
+    Services.teamHome(currentTeam._id)
+      .then(setTeam);
 
-    document.title = `${props.currentTeam.name}`;
+    document.title = `${currentTeam.name}`;
   }, []);
 
   if (!team) {
@@ -77,18 +69,18 @@ function TeamBackOfficeHomeComponent(props) {
     <div className="row">
       <div className="col">
         <h1>
-          {props.currentTeam.name}
+          {currentTeam.name}
           <a
             className="ms-1 btn btn-sm btn-access-negative"
             title="View this Team"
-            href={`/${props.currentTeam._humanReadableId}`}
+            href={`/${currentTeam._humanReadableId}`}
           >
             <i className="fas fa-eye"></i>
           </a>
         </h1>
         <div className="d-flex justify-content-center align-items-center col-12 mt-5">
           <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
-            <Link to={`/${props.currentTeam._humanReadableId}/settings/apis`} className="home-tile">
+            <Link to={`/${currentTeam._humanReadableId}/settings/apis`} className="home-tile">
               <span className="home-tile-number">{team.apisCount}</span>
               <span className="home-tile-text">
                 <Translation i18nkey="apis published" count={team.apisCount}>
@@ -97,7 +89,7 @@ function TeamBackOfficeHomeComponent(props) {
               </span>
             </Link>
             <Link
-              to={`/${props.currentTeam._humanReadableId}/settings/apikeys`}
+              to={`/${currentTeam._humanReadableId}/settings/apikeys`}
               className="home-tile"
             >
               <span className="home-tile-number">{team.subscriptionsCount}</span>
@@ -109,14 +101,14 @@ function TeamBackOfficeHomeComponent(props) {
             </Link>
             <Link
               to={
-                props.currentTeam.type === 'Personal'
+                currentTeam.type === 'Personal'
                   ? '#'
-                  : `/${props.currentTeam._humanReadableId}/settings/members`
+                  : `/${currentTeam._humanReadableId}/settings/members`
               }
               className="home-tile"
-              disabled={props.currentTeam.type === 'Personal' ? 'disabled' : null}
+              disabled={currentTeam.type === 'Personal' ? 'disabled' : null}
             >
-              {props.currentTeam.type !== 'Personal' ? (
+              {currentTeam.type !== 'Personal' ? (
                 <>
                   <span className="home-tile-number">{team.users.length}</span>
                   <span className="home-tile-text">
@@ -151,28 +143,9 @@ function TeamBackOfficeHomeComponent(props) {
   );
 }
 
-const NavItem = ({ to, icon, name, subItem, injectedSubMenu }) => {
-  const resolved = useResolvedPath(to);
-  const match = useMatch({ path: resolved.pathname, end: true });
-
-  return (
-    <li className="nav-item">
-      <NavLink className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')} to={to}>
-        <i className={`fas fa-${icon}`} style={{ marginLeft: subItem ? '12px' : 0 }} />
-        {name}
-      </NavLink>
-
-      {!!match && !!injectedSubMenu && <div className="ms-4 mt-2">{injectedSubMenu}</div>}
-    </li>
-  );
-};
-
 
 
 const TeamBackOfficeComponent = ({ currentTeam, isLoading, error, title }) => {
-
-  useTeamBackOffice(currentTeam)
-
   useEffect(() => {
     if (title) {
       document.title = title;
@@ -207,6 +180,8 @@ const TeamBackOfficeComponent = ({ currentTeam, isLoading, error, title }) => {
         <BackOfficeContent error={error}>
           <Routes>
             <Route path={`/edition`} element={<TeamEdit />} />
+            <Route path={`/assets`} element={<TeamAssets />} />
+
             <Route path={`/consumption`} element={<TeamConsumption />} />
             <Route path={`/billing`} element={<TeamBilling />} />
             <Route path={`/income`} element={<TeamIncome />} />
@@ -226,7 +201,6 @@ const TeamBackOfficeComponent = ({ currentTeam, isLoading, error, title }) => {
               element={<TeamPlanConsumption />}
             />
             <Route path={`/members`} element={<TeamMembers />} />
-            <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
             <Route
               path={`/apis/:apiId/:versionId/:tab/*`}
               element={
@@ -472,5 +446,3 @@ const mapStateToProps = (state) => ({
 
 export const TeamBackOffice = connect(mapStateToProps)(TeamBackOfficeComponent);
 export const UserBackOffice = connect(mapStateToProps)(UserBackOfficeComponent);
-
-const TeamBackOfficeHome = connect(mapStateToProps)(TeamBackOfficeHomeComponent);

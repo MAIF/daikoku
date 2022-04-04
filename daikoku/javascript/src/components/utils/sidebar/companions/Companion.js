@@ -54,7 +54,7 @@ export const Companion = () => {
                         <>
                           {link}
                           {entry.childs && (
-                            <div className="entry__submenu" key={`${performance.now}-submenu-${idx}`}>
+                            <div className="entry__submenu d-flex flex-column" key={`${performance.now}-submenu-${idx}`}>
                               {Object.values(entry.childs).map((entry, idx) => {
                                 if (entry.action) {
                                   return <span key={`${performance.now}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} onClick={() => entry.action()}>{entry.label}</span>

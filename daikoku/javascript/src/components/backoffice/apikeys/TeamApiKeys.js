@@ -1,30 +1,32 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import * as Services from '../../../services';
 import { Table } from '../../inputs';
 import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
 import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-export function TeamApiKeysComponent(props) {
+export const TeamApiKeys = () => {
+  const { currentTeam, connectedUser } = useSelector(state => state.context);
+  useTeamBackOffice(currentTeam);
+
   const tableRef = useRef();
   const [showApiKey, setShowApiKey] = useState(false);
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  let table;
-
   useEffect(() => {
     setShowApiKey(
-      props.connectedUser.isDaikokuAdmin ||
-        !props.currentTeam.showApiKeyOnlyToAdmins ||
-        isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
+      connectedUser.isDaikokuAdmin ||
+      !currentTeam.showApiKeyOnlyToAdmins ||
+      isUserIsTeamAdmin(connectedUser, currentTeam)
     );
-  }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins]);
+  }, [connectedUser.isDaikokuAdmin, currentTeam.showApiKeyOnlyToAdmins]);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translateMethod('API key')}`;
+    document.title = `${currentTeam.name} - ${translateMethod('API key')}`;
   }, []);
 
   const columns = [
@@ -54,7 +56,7 @@ export function TeamApiKeysComponent(props) {
           showApiKey && (
             <div style={{ minWidth: 100 }}>
               <Link
-                to={`/${props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
+                to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                 className="btn btn-sm btn-access-negative"
               >
                 <i className="fas fa-eye me-1" />
@@ -78,24 +80,23 @@ export function TeamApiKeysComponent(props) {
       )
       .then((ok) => {
         if (ok) {
-          Services.cleanArchivedSubscriptions(props.currentTeam._id).then(() =>
+          Services.cleanArchivedSubscriptions(currentTeam._id).then(() =>
             tableRef?.current?.update()
           );
         }
       });
   };
 
-  const params = useParams();
 
   return (
-    <Can I={manage} a={apikey} team={props.currentTeam} dispatchError={true}>
+    <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
       <div className="row">
         <div className="col">
           <h1>
             <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
           </h1>
           <Link
-            to={`/${props.currentTeam._humanReadableId}/settings/consumption`}
+            to={`/${currentTeam._humanReadableId}/settings/consumption`}
             className="btn btn-sm btn-access-negative mb-2"
           >
             <i className="fas fa-chart-bar me-1" />
@@ -109,11 +110,10 @@ export function TeamApiKeysComponent(props) {
               defaultSort="name"
               itemName="apikey"
               columns={columns}
-              fetchItems={() => Services.subscribedApis(props.currentTeam._id)}
+              fetchItems={() => Services.subscribedApis(currentTeam._id)}
               showActions={false}
               showLink={false}
               extractKey={(item) => item._id}
-              // injectTable={(t) => (table = t)}
               ref={tableRef}
             />
             <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
@@ -125,9 +125,3 @@ export function TeamApiKeysComponent(props) {
     </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamApiKeys = connect(mapStateToProps)(TeamApiKeysComponent);

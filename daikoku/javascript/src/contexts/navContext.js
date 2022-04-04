@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { merge } from 'lodash';
 import { useSelector, useDispatch } from 'react-redux';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useMatch } from 'react-router-dom';
+import _ from 'lodash';
 
 import { I18nContext, openContactModal } from '../core'
 import { Can, manage, api as API } from '../components/utils'
@@ -131,7 +132,7 @@ export const useApiFrontOffice = (api, team) => {
 }
 
 export const useApiBackOffice = (api) => {
-  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext)
+  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu, menu } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
   const { currentTeam } = useSelector(state => state.context)
@@ -160,13 +161,15 @@ export const useApiBackOffice = (api) => {
   }
 
   useEffect(() => {
-    if (params.tab) {
-        addMenu(schema(params.tab))
+    console.debug({menu})
+    if (params.tab && !_.isEmpty(menu)) {
+      addMenu(schema(params.tab))
     }
   }, [params.tab, api])
 
   useEffect(() => {
     if (api) {
+      setMenu(schema(params.tab))
       setMode(navMode.api)
       setOffice(officeMode.back)
       setApi(api)
@@ -184,13 +187,13 @@ export const useApiBackOffice = (api) => {
 }
 
 export const useTeamBackOffice = (team) => {
-  const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext)
+  const { setMode, setOffice, setTeam, addMenu, setMenu, menu } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
   const { currentTeam } = useSelector(state => state.context)
 
   const navigate = useNavigate();
-  const params = useParams();
+  const match = useMatch('/:teamId/settings/:tab*')
 
   const schema = currentTab => ({
     title: team.name,
@@ -198,34 +201,35 @@ export const useTeamBackOffice = (team) => {
       links: {
         order: 1,
         links: {
-          settings: { 
-            label: translateMethod("Settings"), 
-            action: () => navigateTo(''), 
-            className: { active: !currentTab || ['edition', 'assets'].includes(currentTab) },
+          settings: {
+            label: translateMethod("Settings"),
+            action: () => navigateTo(''),
+            className: { active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab) },
             childs: {
-              informations: { label: translateMethod("Informations"), action: () => navigateTo('edition') },
-              assets: { label: translateMethod("Assets"), action: () => navigateTo('assets') },
+              informations: { label: translateMethod("Informations"), action: () => navigateTo('edition'), className: {active: currentTab === 'edition'} },
+              assets: { label: translateMethod("Assets"), action: () => navigateTo('assets'), className: { active: currentTab === 'assets' } },
+              members: { label: translateMethod("Members"), action: () => navigateTo('members'), className: { active: currentTab === 'members' } },
             }
           },
-          apis: { 
-            label: translateMethod("Apis"), 
-            action: () => navigateTo('apis'), 
-            className: { active: 'apis' === currentTab },
+          apis: {
+            label: translateMethod("Apis"),
+            action: () => navigateTo('apis'),
+            className: { active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab) },
           },
-          apikeys: { 
-            label: translateMethod("Plans"), 
-            action: () => navigateTo('plans'), 
-            className: { active: ['plans', 'consumption'].includes(currentTab) },
+          apikeys: {
+            label: translateMethod("API keys"),
+            action: () => navigateTo('apikeys'),
+            className: { active: ['apikeys', 'consumption'].includes(currentTab) },
             childs: {
-              stats: { label: translateMethod("Global stats"), action: () => navigateTo('consumption') }
+              stats: { label: translateMethod("Global stats"), action: () => navigateTo('consumption'), className: { active: currentTab === 'consumption' } }
             }
           },
-          billing: { 
-            label: translateMethod("Billing"), 
-            action: () => navigateTo('documentation'), 
-            className: { active: currentTab === 'documentation' },
+          billing: {
+            label: translateMethod("Billing"),
+            action: () => navigateTo('billing'),
+            className: { active: ['billing', 'income'].includes(currentTab) },
             childs: {
-              income: { label: translateMethod("Income"), action: () => navigateTo('income') }
+              income: { label: translateMethod("Income"), action: () => navigateTo('income'), className: { active: currentTab === 'income' } }
             }
           },
         }
@@ -238,17 +242,17 @@ export const useTeamBackOffice = (team) => {
   }
 
   useEffect(() => {
-    console.debug(params)
-    if (params.tab) {
-      addMenu(schema(params.tab))
+    if (!_.isEmpty(menu)) {
+      addMenu(schema(match?.params?.tab))
     }
-  }, [params.tab, team])
+  }, [match?.params?.tab, team])
 
   useEffect(() => {
     if (team) {
       setMode(navMode.team)
       setOffice(officeMode.back)
       setTeam(team)
+      setMenu(schema(match?.params?.tab))
     }
     return () => {
       setMode(navMode.initial)

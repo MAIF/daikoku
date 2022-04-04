@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import moment from 'moment';
 import _ from 'lodash';
 
@@ -8,8 +8,9 @@ import { MonthPicker } from '../../inputs/monthPicker';
 import { formatCurrency, formatPlanType, Can, read, stat } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-function TeamBillingComponent(props) {
+export const TeamBilling = (props) =>  {
   const [state, setState] = useState({
     consumptions: [],
     consumptionsByApi: [],
@@ -18,12 +19,16 @@ function TeamBillingComponent(props) {
     date: moment(),
   });
 
+  const {currentTeam} = useSelector(state => state.context)
+
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  useEffect(() => {
-    getTeamBilling(props.currentTeam);
+  useTeamBackOffice(currentTeam);
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('Billing')}`;
+  useEffect(() => {
+    getTeamBilling(currentTeam);
+
+    document.title = `${currentTeam.name} - ${translateMethod('Billing')}`;
   }, []);
 
   const getTeamBilling = (team) => {
@@ -182,9 +187,3 @@ function TeamBillingComponent(props) {
     </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamBilling = connect(mapStateToProps)(TeamBillingComponent);

@@ -241,6 +241,31 @@ a.navbar-brand, #teamSelector:hover {
             }
           }
 
+          .submenu__entry__link {
+            cursor: pointer;
+            font-size: 14px;
+            color: $aside-text-color;
+            margin-bottom: 5px;
+            line-height: 40px;
+            padding-left: .5rem;
+            box-sizing: border-box;
+            height: 40px;
+
+            &.active {
+              border-bottom: 1px solid $menu-text-hover-bg-color;
+              // color: $menu-text-hover-color;
+            }
+            
+            &.disabled {
+              color: lighten(#000, 50%);
+              cursor: default;
+            }
+            
+            &:hover {
+              border-bottom: 1px solid $menu-text-hover-bg-color;
+            }
+          }
+
           .entry__submenu {
             margin-left: 1rem;
             font-size: 14px;

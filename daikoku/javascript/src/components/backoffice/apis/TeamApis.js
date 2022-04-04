@@ -1,18 +1,23 @@
 import React, { useContext, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { connect } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { Can, read, manage, stat, api as API } from '../../utils';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { I18nContext, setError } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-function TeamApisComponent(props) {
+export const TeamApis = () => {
+  const { currentTeam, tenant } = useSelector(state => state.context);
+  const dispatch = useDispatch()
+  useTeamBackOffice(currentTeam);
+
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translateMethod('API', true)}`;
+    document.title = `${currentTeam.name} - ${translateMethod('API', true)}`;
   }, []);
 
   let table;
@@ -44,7 +49,7 @@ function TeamApisComponent(props) {
       }) => {
         const api = original;
         return (
-          <Can I={manage} a={API} team={props.currentTeam}>
+          <Can I={manage} a={API} team={currentTeam}>
             <SwitchButton
               onSwitch={() => togglePublish(api)}
               checked={api.published}
@@ -72,17 +77,17 @@ function TeamApisComponent(props) {
           <div className="btn-group">
             <Link
               rel="noopener"
-              to={`/${props.currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
+              to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
               className="btn btn-sm btn-access-negative"
               title="View this Api"
             >
               <i className="fas fa-eye" />
             </Link>
             {api.published && (
-              <Can I={read} a={stat} team={props.currentTeam}>
+              <Can I={read} a={stat} team={currentTeam}>
                 <Link
                   key={`consumption-${api._humanReadableId}`}
-                  to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}/${api.currentVersion}`}
+                  to={`/${currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-access-negative"
                   title={translateMethod('View this api consumption')}
                 >
@@ -91,10 +96,10 @@ function TeamApisComponent(props) {
               </Can>
             )}
             {api.published && (
-              <Can I={manage} a={API} team={props.currentTeam}>
+              <Can I={manage} a={API} team={currentTeam}>
                 <Link
                   key={`apikeys-${api._humanReadableId}`}
-                  to={`/${props.currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}/${api.currentVersion}`}
+                  to={`/${currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-access-negative"
                   title={translateMethod('View this api subscriptions')}
                 >
@@ -102,10 +107,10 @@ function TeamApisComponent(props) {
                 </Link>
               </Can>
             )}
-            <Can I={manage} a={API} team={props.currentTeam}>
+            <Can I={manage} a={API} team={currentTeam}>
               <Link
                 key={`edit-${api._humanReadableId}`}
-                to={`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`}
+                to={`/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`}
                 className="btn btn-sm btn-access-negative"
                 title="Edit this Api"
               >
@@ -131,7 +136,7 @@ function TeamApisComponent(props) {
 
   const togglePublish = (api) => {
     Services.saveTeamApi(
-      props.currentTeam._id,
+      currentTeam._id,
       {
         ...api,
         published: !api.published,
@@ -147,7 +152,7 @@ function TeamApisComponent(props) {
       )
       .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi(props.currentTeam._id, api._id).then(() => {
+          Services.deleteTeamApi(currentTeam._id, api._id).then(() => {
             toastr.success(
               translateMethod('delete.api.success', false, 'API deleted successfully', api.name)
             );
@@ -157,11 +162,11 @@ function TeamApisComponent(props) {
       });
   };
 
-  if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-    props.setError({ error: { status: 403, message: 'Creation security enabled' } });
+  if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
+    setError({ error: { status: 403, message: 'Creation security enabled' } })(dispatch);
   }
   return (
-    <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>
+    <Can I={read} a={API} dispatchError={true} team={currentTeam}>
       <div className="row">
         <div className="col">
           <div className="p-2">
@@ -172,7 +177,7 @@ function TeamApisComponent(props) {
               defaultSort="name"
               itemName="api"
               columns={columns}
-              fetchItems={() => Services.teamApis(props.currentTeam._id)}
+              fetchItems={() => Services.teamApis(currentTeam._id)}
               showActions={false}
               showLink={false}
               extractKey={(item) => item._id}
@@ -184,13 +189,3 @@ function TeamApisComponent(props) {
     </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  setError: (error) => setError(error),
-};
-
-export const TeamApis = connect(mapStateToProps, mapDispatchToProps)(TeamApisComponent);

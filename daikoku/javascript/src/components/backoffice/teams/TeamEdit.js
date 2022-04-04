@@ -7,10 +7,11 @@ import { I18nContext, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
 
 import { AvatarChooser, Spinner } from '../../utils';
+import { useTeamBackOffice } from '../../../contexts';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-export function TeamEditForm(props) {
+export const TeamEditForm = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   const flow = ['name', 'description', 'contact', 'avatar', 'avatarFrom', 'apiKeyVisibility'];
@@ -127,6 +128,7 @@ export function TeamEditForm(props) {
 const TeamEditComponent = ({ currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
   const navigate = useNavigate();
+  useTeamBackOffice(currentTeam)
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
