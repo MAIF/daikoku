@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
+import { useTenantBackOffice } from '../../../contexts';
 import { openInvitationTeamModal } from '../../../core';
 
 import * as Services from '../../../services';
-import { UserBackOffice, TeamMembersSimpleComponent } from '../../backoffice';
+import { TeamMembersSimpleComponent } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 
-const TeamMembersComponent = (props) => {
+export const TeamMembersForAdmin = () => {
+  useTenantBackOffice()
+
+  const connectedUser = useSelector(s => s.context.connectedUser)
+  const dispatch = useDispatch()
+
   const [team, setTeam] = useState();
   const params = useParams();
 
@@ -20,28 +26,13 @@ const TeamMembersComponent = (props) => {
   }
 
   return (
-    <UserBackOffice tab="Teams">
-      <Can I={manage} a={tenant} dispatchError>
-        <TeamMembersSimpleComponent
-          currentTeam={team}
-          connectedUser={props.connectedUser}
-          updateTeam={(team) => Promise.resolve(setTeam(team))}
-          openInvitationModal={props.openInvitationModal}
-        />
-      </Can>
-    </UserBackOffice>
+    <Can I={manage} a={tenant} dispatchError>
+      <TeamMembersSimpleComponent
+        currentTeam={team}
+        connectedUser={connectedUser}
+        updateTeam={(team) => Promise.resolve(setTeam(team))}
+        openInvitationModal={(p) => openInvitationTeamModal(p)(dispatch)}
+      />
+    </Can>
   );
 };
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  openInvitationModal: (modalProps) => openInvitationTeamModal(modalProps),
-};
-
-export const TeamMembersForAdmin = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(TeamMembersComponent);

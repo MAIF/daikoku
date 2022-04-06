@@ -9,6 +9,7 @@ import { Pages } from './Pages';
 import * as Services from '../../../services';
 import { Spinner } from '../..';
 import Revisions from './Revisions';
+import { useTenantBackOffice } from '../../../contexts';
 
 const getAllPages = () => ({
   query: gql`
@@ -25,32 +26,42 @@ const getAllPages = () => ({
 });
 
 export const CMSOffice = () => {
-  const { client } = useContext(getApolloContext());
+  useTenantBackOffice();
+
   const location = useLocation();
-  const [pages, setPages] = useState([]);
+
+  const { client } = useContext(getApolloContext());
   const { translateMethod } = useContext(I18nContext);
+
+  const [pages, setPages] = useState([]);
+  const [downloading, setDownloading] = useState(false);
 
   const importRef = useRef();
 
-  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     reload();
   }, []);
 
   useEffect(() => {
-    if (location.state && location.state.reload) reload();
+    if (location.state && location.state.reload) {
+      reload();
+    }
   }, [location]);
 
   const reload = () => {
-    client.query(getAllPages()).then((r) => setPages(r.data.pages));
+    client.query(getAllPages())
+      .then((r) => setPages(r.data.pages));
   };
 
   const loadFiles = (e) => {
-    if (e.target.files.length === 1) Services.uploadZip(e.target.files[0]).then(reload);
+    if (e.target.files.length === 1) {
+      Services.uploadZip(e.target.files[0])
+        .then(reload);
+    }
   };
 
-  const Index = ({}) => {
+  const Index = ({ }) => {
     const navigation = useNavigate();
     const location = useLocation();
 
@@ -134,15 +145,13 @@ export const CMSOffice = () => {
   };
 
   return (
-    <UserBackOffice tab="Pages">
-      <Can I={manage} a={tenant} dispatchError>
-        <Routes>
-          <Route path={`/new`} element={<Create pages={pages} />} />
-          <Route path={`/edit/:id/revisions`} element={<Revisions pages={pages} />} />
-          <Route path={`/edit/:id`} element={<Create pages={pages} />} />
-          <Route path="*" element={<Index />} />
-        </Routes>
-      </Can>
-    </UserBackOffice>
+    <Can I={manage} a={tenant} dispatchError>
+      <Routes>
+        <Route path={`/new`} element={<Create pages={pages} />} />
+        <Route path={`/edit/:id/revisions`} element={<Revisions pages={pages} />} />
+        <Route path={`/edit/:id`} element={<Create pages={pages} />} />
+        <Route path="*" element={<Index />} />
+      </Routes>
+    </Can>
   );
 };

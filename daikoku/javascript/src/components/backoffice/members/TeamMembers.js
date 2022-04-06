@@ -27,7 +27,7 @@ const TABS = {
   pending: 'PENDING',
 };
 
-export function TeamMembersSimpleComponent(props) {
+export const TeamMembersSimpleComponent = (props) => {
   const [state, setState] = useState({
     pendingUsers: [],
     selectedMember: null,
@@ -36,8 +36,6 @@ export function TeamMembersSimpleComponent(props) {
   });
 
   const { translateMethod, Translation } = useContext(I18nContext);
-
-  useTeamBackOffice(props.currentTeam);
 
   useEffect(() => {
     updateMembers(props.currentTeam);
@@ -444,6 +442,7 @@ export function TeamMembersSimpleComponent(props) {
 }
 
 const TeamMembersComponent = (props) => {
+  useTeamBackOffice(props.currentTeam);
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {

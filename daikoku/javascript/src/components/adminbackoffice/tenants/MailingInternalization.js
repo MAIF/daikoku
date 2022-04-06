@@ -1,18 +1,19 @@
 import React, { Suspense, useContext, useEffect, useState } from 'react';
+import { toastr } from 'react-redux-toastr';
+import { useSelector } from 'react-redux';
+import { Link, useParams } from 'react-router-dom';
+import { v4 as uuid } from 'uuid';
+
 import { Can, manage, Spinner, tenant as TENANT } from '../../utils';
-import { connect } from 'react-redux';
 import { UserBackOffice } from '../../backoffice';
 import * as Services from '../../../services';
-import { toastr } from 'react-redux-toastr';
-import { Link, Route, Routes, useParams } from 'react-router-dom';
-import { v4 as uuid } from 'uuid';
 import { I18nContext } from '../../../core';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
+import { useTenantBackOffice } from '../../../contexts';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
 const MarkdownComponent = ({
-  team,
   value,
   translationKey,
   language,
@@ -25,7 +26,6 @@ const MarkdownComponent = ({
     <div style={{ position: 'relative' }} className="my-2">
       <LazySingleMarkdownInput
         fullWidth
-        team={team}
         value={value}
         onChange={(code) => handleInputChange(translationKey, language, code)}
       />
@@ -103,33 +103,34 @@ const Collapse = ({
   );
 };
 
-const EditMailtemplate = ({ tenantId, team }) => {
+const EditMailtemplate = ({ tenantId }) => {
   const [tenant, setTenant] = useState(undefined);
   const [mailTemplateTranslations, setMailTemplateTranslations] = useState([]);
 
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.oneTenant(tenantId).then((tenant) => {
-      setTenant(tenant);
+    Services.oneTenant(tenantId)
+      .then((tenant) => {
+        setTenant(tenant);
 
-      const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
-      Services.getTranslations(KEY_MAIL_TEMPLATE).then((data) => {
-        if (data.translations.length === 0) {
-          setMailTemplateTranslations(
-            ['fr', 'en']
-              .map((l) => ({
-                _id: uuid(),
-                key: KEY_MAIL_TEMPLATE,
-                language: l,
-                value: '{{email}}',
-                _tenant: tenant._id,
-              }))
-              .flatMap((t) => t)
-          );
-        } else setMailTemplateTranslations(data.translations);
+        const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
+        Services.getTranslations(KEY_MAIL_TEMPLATE).then((data) => {
+          if (data.translations.length === 0) {
+            setMailTemplateTranslations(
+              ['fr', 'en']
+                .map((l) => ({
+                  _id: uuid(),
+                  key: KEY_MAIL_TEMPLATE,
+                  language: l,
+                  value: '{{email}}',
+                  _tenant: tenant._id,
+                }))
+                .flatMap((t) => t)
+            );
+          } else setMailTemplateTranslations(data.translations);
+        });
       });
-    });
   }, []);
 
   const handleTranslation = (key, language, value) => {
@@ -147,7 +148,8 @@ const EditMailtemplate = ({ tenantId, team }) => {
   };
 
   const saveTenant = () => {
-    Services.saveTenant(tenant).then(manageError);
+    Services.saveTenant(tenant)
+      .then(manageError);
   };
 
   const saveTranslation = (translation) => {
@@ -156,7 +158,9 @@ const EditMailtemplate = ({ tenantId, team }) => {
         if (!res.error)
           setMailTemplateTranslations(
             mailTemplateTranslations.map((t) => {
-              if (t._id === translation._id) return res;
+              if (t._id === translation._id) {
+                return res
+              };
 
               return t;
             })
@@ -200,8 +204,7 @@ const EditMailtemplate = ({ tenantId, team }) => {
           <span className="h5">Default mail template</span>
           <div className="mt-3">
             <MarkdownComponent
-              team={team}
-              value={tenant.mailerSettings.template || '{{email}}'}
+              value={tenant.mailerSettings?.template || '{{email}}'}
               language="en"
               saveTranslation={saveTenant}
               handleInputChange={(k, l, template) =>
@@ -222,7 +225,7 @@ const EditMailtemplate = ({ tenantId, team }) => {
                   },
                 })
               }
-              lastModificationAt={tenant.mailerSettings.template !== '{{email}}'}
+              lastModificationAt={tenant.mailerSettings?.template !== '{{email}}'}
             />
           </div>
         </div>
@@ -233,7 +236,6 @@ const EditMailtemplate = ({ tenantId, team }) => {
               <span className="h5">Translation : {language}</span>
               <div className="mt-3">
                 <MarkdownComponent
-                  team={team}
                   value={value}
                   language={language}
                   saveTranslation={() => saveTranslation(translation)}
@@ -250,7 +252,10 @@ const EditMailtemplate = ({ tenantId, team }) => {
   );
 };
 
-function MailingInternalizationComponent({ team, tenant }) {
+export const MailingInternalization = () => {
+  const tenant = useSelector(s => s.context);
+  useTenantBackOffice();
+
   const [translations, setTranslations] = useState([]);
   const params = useParams();
 
@@ -334,85 +339,76 @@ function MailingInternalizationComponent({ team, tenant }) {
   const { domain } = params;
 
   return (
-    <UserBackOffice tab="Internalization">
-      <Can I={manage} a={TENANT} dispatchError>
-        <h1>
-          <Translation i18nkey="internationalization" />
-        </h1>
-        <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
-          <li className="nav-item">
-            <Link
-              className={`nav-link ${domain === 'mail' ? 'active' : ''}`}
-              to={`/settings/internationalization/mail`}
-            >
-              <i className="fas fa-envelope me-1" />
-              {translateMethod('mailing_internalization.mail_tab')}
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link
-              className={`nav-link ${domain === 'mail-template' ? 'active' : ''}`}
-              to={`/settings/internationalization/mail-template`}
-            >
-              <i className="fas fa-envelope me-1" />
-              {translateMethod('mailing_internalization.mail_template_tab')}
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link
-              className={`nav-link ${domain === 'front' ? 'active' : ''}`}
-              to={`/settings/internationalization/front`}
-            >
-              <i className="fas fa-globe me-1" />
-              {translateMethod('mailing_internalization.front_office_tab')}
-            </Link>
-          </li>
-        </ul>
+    <Can I={manage} a={TENANT} dispatchError>
+      <h1>
+        <Translation i18nkey="internationalization" />
+      </h1>
+      <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
+        <li className="nav-item">
+          <Link
+            className={`nav-link ${domain === 'mail' ? 'active' : ''}`}
+            to={`/settings/internationalization/mail`}
+          >
+            <i className="fas fa-envelope me-1" />
+            {translateMethod('mailing_internalization.mail_tab')}
+          </Link>
+        </li>
+        <li className="nav-item">
+          <Link
+            className={`nav-link ${domain === 'mail-template' ? 'active' : ''}`}
+            to={`/settings/internationalization/mail-template`}
+          >
+            <i className="fas fa-envelope me-1" />
+            {translateMethod('mailing_internalization.mail_template_tab')}
+          </Link>
+        </li>
+        <li className="nav-item">
+          <Link
+            className={`nav-link ${domain === 'front' ? 'active' : ''}`}
+            to={`/settings/internationalization/front`}
+          >
+            <i className="fas fa-globe me-1" />
+            {translateMethod('mailing_internalization.front_office_tab')}
+          </Link>
+        </li>
+      </ul>
 
-        {domain === 'mail' && (
-          <div className="col-12 pb-3">
-            <div className="d-flex justify-space-between py-3">
-              <span style={{ flex: 1 }} className="lead">
-                {translateMethod('mailing_internalization.message_text')}
-              </span>
-              <span style={{ flex: 1 }} className="lead text-center">
-                {translateMethod('mailing_internalization.required_variables')}
-              </span>
-            </div>
-            {translations.map(([key, values, defaultTranslation, edited]) => (
-              <Collapse
-                label={translateMethod(key)}
-                edited={edited === undefined ? false : edited}
-                translationKey={key}
-                toggleTranslation={toggleTranslation}
-                defaultTranslation={defaultTranslation}
-                key={`${key}-collapse`}
-              >
-                {values.map((v, i) => (
-                  <MarkdownComponent
-                    {...v}
-                    key={`${key}-${v.language}-${i}`}
-                    team={team}
-                    translationKey={key}
-                    saveTranslation={saveTranslation}
-                    resetTranslation={resetTranslation}
-                    handleInputChange={handleInputChange}
-                  />
-                ))}
-              </Collapse>
-            ))}
+      {domain === 'mail' && (
+        <div className="col-12 pb-3">
+          <div className="d-flex justify-space-between py-3">
+            <span style={{ flex: 1 }} className="lead">
+              {translateMethod('mailing_internalization.message_text')}
+            </span>
+            <span style={{ flex: 1 }} className="lead text-center">
+              {translateMethod('mailing_internalization.required_variables')}
+            </span>
           </div>
-        )}
-        {domain === 'mail-template' && <EditMailtemplate tenantId={tenant._id} team={team} />}
+          {translations.map(([key, values, defaultTranslation, edited]) => (
+            <Collapse
+              label={translateMethod(key)}
+              edited={edited === undefined ? false : edited}
+              translationKey={key}
+              toggleTranslation={toggleTranslation}
+              defaultTranslation={defaultTranslation}
+              key={`${key}-collapse`}
+            >
+              {values.map((v, i) => (
+                <MarkdownComponent
+                  {...v}
+                  key={`${key}-${v.language}-${i}`}
+                  translationKey={key}
+                  saveTranslation={saveTranslation}
+                  resetTranslation={resetTranslation}
+                  handleInputChange={handleInputChange}
+                />
+              ))}
+            </Collapse>
+          ))}
+        </div>
+      )}
+      {domain === 'mail-template' && <EditMailtemplate tenantId={tenant._id} />}
 
-        {domain === 'front' && <EditFrontOfficeTranslations tenantId={tenant._id} team={team} />}
-      </Can>
-    </UserBackOffice>
+      {domain === 'front' && <EditFrontOfficeTranslations tenantId={tenant._id} />}
+    </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const MailingInternalization = connect(mapStateToProps)(MailingInternalizationComponent);

@@ -103,8 +103,8 @@ export default ({}) => {
 
   return (
     <>
-      <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
-        <div className="sidebar-sticky d-flex flex-column">
+      <nav className="col-md-3 d-md-block">
+        <div className="d-flex flex-column">
           <div className="d-flex p-3 align-items-baseline">
             <div
               style={{

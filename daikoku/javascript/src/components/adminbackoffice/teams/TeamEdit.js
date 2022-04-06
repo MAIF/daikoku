@@ -1,16 +1,19 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import * as Services from '../../../services';
 
-import { UserBackOffice } from '../../backoffice';
 import { AvatarChooser, Can, manage, tenant, Spinner } from '../../utils';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../locales/i18n-context';
+import { useTenantBackOffice } from '../../../contexts';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-function TeamEditForAdministrationComponent(props) {
+export const TeamEditForAdmin = () => {
+  const context = useSelector(s => s.context);
+  useTenantBackOffice();
+  
   const [team, setTeam] = useState(null);
   const [create, setCreate] = useState(false);
   const navigate = useNavigate();
@@ -76,7 +79,7 @@ function TeamEditForAdministrationComponent(props) {
     },
     apisCreationPermission: {
       type: 'bool',
-      visible: () => props.tenant.creationSecurity,
+      visible: () => context.tenant.creationSecurity,
       props: {
         label: translateMethod('APIs creation permission'),
         help: translateMethod('apisCreationPermission.help', false, 'test.help'),
@@ -86,25 +89,27 @@ function TeamEditForAdministrationComponent(props) {
 
   const save = () => {
     if (location && location.state && location.state.newTeam) {
-      Services.createTeam(team).then((team) => {
-        if (team.error) toastr.error(translateMethod('team_api_post.failed'));
-        else {
-          toastr.success(
-            translateMethod(
-              'team.created',
-              false,
-              `Team ${team.name} successfully created`,
-              team.name
-            )
-          );
-          navigate(`/settings/teams/${team._humanReadableId}/members`);
-        }
-      });
+      Services.createTeam(team).
+        then((team) => {
+          if (team.error) toastr.error(translateMethod('team_api_post.failed'));
+          else {
+            toastr.success(
+              translateMethod(
+                'team.created',
+                false,
+                `Team ${team.name} successfully created`,
+                team.name
+              )
+            );
+            navigate(`/settings/teams/${team._humanReadableId}/members`);
+          }
+        });
     } else {
-      Services.updateTeam(team).then((t) => {
-        setTeam(t);
-        toastr.success(translateMethod('team.updated'));
-      });
+      Services.updateTeam(team)
+        .then((t) => {
+          setTeam(t);
+          toastr.success(translateMethod('team.updated'));
+        });
     }
   };
 
@@ -116,7 +121,10 @@ function TeamEditForAdministrationComponent(props) {
     if (location && location.state && location.state.newTeam) {
       setTeam(location.state.newTeam);
       setCreate(true);
-    } else Services.teamFull(params.teamSettingId).then(setTeam);
+    } else {
+      Services.teamFull(params.teamSettingId)
+        .then(setTeam);
+    }
   }, []);
 
   if (!team) {
@@ -124,75 +132,67 @@ function TeamEditForAdministrationComponent(props) {
   }
 
   return (
-    <UserBackOffice tab="Teams">
-      <Can I={manage} a={tenant} dispatchError>
-        <div className="row d-flex justify-content-start align-items-center mb-2">
-          {team && (
-            <div className="ms-1 avatar__container">
-              <img src={team.avatar} className="img-fluid" alt="avatar" />
-            </div>
-          )}
-          <h1 className="h1-rwd-reduce ms-2">Team - {team.name}</h1>
-        </div>
-        <div className="row">
-          <React.Suspense fallback={<Spinner />}>
-            <LazyForm
-              flow={flow}
-              schema={schema}
-              value={team}
-              onChange={setTeam}
-              style={{ marginBottom: 100, paddingTop: 20 }}
-            />
-          </React.Suspense>
-          <div className="row form-back-fixedBtns">
-            <div className="d-flex justify-content-end">
-              <Link className="btn btn-outline-primary" to={'/settings/teams'}>
-                <i className="fas fa-chevron-left me-1" />
-                <Translation i18nkey="Back">Back</Translation>
-              </Link>
-              <button
-                style={{ marginLeft: 5 }}
-                type="button"
-                className="btn btn-outline-primary"
-                disabled={create}
-                onClick={members}
-              >
+    <Can I={manage} a={tenant} dispatchError>
+      <div className="row d-flex justify-content-start align-items-center mb-2">
+        {team && (
+          <div className="ms-1 avatar__container">
+            <img src={team.avatar} className="img-fluid" alt="avatar" />
+          </div>
+        )}
+        <h1 className="h1-rwd-reduce ms-2">Team - {team.name}</h1>
+      </div>
+      <div className="row">
+        <React.Suspense fallback={<Spinner />}>
+          <LazyForm
+            flow={flow}
+            schema={schema}
+            value={team}
+            onChange={setTeam}
+            style={{ marginBottom: 100, paddingTop: 20 }}
+          />
+        </React.Suspense>
+        <div className="row form-back-fixedBtns">
+          <div className="d-flex justify-content-end">
+            <Link className="btn btn-outline-primary" to={'/settings/teams'}>
+              <i className="fas fa-chevron-left me-1" />
+              <Translation i18nkey="Back">Back</Translation>
+            </Link>
+            <button
+              style={{ marginLeft: 5 }}
+              type="button"
+              className="btn btn-outline-primary"
+              disabled={create}
+              onClick={members}
+            >
+              <span>
+                <i className="fas fa-users me-1" />
+                <Translation i18nkey="Members" isPlural>
+                  Members
+                </Translation>
+              </span>
+            </button>
+            <button
+              style={{ marginLeft: 5 }}
+              type="button"
+              className="btn btn-outline-success"
+              onClick={save}
+            >
+              {!create && (
                 <span>
-                  <i className="fas fa-users me-1" />
-                  <Translation i18nkey="Members" isPlural>
-                    Members
-                  </Translation>
+                  <i className="fas fa-save me-1" />
+                  <Translation i18nkey="Save">Save</Translation>
                 </span>
-              </button>
-              <button
-                style={{ marginLeft: 5 }}
-                type="button"
-                className="btn btn-outline-success"
-                onClick={save}
-              >
-                {!create && (
-                  <span>
-                    <i className="fas fa-save me-1" />
-                    <Translation i18nkey="Save">Save</Translation>
-                  </span>
-                )}
-                {create && (
-                  <span>
-                    <i className="fas fa-save me-1" />
-                    <Translation i18nkey="Create">Create</Translation>
-                  </span>
-                )}
-              </button>
-            </div>
+              )}
+              {create && (
+                <span>
+                  <i className="fas fa-save me-1" />
+                  <Translation i18nkey="Create">Create</Translation>
+                </span>
+              )}
+            </button>
           </div>
         </div>
-      </Can>
-    </UserBackOffice>
+      </div>
+    </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamEditForAdmin = connect(mapStateToProps)(TeamEditForAdministrationComponent);

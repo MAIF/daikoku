@@ -48,6 +48,7 @@ import {
   TeamMembersForAdmin,
   TeamList,
   TenantAdminList,
+  DaikokuTenantAdminList,
   InitializeFromOtoroshi,
   MailingInternalization,
   AdminMessages,
@@ -57,6 +58,7 @@ import {
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
 import { I18nContext } from '../locales/i18n-context';
+import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 
 const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
   useEffect(() => {
@@ -233,7 +235,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                   path="/settings/tenants/:tenantId/admins"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
-                      <TenantAdminList tenantMode={false} />
+                      <DaikokuTenantAdminList />
                     </RouteWithTitle>
                   }
                 />
@@ -301,7 +303,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                     </RouteWithTitle>
                   }
                 />
-                <Route path="/settings/assets" element={<AssetsList tenantMode={true} />} />
+                <Route path="/settings/assets" element={<TenantAssets />} />
                 <Route
                   path="/settings/admins"
                   element={

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import Select from 'react-select';
 import { toastr } from 'react-redux-toastr';
 import _ from 'lodash';
+import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { UserBackOffice } from '../../backoffice';
 import {
   Can,
   manage,
@@ -15,9 +15,11 @@ import {
   Option,
 } from '../../utils';
 import { I18nContext } from '../../../core';
-import { useParams } from 'react-router-dom';
+import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 
-const TenantAdminListComponent = (props) => {
+const AdminList = () => {
+  const context = useSelector(s => s.context)
+
   const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState([]);
   const [admins, setAdmins] = useState([]);
@@ -31,7 +33,7 @@ const TenantAdminListComponent = (props) => {
   const params = useParams();
 
   useEffect(() => {
-    const tenantId = params.tenantId || props.tenant._id;
+    const tenantId = params.tenantId || context.tenant._id;
     Promise.all([
       Services.tenantAdmins(tenantId),
       Services.addableAdminsForTenant(tenantId),
@@ -138,65 +140,70 @@ const TenantAdminListComponent = (props) => {
   };
 
   return (
-    <UserBackOffice tab={props.tenantMode ? 'Admins' : 'Tenants'} isLoading={loading}>
-      <Can I={manage} a={TENANT} dispatchError={true} whichOne={tenant}>
-        <div className="row">
-          <div className="col">
-            <h1>
-              {tenant && <>{tenant.name} - </>}
-              <Translation i18nkey="Admins">Admins</Translation>
-            </h1>
-          </div>
+    <Can I={manage} a={TENANT} dispatchError={true} whichOne={tenant}>
+      <div className="row">
+        <div className="col">
+          <h1>
+            {tenant && <>{tenant.name} - </>}
+            <Translation i18nkey="Admins">Admins</Translation>
+          </h1>
         </div>
-        <div className="row">
-          <div className="col-12 mb-3 d-flex justify-content-start">
-            <Select
-              placeholder={translateMethod('Add new admin')}
-              className="add-member-select me-2 reactSelect"
-              options={addableAdmins.map(adminToSelector)}
-              onChange={(slug) => setSelectedAdmin(slug.value)}
-              value={selectedAdmin}
-              filterOption={(data, search) =>
-                _.values(data.value)
-                  .filter((e) => typeof e === 'string')
-                  .some((v) => v.includes(search))
-              }
-              classNamePrefix="reactSelect"
-            />
-            <input
-              placeholder={translateMethod('Find an admin')}
-              className="form-control"
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+      </div>
+      <div className="row">
+        <div className="col-12 mb-3 d-flex justify-content-start">
+          <Select
+            placeholder={translateMethod('Add new admin')}
+            className="add-member-select me-2 reactSelect"
+            options={addableAdmins.map(adminToSelector)}
+            onChange={(slug) => setSelectedAdmin(slug.value)}
+            value={selectedAdmin}
+            filterOption={(data, search) =>
+              _.values(data.value)
+                .filter((e) => typeof e === 'string')
+                .some((v) => v.includes(search))
+            }
+            classNamePrefix="reactSelect"
+          />
+          <input
+            placeholder={translateMethod('Find an admin')}
+            className="form-control"
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-        <PaginatedComponent
-          items={_.sortBy(filteredAdmins, [(a) => a.name.toLowerCase()])}
-          count={15}
-          formatter={(admin) => {
-            return (
-              <AvatarWithAction
-                key={admin._id}
-                avatar={admin.picture}
-                infos={<span className="team-member__name">{admin.name}</span>}
-                actions={[
-                  {
-                    action: () => removeAdmin(admin),
-                    iconClass: 'fas fa-trash delete-icon',
-                    tooltip: translateMethod('Remove admin rights'),
-                  },
-                ]}
-              />
-            );
-          }}
-        />
-      </Can>
-    </UserBackOffice>
+      </div>
+      <PaginatedComponent
+        items={_.sortBy(filteredAdmins, [(a) => a.name.toLowerCase()])}
+        count={15}
+        formatter={(admin) => {
+          return (
+            <AvatarWithAction
+              key={admin._id}
+              avatar={admin.picture}
+              infos={<span className="team-member__name">{admin.name}</span>}
+              actions={[
+                {
+                  action: () => removeAdmin(admin),
+                  iconClass: 'fas fa-trash delete-icon',
+                  tooltip: translateMethod('Remove admin rights'),
+                },
+              ]}
+            />
+          );
+        }}
+      />
+    </Can>
   );
 };
 
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TenantAdminList = connect(mapStateToProps)(TenantAdminListComponent);
+export const TenantAdminList = () => {
+  useTenantBackOffice();
+  return (
+    <AdminList />
+  )
+}
+export const DaikokuTenantAdminList = () => {
+  useDaikokuBackOffice()
+  return (
+    <AdminList />
+  )
+}

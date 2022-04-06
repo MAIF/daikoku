@@ -2,13 +2,13 @@ import { getApolloContext, gql } from '@apollo/client';
 import { useMachine } from '@xstate/react';
 import _ from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import StepWizard from 'react-step-wizard';
+import { useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
 
 import * as Services from '../../../services';
-import { UserBackOffice } from '../../backoffice';
 import { Can, manage, Spinner, tenant as TENANT, Option, BeautifulTitle } from '../../utils';
 import {
   theMachine,
@@ -20,7 +20,10 @@ import {
   RecapSubsStep,
 } from './initialization';
 
-const InitializeFromOtoroshiComponent = (props) => {
+export const InitializeFromOtoroshi = () => {
+  const tenant = useSelector(s => s.context.tenant)
+  useTenantBackOffice()
+
   const [state, send] = useMachine(theMachine);
 
   const { Translation } = useContext(I18nContext);
@@ -38,10 +41,10 @@ const InitializeFromOtoroshiComponent = (props) => {
   useEffect(() => {
     if (apis.length && state.context.otoroshi && (createdApis.length || createdSubs.length)) {
       localStorage.setItem(
-        `daikoku-initialization-${props.tenant._id}`,
+        `daikoku-initialization-${tenant._id}`,
         JSON.stringify({
           otoroshi: state.context.otoroshi,
-          tenant: props.tenant._id,
+          tenant: tenant._id,
           step,
           createdApis,
           createdSubs,
@@ -53,14 +56,14 @@ const InitializeFromOtoroshiComponent = (props) => {
   useEffect(() => {
     Promise.all([
       Services.teams(),
-      Services.allSimpleOtoroshis(props.tenant._id),
+      Services.allSimpleOtoroshis(tenant._id),
       getVisibleApis(),
     ]).then(([teams, otoroshis, apis]) => {
       setTeams(teams);
       setOtoroshis(otoroshis);
       setApis(apis);
     });
-  }, [props.tenant]);
+  }, [tenant]);
 
   const getVisibleApis = () =>
     client
@@ -130,7 +133,7 @@ const InitializeFromOtoroshiComponent = (props) => {
       }
       resetService={() => setCreatedApis([...createdApis.filter((a) => a.id !== s.id)])}
       getFilteredServices={filterServices}
-      tenant={props.tenant}
+      tenant={tenant}
       cancel={() => send('CANCEL')}
     />
   ));
@@ -160,7 +163,7 @@ const InitializeFromOtoroshiComponent = (props) => {
 
   const loadPreviousState = () => {
     const { otoroshi, tenant, step, createdApis, createdSubs } = JSON.parse(
-      localStorage.getItem(`daikoku-initialization-${props.tenant._id}`)
+      localStorage.getItem(`daikoku-initialization-${tenant._id}`)
     );
     if (createdApis.length) {
       setStep(step);
@@ -176,7 +179,6 @@ const InitializeFromOtoroshiComponent = (props) => {
   };
 
   return (
-    <UserBackOffice tab="Initialization">
       <Can I={manage} a={TENANT} dispatchError>
         <div className="d-flex flex-row align-items-center">
           <h1>
@@ -187,10 +189,10 @@ const InitializeFromOtoroshiComponent = (props) => {
         <div className="section py-3 px-2">
           {state.value === 'otoroshiSelection' && (
             <SelectOtoStep
-              tenant={props.tenant}
+              tenant={tenant}
               loadPreviousState={(previousState) => loadPreviousState(previousState)}
               setOtoInstance={(oto) =>
-                send('LOAD', { otoroshi: oto.value, tenant: props.tenant._id })
+                send('LOAD', { otoroshi: oto.value, tenant: tenant._id })
               }
               otoroshis={otoroshis}
             />
@@ -254,7 +256,7 @@ const InitializeFromOtoroshiComponent = (props) => {
                   setCreatedSubs([...createdSubs.filter((s) => s.clientId !== apikey.clientId)])
                 }
                 getFilteredApikeys={filterApikeys}
-                tenant={props.tenant}
+                tenant={tenant}
                 cancel={() => send('CANCEL')}
                 createdSubs={createdSubs}
               />
@@ -297,15 +299,8 @@ const InitializeFromOtoroshiComponent = (props) => {
           )}
         </div>
       </Can>
-    </UserBackOffice>
   );
 };
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const InitializeFromOtoroshi = connect(mapStateToProps)(InitializeFromOtoroshiComponent);
 
 const Help = () => {
   const { Translation } = useContext(I18nContext);

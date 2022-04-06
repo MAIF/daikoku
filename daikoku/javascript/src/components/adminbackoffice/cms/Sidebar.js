@@ -4,6 +4,7 @@ import moment from 'moment';
 import { SelectInput } from '@maif/react-forms';
 import { constraints, Form, format, type } from '@maif/react-forms';
 import { I18nContext } from '../../../core';
+import { DivideCircle } from 'react-feather';
 
 export default React.memo(
   React.forwardRef(
@@ -156,15 +157,9 @@ export default React.memo(
 
       return (
         <>
-          <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
-            <div
-              className="sidebar-sticky"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <ul className="nav flex-column mb-2 px-3">
+          <nav className="col-md-3 d-md-block">
+            <div className="d-flex flex-column">
+              <ul className="nav d-flex flex-column mb-2 px-3">
                 <li className="nav-item">
                   <Form
                     schema={schema}

@@ -329,7 +329,6 @@ export const useDaikokuBackOffice = () => {
   const match = useMatch('/settings/:tab*');
 
   const schema = currentTab => ({
-    title: tenant.name,
     blocks: {
       links: {
         order: 1,
@@ -337,7 +336,7 @@ export const useDaikokuBackOffice = () => {
           tenants: { label: translateMethod("Tenants"), action: () => navigateTo('tenants'), className: { active: currentTab === 'tenants' } },
           users: { label: translateMethod("Users"), action: () => navigateTo('users'), className: { active: currentTab === 'users' } },
           sessions: { label: translateMethod("User sessions"), action: () => navigateTo('sessions'), className: { active: currentTab === 'sessions' } },
-          importexport: { label: translateMethod("Import / Expor"), action: () => navigateTo('import-export'), className: { active: currentTab === 'import-export' } },
+          importexport: { label: translateMethod("Import / Export"), action: () => navigateTo('import-export'), className: { active: currentTab === 'import-export' } },
         }
       }
     }
@@ -351,21 +350,19 @@ export const useDaikokuBackOffice = () => {
     if (match.params.tab && !_.isEmpty(menu)) {
       addMenu(schema(match.params.tab))
     }
-  }, [match.params.tab, api])
+  }, [match.params.tab])
 
 
   useEffect(() => {
     setMode(navMode.daikoku)
     setOffice(officeMode.back)
-    setTenant(tenant)
     setMenu(schema(match.params.tab))
 
     return () => {
       setMode(navMode.initial)
-      setTenant(undefined)
       setMenu({})
     }
-  }, [tenant])
+  }, [])
 
   return { addMenu };
 }

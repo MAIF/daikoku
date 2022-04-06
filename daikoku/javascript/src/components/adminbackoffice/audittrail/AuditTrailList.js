@@ -1,21 +1,23 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
+import moment from 'moment';
+
 import { Table } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
 import * as Services from '../../../services';
-import moment from 'moment';
-
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
+import { useTenantBackOffice } from '../../../contexts';
 
-export class AuditTrailList extends Component {
-  state = {
-    from: moment().subtract(1, 'hour'),
-    to: moment(),
-    page: 1,
-    size: 500,
-  };
+export const AuditTrailList = () => {
+  useTenantBackOffice();
 
-  columns = [
+  const [from, setFrom] = useState(moment().subtract(1, 'hour'));
+  const [to, setTo] = useState(moment());
+  const [table, setTable] = useState();
+  const page = 1;
+  const size = 500;
+
+  const columns = [
     {
       Header: 'Date',
       id: 'date',
@@ -73,86 +75,66 @@ export class AuditTrailList extends Component {
     },
   ];
 
-  componentDidMount() {
-    this.update();
-  }
+  useEffect(() => {
+    update()
+  }, [from, to, page])
 
-  update = () => {
-    if (this.table) {
-      this.table.update();
+  const update = () => {
+    if (table) {
+      table.update();
     }
   };
 
-  updateDateRange = (from, to) => {
-    this.setState({ from, to }, () => {
-      this.update();
-    });
+  const updateDateRange = (from, to) => {
+    setFrom(from);
+    setTo(to);
   };
 
-  previous = () => {
-    if (this.state.page > 1) {
-      this.setState({ page: this.state.page - 1 });
-      this.table.update();
-    }
-  };
-
-  next = () => {
-    this.setState({ page: this.state.page + 1 });
-    this.table.update();
-  };
-
-  topBar = () => {
+  const topBar = () => {
     return (
       <OtoDatePicker
-        updateDateRange={this.updateDateRange}
-        from={this.state.from}
-        to={this.state.to}
+        updateDateRange={updateDateRange}
+        from={from}
+        to={to}
       />
     );
   };
 
-  fetchItems = () => {
+  const fetchItems = () => {
     return Services.fetchAuditTrail(
-      this.state.from.valueOf(),
-      this.state.to.valueOf(),
-      this.state.page,
-      this.state.size
-    ).then((resp) => {
-      this.setState({ total: resp.size });
-      return resp.events;
-    });
+      from.valueOf(),
+      to.valueOf(),
+      page,
+      size)
+      .then((resp) => resp.events);
   };
 
-  render() {
-    return (
-      <UserBackOffice tab="Audit trail">
-        <Can I={manage} a={tenant} dispatchError>
-          <div className="row">
-            <div className="col">
-              <h1>Audit trail </h1>
-              <div className="section">
-                <div className="p-2">
-                  <Table
-                    selfUrl="audit"
-                    defaultTitle="Audit trail"
-                    defaultValue={() => ({})}
-                    itemName="event"
-                    columns={this.columns}
-                    fetchItems={this.fetchItems}
-                    showActions={false}
-                    showLink={false}
-                    extractKey={(item) => item._id}
-                    injectTable={(t) => (this.table = t)}
-                    defaultSort="date"
-                    defaultSortDesc={true}
-                    injectTopBar={this.topBar}
-                  />
-                </div>
-              </div>
+  return (
+    <Can I={manage} a={tenant} dispatchError>
+      <div className="row">
+        <div className="col">
+          <h1>Audit trail </h1>
+          <div className="section">
+            <div className="p-2">
+              <Table
+                selfUrl="audit"
+                defaultTitle="Audit trail"
+                defaultValue={() => ({})}
+                itemName="event"
+                columns={columns}
+                fetchItems={fetchItems}
+                showActions={false}
+                showLink={false}
+                extractKey={(item) => item._id}
+                injectTable={setTable}
+                defaultSort="date"
+                defaultSortDesc={true}
+                injectTopBar={topBar}
+              />
             </div>
           </div>
-        </Can>
-      </UserBackOffice>
-    );
-  }
+        </div>
+      </div>
+    </Can>
+  );
 }
