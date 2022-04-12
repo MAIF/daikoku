@@ -68,11 +68,11 @@ const TeamApiComponent = (props) => {
     label: params.versionId,
   });
 
-  const teamApiDocumentationRef = useRef();
-  
-  const { translateMethod, Translation } = useContext(I18nContext);
-
   const { addMenu } = useApiBackOffice(api)
+
+  const teamApiDocumentationRef = useRef();
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
 
   useEffect(() => {
@@ -89,6 +89,31 @@ const TeamApiComponent = (props) => {
 
   useEffect(() => {
     document.title = `${props.currentTeam.name} - ${api ? api.name : translateMethod('API')}`;
+
+    addMenu({
+      blocks: {
+        links: {
+          links: {
+            version: {
+              order: 1,
+              component: <Select
+                name="versions-selector"
+                value={{ value: params.versionId, label: params.versionId }}
+                options={versions}
+                onChange={(e) => navigate(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
+                classNamePrefix="reactSelect"
+                className="mb-4"
+                menuPlacement="auto"
+                menuPosition="fixed"
+              />
+            },
+          }
+        },
+        actions: {
+
+        }
+      }
+    })
   }, [api]);
 
   const reloadState = () => {
@@ -102,30 +127,6 @@ const TeamApiComponent = (props) => {
         setApiVersion({ value: params.versionId, label: params.versionId });
         setApi(api);
         setOtoroshiSettings(otoroshiSettings);
-
-        addMenu({
-          blocks: {
-            links: {
-              links: {
-                version: {
-                  component: <Select
-                    name="versions-selector"
-                    value={{ value: params.versionId, label: params.versionId }}
-                    options={versions}
-                    onChange={(e) => navigate(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
-                    classNamePrefix="reactSelect"
-                    className="mb-4"
-                    menuPlacement="auto"
-                    menuPosition="fixed"
-                  />
-                },
-              }
-            },
-            actions: {
-
-            }
-          }
-        })
       } else {
         toastr.error(api.error);
       }
@@ -236,13 +237,13 @@ const TeamApiComponent = (props) => {
             actions: {
               links: {
                 view: {
-                  component: (
+                  component: 
                     <Link
                       to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
                       className="btn btn-sm btn-access-negative mb-2"
                     >
                       {translateMethod('View this Api')}
-                    </Link>)
+                    </Link>
                 },
                 newVersion: {
                   component: < CreateNewVersionButton {...params} currentTeam={props.currentTeam} />

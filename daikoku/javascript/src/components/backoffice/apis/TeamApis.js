@@ -17,6 +17,7 @@ export const TeamApis = () => {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
+    console.log('coocoo')
     document.title = `${currentTeam.name} - ${translateMethod('API', true)}`;
   }, []);
 

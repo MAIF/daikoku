@@ -34,7 +34,7 @@ export const NavProvider = ({ children }) => {
   const [tenant, setTenant] = useState();
 
   const addMenu = (value) => {
-    setMenu({ ...merge(menu, value) })
+    setMenu(menu => ({ ...merge(menu, value) }))
   }
 
   return (
@@ -134,7 +134,7 @@ export const useApiFrontOffice = (api, team) => {
 }
 
 export const useApiBackOffice = (api) => {
-  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu, menu } = useContext(NavContext)
+  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
   const { currentTeam } = useSelector(state => state.context)
@@ -148,11 +148,10 @@ export const useApiBackOffice = (api) => {
       links: {
         order: 2,
         links: {
-          version: { component: <></> },
-          informations: { label: translateMethod("Informations"), action: () => navigateTo('infos'), className: { active: currentTab === 'infos' } },
-          plans: { label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
-          documentation: { label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
-          news: { label: translateMethod("News"), action: () => navigateTo('news'), className: { active: currentTab === 'news' } }
+          informations: { order: 2, label: translateMethod("Informations"), action: () => navigateTo('infos'), className: { active: currentTab === 'infos' } },
+          plans: { order: 3, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
+          documentation: { order: 4, label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
+          news: { order: 5, label: translateMethod("News"), action: () => navigateTo('news'), className: { active: currentTab === 'news' } }
         }
       }
     }
@@ -163,32 +162,30 @@ export const useApiBackOffice = (api) => {
   }
 
   useEffect(() => {
-    if (params.tab && !_.isEmpty(menu)) {
+      console.debug("set api bo menu")
       addMenu(schema(params.tab))
-    }
-  }, [params.tab, api])
-
-  useEffect(() => {
-    if (api) {
-      setMenu(schema(params.tab))
       setMode(navMode.api)
       setOffice(officeMode.back)
       setApi(api)
       setTeam(currentTeam)
-    }
+  }, [api?._id])
+
+  useEffect(() => {
     return () => {
+      console.debug("remove API bo menu")
       setMode(navMode.initial)
       setApi(undefined)
       setTeam(undefined)
       setMenu({})
     }
-  }, [api])
+  }, [])
+  
 
   return { addMenu };
 }
 
 export const useTeamBackOffice = (team) => {
-  const { setMode, setOffice, setTeam, addMenu, setMenu, menu } = useContext(NavContext)
+  const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
   const { currentTeam } = useSelector(state => state.context)
@@ -243,30 +240,33 @@ export const useTeamBackOffice = (team) => {
   }
 
   useEffect(() => {
-    if (!_.isEmpty(menu)) {
-      addMenu(schema(match?.params?.tab))
-    }
-  }, [match?.params?.tab, team])
-
-  useEffect(() => {
     if (team) {
+      console.debug("set Team bo menu")
+
       setMode(navMode.team)
       setOffice(officeMode.back)
       setTeam(team)
       setMenu(schema(match?.params?.tab))
     }
+    
+  }, [team])
+
+  useEffect(() => {
     return () => {
+      console.debug("remove team bo menu")
       setMode(navMode.initial)
       setTeam(undefined)
       setMenu({})
     }
-  }, [team])
+  }, [])
+  
+  
 
   return { addMenu };
 }
 
 export const useTenantBackOffice = () => {
-  const { setMode, setOffice, addMenu, setMenu, menu, setTenant } = useContext(NavContext)
+  const { setMode, setOffice, addMenu, setMenu, setTenant } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
   const navigate = useNavigate();
@@ -298,11 +298,11 @@ export const useTenantBackOffice = () => {
     navigate(`/settings/${navTab}`)
   }
 
-  useEffect(() => {
-    if (match.params.tab && !_.isEmpty(menu)) {
-      addMenu(schema(match.params.tab))
-    }
-  }, [match.params.tab, tenant])
+  // useEffect(() => {
+  //   if (match.params.tab && !_.isEmpty(menu)) {
+  //     addMenu(schema(match.params.tab))
+  //   }
+  // }, [match.params.tab, tenant])
 
   useEffect(() => {
     setMenu(schema(match.params.tab))
@@ -311,6 +311,8 @@ export const useTenantBackOffice = () => {
     setTenant(tenant)
 
     return () => {
+
+      console.debug("remove team bo menu")
       setMode(navMode.initial)
       setTenant(undefined)
       setMenu({})
@@ -321,7 +323,7 @@ export const useTenantBackOffice = () => {
 }
 
 export const useDaikokuBackOffice = () => {
-  const { setMode, setOffice, addMenu, setMenu, menu } = useContext(NavContext)
+  const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
 
@@ -346,11 +348,11 @@ export const useDaikokuBackOffice = () => {
     navigate(`/settings/${navTab}`)
   }
 
-  useEffect(() => {
-    if (match.params.tab && !_.isEmpty(menu)) {
-      addMenu(schema(match.params.tab))
-    }
-  }, [match.params.tab])
+  // useEffect(() => {
+  //   if (match.params.tab && !_.isEmpty(menu)) {
+  //     addMenu(schema(match.params.tab))
+  //   }
+  // }, [match.params.tab])
 
 
   useEffect(() => {
@@ -368,7 +370,7 @@ export const useDaikokuBackOffice = () => {
 }
 
 export const useUserBackOffice = () => {
-  const { setMode, setOffice, addMenu, setMenu, menu } = useContext(NavContext)
+  const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
   const { connectedUser } = useSelector(state => state.context)
@@ -395,11 +397,11 @@ export const useUserBackOffice = () => {
     navigate(`/${navTab}`)
   }
 
-  useEffect(() => {
-    if (match.params.tab && !_.isEmpty(menu)) {
-      addMenu(schema(match.params.tab))
-    }
-  }, [match.params.tab])
+  // useEffect(() => {
+  //   if (match.params.tab && !_.isEmpty(menu)) {
+  //     addMenu(schema(match.params.tab))
+  //   }
+  // }, [match.params.tab])
 
   useEffect(() => {
     setMode(navMode.user)

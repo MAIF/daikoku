@@ -155,7 +155,7 @@ const TeamEditComponent = ({ currentTeam }) => {
   return (
     <>
       <TeamEditForm team={team} updateTeam={setTeam} />
-      <div className="row form-back-fixedBtns">
+      <div className="row">
         <div className="d-flex justify-content-end">
           <Link
             className="btn btn-outline-primary"
