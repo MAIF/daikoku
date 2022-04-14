@@ -1116,5 +1116,8 @@
     "Skip": "Skip",
     "Otoroshi target": "Otoroshi target",
     "http.method": "HTTP method",
-    "http.path": "Path"
+    "http.path": "Path",
+    "Edit API": "Edit API",
+    "create": "create",
+    "search.placeholder": "Search for API, team and more..."
 }

@@ -23,7 +23,7 @@ export const Companion = () => {
 
   console.debug({ menu })
   return (
-    <div className={classNames("navbar-companion", {
+    <div className={classNames("navbar-companion me-3", {
       opened: companionState === state.opened,
       closed: companionState === state.closed,
     })}>
@@ -47,9 +47,15 @@ export const Companion = () => {
                       .map((entry, linkidx) => {
                         let link = null
                         if (entry.action) {
-                          link = <span key={`${performance.now}-link-${idx}-${linkidx}`} className={classNames('block__entry__link', entry.className)} onClick={() => entry.action()}>{entry.label}</span>
+                          link = <span
+                            key={`${performance.now}-link-${idx}-${linkidx}`}
+                            className={classNames(entry.className, 'block__entry__link')}
+                            onClick={() => entry.action()}>{entry.label}</span>
                         } else if (entry.link) {
-                          link = <Link key={`${performance.now}-link-${idx}-${linkidx}`} className={classNames('block__entry__link', entry.className)} to={entry.link}>{entry.label}</Link>
+                          link = <Link
+                            key={`${performance.now}-link-${idx}-${linkidx}`}
+                            className={classNames(entry.className, 'block__entry__link')}
+                            to={entry.link}>{entry.label}</Link>
                         } else if (entry.component) {
                           link = React.cloneElement(entry.component)
                         }

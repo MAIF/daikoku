@@ -95,10 +95,18 @@ export const useApiFrontOffice = (api, team) => {
           edit: {
             label: translateMethod("edit"),
             component: <Can I={manage} a={API} team={team}>
-              <Link to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/${currentTab}`} className='block__entry__link'>Edit API</Link>
+              <Link 
+                href={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/${currentTab}`} 
+                className="btn btn-sm btn-access-negative mb-2">{translateMethod('Edit API')}</Link>
             </Can>
           },
-          contact: { label: translateMethod(`contact ${team?.name}`), action: () => openContactModal(connectedUser.name, connectedUser.email, tenant._id, api.team, api._id)(dispatch) },
+          contact: {
+            component: <button 
+              className="btn btn-sm btn-access-negative mb-2"
+              onClick={() => openContactModal(connectedUser.name, connectedUser.email, tenant._id, api.team, api._id)(dispatch)}>
+              {translateMethod(`contact ${team?.name}`)}
+            </button>
+          }
         }
       }
     }

@@ -77,7 +77,7 @@ export const AddPanel = ({ teams }) => {
       <div className='mb-3' style={{ height: '40px' }}></div>
       <div className="blocks">
         <div className="mb-3 block">
-          <div className="mb-1 block__category">create</div>
+          <div className="mb-1 block__category">{translateMethod("create")}</div>
           <div className='ms-2 block__entries d-flex flex-column'>
             {connectedUser.isDaikokuAdmin && <strong className='block__entry__link'>tenant</strong>}
             <strong className='block__entry__link' onClick={createTeam}>team</strong>

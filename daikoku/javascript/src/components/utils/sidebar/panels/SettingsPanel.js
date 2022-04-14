@@ -85,7 +85,7 @@ export const SettingsPanel = ({ }) => {
           <div className="mb-1 block__category">{connectedUser.email}</div>
           <div className='ms-2 block__entries d-flex flex-column'>
             <Link to='/me' className='block__entry__link'>{translateMethod('My profile')}</Link>
-            <Link to='/logout' className='block__entry__link'>{translateMethod('Logout')}</Link>
+            <a href='/logout' className='block__entry__link'>{translateMethod('Logout')}</a>
           </div>
           <div className="dropdown-divider" />
         </div>

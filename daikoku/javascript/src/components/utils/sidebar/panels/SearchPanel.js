@@ -51,7 +51,7 @@ export const SearchPanel = ({ teams }) => {
   return (
     <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
       <input
-        placeholder='Search for API, team and more... '
+        placeholder={translateMethod("search.placeholder")}
         className='mb-3 form-control'
         onChange={e => debouncedSearch(e.target.value)} />
       <div className="blocks">
