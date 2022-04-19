@@ -13,20 +13,20 @@ describe('Login page & login form', () => {
 describe('API page', () => {
   it('load well', { scrollBehavior: false }, () => {
     cy
-      .visit('http://localhost:9000/testers/test-api/1.0.0')
+      .visit('http://localhost:9000/testers/test-api/1.0.0/description')
       .get('h1.jumbotron-heading').should(($div) => {
         expect($div.text().trim()).contains('test API');
       })
-      .get('a.nav-link').contains('Plans').click()
+      .get('.block__entry__link').contains('Plans').click()
       .get('.card').should('have.length', 2)
-      .get('a.nav-link').contains('Documentation').click()
+      .get('.block__entry__link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
-      .get('a.nav-link').contains('API Reference').click()
+      .get('.block__entry__link').contains('Swagger').click()
       .get('#redoc-container h1').should(($title) => {
         const text = $title.text();
         expect(text).to.include('Swagger Petstore (1.0.0)');
       })
-      .get('a.nav-link').contains('Try it!').click()
+      .get('.block__entry__link').contains('Testing').click()
       .get('#swagger-ui').should('be.visible');
   });
 });
@@ -34,7 +34,7 @@ describe('API page', () => {
 describe('Profile page', () => {
   it('load well', () => {
     cy
-      .visit('http://localhost:9000/settings/me')
+      .visit('http://localhost:9000/me')
       .get('input[name="name"]').should('have.value', 'User');
   });
 });
@@ -50,7 +50,7 @@ describe('Team apis page', () => {
 describe('Select version of api', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
-      .visit('http://localhost:9000/testers/test-api/1.0.0')
+      .visit('http://localhost:9000/testers/test-api/1.0.0/description')
       .get('input[name="versions-selector"]').should('have.value', '1.0.0')
       .get('.api__header .reactSelect__control')
       .click({ multiple: true })

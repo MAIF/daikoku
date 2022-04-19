@@ -69,10 +69,10 @@ export const useApiFrontOffice = (api, team) => {
         order: 1,
         links: {
           description: { label: translateMethod("Description"), action: () => navigateTo('description'), className: { active: currentTab === 'description' } },
-          pricings: { label: translateMethod("Pricings"), action: () => navigateTo('pricing'), className: { active: currentTab === 'pricing' } },
+          pricings: { label: translateMethod("Plan", true), action: () => navigateTo('pricing'), className: { active: currentTab === 'pricing' } },
           documentation: { label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
           swagger: {
-            label: translateMethod("Swaggger"),
+            label: translateMethod("Swagger"),
             action: () => { if (api?.swagger?.content || api?.swagger?.url) navigateTo('swagger') },
             className: { active: currentTab === 'swagger', disabled: !api?.swagger?.content && !api?.swagger?.url }
           },
@@ -96,7 +96,7 @@ export const useApiFrontOffice = (api, team) => {
             label: translateMethod("edit"),
             component: <Can I={manage} a={API} team={team}>
               <Link 
-                href={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/${currentTab}`} 
+                to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/${currentTab}`} 
                 className="btn btn-sm btn-access-negative mb-2">{translateMethod('Edit API')}</Link>
             </Can>
           },
@@ -170,7 +170,6 @@ export const useApiBackOffice = (api) => {
   }
 
   useEffect(() => {
-      console.debug("set api bo menu")
       addMenu(schema(params.tab))
       setMode(navMode.api)
       setOffice(officeMode.back)
@@ -180,7 +179,6 @@ export const useApiBackOffice = (api) => {
 
   useEffect(() => {
     return () => {
-      console.debug("remove API bo menu")
       setMode(navMode.initial)
       setApi(undefined)
       setTeam(undefined)
@@ -249,8 +247,6 @@ export const useTeamBackOffice = (team) => {
 
   useEffect(() => {
     if (team) {
-      console.debug("set Team bo menu")
-
       setMode(navMode.team)
       setOffice(officeMode.back)
       setTeam(team)
@@ -261,7 +257,6 @@ export const useTeamBackOffice = (team) => {
 
   useEffect(() => {
     return () => {
-      console.debug("remove team bo menu")
       setMode(navMode.initial)
       setTeam(undefined)
       setMenu({})
@@ -320,7 +315,6 @@ export const useTenantBackOffice = () => {
 
     return () => {
 
-      console.debug("remove team bo menu")
       setMode(navMode.initial)
       setTenant(undefined)
       setMenu({})

@@ -21,7 +21,6 @@ export const Companion = () => {
     return null;
   }
 
-  console.debug({ menu })
   return (
     <div className={classNames("navbar-companion me-3", {
       opened: companionState === state.opened,

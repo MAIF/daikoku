@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import * as Services from '../../../../services';
 import { updateTenant } from '../../../../core/context/actions';
 import { I18nContext } from '../../../../locales/i18n-context';
+import { CanIDoAction, manage, tenant as TENANT } from '../../..';
 
 const DarkModeActivator = ({ initialDark }) => {
   const { translateMethod } = useContext(I18nContext);
@@ -38,7 +39,7 @@ export const SettingsPanel = ({ }) => {
   const [version, setVersion] = useState();
 
   const { translateMethod, isTranslationMode } = useContext(I18nContext);
-  const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => state.context)
+  const { tenant, connectedUser } = useSelector((state) => state.context)
 
   const dispatch = useDispatch();
 
@@ -74,6 +75,8 @@ export const SettingsPanel = ({ }) => {
       });
   };
 
+  const isTenantAdmin = CanIDoAction(connectedUser, manage, TENANT)
+
 
   return (
     <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
@@ -89,14 +92,14 @@ export const SettingsPanel = ({ }) => {
           </div>
           <div className="dropdown-divider" />
         </div>
-        <div className="mb-3 block">
+        {(isTenantAdmin || connectedUser.isDaikokuAdmin) && <div className="mb-3 block">
           <div className="mb-1 block__category">{translateMethod('settings')}</div>
           <div className='ms-2 block__entries d-flex flex-column'>
-            <Link to='/settings/teams' className='block__entry__link'>{tenant.name}{' '}{translateMethod('settings')}</Link>
-            <Link to='/settings/tenants' className='block__entry__link'>{translateMethod('Daikoku settings')}</Link>
+            {isTenantAdmin && <Link to='/settings/teams' className='block__entry__link'>{tenant.name}{' '}{translateMethod('settings')}</Link>}
+            {connectedUser.isDaikokuAdmin && <Link to='/settings/tenants' className='block__entry__link'>{translateMethod('Daikoku settings')}</Link>}
           </div>
           <div className="dropdown-divider" />
-        </div>
+        </div>}
         <div className="mb-3 block">
           <div className="mb-1 block__category">{translateMethod('actions')}</div>
           <div className='ms-2 block__entries d-flex flex-column'>

@@ -5,7 +5,7 @@ import _ from 'lodash';
 
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
-import { formatCurrency, formatPlanType, Can, read, stat } from '../../utils';
+import { formatCurrency, formatPlanType, Can, read, stat, api as API, CanIDoAction } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
@@ -19,7 +19,7 @@ export const TeamBilling = (props) =>  {
     date: moment(),
   });
 
-  const {currentTeam} = useSelector(state => state.context)
+  const {currentTeam, connectedUser} = useSelector(state => state.context)
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -101,8 +101,14 @@ export const TeamBilling = (props) =>  {
   const lastDate =
     mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
+    console.group('test')
+    console.debug(connectedUser)
+    console.debug(props.currentTeam)
+    console.debug(CanIDoAction(connectedUser, read, stat, currentTeam))
+    console.debug(CanIDoAction(connectedUser, read, API, currentTeam))
+    console.groupEnd()
   return (
-    <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
+    <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
       <div className="row">
         <div className="col">
           <h1>

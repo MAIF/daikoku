@@ -67,6 +67,7 @@ const TeamApiComponent = (props) => {
     value: params.versionId,
     label: params.versionId,
   });
+  const [versions, setVersions] = useState([params.versionId])
 
   const { addMenu } = useApiBackOffice(api)
 
@@ -100,7 +101,7 @@ const TeamApiComponent = (props) => {
                 name="versions-selector"
                 value={{ value: params.versionId, label: params.versionId }}
                 options={versions}
-                onChange={(e) => navigate(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
+                onChange={(e) => navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${e.value}/${tab}`)}
                 classNamePrefix="reactSelect"
                 className="mb-4"
                 menuPlacement="auto"
@@ -108,25 +109,23 @@ const TeamApiComponent = (props) => {
               />
             },
           }
-        },
-        actions: {
-
         }
       }
     })
-  }, [api]);
+  }, [api, versions]);
 
   const reloadState = () => {
     Promise.all([
       Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.allSimpleOtoroshis(props.tenant._id),
       Services.getAllApiVersions(props.currentTeam._id, params.apiId),
-    ]).then(([api, otoroshiSettings, versions]) => {
+    ]).then(([api, otoroshiSettings, v]) => {
       if (!api.error) {
-        const versions = (versions || []).map((v) => ({ label: v, value: v }))
+        const versions = (v || []).map((v) => ({ label: v, value: v }))
         setApiVersion({ value: params.versionId, label: params.versionId });
         setApi(api);
         setOtoroshiSettings(otoroshiSettings);
+        setVersions(versions)
       } else {
         toastr.error(api.error);
       }

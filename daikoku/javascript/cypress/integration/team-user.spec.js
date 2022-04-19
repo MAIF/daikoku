@@ -13,20 +13,20 @@ describe('Login page & login form', () => {
 describe('API page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
-      .visit('http://localhost:9000/testers/test-api/1.0.0')
-      .get('h1.jumbotron-heading').should(($div) => {
+      .visit('http://localhost:9000/testers/test-api/1.0.0/description')
+      .get('h1').should(($div) => {
         expect($div.text().trim()).contains('test API');
       })
-      .get('a.nav-link').contains('Plans').click()
+      .get('.block__entry__link').contains('Plans').click()
       .get('.card').should('have.length', 2)
-      .get('a.nav-link').contains('Documentation').click()
+      .get('.block__entry__link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
-      .get('a.nav-link').contains('API Reference').click()
+      .get('.block__entry__link').contains('Swagger').click()
       .get('#redoc-container h1').should(($title) => {
         const text = $title.text();
         expect(text).to.include('Swagger Petstore (1.0.0)');
       })
-      .get('a.nav-link').contains('Try it!').click()
+      .get('.block__entry__link').contains('Testing').click()
       .get('#swagger-ui').should('be.visible');
   });
 });
@@ -37,7 +37,7 @@ describe('Notification page', () => {
       .visit('http://localhost:9000/apis')
       .get('.navbar a.notification-link').click()
       .url().should('include', '/notifications')
-      .get('main h1').should('have.text', 'Notifications (1)')
+      .get('.wrapper h1').should('have.text', 'Notifications (1)')
       .get(('div.alert.section')).should('have.length', 1);
   });
 });
@@ -45,7 +45,7 @@ describe('Notification page', () => {
 describe('Profile page', () => {
   it('load well', () => {
     cy
-      .visit('http://localhost:9000/settings/me')
+      .visit('http://localhost:9000/me')
       .get('input[name="email"]').should('have.value', 'tester@foo.bar');
   });
 });
@@ -68,7 +68,7 @@ describe('Team back-office', { scrollBehavior: false }, () => {
   it('Team APIs works', () => {
     cy
       .visit('http://localhost:9000/testers/settings')
-      .get('nav#sidebar a.nav-link').contains('APIs').click()
+      .get('.block__entry__link').contains('APIs').click()
       .url().should('include', '/testers/settings/apis')
       .get('table tbody tr').should('have.length', 4)
       .visit('http://localhost:9000/testers/settings/subscriptions/apis/test-api/1.0.0')
@@ -80,9 +80,9 @@ describe('Team back-office', { scrollBehavior: false }, () => {
 
   it('Team income works', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('Billing').click()
+      .get('.block__entry__link').contains('Billing').click()
       .url().should('include', '/testers/settings/billing')
-      .get('nav#sidebar a.nav-link').contains('Income').click()
+      .get('.submenu__entry__link').contains('Income').click()
       .url().should('include', '/testers/settings/income')
       .get('.month__and__total button.btn-access-negative').click()
       .waitFor('.col.apis', {
@@ -107,8 +107,8 @@ describe('Team back-office', { scrollBehavior: false }, () => {
 
   it('Team assets works', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('Settings').click()
-      .get('nav#sidebar a.nav-link').contains('Assets').click()
+      .get('.block__entry__link').contains('Settings').click()
+      .get('.submenu__entry__link').contains('Assets').click()
       .url().should('include', '/testers/settings/assets')
       // .get('main h1').should('have.text', 'Testers assets')
       .get('main .alert').should('have.text', 'No bucket config found !');
@@ -116,7 +116,7 @@ describe('Team back-office', { scrollBehavior: false }, () => {
 
   it('Team Api keys works', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('API keys').click()
+      .get('.block__entry__link').contains('API keys').click()
       .url().should('include', '/testers/settings/apikeys')
       .get('main h1').should('have.text', 'Subscribed APIs')
       .get('table tbody tr').should('have.length', 1)

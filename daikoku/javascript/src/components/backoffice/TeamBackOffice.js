@@ -5,11 +5,9 @@ import {
   Routes,
   useLocation,
   NavLink,
-  useResolvedPath,
-  useMatch,
 } from 'react-router-dom';
 import classNames from 'classnames';
-import { connect, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import * as Services from '../../services';
 import {
@@ -48,7 +46,7 @@ const BackOfficeContent = (props) => {
 };
 
 const TeamBackOfficeHome = () => {
-  const {currentTeam} = useSelector(state => state.context);
+  const { currentTeam } = useSelector(state => state.context);
   useTeamBackOffice(currentTeam);
 
   const { Translation } = useContext(I18nContext);
@@ -145,7 +143,10 @@ const TeamBackOfficeHome = () => {
 
 
 
-const TeamBackOfficeComponent = ({ currentTeam, isLoading, error, title }) => {
+export const TeamBackOffice = ({ isLoading, title }) => {
+  const { currentTeam } = useSelector(s => s.context);
+  const error = useSelector(s => s.error)
+
   useEffect(() => {
     if (title) {
       document.title = title;
@@ -210,7 +211,7 @@ const TeamBackOfficeComponent = ({ currentTeam, isLoading, error, title }) => {
             <Route
               path={`/apis/:apiId/:tab`}
               element={
-                <TeamApi creation/>
+                <TeamApi creation />
               }
             />
             <Route path={`/apis`} element={<TeamApis />} />
@@ -222,13 +223,11 @@ const TeamBackOfficeComponent = ({ currentTeam, isLoading, error, title }) => {
   );
 };
 
-const UserBackOfficeComponent = ({
+export const UserBackOffice = ({
   tab,
   title,
   notificationSubMenu,
-  tenant,
   isLoading,
-  error,
   children,
 }) => {
   useEffect(() => {
@@ -236,6 +235,9 @@ const UserBackOfficeComponent = ({
       document.title = title;
     }
   }, [title]);
+
+  const { tenant } = useSelector(s => s.context);
+  const error = useSelector(s => s.error);
 
   const location = useLocation();
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -438,11 +440,3 @@ const UserBackOfficeComponent = ({
     </div>
   );
 };
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-  error: state.error,
-});
-
-export const TeamBackOffice = connect(mapStateToProps)(TeamBackOfficeComponent);
-export const UserBackOffice = connect(mapStateToProps)(UserBackOfficeComponent);

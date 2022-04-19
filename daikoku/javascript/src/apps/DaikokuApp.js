@@ -373,6 +373,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                   }
                 />
               </Routes>
+              <Error />
             </div>
 
           </div>
@@ -394,7 +395,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             ))}
             <Route path="/" element={<Footer isBackOffice={false} />} />
           </Routes>
-          <Error />
         </NavProvider>
       </MessagesProvider>
     </BrowserRouter>
