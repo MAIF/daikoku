@@ -110,7 +110,7 @@ export const TeamIncome = () => {
                     <MonthPicker
                       updateDate={(date) => {
                         setState({ ...state, date });
-                        getBillingData(props.currentTeam);
+                        getBillingData(currentTeam);
                       }}
                       value={state.date}
                     />

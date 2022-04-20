@@ -367,18 +367,6 @@ const mapDispatchToProps = {
 
 export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
 
-ApiListComponent.propTypes = {
-  myTeams: PropTypes.array.isRequired,
-  apis: PropTypes.array.isRequired,
-  teams: PropTypes.array.isRequired,
-  teamVisible: PropTypes.bool,
-  team: PropTypes.object,
-  askForApiAccess: PropTypes.func.isRequired,
-  redirectToTeamPage: PropTypes.func.isRequired,
-  redirectToApiPage: PropTypes.func.isRequired,
-  redirectToEditPage: PropTypes.func.isRequired,
-};
-
 const Top = (props) => {
   return (
     <div className={`top__container ${props.className ? props.className : ''}`}>

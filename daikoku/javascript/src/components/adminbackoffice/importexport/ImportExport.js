@@ -8,14 +8,14 @@ import { useDaikokuBackOffice } from '../../../contexts';
 
 export const ImportExport = () => {
   useDaikokuBackOffice();
-  
+
   const { translateMethod, Translation } = useContext(I18nContext);
 
   let input;
 
+  const [uploading, setUploading] = useState(false);
   const [state, setState] = useState({
     exportAuditTrail: true,
-    uploading: false,
     migration: {
       processing: false,
       error: '',
@@ -31,11 +31,12 @@ export const ImportExport = () => {
 
   const actuallyImportState = (e) => {
     const files = e.target.files;
-    setState({ ...state, uploading: true });
-    Services.uploadExportFile(files[0]).then(() => {
-      setState({ ...state, uploading: false });
-      window.location.reload();
-    });
+    setUploading(true);
+    Services.uploadExportFile(files[0])
+      .then(() => {
+        setUploading(false);
+        window.location.reload();
+      });
   };
 
   const migrate = () => {
@@ -83,7 +84,7 @@ export const ImportExport = () => {
               className="btn btn-outline-primary"
             >
               <i className="fas fa-upload me-1" />
-              {state.uploading
+              {uploading
                 ? translateMethod('importing ...')
                 : translateMethod('import state')}
             </button>

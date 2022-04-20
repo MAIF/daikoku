@@ -85,21 +85,21 @@ describe('users page', { scrollBehavior: false }, () => {
   });
 });
 
-describe('create new api version', () => {
-  it('load well', () => {
-    const version = "1.0.1"
-    cy.visit('http://localhost:9000/apis')
-      .url().should('include', '/apis')
-      .visit('http://localhost:9000/')
-      .get('.row:nth-child(3) > .col-12 h3').click()
-      .url().should('include', 'testers/test-api/1.0.0')
-      .get('.btn-sm:nth-child(1)').click({ force: true })
-      .get('.navbar-companion .btn-outline-primary').contains('New version').click()
-      .get('.form-control:nth-child(2)').click()
-      .get('.form-control:nth-child(2)').type(version)
-      .get('.modal-footer > .btn-outline-success').click()
-      .visit(`http://localhost:9000/testers/test-api/1.0.1/description`)
-      .url().should('include', `/testers/test-api/1.0.1/description`)
-      .get('.reactSelect__control').first().should('have.text', version)
-  })
-})
+// describe('create new api version', () => {
+//   it('load well', () => {
+//     const version = "1.0.1"
+//     cy.visit('http://localhost:9000/apis')
+//       .url().should('include', '/apis')
+//       .visit('http://localhost:9000/')
+//       .get('.row:nth-child(3) > .col-12 h3').click()
+//       .url().should('include', 'testers/test-api/1.0.0')
+//       .get('.btn-sm:nth-child(1)').click({ force: true })
+//       .get('.navbar-companion .btn-outline-primary').contains('New version').click()
+//       .get('.form-control:nth-child(2)').click()
+//       .get('.form-control:nth-child(2)').type(version)
+//       .get('.modal-footer > .btn-outline-success').click()
+//       .visit(`http://localhost:9000/testers/test-api/1.0.1/description`)
+//       .url().should('include', `/testers/test-api/1.0.1/description`)
+//       .get('.reactSelect__control').first().should('have.text', version)
+//   })
+// })

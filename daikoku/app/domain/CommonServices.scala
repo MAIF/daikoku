@@ -39,8 +39,8 @@ object CommonServices {
                   "action.team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))),
                   "status.status" -> "Pending")
               )
-            publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ teamFilter)
-            almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(Json.obj("visibility" -> "PublicWithAuthorizations") ++ teamFilter)
+            publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
+            almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(Json.obj("visibility" -> "PublicWithAuthorizations"))
             privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
               Json.obj(
                 "visibility" -> "Private",

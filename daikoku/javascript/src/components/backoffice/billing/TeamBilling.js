@@ -19,7 +19,7 @@ export const TeamBilling = (props) =>  {
     date: moment(),
   });
 
-  const {currentTeam, connectedUser} = useSelector(state => state.context)
+  const { currentTeam } = useSelector(state => state.context)
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -62,7 +62,7 @@ export const TeamBilling = (props) =>  {
   const getBilling = (date) => {
     setState({ ...state, loading: true, selectedApi: undefined });
     Services.getTeamBillings(
-      props.currentTeam._id,
+      currentTeam._id,
       date.startOf('month').valueOf(),
       date.endOf('month').valueOf()
     ).then((consumptions) =>
@@ -78,10 +78,10 @@ export const TeamBilling = (props) =>  {
 
   const sync = () => {
     setState({ ...state, loading: true });
-    Services.syncTeamBilling(props.currentTeam._id)
+    Services.syncTeamBilling(currentTeam._id)
       .then(() =>
         Services.getTeamBillings(
-          props.currentTeam._id,
+          currentTeam._id,
           state.date.startOf('month').valueOf(),
           state.date.endOf('month').valueOf()
         )
@@ -101,12 +101,6 @@ export const TeamBilling = (props) =>  {
   const lastDate =
     mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
-    console.group('test')
-    console.debug(connectedUser)
-    console.debug(props.currentTeam)
-    console.debug(CanIDoAction(connectedUser, read, stat, currentTeam))
-    console.debug(CanIDoAction(connectedUser, read, API, currentTeam))
-    console.groupEnd()
   return (
     <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
       <div className="row">

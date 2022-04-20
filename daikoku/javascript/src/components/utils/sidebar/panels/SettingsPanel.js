@@ -104,10 +104,10 @@ export const SettingsPanel = ({ }) => {
           <div className="mb-1 block__category">{translateMethod('actions')}</div>
           <div className='ms-2 block__entries d-flex flex-column'>
             <DarkModeActivator />
-            <span className='block__entry__link' onClick={reset}>{translateMethod('Reset')}</span>
-            <span className='block__entry__link' onClick={toggleMaintenanceMode}>
+            {connectedUser.isDaikokuAdmin && <span className='block__entry__link' onClick={reset}>{translateMethod('Reset')}</span>}
+            {isTenantAdmin && <span className='block__entry__link' onClick={toggleMaintenanceMode}>
               {translateMethod(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
-            </span>
+            </span>}
           </div>
           <div className="dropdown-divider" />
         </div>

@@ -23,7 +23,7 @@ export const SearchPanel = ({ teams }) => {
         value: 'me',
         label: translateMethod('My profile'),
         type: 'link',
-        url: '/settings/me',
+        url: '/me',
       },
     ];
     if (connectedUser?.isDaikokuAdmin)
