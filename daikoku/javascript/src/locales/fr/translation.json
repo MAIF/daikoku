@@ -1121,5 +1121,6 @@
   "incorrect password": "Mots de passe incorrect",
   "Edit API": "Modifier l'API",
   "create": "Créer",
-  "search.placeholder": "Rechercher une API, équipe, etc..."
+  "search.placeholder": "Rechercher une API, équipe, etc...",
+  "incorrect.email.or.password": "Adresse e-mail et/ou mot de passe incorrects"
 }

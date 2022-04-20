@@ -1119,5 +1119,6 @@
     "http.path": "Path",
     "Edit API": "Edit API",
     "create": "create",
-    "search.placeholder": "Search for API, team and more..."
+    "search.placeholder": "Search for API, team and more...",
+    "incorrect.email.or.password": "Incorrect email address and/or password"
 }

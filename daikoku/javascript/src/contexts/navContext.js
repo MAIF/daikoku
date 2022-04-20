@@ -23,7 +23,7 @@ export const officeMode = {
 
 export const NavContext = React.createContext();
 
-export const NavProvider = ({ children }) => {
+export const NavProvider = ({ children, loginAction, loginProvider }) => {
   const [mode, setMode] = useState(navMode.initial);
   const [office, setOffice] = useState(officeMode.front);
 
@@ -40,6 +40,7 @@ export const NavProvider = ({ children }) => {
   return (
     <NavContext.Provider
       value={{
+        loginAction, loginProvider,
         menu, addMenu, setMenu,
         navMode, officeMode,
         mode, setMode,

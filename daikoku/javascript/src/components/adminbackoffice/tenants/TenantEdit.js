@@ -971,11 +971,10 @@ export const TenantEdit = (props) => {
             schema={schema}
             value={state.tenant}
             onChange={(tenant) => setState({ ...state, tenant, updated: true })}
-            style={{ marginBottom: 100, paddingTop: 20 }}
+            style={{ paddingTop: 20 }}
           />
         </React.Suspense>
-        <div style={{ height: 60 }} />
-        <div className="d-flex form-back-fixedBtns">
+        <div className="d-flex justify-content-end my-3">
           <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
             <i className="fas fa-chevron-left me-1" />
             <Translation i18nkey="Back">Back</Translation>
