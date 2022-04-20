@@ -85,7 +85,7 @@ export const SearchPanel = ({ teams }) => {
                     case 'team':
                       return (
                         <Link
-                          to={`/${option.value}`}
+                          to={`/${option.value}/settings`}
                           className='block__entry__link'
                           key={option.value}
                         >{option.label}</Link>

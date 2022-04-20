@@ -172,7 +172,7 @@ a.navbar-brand, #teamSelector:hover {
 /// companion
 
 .navbar-companion {
-  z-index: 1000;
+  z-index: 10;
   background-color: $aside-bg-color;
   height: 100vh;
   position: relative;
@@ -292,9 +292,9 @@ a.navbar-brand, #teamSelector:hover {
     }
 
     &:hover {
-      background-color: steelblue;
+      background-color: $navbar-bg-color;
       color: #fff;
-      border: 1px solid midnightblue;
+      border: 1px solid rgba(0, 0, 0, .1);
     }
   }
 }

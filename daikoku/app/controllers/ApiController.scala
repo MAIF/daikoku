@@ -1702,12 +1702,13 @@ class ApiController(DaikokuAction: DaikokuAction,
       ctx.setCtxValue("search", search)
 
       val searchAsRegex = Json.obj("$regex" -> s".*$search.*", "$options" -> "-i")
+      val teamUsersFilter = if (ctx.user.isDaikokuAdmin) Json.obj() else Json.obj( "users.userId" -> ctx.user.id.value )
 
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
         teams <- env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
-          .findNotDeleted(Json.obj("name" -> searchAsRegex), 5)
+          .findNotDeleted(Json.obj("name" -> searchAsRegex) ++ teamUsersFilter, 5)
         apis <- env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .findNotDeleted(
