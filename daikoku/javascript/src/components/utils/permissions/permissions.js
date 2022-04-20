@@ -24,6 +24,7 @@ export const permissions = {
     { action: read, what: api },
     { action: read, what: asset },
     { action: read, what: team },
+    { action: read, what: stat },
     { action: read, what: backoffice },
   ],
   ApiEditor: [
@@ -35,6 +36,7 @@ export const permissions = {
     },
     { action: manage, what: asset },
     { action: read, what: team },
+    { action: read, what: stat },
     { action: read, what: backoffice },
   ],
   Administrator: [

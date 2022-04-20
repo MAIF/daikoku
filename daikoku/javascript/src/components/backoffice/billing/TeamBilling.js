@@ -1,15 +1,16 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import moment from 'moment';
 import _ from 'lodash';
 
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
-import { formatCurrency, formatPlanType, Can, read, stat } from '../../utils';
+import { formatCurrency, formatPlanType, Can, read, stat, api as API, CanIDoAction } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-function TeamBillingComponent(props) {
+export const TeamBilling = (props) =>  {
   const [state, setState] = useState({
     consumptions: [],
     consumptionsByApi: [],
@@ -18,12 +19,16 @@ function TeamBillingComponent(props) {
     date: moment(),
   });
 
+  const { currentTeam } = useSelector(state => state.context)
+
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  useEffect(() => {
-    getTeamBilling(props.currentTeam);
+  useTeamBackOffice(currentTeam);
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('Billing')}`;
+  useEffect(() => {
+    getTeamBilling(currentTeam);
+
+    document.title = `${currentTeam.name} - ${translateMethod('Billing')}`;
   }, []);
 
   const getTeamBilling = (team) => {
@@ -57,7 +62,7 @@ function TeamBillingComponent(props) {
   const getBilling = (date) => {
     setState({ ...state, loading: true, selectedApi: undefined });
     Services.getTeamBillings(
-      props.currentTeam._id,
+      currentTeam._id,
       date.startOf('month').valueOf(),
       date.endOf('month').valueOf()
     ).then((consumptions) =>
@@ -73,10 +78,10 @@ function TeamBillingComponent(props) {
 
   const sync = () => {
     setState({ ...state, loading: true });
-    Services.syncTeamBilling(props.currentTeam._id)
+    Services.syncTeamBilling(currentTeam._id)
       .then(() =>
         Services.getTeamBillings(
-          props.currentTeam._id,
+          currentTeam._id,
           state.date.startOf('month').valueOf(),
           state.date.endOf('month').valueOf()
         )
@@ -97,7 +102,7 @@ function TeamBillingComponent(props) {
     mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
   return (
-    <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
+    <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
       <div className="row">
         <div className="col">
           <h1>
@@ -182,9 +187,3 @@ function TeamBillingComponent(props) {
     </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamBilling = connect(mapStateToProps)(TeamBillingComponent);

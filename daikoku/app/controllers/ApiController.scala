@@ -1737,7 +1737,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               "options" -> JsArray(
                 apis.map(
                   a =>
-                    Json.obj("value" -> a.humanReadableId, "team" -> a.team.value, "label" -> a.name, "type" -> "api")
+                    Json.obj("value" -> a.humanReadableId, "team" -> a.team.value, "label" -> a.name, "version" -> a.currentVersion.asJson, "type" -> "api")
                 )
               )
             )

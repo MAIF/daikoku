@@ -987,6 +987,8 @@
   "constraints.required.oldPassword": "L'ancien mot de passe est requis",
   "constraints.required.newPassword": "Le nouveau mot de passe est requis",
   "constraints.required.confirmPassword": "Le mot de passe de confirmation est requis",
+  "constraints.required.title": "Le titre est requis",
+  "constraints.required.version": "La version est requise",
   "constraints.format.url": "%s doit être une URL valide",
   "constraints.matches.email": "Votre courriel doit être une addresse électronique valide",
   "constraint.matches.password": "Votre mot de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spécial (#$^+=!*()@%&).",
@@ -1001,8 +1003,6 @@
   "notification.accept.on_error.title": "Impossible d'accepter la notification",
   "You're not authorized on this api": "Vous n'êtes pas autorisé à accéder à cette API",
   "ask.api.access.info": "Votre demande d'accès à %s à bien été envoyée.",
-  "updated password can't be saved": "Le mot de passe n'a pas pu être mis à jour.",
-  "incorrect password": "Mot de passe incorrect",
   "Standard mode": "Mode standard",
   "Expert mode": "Mode expert",
   "Subscription.manual.help": "valeur obligatoire en raison de la configuration des métadonnées personnalisées",
@@ -1118,5 +1118,8 @@
   "cms.revisions.delete_sentence": "Êtes-vous sûr de vouloir restaurer cette version ?",
   "cms.revisions.version_history": "Historique",
   "updated password can't be saved": "Le mots de passe n'a pu être mis à jour.",
-  "incorrect password": "Mots de passe incorrect"
+  "incorrect password": "Mots de passe incorrect",
+  "Edit API": "Modifier l'API",
+  "create": "Créer",
+  "search.placeholder": "Rechercher une API, équipe, etc..."
 }

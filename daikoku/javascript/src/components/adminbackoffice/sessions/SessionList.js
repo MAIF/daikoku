@@ -1,19 +1,21 @@
 import React, { useContext } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import moment from 'moment';
 
 import * as Services from '../../../services';
 
-import { UserBackOffice } from '../../backoffice';
 import { Table } from '../../inputs';
 import { Can, manage, daikoku } from '../../utils';
 import { I18nContext } from '../../../locales/i18n-context';
+import { useDaikokuBackOffice } from '../../../contexts';
 
-function SessionListComponent(props) {
+export const SessionList = () => {
+  const connectedUser = useSelector(s => s.context.connectedUser)
+  useDaikokuBackOffice();
+
   const { translateMethod, Translation } = useContext(I18nContext);
 
   let table;
-
   const columns = [
     {
       Header: translateMethod('User'),
@@ -70,7 +72,7 @@ function SessionListComponent(props) {
         Services.deleteSession(session._id).then(() => {
           if (table) {
             table.update();
-            if (props.connectedUser._id === session.userId) {
+            if (connectedUser._id === session.userId) {
               window.location.reload();
             }
           }
@@ -93,48 +95,40 @@ function SessionListComponent(props) {
   };
 
   return (
-    <UserBackOffice tab="User sessions">
-      <Can I={manage} a={daikoku} dispatchError>
-        <div className="row">
-          <div className="col">
-            <h1>
-              <Translation i18nkey="User sessions">User sessions</Translation>
-            </h1>
-            <div className="section p-2">
-              <Table
-                selfUrl="sessions"
-                defaultTitle="User sessions"
-                defaultValue={() => ({})}
-                itemName="sessions"
-                columns={columns}
-                fetchItems={() => Services.getSessions()}
-                showActions={false}
-                showLink={false}
-                injectTable={(t) => (table = t)}
-                extractKey={(item) => item._id}
-                injectTopBar={() => (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-danger"
-                    title="Delete all session"
-                    style={{ marginLeft: 10 }}
-                    onClick={() => deleteSessions()}
-                  >
-                    <i className="fas fa-trash me-1" />
-                    <Translation i18nkey="Delete all sessions">Delete all sessions</Translation>
-                  </button>
-                )}
-              />
-            </div>
+    <Can I={manage} a={daikoku} dispatchError>
+      <div className="row">
+        <div className="col">
+          <h1>
+            <Translation i18nkey="User sessions">User sessions</Translation>
+          </h1>
+          <div className="section p-2">
+            <Table
+              selfUrl="sessions"
+              defaultTitle="User sessions"
+              defaultValue={() => ({})}
+              itemName="sessions"
+              columns={columns}
+              fetchItems={() => Services.getSessions()}
+              showActions={false}
+              showLink={false}
+              injectTable={(t) => (table = t)}
+              extractKey={(item) => item._id}
+              injectTopBar={() => (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  title="Delete all session"
+                  style={{ marginLeft: 10 }}
+                  onClick={() => deleteSessions()}
+                >
+                  <i className="fas fa-trash me-1" />
+                  <Translation i18nkey="Delete all sessions">Delete all sessions</Translation>
+                </button>
+              )}
+            />
           </div>
         </div>
-      </Can>
-    </UserBackOffice>
+      </div>
+    </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const SessionList = connect(mapStateToProps)(SessionListComponent);

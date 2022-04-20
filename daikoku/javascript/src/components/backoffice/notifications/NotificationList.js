@@ -1,19 +1,21 @@
 import React, { useContext, useEffect, useState } from 'react';
-import classNames from 'classnames';
-import { connect } from 'react-redux';
-import * as _ from 'lodash';
+import { useDispatch } from 'react-redux';
+import _ from 'lodash';
 
 import * as Services from '../../../services';
-import { UserBackOffice } from '../';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
-import { updateNotications, openSubMetadataModal, I18nContext } from '../../../core';
+import { updateNotifications, openSubMetadataModal, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
 import { useParams } from 'react-router-dom';
+import { useUserBackOffice } from '../../../contexts';
 
-function NotificationListComponent(props) {
+export const NotificationList = () => {
+  useUserBackOffice();
+  const dispatch = useDispatch()
+
   const { translateMethod, Translation } = useContext(I18nContext);
-  const params = useParams();
+  const { client } = useContext(getApolloContext());
 
   const [state, setState] = useState({
     notifications: [],
@@ -27,7 +29,6 @@ function NotificationListComponent(props) {
 
   const isUntreatedNotification = (n) => n.status.status === 'Pending';
 
-  const { client } = useContext(getApolloContext());
 
   useEffect(() => {
     Promise.all([
@@ -76,7 +77,7 @@ function NotificationListComponent(props) {
 
   useEffect(() => {
     if (state.untreatedNotifications)
-      props.updateNotifications(state.untreatedNotifications.length);
+      updateNotifications(state.untreatedNotifications.length)(dispatch);
   }, [state.untreatedNotifications]);
 
   const acceptNotification = (notificationId, values) => {
@@ -183,38 +184,9 @@ function NotificationListComponent(props) {
   }
 
   const notifByTeams = _.groupBy(state.notifications, 'team');
+  const openModal = p => openSubMetadataModal(p)(dispatch)
   return (
-    <UserBackOffice
-      tab="Notifications"
-      apiId={params.apiId}
-      notificationSubMenu={
-        <ul className="nav flex-column sub-nav">
-          <li
-            className={classNames({
-              'nav-item': true,
-              active: state.tab === 'unread',
-            })}
-          >
-            <a href="#unread" onClick={() => onSelectTab('unread')}>
-              <Translation i18nkey="Untreated" count={state.untreatedCount}>
-                Untreated
-              </Translation>
-              &nbsp;({state.untreatedCount})
-            </a>
-          </li>
-          <li
-            className={classNames({
-              'nav-item': true,
-              active: state.tab === 'all',
-            })}
-          >
-            <a href="#all" onClick={() => onSelectTab('all')}>
-              <Translation i18nkey="All notifications">All notifications</Translation>
-            </a>
-          </li>
-        </ul>
-      }
-    >
+    <>
       <div className="row">
         <h1>
           <Translation i18nkey="Notifications" isPlural={true}>
@@ -256,7 +228,7 @@ function NotificationListComponent(props) {
                           reject={() => rejectNotification(notification._id)}
                           getTeam={(id) => state.teams.find((team) => team._id === id)}
                           getApi={(id) => state.apis.find((a) => a._id === id)}
-                          openSubMetadataModal={props.openSubMetadataModal}
+                          openSubMetadataModal={openModal}
                         />
                       ))}
                   </div>
@@ -275,20 +247,6 @@ function NotificationListComponent(props) {
           </div>
         </div>
       )}
-    </UserBackOffice>
+    </>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  updateNotifications: (count) => updateNotications(count),
-  openSubMetadataModal: (modalProps) => openSubMetadataModal(modalProps),
-};
-
-export const NotificationList = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(NotificationListComponent);

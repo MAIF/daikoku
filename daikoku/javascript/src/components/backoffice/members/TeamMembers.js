@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -7,6 +7,7 @@ import classnames from 'classnames';
 
 import * as Services from '../../../services';
 import { openInvitationTeamModal, updateTeamPromise, I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 import {
   Option,
   PaginatedComponent,
@@ -26,7 +27,7 @@ const TABS = {
   pending: 'PENDING',
 };
 
-export function TeamMembersSimpleComponent(props) {
+export const TeamMembersSimpleComponent = (props) => {
   const [state, setState] = useState({
     pendingUsers: [],
     selectedMember: null,
@@ -441,6 +442,7 @@ export function TeamMembersSimpleComponent(props) {
 }
 
 const TeamMembersComponent = (props) => {
+  useTeamBackOffice(props.currentTeam);
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {

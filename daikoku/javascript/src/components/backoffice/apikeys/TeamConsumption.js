@@ -1,13 +1,18 @@
 import React, { useContext, useEffect } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import * as _ from 'lodash';
 
 import { OtoroshiStatsVizualization } from '../../utils';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-const TeamConsumptionComponent = ({ currentTeam }) => {
+export const TeamConsumption = () => {
   const { translateMethod } = useContext(I18nContext);
+
+  const { currentTeam } = useSelector(state => state.context)
+  useTeamBackOffice(currentTeam)
+
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translateMethod('Consumption')}`;
@@ -61,9 +66,3 @@ const TeamConsumptionComponent = ({ currentTeam }) => {
     </div>
   );
 };
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamConsumption = connect(mapStateToProps)(TeamConsumptionComponent);

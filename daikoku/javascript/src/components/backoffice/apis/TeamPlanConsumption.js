@@ -1,13 +1,17 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import moment from 'moment';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-function TeamPlanConsumptionComponent(props) {
+export const TeamPlanConsumption = () => {
+  const { currentTeam } = useSelector(state => state.context);
+  useTeamBackOffice(currentTeam);
+
   const { translateMethod } = useContext(I18nContext);
   const params = useParams();
 
@@ -58,7 +62,7 @@ function TeamPlanConsumptionComponent(props) {
   ];
 
   const getPlanInformation = () => {
-    return Services.teamApi(props.currentTeam._id, params.apiId, params.versionId).then((api) => {
+    return Services.teamApi(currentTeam._id, params.apiId, params.versionId).then((api) => {
       if (api.error) {
         return null;
       }
@@ -90,7 +94,7 @@ function TeamPlanConsumptionComponent(props) {
   useEffect(() => {
     Services.teams().then((teams) => setState({ ...state, teams }));
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('Plan consumption')}`;
+    document.title = `${currentTeam.name} - ${translateMethod('Plan consumption')}`;
   }, []);
 
   return (
@@ -102,7 +106,7 @@ function TeamPlanConsumptionComponent(props) {
         </div>
         <p className="col">
           <Link
-            to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${params.apiId}/${params.versionId}`}
+            to={`/${currentTeam._humanReadableId}/settings/consumptions/apis/${params.apiId}/${params.versionId}`}
             className="btn my-2 btn-access-negative"
           >
             <i className="fas fa-angle-left" /> Back to plans
@@ -110,12 +114,12 @@ function TeamPlanConsumptionComponent(props) {
         </p>
       </div>
       <OtoroshiStatsVizualization
-        sync={() => Services.syncApiConsumption(params.apiId, props.currentTeam._id)}
+        sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
         fetchData={(from, to) =>
           Services.apiConsumption(
             params.apiId,
             params.planId,
-            props.currentTeam._id,
+            currentTeam._id,
             from.valueOf(),
             to.valueOf()
           )
@@ -126,21 +130,16 @@ function TeamPlanConsumptionComponent(props) {
   );
 }
 
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamPlanConsumption = connect(mapStateToProps)(TeamPlanConsumptionComponent);
-
-function PlanInformations(props) {
+const PlanInformations = (props) => {
   const [loading, setLoading] = useState(true);
   const [informations, setInformations] = useState();
 
   useEffect(() => {
-    props.fetchData().then((informations) => {
-      setInformations(informations);
-      setLoading(false);
-    });
+    props.fetchData()
+      .then((informations) => {
+        setInformations(informations);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) return <Spinner width="50" height="50" />;

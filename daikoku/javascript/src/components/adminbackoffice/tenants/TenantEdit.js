@@ -1,10 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { connect } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 
-import { UserBackOffice } from '../../backoffice';
 import * as Services from '../../../services';
 
 import { LDAPConfig, LocalConfig, OAuth2Config, OtoroshiConfig } from './auth';
@@ -17,13 +16,13 @@ import {
 } from './mailer';
 import { Can, manage, tenant, Spinner } from '../../utils';
 import { BooleanInput } from '../../inputs/BooleanInput';
-import { openSaveOrCancelModal, updateTenant } from '../../../core';
 import { I18nContext } from '../../../locales/i18n-context';
 import { getApolloContext, gql } from '@apollo/client';
+import { useDaikokuBackOffice } from '../../../contexts';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-function LazyFormInput(props) {
+const LazyFormInput = (props) => {
   return (
     <React.Suspense fallback={<Spinner />}>
       <LazyForm {...props} />
@@ -31,7 +30,7 @@ function LazyFormInput(props) {
   );
 }
 
-function AuthConfig(props) {
+const AuthConfig = (props) => {
   const { Translation } = useContext(I18nContext);
 
   if (props.rawValue.authProvider === 'Local') {
@@ -52,7 +51,7 @@ function AuthConfig(props) {
   }
 }
 
-function MailerConfig(props) {
+const MailerConfig = (props) => {
   const { rawValue } = props;
   const mailerSettings = rawValue.mailerSettings;
 
@@ -66,7 +65,7 @@ function MailerConfig(props) {
   else return null;
 }
 
-function StyleLogoAssetButton(props) {
+const StyleLogoAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
@@ -86,7 +85,7 @@ function StyleLogoAssetButton(props) {
   );
 }
 
-function StyleJsUrlAssetButton(props) {
+const StyleJsUrlAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
@@ -105,7 +104,7 @@ function StyleJsUrlAssetButton(props) {
   );
 }
 
-function StyleCssUrlAssetButton(props) {
+const StyleCssUrlAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
@@ -125,7 +124,7 @@ function StyleCssUrlAssetButton(props) {
   );
 }
 
-function StyleFaviconUrlAssetButton(props) {
+const StyleFaviconUrlAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
@@ -145,7 +144,7 @@ function StyleFaviconUrlAssetButton(props) {
   );
 }
 
-function StyleFontFamilyUrlAssetButton(props) {
+const StyleFontFamilyUrlAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
@@ -166,7 +165,7 @@ function StyleFontFamilyUrlAssetButton(props) {
   );
 }
 
-function ThemeUpdatorFromUI(props) {
+const ThemeUpdatorFromUI = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
@@ -200,7 +199,7 @@ function ThemeUpdatorFromUI(props) {
   );
 }
 
-function HomePageVisibilitySwitch(props) {
+const HomePageVisibilitySwitch = (props) => {
   return (
     <BooleanInput
       key="style.homePageVisible"
@@ -211,12 +210,15 @@ function HomePageVisibilitySwitch(props) {
   );
 }
 
-export function TenantEditComponent(props) {
+export const TenantEdit = (props) => {
+  useDaikokuBackOffice();
+
   const { translateMethod, language, Translation, languages, setTranslationMode } =
     useContext(I18nContext);
 
   const params = useParams();
   const location = useLocation();
+  const dispatch = useDispatch()
 
   const [state, setState] = useState({
     tenant: null,
@@ -560,7 +562,7 @@ export function TenantEditComponent(props) {
         tenant: () => state.tenant,
         save: () => save(),
         isTenantUpdated: () => !!state.updated,
-        openModal: (p) => props.openSaveOrCancelModal({ ...p }),
+        openModal: (p) => props.openSaveOrCancelModal({ ...p })(dispatch),
       },
     },
     'style.js': {
@@ -716,7 +718,7 @@ export function TenantEditComponent(props) {
         tenant: () => state.tenant,
         save: () => save(),
         isTenantUpdated: () => !!state.updated,
-        openModal: (p) => props.openSaveOrCancelModal({ ...p }),
+        openModal: (p) => props.openSaveOrCancelModal({ ...p })(dispatch),
       },
     },
     'daikokuHeader.name': {
@@ -940,76 +942,65 @@ export function TenantEditComponent(props) {
         setTranslationMode(true);
       }
       return Services.saveTenant(state.tenant)
-        .then(({ uiPayload }) => props.updateTenant(uiPayload))
+        .then(({ uiPayload }) => props.updateTenant(uiPayload)(dispatch))
         .then(() => toastr.success(translateMethod('Tenant updated successfully')));
     }
   };
 
   const disabled = {}; //TODO: deepEqual(state.originalApi, state.api) ? { disabled: 'disabled' } : {};
+  if (!state.tenant) {
+    return null;
+  }
+  
   return (
-    <UserBackOffice tab="Tenants" isLoading={!state.tenant}>
-      {state.tenant && (
-        <Can I={manage} a={tenant} dispatchError>
-          <div className="row">
-            <div className="col-12 d-flex justify-content-start align-items-center mb-2">
-              <div className="avatar__container">
-                <img
-                  style={{ width: '100%', height: 'auto' }}
-                  src={state.tenant?.style?.logo}
-                  alt="avatar"
-                />
-              </div>
-              <h1 className="h1-rwd-reduce ms-2">{state.tenant.name}</h1>
-            </div>
-            <React.Suspense fallback={<Spinner />}>
-              <LazyForm
-                flow={flow}
-                schema={schema}
-                value={state.tenant}
-                onChange={(tenant) => setState({ ...state, tenant, updated: true })}
-                style={{ marginBottom: 100, paddingTop: 20 }}
-              />
-            </React.Suspense>
-            <div style={{ height: 60 }} />
-            <div className="d-flex form-back-fixedBtns">
-              <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
-                <i className="fas fa-chevron-left me-1" />
-                <Translation i18nkey="Back">Back</Translation>
-              </Link>
-              <button
-                type="button"
-                className="btn btn-outline-success"
-                {...disabled}
-                onClick={save}
-              >
-                {!state.create && (
-                  <span>
-                    <i className="fas fa-save me-1" />
-                    <Translation i18nkey="Save">Save</Translation>
-                  </span>
-                )}
-                {state.create && (
-                  <span>
-                    <i className="fas fa-save me-1" />
-                    <Translation i18nkey="Create">Create</Translation>
-                  </span>
-                )}
-              </button>
-            </div>
+    <Can I={manage} a={tenant} dispatchError>
+      <div className="row">
+        <div className="col-12 d-flex justify-content-start align-items-center mb-2">
+          <div className="avatar__container">
+            <img
+              style={{ width: '100%', height: 'auto' }}
+              src={state.tenant?.style?.logo}
+              alt="avatar"
+            />
           </div>
-        </Can>
-      )}
-    </UserBackOffice>
+          <h1 className="h1-rwd-reduce ms-2">{state.tenant.name}</h1>
+        </div>
+        <React.Suspense fallback={<Spinner />}>
+          <LazyForm
+            flow={flow}
+            schema={schema}
+            value={state.tenant}
+            onChange={(tenant) => setState({ ...state, tenant, updated: true })}
+            style={{ marginBottom: 100, paddingTop: 20 }}
+          />
+        </React.Suspense>
+        <div style={{ height: 60 }} />
+        <div className="d-flex form-back-fixedBtns">
+          <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
+            <i className="fas fa-chevron-left me-1" />
+            <Translation i18nkey="Back">Back</Translation>
+          </Link>
+          <button
+            type="button"
+            className="btn btn-outline-success"
+            {...disabled}
+            onClick={save}
+          >
+            {!state.create && (
+              <span>
+                <i className="fas fa-save me-1" />
+                <Translation i18nkey="Save">Save</Translation>
+              </span>
+            )}
+            {state.create && (
+              <span>
+                <i className="fas fa-save me-1" />
+                <Translation i18nkey="Create">Create</Translation>
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+    </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  openSaveOrCancelModal: (modalProps) => openSaveOrCancelModal(modalProps),
-  updateTenant: (t) => updateTenant(t),
-};
-
-export const TenantEdit = connect(mapStateToProps, mapDispatchToProps)(TenantEditComponent);

@@ -15,6 +15,7 @@ import {
 import * as Services from '../../../services';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
 import { I18nContext, openSubMetadataModal } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
 const TeamApiSubscriptionsComponent = (props) => {
   const [api, setApi] = useState(undefined);
@@ -26,6 +27,8 @@ const TeamApiSubscriptionsComponent = (props) => {
   const params = useParams();
 
   const { translateMethod, language, Translation } = useContext(I18nContext);
+
+  useTeamBackOffice(props.currentTeam)
 
   useEffect(() => {
     Promise.all([

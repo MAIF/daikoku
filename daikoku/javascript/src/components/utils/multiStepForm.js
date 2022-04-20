@@ -66,6 +66,10 @@ export const MultiStepForm = ({
             target: nextStep ? nextStep.id : 'save',
             actions: ['setValue'],
           },
+          RESET: {
+            target: initial,
+            actions: ['reset'],
+          },
           ...previousStepObj,
           ..._.omit(tos, `TO_${step.id.toUpperCase()}`),
           ...skipStep,

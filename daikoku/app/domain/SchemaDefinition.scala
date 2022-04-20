@@ -1143,13 +1143,13 @@ object SchemaDefinition {
     )
 
     val ID: Argument[String] = Argument("id", StringType, description = "The id of element")
-    val TEAM_ID: Argument[String] = Argument("teamId", StringType, description = "The id of the team")
     val LIMIT: Argument[Int] = Argument("limit", IntType,
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
     val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
+    val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
 
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
@@ -1168,11 +1168,8 @@ object SchemaDefinition {
     }
 
     def apiQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("visibleApis", ListType(GraphQLApiType), resolve = ctx => {
-        getVisibleApis(ctx)
-      }),
-      Field("visibleApisOfTeam", ListType(GraphQLApiType), arguments = TEAM_ID :: Nil, resolve = ctx => {
-        getVisibleApis(ctx, Some(ctx.arg(TEAM_ID)))
+      Field("visibleApis", ListType(GraphQLApiType), arguments = TEAM_ID :: Nil, resolve = ctx => {
+        getVisibleApis(ctx, ctx.arg(TEAM_ID))
       })
     )
 
@@ -1193,19 +1190,27 @@ object SchemaDefinition {
                                                fieldName: String,
                                                fieldType: OutputType[Out],
                                                repo: Context[(DataStore, DaikokuActionContext[JsValue]), Unit] => Repo[Of, Id]): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
-      def toQuery(ids: Seq[String]): JsObject = {
-        if(ids.isEmpty) Json.obj() else Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString))))
+      def toQuery(maybeIds: Option[Seq[String]], maybeTeamId: Option[String]): JsObject = {
+        (maybeIds, maybeTeamId) match {
+          case (None, None) => Json.obj()
+          case (Some(ids), None) => Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString))))
+          case (None, Some(teamId)) => Json.obj("team" -> teamId)
+          case (Some(ids), Some(teamId)) => Json.obj(
+            "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString))),
+            "team" -> teamId
+          )
+        }
       }
 
 
       List(
         Field(fieldName, OptionType(fieldType), arguments = ID :: Nil,
           resolve = ctx => repo(ctx).findById(ctx.arg(ID)).asInstanceOf[Future[Option[Out]]]),
-        Field(s"${fieldName}s", ListType(fieldType), arguments = LIMIT :: OFFSET :: IDS :: Nil,
+        Field(s"${fieldName}s", ListType(fieldType), arguments = LIMIT :: OFFSET :: IDS :: TEAM_ID :: Nil,
           resolve = ctx => {
-            (ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(IDS)) match {
-              case (-1, _, ids) => repo(ctx).find(toQuery(ids.getOrElse(Seq.empty))).map(_.asInstanceOf[Seq[Out]])
-              case (limit, offset, ids) => repo(ctx).findWithPagination(toQuery(ids.getOrElse(Seq.empty)), offset, limit).map(_._1.asInstanceOf[Seq[Out]])
+            (ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(IDS), ctx.arg(TEAM_ID)) match {
+              case (-1, _, ids, teamId) => repo(ctx).find(toQuery(ids, teamId)).map(_.asInstanceOf[Seq[Out]])
+              case (limit, offset, ids, teamId) => repo(ctx).findWithPagination(toQuery(ids, teamId), offset, limit).map(_._1.asInstanceOf[Seq[Out]])
             }
           })
       )

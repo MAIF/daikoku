@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
 import { sortBy } from 'lodash';
@@ -19,10 +19,13 @@ import {
   BeautifulTitle,
   Option,
 } from '../../utils';
-import { SwitchButton } from '../../inputs';
 import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-function TeamApiKeysForApiComponent(props) {
+export const TeamApiKeysForApi = () => {
+  const {currentTeam, connectedUser} = useSelector(state => state.context);
+  useTeamBackOffice(currentTeam);
+
   const [api, setApi] = useState({ name: '--', possibleUsagePlans: [] });
   const [apiTeam, setApiTeam] = useState();
   const [subscriptions, setSubscriptions] = useState([]);
@@ -37,8 +40,8 @@ function TeamApiKeysForApiComponent(props) {
 
   useEffect(() => {
     Promise.all([
-      Services.getTeamVisibleApi(props.currentTeam._id, params.apiId, params.versionId),
-      Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId),
+      Services.getTeamVisibleApi(currentTeam._id, params.apiId, params.versionId),
+      Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId),
     ])
       .then(([api, subscriptions]) =>
         Promise.all([
@@ -59,7 +62,7 @@ function TeamApiKeysForApiComponent(props) {
   }, [location]);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ApiKeys`;
+    document.title = `${currentTeam.name} - ApiKeys`;
   }, []);
 
   const updateCustomName = (subscription, customName) => {
@@ -67,9 +70,9 @@ function TeamApiKeysForApiComponent(props) {
   };
 
   const archiveApiKey = (subscription) => {
-    return Services.archiveApiKey(props.currentTeam._id, subscription._id, !subscription.enabled)
+    return Services.archiveApiKey(currentTeam._id, subscription._id, !subscription.enabled)
       .then(() =>
-        Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+        Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId)
       )
       .then((subs) => setSubscriptions(subs));
   };
@@ -77,9 +80,9 @@ function TeamApiKeysForApiComponent(props) {
   const makeUniqueApiKey = (subscription) => {
     window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique')).then((ok) => {
       if (ok)
-        Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
+        Services.makeUniqueApiKey(currentTeam._id, subscription._id)
           .then(() =>
-            Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+            Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId)
           )
           .then((subs) => {
             toastr.success('team_apikey_for_api.ask_for_make_unique.success_message');
@@ -101,14 +104,14 @@ function TeamApiKeysForApiComponent(props) {
     }
 
     return Services.toggleApiKeyRotation(
-      props.currentTeam._id,
+      currentTeam._id,
       subscription._id,
       enabled,
       rotationEvery,
       gracePeriod
     )
       .then(() =>
-        Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+        Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId)
       )
       .then((subs) => setSubscriptions(subs));
   };
@@ -124,9 +127,9 @@ function TeamApiKeysForApiComponent(props) {
       )
       .then((ok) => {
         if (ok) {
-          Services.regenerateApiKeySecret(props.currentTeam._id, subscription._id)
+          Services.regenerateApiKeySecret(currentTeam._id, subscription._id)
             .then(() =>
-              Services.getTeamSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+              Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId)
             )
             .then((subs) => setSubscriptions(subs))
             .then(() => toastr.success('secret reseted successfully'));
@@ -138,7 +141,7 @@ function TeamApiKeysForApiComponent(props) {
     return api.possibleUsagePlans.find((p) => p._id === subscription.plan);
   };
 
-  const showApiKey = CanIDoAction(props.connectedUser, read, apikey, props.currentTeam);
+  const showApiKey = CanIDoAction(connectedUser, read, apikey, currentTeam);
 
   const search = searched.trim().toLowerCase();
   const filteredApiKeys =
@@ -174,7 +177,7 @@ function TeamApiKeysForApiComponent(props) {
     );
 
   return (
-    <Can I={read} a={apikey} team={props.currentTeam} dispatchError>
+    <Can I={read} a={apikey} team={currentTeam} dispatchError>
       {api && apiTeam ? (
         <div className="row">
           <div className="col-12 d-flex align-items-center">
@@ -212,9 +215,9 @@ function TeamApiKeysForApiComponent(props) {
 
                 return (
                   <ApiKeyCard
-                    currentTeam={props.currentTeam}
+                    currentTeam={currentTeam}
                     openInfoNotif={(message) => toastr.info(message)}
-                    statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
+                    statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
                     key={subscription._id}
                     subscription={subscription}
                     showApiKey={showApiKey}
@@ -239,12 +242,6 @@ function TeamApiKeysForApiComponent(props) {
     </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamApiKeysForApi = connect(mapStateToProps)(TeamApiKeysForApiComponent);
 
 const ApiKeyCard = ({
   subscription,

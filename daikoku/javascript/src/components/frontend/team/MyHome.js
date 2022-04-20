@@ -29,7 +29,7 @@ function MyHomeComponent(props) {
     setState({ ...state, loading: true });
     Promise.all([
       client.query({
-        query: Services.graphql.myVisibleApis(),
+        query: Services.graphql.myVisibleApis,
       }),
       Services.teams(),
       client.query({
@@ -100,7 +100,7 @@ function MyHomeComponent(props) {
     const apiOwner = state.teams.find((t) => t._id === api.team._id);
 
     const route = (version) =>
-      `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}`;
+      `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}/description`;
 
     if (api.isDefault) navigate(route(api.currentVersion));
     else

@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { getApolloContext } from '@apollo/client';
 import moment from 'moment';
 import _ from 'lodash';
 
@@ -7,12 +8,15 @@ import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { formatCurrency, formatPlanType, Spinner, Can, read, api } from '../../utils';
-import { I18nContext, setError } from '../../../core';
-import { getApolloContext } from '@apollo/client';
+import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-function TeamIncomeComponent(props) {
+export const TeamIncome = () => {
+  const { currentTeam } = useSelector(state => state.context);
+  useTeamBackOffice(currentTeam);
+
   const { translateMethod, Translation } = useContext(I18nContext);
-
+  
   const [state, setState] = useState({
     consumptions: [],
     consumptionsByApi: [],
@@ -25,9 +29,9 @@ function TeamIncomeComponent(props) {
   });
 
   useEffect(() => {
-    getBillingData(props.currentTeam);
+    getBillingData(currentTeam);
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('Income')}`;
+    document.title = `${currentTeam.name} - ${translateMethod('Income')}`;
   }, []);
 
   const { client } = useContext(getApolloContext());
@@ -41,7 +45,8 @@ function TeamIncomeComponent(props) {
         state.date.endOf('month').valueOf()
       ),
       client.query({
-        query: Services.graphql.myVisibleApisOfTeam(team._id),
+        query: Services.graphql.myVisibleApis,
+        variables: { teamId: team._id }
       }),
       Services.teams(),
     ]).then(
@@ -80,12 +85,9 @@ function TeamIncomeComponent(props) {
 
   const sync = () => {
     setState({ ...state, loading: true });
-    Services.syncTeamIncome(props.currentTeam._id).then(() => getBillingData(props.currentTeam));
+    Services.syncTeamIncome(currentTeam._id)
+      .then(() => getBillingData(currentTeam));
   };
-
-  if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-    props.setError({ error: { status: 403, message: 'Creation security enabled' } });
-  }
 
   const total = state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
   const mostRecentConsumption = _.maxBy(state.consumptions, (c) => c.to);
@@ -93,7 +95,7 @@ function TeamIncomeComponent(props) {
     mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
   return (
-    <Can I={read} a={api} team={props.currentTeam} dispatchError={true}>
+    <Can I={read} a={api} team={currentTeam} dispatchError={true}>
       <div className="row">
         <div className="col">
           <h1>
@@ -108,7 +110,7 @@ function TeamIncomeComponent(props) {
                     <MonthPicker
                       updateDate={(date) => {
                         setState({ ...state, date });
-                        getBillingData(props.currentTeam);
+                        getBillingData(currentTeam);
                       }}
                       value={state.date}
                     />
@@ -238,13 +240,3 @@ function TeamIncomeComponent(props) {
     </Can>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  setError: (error) => setError(error),
-};
-
-export const TeamIncome = connect(mapStateToProps, mapDispatchToProps)(TeamIncomeComponent);

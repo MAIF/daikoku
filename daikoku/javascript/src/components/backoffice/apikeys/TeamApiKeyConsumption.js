@@ -1,15 +1,18 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Progress } from 'antd';
 import moment from 'moment';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
 import { I18nContext } from '../../../core';
+import { useTeamBackOffice } from '../../../contexts';
 
-function TeamApiKeyConsumptionComponent(props) {
+export const TeamApiKeyConsumption = () => {
+  const { currentTeam } = useSelector(state => state.context);
+  useTeamBackOffice(currentTeam);
   const { translateMethod, Translation } = useContext(I18nContext);
   const params = useParams();
 
@@ -100,7 +103,7 @@ function TeamApiKeyConsumptionComponent(props) {
   );
 }
 
-function PlanInformations(props) {
+const PlanInformations = (props) => {
   const [state, setState] = useState({
     loading: true,
     informations: null,
@@ -125,9 +128,3 @@ function PlanInformations(props) {
     </h3>
   );
 }
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const TeamApiKeyConsumption = connect(mapStateToProps)(TeamApiKeyConsumptionComponent);

@@ -8,6 +8,7 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _Ub
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
 import play.api.mvc.AnyContent
 
@@ -21,11 +22,11 @@ object CommonServices {
       val teamRepo = env.dataStore.teamRepo.forTenant(ctx.tenant)
       (teamId match {
         case None => teamRepo.findAllNotDeleted()
-        case Some(id) => teamRepo.find(Json.obj("_humanReadableId" -> id))
+        case Some(id) => teamRepo.find(Json.obj("$or" -> Json.arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> id))))
       })
         .map(teams => if (ctx.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.user.id)))
         .flatMap(teams => {
-          val teamFilter = Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))))
+          val teamFilter = if (teams.nonEmpty) Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))) else Json.obj()
           val tenant = ctx.tenant
           val user = ctx.user
           for {
@@ -46,12 +47,13 @@ object CommonServices {
                 "$or" -> Json.arr(
                   Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
                   teamFilter
-                )))
+                )) ++ teamFilter)
             adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
               Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
             )
           } yield {
-            val sortedApis: Seq[ApiWithAuthorizations] = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
+            val sortedApis: Seq[ApiWithAuthorizations] = (publicApis ++ almostPublicApis ++ privateApis)
+              .filter(api => api.published || myTeams.exists(api.team == _.id))
               .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
               .map(api => api
                 .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))

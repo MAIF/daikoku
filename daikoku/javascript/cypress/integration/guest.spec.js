@@ -12,13 +12,13 @@ describe('Login page & login form', () => {
 describe('API page', { scrollBehavior: false }, () => {
   it('load well', () => {
     cy
-      .visit('http://localhost:9000/testers/test-api/1.0.0')
+      .visit('http://localhost:9000/testers/test-api/1.0.0/description')
       .get('h1.jumbotron-heading').should(($div) => {
         expect($div.text().trim()).contains('test API');
       })
-      .get('a.nav-link').contains('Plans').click()
+      .get('.block__entry__link').contains('Plans').click()
       .get('.card').should('have.length', 2)
-      .get('a.nav-link').contains('Documentation').click()
+      .get('.block__entry__link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
   });
 });

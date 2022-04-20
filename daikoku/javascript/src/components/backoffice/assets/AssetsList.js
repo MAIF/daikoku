@@ -536,7 +536,7 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
 
   const params = useParams();
 
-  const View = () => (
+  return (
     <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
       {loading && <Spinner />}
       {error && <div className="alert alert-danger">{error}</div>}
@@ -573,19 +573,6 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
       )}
     </Can>
   );
-
-  if (tenantMode)
-    return (
-      <UserBackOffice
-        tab="Assets"
-        apiId={params.apiId}
-        title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}
-      >
-        <View />
-      </UserBackOffice>
-    );
-
-  return <View />;
 };
 
 const mapStateToProps = (state) => ({

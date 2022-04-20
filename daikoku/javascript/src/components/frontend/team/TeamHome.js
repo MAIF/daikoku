@@ -9,7 +9,7 @@ import { updateUser } from '../../../core';
 import { setError, updateTeamPromise } from '../../../core';
 import { getApolloContext } from '@apollo/client';
 
-function TeamHomeComponent(props) {
+const TeamHomeComponent = (props) => {
   const [state, setState] = useState({
     searched: '',
     team: null,
@@ -24,7 +24,8 @@ function TeamHomeComponent(props) {
   const fetchData = (teamId) => {
     Promise.all([
       client.query({
-        query: Services.graphql.myVisibleApisOfTeam(teamId),
+        query: Services.graphql.myVisibleApis,
+        variables: { teamId }
       }),
       Services.team(teamId),
       Services.teams(),
@@ -62,7 +63,7 @@ function TeamHomeComponent(props) {
 
   useEffect(() => {
     fetchData(params.teamId);
-  }, []);
+  }, [params]);
 
   const askForApiAccess = (api, teams) => {
     return Services.askForApiAccess(teams, api._id).then(() => fetchData(params.teamId));
@@ -97,7 +98,7 @@ function TeamHomeComponent(props) {
       const route = (version) =>
         `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${
           api._humanReadableId
-        }/${version}`;
+        }/${version}/description`;
 
       navigate(route(api.currentVersion));
     }
