@@ -163,9 +163,10 @@ class GuestModeSpec()
         "POST",
         body = Some(
           Json.obj(
+            "variables" -> Json.obj("teamId" -> teamOwnerId.value),
             "query" -> s"""
-            |query AllVisibleApis {
-            |      visibleApis: visibleApisOfTeam(teamId: "${teamOwnerId}") {
+            |query AllVisibleApis ($$teamId: String) {
+            |      visibleApis (teamId: $$teamId) {
             |        api {
             |          _id
             |        }
