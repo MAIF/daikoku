@@ -110,9 +110,8 @@ function MyHomeComponent(props) {
   };
 
   const redirectToEditPage = (api) => {
-    const adminTeam = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams).find(
-      (team) => api.team._id === team._id
-    );
+    const adminTeam = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams)
+      .find((team) => api.team._id === team._id);
 
     if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
       props
@@ -147,7 +146,7 @@ function MyHomeComponent(props) {
               <div className="col-sm-1 d-flex flex-column">
                 <div>
                   <Link
-                    to={`/settings/tenants/${props.tenant._humanReadableId}`}
+                    to={`/settings/settings`}
                     className="tenant__settings float-right btn btn-sm btn-access-negative"
                   >
                     <i className="fas fa-cogs" />

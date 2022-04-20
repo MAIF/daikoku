@@ -284,6 +284,7 @@ export const useTenantBackOffice = () => {
       links: {
         order: 1,
         links: {
+          settings: { label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
           message: { label: translateMethod("Message", true), action: () => navigateTo('messages'), className: { active: currentTab === 'messages' } },
           otoroshi: { label: translateMethod("Otoroshi instance", true), action: () => navigateTo('otoroshis'), className: { active: currentTab === 'otoroshis' } },
           admins: { label: translateMethod("Admins"), action: () => navigateTo('admins'), className: { active: currentTab === 'admins' } },
@@ -322,7 +323,7 @@ export const useTenantBackOffice = () => {
     }
   }, [tenant])
 
-  return { addMenu };
+  return { addMenu, tenant };
 }
 
 export const useDaikokuBackOffice = () => {

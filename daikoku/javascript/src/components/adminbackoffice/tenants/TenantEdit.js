@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 
@@ -18,7 +18,8 @@ import { Can, manage, tenant, Spinner } from '../../utils';
 import { BooleanInput } from '../../inputs/BooleanInput';
 import { I18nContext } from '../../../locales/i18n-context';
 import { getApolloContext, gql } from '@apollo/client';
-import { useDaikokuBackOffice } from '../../../contexts';
+import { updateTenant } from '../../../core';
+import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -210,8 +211,8 @@ const HomePageVisibilitySwitch = (props) => {
   );
 }
 
-export const TenantEdit = (props) => {
-  useDaikokuBackOffice();
+const TenantEdition = (props) => {
+  const {tenant } = useSelector(s => s.context);
 
   const { translateMethod, language, Translation, languages, setTranslationMode } =
     useContext(I18nContext);
@@ -248,7 +249,6 @@ export const TenantEdit = (props) => {
   }, []);
 
   const flow = [
-    '_id',
     'enabled',
     'name',
     'domain',
@@ -383,10 +383,6 @@ export const TenantEdit = (props) => {
   const webhooksFormFlow = ['url', 'headers'];
 
   const schema = {
-    _id: {
-      type: 'string',
-      props: { label: translateMethod('Id') },
-    },
     enabled: {
       type: 'bool',
       props: { label: translateMethod('Enabled') },
@@ -907,43 +903,49 @@ export const TenantEdit = (props) => {
         create: true,
       });
     } else {
-      Services.oneTenant(params.tenantId).then((tenant) => {
-        setState({
-          ...state,
-          tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
+      Services.oneTenant(params.tenantId || props.tenant._humanReadableId)
+        .then((tenant) => {
+          setState({
+            ...state,
+            tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
+          });
         });
-      });
     }
   }, []);
 
   const save = () => {
     if (state.create) {
-      return Services.createTenant(state.tenant).then((tenant) => {
-        setState(
-          {
-            ...state,
-            create: false,
-            tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
-          },
-          () =>
-            toastr.success(
-              translateMethod(
-                'tenant.created.success',
-                false,
-                `Tenant "${tenant.name}" created`,
-                tenant.name
+      return Services.createTenant(state.tenant)
+        .then((tenant) => {
+          setState(
+            {
+              ...state,
+              create: false,
+              tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
+            },
+            () =>
+              toastr.success(
+                translateMethod(
+                  'tenant.created.success',
+                  false,
+                  `Tenant "${tenant.name}" created`,
+                  tenant.name
+                )
               )
-            )
-        );
-      });
+          );
+        });
     } else {
       if (state.tenant.tenantMode === 'translation') {
         window.alert(<p>{translateMethod('tenant_edit.translation_mode_message')}</p>);
         setTranslationMode(true);
       }
       return Services.saveTenant(state.tenant)
-        .then(({ uiPayload }) => props.updateTenant(uiPayload)(dispatch))
-        .then(() => toastr.success(translateMethod('Tenant updated successfully')));
+        .then(({ uiPayload }) => {
+          toastr.success(translateMethod('Tenant updated successfully'))
+          if (uiPayload._id === tenant._id) {
+            updateTenant(uiPayload)(dispatch)
+          }
+        })
     }
   };
 
@@ -951,7 +953,7 @@ export const TenantEdit = (props) => {
   if (!state.tenant) {
     return null;
   }
-  
+
   return (
     <Can I={manage} a={tenant} dispatchError>
       <div className="row">
@@ -1002,4 +1004,16 @@ export const TenantEdit = (props) => {
       </div>
     </Can>
   );
+}
+
+export const TenantEdit = () => {
+  const { tenant } = useTenantBackOffice();
+
+  return <TenantEdition tenant={tenant} />
+}
+
+export const TenantEditForAdmin = () => {
+  useDaikokuBackOffice();
+
+  return <TenantEdition />
 }

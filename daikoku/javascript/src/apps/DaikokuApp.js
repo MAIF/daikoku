@@ -38,6 +38,7 @@ import {
   TenantOtoroshis,
   TenantList,
   TenantEdit,
+  TenantEditForAdmin,
   TenantStyleEdit,
   UserList,
   UserEdit,
@@ -208,10 +209,18 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                   }
                 />
                 <Route
+                  path="/settings/settings"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}>
+                      <TenantEdit tenant={tenant} />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
                   path="/settings/tenants/:tenantId"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenant edit')}`}>
-                      <TenantEdit />
+                      <TenantEditForAdmin />
                     </RouteWithTitle>
                   }
                 />
