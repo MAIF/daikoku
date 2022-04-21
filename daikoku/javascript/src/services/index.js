@@ -1041,3 +1041,9 @@ export const uploadZip = (file) => {
     body: formData,
   });
 };
+
+export const transferApiOwnership = (newTeamId, teamId, apiId) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/_transfer`, {
+    method: 'POST',
+    body: JSON.stringify({ team: newTeamId })
+  })

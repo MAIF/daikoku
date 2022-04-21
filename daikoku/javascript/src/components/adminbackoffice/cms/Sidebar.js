@@ -35,11 +35,9 @@ export default React.memo(
       const schema = {
         lastPublishedDate: {
           type: type.string,
-          constraints: [constraints.nullable()],
         },
         body: {
           type: type.string,
-          constraints: [constraints.nullable()],
         },
         name: {
           type: type.string,
@@ -64,7 +62,6 @@ export default React.memo(
             constraints.when(
               'isBlockPage',
               (v) => !!v,
-              [constraints.nullable()],
               [
                 constraints.matches('^/', translateMethod('cms.create.path_slash_constraints')),
                 constraints.test(

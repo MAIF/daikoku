@@ -1122,5 +1122,10 @@
   "Edit API": "Modifier l'API",
   "create": "Créer",
   "search.placeholder": "Rechercher une API, équipe, etc...",
-  "incorrect.email.or.password": "Adresse e-mail et/ou mot de passe incorrects"
+  "incorrect.email.or.password": "Adresse e-mail et/ou mot de passe incorrects",
+  "transfer.api.ownership.title": "Transfère de propriété",
+  "transfer.api.ownership.description": "Transférer l'API à une autre équipe",
+  "Transfer": "Transférer",
+  "delete.api.title": "Supprimer l'API",
+  "delete.api.description": "Une fois l'API supprimée, il n'y a pas de retour en arrière. Soyez sûr de vous."
 }

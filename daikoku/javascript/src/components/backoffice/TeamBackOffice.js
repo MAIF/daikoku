@@ -187,20 +187,11 @@ export const TeamBackOffice = ({ isLoading, title }) => {
             <Route path={`/billing`} element={<TeamBilling />} />
             <Route path={`/income`} element={<TeamIncome />} />
             <Route
-              path={`/subscriptions/apis/:apiId/:versionId`}
-              element={<TeamApiSubscriptions />}
-            />
-            <Route
               path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`}
               element={<TeamApiKeyConsumption />}
             />
             <Route path={`/apikeys/:apiId/:versionId`} element={<TeamApiKeysForApi />} />
             <Route path={`/apikeys`} element={<TeamApiKeys />} />
-            <Route path={`/consumptions/apis/:apiId/:versionId`} element={<TeamApiConsumption />} />
-            <Route
-              path={`/consumptions/apis/:apiId/:versionId/plan/:planId`}
-              element={<TeamPlanConsumption />}
-            />
             <Route path={`/members`} element={<TeamMembers />} />
             <Route
               path={`/apis/:apiId/:versionId/:tab/*`}

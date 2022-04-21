@@ -849,6 +849,18 @@ object SchemaDefinition {
         })
       )
     ))
+    lazy val TransferApiOwnershipType = new PossibleObject(ObjectType(
+      "TransferApiOwnership",
+      "A transfer ownership for API notification action",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), TransferApiOwnership](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), TransferApiOwnership](
+        Field("team", OptionType(TeamObjectType),
+          resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.team)),
+        Field("api", OptionType(ApiType),
+          resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
+      )
+
+    ))
     lazy val  OtoroshiSyncSubscriptionErrorType = new PossibleObject(ObjectType(
       "OtoroshiSyncSubscriptionError",
       "A Otoroshi notification triggered when the synchronization with an otoroshi had failed",
@@ -919,7 +931,7 @@ object SchemaDefinition {
       ReplaceField("notificationType", Field("notificationType", NotificationInterfaceType, resolve = _.value.notificationType)),
       ReplaceField("status", Field("status", NotificationStatusType, resolve = _.value.status, possibleTypes = List(NotificationStatusAcceptedType, NotificationStatusRejectedType, NotificationStatusPendingType))),
       ReplaceField("action", Field("action", NotificationActionType, resolve = _.value.action, possibleTypes = List(ApiAccessType, TeamAccessType, TeamInvitationType, ApiSubscriptionDemandType, OtoroshiSyncSubscriptionErrorType, OtoroshiSyncApiErrorType,
-        ApiKeyDeletionInformationType, ApiKeyRotationInProgressType, ApiKeyRotationEndedType, ApiKeyRefreshType, NewPostPublishedType, NewIssueOpenType, NewCommentOnIssueType
+        ApiKeyDeletionInformationType, ApiKeyRotationInProgressType, ApiKeyRotationEndedType, ApiKeyRefreshType, NewPostPublishedType, NewIssueOpenType, NewCommentOnIssueType, TransferApiOwnershipType
       ))),
     )
 

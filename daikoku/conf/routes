@@ -224,6 +224,7 @@ GET     /api/teams/:teamId/apis/:apiId/:version/swagger          fr.maif.otorosh
 GET     /api/teams/:teamId/apis/:apiId/:version                  fr.maif.otoroshi.daikoku.ctrls.ApiController.apiOfTeam(teamId, apiId, version)
 ### NoDocs ###
 PUT     /api/teams/:teamId/apis/:id/:version                     fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiOfTeam(teamId, id, version)
+POST    /api/teams/:teamId/apis/:id/_transfer                    fr.maif.otoroshi.daikoku.ctrls.ApiController.transferApiOwnership(teamId, id)
 ### NoDocs ###
 DELETE  /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiOfTeam(teamId, id)
 ### NoDocs ###

@@ -50,6 +50,8 @@ mail.team.access.rejection.body=Votre demande d'accès à l'équipe [teamName] a
 mail.team.access.acceptation.body=Votre demande d'accès à l'équipe [teamName] a été acceptée.
 mail.user.invitation.rejection.body=Votre invitation à [teamName] dans votre équipe [user] a été rejetée.
 mail.user.invitation.acceptation.body=[user] a accepté de rejoindre votre équipe [teamName].
+mail.api.transfer.ownership.rejection.body=Votre demande de trasfert de priopriété de l'API [apiName] à l'équipe [teamName] a été rejetée
+mail.api.transfer.ownership.acceptation.body=Votre demande de trasfert de priopriété de l'API [apiName] à l'équipe [teamName] a été acceptée
 mail.new.message.title=Nouveau message de [user]
 mail.new.message.body=Bonjour,\
   <br/>\

@@ -106,14 +106,12 @@ export const TeamApiTesting = (props) => {
       type: type.string,
       label: translateMethod('Auth. name'),
       constraints: [
-        constraints.nullable(), //todo: use when constraint based of enabled
       ],
     },
     username: {
       type: type.string,
       label: translateMethod('Client Id'),
       constraints: [
-        constraints.nullable(), //todo: use when constraint based of enabled
       ],
     },
     password: {
@@ -121,7 +119,6 @@ export const TeamApiTesting = (props) => {
       format: format.password,
       label: translateMethod('Client secret'),
       constraints: [
-        constraints.nullable(), //todo: use when constraint based of enabled
       ],
     },
   };

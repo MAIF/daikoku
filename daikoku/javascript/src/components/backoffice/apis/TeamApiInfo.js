@@ -71,7 +71,6 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
         `Use {{title}} to insert API title, {{ description }} to insert API small description.
          Add "btn-edit" class to link to admin API edition admin page.`
       ),
-      constraints: [constraints.nullable()],
       props: {
         theme: 'monokai',
       },
@@ -83,7 +82,6 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       //todo: render custom for image from asset
       render: (v) => Image({ ...v, team, tenant }),
       constraints: [
-        constraints.nullable(),
         // constraints.matches(
         //   /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
         //   translateMethod('constraints.format.url', false, '', translateMethod('Image'))
@@ -138,19 +136,19 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       transformer: (t) => ({ label: t, value: t }),
       expert: true,
     },
-    visibility: {
-      type: type.string,
-      format: format.buttonsSelect,
-      label: translateMethod('Visibility'),
-      options: [
-        { label: translateMethod('Public'), value: 'Public' },
-        { label: translateMethod('Private'), value: 'Private' },
-        {
-          label: translateMethod('PublicWithAuthorizations'),
-          value: 'PublicWithAuthorizations',
-        },
-      ],
-    },
+    // visibility: {
+    //   type: type.string,
+    //   format: format.buttonsSelect,
+    //   label: translateMethod('Visibility'),
+    //   options: [
+    //     { label: translateMethod('Public'), value: 'Public' },
+    //     { label: translateMethod('Private'), value: 'Private' },
+    //     {
+    //       label: translateMethod('PublicWithAuthorizations'),
+    //       value: 'PublicWithAuthorizations',
+    //     },
+    //   ],
+    // },
     authorizedTeams: {
       type: type.string,
       format: format.select,

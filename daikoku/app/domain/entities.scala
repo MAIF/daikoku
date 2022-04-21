@@ -1605,6 +1605,9 @@ object NotificationAction {
 
   case class NewCommentOnIssue(teamId: String, apiName: String, linkTo: String)
       extends NotificationAction
+
+  case class TransferApiOwnership(team: TeamId, api: ApiId)
+      extends NotificationAction
 }
 
 sealed trait NotificationType {

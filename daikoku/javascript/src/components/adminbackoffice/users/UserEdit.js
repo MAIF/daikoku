@@ -174,7 +174,6 @@ export const UserEdit = () => {
       label: translateMethod('Avatar'),
       render: (v) => Avatar({ ...v, tenant: tenant }),
       constraints: [
-        constraints.nullable(),
         constraints.url(
           translateMethod('constraints.format.url', false, '', translateMethod('Avatar'))
         ),

@@ -50,6 +50,8 @@ mail.team.access.rejection.body=Your request to join the team [teamName] has bee
 mail.team.access.acceptation.body=Your request to access to team [teamName] has been accepted.
 mail.user.invitation.rejection.body=[user] rejected your request to join your team [teamName].
 mail.user.invitation.acceptation.body=[user] accepted your request to join your team [teamName].
+mail.api.transfer.ownership.rejection.body=Your request to transfer ownership of API [apiName] to team [teamName] has been rejected
+mail.api.transfer.ownership.acceptation.body=Your request to transfer ownership of API [apiName] to team [teamName] has been accepted
 mail.new.message.title=New message from [user]
 mail.new.message.body=Hello,\
   <br/>\

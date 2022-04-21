@@ -91,7 +91,6 @@ export const TeamApiSwagger = ({ value, onChange }) => {
         test: (v) => !v,
       },
       constraints: [
-        constraints.nullable(),
         constraints.matches(
           /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
           translateMethod('constraints.format.url', false, '', translateMethod('Url'))
@@ -105,7 +104,6 @@ export const TeamApiSwagger = ({ value, onChange }) => {
         ref: 'useContent',
         test: (v) => !v,
       },
-      constraints: [constraints.nullable()],
     },
     useContent: {
       type: type.bool,
@@ -121,7 +119,6 @@ export const TeamApiSwagger = ({ value, onChange }) => {
         test: (v) => !!v,
       },
       render: (v) => SwaggerEditorInput(v),
-      constraints: [constraints.nullable()],
     },
   };
 

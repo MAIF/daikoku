@@ -28,6 +28,14 @@ export function SimpleNotification(props) {
             title={translateMethod('Ask to join a team')}
           />
         );
+      case 'TransferApiOwnership': 
+        return (
+          <i 
+            className="fa-solid fa-arrow-down-from-dotted-line"
+            style={{ marginRight: 5 }}
+            title={translateMethod('transfer.api.ownership')}
+          />
+        )  
       case 'ApiSubscription':
         return (
           <i
@@ -246,6 +254,8 @@ export function SimpleNotification(props) {
       case 'NewIssueOpen':
       case 'NewCommentOnIssue':
         return sender.name;
+      case 'TransferApiOwnership':
+        return `${sender.name}`;
       case 'TeamInvitation':
         return props.getTeam(action.team).name;
       case 'ApiSubscription':
@@ -269,7 +279,7 @@ export function SimpleNotification(props) {
 
   const { notification, getApi } = props;
   let infos = {};
-  if (['ApiAccess', 'ApiSubscription'].includes(notification.action.type)) {
+  if (['ApiAccess', 'ApiSubscription', 'TransferApiOwnership'].includes(notification.action.type)) {
     const api = getApi(notification.action.api);
     const plan = !api
       ? { customName: translateMethod('deleted') }
@@ -303,6 +313,11 @@ export function SimpleNotification(props) {
                   <Translation i18nkey="notif.membership.team">
                     membership request to your team
                   </Translation>
+                </div>
+              )}
+              {notification.action.type === 'TransferApiOwnership' && (
+                <div>
+                  {`request to transfer the ownership of `}<strong>{infos.api.name}</strong>
                 </div>
               )}
               {notification.action.type === 'ApiSubscription' && (

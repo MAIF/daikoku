@@ -368,7 +368,6 @@ export const MyProfile = () => {
       label: translateMethod('Default language'),
       defaultValue: languages.find((l) => l.value === tenant.defaultLanguage),
       options: languages,
-      constraints: [constraints.nullable()],
     },
   };
 

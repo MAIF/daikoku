@@ -3,31 +3,17 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand,
-  TeamAccess,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{ApiService, OtoroshiClient, Translator}
-import play.api.i18n.{I18nSupport, Lang}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
+import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{
-  AbstractController,
-  AnyContent,
-  ControllerComponents,
-  Result
-}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -277,6 +263,8 @@ class NotificationController(
                                        team,
                                        user,
                                        notification.sender))
+              case TransferApiOwnership(teamId, apiId) =>
+                EitherT(acceptTransferOwnership(ctx.tenant, teamId, apiId))
               case _ => EitherT(nothing())
             }
             acceptedNotification <- EitherT.liftF(
@@ -431,6 +419,19 @@ class NotificationController(
                                        ctx.tenant,
                                        Map("apiName" -> api.name))
               }
+          case TransferApiOwnership(team, api) =>
+            val result = for {
+              api <- env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(api)
+              team <- env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(team)
+              unrecognizedApi <- translator.translate("unrecognized.api", ctx.tenant)
+              unrecognizedTeam <- translator.translate("unrecognized.team", ctx.tenant)
+            } yield {
+              translator.translate("mail.api.transfer.ownership.rejection.body",
+                ctx.tenant,
+                Map("apiName" -> api.map(_.name).getOrElse(unrecognizedApi), "teamName" -> team.map(_.name).getOrElse(unrecognizedTeam)))
+            }
+
+            result.flatten
           case _ => FastFuture.successful("")
         }
 
@@ -716,6 +717,21 @@ class NotificationController(
             tenant.mailer.send(title, Seq(admin.email), body, tenant)
           }).flatten
         })))
+    } yield ()
+
+    r.value
+  }
+
+  def acceptTransferOwnership(tenant: Tenant, teamId: TeamId, apiId: ApiId): Future[Either[AppError, Unit]] = {
+    import cats.data._
+    import cats.implicits._
+
+    val r: EitherT[Future, AppError, Unit] = for {
+      newTeam <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(teamId), AppError.TeamNotFound)
+      versions <- EitherT.liftF(env.dataStore.apiRepo.findAllVersions(tenant, apiId.value))
+      _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(tenant).updateManyByQuery(
+        Json.obj("_id" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson)))),
+        Json.obj("$set" -> Json.obj("team" -> newTeam.id.asJson))))
     } yield ()
 
     r.value

@@ -655,14 +655,12 @@ export const TeamApiPricings = (props) => {
           type: type.string,
           label: translateMethod('Name'),
           placeholder: translateMethod('Plan name'),
-          constraints: [constraints.nullable()],
         },
         customDescription: {
           type: type.string,
           format: format.text,
           label: translateMethod('Description'),
           placeholder: translateMethod('Plan description'),
-          constraints: [constraints.nullable()],
         },
       },
       flow: ['type', 'customName', 'customDescription'],
@@ -686,7 +684,6 @@ export const TeamApiPricings = (props) => {
                 label: s.url,
                 value: s._id,
               }),
-              constraints: [constraints.nullable()],
             },
             authorizedEntities: {
               type: type.object,
@@ -698,7 +695,6 @@ export const TeamApiPricings = (props) => {
               label: translateMethod('Authorized entities'),
               placeholder: translateMethod('Authorized.entities.placeholder'),
               help: translateMethod('authorized.entities.help'),
-              constraints: [constraints.nullable()],
             },
           },
         },
@@ -717,12 +713,10 @@ export const TeamApiPricings = (props) => {
             otoroshiSettings: {
               type: type.string,
               visible: false,
-              constraints: [constraints.nullable()],
             },
             authorizedEntities: {
               type: type.object,
               visible: false,
-              constraints: [constraints.nullable()],
             },
             apikeyCustomization: {
               type: type.object,

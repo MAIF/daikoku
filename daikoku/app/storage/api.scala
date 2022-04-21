@@ -1,9 +1,11 @@
 package storage
 
 import akka.NotUsed
+import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import cats.data.OptionT
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.libs.json._
@@ -267,6 +269,18 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
                                            Json.obj("_humanReadableId" -> id)))
 
     env.dataStore.apiRepo.forTenant(tenant.id).findOneNotDeleted(query)
+  }
+
+  def findAllVersions(tenant: Tenant, id: String)(
+    implicit env: Env,
+    ec: ExecutionContext): Future[Seq[Api]] = {
+
+    val o: OptionT[Future, Seq[Api]] = for {
+      api <- OptionT(env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrIdNotDeleted(id))
+      apis <- OptionT.liftF(env.dataStore.apiRepo.forTenant(tenant).find(Json.obj("_humanReadableId" -> api.humanReadableId)))
+    } yield apis
+
+    o.value.map(_.getOrElse(Seq.empty))
   }
 }
 

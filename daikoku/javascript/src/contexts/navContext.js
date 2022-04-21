@@ -160,7 +160,10 @@ export const useApiBackOffice = (api) => {
           informations: { order: 2, label: translateMethod("Informations"), action: () => navigateTo('infos'), className: { active: currentTab === 'infos' } },
           plans: { order: 3, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
           documentation: { order: 4, label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
-          news: { order: 5, label: translateMethod("News"), action: () => navigateTo('news'), className: { active: currentTab === 'news' } }
+          news: { order: 5, label: translateMethod("News"), action: () => navigateTo('news'), className: { active: currentTab === 'news' } },
+          subscriptions: { order: 5, label: translateMethod("API Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
+          consumptions: { order: 5, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
+          settings: { order: 5, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
         }
       }
     }
@@ -414,7 +417,6 @@ export const useUserBackOffice = () => {
 
     return () => {
       setMode(navMode.initial)
-      setTenant(undefined)
       setMenu({})
     }
   }, [])

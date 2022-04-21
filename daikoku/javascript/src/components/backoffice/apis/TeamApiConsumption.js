@@ -43,7 +43,6 @@ export const TeamApiConsumption = () => {
   });
 
   const {currentTeam} = useSelector(state => state.context);
-  useTeamBackOffice(currentTeam);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -107,7 +106,7 @@ export const TeamApiConsumption = () => {
                 period={state.period}
                 handleClick={() =>
                   navigate(
-                    `/${currentTeam._humanReadableId}/settings/consumptions/apis/${state.api._humanReadableId}/${state.api.currentVersion}/plan/${plan._id}`
+                    `/${currentTeam._humanReadableId}/settings/apis/${state.api._humanReadableId}/${state.api.currentVersion}/stats/plan/${plan._id}`
                   )
                 }
               />

@@ -28,8 +28,6 @@ const TeamApiSubscriptionsComponent = (props) => {
 
   const { translateMethod, language, Translation } = useContext(I18nContext);
 
-  useTeamBackOffice(props.currentTeam)
-
   useEffect(() => {
     Promise.all([
       Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),

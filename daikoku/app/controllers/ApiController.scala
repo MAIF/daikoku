@@ -2333,7 +2333,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       val repo = env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
 
-      repo.find(Json.obj("_humanReadableId" -> apiId))
+      env.dataStore.apiRepo.findAllVersions(tenant = ctx.tenant, id = apiId)
         .map { apis =>
           Ok(SeqVersionFormat.writes(apis
             .filter(api => !ctx.user.isGuest || api.visibility.name == ApiVisibility.Public.name)
@@ -2468,6 +2468,28 @@ class ApiController(DaikokuAction: DaikokuAction,
             })
               .map(p => Ok(p))
         }
+    }
+  }
+
+  def transferApiOwnership(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has transfer ownership of api @{api.name} to @{newTeam.name}"))(teamId, ctx) { _ =>
+      val newTeamId: String = (ctx.request.body \ "team").as[String]
+
+      (for {
+        newTeam <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(newTeamId), AppError.render(TeamNotFound))
+        api <-  EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(apiId), AppError.render(ApiNotFound))
+        notification = Notification(
+          id = NotificationId(BSONObjectID.generate().stringify),
+          tenant = ctx.tenant.id,
+          team = Some(newTeam.id),
+          sender = ctx.user,
+          action = NotificationAction.TransferApiOwnership(newTeam.id, api.id)
+        )
+        _ <- EitherT.liftF[Future, Result, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant).save(notification))
+      } yield {
+        Ok(Json.obj("notify" -> true))
+      })
+        .merge
     }
   }
 }

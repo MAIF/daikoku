@@ -2331,6 +2331,7 @@ object json {
         case "NewPostPublished"    => NewPostPublishedFormat.reads(json)
         case "NewIssueOpen"        => NewIssueOpenFormat.reads(json)
         case "NewCommentOnIssue"   => NewCommentOnIssueFormat.reads(json)
+        case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
         case str                   => JsError(s"Bad notification value: $str")
       }
 
@@ -2377,6 +2378,11 @@ object json {
           NewCommentOnIssueFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "NewCommentOnIssue"
           )
+        case p: TransferApiOwnership =>
+          TransferApiOwnershipFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "TransferApiOwnership"
+          )
+
       }
     }
 
@@ -2399,6 +2405,26 @@ object json {
       "teamId" -> o.teamId,
       "linkTo" -> o.linkTo
     )
+  }
+
+  val TransferApiOwnershipFormat = new Format[TransferApiOwnership] {
+    override def reads(json: JsValue): JsResult[TransferApiOwnership] =
+      Try {
+        JsSuccess(
+          TransferApiOwnership(
+            api = (json \ "api").as(ApiIdFormat),
+            team = (json \ "team").as(TeamIdFormat),
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: TransferApiOwnership): JsValue = Json.obj(
+      "api" -> o.api.value,
+      "team" -> o.team.value
+    )
+
   }
 
   val NewIssueOpenFormat = new Format[NewIssueOpen] {

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { useNavigate, useLocation, useParams, Link } from 'react-router-dom';
+import { useNavigate, useLocation, useParams, useMatch, Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
+import { Plus } from 'react-feather';
 
 import * as Services from '../../../services';
 import { Can, manage, api as API, Spinner } from '../../utils';
-import { TeamApiInfos, TeamApiPost, TeamApiDocumentation, TeamApiPricings } from '.';
+import { TeamApiInfos, TeamApiPost, TeamApiDocumentation, TeamApiPricings, TeamApiSettings, TeamPlanConsumption } from '.';
 import { useApiBackOffice } from '../../../contexts';
 
 import {
@@ -17,6 +18,8 @@ import {
   toggleExpertMode,
   openApiSelectModal,
 } from '../../../core';
+import { TeamApiConsumption } from './TeamApiConsumption';
+import { TeamApiSubscriptions } from './TeamApiSubscriptions';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
@@ -49,8 +52,8 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
   };
 
   return (
-    <button onClick={promptVersion} className="btn btn-sm btn-outline-primary mb-2">
-      {translateMethod('teamapi.new_version')}
+    <button onClick={promptVersion} className="btn btn-sm btn-outline-primary ms-1">
+      <Plus />
     </button>
   );
 };
@@ -60,6 +63,7 @@ const TeamApiComponent = (props) => {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId')
 
   const [api, setApi] = useState();
   const [otoroshiSettings, setOtoroshiSettings] = useState([]);
@@ -97,16 +101,19 @@ const TeamApiComponent = (props) => {
           links: {
             version: {
               order: 1,
-              component: <Select
-                name="versions-selector"
-                value={{ value: params.versionId, label: params.versionId }}
-                options={versions}
-                onChange={(e) => navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${e.value}/${tab}`)}
-                classNamePrefix="reactSelect"
-                className="mb-4"
-                menuPlacement="auto"
-                menuPosition="fixed"
-              />
+              component: <div className='d-flex flex-row'>
+                <Select
+                  name="versions-selector"
+                  value={{ value: params.versionId, label: params.versionId }}
+                  options={versions}
+                  onChange={(e) => navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${e.value}/${tab}`)}
+                  classNamePrefix="reactSelect"
+                  className="flex-grow-1"
+                  menuPlacement="auto"
+                  menuPosition="fixed"
+                />
+                < CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
+              </div>
             },
           }
         }
@@ -244,16 +251,6 @@ const TeamApiComponent = (props) => {
                       {translateMethod('View this Api')}
                     </Link>
                 },
-                newVersion: {
-                  component: < CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
-                },
-                delete: {
-                  component: (
-                    <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
-                      {translateMethod('Delete this Api')}
-                    </button>
-                  )
-                },
                 back: {
                   component: backButton
                 }
@@ -354,8 +351,27 @@ const TeamApiComponent = (props) => {
                     value={api}
                     team={props.currentTeam}
                     api={api}
-                    onChange={(api) => setState({ ...state, api })}
                     params={params}
+                  />
+                )}
+                {tab === 'settings' && (
+                  <TeamApiSettings
+                    api={api}
+                  />
+                )}
+                {tab === 'stats' && !match && (
+                  <TeamApiConsumption
+                    api={api}
+                  />
+                )}
+                {tab === 'stats' && match && match.params.planId && (
+                  <TeamPlanConsumption
+                    api={api}
+                  />
+                )}
+                {tab === 'subscriptions' && (
+                  <TeamApiSubscriptions
+                    api={api}
                   />
                 )}
               </div>

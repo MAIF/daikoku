@@ -1,23 +1,19 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useMatch } from 'react-router-dom';
 import moment from 'moment';
 import { useSelector } from 'react-redux';
 
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamPlanConsumption = () => {
   const { currentTeam } = useSelector(state => state.context);
-  useTeamBackOffice(currentTeam);
 
   const { translateMethod } = useContext(I18nContext);
-  const params = useParams();
+  const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId')
 
-  const [state, setState] = useState({
-    api: null,
-  });
+  const [teams, setTeams] = useState([]);
 
   const mappers = [
     {
@@ -44,7 +40,7 @@ export const TeamPlanConsumption = () => {
         data.reduce((acc, item) => {
           const value = acc.find((a) => a.name === item.clientId) || { count: 0 };
 
-          const team = state.teams.find((t) => t._id === item.team);
+          const team = teams.find((t) => t._id === item.team);
           const name = team.name;
 
           return [
@@ -62,15 +58,16 @@ export const TeamPlanConsumption = () => {
   ];
 
   const getPlanInformation = () => {
-    return Services.teamApi(currentTeam._id, params.apiId, params.versionId).then((api) => {
-      if (api.error) {
-        return null;
-      }
-      return {
-        api,
-        plan: api.possibleUsagePlans.find((pp) => pp._id === params.planId),
-      };
-    });
+    return Services.teamApi(currentTeam._id, match.params.apiId, match.params.versionId)
+      .then((api) => {
+        if (api.error) {
+          return null;
+        }
+        return {
+          api,
+          plan: api.possibleUsagePlans.find((pp) => pp._id === match.params.planId),
+        };
+      });
   };
 
   const sumGlobalInformations = (data) => {
@@ -92,7 +89,8 @@ export const TeamPlanConsumption = () => {
   };
 
   useEffect(() => {
-    Services.teams().then((teams) => setState({ ...state, teams }));
+    Services.teams()
+      .then(setTeams);
 
     document.title = `${currentTeam.name} - ${translateMethod('Plan consumption')}`;
   }, []);
@@ -104,25 +102,19 @@ export const TeamPlanConsumption = () => {
           <h1>Api Consumption</h1>
           <PlanInformations fetchData={() => getPlanInformation()} />
         </div>
-        <p className="col">
-          <Link
-            to={`/${currentTeam._humanReadableId}/settings/consumptions/apis/${params.apiId}/${params.versionId}`}
-            className="btn my-2 btn-access-negative"
-          >
-            <i className="fas fa-angle-left" /> Back to plans
-          </Link>
-        </p>
       </div>
       <OtoroshiStatsVizualization
         sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
-        fetchData={(from, to) =>
-          Services.apiConsumption(
-            params.apiId,
-            params.planId,
+        fetchData={(from, to) => {
+          console.debug({match, currentTeam, from, to})
+          return Services.apiConsumption(
+            match.params.apiId,
+            match.params.planId,
             currentTeam._id,
             from.valueOf(),
             to.valueOf()
           )
+        }
         }
         mappers={mappers}
       />
