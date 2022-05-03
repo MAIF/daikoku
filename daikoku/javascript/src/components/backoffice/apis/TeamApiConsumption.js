@@ -11,7 +11,6 @@ import { OtoroshiStatsVizualization } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
 
 const Currency = ({ plan }) => {
   const cur = _.find(currencies, (c) => c.code === plan.currency.code);
@@ -131,13 +130,6 @@ export const TeamApiConsumption = () => {
       {!!state.api && (
         <div className="d-flex col flex-column pricing-content">
           <div className="row">
-            <div className="col-12">
-              <h1>
-                <Translation i18nkey="api.consumption.title" replacements={[state.api.name]}>
-                  Api Consumption - {state.api.name}
-                </Translation>
-              </h1>
-            </div>
             <div className="col section p-2">
               <OtoroshiStatsVizualization
                 sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}

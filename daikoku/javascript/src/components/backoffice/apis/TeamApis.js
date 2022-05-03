@@ -17,7 +17,6 @@ export const TeamApis = () => {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    console.log('coocoo')
     document.title = `${currentTeam.name} - ${translateMethod('API', true)}`;
   }, []);
 
@@ -84,30 +83,6 @@ export const TeamApis = () => {
             >
               <i className="fas fa-eye" />
             </Link>
-            {api.published && (
-              <Can I={read} a={stat} team={currentTeam}>
-                <Link
-                  key={`consumption-${api._humanReadableId}`}
-                  to={`/${currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}/${api.currentVersion}`}
-                  className="btn btn-sm btn-access-negative"
-                  title={translateMethod('View this api consumption')}
-                >
-                  <i className="fas fa-chart-bar" />
-                </Link>
-              </Can>
-            )}
-            {api.published && (
-              <Can I={manage} a={API} team={currentTeam}>
-                <Link
-                  key={`apikeys-${api._humanReadableId}`}
-                  to={`/${currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}/${api.currentVersion}`}
-                  className="btn btn-sm btn-access-negative"
-                  title={translateMethod('View this api subscriptions')}
-                >
-                  <i className="fas fa-key" />
-                </Link>
-              </Can>
-            )}
             <Can I={manage} a={API} team={currentTeam}>
               <Link
                 key={`edit-${api._humanReadableId}`}

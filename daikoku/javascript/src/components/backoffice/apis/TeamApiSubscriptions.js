@@ -15,7 +15,6 @@ import {
 import * as Services from '../../../services';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
 import { I18nContext, openSubMetadataModal } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
 
 const TeamApiSubscriptionsComponent = (props) => {
   const [api, setApi] = useState(undefined);
@@ -32,11 +31,12 @@ const TeamApiSubscriptionsComponent = (props) => {
     Promise.all([
       Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.teams(),
-    ]).then(([api, teams]) => {
-      setApi(api);
-      setTeams(teams);
-      setLoading(false);
-    });
+    ])
+      .then(([api, teams]) => {
+        setApi(api);
+        setTeams(teams);
+        setLoading(false);
+      });
 
     document.title = `${props.currentTeam.name} - ${translateMethod('Subscriptions')}`;
   }, []);
@@ -186,11 +186,6 @@ const TeamApiSubscriptionsComponent = (props) => {
     <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
       {!loading && (
         <div className="row">
-          <div className="col-12">
-            <h1>
-              <Translation i18nkey="Api subscriptions">Api subscriptions</Translation> - {api.name}
-            </h1>
-          </div>
           <div className="col-12">
             <Table
               selfUrl="apis"

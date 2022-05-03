@@ -70,12 +70,7 @@ describe('Team back-office', { scrollBehavior: false }, () => {
       .visit('http://localhost:9000/testers/settings')
       .get('.block__entry__link').contains('APIs').click()
       .url().should('include', '/testers/settings/apis')
-      .get('table tbody tr').should('have.length', 3)
-      .visit('http://localhost:9000/testers/settings/subscriptions/apis/test-api/1.0.0')
-      .get('table tbody tr').should('have.length', 2)
-      .visit('http://localhost:9000/testers/settings/consumptions/apis/test-api/1.0.0')
-      .get('div.data-vizualisation').should('be.visible');
-
+      .get('table tbody tr').should('have.length', 3);
   });
 
   it('Team income works', () => {

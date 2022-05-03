@@ -179,9 +179,10 @@ export const useApiBackOffice = (api) => {
       setOffice(officeMode.back)
       setApi(api)
       setTeam(currentTeam)
-  }, [api?._id])
+  }, [api?._id, params])
 
   useEffect(() => {
+    addMenu(schema(params.tab))
     return () => {
       setMode(navMode.initial)
       setApi(undefined)
