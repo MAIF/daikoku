@@ -13,12 +13,13 @@ val reactiveMongoVersion = "0.20.10"
 val wiremockVersion = "2.26.3"
 
 lazy val root = (project in file("."))
-  .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin)
+  .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin, PlayAkkaHttp2Support)
   .disablePlugins(PlayFilters)
   .settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage := "daikoku"
   )
+
 
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 
@@ -73,6 +74,7 @@ libraryDependencies ++= Seq(
   "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
   "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.2",
+  "com.typesafe.akka"               %% "akka-http-xml"                  % "10.1.15",
   "org.typelevel" %% "cats-core" % "2.1.1",
   "de.svenkubiak" % "jBCrypt" % "0.4.1",
   "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.0",
@@ -108,10 +110,9 @@ resolvers += "Millhouse Bintray" at "https://dl.bintray.com/themillhousegroup/ma
 
 PlayKeys.devSettings := Seq("play.server.http.port" -> "9000")
 
-sources in (Compile, doc) := Seq.empty
-publishArtifact in (Compile, packageDoc) := false
-
-scalafmtVersion in ThisBuild := "1.2.0"
+// sources in (Compile, doc) := Seq.empty
+// publishArtifact in (Compile, packageDoc) := false
+// scalafmtVersion in ThisBuild := "1.2.0"
 
 /// ASSEMBLY CONFIG
 
