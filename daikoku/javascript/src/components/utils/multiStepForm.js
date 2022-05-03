@@ -139,6 +139,7 @@ export const MultiStepForm = ({
           guards,
           actions: {
             setValue: assign((context, response) => {
+              console.debug({context, response})
               return { ...context, ...response.value };
             }),
             reset: assign((_, response) => {
@@ -186,7 +187,7 @@ export const MultiStepForm = ({
       <div className="d-flex flex-row flex-grow-1 col-12">
         {step.component && (
           <ComponentedForm
-            ref={ref}
+            reference={ref}
             value={current.context}
             valid={(response) => send('NEXT', { value: response })}
             component={step.component}
@@ -255,22 +256,20 @@ export const MultiStepForm = ({
   );
 };
 
-const ComponentedForm = React.forwardRef(({ value, valid, component }, ref) => {
-  const [state, setState] = useState(value);
-
-  useImperativeHandle(ref, () => ({
-    handleSubmit: () => valid(state),
-  }));
-
+const ComponentedForm = ({ value, valid, component, reference }) => {
   return (
     <div className="d-flex flex-column flex-grow-1">
       {React.createElement(component, {
-        value: state,
-        onChange: setState,
+        value,
+        onChange: x => {
+          console.debug({value, x})
+          valid(x)
+        },
+        reference
       })}
     </div>
   );
-});
+};
 
 const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction, context }) => {
   const currentIdx = steps.findIndex((s) => s.id === currentStep);

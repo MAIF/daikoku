@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useEffect, useContext } from 'react';
 import SwaggerEditor, { plugins } from 'swagger-editor';
 import { Form, type, format, constraints } from '@maif/react-forms';
 
 import { I18nContext } from '../../../core';
-import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
 import 'swagger-editor/dist/swagger-editor.css';
 
@@ -78,7 +77,7 @@ const SwaggerEditorInput = ({ setValue, rawValues, value, error, onChange }) => 
   return <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }} />;
 };
 
-export const TeamApiSwagger = ({ value, onChange }) => {
+export const TeamApiSwagger = ({ value, onChange, reference }) => {
   const { translateMethod } = useContext(I18nContext);
   const swagger = value.swagger;
 
@@ -124,11 +123,12 @@ export const TeamApiSwagger = ({ value, onChange }) => {
 
   return (
     <Form
+      ref={reference}
       schema={schema}
-      options={{
-        autosubmit: true,
+      onSubmit={(swagger) => {
+        console.debug({swagger})
+        onChange({ ...value, swagger })
       }}
-      onSubmit={(swagger) => onChange({ ...value, swagger })}
       value={value.swagger}
       footer={() => null}
     />

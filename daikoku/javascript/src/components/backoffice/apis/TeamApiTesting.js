@@ -13,6 +13,8 @@ export const TeamApiTesting = (props) => {
   const team = useSelector((s) => s.context.currentTeam);
   const { translateMethod, Translation } = useContext(I18nContext);
 
+  console.debug({props})
+
   const handleOtoroshiUsage = () => {
     const random = faker.random.alphaNumeric(16);
     const newConfig =
@@ -126,11 +128,9 @@ export const TeamApiTesting = (props) => {
   return (
     <div className="d-flex">
       <Form
+        ref={props.reference}
         schema={schema}
         onSubmit={(testing) => props.onChange({ ...props.value, testing })}
-        options={{
-          autosubmit: true,
-        }}
         value={props.value.testing}
         footer={() => null}
       />
