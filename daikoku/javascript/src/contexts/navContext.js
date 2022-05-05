@@ -10,6 +10,7 @@ import { Can, manage, api as API } from '../components/utils'
 export const navMode = {
   initial: "INITIAL",
   api: "API",
+  apiGroup: "API_GROUP",
   user: 'USER',
   daikoku: 'DAIKOKU',
   tenant: 'TENANT',
@@ -30,6 +31,7 @@ export const NavProvider = ({ children, loginAction, loginProvider }) => {
   const [menu, setMenu] = useState({});
 
   const [api, setApi] = useState();
+  const [apiGroup, setApiGroup] = useState();
   const [team, setTeam] = useState();
   const [tenant, setTenant] = useState();
 
@@ -46,6 +48,7 @@ export const NavProvider = ({ children, loginAction, loginProvider }) => {
         mode, setMode,
         office, setOffice,
         api, setApi,
+        apiGroup, setApiGroup,
         team, setTeam,
         tenant, setTenant
       }}
@@ -186,6 +189,57 @@ export const useApiBackOffice = (api) => {
     return () => {
       setMode(navMode.initial)
       setApi(undefined)
+      setTeam(undefined)
+      setMenu({})
+    }
+  }, [])
+  
+
+  return { addMenu };
+}
+
+export const useApiGroupBackOffice = (apiGroup) => {
+  const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext)
+  const { translateMethod } = useContext(I18nContext);
+
+  const { currentTeam } = useSelector(state => state.context)
+
+  const navigate = useNavigate();
+  const params = useParams();
+
+  const schema = currentTab => ({
+    title: apiGroup?.name,
+    blocks: {
+      links: {
+        order: 2,
+        links: {
+          informations: { order: 2, label: translateMethod("Informations"), action: () => navigateTo('infos'), className: { active: currentTab === 'infos' } },
+          plans: { order: 3, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
+          subscriptions: { order: 5, label: translateMethod("API group Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
+          consumptions: { order: 5, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
+          settings: { order: 5, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
+        }
+      }
+    }
+  })
+
+  const navigateTo = (navTab) => {
+    navigate(`/${currentTeam._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`)
+  }
+
+  useEffect(() => {
+      addMenu(schema(params.tab))
+      setMode(navMode.apiGroup)
+      setOffice(officeMode.back)
+      setApiGroup(apiGroup)
+      setTeam(currentTeam)
+  }, [apiGroup?._id, params])
+
+  useEffect(() => {
+    addMenu(schema(params.tab))
+    return () => {
+      setMode(navMode.initial)
+      setApiGroup(undefined)
       setTeam(undefined)
       setMenu({})
     }

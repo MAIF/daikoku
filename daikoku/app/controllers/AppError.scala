@@ -7,11 +7,16 @@ import play.api.mvc.Results._
 
 import scala.concurrent.Future
 
-sealed trait AppError
+sealed trait AppError {
+  def render() = AppError.render(this)
+  def renderF() = AppError.renderF(this)
+  def toJson() = AppError.toJson(this)
+}
 
 object AppError {
   case object ApiVersionConflict extends AppError
   case object ApiNotFound extends AppError
+  case object ApiGroupNotFound extends AppError
   case object TeamNotFound extends AppError
   case object UserNotFound extends AppError
   case object ForbiddenAction extends AppError
@@ -37,72 +42,54 @@ object AppError {
   case object TranslationNotFound extends AppError
   case object Unauthorized extends AppError
   case object TeamForbidden extends AppError
+  case class ParsingPayloadError(message: String) extends AppError
+  case object NameAlreadyExists extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
   def render(error: AppError): mvc.Result = error match {
-    case ApiVersionConflict => Conflict(toJson(ApiVersionConflict))
-    case ApiNotFound        => NotFound(Json.obj("error" -> "Api not found"))
-    case TeamNotFound       => NotFound(Json.obj("error" -> "Team not found"))
-    case UserNotFound       => NotFound(Json.obj("error" -> "User not found"))
-    case NotificationNotFound =>
-      NotFound(Json.obj("error" -> "Notification not found"))
-    case OtoroshiSettingsNotFound =>
-      NotFound(Json.obj("error" -> "Otoroshi settings not found"))
-    case TeamUnauthorized =>
-      play.api.mvc.Results
-        .Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
-    case TeamForbidden =>
-      play.api.mvc.Results
-        .Forbidden(Json.obj("error" -> "You're not part of the team"))
-    case ApiUnauthorized =>
-      play.api.mvc.Results.Unauthorized(
-        Json.obj("error" -> "You're not authorized on this api",
-                 "status" -> 403))
-    case PlanUnauthorized =>
-      play.api.mvc.Results
-        .Unauthorized(Json.obj("error" -> "You're not authorized on this plan"))
-    case PlanNotFound =>
-      NotFound(Json.obj("error" -> "Plan not found"))
-    case ApiNotLinked =>
-      BadRequest(
-        Json.obj("error" -> "Api is not linked to an Otoroshi descriptor"))
-    case UserNotTeamAdmin(userId, teamId) =>
-      play.api.mvc.Results.Unauthorized(
-        Json.obj("error" -> s"User $userId is not an admin for team $teamId"))
-    case OtoroshiError(e) => BadRequest(e)
-    case SubscriptionConflict =>
-      Conflict(Json.obj("error" -> "conflict with subscription request"))
-    case ApiKeyRotationConflict =>
-      Conflict(Json.obj("error" -> "Api have already setup apikey rotation"))
-    case ApiKeyRotationError(e) => BadRequest(e)
-    case ForbiddenAction =>
-      Forbidden(Json.obj("error" -> "You're not authorized to do this action"))
-    case ApiKeyCustomMetadataNotPrivided =>
-      BadRequest(Json.obj("error" -> "You need to provide custom metadata"))
-    case SubscriptionNotFound => NotFound(toJson(SubscriptionNotFound))
-    case SubscriptionParentExisted =>
-      Conflict(toJson(SubscriptionParentExisted))
-    case SubscriptionAggregationDisabled =>
-      BadRequest(toJson(SubscriptionAggregationDisabled))
-    case SubscriptionAggregationTeamConflict =>
-      Conflict(toJson(SubscriptionAggregationTeamConflict))
-    case SubscriptionAggregationOtoroshiConflict =>
-      Conflict(toJson(SubscriptionAggregationOtoroshiConflict))
-    case MissingParentSubscription =>
-      NotFound(toJson(MissingParentSubscription))
-    case TranslationNotFound => NotFound(toJson(TranslationNotFound))
-    case Unauthorized        => play.api.mvc.Results.Unauthorized(toJson(Unauthorized))
+    case ApiVersionConflict                       => Conflict(toJson(ApiVersionConflict))
+    case ApiNotFound                              => NotFound(toJson(error))
+    case ApiGroupNotFound                         => NotFound(toJson(error))
+    case TeamNotFound                             => NotFound(toJson(error))
+    case UserNotFound                             => NotFound(toJson(error))
+    case NotificationNotFound                     => NotFound(toJson(error))
+    case OtoroshiSettingsNotFound                 => NotFound(toJson(error))
+    case TeamUnauthorized                         => play.api.mvc.Results.Unauthorized(toJson(error))
+    case TeamForbidden                            => play.api.mvc.Results.Unauthorized(toJson(error))
+    case ApiUnauthorized                          => play.api.mvc.Results.Unauthorized(toJson(error) ++ Json.obj("status" -> 403))
+    case PlanUnauthorized                         => play.api.mvc.Results.Unauthorized(toJson(error))
+    case PlanNotFound                             => NotFound(toJson(error))
+    case ApiNotLinked                             => BadRequest(toJson(error))
+    case UserNotTeamAdmin(userId, teamId)         => play.api.mvc.Results.Unauthorized(toJson(error))
+    case OtoroshiError(e)                         => BadRequest(e)
+    case SubscriptionConflict                     => Conflict(toJson(error))
+    case ApiKeyRotationConflict                   => Conflict(toJson(error))
+    case ApiKeyRotationError(e)                   => BadRequest(e)
+    case ForbiddenAction                          => Forbidden(toJson(error))
+    case ApiKeyCustomMetadataNotPrivided          => BadRequest(toJson(error))
+    case SubscriptionNotFound                     => NotFound(toJson(error))
+    case SubscriptionParentExisted                => Conflict(toJson(error))
+    case SubscriptionAggregationDisabled          => BadRequest(toJson(error))
+    case SubscriptionAggregationTeamConflict      => Conflict(toJson(error))
+    case SubscriptionAggregationOtoroshiConflict  => Conflict(toJson(error))
+    case MissingParentSubscription                => NotFound(toJson(error))
+    case TranslationNotFound                      => NotFound(toJson(error))
+    case Unauthorized                             => play.api.mvc.Results.Unauthorized(toJson(error))
+    case ParsingPayloadError(message)             => BadRequest(toJson(error))
+    case NameAlreadyExists                        => Conflict(toJson(error))
   }
 
   def toJson(error: AppError) = {
     error match {
       case OtoroshiError(e)       => e
       case ApiKeyRotationError(e) => e
+      case ParsingPayloadError(msg) => Json.obj("error" -> "Error while parsing payload", "msg" -> msg)
       case err =>
         Json.obj("error" -> (err match {
           case ApiVersionConflict       => "This version already existed"
-          case ApiNotFound              => "Api not found"
+          case ApiNotFound              => "API not found"
+          case ApiGroupNotFound         => "API group not found"
           case TeamNotFound             => "Team not found"
           case UserNotFound             => "User not found"
           case NotificationNotFound     => "Notification not found"
@@ -117,7 +104,8 @@ object AppError {
           case SubscriptionConflict => "conflict with subscription request"
           case ApiKeyRotationConflict =>
             "conflict, Api have already setup apikey rotation"
-          case ForbiddenAction => "You're not authorized to do this action"
+          case ForbiddenAction          => "You're not authorized to do this action"
+          case TeamForbidden            => "You're not part of this team"
           case ApiKeyCustomMetadataNotPrivided =>
             "You need to provide custom metadata"
           case SubscriptionNotFound => "Subscription not found"
@@ -133,6 +121,7 @@ object AppError {
             "The parent of this subscription is missing"
           case TranslationNotFound => "Translation not found"
           case Unauthorized        => "You're not authorized here"
+          case NameAlreadyExists   => "Resource with same name already exists"
           case _                   => ""
         }))
     }

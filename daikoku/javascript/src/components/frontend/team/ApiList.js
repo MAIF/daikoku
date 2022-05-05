@@ -236,26 +236,6 @@ const ApiListComponent = (props) => {
             </div>
           </Can>
         )}
-        {props.apiCreationPermitted && !props.team && !props.connectedUser.isGuest && (
-          <ActionWithTeamSelector
-            title={translateMethod('api.creation.title.modal')}
-            description={translateMethod('api.creation.description.modal')}
-            teams={props.myTeams
-              .filter((t) => t.type !== 'Admin')
-              .filter((t) => !props.tenant.creationSecurity || t.apisCreationPermission)
-              .filter((t) =>
-                CanIDoAction(props.connectedUser, manage, api, t, props.apiCreationPermitted)
-              )}
-            action={(team) => createNewApi(team)}
-            withAllTeamSelector={false}
-          >
-            <div className="col-12 col-sm-2">
-              <button className="btn btn-access-negative mb-2 float-right">
-                <i className="fas fa-plus-square" /> API
-              </button>
-            </div>
-          </ActionWithTeamSelector>
-        )}
       </div>
       <div className="row mb-2 view-selectors">
         <div className="col-9 d-flex justify-content-end">

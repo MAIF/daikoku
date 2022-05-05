@@ -15,3 +15,4 @@ export * from './TeamApiPost';
 export * from './TeamApiInfos';
 export * from './TeamApiPricings';
 export * from './TeamApiSettings';
+export * from './TeamApiGroup';

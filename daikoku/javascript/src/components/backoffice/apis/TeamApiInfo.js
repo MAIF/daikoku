@@ -136,19 +136,19 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       transformer: (t) => ({ label: t, value: t }),
       expert: true,
     },
-    // visibility: {
-    //   type: type.string,
-    //   format: format.buttonsSelect,
-    //   label: translateMethod('Visibility'),
-    //   options: [
-    //     { label: translateMethod('Public'), value: 'Public' },
-    //     { label: translateMethod('Private'), value: 'Private' },
-    //     {
-    //       label: translateMethod('PublicWithAuthorizations'),
-    //       value: 'PublicWithAuthorizations',
-    //     },
-    //   ],
-    // },
+    visibility: {
+      type: type.string,
+      format: format.buttonsSelect,
+      label: translateMethod('Visibility'),
+      options: [
+        { label: translateMethod('Public'), value: 'Public' },
+        { label: translateMethod('Private'), value: 'Private' },
+        {
+          label: translateMethod('PublicWithAuthorizations'),
+          value: 'PublicWithAuthorizations',
+        },
+      ],
+    },
     authorizedTeams: {
       type: type.string,
       format: format.select,

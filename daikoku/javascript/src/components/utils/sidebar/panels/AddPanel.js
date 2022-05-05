@@ -63,6 +63,44 @@ export const AddPanel = ({ teams }) => {
     }
   };
 
+  const createApiGroup = (teamId) => {
+    if (apiCreationPermitted) {
+      if (!teamId) {
+        return openTeamSelectorModal({
+          allTeamSelector: false,
+          title: translateMethod('apigroup.creation.title.modal'),
+          description: translateMethod('apigroup.creation.description.modal'),
+          teams: myTeams
+            .filter((t) => t.type !== 'Admin')
+            .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
+            .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+          action: teams => createApiGroup(teams[0]),
+        })(dispatch)
+      } else {
+        const team = myTeams.find((t) => teamId === t._id);
+
+        return Services.fetchNewApiGroup()
+          .then((e) => {
+            const verb = faker.hacker.verb();
+            const name =
+              verb.charAt(0).toUpperCase() +
+              verb.slice(1) +
+              ' ' +
+              faker.hacker.adjective() +
+              ' ' +
+              faker.hacker.noun() +
+              ' apigroup';
+
+            const _humanReadableId = name.replace(/\s/gi, '-').toLowerCase().trim();
+            return { ...e, name, _humanReadableId, team: team._id };
+          })
+          .then((newApiGroup) => navigate(`/${team._humanReadableId}/settings/apigroups/${newApiGroup._id}/infos`,
+            { state: { newApiGroup } })
+          );
+      }
+    }
+  }
+
   const maybeTeam = Option(match)
     .map(m => m.params)
     .map(p => p.teamId)
@@ -82,6 +120,7 @@ export const AddPanel = ({ teams }) => {
             {connectedUser.isDaikokuAdmin && <strong className='block__entry__link'>tenant</strong>}
             <strong className='block__entry__link' onClick={createTeam}>team</strong>
             <strong className='block__entry__link' onClick={() => createApi(maybeTeam)}>API</strong>
+            <strong className='block__entry__link' onClick={() => createApiGroup(maybeTeam)}>API group</strong>
           </div>
         </div>
         {/* todo: add a block in function of context to create plan...otoroshi or whatever */}

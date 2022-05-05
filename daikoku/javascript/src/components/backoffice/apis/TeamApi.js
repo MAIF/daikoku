@@ -333,7 +333,7 @@ const TeamApiComponent = (props) => {
                   />
                 )}
                 {tab === 'infos' && (
-                  <TeamApiInfos
+                  <TeamApiIxnfos
                     value={api}
                     team={props.currentTeam}
                     tenant={props.tenant}

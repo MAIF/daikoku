@@ -129,6 +129,9 @@ export const teamHome = (teamId) => customFetch(`/api/teams/${teamId}/home`);
 export const teamApi = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
 
+export const teamApiGroup = (teamId, apiGroupId) => 
+  customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`)
+
 export const teamApis = (teamId) => customFetch(`/api/teams/${teamId}/apis`);
 export const team = (teamId) => customFetch(`/api/teams/${teamId}`);
 export const teamFull = (teamId) => customFetch(`/api/teams/${teamId}/_full`);
@@ -347,6 +350,7 @@ export const getTenantNames = (ids) =>
 export const fetchNewTenant = () => customFetch('/api/entities/tenant');
 export const fetchNewTeam = () => customFetch('/api/entities/team');
 export const fetchNewApi = () => customFetch('/api/entities/api');
+export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
@@ -356,6 +360,11 @@ export const checkIfApiNameIsUnique = (name, id) =>
   customFetch('/api/apis/_names', {
     method: 'POST',
     body: JSON.stringify({ name, id }),
+  });
+export const checkIfApiGroupNameIsUnique = (name) =>
+  customFetch('/api/groups/_names', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
   });
 
 export const getSessions = () => customFetch('/api/admin/sessions');
