@@ -217,17 +217,17 @@ export const MultiStepForm = ({
       <div className="d-flex justify-content-between">
         {steps.findIndex((s) => s.id === step.id) !== 0 && (
           <button
-            className="btn btn-outline-danger m-3"
+            className="btn btn-outline-danger me-1 my-3"
             disabled={step.id === initial}
             onClick={() => send('PREVIOUS')}
           >
             {labels?.previous || 'Previous'}
           </button>
         )}
-        <div className="flex-grow-1 d-flex justify-content-end">
+        <div className="flex-grow-1 d-flex justify-content-end my-3">
           {steps.findIndex((s) => s.id === step.id) !== steps.length - 1 && (
             <button
-              className="btn btn-outline-primary m-3"
+              className="btn btn-outline-primary me-1"
               disabled={!!creation && !step.skipTo}
               onClick={() => send('SKIP')}
             >
@@ -236,7 +236,7 @@ export const MultiStepForm = ({
           )}
           {steps.findIndex((s) => s.id === step.id) !== steps.length - 1 && (
             <button
-              className="btn btn-outline-success m-3"
+              className="btn btn-outline-success me-1"
               onClick={() => ref.current.handleSubmit()}
             >
               {labels?.next || 'Next'}
@@ -244,7 +244,7 @@ export const MultiStepForm = ({
           )}
           {steps.findIndex((s) => s.id === step.id) === steps.length - 1 && (
             <button
-              className="btn btn-outline-success m-3"
+              className="btn btn-outline-success"
               onClick={() => ref.current.handleSubmit()}
             >
               {labels?.save || 'Save'}

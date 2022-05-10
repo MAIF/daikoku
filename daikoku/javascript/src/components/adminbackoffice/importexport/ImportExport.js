@@ -88,7 +88,7 @@ export const ImportExport = () => {
                 ? translateMethod('importing ...')
                 : translateMethod('import state')}
             </button>
-            <div className="d-flex justify-content-start">
+            <div className="d-flex justify-content-start mt-2">
               <SwitchButton
                 onSwitch={(enabled) => setState({ ...state, exportAuditTrail: enabled })}
                 checked={state.exportAuditTrail}
