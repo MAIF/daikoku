@@ -161,7 +161,7 @@ a.navbar-brand, #teamSelector:hover {
           padding-left: .5rem;
 
           &:hover {
-            background-color: #EBECF0;
+            background-color: var(--menu-text-hover-bg-color, #9bb0c5);;
           }
         }
       }
