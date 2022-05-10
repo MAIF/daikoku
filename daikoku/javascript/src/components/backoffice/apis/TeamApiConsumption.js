@@ -30,9 +30,9 @@ const sumGlobalInformations = (data) =>
       return acc;
     }, {});
 
-export const TeamApiConsumption = () => {
+export const TeamApiConsumption = ({ api, apiGroup }) => {
+  const [teams, setTeams] = useState([]);
   const [state, setState] = useState({
-    api: null,
     consumptions: null,
     period: {
       from: moment().startOf('day'),
@@ -73,8 +73,8 @@ export const TeamApiConsumption = () => {
         data.reduce((acc, item) => {
           const value = acc.find((a) => a.clientId === item.clientId) || { count: 0 };
 
-          const team = state.teams.find((t) => t._id === item.team);
-          const plan = state.api.possibleUsagePlans.find((p) => p._id == item.plan);
+          const team = teams.find((t) => t._id === item.team);
+          const plan = api.possibleUsagePlans.find((p) => p._id == item.plan);
 
           const name = `${team.name}/${plan.customName || plan.type}`;
 
@@ -94,19 +94,19 @@ export const TeamApiConsumption = () => {
       label: translateMethod('Plans', true),
       formatter: (data) => (
         <div className="row">
-          {state.api.possibleUsagePlans.map((plan) => (
+          {api.possibleUsagePlans.map((plan) => (
             <div key={plan._id} className="col-sm-4 col-lg-3">
               <PlanLightConsumption
-                api={state.api}
+                api={api}
                 team={currentTeam}
                 key={plan._id}
                 plan={plan}
                 data={sumGlobalInformations(data.filter((d) => d.plan === plan._id))}
                 period={state.period}
                 handleClick={() =>
-                  navigate(
-                    `/${currentTeam._humanReadableId}/settings/apis/${state.api._humanReadableId}/${state.api.currentVersion}/stats/plan/${plan._id}`
-                  )
+                  !!apiGroup ?
+                  navigate(`/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/stats/plan/${plan._id}`) :
+                  navigate(`/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/stats/plan/${plan._id}`)
                 }
               />
             </div>
@@ -117,25 +117,23 @@ export const TeamApiConsumption = () => {
   ];
 
   useEffect(() => {
-    Promise.all([
-      Services.teams(),
-      Services.teamApi(currentTeam._id, params.apiId, params.versionId),
-    ]).then(([teams, api]) => setState({ ...state, teams, api }));
+    Services.teams()
+      .then(setTeams);
 
     document.title = `${currentTeam.name} - ${translateMethod('API consumption')}`;
   }, []);
 
   return (
     <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
-      {!!state.api && (
+      {!!api && (
         <div className="d-flex col flex-column pricing-content">
           <div className="row">
             <div className="col section p-2">
               <OtoroshiStatsVizualization
-                sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
+                sync={() => Services.syncApiConsumption(api._id, currentTeam._id)}
                 fetchData={(from, to) =>
                   Services.apiGlobalConsumption(
-                    params.apiId,
+                    api._id,
                     currentTeam._id,
                     from.valueOf(),
                     to.valueOf()

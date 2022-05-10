@@ -113,13 +113,16 @@ function MyHomeComponent(props) {
     const adminTeam = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams)
       .find((team) => api.team._id === team._id);
 
+    console.debug({api})
+
     if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
       props
         .updateTeam(adminTeam)
-        .then(() =>
-          navigate(
-            `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-          )
+        .then(() =>{
+          const url = api.apis ? 
+          `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos` : 
+          `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
+          navigate(url)}
         );
     }
   };

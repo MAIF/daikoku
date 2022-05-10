@@ -984,6 +984,10 @@ export const graphql = {
             name
             avatar
           }
+          apis {
+            _id
+            name
+          }
         }
         authorizations {
           team

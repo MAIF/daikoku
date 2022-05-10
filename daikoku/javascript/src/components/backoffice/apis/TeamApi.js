@@ -7,7 +7,7 @@ import { Plus } from 'react-feather';
 
 import * as Services from '../../../services';
 import { Can, manage, api as API, Spinner } from '../../utils';
-import { TeamApiInfos, TeamApiPost, TeamApiDocumentation, TeamApiPricings, TeamApiSettings, TeamPlanConsumption } from '.';
+import { TeamApiInfos, TeamApiPost, TeamApiDocumentation, TeamApiPricings, TeamApiSettings, TeamPlanConsumption, TeamApiConsumption, TeamApiSubscriptions } from '.';
 import { useApiBackOffice } from '../../../contexts';
 
 import {
@@ -18,8 +18,6 @@ import {
   toggleExpertMode,
   openApiSelectModal,
 } from '../../../core';
-import { TeamApiConsumption } from './TeamApiConsumption';
-import { TeamApiSubscriptions } from './TeamApiSubscriptions';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
@@ -333,7 +331,7 @@ const TeamApiComponent = (props) => {
                   />
                 )}
                 {tab === 'infos' && (
-                  <TeamApiIxnfos
+                  <TeamApiInfos
                     value={api}
                     team={props.currentTeam}
                     tenant={props.tenant}

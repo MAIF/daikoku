@@ -4,20 +4,26 @@ import { Form, constraints, type, format } from '@maif/react-forms';
 import { useSelector } from 'react-redux'
 import { toastr } from 'react-redux-toastr';
 
+import { Can, manage, api as API, Spinner } from '../../utils';
 import { useApiGroupBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
+import { TeamApiPricings, TeamApiSettings, TeamPlanConsumption, TeamApiSubscriptions, TeamApiConsumption } from '.';
 
 export const TeamApiGroup = () => {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const match = useMatch('/:teamId/settings/apigroups/:apiGroupId/stats/plan/:planId')
 
   const [apiGroup, setApiGroup] = useState()
+  const [otoroshiSettings, setOtoroshiSettings] = useState([]);
 
-  const { currentTeam, expertMode } = useSelector(s => s.context)
+  const { currentTeam, expertMode, tenant } = useSelector(s => s.context)
 
-  useApiGroupBackOffice(apiGroup)
+  const { addMenu } = useApiGroupBackOffice(apiGroup)
+
+  const creation = location?.state?.newApiGroup
 
   useEffect(() => {
     if (location?.state?.newApiGroup) {
@@ -27,6 +33,11 @@ export const TeamApiGroup = () => {
         .then(setApiGroup)
     }
   }, [params.apiGroupId, location.state?.newApiGroup]);
+
+  useEffect(() => {
+    Services.allSimpleOtoroshis(tenant._id)
+      .then(setOtoroshiSettings(otoroshiSettings));
+  }, []);
 
   const save = (group) => {
     if (location.state?.newApiGroup) {
@@ -189,15 +200,85 @@ export const TeamApiGroup = () => {
     },
   ];
 
-
+  const {tab} = params
   return (
-    <div>
-      <Form
-        schema={schema}
-        flow={flow}
-        onSubmit={save}
-        value={apiGroup}
-      />
-    </div>
+    <Can I={manage} a={API} team={currentTeam} dispatchError>
+      {!apiGroup && <Spinner />}
+      {apiGroup && (
+        <>
+          <div className="d-flex flex-row justify-content-between align-items-center">
+            {creation ? (
+              <h2>{apiGroup.name}</h2>
+            ) : (
+              <div
+                className="d-flex align-items-center justify-content-between"
+                style={{ flex: 1 }}
+              >
+                  <h2 className="me-2">{apiGroup.name}</h2>
+              </div>
+            )}
+            <button
+              onClick={() => toggleExpertMode()}
+              className="btn btn-sm btn-outline-primary"
+            >
+              {expertMode && translateMethod('Standard mode')}
+              {!expertMode && translateMethod('Expert mode')}
+            </button>
+          </div>
+          <div className="row">
+            <div className="section col container-api">
+              <div className="mt-2">
+                {(params.tab === 'infos' && (<div>
+                  <Form
+                    schema={schema}
+                    flow={flow}
+                    onSubmit={save}
+                    value={apiGroup}
+                  />
+                </div>))}
+                {(params.tab === 'plans' && (<div>
+                  <TeamApiPricings
+                    value={apiGroup}
+                    team={currentTeam}
+                    tenant={tenant}
+                    save={save}
+                    creation={creation}
+                    otoroshiSettings={otoroshiSettings}
+                    expertMode={expertMode}
+                    injectSubMenu={component => addMenu({ blocks: { links: { links: { plans: { childs: { menu: { component } } } } } } })}
+                    openApiSelectModal={() => alert('oops')}
+                  />
+                </div>))}
+                {tab === 'settings' && (
+                  <TeamApiSettings
+                    api={apiGroup}
+                    apiGroup
+                  />
+                )}
+                {tab === 'stats' && !match && (
+                  <TeamApiConsumption
+                    api={apiGroup}
+                    apiGroup
+                  />
+                )}
+                {tab === 'stats' && match && match.params.planId && (
+                  <TeamPlanConsumption
+                    api={apiGroup}
+                    apiGroup
+                  />
+                )}
+                {tab === 'subscriptions' && (
+                  <TeamApiSubscriptions
+                    api={apiGroup}
+                    apiGroup
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </>)}
+    </Can>
   )
+
+    
 }

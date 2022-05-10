@@ -190,7 +190,7 @@ export const TeamBackOffice = ({ isLoading, title }) => {
               }
             />
             <Route 
-              path={`/apigroups/:apiGroupId/:tab`}
+              path={`/apigroups/:apiGroupId/:tab/*`}
               element={
                 <TeamApiGroup />
               }

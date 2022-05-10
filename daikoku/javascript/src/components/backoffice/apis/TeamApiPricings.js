@@ -616,6 +616,7 @@ export const TeamApiPricings = (props) => {
   const cancelEdition = () => {
     setPlanForEdition(undefined);
     setMode(possibleMode.list);
+    props.injectSubMenu(null)
     setCreation(false);
   };
 

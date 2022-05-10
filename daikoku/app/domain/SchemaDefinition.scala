@@ -1,5 +1,7 @@
 package fr.maif.otoroshi.daikoku.domain
 
+import akka.http.scaladsl.util.FastFuture
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
@@ -737,8 +739,16 @@ object SchemaDefinition {
             case None => None
           }
         ),
+        Field("apis", OptionType(ListType(ApiType)), resolve = ctx => {
+          ctx.value.apis match {
+            case None => FastFuture.successful(None)
+            case Some(apis) => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant)
+              .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(apis.map(_.asJson).toSeq))))
+              .map(_.some)
+          }
+        }
       )
-    )
+    ))
 
     lazy val  AuthorizationApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationApi]()
 

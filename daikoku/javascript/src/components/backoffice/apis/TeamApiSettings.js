@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 
-export const TeamApiSettings = ({ api }) => {
+export const TeamApiSettings = ({ api, apiGroup }) => {
   const { translateMethod } = useContext(I18nContext);
   const { currentTeam } = useSelector(s => s.context)
 

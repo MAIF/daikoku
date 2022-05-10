@@ -16,8 +16,7 @@ import * as Services from '../../../services';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
 import { I18nContext, openSubMetadataModal } from '../../../core';
 
-const TeamApiSubscriptionsComponent = (props) => {
-  const [api, setApi] = useState(undefined);
+const TeamApiSubscriptionsComponent = ({api, ...props}) => {
   const [teams, setTeams] = useState([]);
   const [columns, setColumns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,12 +27,8 @@ const TeamApiSubscriptionsComponent = (props) => {
   const { translateMethod, language, Translation } = useContext(I18nContext);
 
   useEffect(() => {
-    Promise.all([
-      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
-      Services.teams(),
-    ])
-      .then(([api, teams]) => {
-        setApi(api);
+    Services.teams()
+      .then((teams) => {
         setTeams(teams);
         setLoading(false);
       });
@@ -195,7 +190,7 @@ const TeamApiSubscriptionsComponent = (props) => {
               itemName="sub"
               columns={columns}
               fetchItems={() =>
-                Services.apiSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
+                Services.apiSubscriptions(api._id, props.currentTeam._id, api.currentVersion)
               }
               showActions={false}
               showLink={false}
