@@ -78,8 +78,8 @@ export const SettingsPanel = ({ }) => {
 
   return (
     <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
-      <div className='mb-3 panel__title' style={{ height: '40px' }}>
-        {translateMethod('Settings')}
+      <div className='mb-3 panel__title'>
+        <h3>{translateMethod('Settings')}</h3>
       </div>
       <div className="blocks">
         <div className="mb-3 block">
@@ -117,7 +117,7 @@ export const SettingsPanel = ({ }) => {
         <div className="mb-3 block">
           <div className="mb-1 block__category">{translateMethod('version')}</div>
           <div className='ms-2 block__entries d-flex flex-column'>
-            <span className='block__entry__link'>{translateMethod('Version used')} : {version || '?.??.??'}</span>
+            <span className='pe-none block__entry__link'>{translateMethod('Version used')} : {version || '?.??.??'}</span>
           </div>
           <div className="dropdown-divider" />
         </div>
