@@ -62,7 +62,7 @@ export const SearchPanel = ({ teams }) => {
           return (
             <div key={idx} className="mb-3 block">
               <div className="mb-1 block__category">{r.label}</div>
-              <div className='ms-2 block__entries d-flex flex-column'>
+              <div className='ms-2 block__entries block__border d-flex flex-column'>
                 {r.options.map((option) => {
                   const team = teams.find((t) => t._id === option.team);
                   switch (option.type) {

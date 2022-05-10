@@ -149,7 +149,9 @@ a.navbar-brand, #teamSelector:hover {
         font-weight: 600;
         font-size: 12px;
       }
-
+      .block__border {
+        border-left: 1px solid var(--navbar-bg-color, #7f96af);
+      }
       .block__entries {
         .block__entry__link {
           cursor: pointer;
@@ -159,7 +161,6 @@ a.navbar-brand, #teamSelector:hover {
           line-height: 40px;
           border-radius: 4px;
           padding-left: .5rem;
-
           &:hover {
             background-color: var(--menu-text-hover-bg-color, #9bb0c5);
             color: var(--menu-text-hover-color, #fff);
@@ -231,7 +232,6 @@ a.navbar-brand, #teamSelector:hover {
             line-height: 40px;
             border-radius: 4px;
             padding-left: .5rem;
-
             &.active {
               background-color: $menu-text-hover-bg-color;
               color: $menu-text-hover-color;
