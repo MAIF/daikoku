@@ -210,7 +210,7 @@ export const Table = React.forwardRef(
     };
 
     const tablePagination = (
-      <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
+      <div className="d-flex flex-row align-items-center justify-content-end flex-grow-1">
         <span>
           {rows.length}{' '}
           <Translation i18nkey="Result" isPlural={rows.length > 1}>
