@@ -115,7 +115,7 @@ export const TenantOtoroshis = () => {
         <div>
           <button
             type='button'
-            className="btn btn-sm btn-access-negative mb-1 ms-1"
+            className="btn btn-sm btn-outline-success mb-1 ms-1"
             title={translateMethod('Create new settings')}
             onClick={(e) => {
               createNewSettings();
