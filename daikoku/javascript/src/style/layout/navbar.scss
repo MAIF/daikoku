@@ -200,7 +200,7 @@ a.navbar-brand, #teamSelector:hover {
     flex-direction: column;
 
     .companion-title {
-      height: 40px;
+      // height: 40px;
       min-height: 40px;
       margin-bottom: 1rem;
       overflow: hidden;
@@ -209,6 +209,11 @@ a.navbar-brand, #teamSelector:hover {
       line-height: 1.14286;
       color: $aside-text-color;
       font-weight: 600;
+
+      h3{
+        white-space: normal;
+        word-break: break-word;
+      }
     }
 
 
