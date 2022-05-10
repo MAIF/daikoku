@@ -143,7 +143,7 @@ export const AdminMessages = () => {
       <div className="d-flex flex-column messages-sender">
         <Select
           placeholder={translateMethod('Start new conversation')}
-          className="me-2 reactSelect"
+          className="mx-2 reactSelect"
           options={possibleNewUsers.map((u) => ({
             label: (
               <div
