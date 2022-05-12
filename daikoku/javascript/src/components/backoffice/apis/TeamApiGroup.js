@@ -17,7 +17,6 @@ export const TeamApiGroup = () => {
   const match = useMatch('/:teamId/settings/apigroups/:apiGroupId/stats/plan/:planId')
 
   const [apiGroup, setApiGroup] = useState()
-  const [otoroshiSettings, setOtoroshiSettings] = useState([]);
 
   const { currentTeam, expertMode, tenant } = useSelector(s => s.context)
 
@@ -33,11 +32,6 @@ export const TeamApiGroup = () => {
         .then(setApiGroup)
     }
   }, [params.apiGroupId, location.state?.newApiGroup]);
-
-  useEffect(() => {
-    Services.allSimpleOtoroshis(tenant._id)
-      .then(setOtoroshiSettings(otoroshiSettings));
-  }, []);
 
   const save = (group) => {
     if (location.state?.newApiGroup) {
@@ -164,7 +158,7 @@ export const TeamApiGroup = () => {
       label: translateMethod('APIs'),
       format: format.select,
       isMulti: true,
-      optionsFrom: Services.teamApis(currentTeam._id).then(apis => apis.filter(api => api._id !== apiGroup._id && !api.apis)),
+      optionsFrom: Services.teamApis(currentTeam._id).then(apis => apis.filter(api => api._id !== apiGroup?._id && !api.apis)),
       transformer: api => ({ label: `${api.name} - ${api.currentVersion}`, value: api._id })
 
     },
@@ -243,7 +237,6 @@ export const TeamApiGroup = () => {
                     tenant={tenant}
                     save={save}
                     creation={creation}
-                    otoroshiSettings={otoroshiSettings}
                     expertMode={expertMode}
                     injectSubMenu={component => addMenu({ blocks: { links: { links: { plans: { childs: { menu: { component } } } } } } })}
                     openApiSelectModal={() => alert('oops')}

@@ -51,7 +51,9 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
 
   useEffect(() => {
     const otoroshiTarget = rawValues.otoroshiTarget;
-    if (otoroshiTarget) {
+    
+    if (otoroshiTarget && otoroshiTarget.otoroshiSettings) {
+      console.debug({params, otoroshiTarget})
       Promise.all([
         Services.getOtoroshiGroupsAsTeamAdmin(
           params.teamId,
@@ -128,6 +130,8 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
       onChange(value);
     }
   };
+
+  console.debug({ groups, services })
 
   return (
     <div>
@@ -680,7 +684,7 @@ export const TeamApiPricings = (props) => {
               format: format.select,
               disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translateMethod('Otoroshi instances'),
-              options: props.otoroshiSettings,
+              optionsFrom: Services.allSimpleOtoroshis(props.tenant._id),
               transformer: (s) => ({
                 label: s.url,
                 value: s._id,
@@ -690,7 +694,9 @@ export const TeamApiPricings = (props) => {
               type: type.object,
               visible: {
                 ref: 'otoroshiTarget.otoroshiSettings',
-                test: (v) => !!v,
+                test: (v) => {
+                  console.debug({v})
+                  return !!v},
               },
               render: (props) => OtoroshiServicesAndGroupSelector({ ...props, translateMethod }),
               label: translateMethod('Authorized entities'),
@@ -888,8 +894,7 @@ export const TeamApiPricings = (props) => {
         },
         costPerMonth: {
           type: type.number,
-          label: ({ rawValues }) =>
-            translateMethod(`Cost per ${rawValues.billingDuration.unit.toLocaleLowerCase()}`),
+          label: ({ rawValues }) => translateMethod(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
           placeholder: translateMethod('Cost per billing period'),
           props: {
             step: 1,

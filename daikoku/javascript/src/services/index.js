@@ -940,9 +940,11 @@ export const graphql = {
           currentVersion
           name
           apis {
-            _id
-            _humanReadableId
-            name
+            api {
+              _id
+              _humanReadableId
+              name
+            }
           }
         }
       }
@@ -969,6 +971,7 @@ export const graphql = {
         api (id: $id) {
           _id
           _humanReadableId
+          published
           currentVersion
           name
           smallDescription
@@ -984,7 +987,23 @@ export const graphql = {
             customName
             customDescription
             visibility
+            ... on QuotasWithLimits {
+              maxPerSecond
+              maxPerDay
+              maxPerMonth
+            }
+            ... on FreeWithQuotas {
+              maxPerSecond
+              maxPerDay
+              maxPerMonth
+            }
+            ... on QuotasWithoutLimits {
+              maxPerSecond
+              maxPerDay
+              maxPerMonth
+            }
             subscriptionProcess
+            allowMultipleKeys
             otoroshiTarget {
               otoroshiSettings
             }

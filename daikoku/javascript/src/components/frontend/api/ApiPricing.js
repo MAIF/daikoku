@@ -8,6 +8,7 @@ import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import {
   Can,
+  CanIDoAction,
   access,
   apikey,
   getCurrencySymbol,
@@ -342,17 +343,6 @@ const mapDispatchToProps = {
 
 export const ApiPricingCard = connect(mapStateToProps, mapDispatchToProps)(ApiPricingCardComponent);
 
-ApiPricingCard.propTypes = {
-  api: PropTypes.object.isRequired,
-  plan: PropTypes.object.isRequired,
-  myTeams: PropTypes.array.isRequired,
-  subscriptions: PropTypes.array.isRequired,
-  pendingSubscriptions: PropTypes.array.isRequired,
-  askForApikeys: PropTypes.func.isRequired,
-  updateSubscriptions: PropTypes.func.isRequired,
-  ownerTeam: PropTypes.object.isRequired,
-};
-
 export function ApiPricing(props) {
   const api = props.api;
   if (!api) {
@@ -387,7 +377,6 @@ export function ApiPricing(props) {
                     (subs) => subs.action.api === api._id && subs.action.plan === plan._id
                   )}
                   askForApikeys={props.askForApikeys}
-                  updateSubscriptions={props.updateSubscriptions}
                   tenant={props.tenant}
                   connectedUser={props.connectedUser}
                 />
@@ -399,12 +388,3 @@ export function ApiPricing(props) {
     </div>
   );
 }
-
-ApiPricing.propTypes = {
-  api: PropTypes.object.isRequired,
-  myTeams: PropTypes.array.isRequired,
-  ownerTeam: PropTypes.object.isRequired,
-  subscriptions: PropTypes.array.isRequired,
-  pendingSubscriptions: PropTypes.array.isRequired,
-  updateSubscriptions: PropTypes.func.isRequired,
-};

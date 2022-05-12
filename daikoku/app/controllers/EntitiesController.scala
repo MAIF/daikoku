@@ -100,27 +100,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             pages = Seq.empty
           ),
           visibility = ApiVisibility.Public,
-          possibleUsagePlans = Seq(FreeWithQuotas(
-            id = UsagePlanId("default"),
-            maxPerSecond = 10,
-            maxPerDay = 500,
-            maxPerMonth = 10000,
-            currency = Currency(
-              code = "EUR"
-            ),
-            billingDuration = BillingDuration(
-              value = 1,
-              unit = BillingTimeUnit.Month
-            ),
-            customName = Some("Free plan"),
-            customDescription = Some(
-              "Free plan with limited number of calls per day and per month"),
-            otoroshiTarget = None,
-            allowMultipleKeys = Some(false),
-            autoRotation = None,
-            subscriptionProcess = SubscriptionProcess.Automatic,
-            integrationProcess = IntegrationProcess.ApiKey
-          )),
+          possibleUsagePlans = Seq.empty,
           defaultUsagePlan = UsagePlanId("default")
         ).asJson)
     }
@@ -144,27 +124,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
           pages = Seq.empty
         ),
         visibility = ApiVisibility.Public,
-        possibleUsagePlans = Seq(FreeWithQuotas(
-          id = UsagePlanId("default"),
-          maxPerSecond = 10,
-          maxPerDay = 500,
-          maxPerMonth = 10000,
-          currency = Currency(
-            code = "EUR"
-          ),
-          billingDuration = BillingDuration(
-            value = 1,
-            unit = BillingTimeUnit.Month
-          ),
-          customName = Some("Free plan"),
-          customDescription = Some(
-            "Free plan with limited number of calls per day and per month"),
-          otoroshiTarget = None,
-          allowMultipleKeys = Some(false),
-          autoRotation = None,
-          subscriptionProcess = SubscriptionProcess.Automatic,
-          integrationProcess = IntegrationProcess.ApiKey,
-        )),
+        possibleUsagePlans = Seq.empty,
         defaultUsagePlan = UsagePlanId("default")
       ).asJson)
     }

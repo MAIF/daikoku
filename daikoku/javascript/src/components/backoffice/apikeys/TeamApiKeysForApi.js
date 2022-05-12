@@ -66,7 +66,7 @@ export const TeamApiKeysForApi = () => {
   }, []);
 
   const updateCustomName = (subscription, customName) => {
-    return Services.updateSubscriptionCustomName(props.currentTeam, subscription, customName);
+    return Services.updateSubscriptionCustomName(currentTeam, subscription, customName);
   };
 
   const archiveApiKey = (subscription) => {

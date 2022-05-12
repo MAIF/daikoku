@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
-import { Can, read, manage, stat, api as API } from '../../utils';
+import { Can, read, manage, api as API } from '../../utils';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { I18nContext, setError } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
@@ -27,8 +27,24 @@ export const TeamApis = () => {
       id: 'name',
       Header: translateMethod('Name'),
       style: { textAlign: 'left' },
-      accessor: (api) => `${api.name} - (${api.currentVersion})`,
+      accessor: (api) => api.apis ? api.name : `${api.name} - (${api.currentVersion})`,
       sortType: 'basic',
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
+        const api = original;
+        if (api.apis) {
+          return <div className='d-flex flex-row justify-content-between'>
+            <span>{api.name}</span> 
+            <div className='iconized'>G</div>
+          </div>
+        }
+        return (
+          <div>{`${api.name} - (${api.currentVersion})`}</div>
+        );
+      },
     },
     {
       Header: translateMethod('Description'),

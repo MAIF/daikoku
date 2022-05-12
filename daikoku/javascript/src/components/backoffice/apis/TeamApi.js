@@ -80,11 +80,7 @@ const TeamApiComponent = (props) => {
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
-      Services.allSimpleOtoroshis(props.tenant._id)
-        .then((otoroshiSettings) => {
-          setOtoroshiSettings(otoroshiSettings);
-          setApi(location.state.newApi);
-        });
+      setApi(location.state.newApi);
     } else {
       reloadState();
     }
@@ -122,14 +118,12 @@ const TeamApiComponent = (props) => {
   const reloadState = () => {
     Promise.all([
       Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
-      Services.allSimpleOtoroshis(props.tenant._id),
       Services.getAllApiVersions(props.currentTeam._id, params.apiId),
-    ]).then(([api, otoroshiSettings, v]) => {
+    ]).then(([api, v]) => {
       if (!api.error) {
         const versions = (v || []).map((v) => ({ label: v, value: v }))
         setApiVersion({ value: params.versionId, label: params.versionId });
         setApi(api);
-        setOtoroshiSettings(otoroshiSettings);
         setVersions(versions)
       } else {
         toastr.error(api.error);
@@ -324,7 +318,6 @@ const TeamApiComponent = (props) => {
                     tenant={props.tenant}
                     save={save}
                     creation={props.creation}
-                    otoroshiSettings={otoroshiSettings}
                     expertMode={props.expertMode}
                     injectSubMenu={component => addMenu({ blocks: { links: { links: { plans: { childs: { menu: {component} } } } } } })}
                     openApiSelectModal={props.openApiSelectModal}
@@ -341,7 +334,6 @@ const TeamApiComponent = (props) => {
                     injectSubMenu={component => addMenu({ blocks: { links: { links: { informations: { childs: { menu: { component } } } } } } })}
                     openTestingApiKeyModal={props.openTestingApiKeyModal}
                     openSubMetadataModal={props.openSubMetadataModal}
-                    otoroshiSettings={otoroshiSettings}
                   />
                 )}
                 {tab === 'news' && (

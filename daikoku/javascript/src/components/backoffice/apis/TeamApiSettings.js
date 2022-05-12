@@ -3,6 +3,7 @@ import { Form, constraints, type, format } from '@maif/react-forms';
 import { toastr } from 'react-redux-toastr';
 import { sortBy } from 'lodash';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
@@ -10,6 +11,7 @@ import * as Services from '../../../services';
 export const TeamApiSettings = ({ api, apiGroup }) => {
   const { translateMethod } = useContext(I18nContext);
   const { currentTeam } = useSelector(s => s.context)
+  const navigate = useNavigate();
 
   const transferOwnership = ({ team }) => {
     Services.transferApiOwnership(team, api.team, api._id)
