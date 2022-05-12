@@ -20,6 +20,7 @@ export const ApiCard = (props) => {
   const accessButton = () => {
     if (
       !allTeamsAreAuthorized &&
+      !props.groupView &&
       // !isPending &&
       !['Private', 'AdminOnly'].includes(api.visibility)
     ) {
@@ -120,12 +121,12 @@ export const ApiCard = (props) => {
               </button>
             </Can>
             {accessButton()}
-            <StarsButton
+            {!props.groupView && <StarsButton
               stars={api.stars}
               starred={props.user.starredApis.includes(api._id)}
               toggleStar={props.toggleStar}
               connectedUser={props.connectedUser}
-            />
+            />}
           </div>
         </div>
       </div>

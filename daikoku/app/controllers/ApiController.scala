@@ -284,9 +284,9 @@ class ApiController(DaikokuAction: DaikokuAction,
     UberPublicUserAccess(AuditTrailEvent("@{user.name} is accessing visible api @{api.name}"))(ctx) {
       env.dataStore.apiRepo
         .forTenant(ctx.tenant)
-        .findById(apiId)
+        .findByIdOrHrId(apiId)
         .flatMap {
-          case None => FastFuture.successful(AppError.render(ApiNotFound))
+          case None => ApiNotFound.renderF()
           case Some(api) => getApi(api, ctx)
         }
     }

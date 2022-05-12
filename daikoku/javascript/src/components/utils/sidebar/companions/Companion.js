@@ -39,7 +39,7 @@ export const Companion = () => {
             .sort((a, b) => a.order - b.order)
             .map((block, idx) => {
               return (
-                <div key={`${performance.now}${idx}`} className="block">
+                <div key={`${performance.now()}${idx}`} className="block">
                   <div className='d-flex flex-column block__entries'>
                     {block.links && Object.values(block.links)
                       .sort((a, b) => a.order - b.order)
@@ -47,29 +47,30 @@ export const Companion = () => {
                         let link = null
                         if (entry.action) {
                           link = <span
-                            key={`${performance.now}-link-${idx}-${linkidx}`}
+                            key={`${performance.now()}-link-${idx}-${linkidx}`}
                             className={classNames(entry.className, 'block__entry__link')}
                             onClick={() => entry.action()}>{entry.label}</span>
                         } else if (entry.link) {
                           link = <Link
-                            key={`${performance.now}-link-${idx}-${linkidx}`}
+                            key={`${performance.now()}-link-${idx}-${linkidx}`}
                             className={classNames(entry.className, 'block__entry__link')}
                             to={entry.link}>{entry.label}</Link>
                         } else if (entry.component) {
-                          link = React.cloneElement(entry.component)
+                          link = React.cloneElement(entry.component, { key: `${performance.now()}-link-${idx}-${linkidx}` })
                         }
+
                         return (
                           <>
                             {link}
                             {entry.childs && (
-                              <div className="entry__submenu d-flex flex-column" key={`${performance.now}-submenu-${idx}`}>
+                              <div className="entry__submenu d-flex flex-column" key={`${performance.now()}-submenu-${idx}`}>
                                 {Object.values(entry.childs).map((entry, idx) => {
                                   if (entry.action) {
-                                    return <span key={`${performance.now}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} onClick={() => entry.action()}>{entry.label}</span>
+                                    return <span key={`${performance.now()}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} onClick={() => entry.action()}>{entry.label}</span>
                                   } else if (entry.link) {
-                                    return <Link key={`${performance.now}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} to={entry.link}>{entry.label}</Link>
+                                    return <Link key={`${performance.now()}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} to={entry.link}>{entry.label}</Link>
                                   } else if (entry.component) {
-                                    return React.cloneElement(entry.component, { key: `${performance.now}-child-${idx}` })
+                                    return React.cloneElement(entry.component, { key: `${performance.now()}-child-${idx}` })
                                   }
                                 })}
                               </div>

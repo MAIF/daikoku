@@ -16,6 +16,7 @@ export const oneOfMyTeam = (id) => customFetch(`/api/me/teams/${id}`);
 
 export const getVisibleApiWithId = (id) => customFetch(`/api/me/visible-apis/${id}`);
 export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}/${version}`);
+export const getVisibleApiGroup = (id) => customFetch(`/api/me/visible-groups/${id}`);
 export const getTeamVisibleApi = (teamId, apiId, version) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 // export const myTeams = () => customFetch('/api/me/teams');
@@ -938,6 +939,11 @@ export const graphql = {
           _humanReadableId
           currentVersion
           name
+          apis {
+            _id
+            _humanReadableId
+            name
+          }
         }
       }
     `),
@@ -954,6 +960,64 @@ export const graphql = {
               otoroshiSettings
             }
             aggregationApiKeysSecurity
+          }
+        }
+      }
+    `),
+  apiByIdsWithPlans: gql(`
+      query filteredApi ($id: String!) {
+        api (id: $id) {
+          _id
+          _humanReadableId
+          currentVersion
+          name
+          smallDescription
+          description
+          tags
+          team {
+            _id
+            _humanReadableId
+            name
+          }
+          possibleUsagePlans {
+            _id
+            customName
+            customDescription
+            visibility
+            subscriptionProcess
+            otoroshiTarget {
+              otoroshiSettings
+            }
+            aggregationApiKeysSecurity
+          }
+          apis {
+            api {
+              _id
+              _humanReadableId
+              name
+              smallDescription
+              tags
+              categories
+              currentVersion
+              swagger { content }
+              testing { enabled }
+              posts { _id }
+              issues { _id }
+              team {
+                _id
+                _humanReadableId
+                name
+              }
+            }
+            authorizations {
+              team
+              authorized
+              pending
+            }
+          }
+          authorizedTeams {
+            _id
+            name
           }
         }
       }
@@ -981,12 +1045,16 @@ export const graphql = {
           currentVersion
           team {
             _id
+            _humanReadableId
             name
             avatar
           }
           apis {
-            _id
-            name
+            api {
+              _id
+              _humanReadableId
+              name
+            }
           }
         }
         authorizations {

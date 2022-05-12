@@ -128,6 +128,7 @@ DELETE  /api/teams/:teamId/pages/:pageId                        fr.maif.otoroshi
 PUT     /api/teams/:teamId/pages/:pageId                        fr.maif.otoroshi.daikoku.ctrls.ApiController.saveDocPage(teamId, pageId)
 POST    /api/teams/:teamId/pages                                fr.maif.otoroshi.daikoku.ctrls.ApiController.createDocPage(teamId)
 
+GET     /api/me/visible-groups/:groupId                 fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApiWithId(groupId)
 GET     /api/teams/:teamId/groups/:groupId              fr.maif.otoroshi.daikoku.ctrls.ApiGroupController.getApiGroupOfTeam(teamId, groupId)
 POST    /api/groups/_names                              fr.maif.otoroshi.daikoku.ctrls.ApiGroupController.verifyNameUniqueness()
 POST    /api/teams/:teamId/groups                       fr.maif.otoroshi.daikoku.ctrls.ApiGroupController.createApiGroup(teamId)

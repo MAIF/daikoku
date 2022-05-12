@@ -164,7 +164,7 @@ export const TeamApiGroup = () => {
       label: translateMethod('APIs'),
       format: format.select,
       isMulti: true,
-      optionsFrom: Services.teamApis(currentTeam._id),
+      optionsFrom: Services.teamApis(currentTeam._id).then(apis => apis.filter(api => api._id !== apiGroup._id && !api.apis)),
       transformer: api => ({ label: `${api.name} - ${api.currentVersion}`, value: api._id })
 
     },

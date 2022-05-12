@@ -73,11 +73,13 @@ export const TeamApis = () => {
         },
       }) => {
         const api = original;
+        const viewUrl = api.apis ? `/${currentTeam._humanReadableId}/apigroups/${api._humanReadableId}/apis` : `/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`
+        const editUrl = api.apis ? `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos` : `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
         return (
           <div className="btn-group">
             <Link
               rel="noopener"
-              to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
+              to={viewUrl}
               className="btn btn-sm btn-access-negative"
               title="View this Api"
             >
@@ -86,7 +88,7 @@ export const TeamApis = () => {
             <Can I={manage} a={API} team={currentTeam}>
               <Link
                 key={`edit-${api._humanReadableId}`}
-                to={`/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`}
+                to={editUrl}
                 className="btn btn-sm btn-access-negative"
                 title="Edit this Api"
               >

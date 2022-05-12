@@ -16,6 +16,79 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object CommonServices {
 
+  def getApisByIds(ids: Seq[String])
+                  (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[Seq[ApiWithAuthorizations], AppError]] = {
+    _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
+
+      val tenant = ctx.tenant
+      val user = ctx.user
+      val idFilter = if (ids.nonEmpty) Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString)))) else Json.obj()
+      for {
+        myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
+        apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
+        myCurrentRequests <- if (user.isGuest) FastFuture.successful(Seq.empty) else env.dataStore.notificationRepo
+          .forTenant(tenant.id)
+          .findNotDeleted(
+            Json.obj("action.type" -> "ApiAccess",
+              "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
+              "status.status" -> "Pending")
+          )
+        publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ idFilter)
+        almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(Json.obj("visibility" -> "PublicWithAuthorizations") ++ idFilter)
+        privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
+          Json.obj(
+            "visibility" -> "Private",
+            "$or" -> Json.arr(
+              Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))))
+            )) ++ idFilter)
+        adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
+          Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ idFilter
+        )
+      } yield {
+        val sortedApis: Seq[ApiWithAuthorizations] = (publicApis ++ almostPublicApis ++ privateApis)
+          .filter(api => api.published || myTeams.exists(api.team == _.id))
+          .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
+          .map(api => api
+            .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))
+          .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
+            val authorizations = myTeams
+              .filter(t => t.`type` != TeamType.Admin)
+              .foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
+                acc :+ AuthorizationApi(
+                  team = team.id.value,
+                  authorized = (api.authorizedTeams.contains(team.id) || api.team == team.id),
+                  pending = myCurrentRequests.exists(notif =>
+                    notif.action.asInstanceOf[ApiAccess].team == team.id && notif.action.asInstanceOf[ApiAccess].api == api.id)
+                )
+              }
+
+            acc :+ (api.visibility.name match {
+              case "PublicWithAuthorizations" | "Private" => ApiWithAuthorizations(api = api, authorizations = authorizations)
+              case _ => ApiWithAuthorizations(api = api)
+            })
+          }
+
+        val apis: Seq[ApiWithAuthorizations] = (if (user.isDaikokuAdmin)
+          adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) => acc :+ ApiWithAuthorizations(
+            api = api,
+            authorizations = myTeams.foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
+              acc :+ AuthorizationApi(
+                team = team.id.value,
+                authorized = user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id),
+                pending = false
+              )
+            })
+          } ++ sortedApis
+        else
+          sortedApis)
+
+        apis.groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
+          .map(res => res._2.head)
+          .toSeq
+      }
+    }
+  }
+
   def getVisibleApis[A](teamId: Option[String] = None)
                        (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[Seq[ApiWithAuthorizations], AppError]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
