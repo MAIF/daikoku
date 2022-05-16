@@ -20,9 +20,10 @@ export const TeamApiGroup = () => {
 
   const { currentTeam, expertMode, tenant } = useSelector(s => s.context)
 
-  const { addMenu } = useApiGroupBackOffice(apiGroup)
-
   const creation = location?.state?.newApiGroup
+  
+  const { addMenu } = useApiGroupBackOffice(apiGroup, creation)
+
 
   useEffect(() => {
     if (location?.state?.newApiGroup) {

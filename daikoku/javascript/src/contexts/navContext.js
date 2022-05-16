@@ -35,6 +35,8 @@ export const NavProvider = ({ children, loginAction, loginProvider }) => {
   const [team, setTeam] = useState();
   const [tenant, setTenant] = useState();
 
+  const [creation, setCreation] = useState(false);
+
   const addMenu = (value) => {
     setMenu(menu => ({ ...merge(menu, value) }))
   }
@@ -50,7 +52,8 @@ export const NavProvider = ({ children, loginAction, loginProvider }) => {
         api, setApi,
         apiGroup, setApiGroup,
         team, setTeam,
-        tenant, setTenant
+        tenant, setTenant,
+        setCreation
       }}
     >
       {children}
@@ -231,7 +234,7 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
   return { addMenu };
 }
 
-export const useApiBackOffice = (api) => {
+export const useApiBackOffice = (api, creation) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
@@ -247,12 +250,12 @@ export const useApiBackOffice = (api) => {
         order: 2,
         links: {
           informations: { order: 2, label: translateMethod("Informations"), action: () => navigateTo('infos'), className: { active: currentTab === 'infos' } },
-          plans: { order: 3, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
-          documentation: { order: 4, label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
-          news: { order: 5, label: translateMethod("News"), action: () => navigateTo('news'), className: { active: currentTab === 'news' } },
-          subscriptions: { order: 5, label: translateMethod("API Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
-          consumptions: { order: 5, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
-          settings: { order: 5, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
+          plans: { order: 3, visible: !creation, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
+          documentation: { order: 4, visible: !creation, label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
+          news: { order: 5, visible: !creation, label: translateMethod("News"), action: () => navigateTo('news'), className: { active: currentTab === 'news' } },
+          subscriptions: { order: 5, visible: !creation, label: translateMethod("API Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
+          consumptions: { order: 5, visible: !creation, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
+          settings: { order: 5, visible: !creation, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
         }
       }
     }
@@ -284,8 +287,8 @@ export const useApiBackOffice = (api) => {
   return { addMenu };
 }
 
-export const useApiGroupBackOffice = (apiGroup) => {
-  const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext)
+export const useApiGroupBackOffice = (apiGroup, creation) => {
+  const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu, setCreation } = useContext(NavContext)
   const { translateMethod } = useContext(I18nContext);
 
   const { currentTeam } = useSelector(state => state.context)
@@ -300,10 +303,10 @@ export const useApiGroupBackOffice = (apiGroup) => {
         order: 2,
         links: {
           informations: { order: 2, label: translateMethod("Informations"), action: () => navigateTo('infos'), className: { active: currentTab === 'infos' } },
-          plans: { order: 3, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
-          subscriptions: { order: 5, label: translateMethod("API group Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
-          consumptions: { order: 5, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
-          settings: { order: 5, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
+          plans: { order: 3, visible: !creation, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
+          subscriptions: { order: 5, visible: !creation, label: translateMethod("API group Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
+          consumptions: { order: 5, visible: !creation, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
+          settings: { order: 5, visible: !creation, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
         }
       }, 
       actions: {
@@ -363,6 +366,11 @@ export const useApiGroupBackOffice = (apiGroup) => {
       setMenu({})
     }
   }, [])
+
+  useEffect(() => {
+    setCreation(creation)
+  }, [creation])
+  
 
 
   return { addMenu };

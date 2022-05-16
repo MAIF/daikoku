@@ -977,6 +977,7 @@ export const graphql = {
           smallDescription
           description
           tags
+          visibility
           team {
             _id
             _humanReadableId

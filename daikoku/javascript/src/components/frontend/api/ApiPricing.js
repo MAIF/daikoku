@@ -218,6 +218,8 @@ const ApiPricingCardComponent = (props) => {
     )}/${req}`;
   }
 
+  console.debug({ ...props, authorizedTeams })
+
   return (
     <div className="card mb-4 shadow-sm">
       <div className="card-img-top card-link card-skin" data-holder-rendered="true">

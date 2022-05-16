@@ -43,6 +43,7 @@ export const Companion = () => {
                   <div className='d-flex flex-column block__entries'>
                     {block.links && Object.values(block.links)
                       .sort((a, b) => a.order - b.order)
+                      .filter(x => x.visible || x.visible === undefined )
                       .map((entry, linkidx) => {
                         let link = null
                         if (entry.action) {

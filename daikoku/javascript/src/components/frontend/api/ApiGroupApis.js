@@ -12,7 +12,6 @@ import { updateTeamPromise } from '../../../core';
 
 export const ApiGroupApis = ({ apiGroup }) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const { connectedUser, apiCreationPermitted } = useSelector(s => s.context)
   const dispatch = useDispatch()

@@ -71,7 +71,7 @@ const TeamApiComponent = (props) => {
   });
   const [versions, setVersions] = useState([params.versionId])
 
-  const { addMenu } = useApiBackOffice(api)
+  const { addMenu } = useApiBackOffice(api, props.creation)
 
   const teamApiDocumentationRef = useRef();
 
