@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
-import { Can, read, manage, stat, api as API } from '../../utils';
+import { Can, read, manage, api as API } from '../../utils';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { I18nContext, setError } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
@@ -27,8 +27,24 @@ export const TeamApis = () => {
       id: 'name',
       Header: translateMethod('Name'),
       style: { textAlign: 'left' },
-      accessor: (api) => `${api.name} - (${api.currentVersion})`,
+      accessor: (api) => api.apis ? api.name : `${api.name} - (${api.currentVersion})`,
       sortType: 'basic',
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
+        const api = original;
+        if (api.apis) {
+          return <div className='d-flex flex-row justify-content-between'>
+            <span>{api.name}</span> 
+            <div className='iconized'>G</div>
+          </div>
+        }
+        return (
+          <div>{`${api.name} - (${api.currentVersion})`}</div>
+        );
+      },
     },
     {
       Header: translateMethod('Description'),
@@ -73,11 +89,13 @@ export const TeamApis = () => {
         },
       }) => {
         const api = original;
+        const viewUrl = api.apis ? `/${currentTeam._humanReadableId}/apigroups/${api._humanReadableId}/apis` : `/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`
+        const editUrl = api.apis ? `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos` : `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
         return (
           <div className="btn-group">
             <Link
               rel="noopener"
-              to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
+              to={viewUrl}
               className="btn btn-sm btn-access-negative"
               title="View this Api"
             >
@@ -86,7 +104,7 @@ export const TeamApis = () => {
             <Can I={manage} a={API} team={currentTeam}>
               <Link
                 key={`edit-${api._humanReadableId}`}
-                to={`/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`}
+                to={editUrl}
                 className="btn btn-sm btn-access-negative"
                 title="Edit this Api"
               >

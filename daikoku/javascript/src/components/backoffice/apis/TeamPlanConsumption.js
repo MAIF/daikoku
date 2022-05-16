@@ -7,11 +7,12 @@ import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
 
-export const TeamPlanConsumption = () => {
+export const TeamPlanConsumption = ({ apiGroup }) => {
   const { currentTeam } = useSelector(state => state.context);
 
   const { translateMethod } = useContext(I18nContext);
-  const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId')
+  const urlMatching = !!apiGroup ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId' : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId'
+  const match = useMatch(urlMatching)
 
   const [teams, setTeams] = useState([]);
 

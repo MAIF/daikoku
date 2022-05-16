@@ -1797,10 +1797,10 @@
     uuid "8.3.2"
     yup "0.32.11"
 
-"@maif/react-forms@^1.0.50":
-  version "1.0.50"
-  resolved "https://registry.yarnpkg.com/@maif/react-forms/-/react-forms-1.0.50.tgz#961aee8bd6635c2cbff4db7cadf3626a84b7001b"
-  integrity sha512-M3TEvV+b99qNGAAs46YOfvtZy9L3i3lkHR2XL/Jhq3SV7YC3dceixYz16LLeFossKeBs5hk0yWsn+JmaArj3YQ==
+"@maif/react-forms@^1.0.53":
+  version "1.0.53"
+  resolved "https://registry.yarnpkg.com/@maif/react-forms/-/react-forms-1.0.53.tgz#0b4ccf0051cef7d5ca9c4d9016d8c70f0835bcd5"
+  integrity sha512-YGMNZJSnxVf78Kw2U2H2v1R4w7fCcUCfSHjqbA+rTSMQ+Xnt+zcgdr9eRq06FnfmCQoj6hoXQgR5mWBuuVChAQ==
   dependencies:
     "@codemirror/basic-setup" "^0.19.1"
     "@codemirror/lang-html" "^0.19.4"

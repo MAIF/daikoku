@@ -1,6 +1,8 @@
 package fr.maif.otoroshi.daikoku.utils
 
+import akka.NotUsed
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.scaladsl.{Flow, Source}
 import cats.data.EitherT
 import controllers.AppError
 import controllers.AppError._
@@ -9,6 +11,7 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.i18n.{Lang, MessagesApi}
 import play.api.libs.json.{JsArray, JsNull, JsObject, Json}
@@ -16,7 +19,12 @@ import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
 
-class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: MessagesApi, translator: Translator) {
+class ApiService(env: Env,
+                 otoroshiClient: OtoroshiClient,
+                 messagesApi: MessagesApi,
+                 translator: Translator,
+                 apiKeyStatsJob: ApiKeyStatsJob,
+                 otoroshiSynchronisator: OtoroshiVerifierJob) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -350,7 +358,6 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
   def deleteApiKey(tenant: Tenant,
                    subscription: ApiSubscription,
                    plan: UsagePlan,
-                   api: Api,
                    team: Team): Future[Either[AppError, JsObject]] = {
     def deleteKey()(implicit otoroshiSettings: OtoroshiSettings): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
@@ -596,7 +603,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         .map(_.filterNot(_.id == subscription.id)))
       team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant.id).findById(parentSubscription.team), TeamNotFound)
       newParentKey <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant)
-        .findByIdNotDeleted(parentSubscription.api)
+        .findByIdNotDeleted(parentSubscription.api.asInstanceOf[ApiId])
         .map(_.flatMap(api => api.possibleUsagePlans
           .find(p => p.id == parentSubscription.plan)
           .map(plan => createOtoroshiApiKey(
@@ -609,7 +616,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
             customMetadata = parentSubscription.customMetadata,
           )))), ApiNotFound)
       childsKeys <- EitherT.liftF(Future.sequence(childsSubscription.map(s => env.dataStore.apiRepo.forTenant(tenant)
-        .findByIdNotDeleted(s.api)
+        .findByIdNotDeleted(s.api.asInstanceOf[ApiId])
         .map(_.flatMap(api => api.possibleUsagePlans
           .find(p => p.id == s.plan)
           .map(plan => createOtoroshiApiKey(
@@ -621,7 +628,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
             integrationToken = IdGenerator.token(64),
             customMetadata = s.customMetadata,
           )))))))
-      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api), ApiNotFound)
+      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api.asInstanceOf[ApiId]), ApiNotFound)
       plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscription.plan), PlanNotFound)
       apikey        <- EitherT.rightT[Future, AppError](createOtoroshiApiKey(
             user = user,
@@ -647,4 +654,68 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       _ <- EitherT(otoroshiClient.updateApiKey(newAggApiKey))
     } yield apikey).value
   }
+
+  def deleteApiSubscriptionsAsFlow(tenant: Tenant, apiOrGroupName: String, user: User) = Flow[(UsagePlan, Seq[ApiSubscription])]
+    .map(tuple => {
+      tuple._2.map(subscription => {
+        (tuple._1, subscription, Notification(
+          id = NotificationId(BSONObjectID.generate().stringify),
+          tenant = tenant.id,
+          team = Some(subscription.team),
+          sender = user,
+          notificationType = NotificationType.AcceptOnly,
+          action = NotificationAction.ApiKeyDeletionInformation(apiOrGroupName, subscription.apiKey.clientId)
+        ))
+      })
+    })
+    .flatMapConcat(seq => Source(seq.toList))
+    //todo: update to 5 parralelism if team.subscriptions is no more used
+    .mapAsync(1)(sub => {
+      val plan = sub._1
+      val subscription = sub._2
+      val notification = sub._3
+
+      plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+        tenant.otoroshiSettings.find(_.id == id)
+      } match {
+        case None => FastFuture.successful(false)
+        case Some(otoSettings) =>
+          implicit val otoroshiSettings: OtoroshiSettings = otoSettings
+          env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team).flatMap {
+            case None => FastFuture.successful(false)
+            case Some(subscriberTeam) => for {
+              _       <- env.dataStore.notificationRepo.forTenant(tenant).save(notification)
+              _       <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
+              childs  <- env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+                .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
+            } yield subscription.parent match {
+              case Some(_)                    => for {
+                _ <- extractSubscriptionFromAggregation(subscription, tenant, user)
+                _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteByIdLogically(subscription.id)
+                _ <- env.dataStore.teamRepo
+                  .forTenant(tenant.id)
+                  .save(subscriberTeam.copy(subscriptions = subscriberTeam.subscriptions.filterNot(_ == subscription.id)))
+              } yield ()
+              case None if childs.nonEmpty    =>
+                childs match {
+                  case newParent :: newChilds => for {
+                    subRepo <- env.dataStore.apiSubscriptionRepo.forTenantF(tenant)
+                    _ <- subRepo.save(newParent.copy(parent = None))
+                    _ <- subRepo.updateManyByQuery(
+                      Json.obj("_id" -> Json.obj("$in" -> JsArray(newChilds.map(_.id.asJson)))),
+                      Json.obj("$set" -> Json.obj("parent" -> newParent.id.asJson)))
+                    _ <- subRepo.deleteByIdLogically(subscription.id)
+                    _ <- env.dataStore.teamRepo
+                      .forTenant(tenant.id)
+                      .save(subscriberTeam.copy(subscriptions = subscriberTeam.subscriptions.filterNot(_ == subscription.id)))
+                    _ <- otoroshiSynchronisator.verify(Json.obj("_id" -> newParent.id.asJson))
+
+                  } yield ()
+                }
+              case _ => deleteApiKey(tenant, subscription, plan, subscriberTeam)
+            }
+          }
+      }
+    })
+
 }

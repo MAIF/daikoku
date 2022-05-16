@@ -12,3 +12,16 @@
   color: $link-hover-color;
 }
 
+.iconized {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background-color: $menu-text-hover-bg-color;
+  color: $menu-text-hover-color;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  background-color: $menu-text-hover-bg-color;
+}
+

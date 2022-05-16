@@ -1,41 +1,25 @@
 import React, { useContext, useEffect, useState } from 'react';
-import {
-  Link,
-  Route,
-  Routes,
-  useLocation,
-  NavLink,
-} from 'react-router-dom';
 import classNames from 'classnames';
 import { useSelector } from 'react-redux';
-
+import {
+  Link, NavLink, Route,
+  Routes,
+  useLocation
+} from 'react-router-dom';
+import { useTeamBackOffice } from '../../contexts';
+import { I18nContext } from '../../core';
 import * as Services from '../../services';
 import {
-  Can,
-  manage,
-  daikoku,
-  tenant as TENANT,
+  TeamApi, TeamApiGroup, TeamApiKeyConsumption, TeamApiKeys,
+  TeamApiKeysForApi,
+  TeamApis, TeamAssets, TeamBilling, TeamConsumption, TeamEdit, TeamIncome, TeamMembers
+} from '../backoffice';
+import {
+  Can, daikoku, manage, tenant as TENANT
 } from '../utils';
 
-import {
-  TeamApiKeys,
-  TeamApiKeysForApi,
-  TeamApis,
-  TeamApi,
-  TeamMembers,
-  TeamApiKeyConsumption,
-  TeamApiConsumption,
-  TeamPlanConsumption,
-  TeamConsumption,
-  TeamBilling,
-  TeamIncome,
-  TeamApiSubscriptions,
-  TeamEdit,
-  TeamAssets
-} from '../backoffice';
 
-import { I18nContext } from '../../core';
-import { useTeamBackOffice } from '../../contexts';
+
 
 const BackOfficeContent = (props) => {
   return (
@@ -203,6 +187,12 @@ export const TeamBackOffice = ({ isLoading, title }) => {
               path={`/apis/:apiId/:tab`}
               element={
                 <TeamApi creation />
+              }
+            />
+            <Route 
+              path={`/apigroups/:apiGroupId/:tab/*`}
+              element={
+                <TeamApiGroup />
               }
             />
             <Route path={`/apis`} element={<TeamApis />} />

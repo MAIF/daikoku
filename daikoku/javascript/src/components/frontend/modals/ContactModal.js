@@ -14,7 +14,7 @@ const ContactModalComponent = (props) => {
   const [formRef, setFormRef] = useState(undefined);
   const [validity, setValidity] = useState(false);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation, language } = useContext(I18nContext);
 
   useEffect(() => {
     if (formRef) {
@@ -24,9 +24,11 @@ const ContactModalComponent = (props) => {
 
   const sendEmail = () => {
     if (!honeyName && validity) {
-      Services.sendEmails(name, email, subject, body, props.tenant._id, props.team, props.api).then(
-        () => props.closeModal()
-      );
+      console.debug({language})
+      Services.sendEmails(name, email, subject, body, props.tenant._id, props.team, props.api, language)
+        .then(
+          () => props.closeModal()
+        );
     }
   };
 

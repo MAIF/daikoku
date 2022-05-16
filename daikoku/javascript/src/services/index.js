@@ -16,6 +16,7 @@ export const oneOfMyTeam = (id) => customFetch(`/api/me/teams/${id}`);
 
 export const getVisibleApiWithId = (id) => customFetch(`/api/me/visible-apis/${id}`);
 export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}/${version}`);
+export const getVisibleApiGroup = (id) => customFetch(`/api/me/visible-groups/${id}`);
 export const getTeamVisibleApi = (teamId, apiId, version) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 // export const myTeams = () => customFetch('/api/me/teams');
@@ -128,6 +129,9 @@ export const teamHome = (teamId) => customFetch(`/api/teams/${teamId}/home`);
 
 export const teamApi = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
+
+export const teamApiGroup = (teamId, apiGroupId) => 
+  customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`)
 
 export const teamApis = (teamId) => customFetch(`/api/teams/${teamId}/apis`);
 export const team = (teamId) => customFetch(`/api/teams/${teamId}`);
@@ -347,6 +351,7 @@ export const getTenantNames = (ids) =>
 export const fetchNewTenant = () => customFetch('/api/entities/tenant');
 export const fetchNewTeam = () => customFetch('/api/entities/team');
 export const fetchNewApi = () => customFetch('/api/entities/api');
+export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
@@ -356,6 +361,11 @@ export const checkIfApiNameIsUnique = (name, id) =>
   customFetch('/api/apis/_names', {
     method: 'POST',
     body: JSON.stringify({ name, id }),
+  });
+export const checkIfApiGroupNameIsUnique = (name) =>
+  customFetch('/api/groups/_names', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
   });
 
 export const getSessions = () => customFetch('/api/admin/sessions');
@@ -929,6 +939,13 @@ export const graphql = {
           _humanReadableId
           currentVersion
           name
+          apis {
+            api {
+              _id
+              _humanReadableId
+              name
+            }
+          }
         }
       }
     `),
@@ -945,6 +962,82 @@ export const graphql = {
               otoroshiSettings
             }
             aggregationApiKeysSecurity
+          }
+        }
+      }
+    `),
+  apiByIdsWithPlans: gql(`
+      query filteredApi ($id: String!) {
+        api (id: $id) {
+          _id
+          _humanReadableId
+          published
+          currentVersion
+          name
+          smallDescription
+          description
+          tags
+          visibility
+          team {
+            _id
+            _humanReadableId
+            name
+          }
+          possibleUsagePlans {
+            _id
+            customName
+            customDescription
+            visibility
+            ... on QuotasWithLimits {
+              maxPerSecond
+              maxPerDay
+              maxPerMonth
+            }
+            ... on FreeWithQuotas {
+              maxPerSecond
+              maxPerDay
+              maxPerMonth
+            }
+            ... on QuotasWithoutLimits {
+              maxPerSecond
+              maxPerDay
+              maxPerMonth
+            }
+            subscriptionProcess
+            allowMultipleKeys
+            otoroshiTarget {
+              otoroshiSettings
+            }
+            aggregationApiKeysSecurity
+          }
+          apis {
+            api {
+              _id
+              _humanReadableId
+              name
+              smallDescription
+              tags
+              categories
+              currentVersion
+              swagger { content }
+              testing { enabled }
+              posts { _id }
+              issues { _id }
+              team {
+                _id
+                _humanReadableId
+                name
+              }
+            }
+            authorizations {
+              team
+              authorized
+              pending
+            }
+          }
+          authorizedTeams {
+            _id
+            name
           }
         }
       }
@@ -972,8 +1065,16 @@ export const graphql = {
           currentVersion
           team {
             _id
+            _humanReadableId
             name
             avatar
+          }
+          apis {
+            api {
+              _id
+              _humanReadableId
+              name
+            }
           }
         }
         authorizations {

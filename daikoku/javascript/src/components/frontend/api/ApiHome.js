@@ -3,7 +3,7 @@ import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useMatch } from 'react-router-dom';
 import Select from 'react-select';
 
 import * as Services from '../../../services';
@@ -16,7 +16,7 @@ import {
   ApiIssue,
 } from '.';
 import { converter } from '../../../services/showdown';
-import { Can, manage, apikey, ActionWithTeamSelector, CanIDoAction } from '../../utils';
+import { Can, manage, apikey, ActionWithTeamSelector, CanIDoAction, Option } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal, updateUser, I18nContext } from '../../../core';
 import StarsButton from './StarsButton';
@@ -27,7 +27,7 @@ import 'highlight.js/styles/monokai.css';
 
 window.hljs = hljs;
 
-const ApiDescription = ({ api }) => {
+export const ApiDescription = ({ api }) => {
   useEffect(() => {
     window.$('pre code').each((i, block) => {
       hljs.highlightElement(block);
@@ -44,7 +44,7 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({ api, ownerTeam, connectedUser, toggleStar, tab }) => {
+export const ApiHeader = ({ api, ownerTeam, connectedUser, toggleStar, tab }) => {
   const navigate = useNavigate();
   const params = useParams();
 
@@ -115,6 +115,7 @@ const ApiHomeComponent = ({
   connectedUser,
   updateUser,
   tenant,
+  groupView
 }) => {
   const [api, setApi] = useState(undefined);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -125,13 +126,15 @@ const ApiHomeComponent = ({
   const [showGuestModal, setGuestModal] = useState(false);
 
   const navigate = useNavigate();
-  const params = useParams();
+  const defaultParams = useParams();
+  const apiGroupMatch = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab');
+  const params = Option(apiGroupMatch).map(match => match.params).getOrElse(defaultParams);
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const { client } = useContext(getApolloContext());
 
-  const { addMenu } = useApiFrontOffice(api, ownerTeam)
+  const { addMenu } = groupView ? { addMenu: () => { } } : useApiFrontOffice(api, ownerTeam)
 
   useEffect(() => {
     updateSubscriptions(params.apiId);
@@ -146,7 +149,7 @@ const ApiHomeComponent = ({
   
 
   useEffect(() => {
-    if (myTeams && subscriptions) {
+    if (myTeams && subscriptions && !groupView) {
       const subscribingTeams = myTeams
         .filter((team) => subscriptions.some((sub) => sub.team === team._id));
       const viewApiKeyLink = (

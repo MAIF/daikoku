@@ -19,6 +19,7 @@ import {
   MyHome,
   MaybeHomePage,
   ApiHome,
+  ApiGroupHome,
   UnauthenticatedHome,
   UnauthenticatedTopBar,
   UnauthenticatedFooter,
@@ -368,6 +369,11 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 <Route 
                   path='/:teamId/settings*'
                   element={<TeamBackOfficeRouter tenant={tenant} />} />
+
+                <Route 
+                  path=':teamId/apigroups/:apiGroupId/:tab/*'
+                  element={<FrontOfficeRoute><ApiGroupHome /></FrontOfficeRoute>}
+                />
 
                 <Route 
                   path='/:teamId/:apiId/:versionId/:tab/*' 

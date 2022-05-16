@@ -1,0 +1,11 @@
+{
+  "apps": [
+    {
+      "app_id": "app_b60af9a0-0d8d-45e4-a540-2c2df072bad5",
+      "org_id": "orga_00575eaa-d956-4b65-90bb-7f87706b3d5a",
+      "deploy_url": "https://github.com/MAIFX/daikoku-b2b.git",
+      "name": "prod-iaas-daikoku",
+      "alias": "prod-iaas-daikoku"
+    }
+  ]
+}

@@ -83,6 +83,18 @@ case class PostgresTenantCapableApiRepo(
   override def repo(): PostgresRepo[Api, ApiId] = _repo()
 }
 
+case class PostgresTenantCapableApiGroupRepo(
+    _repo: () => PostgresRepo[ApiGroup, ApiGroupId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiGroup, ApiGroupId])
+    extends PostgresTenantCapableRepo[ApiGroup, ApiGroupId]
+    with ApiGroupRepo {
+  override def tenantRepo(
+      tenant: TenantId): PostgresTenantAwareRepo[ApiGroup, ApiGroupId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[ApiGroup, ApiGroupId] = _repo()
+}
+
 case class PostgresTenantCapableApiSubscriptionRepo(
     _repo: () => PostgresRepo[ApiSubscription, ApiSubscriptionId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiSubscription,
@@ -409,6 +421,9 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   private val _apiRepo: ApiRepo = PostgresTenantCapableApiRepo(
     () => new PostgresApiRepo(env, reactivePg),
     t => new PostgresTenantApiRepo(env, reactivePg, t))
+  private val _apiGroupRepo: ApiGroupRepo = PostgresTenantCapableApiGroupRepo(
+    () => new PostgresApiGroupRepo(env, reactivePg),
+    t => new PostgresTenantApiGroupRepo(env, reactivePg, t))
   private val _apiSubscriptionRepo: ApiSubscriptionRepo =
     PostgresTenantCapableApiSubscriptionRepo(
       () => new PostgresApiSubscriptionRepo(env, reactivePg),
@@ -475,6 +490,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   override def teamRepo: TeamRepo = _teamRepo
 
   override def apiRepo: ApiRepo = _apiRepo
+
+  override def apiGroupRepo: ApiGroupRepo = _apiGroupRepo
 
   override def apiSubscriptionRepo: ApiSubscriptionRepo = _apiSubscriptionRepo
 
@@ -605,6 +622,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     collections ++= List(
       teamRepo.forAllTenant(),
       apiRepo.forAllTenant(),
+      apiGroupRepo.forAllTenant(),
       apiSubscriptionRepo.forAllTenant(),
       apiDocumentationPageRepo.forAllTenant(),
       apiPostRepo.forAllTenant(),
@@ -669,6 +687,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
               apiRepo
                 .forAllTenant()
                 .save(ApiFormat.reads(payload).get)
+            case ("apiGroups", payload) =>
+              apiGroupRepo
+                .forAllTenant()
+                .save(ApiGroupFormat.reads(payload).get)
             case ("apisubscriptions", payload) =>
               apiSubscriptionRepo
                 .forAllTenant()
@@ -759,6 +781,15 @@ class PostgresTenantApiRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)
   override def tableName: String = "apis"
 
   override def extractId(value: Api): String = value.id.value
+}
+
+class PostgresTenantApiGroupRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)
+    extends PostgresTenantAwareRepo[ApiGroup, ApiGroupId](env, reactivePg, tenant) {
+  override def format: Format[ApiGroup] = json.ApiGroupFormat
+
+  override def tableName: String = "apiGroups"
+
+  override def extractId(value: ApiGroup): String = value.id.value
 }
 
 class PostgresTenantTranslationRepo(env: Env,
@@ -962,6 +993,15 @@ class PostgresApiRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[Api] = json.ApiFormat
 
   override def extractId(value: Api): String = value.id.value
+}
+
+class PostgresApiGroupRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[ApiGroup, ApiGroupId](env, reactivePg) {
+  override def tableName: String = "apiGroups"
+
+  override def format: Format[ApiGroup] = json.ApiGroupFormat
+
+  override def extractId(value: ApiGroup): String = value.id.value
 }
 
 class PostgresApiSubscriptionRepo(env: Env, reactivePg: ReactivePg)

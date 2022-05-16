@@ -284,9 +284,9 @@ class ApiController(DaikokuAction: DaikokuAction,
     UberPublicUserAccess(AuditTrailEvent("@{user.name} is accessing visible api @{api.name}"))(ctx) {
       env.dataStore.apiRepo
         .forTenant(ctx.tenant)
-        .findById(apiId)
+        .findByIdOrHrId(apiId)
         .flatMap {
-          case None => FastFuture.successful(AppError.render(ApiNotFound))
+          case None => ApiNotFound.renderF()
           case Some(api) => getApi(api, ctx)
         }
     }
@@ -1179,7 +1179,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
         for {
           _ <- apiKeyStatsJob.syncForSubscription(subscription, ctx.tenant)
-          delete <- apiService.deleteApiKey(ctx.tenant, subscription, plan, api, team)
+          delete <- apiService.deleteApiKey(ctx.tenant, subscription, plan, team)
             .flatMap(delete => {
               if (plan.visibility == Private) {
                 env.dataStore.apiRepo.forTenant(ctx.tenant)
@@ -1297,7 +1297,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     PublicUserAccess(
       AuditTrailEvent(s"@{user.name} is checking if api name (@{api.name}) is unique")
     )(ctx) {
-      val name = (ctx.request.body.as[JsObject] \ "name").as[String].toLowerCase.trim
+      val name = (ctx.request.body.as[JsObject] \ "name").asOpt[String].map(_.toLowerCase.trim).getOrElse("")
       val id = (ctx.request.body.as[JsObject] \ "id").asOpt[String].map(_.trim)
       ctx.setCtxValue("api.name", name)
 
@@ -1456,7 +1456,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                 .findNotDeleted(Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson))
                 .map(subs => (plan, subs))
             })
-            .via(deleteApiSubscriptionsAsFlow(tenant = ctx.tenant, api = api, user = ctx.user))
+            .via(apiService.deleteApiSubscriptionsAsFlow(tenant = ctx.tenant, apiOrGroupName = api.name, user = ctx.user))
             .runWith(Sink.ignore)
             .flatMap(_ => env.dataStore.apiRepo.forTenant(ctx.tenant.id).deleteByIdLogically(apiId))
             .map(_ => Ok(Json.obj("done" -> true)))
@@ -1783,69 +1783,6 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
 
-  def deleteApiSubscriptionsAsFlow(tenant: Tenant, api: Api, user: User) = Flow[(UsagePlan, Seq[ApiSubscription])]
-    .map(tuple => {
-      tuple._2.map(subscription => {
-        (tuple._1, subscription, Notification(
-          id = NotificationId(BSONObjectID.generate().stringify),
-          tenant = tenant.id,
-          team = Some(subscription.team),
-          sender = user,
-          notificationType = NotificationType.AcceptOnly,
-          action = NotificationAction.ApiKeyDeletionInformation(api.name, subscription.apiKey.clientId)
-        ))
-      })
-    })
-    .flatMapConcat(seq => Source(seq.toList))
-    //todo: update to 5 parralelism if team.subscriptions is no more used
-    .mapAsync(1)(sub => {
-      val plan = sub._1
-      val subscription = sub._2
-      val notification = sub._3
-
-      plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
-        tenant.otoroshiSettings.find(_.id == id)
-      } match {
-        case None => FastFuture.successful(false)
-        case Some(otoSettings) =>
-          implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-          env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team).flatMap {
-            case None => FastFuture.successful(false)
-            case Some(subscriberTeam) => for {
-              _       <- env.dataStore.notificationRepo.forTenant(tenant).save(notification)
-              _       <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
-              childs  <- env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-                .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
-            } yield subscription.parent match {
-              case Some(_)                    => for {
-                _ <- apiService.extractSubscriptionFromAggregation(subscription, tenant, user)
-                _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteByIdLogically(subscription.id)
-                _ <- env.dataStore.teamRepo
-                  .forTenant(tenant.id)
-                  .save(subscriberTeam.copy(subscriptions = subscriberTeam.subscriptions.filterNot(_ == subscription.id)))
-              } yield ()
-              case None if childs.nonEmpty    =>
-                childs match {
-                  case newParent :: newChilds => for {
-                    subRepo <- env.dataStore.apiSubscriptionRepo.forTenantF(tenant)
-                    _ <- subRepo.save(newParent.copy(parent = None))
-                    _ <- subRepo.updateManyByQuery(
-                      Json.obj("_id" -> Json.obj("$in" -> JsArray(newChilds.map(_.id.asJson)))),
-                      Json.obj("$set" -> Json.obj("parent" -> newParent.id.asJson)))
-                    _ <- subRepo.deleteByIdLogically(subscription.id)
-                    _ <- env.dataStore.teamRepo
-                      .forTenant(tenant.id)
-                      .save(subscriberTeam.copy(subscriptions = subscriberTeam.subscriptions.filterNot(_ == subscription.id)))
-                    _ <- otoroshiSynchronisator.verify(Json.obj("_id" -> newParent.id.asJson))
-
-                  } yield ()
-                }
-              case _ => apiService.deleteApiKey(tenant, subscription, plan, api, subscriberTeam)
-            }
-          }
-      }
-    })
-
   def deleteApiPlansSubscriptions(plans: Seq[UsagePlan], api: Api, tenant: Tenant, user: User): Future[Done] = {
     implicit val mat: Materializer = env.defaultMaterializer
 
@@ -1854,7 +1791,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         env.dataStore.apiSubscriptionRepo.forTenant(tenant)
           .findNotDeleted(Json.obj("api" -> api.id.asJson, "plan" -> Json.obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))))
           .map(seq => (plan, seq)))
-      .via(deleteApiSubscriptionsAsFlow(tenant, api, user))
+      .via(apiService.deleteApiSubscriptionsAsFlow(tenant, api.name, user))
       .runWith(Sink.ignore)
       .recover {
         case e =>

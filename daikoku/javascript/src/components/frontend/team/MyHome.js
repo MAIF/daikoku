@@ -99,14 +99,15 @@ function MyHomeComponent(props) {
   const redirectToApiPage = (api) => {
     const apiOwner = state.teams.find((t) => t._id === api.team._id);
 
-    const route = (version) =>
+    const route = (version) => api.apis ?
+      `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/apigroups/${api._humanReadableId}/apis` :
       `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}/description`;
 
     if (api.isDefault) navigate(route(api.currentVersion));
     else
-      Services.getDefaultApiVersion(api._humanReadableId).then((res) =>
-        navigate(route(res.defaultVersion))
-      );
+      Services.getDefaultApiVersion(api._humanReadableId)
+        .then((res) => navigate(route(res.defaultVersion))
+        );
   };
 
   const redirectToEditPage = (api) => {
@@ -116,10 +117,12 @@ function MyHomeComponent(props) {
     if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
       props
         .updateTeam(adminTeam)
-        .then(() =>
-          navigate(
+        .then(() => {
+          const url = api.apis ?
+            `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos` :
             `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-          )
+          navigate(url)
+        }
         );
     }
   };
@@ -142,18 +145,6 @@ function MyHomeComponent(props) {
               </h1>
               <Description description={props.tenant.description} />
             </div>
-            <Can I={manage} a={TENANT}>
-              <div className="col-sm-1 d-flex flex-column">
-                <div>
-                  <Link
-                    to={`/settings/settings`}
-                    className="tenant__settings float-right btn btn-sm btn-access-negative"
-                  >
-                    <i className="fas fa-cogs" />
-                  </Link>
-                </div>
-              </div>
-            </Can>
           </div>
         </div>
       </section>
