@@ -139,7 +139,6 @@ export const MultiStepForm = ({
           guards,
           actions: {
             setValue: assign((context, response) => {
-              console.debug({context, response})
               return { ...context, ...response.value };
             }),
             reset: assign((_, response) => {
@@ -261,10 +260,7 @@ const ComponentedForm = ({ value, valid, component, reference }) => {
     <div className="d-flex flex-column flex-grow-1">
       {React.createElement(component, {
         value,
-        onChange: x => {
-          console.debug({value, x})
-          valid(x)
-        },
+        onChange: x => valid(x),
         reference
       })}
     </div>

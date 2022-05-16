@@ -73,6 +73,17 @@ case class MongoTenantCapableApiRepo(
   override def repo(): MongoRepo[Api, ApiId] = _repo()
 }
 
+case class MongoTenantCapableApiGroupRepo(
+    _repo: () => MongoRepo[ApiGroup, ApiGroupId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[ApiGroup, ApiGroupId])
+  extends MongoTenantCapableRepo[ApiGroup, ApiGroupId]
+    with ApiGroupRepo {
+  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[ApiGroup, ApiGroupId] =
+    _tenantRepo(tenant)
+
+  override def repo(): MongoRepo[ApiGroup, ApiGroupId] = _repo()
+}
+
 case class MongoTenantCapableApiSubscriptionRepo(
     _repo: () => MongoRepo[ApiSubscription, ApiSubscriptionId],
     _tenantRepo: TenantId => MongoTenantAwareRepo[ApiSubscription,
@@ -296,6 +307,10 @@ class MongoDataStore(context: Context, env: Env)
   private val _apiRepo: ApiRepo = MongoTenantCapableApiRepo(
     () => new MongoApiRepo(env, reactiveMongoApi),
     t => new MongoTenantApiRepo(env, reactiveMongoApi, t))
+  private val _apiGroupRepo: ApiGroupRepo = MongoTenantCapableApiGroupRepo(
+    () => new MongoApiGroupRepo(env, reactiveMongoApi),
+    t => new MongoTenantApiGroupRepo(env, reactiveMongoApi, t)
+  )
   private val _apiSubscriptionRepo: ApiSubscriptionRepo =
     MongoTenantCapableApiSubscriptionRepo(
       () => new MongoApiSubscriptionRepo(env, reactiveMongoApi),
@@ -365,6 +380,8 @@ class MongoDataStore(context: Context, env: Env)
 
   override def apiRepo: ApiRepo = _apiRepo
 
+  override def apiGroupRepo: ApiGroupRepo = _apiGroupRepo
+
   override def apiSubscriptionRepo: ApiSubscriptionRepo = _apiSubscriptionRepo
 
   override def apiDocumentationPageRepo: ApiDocumentationPageRepo =
@@ -423,6 +440,7 @@ class MongoDataStore(context: Context, env: Env)
     collections ++= List(
       teamRepo.forAllTenant(),
       apiRepo.forAllTenant(),
+      apiGroupRepo.forAllTenant(),
       apiSubscriptionRepo.forAllTenant(),
       apiDocumentationPageRepo.forAllTenant(),
       apiPostRepo.forAllTenant(),
@@ -461,6 +479,7 @@ class MongoDataStore(context: Context, env: Env)
       _ <- userRepo.deleteAll()
       _ <- teamRepo.forAllTenant().deleteAll()
       _ <- apiRepo.forAllTenant().deleteAll()
+      _ <- apiGroupRepo.forAllTenant().deleteAll()
       _ <- apiSubscriptionRepo.forAllTenant().deleteAll()
       _ <- apiDocumentationPageRepo.forAllTenant().deleteAll()
       _ <- apiPostRepo.forAllTenant().deleteAll()
@@ -496,6 +515,10 @@ class MongoDataStore(context: Context, env: Env)
             apiRepo
               .forAllTenant()
               .save(ApiFormat.reads(payload).get)
+          case ("apiGroups", payload) =>
+            apiGroupRepo
+              .forAllTenant()
+              .save(ApiGroupFormat.reads(payload).get)
           case ("apisubscriptions", payload) =>
             apiSubscriptionRepo
               .forAllTenant()
@@ -595,6 +618,17 @@ class MongoTenantApiRepo(env: Env,
   override def format: Format[Api] = json.ApiFormat
 
   override def extractId(value: Api): String = value.id.value
+}
+
+class MongoTenantApiGroupRepo(env: Env,
+                              reactiveMongoApi: ReactiveMongoApi,
+                              tenant: TenantId)
+    extends MongoTenantAwareRepo[ApiGroup, ApiGroupId](env, reactiveMongoApi, tenant) {
+  override def collectionName: String = "ApiGroups"
+
+  override def format: Format[ApiGroup] = json.ApiGroupFormat
+
+  override def extractId(value: ApiGroup): String = value.id.value
 }
 
 class MongoTenantTranslationRepo(env: Env,
@@ -797,6 +831,15 @@ class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[Api] = json.ApiFormat
 
   override def extractId(value: Api): String = value.id.value
+}
+
+class MongoApiGroupRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[ApiGroup, ApiGroupId](env, reactiveMongoApi) {
+  override def collectionName: String = "ApiGroups"
+
+  override def format: Format[ApiGroup] = json.ApiGroupFormat
+
+  override def extractId(value: ApiGroup): String = value.id.value
 }
 
 class MongoApiSubscriptionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)

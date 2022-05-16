@@ -56,7 +56,7 @@ const ApiListComponent = (props) => {
     computeTops(props.apis);
   }, [props.apis]);
 
-  
+
 
   const redirectToTeam = (team) => {
     navigate(`/${team._humanReadableId}/settings`);
@@ -142,14 +142,14 @@ const ApiListComponent = (props) => {
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (teamMatch(api, searchedTrim)) {
-            return true;
-          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-        })
+        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (teamMatch(api, searchedTrim)) {
+          return true;
+        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+      })
   )
     .groupBy('_humanReadableId')
     .map((value) => {
@@ -236,26 +236,6 @@ const ApiListComponent = (props) => {
             </div>
           </Can>
         )}
-        {props.apiCreationPermitted && !props.team && !props.connectedUser.isGuest && (
-          <ActionWithTeamSelector
-            title={translateMethod('api.creation.title.modal')}
-            description={translateMethod('api.creation.description.modal')}
-            teams={props.myTeams
-              .filter((t) => t.type !== 'Admin')
-              .filter((t) => !props.tenant.creationSecurity || t.apisCreationPermission)
-              .filter((t) =>
-                CanIDoAction(props.connectedUser, manage, api, t, props.apiCreationPermitted)
-              )}
-            action={(team) => createNewApi(team)}
-            withAllTeamSelector={false}
-          >
-            <div className="col-12 col-sm-2">
-              <button className="btn btn-access-negative mb-2 float-right">
-                <i className="fas fa-plus-square" /> API
-              </button>
-            </div>
-          </ActionWithTeamSelector>
-        )}
       </div>
       <div className="row mb-2 view-selectors">
         <div className="col-9 d-flex justify-content-end">
@@ -274,7 +254,7 @@ const ApiListComponent = (props) => {
         </div>
       </div>
       <div className="row">
-        <div className="section col-9 d-flex flex-column">
+        <div className={classNames("section d-flex flex-column", {'col-9': !props.groupView, 'col-12': props.groupView})}>
           <div
             className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
@@ -283,28 +263,31 @@ const ApiListComponent = (props) => {
             })}
           >
             {filterPreview(filteredApis.length)}
-            {paginateApis.map((api) => (
-              <ApiCard
-                key={api._id}
-                user={user}
-                api={api}
-                showTeam={props.showTeam}
-                teamVisible={props.teamVisible}
-                team={props.teams.find((t) => t._id === api.team._id)}
-                myTeams={props.myTeams}
-                askForApiAccess={(teams) => props.askForApiAccess(api, teams)}
-                redirectToTeamPage={(team) => props.redirectToTeamPage(team)}
-                redirectToApiPage={() => props.redirectToApiPage(api)}
-                redirectToEditPage={() => props.redirectToEditPage(api)}
-                handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
-                toggleStar={() => props.toggleStar(api)}
-                handleCategorySelect={(category) =>
-                  setSelectedCategory(categories.find((c) => c.value === category))
-                }
-                view={view}
-                connectedUser={props.connectedUser}
-              />
-            ))}
+            {paginateApis.map((api) => {
+              return (
+                <ApiCard
+                  key={api._id}
+                  user={user}
+                  api={api}
+                  showTeam={props.showTeam}
+                  teamVisible={props.teamVisible}
+                  team={props.teams.find((t) => t._id === api.team._id)}
+                  myTeams={props.myTeams}
+                  askForApiAccess={(teams) => props.askForApiAccess(api, teams)}
+                  redirectToTeamPage={(team) => props.redirectToTeamPage(team)}
+                  redirectToApiPage={() => props.redirectToApiPage(api)}
+                  redirectToEditPage={() => props.redirectToEditPage(api)}
+                  handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
+                  toggleStar={() => props.toggleStar(api)}
+                  handleCategorySelect={(category) =>
+                    setSelectedCategory(categories.find((c) => c.value === category))
+                  }
+                  view={view}
+                  connectedUser={props.connectedUser}
+                  groupView={props.groupView}
+                />
+              )
+            })}
           </div>
           <div className="apis__pagination">
             <Pagination
@@ -323,7 +306,7 @@ const ApiListComponent = (props) => {
             />
           </div>
         </div>
-        <div className="d-flex col-3 col-sm-3 text-muted flex-column px-3">
+        {!props.groupView && <div className="d-flex col-3 col-sm-3 text-muted flex-column px-3">
           {!props.team && !props.connectedUser.isGuest && (
             <YourTeams
               teams={props.myTeams}
@@ -350,7 +333,7 @@ const ApiListComponent = (props) => {
               handleClick={setSelectedCategory}
             />
           )}
-        </div>
+        </div>}
       </div>
     </section>
   );

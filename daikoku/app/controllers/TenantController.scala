@@ -10,6 +10,7 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TenantFormat
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.utils.jwt.JWKSAlgoSettings

@@ -100,29 +100,33 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             pages = Seq.empty
           ),
           visibility = ApiVisibility.Public,
-          possibleUsagePlans = Seq(FreeWithQuotas(
-            id = UsagePlanId("default"),
-            maxPerSecond = 10,
-            maxPerDay = 500,
-            maxPerMonth = 10000,
-            currency = Currency(
-              code = "EUR"
-            ),
-            billingDuration = BillingDuration(
-              value = 1,
-              unit = BillingTimeUnit.Month
-            ),
-            customName = Some("Free plan"),
-            customDescription = Some(
-              "Free plan with limited number of calls per day and per month"),
-            otoroshiTarget = None,
-            allowMultipleKeys = Some(false),
-            autoRotation = None,
-            subscriptionProcess = SubscriptionProcess.Automatic,
-            integrationProcess = IntegrationProcess.ApiKey
-          )),
+          possibleUsagePlans = Seq.empty,
           defaultUsagePlan = UsagePlanId("default")
         ).asJson)
+    }
+  }
+
+  def newApiGroup() = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent(s"@{user.name} has asked for a template entity of type ApiGroup"))(ctx) {
+      Ok(Api(
+        id = ApiId(BSONObjectID.generate().stringify),
+        tenant = ctx.tenant.id,
+        team = TeamId("none"),
+        name = "New API",
+        apis = Some(Set.empty),
+        smallDescription = "A new API group",
+        description = "A new API group",
+        lastUpdate = DateTime.now(),
+        documentation = ApiDocumentation(
+          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+          tenant = ctx.tenant.id,
+          lastModificationAt = DateTime.now(),
+          pages = Seq.empty
+        ),
+        visibility = ApiVisibility.Public,
+        possibleUsagePlans = Seq.empty,
+        defaultUsagePlan = UsagePlanId("default")
+      ).asJson)
     }
   }
 

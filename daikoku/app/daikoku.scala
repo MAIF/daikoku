@@ -82,6 +82,7 @@ package object modules {
     lazy val homeController = wire[HomeController]
     lazy val mockController = wire[MockController]
     lazy val apiController = wire[ApiController]
+    lazy val apiGroupController = wire[ApiGroupController]
     lazy val loginController = wire[LoginController]
     lazy val teamController = wire[TeamController]
     lazy val notificationController = wire[NotificationController]

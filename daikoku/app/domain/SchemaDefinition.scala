@@ -1,5 +1,7 @@
 package fr.maif.otoroshi.daikoku.domain
 
+import akka.http.scaladsl.util.FastFuture
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
@@ -349,12 +351,12 @@ object SchemaDefinition {
         Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod),
         Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration),
         Field("typeName", StringType, resolve = _.value.typeName),
-        Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility),
+        Field("visibility", StringType, resolve = _.value.visibility.name),
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
             Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         ),
-        Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess),
-        Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess),
+        Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name),
+        Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name),
         Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity),
         Field("type", StringType, resolve = _.value.typeName)
       )
@@ -382,12 +384,12 @@ object SchemaDefinition {
       ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
-      ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
-        Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
+        Field("visibility", StringType, resolve = _.value.visibility.name)),
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
@@ -403,12 +405,12 @@ object SchemaDefinition {
       ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
-      ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
-        Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
+        Field("visibility", StringType, resolve = _.value.visibility.name)),
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
@@ -425,12 +427,12 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
-      ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
-        Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
+        Field("visibility", StringType, resolve = _.value.visibility.name)),
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
@@ -447,12 +449,12 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
-      ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
-        Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
+        Field("visibility", StringType, resolve = _.value.visibility.name)),
       ReplaceField("authorizedTeams",
           Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
             Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
@@ -469,12 +471,12 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
-      ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
-        Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
+        Field("visibility", StringType, resolve = _.value.visibility.name)),
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
@@ -737,8 +739,16 @@ object SchemaDefinition {
             case None => None
           }
         ),
-      )
-    )
+        Field("apis", OptionType(ListType(GraphQLApiType)), resolve = ctx => {
+          ctx.value.apis match {
+            case None => FastFuture.successful(None)
+            case Some(apis) => CommonServices.getApisByIds(apis.toSeq.map(_.value))(ctx.ctx._2, env, e).map {
+              case Left(apis) => Some(apis)
+              case Right(_) => None
+            }
+          }
+        })
+    ))
 
     lazy val  AuthorizationApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationApi]()
 
@@ -1205,10 +1215,16 @@ object SchemaDefinition {
       def toQuery(maybeIds: Option[Seq[String]], maybeTeamId: Option[String]): JsObject = {
         (maybeIds, maybeTeamId) match {
           case (None, None) => Json.obj()
-          case (Some(ids), None) => Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString))))
+          case (Some(ids), None) => Json.obj("$or" -> Json.arr(
+            Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString)))),
+            Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(ids.map(JsString))))
+          ))
           case (None, Some(teamId)) => Json.obj("team" -> teamId)
           case (Some(ids), Some(teamId)) => Json.obj(
-            "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString))),
+            "$or" -> Json.arr(
+              Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString)))),
+              Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(ids.map(JsString))))
+            ),
             "team" -> teamId
           )
         }
@@ -1217,7 +1233,7 @@ object SchemaDefinition {
 
       List(
         Field(fieldName, OptionType(fieldType), arguments = ID :: Nil,
-          resolve = ctx => repo(ctx).findById(ctx.arg(ID)).asInstanceOf[Future[Option[Out]]]),
+          resolve = ctx => repo(ctx).findByIdOrHrId(ctx.arg(ID)).asInstanceOf[Future[Option[Out]]]),
         Field(s"${fieldName}s", ListType(fieldType), arguments = LIMIT :: OFFSET :: IDS :: TEAM_ID :: Nil,
           resolve = ctx => {
             (ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(IDS), ctx.arg(TEAM_ID)) match {

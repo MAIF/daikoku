@@ -63,6 +63,44 @@ export const AddPanel = ({ teams }) => {
     }
   };
 
+  const createApiGroup = (teamId) => {
+    if (apiCreationPermitted) {
+      if (!teamId) {
+        return openTeamSelectorModal({
+          allTeamSelector: false,
+          title: translateMethod('apigroup.creation.title.modal'),
+          description: translateMethod('apigroup.creation.description.modal'),
+          teams: myTeams
+            .filter((t) => t.type !== 'Admin')
+            .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
+            .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+          action: teams => createApiGroup(teams[0]),
+        })(dispatch)
+      } else {
+        const team = myTeams.find((t) => teamId === t._id);
+
+        return Services.fetchNewApiGroup()
+          .then((e) => {
+            const verb = faker.hacker.verb();
+            const name =
+              verb.charAt(0).toUpperCase() +
+              verb.slice(1) +
+              ' ' +
+              faker.hacker.adjective() +
+              ' ' +
+              faker.hacker.noun() +
+              ' apigroup';
+
+            const _humanReadableId = name.replace(/\s/gi, '-').toLowerCase().trim();
+            return { ...e, name, _humanReadableId, team: team._id };
+          })
+          .then((newApiGroup) => navigate(`/${team._humanReadableId}/settings/apigroups/${newApiGroup._id}/infos`,
+            { state: { newApiGroup } })
+          );
+      }
+    }
+  }
+
   const maybeTeam = Option(match)
     .map(m => m.params)
     .map(p => p.teamId)
@@ -93,7 +131,13 @@ export const AddPanel = ({ teams }) => {
               </button>
             </span>
             <span className='block__entry__link d-flex align-items-center justify-content-between' onClick={() => createApi(maybeTeam)}>
-            <span>API</span>
+              <span>API</span>
+              <button className="btn btn-sm btn-access-negative me-1">
+                <i className="fas fa-plus-circle" />
+              </button>
+            </span>
+            <span className='block__entry__link d-flex align-items-center justify-content-between' onClick={() => createApiGroup(maybeTeam)}>
+              <span>API group</span>
               <button className="btn btn-sm btn-access-negative me-1">
                 <i className="fas fa-plus-circle" />
               </button>

@@ -23,7 +23,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.getRootApi(apiId)
+    Services.getRootApi(props.api._humanReadableId)
       .then((rootApi) => {
         setRootApi(rootApi);
       });
