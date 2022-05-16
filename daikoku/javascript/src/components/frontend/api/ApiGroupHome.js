@@ -4,7 +4,7 @@ import { getApolloContext } from '@apollo/client';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
-import { ApiPricing, ApiDescription, ApiHome, ApiGroupApis, ApiDocumentation, ApiIssue, ApiPost } from './'
+import { ApiHeader, ApiPricing, ApiDescription, ApiHome, ApiGroupApis, ApiDocumentation, ApiIssue, ApiPost } from './'
 import { useApiGroupFrontOffice } from '../../../contexts'
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
@@ -164,43 +164,54 @@ export const ApiGroupHome = ({ }) => {
 
 
   return (
-    <div>
-      {params.tab === 'apis' && !match && (
-        <ApiGroupApis apiGroup={apiGroup} ownerTeam={ownerTeam} subscriptions={subscriptions} />
-      )}
-      {params.tab === 'apis' && match && (
-        <ApiHome groupView />
-      )}
-      {params.tab === 'description' && (
-        <ApiDescription api={apiGroup} ownerTeam={ownerTeam} />
-      )}
-      {params.tab === 'pricing' && (
-        <ApiPricing
-          connectedUser={connectedUser}
-          api={apiGroup}
-          myTeams={myTeams}
-          ownerTeam={ownerTeam}
-          subscriptions={subscriptions}
-          askForApikeys={askForApikeys}
-          pendingSubscriptions={pendingSubscriptions}
-          tenant={tenant}
-        />
-      )}
-      {params.tab === 'documentation' && (
-        <ApiDocumentation api={apiGroup} ownerTeam={ownerTeam} />
-      )}
-      {params.tab === 'issues' && (
-        <ApiIssue
-          api={apiGroup}
-          onChange={(editedApi) => setApi(editedApi)}
-          ownerTeam={ownerTeam}
-          connectedUser={connectedUser}
-        />
-      )}
-      {params.tab === 'news' && (
-        <ApiPost api={apiGroup} ownerTeam={ownerTeam} versionId={apiGroup.currentVersion} />
-      )}
-    </div>
+    <main role="main">
+      {params.tab !== 'apis' && <ApiHeader
+        api={apiGroup}
+        ownerTeam={ownerTeam}
+        connectedUser={connectedUser}
+        tab={params.tab}
+      />}
+      <div className="album py-2 col-12 min-vh-100">
+        <div className="container">
+          <div className="row pt-3"></div>
+          {params.tab === 'apis' && !match && (
+            <ApiGroupApis apiGroup={apiGroup} ownerTeam={ownerTeam} subscriptions={subscriptions} />
+          )}
+          {params.tab === 'apis' && match && (
+            <ApiHome groupView />
+          )}
+          {params.tab === 'description' && (
+            <ApiDescription api={apiGroup} ownerTeam={ownerTeam} />
+          )}
+          {params.tab === 'pricing' && (
+            <ApiPricing
+              connectedUser={connectedUser}
+              api={apiGroup}
+              myTeams={myTeams}
+              ownerTeam={ownerTeam}
+              subscriptions={subscriptions}
+              askForApikeys={askForApikeys}
+              pendingSubscriptions={pendingSubscriptions}
+              tenant={tenant}
+            />
+          )}
+          {params.tab === 'documentation' && (
+            <ApiDocumentation api={apiGroup} ownerTeam={ownerTeam} />
+          )}
+          {params.tab === 'issues' && (
+            <ApiIssue
+              api={apiGroup}
+              onChange={(editedApi) => setApi(editedApi)}
+              ownerTeam={ownerTeam}
+              connectedUser={connectedUser}
+            />
+          )}
+          {params.tab === 'news' && (
+            <ApiPost api={apiGroup} ownerTeam={ownerTeam} versionId={apiGroup.currentVersion} />
+          )}
+        </div>
+      </div>
+    </main >
   )
 
 }

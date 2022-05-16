@@ -56,7 +56,7 @@ object AppError {
     case NotificationNotFound                     => NotFound(toJson(error))
     case OtoroshiSettingsNotFound                 => NotFound(toJson(error))
     case TeamUnauthorized                         => play.api.mvc.Results.Unauthorized(toJson(error))
-    case TeamForbidden                            => play.api.mvc.Results.Unauthorized(toJson(error))
+    case TeamForbidden                            => play.api.mvc.Results.Forbidden(toJson(error))
     case ApiUnauthorized                          => play.api.mvc.Results.Unauthorized(toJson(error) ++ Json.obj("status" -> 403))
     case PlanUnauthorized                         => play.api.mvc.Results.Unauthorized(toJson(error))
     case PlanNotFound                             => NotFound(toJson(error))
