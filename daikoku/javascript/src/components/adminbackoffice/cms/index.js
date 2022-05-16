@@ -133,7 +133,7 @@ export const CMSOffice = () => {
                     }
                   });
               }}
-              className="btn btn-sm btn-primary"
+              className="btn btn-sm btn-outline-success"
             >
               {translateMethod('cms.index.new_page')}
             </button>

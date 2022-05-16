@@ -208,7 +208,7 @@ const TeamApiComponent = (props) => {
           }}
           to={`/${props.currentTeam._humanReadableId}/settings/apis`}
         >
-          <i className="fas fa-chevron-left" />
+          <i className="fas fa-chevron-left me-1" />
           {translateMethod(
             'back.to.team',
             false,

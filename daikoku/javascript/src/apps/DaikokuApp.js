@@ -108,7 +108,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
         <NavProvider loginAction={loginAction} loginProvider={loginProvider}>
           <div className="d-flex flex-row">
             <SideBar />
-            <div className="wrapper flex-grow-1" style={{ height: '100vh', overflow: 'scroll' }}>
+            <div className="wrapper flex-grow-1">
               <Routes>
                 <Route
                   path="/me"

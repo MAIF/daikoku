@@ -112,15 +112,36 @@ export const AddPanel = ({ teams }) => {
   return (
     <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
       {/* todo: add a title if API page or tenant or Team */}
-      <div className='mb-3' style={{ height: '40px' }}></div>
+      <div><h3>{translateMethod("Create")}</h3></div>
       <div className="blocks">
         <div className="mb-3 block">
-          <div className="mb-1 block__category">{translateMethod("create")}</div>
-          <div className='ms-2 block__entries d-flex flex-column'>
-            {connectedUser.isDaikokuAdmin && <strong className='block__entry__link'>tenant</strong>}
-            <strong className='block__entry__link' onClick={createTeam}>team</strong>
-            <strong className='block__entry__link' onClick={() => createApi(maybeTeam)}>API</strong>
-            <strong className='block__entry__link' onClick={() => createApiGroup(maybeTeam)}>API group</strong>
+          <div className='block__entries d-flex flex-column'>
+            {connectedUser.isDaikokuAdmin && 
+            <span className='block__entry__link d-flex align-items-center justify-content-between'>
+              <span>tenant</span>
+              <button className="btn btn-sm btn-access-negative me-1">
+                <i className="fas fa-plus-circle" />
+              </button>
+            </span>
+            }
+            <span className='block__entry__link d-flex align-items-center justify-content-between' onClick={createTeam}>
+              <span>team</span>
+              <button className="btn btn-sm btn-access-negative me-1">
+                <i className="fas fa-plus-circle" />
+              </button>
+            </span>
+            <span className='block__entry__link d-flex align-items-center justify-content-between' onClick={() => createApi(maybeTeam)}>
+              <span>API</span>
+              <button className="btn btn-sm btn-access-negative me-1">
+                <i className="fas fa-plus-circle" />
+              </button>
+            </span>
+            <span className='block__entry__link d-flex align-items-center justify-content-between' onClick={() => createApiGroup(maybeTeam)}>
+              <span>API group</span>
+              <button className="btn btn-sm btn-access-negative me-1">
+                <i className="fas fa-plus-circle" />
+              </button>
+            </span>
           </div>
         </div>
         {/* todo: add a block in function of context to create plan...otoroshi or whatever */}
