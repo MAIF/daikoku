@@ -582,9 +582,9 @@ class ApiControllerSpec()
       )(tenant, session)
 
       respError.status mustBe 404
-      (respError.json \ "error").as[String] mustBe "Api not found"
+      (respError.json \ "error").as[String] mustBe "API not found"
 
-      val respError2 = httpJsonCallBlocking(
+      val respError2 = httpJsonCallBlocking(git 
         path =
           s"/api/teams/${teamConsumerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}",
         method = "PUT",
