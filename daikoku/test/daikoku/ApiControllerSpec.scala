@@ -582,6 +582,7 @@ class ApiControllerSpec()
       )(tenant, session)
 
       respError.status mustBe 404
+
       (respError.json \ "error").as[String] mustBe "API not found"
 
       val respError2 = httpJsonCallBlocking(
