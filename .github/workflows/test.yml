@@ -3,6 +3,7 @@ on:
   push:
     paths:
     - 'daikoku/app/**'
+    - 'daikoku/test/**'
     
 
 jobs:
