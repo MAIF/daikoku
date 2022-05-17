@@ -107,7 +107,6 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
       <OtoroshiStatsVizualization
         sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
         fetchData={(from, to) => {
-          console.debug({match, currentTeam, from, to})
           return Services.apiConsumption(
             match.params.apiId,
             match.params.planId,

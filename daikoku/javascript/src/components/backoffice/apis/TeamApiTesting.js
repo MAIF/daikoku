@@ -13,8 +13,6 @@ export const TeamApiTesting = (props) => {
   const team = useSelector((s) => s.context.currentTeam);
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  console.debug({props})
-
   const handleOtoroshiUsage = () => {
     const random = faker.random.alphaNumeric(16);
     const newConfig =

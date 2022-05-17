@@ -77,7 +77,11 @@ export const useApiFrontOffice = (api, team) => {
         links: {
           description: { label: translateMethod("Description"), action: () => navigateTo('description'), className: { active: currentTab === 'description' } },
           pricings: { label: translateMethod("Plan", true), action: () => navigateTo('pricing'), className: { active: currentTab === 'pricing' } },
-          documentation: { label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
+          documentation: {
+            label: translateMethod("Documentation"),
+            action: () => { if (api?.documentation?.page?.length) navigateTo('documentation') },
+            className: { active: currentTab === 'documentation', disabled: !api?.documentation?.page?.length }
+          },
           swagger: {
             label: translateMethod("Swagger"),
             action: () => { if (api?.swagger?.content || api?.swagger?.url) navigateTo('swagger') },
@@ -168,7 +172,11 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
           apis: { label: translateMethod("APIs"), action: () => navigateTo('apis'), className: { active: currentTab === 'apis' } },
           description: { label: translateMethod("Description"), action: () => navigateTo('description'), className: { active: currentTab === 'description' } },
           pricings: { label: translateMethod("Plan", true), action: () => navigateTo('pricing'), className: { active: currentTab === 'pricing' } },
-          documentation: { label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
+          documentation: {
+            label: translateMethod("Documentation"),
+            action: () => { if (apigroup?.documentation?.page?.length) navigateTo('documentation') },
+            className: { active: currentTab === 'documentation', disabled: !apigroup?.documentation?.page?.length }
+          },
           news: {
             label: translateMethod("News"),
             action: () => { if (apigroup?.posts?.length) ('news') },
@@ -308,7 +316,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
           consumptions: { order: 5, visible: !creation, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
           settings: { order: 5, visible: !creation, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
         }
-      }, 
+      },
       actions: {
         links: {
           view: {
@@ -321,7 +329,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
               </Link>
           },
           back: {
-            component: 
+            component:
               <Link
                 className="d-flex justify-content-around mt-3 align-items-center"
                 style={{
@@ -370,7 +378,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
   useEffect(() => {
     setCreation(creation)
   }, [creation])
-  
+
 
 
   return { addMenu };

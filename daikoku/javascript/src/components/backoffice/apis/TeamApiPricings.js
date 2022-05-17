@@ -53,7 +53,6 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
     const otoroshiTarget = rawValues.otoroshiTarget;
     
     if (otoroshiTarget && otoroshiTarget.otoroshiSettings) {
-      console.debug({params, otoroshiTarget})
       Promise.all([
         Services.getOtoroshiGroupsAsTeamAdmin(
           params.teamId,
@@ -130,8 +129,6 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
       onChange(value);
     }
   };
-
-  console.debug({ groups, services })
 
   return (
     <div>
@@ -694,9 +691,7 @@ export const TeamApiPricings = (props) => {
               type: type.object,
               visible: {
                 ref: 'otoroshiTarget.otoroshiSettings',
-                test: (v) => {
-                  console.debug({v})
-                  return !!v},
+                test: (v) => !!v,
               },
               render: (props) => OtoroshiServicesAndGroupSelector({ ...props, translateMethod }),
               label: translateMethod('Authorized entities'),

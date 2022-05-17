@@ -24,7 +24,6 @@ const ContactModalComponent = (props) => {
 
   const sendEmail = () => {
     if (!honeyName && validity) {
-      console.debug({language})
       Services.sendEmails(name, email, subject, body, props.tenant._id, props.team, props.api, language)
         .then(
           () => props.closeModal()

@@ -41,7 +41,10 @@ export const ApiGroupHome = ({ }) => {
               apis: {
                 childs: {
                   description: { label: translateMethod("Description"), action: () => navigateTo('description'), className: { active: match.params.tab === 'description' } },
-                  documentation: { label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: match.params.tab === 'documentation' } },
+                  documentation: { 
+                    label: translateMethod("Documentation"), 
+                    action: () => { if (api?.documentation?.pages?.length) navigateTo('documentation')}, 
+                    className: { active: match.params.tab === 'documentation', disabled: !api?.documentation?.pages?.length } },
                   swagger: {
                     label: translateMethod("Swagger"),
                     action: () => { if (api.swagger.content) navigateTo('swagger') },

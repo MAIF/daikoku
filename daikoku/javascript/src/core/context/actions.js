@@ -60,7 +60,6 @@ export const updateNotifications = (unreadNotificationsCount) => (dispatch) => {
 };
 
 export const updateTenant = (tenant) => (dispatch) => {
-  console.debug({dispatch, tenant})
   return dispatch({
     type: UPDATE_TENANT,
     tenant,
