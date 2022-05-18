@@ -114,21 +114,6 @@ release_daikoku ()  {
 case "${1}" in
   github)
     clean
-    build_manual
-    build_ui
-    build_daikoku
-    ;;
-  travis)
-    clean
-    build_manual
-    build_ui
-    build_daikoku
-    test_server
-    release_daikoku
-    ;;
-  build)
-    clean
-    build_manual
     build_ui
     build_daikoku
     ;;
@@ -140,17 +125,6 @@ case "${1}" in
     ;;
   test)
     test_server
-    ;;
-  release)
-    export TRAVIS_TAG=$2
-    export TRAVIS_BRANCH=$2
-    export TRAVIS_PULL_REQUEST=false
-    release_daikoku
-    ;;
-  pre-release)
-    # from to next
-    # 1.0.0-dev 1.0.0 1.0.1-dev 
-    pre_release_daikoku $2 $3 $4
     ;;
   manual)
     build_manual

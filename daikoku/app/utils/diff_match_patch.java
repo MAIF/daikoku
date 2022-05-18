@@ -2089,7 +2089,6 @@ public class diff_match_patch {
      * objects.
      * @param textline Text representation of patches.
      * @return List of Patch objects.
-     * @throws IllegalArgumentException If invalid input.
      */
     public List<Patch> patch_fromText(String textline)
             throws IllegalArgumentException {
