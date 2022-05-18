@@ -9,7 +9,7 @@ import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamApiKeys = () => {
-  const { currentTeam, connectedUser } = useSelector(state => state.context);
+  const { currentTeam, connectedUser } = useSelector((state) => state.context);
   useTeamBackOffice(currentTeam);
 
   const tableRef = useRef();
@@ -20,8 +20,8 @@ export const TeamApiKeys = () => {
   useEffect(() => {
     setShowApiKey(
       connectedUser.isDaikokuAdmin ||
-      !currentTeam.showApiKeyOnlyToAdmins ||
-      isUserIsTeamAdmin(connectedUser, currentTeam)
+        !currentTeam.showApiKeyOnlyToAdmins ||
+        isUserIsTeamAdmin(connectedUser, currentTeam)
     );
   }, [connectedUser.isDaikokuAdmin, currentTeam.showApiKeyOnlyToAdmins]);
 
@@ -87,7 +87,6 @@ export const TeamApiKeys = () => {
       });
   };
 
-
   return (
     <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
       <div className="row">
@@ -124,4 +123,4 @@ export const TeamApiKeys = () => {
       </div>
     </Can>
   );
-}
+};

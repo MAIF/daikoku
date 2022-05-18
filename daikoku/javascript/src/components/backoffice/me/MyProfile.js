@@ -188,7 +188,7 @@ const TwoFactorAuthentication = ({ user }) => {
       )}
     </>
   );
-}
+};
 
 const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
   const { Translation } = useContext(I18nContext);
@@ -235,8 +235,9 @@ const Avatar = ({ setValue, rawValues, value, error, onChange, tenant }) => {
     <div className="">
       <div className="float-right mb-4 position-relative">
         <img
-          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
-            }`}
+          src={`${rawValues?.picture}${
+            rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
+          }`}
           style={{
             width: 100,
             borderRadius: '50%',
@@ -320,15 +321,15 @@ const PictureUpload = (props) => {
       </button>
     </div>
   );
-}
+};
 
 export const MyProfile = () => {
-  useUserBackOffice()
+  useUserBackOffice();
 
   const [user, setUser] = useState();
   const [tab, setTab] = useState('infos');
 
-  const { tenant, connectedUser } = useSelector(state => state.context);
+  const { tenant, connectedUser } = useSelector((state) => state.context);
   const dispatch = useDispatch();
 
   const { translateMethod, setLanguage, language, Translation, languages } =
@@ -563,4 +564,4 @@ export const MyProfile = () => {
       </div>
     </div>
   );
-}
+};

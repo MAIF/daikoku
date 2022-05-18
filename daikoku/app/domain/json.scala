@@ -2340,14 +2340,14 @@ object json {
           ApiKeyDeletionInformationFormat.reads(json)
         case "ApiKeyRotationInProgress" =>
           ApiKeyRotationInProgressFormat.reads(json)
-        case "ApiKeyRotationEnded" => ApiKeyRotationEndedFormat.reads(json)
-        case "TeamInvitation"      => TeamInvitationFormat.reads(json)
-        case "ApiKeyRefresh"       => ApiKeyRefreshFormat.reads(json)
-        case "NewPostPublished"    => NewPostPublishedFormat.reads(json)
-        case "NewIssueOpen"        => NewIssueOpenFormat.reads(json)
-        case "NewCommentOnIssue"   => NewCommentOnIssueFormat.reads(json)
+        case "ApiKeyRotationEnded"  => ApiKeyRotationEndedFormat.reads(json)
+        case "TeamInvitation"       => TeamInvitationFormat.reads(json)
+        case "ApiKeyRefresh"        => ApiKeyRefreshFormat.reads(json)
+        case "NewPostPublished"     => NewPostPublishedFormat.reads(json)
+        case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
+        case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
         case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
-        case str                   => JsError(s"Bad notification value: $str")
+        case str                    => JsError(s"Bad notification value: $str")
       }
 
       override def writes(o: NotificationAction) = o match {
@@ -3281,7 +3281,8 @@ object json {
                 .getOrElse(Set.empty),
               possibleUsagePlans = (json \ "possibleUsagePlans")
                 .as(SeqUsagePlanFormat),
-              defaultUsagePlan = (json \ "defaultUsagePlan").as(UsagePlanIdFormat),
+              defaultUsagePlan =
+                (json \ "defaultUsagePlan").as(UsagePlanIdFormat),
               authorizedTeams = (json \ "authorizedTeams")
                 .asOpt(SeqTeamIdFormat)
                 .getOrElse(Seq.empty),
@@ -3295,7 +3296,6 @@ object json {
                 .asOpt(SetApiTagFormat)
                 .getOrElse(Set.empty),
               stars = (json \ "stars").asOpt[Int].getOrElse(0),
-
             )
           )
         } recover {
@@ -3320,7 +3320,8 @@ object json {
           "possibleUsagePlans" -> JsArray(
             o.possibleUsagePlans.map(UsagePlanFormat.writes)),
           "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
-          "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes)),
+          "authorizedTeams" -> JsArray(
+            o.authorizedTeams.map(TeamIdFormat.writes)),
           "posts" -> SeqPostIdFormat.writes(o.posts),
           "issues" -> SeqIssueIdFormat.writes(o.issues),
           "issuesTags" -> SetApiTagFormat.writes(o.issuesTags),

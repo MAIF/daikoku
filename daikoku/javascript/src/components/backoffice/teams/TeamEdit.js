@@ -123,12 +123,12 @@ export const TeamEditForm = (props) => {
       </div>
     </>
   );
-}
+};
 
 const TeamEditComponent = ({ currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
   const navigate = useNavigate();
-  useTeamBackOffice(currentTeam)
+  useTeamBackOffice(currentTeam);
 
   const { translateMethod, Translation } = useContext(I18nContext);
 

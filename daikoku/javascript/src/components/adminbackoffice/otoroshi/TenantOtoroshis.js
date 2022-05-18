@@ -13,7 +13,7 @@ import { I18nContext } from '../../../locales/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
 
 export const TenantOtoroshis = () => {
-  const { tenant, connectedUser } = useSelector(s => s.context);
+  const { tenant, connectedUser } = useSelector((s) => s.context);
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
@@ -23,11 +23,10 @@ export const TenantOtoroshis = () => {
 
   useEffect(() => {
     if (!isTenantAdmin)
-      Services.tenantAdmins(tenant._id)
-        .then((res) => {
-          if (res.admins)
-            setIsTenantAdmin(res.admins.find((admin) => admin._id === connectedUser._id));
-        });
+      Services.tenantAdmins(tenant._id).then((res) => {
+        if (res.admins)
+          setIsTenantAdmin(res.admins.find((admin) => admin._id === connectedUser._id));
+      });
   }, []);
 
   let table;
@@ -112,33 +111,33 @@ export const TenantOtoroshis = () => {
 
   return (
     <Can I={manage} a={TENANT} dispatchError>
-        <div>
-          <button
-            type='button'
-            className="btn btn-sm btn-outline-success mb-1 ms-1"
-            title={translateMethod('Create new settings')}
-            onClick={(e) => {
-              createNewSettings();
-            }}
-          >
-            Create new setting
-          </button>
-          <div className="section p-2">
-            <Table
-              selfUrl="otoroshis"
-              defaultTitle="Otoroshi instances"
-              defaultValue={() => ({})}
-              defaultSort="Url"
-              itemName="otoroshi"
-              columns={columns}
-              fetchItems={() => Services.allOtoroshis(tenant._id)}
-              showActions={false}
-              showLink={false}
-              extractKey={(item) => item._id}
-              injectTable={(t) => (table = t)}
-            />
-          </div>
+      <div>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-success mb-1 ms-1"
+          title={translateMethod('Create new settings')}
+          onClick={(e) => {
+            createNewSettings();
+          }}
+        >
+          Create new setting
+        </button>
+        <div className="section p-2">
+          <Table
+            selfUrl="otoroshis"
+            defaultTitle="Otoroshi instances"
+            defaultValue={() => ({})}
+            defaultSort="Url"
+            itemName="otoroshi"
+            columns={columns}
+            fetchItems={() => Services.allOtoroshis(tenant._id)}
+            showActions={false}
+            showLink={false}
+            extractKey={(item) => item._id}
+            injectTable={(t) => (table = t)}
+          />
         </div>
+      </div>
     </Can>
   );
-}
+};

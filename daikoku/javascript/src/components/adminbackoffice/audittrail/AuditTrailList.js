@@ -76,8 +76,8 @@ export const AuditTrailList = () => {
   ];
 
   useEffect(() => {
-    update()
-  }, [from, to, page])
+    update();
+  }, [from, to, page]);
 
   const update = () => {
     if (table) {
@@ -91,22 +91,13 @@ export const AuditTrailList = () => {
   };
 
   const topBar = () => {
-    return (
-      <OtoDatePicker
-        updateDateRange={updateDateRange}
-        from={from}
-        to={to}
-      />
-    );
+    return <OtoDatePicker updateDateRange={updateDateRange} from={from} to={to} />;
   };
 
   const fetchItems = () => {
-    return Services.fetchAuditTrail(
-      from.valueOf(),
-      to.valueOf(),
-      page,
-      size)
-      .then((resp) => resp.events);
+    return Services.fetchAuditTrail(from.valueOf(), to.valueOf(), page, size).then(
+      (resp) => resp.events
+    );
   };
 
   return (
@@ -137,4 +128,4 @@ export const AuditTrailList = () => {
       </div>
     </Can>
   );
-}
+};

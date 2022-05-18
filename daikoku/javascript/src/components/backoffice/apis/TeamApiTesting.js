@@ -105,21 +105,18 @@ export const TeamApiTesting = (props) => {
     name: {
       type: type.string,
       label: translateMethod('Auth. name'),
-      constraints: [
-      ],
+      constraints: [],
     },
     username: {
       type: type.string,
       label: translateMethod('Client Id'),
-      constraints: [
-      ],
+      constraints: [],
     },
     password: {
       type: type.string,
       format: format.password,
       label: translateMethod('Client secret'),
-      constraints: [
-      ],
+      constraints: [],
     },
   };
 

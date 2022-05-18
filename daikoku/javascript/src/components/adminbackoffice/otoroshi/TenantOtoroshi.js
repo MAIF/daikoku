@@ -11,7 +11,7 @@ import { useTenantBackOffice } from '../../../contexts';
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 export const TenantOtoroshi = () => {
-  const { tenant } = useSelector(s => s.context);
+  const { tenant } = useSelector((s) => s.context);
   useTenantBackOffice();
 
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -60,48 +60,43 @@ export const TenantOtoroshi = () => {
     if (location && location.state && location.state.newSettings) {
       setState({ ...state, otoroshi: location.state.newSettings, create: true });
     } else {
-      Services.oneOtoroshi(tenant._id, params.otoroshiId)
-        .then((otoroshi) =>
-          setState({ ...state, otoroshi })
-        );
+      Services.oneOtoroshi(tenant._id, params.otoroshiId).then((otoroshi) =>
+        setState({ ...state, otoroshi })
+      );
     }
   }, []);
 
   const save = () => {
     if (state.create) {
-      Services.createOtoroshiSettings(tenant._id, state.otoroshi)
-        .then((result) => {
-          if (result.error) {
-            toastr.error('Failure', result.error);
-          } else {
-            toastr.success(translateMethod('otoroshi.settings.created.success'));
-            setState({ ...state, create: false });
-          }
-        });
+      Services.createOtoroshiSettings(tenant._id, state.otoroshi).then((result) => {
+        if (result.error) {
+          toastr.error('Failure', result.error);
+        } else {
+          toastr.success(translateMethod('otoroshi.settings.created.success'));
+          setState({ ...state, create: false });
+        }
+      });
     } else {
-      Services.saveOtoroshiSettings(tenant._id, state.otoroshi)
-        .then((result) => {
-          if (result.error) {
-            toastr.error('Failure', result.error);
-          } else {
-            toastr.success(translateMethod('otoroshi.settings.updated.success'));
-            setState({ ...state, create: false });
-          }
-        });
+      Services.saveOtoroshiSettings(tenant._id, state.otoroshi).then((result) => {
+        if (result.error) {
+          toastr.error('Failure', result.error);
+        } else {
+          toastr.success(translateMethod('otoroshi.settings.updated.success'));
+          setState({ ...state, create: false });
+        }
+      });
     }
   };
 
   const onDelete = () => {
-    window.confirm(translateMethod('otoroshi.settings.delete.confirm'))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteOtoroshiSettings(tenant._id, state.otoroshi._id)
-            .then(() => {
-              toastr.success(translateMethod('otoroshi.settings.deleted.success'));
-              navigate('/settings/otoroshis');
-            });
-        }
-      });
+    window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteOtoroshiSettings(tenant._id, state.otoroshi._id).then(() => {
+          toastr.success(translateMethod('otoroshi.settings.deleted.success'));
+          navigate('/settings/otoroshis');
+        });
+      }
+    });
   };
 
   return (
@@ -169,5 +164,5 @@ export const TenantOtoroshi = () => {
         </div>
       </div>
     </Can>
-  )
-}
+  );
+};

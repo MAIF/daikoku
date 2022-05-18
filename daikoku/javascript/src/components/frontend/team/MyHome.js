@@ -99,31 +99,34 @@ function MyHomeComponent(props) {
   const redirectToApiPage = (api) => {
     const apiOwner = state.teams.find((t) => t._id === api.team._id);
 
-    const route = (version) => api.apis ?
-      `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/apigroups/${api._humanReadableId}/apis` :
-      `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}/description`;
+    const route = (version) =>
+      api.apis
+        ? `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/apigroups/${
+            api._humanReadableId
+          }/apis`
+        : `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${
+            api._humanReadableId
+          }/${version}/description`;
 
     if (api.isDefault) navigate(route(api.currentVersion));
     else
-      Services.getDefaultApiVersion(api._humanReadableId)
-        .then((res) => navigate(route(res.defaultVersion))
-        );
+      Services.getDefaultApiVersion(api._humanReadableId).then((res) =>
+        navigate(route(res.defaultVersion))
+      );
   };
 
   const redirectToEditPage = (api) => {
-    const adminTeam = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams)
-      .find((team) => api.team._id === team._id);
+    const adminTeam = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams).find(
+      (team) => api.team._id === team._id
+    );
 
     if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
-      props
-        .updateTeam(adminTeam)
-        .then(() => {
-          const url = api.apis ?
-            `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos` :
-            `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-          navigate(url)
-        }
-        );
+      props.updateTeam(adminTeam).then(() => {
+        const url = api.apis
+          ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+          : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+        navigate(url);
+      });
     }
   };
 

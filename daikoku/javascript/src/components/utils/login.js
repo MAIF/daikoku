@@ -24,15 +24,14 @@ export function LoginPage(props) {
     e.preventDefault();
     const { username, password } = state;
 
-    Services.login(username, password, props.action)
-      .then((res) => {
-        if (res.status === 400)
-          setState({
-            ...state,
-            loginError: true,
-          });
-        else if (res.redirected) window.location.href = res.url;
-      });
+    Services.login(username, password, props.action).then((res) => {
+      if (res.status === 400)
+        setState({
+          ...state,
+          loginError: true,
+        });
+      else if (res.redirected) window.location.href = res.url;
+    });
   };
 
   const { loginError } = state;

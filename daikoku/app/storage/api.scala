@@ -272,12 +272,16 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
   }
 
   def findAllVersions(tenant: Tenant, id: String)(
-    implicit env: Env,
-    ec: ExecutionContext): Future[Seq[Api]] = {
+      implicit env: Env,
+      ec: ExecutionContext): Future[Seq[Api]] = {
 
     val o: OptionT[Future, Seq[Api]] = for {
-      api <- OptionT(env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrIdNotDeleted(id))
-      apis <- OptionT.liftF(env.dataStore.apiRepo.forTenant(tenant).find(Json.obj("_humanReadableId" -> api.humanReadableId)))
+      api <- OptionT(
+        env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrIdNotDeleted(id))
+      apis <- OptionT.liftF(
+        env.dataStore.apiRepo
+          .forTenant(tenant)
+          .find(Json.obj("_humanReadableId" -> api.humanReadableId)))
     } yield apis
 
     o.value.map(_.getOrElse(Seq.empty))

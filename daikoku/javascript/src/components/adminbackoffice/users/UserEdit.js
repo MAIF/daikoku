@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import faker from 'faker';
 import md5 from 'js-md5';
 import { toastr } from 'react-redux-toastr';
-import { Form, constraints, type, format } from '@maif/react-forms'
+import { Form, constraints, type, format } from '@maif/react-forms';
 
 import * as Services from '../../../services';
 import { Can, manage, daikoku, Spinner } from '../../utils';
@@ -56,8 +56,9 @@ const Avatar = ({ setValue, rawValues, value, onChange, tenant }) => {
     <div className="">
       <div className="float-right mb-4 position-relative">
         <img
-          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
-            }`}
+          src={`${rawValues?.picture}${
+            rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
+          }`}
           style={{
             width: 100,
             borderRadius: '50%',
@@ -141,10 +142,10 @@ const PictureUpload = (props) => {
       </button>
     </div>
   );
-}
+};
 
 export const UserEdit = () => {
-  const tenant = useSelector(s => s.context.tenant);
+  const tenant = useSelector((s) => s.context.tenant);
   useDaikokuBackOffice();
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
@@ -181,34 +182,31 @@ export const UserEdit = () => {
     },
     isDaikokuAdmin: {
       type: type.bool,
-      label: translateMethod('Daikoku admin.')
+      label: translateMethod('Daikoku admin.'),
     },
 
     personalToken: {
       type: type.string,
       label: translateMethod('Personal Token'),
-      render: (({ value, onChange }) => {
+      render: ({ value, onChange }) => {
         const reloadToken = () => {
-          onChange(faker.random.alphaNumeric(32))
-        }
+          onChange(faker.random.alphaNumeric(32));
+        };
         return (
           <div className="d-flex flex-row">
             <input className="form-control" disabled={true} value={value} />
-            <button
-              type="button"
-              className="btn btn-outline-success ms-2"
-              onClick={reloadToken}>
+            <button type="button" className="btn btn-outline-success ms-2" onClick={reloadToken}>
               {translateMethod('Reload')}
             </button>
           </div>
-        )
-      })
+        );
+      },
     },
     metadata: {
       type: type.object,
-      label: translateMethod('Metadata')
-    }
-  }
+      label: translateMethod('Metadata'),
+    },
+  };
 
   useEffect(() => {
     if (location && location.state && location.state.newUser) {
@@ -218,57 +216,53 @@ export const UserEdit = () => {
       });
       setCreate(true);
     } else {
-      Services.findUserById(params.userId)
-        .then(setUser);
+      Services.findUserById(params.userId).then(setUser);
     }
   }, []);
 
   const removeUser = () => {
-    window.confirm(translateMethod('remove.user.confirm'))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteUserById(user._id).then(() => {
-            toastr.info(
-              translateMethod(
-                'remove.user.success',
-                false,
-                `user ${user.name} is successfully deleted`,
-                user.name
-              )
-            );
-            navigate('/settings/users');
-          });
-        }
-      });
+    window.confirm(translateMethod('remove.user.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteUserById(user._id).then(() => {
+          toastr.info(
+            translateMethod(
+              'remove.user.success',
+              false,
+              `user ${user.name} is successfully deleted`,
+              user.name
+            )
+          );
+          navigate('/settings/users');
+        });
+      }
+    });
   };
 
   const save = (u) => {
     if (create) {
-      Services.createUser(u)
-        .then(() => {
-          toastr.success(
-            translateMethod(
-              'user.created.success',
-              false,
-              `user ${user.name} successfully created`,
-              user.name
-            )
-          );
-        });
+      Services.createUser(u).then(() => {
+        toastr.success(
+          translateMethod(
+            'user.created.success',
+            false,
+            `user ${user.name} successfully created`,
+            user.name
+          )
+        );
+      });
     } else {
-      Services.updateUserById(u)
-        .then((updatedUser) => {
-          setUser(updatedUser)
-          setCreate(false)
-          toastr.success(
-            translateMethod(
-              'user.updated.success',
-              false,
-              `user ${user.name} successfully updated`,
-              user.name
-            )
-          );
-        });
+      Services.updateUserById(u).then((updatedUser) => {
+        setUser(updatedUser);
+        setCreate(false);
+        toastr.success(
+          translateMethod(
+            'user.updated.success',
+            false,
+            `user ${user.name} successfully updated`,
+            user.name
+          )
+        );
+      });
     }
   };
 
@@ -288,36 +282,36 @@ export const UserEdit = () => {
       </div>
       {user && (
         <div className="row">
-            <Form
-              schema={schema}
-              value={user}
-              onSubmit={setUser}
-              footer={({ reset, valid }) => {
-                return (
-                  <div className="d-flex justify-content-end">
-                    <button className="btn btn-outline-danger" onClick={reset}>
-                      <Translation i18nkey="Cancel">Cancel</Translation>
+          <Form
+            schema={schema}
+            value={user}
+            onSubmit={setUser}
+            footer={({ reset, valid }) => {
+              return (
+                <div className="d-flex justify-content-end">
+                  <button className="btn btn-outline-danger" onClick={reset}>
+                    <Translation i18nkey="Cancel">Cancel</Translation>
+                  </button>
+                  {!create && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger ms-2"
+                      onClick={removeUser}
+                    >
+                      <i className="fas fa-trash me-1" />
+                      <Translation i18nkey="Delete">Delete</Translation>
                     </button>
-                    {!create && (
-                      <button
-                        type="button"
-                        className="btn btn-outline-danger ms-2"
-                        onClick={removeUser}
-                      >
-                        <i className="fas fa-trash me-1" />
-                        <Translation i18nkey="Delete">Delete</Translation>
-                      </button>
-                    )}
-                    <button className="btn btn-outline-success ms-2" onClick={valid}>
-                      {create && <Translation i18nkey="Save">Create</Translation>}
-                      {!create && <Translation i18nkey="Save">Save</Translation>}
-                    </button>
-                  </div>
-                );
-              }}
-            />
+                  )}
+                  <button className="btn btn-outline-success ms-2" onClick={valid}>
+                    {create && <Translation i18nkey="Save">Create</Translation>}
+                    {!create && <Translation i18nkey="Save">Save</Translation>}
+                  </button>
+                </div>
+              );
+            }}
+          />
         </div>
       )}
     </Can>
   );
-}
+};

@@ -9,7 +9,7 @@ import { SideBar, Spinner, Error, Footer, Discussion } from '../components/utils
 import * as Services from '../services';
 import { updateTeamPromise, history, setError } from '../core';
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
-import { NavProvider } from '../contexts'
+import { NavProvider } from '../contexts';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -204,7 +204,9 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 <Route
                   path="/settings/otoroshis"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}>
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
+                    >
                       <TenantOtoroshis tenant={tenant} />
                     </RouteWithTitle>
                   }
@@ -212,7 +214,9 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 <Route
                   path="/settings/settings"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}>
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
+                    >
                       <TenantEdit tenant={tenant} />
                     </RouteWithTitle>
                   }
@@ -284,7 +288,9 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 <Route
                   path="/settings/import-export"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Import / Export')}`}>
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translateMethod('Import / Export')}`}
+                    >
                       <ImportExport />
                     </RouteWithTitle>
                   }
@@ -366,18 +372,29 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                   />
                 )}
 
-                <Route 
-                  path='/:teamId/settings*'
-                  element={<TeamBackOfficeRouter tenant={tenant} />} />
-
-                <Route 
-                  path=':teamId/apigroups/:apiGroupId/:tab/*'
-                  element={<FrontOfficeRoute><ApiGroupHome /></FrontOfficeRoute>}
+                <Route
+                  path="/:teamId/settings*"
+                  element={<TeamBackOfficeRouter tenant={tenant} />}
                 />
 
-                <Route 
-                  path='/:teamId/:apiId/:versionId/:tab/*' 
-                  element={<FrontOfficeRoute> <ApiHome /> </FrontOfficeRoute>} />
+                <Route
+                  path=":teamId/apigroups/:apiGroupId/:tab/*"
+                  element={
+                    <FrontOfficeRoute>
+                      <ApiGroupHome />
+                    </FrontOfficeRoute>
+                  }
+                />
+
+                <Route
+                  path="/:teamId/:apiId/:versionId/:tab/*"
+                  element={
+                    <FrontOfficeRoute>
+                      {' '}
+                      <ApiHome />{' '}
+                    </FrontOfficeRoute>
+                  }
+                />
 
                 <Route
                   path="/:teamId"
@@ -390,7 +407,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               </Routes>
               <Error />
             </div>
-
           </div>
           <ModalRoot />
           <ReduxToastr

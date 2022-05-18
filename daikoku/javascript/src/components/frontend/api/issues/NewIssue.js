@@ -13,7 +13,7 @@ export const NewIssue = ({ basePath, api }) => {
   const [issue, setIssue] = useState(null);
   const [availableApiVersions, setApiVersions] = useState([]);
 
-  const { currentTeam, connectedUser } = useSelector(state => state.context)
+  const { currentTeam, connectedUser } = useSelector((state) => state.context);
 
   const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
@@ -21,43 +21,37 @@ export const NewIssue = ({ basePath, api }) => {
   useEffect(() => {
     Promise.all([
       Services.fetchNewIssue(),
-      Services.getAllApiVersions(team, api._humanReadableId)
-    ])
-      .then(([template, apiVersions]) => {
-        setIssue(template);
-        setApiVersions(apiVersions);
-      });
+      Services.getAllApiVersions(team, api._humanReadableId),
+    ]).then(([template, apiVersions]) => {
+      setIssue(template);
+      setApiVersions(apiVersions);
+    });
   }, []);
 
   const createIssue = (issue) => {
-    Services.createNewIssue(_humanReadableId, team, issue)
-      .then((res) => {
-        if (res.error) {
-          toastr.error(res.error);
-        } else {
-          toastr.success('Issue created');
-          navigate(basePath);
-        }
-      });
-  }
+    Services.createNewIssue(_humanReadableId, team, issue).then((res) => {
+      if (res.error) {
+        toastr.error(res.error);
+      } else {
+        toastr.success('Issue created');
+        navigate(basePath);
+      }
+    });
+  };
 
   const schema = {
     title: {
       type: type.string,
       label: translateMethod('Title'),
       placeholder: translateMethod('Title'),
-      constraints: [
-        constraints.required(translateMethod("constraints.required.title"))
-      ]
+      constraints: [constraints.required(translateMethod('constraints.required.title'))],
     },
     apiVersion: {
       type: type.string,
       format: format.select,
       label: translateMethod('issues.apiVersion'),
-      options: availableApiVersions.map(x => ({ label: x, value: x })),
-      constraints: [
-        constraints.required(translateMethod("constraints.required.version"))
-      ]
+      options: availableApiVersions.map((x) => ({ label: x, value: x })),
+      constraints: [constraints.required(translateMethod('constraints.required.version'))],
     },
     tags: {
       type: type.string,
@@ -66,7 +60,7 @@ export const NewIssue = ({ basePath, api }) => {
       options: issuesTags,
       transformer: ({ value, name }) => ({ value, label: name }),
       isMulti: true,
-      visible: CanIDoAction(connectedUser, manage, API, currentTeam)
+      visible: CanIDoAction(connectedUser, manage, API, currentTeam),
     },
     comments: {
       type: type.object,
@@ -81,14 +75,11 @@ export const NewIssue = ({ basePath, api }) => {
           // constraints: [
           //   constraints.length(1, "message")
           // ]
-        }
+        },
       },
-      constraints: [
-        constraints.length(1, 'Just one comment please')
-      ]
-    }
-  }
-
+      constraints: [constraints.length(1, 'Just one comment please')],
+    },
+  };
 
   return issue ? (
     <div className="d-flex">
@@ -98,11 +89,15 @@ export const NewIssue = ({ basePath, api }) => {
         onError={console.error}
         value={issue}
         actions={{
-          cancel: { display: true, action: () => navigate(basePath), label: translateMethod('Cancel') }
+          cancel: {
+            display: true,
+            action: () => navigate(basePath),
+            label: translateMethod('Cancel'),
+          },
         }}
       />
     </div>
   ) : (
     <p>{translateMethod('loading')}</p>
   );
-}
+};

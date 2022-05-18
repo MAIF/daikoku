@@ -4,9 +4,6 @@ import { AssetsList } from '../../../components';
 import { useTenantBackOffice } from '../../../contexts';
 
 export const TenantAssets = () => {
-
   useTenantBackOffice();
-  return (
-    <AssetsList tenantMode={true} />
-  )
-}
+  return <AssetsList tenantMode={true} />;
+};

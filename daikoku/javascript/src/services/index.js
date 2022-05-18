@@ -130,8 +130,8 @@ export const teamHome = (teamId) => customFetch(`/api/teams/${teamId}/home`);
 export const teamApi = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
 
-export const teamApiGroup = (teamId, apiGroupId) => 
-  customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`)
+export const teamApiGroup = (teamId, apiGroupId) =>
+  customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`);
 
 export const teamApis = (teamId) => customFetch(`/api/teams/${teamId}/apis`);
 export const team = (teamId) => customFetch(`/api/teams/${teamId}`);
@@ -1146,5 +1146,5 @@ export const uploadZip = (file) => {
 export const transferApiOwnership = (newTeamId, teamId, apiId) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/_transfer`, {
     method: 'POST',
-    body: JSON.stringify({ team: newTeamId })
-  })
+    body: JSON.stringify({ team: newTeamId }),
+  });

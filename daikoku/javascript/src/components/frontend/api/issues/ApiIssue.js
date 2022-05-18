@@ -14,7 +14,7 @@ import { NavContext } from '../../../../contexts';
 export function ApiIssue({ ownerTeam, ...props }) {
   const { issueId, versionId, apiId } = useParams();
   const [api, setRootApi] = useState();
-  const params= useParams();
+  const params = useParams();
 
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
@@ -23,10 +23,9 @@ export function ApiIssue({ ownerTeam, ...props }) {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.getRootApi(props.api._humanReadableId)
-      .then((rootApi) => {
-        setRootApi(rootApi);
-      });
+    Services.getRootApi(props.api._humanReadableId).then((rootApi) => {
+      setRootApi(rootApi);
+    });
   }, []);
 
   const onChange = (editedApi) => {
@@ -40,7 +39,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
         setRootApi(res);
       })
       .then(() => toastr.success(translateMethod('Api saved')));
-  }
+  };
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
 
@@ -60,10 +59,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
   return (
     <div className="container-fluid">
       <Routes>
-        <Route
-          path={'/new'}
-          element={<NewIssue api={api} basePath={`${basePath}/issues`} />}
-        />
+        <Route path={'/new'} element={<NewIssue api={api} basePath={`${basePath}/issues`} />} />
         <Route
           path="/:issueId"
           element={

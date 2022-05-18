@@ -242,10 +242,7 @@ export const MultiStepForm = ({
             </button>
           )}
           {steps.findIndex((s) => s.id === step.id) === steps.length - 1 && (
-            <button
-              className="btn btn-outline-success"
-              onClick={() => ref.current.handleSubmit()}
-            >
+            <button className="btn btn-outline-success" onClick={() => ref.current.handleSubmit()}>
               {labels?.save || 'Save'}
             </button>
           )}
@@ -260,8 +257,8 @@ const ComponentedForm = ({ value, valid, component, reference }) => {
     <div className="d-flex flex-column flex-grow-1">
       {React.createElement(component, {
         value,
-        onChange: x => valid(x),
-        reference
+        onChange: (x) => valid(x),
+        reference,
       })}
     </div>
   );

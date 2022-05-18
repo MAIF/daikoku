@@ -59,18 +59,14 @@ export default React.memo(
           help: translateMethod('cms.create.path_placeholder'),
           label: translateMethod('cms.create.path'),
           constraints: [
-            constraints.when(
-              'isBlockPage',
-              (v) => !!v,
-              [
-                constraints.matches('^/', translateMethod('cms.create.path_slash_constraints')),
-                constraints.test(
-                  'path',
-                  translateMethod('cms.create.path_paths_constraints'),
-                  (value) => (value === savePath ? true : !pages.find((p) => p.path === value))
-                ),
-              ]
-            ),
+            constraints.when('isBlockPage', (v) => !!v, [
+              constraints.matches('^/', translateMethod('cms.create.path_slash_constraints')),
+              constraints.test(
+                'path',
+                translateMethod('cms.create.path_paths_constraints'),
+                (value) => (value === savePath ? true : !pages.find((p) => p.path === value))
+              ),
+            ]),
           ],
         },
         exact: {

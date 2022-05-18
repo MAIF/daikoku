@@ -17,26 +17,26 @@ object User {
 }
 
 case class User(
-                 id: UserId,
-                 deleted: Boolean = false,
-                 tenants: Set[TenantId],
-                 origins: Set[AuthProvider],
-                 name: String,
-                 email: String,
-                 picture: String = User.DEFAULT_IMAGE,
-                 pictureFromProvider: Boolean = true,
-                 personalToken: Option[String],
-                 isDaikokuAdmin: Boolean = false,
-                 password: Option[String] = None,
-                 hardwareKeyRegistrations: Seq[JsObject] = Seq.empty,
-                 lastTenant: Option[TenantId],
-                 metadata: Map[String, String] = Map.empty,
-                 defaultLanguage: Option[String],
-                 isGuest: Boolean = false,
-                 starredApis: Set[ApiId] = Set.empty[ApiId],
-                 twoFactorAuthentication: Option[TwoFactorAuthentication] = None,
-                 invitation: Option[UserInvitation] = None
-               ) extends CanJson[User] {
+    id: UserId,
+    deleted: Boolean = false,
+    tenants: Set[TenantId],
+    origins: Set[AuthProvider],
+    name: String,
+    email: String,
+    picture: String = User.DEFAULT_IMAGE,
+    pictureFromProvider: Boolean = true,
+    personalToken: Option[String],
+    isDaikokuAdmin: Boolean = false,
+    password: Option[String] = None,
+    hardwareKeyRegistrations: Seq[JsObject] = Seq.empty,
+    lastTenant: Option[TenantId],
+    metadata: Map[String, String] = Map.empty,
+    defaultLanguage: Option[String],
+    isGuest: Boolean = false,
+    starredApis: Set[ApiId] = Set.empty[ApiId],
+    twoFactorAuthentication: Option[TwoFactorAuthentication] = None,
+    invitation: Option[UserInvitation] = None
+) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)
   def humanReadableId = email.urlPathSegmentSanitized
   def asSimpleJson: JsValue = {
@@ -121,7 +121,7 @@ case class UserSession(id: DatastoreId,
                        created: DateTime,
                        ttl: FiniteDuration,
                        expires: DateTime)
-  extends CanJson[UserSession] {
+    extends CanJson[UserSession] {
   override def asJson: JsValue = json.UserSessionFormat.writes(this)
   def invalidate()(implicit ec: ExecutionContext, env: Env): Future[Unit] = {
     env.dataStore.userSessionRepo.deleteById(id).map(_ => ())
@@ -148,45 +148,43 @@ case class TwoFactorAuthentication(enabled: Boolean = false,
                                    secret: String,
                                    token: String,
                                    backupCodes: String)
-  extends CanJson[TwoFactorAuthentication] {
+    extends CanJson[TwoFactorAuthentication] {
   override def asJson: JsValue = json.TwoFactorAuthenticationFormat.writes(this)
 }
-
-
 
 case class UserInvitation(registered: Boolean,
                           token: String,
                           createdAt: DateTime,
                           team: String,
                           notificationId: String)
-  extends CanJson[UserInvitation] {
+    extends CanJson[UserInvitation] {
   override def asJson: JsValue = json.UserInvitationFormat.writes(this)
 }
 
 case class PasswordReset(
-                          id: DatastoreId,
-                          deleted: Boolean = false,
-                          randomId: String,
-                          email: String,
-                          password: String,
-                          user: UserId,
-                          creationDate: DateTime,
-                          validUntil: DateTime,
-                        ) extends CanJson[PasswordReset] {
+    id: DatastoreId,
+    deleted: Boolean = false,
+    randomId: String,
+    email: String,
+    password: String,
+    user: UserId,
+    creationDate: DateTime,
+    validUntil: DateTime,
+) extends CanJson[PasswordReset] {
   override def asJson: JsValue = json.PasswordResetFormat.writes(this)
 }
 
 case class AccountCreation(
-                            id: DatastoreId,
-                            deleted: Boolean = false,
-                            randomId: String,
-                            email: String,
-                            name: String,
-                            avatar: String,
-                            password: String,
-                            creationDate: DateTime,
-                            validUntil: DateTime,
-                          ) extends CanJson[AccountCreation] {
+    id: DatastoreId,
+    deleted: Boolean = false,
+    randomId: String,
+    email: String,
+    name: String,
+    avatar: String,
+    password: String,
+    creationDate: DateTime,
+    validUntil: DateTime,
+) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
 
@@ -208,6 +206,6 @@ case class Message(id: DatastoreId,
                    message: String,
                    closed: Option[DateTime] = None,
                    send: Boolean = false)
-  extends CanJson[Message] {
+    extends CanJson[Message] {
   override def asJson: JsValue = json.MessageFormat.writes(this)
 }

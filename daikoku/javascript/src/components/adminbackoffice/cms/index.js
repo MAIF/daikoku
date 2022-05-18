@@ -38,7 +38,6 @@ export const CMSOffice = () => {
 
   const importRef = useRef();
 
-
   useEffect(() => {
     reload();
   }, []);
@@ -50,18 +49,16 @@ export const CMSOffice = () => {
   }, [location]);
 
   const reload = () => {
-    client.query(getAllPages())
-      .then((r) => setPages(r.data.pages));
+    client.query(getAllPages()).then((r) => setPages(r.data.pages));
   };
 
   const loadFiles = (e) => {
     if (e.target.files.length === 1) {
-      Services.uploadZip(e.target.files[0])
-        .then(reload);
+      Services.uploadZip(e.target.files[0]).then(reload);
     }
   };
 
-  const Index = ({ }) => {
+  const Index = ({}) => {
     const navigation = useNavigate();
     const location = useLocation();
 

@@ -8,11 +8,13 @@ import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
 
 export const TeamPlanConsumption = ({ apiGroup }) => {
-  const { currentTeam } = useSelector(state => state.context);
+  const { currentTeam } = useSelector((state) => state.context);
 
   const { translateMethod } = useContext(I18nContext);
-  const urlMatching = !!apiGroup ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId' : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId'
-  const match = useMatch(urlMatching)
+  const urlMatching = !!apiGroup
+    ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
+    : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
+  const match = useMatch(urlMatching);
 
   const [teams, setTeams] = useState([]);
 
@@ -59,8 +61,8 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
   ];
 
   const getPlanInformation = () => {
-    return Services.teamApi(currentTeam._id, match.params.apiId, match.params.versionId)
-      .then((api) => {
+    return Services.teamApi(currentTeam._id, match.params.apiId, match.params.versionId).then(
+      (api) => {
         if (api.error) {
           return null;
         }
@@ -68,7 +70,8 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
           api,
           plan: api.possibleUsagePlans.find((pp) => pp._id === match.params.planId),
         };
-      });
+      }
+    );
   };
 
   const sumGlobalInformations = (data) => {
@@ -90,8 +93,7 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
   };
 
   useEffect(() => {
-    Services.teams()
-      .then(setTeams);
+    Services.teams().then(setTeams);
 
     document.title = `${currentTeam.name} - ${translateMethod('Plan consumption')}`;
   }, []);
@@ -113,25 +115,23 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
             currentTeam._id,
             from.valueOf(),
             to.valueOf()
-          )
-        }
-        }
+          );
+        }}
         mappers={mappers}
       />
     </div>
   );
-}
+};
 
 const PlanInformations = (props) => {
   const [loading, setLoading] = useState(true);
   const [informations, setInformations] = useState();
 
   useEffect(() => {
-    props.fetchData()
-      .then((informations) => {
-        setInformations(informations);
-        setLoading(false);
-      });
+    props.fetchData().then((informations) => {
+      setInformations(informations);
+      setLoading(false);
+    });
   }, []);
 
   if (loading) return <Spinner width="50" height="50" />;
@@ -145,4 +145,4 @@ const PlanInformations = (props) => {
       {informations.api.name} - {informations.plan.customName || informations.plan.type}
     </h3>
   );
-}
+};

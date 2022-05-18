@@ -18,7 +18,7 @@ import { I18nContext } from '../../../core';
 import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 
 const AdminList = () => {
-  const context = useSelector(s => s.context)
+  const context = useSelector((s) => s.context);
 
   const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState([]);
@@ -197,13 +197,9 @@ const AdminList = () => {
 
 export const TenantAdminList = () => {
   useTenantBackOffice();
-  return (
-    <AdminList />
-  )
-}
+  return <AdminList />;
+};
 export const DaikokuTenantAdminList = () => {
-  useDaikokuBackOffice()
-  return (
-    <AdminList />
-  )
-}
+  useDaikokuBackOffice();
+  return <AdminList />;
+};

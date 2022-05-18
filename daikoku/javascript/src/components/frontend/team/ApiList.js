@@ -56,8 +56,6 @@ const ApiListComponent = (props) => {
     computeTops(props.apis);
   }, [props.apis]);
 
-
-
   const redirectToTeam = (team) => {
     navigate(`/${team._humanReadableId}/settings`);
   };
@@ -142,14 +140,14 @@ const ApiListComponent = (props) => {
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (teamMatch(api, searchedTrim)) {
-          return true;
-        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-      })
+          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (teamMatch(api, searchedTrim)) {
+            return true;
+          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+        })
   )
     .groupBy('_humanReadableId')
     .map((value) => {
@@ -254,7 +252,12 @@ const ApiListComponent = (props) => {
         </div>
       </div>
       <div className="row">
-        <div className={classNames("section d-flex flex-column", {'col-9': !props.groupView, 'col-12': props.groupView})}>
+        <div
+          className={classNames('section d-flex flex-column', {
+            'col-9': !props.groupView,
+            'col-12': props.groupView,
+          })}
+        >
           <div
             className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
@@ -286,7 +289,7 @@ const ApiListComponent = (props) => {
                   connectedUser={props.connectedUser}
                   groupView={props.groupView}
                 />
-              )
+              );
             })}
           </div>
           <div className="apis__pagination">
@@ -306,34 +309,33 @@ const ApiListComponent = (props) => {
             />
           </div>
         </div>
-        {!props.groupView && <div className="d-flex col-3 col-sm-3 text-muted flex-column px-3">
-          {!props.team && !props.connectedUser.isGuest && (
-            <YourTeams
-              teams={props.myTeams}
-              redirectToTeam={redirectToTeam}
-            />
-          )}
-          {!!tags.length && (
-            <Top
-              className="p-3 rounded additionalContent mb-2"
-              title="Top tags"
-              icon="fas fa-tag me-2"
-              list={tags}
-              formatter={(tag) => tag.value}
-              handleClick={setSelectedTag}
-            />
-          )}
-          {!!categories.length && (
-            <Top
-              className="p-3 rounded additionalContent"
-              title="Top categories"
-              icon="fas fa-folder me-2"
-              list={categories}
-              formatter={(category) => category.value}
-              handleClick={setSelectedCategory}
-            />
-          )}
-        </div>}
+        {!props.groupView && (
+          <div className="d-flex col-3 col-sm-3 text-muted flex-column px-3">
+            {!props.team && !props.connectedUser.isGuest && (
+              <YourTeams teams={props.myTeams} redirectToTeam={redirectToTeam} />
+            )}
+            {!!tags.length && (
+              <Top
+                className="p-3 rounded additionalContent mb-2"
+                title="Top tags"
+                icon="fas fa-tag me-2"
+                list={tags}
+                formatter={(tag) => tag.value}
+                handleClick={setSelectedTag}
+              />
+            )}
+            {!!categories.length && (
+              <Top
+                className="p-3 rounded additionalContent"
+                title="Top categories"
+                icon="fas fa-folder me-2"
+                list={categories}
+                formatter={(category) => category.value}
+                handleClick={setSelectedCategory}
+              />
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

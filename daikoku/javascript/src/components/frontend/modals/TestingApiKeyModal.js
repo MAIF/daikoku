@@ -161,7 +161,8 @@ export const TestingApiKeyModal = (props) => {
           type: 'select',
           props: {
             label: translateMethod('Otoroshi instance'),
-            possibleValues: props.otoroshiSettings.map((s) => ({ //FIXME: get from url => plus de prop.otosettings
+            possibleValues: props.otoroshiSettings.map((s) => ({
+              //FIXME: get from url => plus de prop.otosettings
               label: s.url,
               value: s._id,
             })),
@@ -181,7 +182,8 @@ export const TestingApiKeyModal = (props) => {
         type: 'select',
         props: {
           label: translateMethod('Otoroshi instance'),
-          possibleValues: props.otoroshiSettings.map((s) => ({ //FIXME: get from url => plus de prop.otosettings
+          possibleValues: props.otoroshiSettings.map((s) => ({
+            //FIXME: get from url => plus de prop.otosettings
             label: s.url,
             value: s._id,
           })),

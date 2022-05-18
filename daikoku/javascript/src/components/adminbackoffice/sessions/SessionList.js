@@ -10,7 +10,7 @@ import { I18nContext } from '../../../locales/i18n-context';
 import { useDaikokuBackOffice } from '../../../contexts';
 
 export const SessionList = () => {
-  const connectedUser = useSelector(s => s.context.connectedUser)
+  const connectedUser = useSelector((s) => s.context.connectedUser);
   useDaikokuBackOffice();
 
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -131,4 +131,4 @@ export const SessionList = () => {
       </div>
     </Can>
   );
-}
+};

@@ -12,11 +12,11 @@ import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamIncome = () => {
-  const { currentTeam } = useSelector(state => state.context);
+  const { currentTeam } = useSelector((state) => state.context);
   useTeamBackOffice(currentTeam);
 
   const { translateMethod, Translation } = useContext(I18nContext);
-  
+
   const [state, setState] = useState({
     consumptions: [],
     consumptionsByApi: [],
@@ -46,7 +46,7 @@ export const TeamIncome = () => {
       ),
       client.query({
         query: Services.graphql.myVisibleApis,
-        variables: { teamId: team._id }
+        variables: { teamId: team._id },
       }),
       Services.teams(),
     ]).then(
@@ -85,8 +85,7 @@ export const TeamIncome = () => {
 
   const sync = () => {
     setState({ ...state, loading: true });
-    Services.syncTeamIncome(currentTeam._id)
-      .then(() => getBillingData(currentTeam));
+    Services.syncTeamIncome(currentTeam._id).then(() => getBillingData(currentTeam));
   };
 
   const total = state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
@@ -239,4 +238,4 @@ export const TeamIncome = () => {
       </div>
     </Can>
   );
-}
+};

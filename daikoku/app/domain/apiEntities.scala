@@ -2,7 +2,13 @@ package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
-import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, UsagePlanFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  SeqIssueIdFormat,
+  SeqPostIdFormat,
+  SeqTeamIdFormat,
+  SetApiTagFormat,
+  UsagePlanFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.ReplaceAllWith
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -35,10 +41,10 @@ object OtoroshiTarget {
 }
 
 case class OtoroshiTarget(
-                           otoroshiSettings: OtoroshiSettingsId,
-                           authorizedEntities: Option[AuthorizedEntities],
-                           apikeyCustomization: ApikeyCustomization = ApikeyCustomization()
-                         ) extends CanJson[OtoroshiTarget] {
+    otoroshiSettings: OtoroshiSettingsId,
+    authorizedEntities: Option[AuthorizedEntities],
+    apikeyCustomization: ApikeyCustomization = ApikeyCustomization()
+) extends CanJson[OtoroshiTarget] {
   def asJson: JsValue = json.OtoroshiTargetFormat.writes(this)
   def processedMetadata(context: Map[String, String]): Map[String, String] = {
     apikeyCustomization.metadata
@@ -59,7 +65,7 @@ case class OtoroshiTarget(
 case class OtoroshiService(name: String,
                            otoroshiSettings: OtoroshiSettingsId,
                            service: OtoroshiServiceId)
-  extends CanJson[OtoroshiService] {
+    extends CanJson[OtoroshiService] {
   def asJson: JsValue = json.OtoroshiServiceFormat.writes(this)
 }
 
@@ -97,7 +103,7 @@ object BillingTimeUnit {
 }
 
 case class BillingDuration(value: Long, unit: BillingTimeUnit)
-  extends CanJson[BillingDuration] {
+    extends CanJson[BillingDuration] {
   def asJson: JsValue = json.BillingDurationFormat.writes(this)
 }
 
@@ -222,13 +228,13 @@ sealed trait UsagePlan {
 
 case object UsagePlan {
   case class Admin(
-                    id: UsagePlanId,
-                    customName: Option[String] = Some("Administration plan"),
-                    customDescription: Option[String] = Some("access to admin api"),
-                    otoroshiTarget: Option[OtoroshiTarget],
-                    aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-                    override val authorizedTeams: Seq[TeamId] = Seq.empty
-                  ) extends UsagePlan {
+      id: UsagePlanId,
+      customName: Option[String] = Some("Administration plan"),
+      customDescription: Option[String] = Some("access to admin api"),
+      otoroshiTarget: Option[OtoroshiTarget],
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
+  ) extends UsagePlan {
     override def costPerMonth: BigDecimal = BigDecimal(0)
     override def maxRequestPerSecond: Option[Long] = None
     override def maxRequestPerDay: Option[Long] = None
@@ -256,20 +262,20 @@ case object UsagePlan {
       IntegrationProcess.ApiKey
   }
   case class FreeWithoutQuotas(
-                                id: UsagePlanId,
-                                currency: Currency,
-                                billingDuration: BillingDuration,
-                                customName: Option[String],
-                                customDescription: Option[String],
-                                otoroshiTarget: Option[OtoroshiTarget],
-                                allowMultipleKeys: Option[Boolean],
-                                autoRotation: Option[Boolean],
-                                subscriptionProcess: SubscriptionProcess,
-                                integrationProcess: IntegrationProcess,
-                                aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-                                override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                                override val authorizedTeams: Seq[TeamId] = Seq.empty
-                              ) extends UsagePlan {
+      id: UsagePlanId,
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
+  ) extends UsagePlan {
     override def typeName: String = "FreeWithoutQuotas"
     override def costPerMonth: BigDecimal = BigDecimal(0)
     override def maxRequestPerSecond: Option[Long] = None
@@ -287,23 +293,23 @@ case object UsagePlan {
       this.copy(authorizedTeams = teamIds)
   }
   case class FreeWithQuotas(
-                             id: UsagePlanId,
-                             maxPerSecond: Long,
-                             maxPerDay: Long,
-                             maxPerMonth: Long,
-                             currency: Currency,
-                             billingDuration: BillingDuration,
-                             customName: Option[String],
-                             customDescription: Option[String],
-                             otoroshiTarget: Option[OtoroshiTarget],
-                             allowMultipleKeys: Option[Boolean],
-                             autoRotation: Option[Boolean],
-                             subscriptionProcess: SubscriptionProcess,
-                             integrationProcess: IntegrationProcess,
-                             aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-                             override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                             override val authorizedTeams: Seq[TeamId] = Seq.empty
-                           ) extends UsagePlan {
+      id: UsagePlanId,
+      maxPerSecond: Long,
+      maxPerDay: Long,
+      maxPerMonth: Long,
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
+  ) extends UsagePlan {
     override def typeName: String = "FreeWithQuotas"
     override def costPerMonth: BigDecimal = BigDecimal(0)
     override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
@@ -321,25 +327,25 @@ case object UsagePlan {
       this.copy(authorizedTeams = teamIds)
   }
   case class QuotasWithLimits(
-                               id: UsagePlanId,
-                               maxPerSecond: Long,
-                               maxPerDay: Long,
-                               maxPerMonth: Long,
-                               costPerMonth: BigDecimal,
-                               trialPeriod: Option[BillingDuration],
-                               currency: Currency,
-                               billingDuration: BillingDuration,
-                               customName: Option[String],
-                               customDescription: Option[String],
-                               otoroshiTarget: Option[OtoroshiTarget],
-                               allowMultipleKeys: Option[Boolean],
-                               autoRotation: Option[Boolean],
-                               subscriptionProcess: SubscriptionProcess,
-                               integrationProcess: IntegrationProcess,
-                               aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-                               override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                               override val authorizedTeams: Seq[TeamId] = Seq.empty
-                             ) extends UsagePlan {
+      id: UsagePlanId,
+      maxPerSecond: Long,
+      maxPerDay: Long,
+      maxPerMonth: Long,
+      costPerMonth: BigDecimal,
+      trialPeriod: Option[BillingDuration],
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
+  ) extends UsagePlan {
     override def typeName: String = "QuotasWithLimits"
     override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
     override def maxRequestPerDay: Option[Long] = maxPerDay.some
@@ -355,26 +361,26 @@ case object UsagePlan {
       this.copy(authorizedTeams = teamIds)
   }
   case class QuotasWithoutLimits(
-                                  id: UsagePlanId,
-                                  maxPerSecond: Long,
-                                  maxPerDay: Long,
-                                  maxPerMonth: Long,
-                                  costPerAdditionalRequest: BigDecimal,
-                                  costPerMonth: BigDecimal,
-                                  trialPeriod: Option[BillingDuration],
-                                  currency: Currency,
-                                  billingDuration: BillingDuration,
-                                  customName: Option[String],
-                                  customDescription: Option[String],
-                                  otoroshiTarget: Option[OtoroshiTarget],
-                                  allowMultipleKeys: Option[Boolean],
-                                  autoRotation: Option[Boolean],
-                                  subscriptionProcess: SubscriptionProcess,
-                                  integrationProcess: IntegrationProcess,
-                                  aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-                                  override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                                  override val authorizedTeams: Seq[TeamId] = Seq.empty
-                                ) extends UsagePlan {
+      id: UsagePlanId,
+      maxPerSecond: Long,
+      maxPerDay: Long,
+      maxPerMonth: Long,
+      costPerAdditionalRequest: BigDecimal,
+      costPerMonth: BigDecimal,
+      trialPeriod: Option[BillingDuration],
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
+  ) extends UsagePlan {
     override def typeName: String = "QuotasWithoutLimits"
     override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
     override def maxRequestPerDay: Option[Long] = maxPerDay.some
@@ -391,23 +397,23 @@ case object UsagePlan {
       this.copy(authorizedTeams = teamIds)
   }
   case class PayPerUse(
-                        id: UsagePlanId,
-                        costPerMonth: BigDecimal,
-                        costPerRequest: BigDecimal,
-                        trialPeriod: Option[BillingDuration],
-                        currency: Currency,
-                        billingDuration: BillingDuration,
-                        customName: Option[String],
-                        customDescription: Option[String],
-                        otoroshiTarget: Option[OtoroshiTarget],
-                        allowMultipleKeys: Option[Boolean],
-                        autoRotation: Option[Boolean],
-                        subscriptionProcess: SubscriptionProcess,
-                        integrationProcess: IntegrationProcess,
-                        aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-                        override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                        override val authorizedTeams: Seq[TeamId] = Seq.empty
-                      ) extends UsagePlan {
+      id: UsagePlanId,
+      costPerMonth: BigDecimal,
+      costPerRequest: BigDecimal,
+      trialPeriod: Option[BillingDuration],
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
+  ) extends UsagePlan {
     override def typeName: String = "PayPerUse"
     override def costFor(requests: Long): BigDecimal =
       costPerMonth + (requests * costPerRequest)
@@ -426,17 +432,17 @@ case object UsagePlan {
 }
 
 case class OtoroshiApiKey(
-                           clientName: String,
-                           clientId: String,
-                           clientSecret: String
-                         ) extends CanJson[OtoroshiApiKey] {
+    clientName: String,
+    clientId: String,
+    clientSecret: String
+) extends CanJson[OtoroshiApiKey] {
   override def asJson: JsValue = json.OtoroshiApiKeyFormat.writes(this)
 }
 
 case class SwaggerAccess(url: String,
                          content: Option[String] = None,
                          headers: Map[String, String] =
-                         Map.empty[String, String]) {
+                           Map.empty[String, String]) {
   def swaggerContent()(implicit ec: ExecutionContext,
                        env: Env): Future[JsValue] = {
     content match {
@@ -461,7 +467,7 @@ case class ApiDocumentation(id: ApiDocumentationId,
                             tenant: TenantId,
                             pages: Seq[ApiDocumentationPageId],
                             lastModificationAt: DateTime)
-  extends CanJson[ApiDocumentation] {
+    extends CanJson[ApiDocumentation] {
   override def asJson: JsValue = json.ApiDocumentationFormat.writes(this)
   def fetchPages(tenant: Tenant)(implicit ec: ExecutionContext, env: Env) = {
     env.dataStore.apiDocumentationPageRepo
@@ -504,8 +510,8 @@ case class ApiDocumentationPage(id: ApiDocumentationPageId,
                                 remoteContentEnabled: Boolean = false,
                                 remoteContentUrl: Option[String] = None,
                                 remoteContentHeaders: Map[String, String] =
-                                Map.empty[String, String])
-  extends CanJson[ApiDocumentationPage] {
+                                  Map.empty[String, String])
+    extends CanJson[ApiDocumentationPage] {
   //def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
   def humanReadableId = s"$level-${title.urlPathSegmentSanitized}"
   override def asJson: JsValue = json.ApiDocumentationPageFormat.writes(this)
@@ -519,7 +525,7 @@ case class ApiPost(id: ApiPostId,
                    title: String,
                    lastModificationAt: DateTime,
                    content: String)
-  extends CanJson[ApiPost] {
+    extends CanJson[ApiPost] {
   def humanReadableId: String = title.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
@@ -544,7 +550,7 @@ case class ApiIssue(id: ApiIssueId,
                     comments: Seq[ApiIssueComment],
                     lastModificationAt: DateTime,
                     apiVersion: Option[String] = Some("1.0.0"))
-  extends CanJson[ApiIssue] {
+    extends CanJson[ApiIssue] {
   def humanReadableId: String = seqId.toString
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
 }
@@ -563,63 +569,63 @@ object TestingAuth {
 }
 
 case class TestingConfig(
-                          otoroshiSettings: OtoroshiSettingsId,
-                          authorizedEntities: AuthorizedEntities,
-                          clientName: String,
-                          api: ApiId,
-                          tag: String,
-                          customMetadata: Option[JsObject],
-                          customMaxPerSecond: Option[Long],
-                          customMaxPerDay: Option[Long],
-                          customMaxPerMonth: Option[Long],
-                          customReadOnly: Option[Boolean]
-                        ) extends CanJson[TestingConfig] {
+    otoroshiSettings: OtoroshiSettingsId,
+    authorizedEntities: AuthorizedEntities,
+    clientName: String,
+    api: ApiId,
+    tag: String,
+    customMetadata: Option[JsObject],
+    customMaxPerSecond: Option[Long],
+    customMaxPerDay: Option[Long],
+    customMaxPerMonth: Option[Long],
+    customReadOnly: Option[Boolean]
+) extends CanJson[TestingConfig] {
   override def asJson: JsValue = json.TestingConfigFormat.writes(this)
 }
 
 case class Testing(
-                    enabled: Boolean = false,
-                    auth: TestingAuth = TestingAuth.Basic,
-                    name: Option[String] = None,
-                    username: Option[String] = None,
-                    password: Option[String] = None,
-                    config: Option[TestingConfig] = None,
-                  ) extends CanJson[Testing] {
+    enabled: Boolean = false,
+    auth: TestingAuth = TestingAuth.Basic,
+    name: Option[String] = None,
+    username: Option[String] = None,
+    password: Option[String] = None,
+    config: Option[TestingConfig] = None,
+) extends CanJson[Testing] {
   override def asJson: JsValue = json.TestingFormat.writes(this)
 }
 
 case class Api(
-                id: ApiId,
-                tenant: TenantId,
-                deleted: Boolean = false,
-                team: TeamId,
-                name: String,
-                smallDescription: String,
-                header: Option[String] = None,
-                image: Option[String] = None,
-                description: String,
-                currentVersion: Version = Version("1.0.0"),
-                supportedVersions: Set[Version] = Set(Version("1.0.0")),
-                isDefault: Boolean = false,
-                lastUpdate: DateTime,
-                published: Boolean = false,
-                testing: Testing = Testing(),
-                documentation: ApiDocumentation,
-                swagger: Option[SwaggerAccess] = Some(
-                  SwaggerAccess(url = "/assets/swaggers/petstore.json")),
-                tags: Set[String] = Set.empty,
-                categories: Set[String] = Set.empty,
-                visibility: ApiVisibility,
-                possibleUsagePlans: Seq[UsagePlan],
-                defaultUsagePlan: UsagePlanId,
-                authorizedTeams: Seq[TeamId] = Seq.empty,
-                posts: Seq[ApiPostId] = Seq.empty,
-                issues: Seq[ApiIssueId] = Seq.empty,
-                issuesTags: Set[ApiIssueTag] = Set.empty,
-                stars: Int = 0,
-                parent: Option[ApiId] = None,
-                apis: Option[Set[ApiId]] = None
-              ) extends CanJson[User] {
+    id: ApiId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    team: TeamId,
+    name: String,
+    smallDescription: String,
+    header: Option[String] = None,
+    image: Option[String] = None,
+    description: String,
+    currentVersion: Version = Version("1.0.0"),
+    supportedVersions: Set[Version] = Set(Version("1.0.0")),
+    isDefault: Boolean = false,
+    lastUpdate: DateTime,
+    published: Boolean = false,
+    testing: Testing = Testing(),
+    documentation: ApiDocumentation,
+    swagger: Option[SwaggerAccess] = Some(
+      SwaggerAccess(url = "/assets/swaggers/petstore.json")),
+    tags: Set[String] = Set.empty,
+    categories: Set[String] = Set.empty,
+    visibility: ApiVisibility,
+    possibleUsagePlans: Seq[UsagePlan],
+    defaultUsagePlan: UsagePlanId,
+    authorizedTeams: Seq[TeamId] = Seq.empty,
+    posts: Seq[ApiPostId] = Seq.empty,
+    issues: Seq[ApiIssueId] = Seq.empty,
+    issuesTags: Set[ApiIssueTag] = Set.empty,
+    stars: Int = 0,
+    parent: Option[ApiId] = None,
+    apis: Option[Set[ApiId]] = None
+) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
   def asSimpleJson: JsValue = Json.obj(
@@ -681,7 +687,7 @@ case class Api(
 
 case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
                               groups: Set[OtoroshiServiceGroupId] = Set.empty)
-  extends CanJson[AuthorizedEntities] {
+    extends CanJson[AuthorizedEntities] {
   def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
   def asOtoroshiJson: JsValue =
     json.AuthorizedEntitiesOtoroshiFormat.writes(this)
@@ -691,30 +697,32 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
       a.groups.contains(g))
 }
 
-case class ApiWithAuthorizations(api: Api, authorizations: Seq[AuthorizationApi] = Seq.empty)
+case class ApiWithAuthorizations(api: Api,
+                                 authorizations: Seq[AuthorizationApi] =
+                                   Seq.empty)
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
 
 case class ApiGroup(
-                     id: ApiGroupId,
-                     tenant: TenantId,
-                     deleted: Boolean = false,
-                     team: TeamId,
-                     name: String,
-                     smallDescription: String,
-                     description: String,
-                     published: Boolean = false,
-                     apis: Set[ApiId],
-                     visibility: ApiVisibility,
-                     tags: Set[String] = Set.empty,
-                     categories: Set[String] = Set.empty,
-                     possibleUsagePlans: Seq[UsagePlan],
-                     defaultUsagePlan: UsagePlanId,
-                     authorizedTeams: Seq[TeamId] = Seq.empty,
-                     posts: Seq[ApiPostId] = Seq.empty,
-                     issues: Seq[ApiIssueId] = Seq.empty,
-                     issuesTags: Set[ApiIssueTag] = Set.empty,
-                     stars: Int = 0,
-                   ) extends CanJson[ApiGroup] {
+    id: ApiGroupId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    team: TeamId,
+    name: String,
+    smallDescription: String,
+    description: String,
+    published: Boolean = false,
+    apis: Set[ApiId],
+    visibility: ApiVisibility,
+    tags: Set[String] = Set.empty,
+    categories: Set[String] = Set.empty,
+    possibleUsagePlans: Seq[UsagePlan],
+    defaultUsagePlan: UsagePlanId,
+    authorizedTeams: Seq[TeamId] = Seq.empty,
+    posts: Seq[ApiPostId] = Seq.empty,
+    issues: Seq[ApiIssueId] = Seq.empty,
+    issuesTags: Set[ApiIssueTag] = Set.empty,
+    stars: Int = 0,
+) extends CanJson[ApiGroup] {
   override def asJson: JsValue = json.ApiGroupFormat.writes(this)
 }

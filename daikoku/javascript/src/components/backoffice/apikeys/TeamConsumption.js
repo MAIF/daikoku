@@ -10,9 +10,8 @@ import { useTeamBackOffice } from '../../../contexts';
 export const TeamConsumption = () => {
   const { translateMethod } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector(state => state.context)
-  useTeamBackOffice(currentTeam)
-
+  const { currentTeam } = useSelector((state) => state.context);
+  useTeamBackOffice(currentTeam);
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translateMethod('Consumption')}`;

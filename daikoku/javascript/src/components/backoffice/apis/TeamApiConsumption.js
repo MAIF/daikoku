@@ -41,7 +41,7 @@ export const TeamApiConsumption = ({ api, apiGroup }) => {
     viewByPlan: true,
   });
 
-  const {currentTeam} = useSelector(state => state.context);
+  const { currentTeam } = useSelector((state) => state.context);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -104,9 +104,13 @@ export const TeamApiConsumption = ({ api, apiGroup }) => {
                 data={sumGlobalInformations(data.filter((d) => d.plan === plan._id))}
                 period={state.period}
                 handleClick={() =>
-                  !!apiGroup ?
-                  navigate(`/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/stats/plan/${plan._id}`) :
-                  navigate(`/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/stats/plan/${plan._id}`)
+                  !!apiGroup
+                    ? navigate(
+                        `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/stats/plan/${plan._id}`
+                      )
+                    : navigate(
+                        `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/stats/plan/${plan._id}`
+                      )
                 }
               />
             </div>
@@ -117,8 +121,7 @@ export const TeamApiConsumption = ({ api, apiGroup }) => {
   ];
 
   useEffect(() => {
-    Services.teams()
-      .then(setTeams);
+    Services.teams().then(setTeams);
 
     document.title = `${currentTeam.name} - ${translateMethod('API consumption')}`;
   }, []);
@@ -147,7 +150,7 @@ export const TeamApiConsumption = ({ api, apiGroup }) => {
       )}
     </Can>
   );
-}
+};
 
 const PlanLightConsumption = (props) => {
   const { translateMethod } = useContext(I18nContext);
@@ -222,4 +225,4 @@ const PlanLightConsumption = (props) => {
       </div>
     </div>
   );
-}
+};

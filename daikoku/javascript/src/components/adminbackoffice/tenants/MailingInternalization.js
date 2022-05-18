@@ -110,27 +110,26 @@ const EditMailtemplate = ({ tenantId }) => {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.oneTenant(tenantId)
-      .then((tenant) => {
-        setTenant(tenant);
+    Services.oneTenant(tenantId).then((tenant) => {
+      setTenant(tenant);
 
-        const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
-        Services.getTranslations(KEY_MAIL_TEMPLATE).then((data) => {
-          if (data.translations.length === 0) {
-            setMailTemplateTranslations(
-              ['fr', 'en']
-                .map((l) => ({
-                  _id: uuid(),
-                  key: KEY_MAIL_TEMPLATE,
-                  language: l,
-                  value: '{{email}}',
-                  _tenant: tenant._id,
-                }))
-                .flatMap((t) => t)
-            );
-          } else setMailTemplateTranslations(data.translations);
-        });
+      const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
+      Services.getTranslations(KEY_MAIL_TEMPLATE).then((data) => {
+        if (data.translations.length === 0) {
+          setMailTemplateTranslations(
+            ['fr', 'en']
+              .map((l) => ({
+                _id: uuid(),
+                key: KEY_MAIL_TEMPLATE,
+                language: l,
+                value: '{{email}}',
+                _tenant: tenant._id,
+              }))
+              .flatMap((t) => t)
+          );
+        } else setMailTemplateTranslations(data.translations);
       });
+    });
   }, []);
 
   const handleTranslation = (key, language, value) => {
@@ -148,8 +147,7 @@ const EditMailtemplate = ({ tenantId }) => {
   };
 
   const saveTenant = () => {
-    Services.saveTenant(tenant)
-      .then(manageError);
+    Services.saveTenant(tenant).then(manageError);
   };
 
   const saveTranslation = (translation) => {
@@ -159,8 +157,8 @@ const EditMailtemplate = ({ tenantId }) => {
           setMailTemplateTranslations(
             mailTemplateTranslations.map((t) => {
               if (t._id === translation._id) {
-                return res
-              };
+                return res;
+              }
 
               return t;
             })
@@ -253,7 +251,7 @@ const EditMailtemplate = ({ tenantId }) => {
 };
 
 export const MailingInternalization = () => {
-  const tenant = useSelector(s => s.context);
+  const tenant = useSelector((s) => s.context);
   useTenantBackOffice();
 
   const [translations, setTranslations] = useState([]);
@@ -411,4 +409,4 @@ export const MailingInternalization = () => {
       {domain === 'front' && <EditFrontOfficeTranslations tenantId={tenant._id} />}
     </Can>
   );
-}
+};

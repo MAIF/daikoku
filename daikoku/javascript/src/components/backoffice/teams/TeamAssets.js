@@ -5,11 +5,9 @@ import { AssetsList } from '../';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamAssets = () => {
-  const { currentTeam } = useSelector(state => state.context)
+  const { currentTeam } = useSelector((state) => state.context);
 
   useTeamBackOffice(currentTeam);
 
-  return (
-    <AssetsList tenantMode={false} />
-  )
-}
+  return <AssetsList tenantMode={false} />;
+};

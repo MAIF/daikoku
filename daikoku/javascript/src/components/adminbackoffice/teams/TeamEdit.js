@@ -11,9 +11,9 @@ import { useTenantBackOffice } from '../../../contexts';
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 export const TeamEditForAdmin = () => {
-  const context = useSelector(s => s.context);
+  const context = useSelector((s) => s.context);
   useTenantBackOffice();
-  
+
   const [team, setTeam] = useState(null);
   const [create, setCreate] = useState(false);
   const navigate = useNavigate();
@@ -89,27 +89,25 @@ export const TeamEditForAdmin = () => {
 
   const save = () => {
     if (location && location.state && location.state.newTeam) {
-      Services.createTeam(team).
-        then((team) => {
-          if (team.error) toastr.error(translateMethod('team_api_post.failed'));
-          else {
-            toastr.success(
-              translateMethod(
-                'team.created',
-                false,
-                `Team ${team.name} successfully created`,
-                team.name
-              )
-            );
-            navigate(`/settings/teams/${team._humanReadableId}/members`);
-          }
-        });
+      Services.createTeam(team).then((team) => {
+        if (team.error) toastr.error(translateMethod('team_api_post.failed'));
+        else {
+          toastr.success(
+            translateMethod(
+              'team.created',
+              false,
+              `Team ${team.name} successfully created`,
+              team.name
+            )
+          );
+          navigate(`/settings/teams/${team._humanReadableId}/members`);
+        }
+      });
     } else {
-      Services.updateTeam(team)
-        .then((t) => {
-          setTeam(t);
-          toastr.success(translateMethod('team.updated'));
-        });
+      Services.updateTeam(team).then((t) => {
+        setTeam(t);
+        toastr.success(translateMethod('team.updated'));
+      });
     }
   };
 
@@ -122,8 +120,7 @@ export const TeamEditForAdmin = () => {
       setTeam(location.state.newTeam);
       setCreate(true);
     } else {
-      Services.teamFull(params.teamSettingId)
-        .then(setTeam);
+      Services.teamFull(params.teamSettingId).then(setTeam);
     }
   }, []);
 
@@ -195,4 +192,4 @@ export const TeamEditForAdmin = () => {
       </div>
     </Can>
   );
-}
+};

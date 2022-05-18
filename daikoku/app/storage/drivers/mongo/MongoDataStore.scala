@@ -76,9 +76,10 @@ case class MongoTenantCapableApiRepo(
 case class MongoTenantCapableApiGroupRepo(
     _repo: () => MongoRepo[ApiGroup, ApiGroupId],
     _tenantRepo: TenantId => MongoTenantAwareRepo[ApiGroup, ApiGroupId])
-  extends MongoTenantCapableRepo[ApiGroup, ApiGroupId]
+    extends MongoTenantCapableRepo[ApiGroup, ApiGroupId]
     with ApiGroupRepo {
-  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[ApiGroup, ApiGroupId] =
+  override def tenantRepo(
+      tenant: TenantId): MongoTenantAwareRepo[ApiGroup, ApiGroupId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[ApiGroup, ApiGroupId] = _repo()
@@ -623,7 +624,9 @@ class MongoTenantApiRepo(env: Env,
 class MongoTenantApiGroupRepo(env: Env,
                               reactiveMongoApi: ReactiveMongoApi,
                               tenant: TenantId)
-    extends MongoTenantAwareRepo[ApiGroup, ApiGroupId](env, reactiveMongoApi, tenant) {
+    extends MongoTenantAwareRepo[ApiGroup, ApiGroupId](env,
+                                                       reactiveMongoApi,
+                                                       tenant) {
   override def collectionName: String = "ApiGroups"
 
   override def format: Format[ApiGroup] = json.ApiGroupFormat

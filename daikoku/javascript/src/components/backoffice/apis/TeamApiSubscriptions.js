@@ -16,7 +16,7 @@ import * as Services from '../../../services';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
 import { I18nContext, openSubMetadataModal } from '../../../core';
 
-const TeamApiSubscriptionsComponent = ({api, ...props}) => {
+const TeamApiSubscriptionsComponent = ({ api, ...props }) => {
   const [teams, setTeams] = useState([]);
   const [columns, setColumns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,11 +27,10 @@ const TeamApiSubscriptionsComponent = ({api, ...props}) => {
   const { translateMethod, language, Translation } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.teams()
-      .then((teams) => {
-        setTeams(teams);
-        setLoading(false);
-      });
+    Services.teams().then((teams) => {
+      setTeams(teams);
+      setLoading(false);
+    });
 
     document.title = `${props.currentTeam.name} - ${translateMethod('Subscriptions')}`;
   }, []);

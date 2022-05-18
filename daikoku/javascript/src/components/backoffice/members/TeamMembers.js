@@ -439,7 +439,7 @@ export const TeamMembersSimpleComponent = (props) => {
         ))}
     </>
   );
-}
+};
 
 const TeamMembersComponent = (props) => {
   useTeamBackOffice(props.currentTeam);

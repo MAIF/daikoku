@@ -29,7 +29,7 @@ const LazyFormInput = (props) => {
       <LazyForm {...props} />
     </React.Suspense>
   );
-}
+};
 
 const AuthConfig = (props) => {
   const { Translation } = useContext(I18nContext);
@@ -50,7 +50,7 @@ const AuthConfig = (props) => {
       </span>
     );
   }
-}
+};
 
 const MailerConfig = (props) => {
   const { rawValue } = props;
@@ -64,7 +64,7 @@ const MailerConfig = (props) => {
   else if (mailerSettings.type === 'smtpClient') return <SmtpClientConfig {...props} />;
   else if (mailerSettings.type === 'sendgrid') return <SendGridConfig {...props} />;
   else return null;
-}
+};
 
 const StyleLogoAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
@@ -84,7 +84,7 @@ const StyleLogoAssetButton = (props) => {
       />
     </div>
   );
-}
+};
 
 const StyleJsUrlAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
@@ -103,7 +103,7 @@ const StyleJsUrlAssetButton = (props) => {
       />
     </div>
   );
-}
+};
 
 const StyleCssUrlAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
@@ -123,7 +123,7 @@ const StyleCssUrlAssetButton = (props) => {
       />
     </div>
   );
-}
+};
 
 const StyleFaviconUrlAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
@@ -143,7 +143,7 @@ const StyleFaviconUrlAssetButton = (props) => {
       />
     </div>
   );
-}
+};
 
 const StyleFontFamilyUrlAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
@@ -164,7 +164,7 @@ const StyleFontFamilyUrlAssetButton = (props) => {
       />
     </div>
   );
-}
+};
 
 const ThemeUpdatorFromUI = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -198,7 +198,7 @@ const ThemeUpdatorFromUI = (props) => {
       </button>
     </div>
   );
-}
+};
 
 const HomePageVisibilitySwitch = (props) => {
   return (
@@ -209,17 +209,17 @@ const HomePageVisibilitySwitch = (props) => {
       onChange={(v) => props.changeValue('style.homePageVisible', v)}
     />
   );
-}
+};
 
 const TenantEdition = (props) => {
-  const {tenant } = useSelector(s => s.context);
+  const { tenant } = useSelector((s) => s.context);
 
   const { translateMethod, language, Translation, languages, setTranslationMode } =
     useContext(I18nContext);
 
   const params = useParams();
   const location = useLocation();
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const [state, setState] = useState({
     tenant: null,
@@ -903,49 +903,46 @@ const TenantEdition = (props) => {
         create: true,
       });
     } else {
-      Services.oneTenant(params.tenantId || props.tenant._humanReadableId)
-        .then((tenant) => {
-          setState({
-            ...state,
-            tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
-          });
+      Services.oneTenant(params.tenantId || props.tenant._humanReadableId).then((tenant) => {
+        setState({
+          ...state,
+          tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
         });
+      });
     }
   }, []);
 
   const save = () => {
     if (state.create) {
-      return Services.createTenant(state.tenant)
-        .then((tenant) => {
-          setState(
-            {
-              ...state,
-              create: false,
-              tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
-            },
-            () =>
-              toastr.success(
-                translateMethod(
-                  'tenant.created.success',
-                  false,
-                  `Tenant "${tenant.name}" created`,
-                  tenant.name
-                )
+      return Services.createTenant(state.tenant).then((tenant) => {
+        setState(
+          {
+            ...state,
+            create: false,
+            tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
+          },
+          () =>
+            toastr.success(
+              translateMethod(
+                'tenant.created.success',
+                false,
+                `Tenant "${tenant.name}" created`,
+                tenant.name
               )
-          );
-        });
+            )
+        );
+      });
     } else {
       if (state.tenant.tenantMode === 'translation') {
         window.alert(<p>{translateMethod('tenant_edit.translation_mode_message')}</p>);
         setTranslationMode(true);
       }
-      return Services.saveTenant(state.tenant)
-        .then(({ uiPayload }) => {
-          toastr.success(translateMethod('Tenant updated successfully'))
-          if (uiPayload._id === tenant._id) {
-            updateTenant(uiPayload)(dispatch)
-          }
-        })
+      return Services.saveTenant(state.tenant).then(({ uiPayload }) => {
+        toastr.success(translateMethod('Tenant updated successfully'));
+        if (uiPayload._id === tenant._id) {
+          updateTenant(uiPayload)(dispatch);
+        }
+      });
     }
   };
 
@@ -981,12 +978,7 @@ const TenantEdition = (props) => {
             <i className="fas fa-chevron-left me-1" />
             <Translation i18nkey="Back">Back</Translation>
           </Link>
-          <button
-            type="button"
-            className="btn btn-outline-success"
-            {...disabled}
-            onClick={save}
-          >
+          <button type="button" className="btn btn-outline-success" {...disabled} onClick={save}>
             {!state.create && (
               <span>
                 <i className="fas fa-save me-1" />
@@ -1004,16 +996,16 @@ const TenantEdition = (props) => {
       </div>
     </Can>
   );
-}
+};
 
 export const TenantEdit = () => {
   const { tenant } = useTenantBackOffice();
 
-  return <TenantEdition tenant={tenant} />
-}
+  return <TenantEdition tenant={tenant} />;
+};
 
 export const TenantEditForAdmin = () => {
   useDaikokuBackOffice();
 
-  return <TenantEdition />
-}
+  return <TenantEdition />;
+};

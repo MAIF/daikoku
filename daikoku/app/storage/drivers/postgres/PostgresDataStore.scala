@@ -783,8 +783,12 @@ class PostgresTenantApiRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)
   override def extractId(value: Api): String = value.id.value
 }
 
-class PostgresTenantApiGroupRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)
-    extends PostgresTenantAwareRepo[ApiGroup, ApiGroupId](env, reactivePg, tenant) {
+class PostgresTenantApiGroupRepo(env: Env,
+                                 reactivePg: ReactivePg,
+                                 tenant: TenantId)
+    extends PostgresTenantAwareRepo[ApiGroup, ApiGroupId](env,
+                                                          reactivePg,
+                                                          tenant) {
   override def format: Format[ApiGroup] = json.ApiGroupFormat
 
   override def tableName: String = "apiGroups"

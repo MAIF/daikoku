@@ -7,7 +7,7 @@ trait CanJson[A] {
   def asJson: JsValue
 }
 
-trait ApiOrGroupId{
+trait ApiOrGroupId {
   def value: String
   def asJson: JsValue
 }
@@ -36,10 +36,16 @@ case class UserId(value: String) extends ValueType with CanJson[UserId] {
 case class TeamId(value: String) extends ValueType with CanJson[TeamId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiId(value: String) extends ValueType with ApiOrGroupId with CanJson[ApiId] {
+case class ApiId(value: String)
+    extends ValueType
+    with ApiOrGroupId
+    with CanJson[ApiId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiGroupId(value: String) extends ValueType with ApiOrGroupId with CanJson[ApiGroupId] {
+case class ApiGroupId(value: String)
+    extends ValueType
+    with ApiOrGroupId
+    with CanJson[ApiGroupId] {
   def asJson: JsValue = JsString(value)
 }
 case class ApiSubscriptionId(value: String)
@@ -134,8 +140,3 @@ case class Evolution(id: DatastoreId,
     extends CanJson[Evolution] {
   override def asJson: JsValue = json.EvolutionFormat.writes(this)
 }
-
-
-
-
-

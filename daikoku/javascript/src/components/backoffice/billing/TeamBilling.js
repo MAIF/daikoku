@@ -5,12 +5,20 @@ import _ from 'lodash';
 
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
-import { formatCurrency, formatPlanType, Can, read, stat, api as API, CanIDoAction } from '../../utils';
+import {
+  formatCurrency,
+  formatPlanType,
+  Can,
+  read,
+  stat,
+  api as API,
+  CanIDoAction,
+} from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
-export const TeamBilling = (props) =>  {
+export const TeamBilling = (props) => {
   const [state, setState] = useState({
     consumptions: [],
     consumptionsByApi: [],
@@ -19,7 +27,7 @@ export const TeamBilling = (props) =>  {
     date: moment(),
   });
 
-  const { currentTeam } = useSelector(state => state.context)
+  const { currentTeam } = useSelector((state) => state.context);
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -186,4 +194,4 @@ export const TeamBilling = (props) =>  {
       </div>
     </Can>
   );
-}
+};

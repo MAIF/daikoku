@@ -20,9 +20,7 @@ export const TenantList = () => {
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  const getTenants = (_) =>
-    Services.allTenants()
-      .then(setTenants);
+  const getTenants = (_) => Services.allTenants().then(setTenants);
 
   const createNewTenant = () => {
     Services.fetchNewTenant().then((newTenant) => {
@@ -35,13 +33,11 @@ export const TenantList = () => {
   };
 
   const removeTenant = (tenantId) => {
-    window.confirm(translateMethod('delete.tenant.confirm'))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteTenant(tenantId)
-            .then(() => getTenants());
-        }
-      });
+    window.confirm(translateMethod('delete.tenant.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteTenant(tenantId).then(() => getTenants());
+      }
+    });
   };
 
   const filteredTenants = search
@@ -122,4 +118,4 @@ export const TenantList = () => {
       </div>
     </Can>
   );
-}
+};

@@ -10,7 +10,7 @@ export function TeamApiIssueTags({ value, onChange, basePath }) {
   const [updated, setUpdated] = useState(false);
 
   const { translateMethod } = useContext(I18nContext);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   function deleteTag(id) {
     setApi({
@@ -25,7 +25,7 @@ export function TeamApiIssueTags({ value, onChange, basePath }) {
         <NewTag
           issuesTags={api.issuesTags}
           handleCreate={(newTag) => {
-            const updatedApi = { ...api, issuesTags: [...api.issuesTags, newTag] }
+            const updatedApi = { ...api, issuesTags: [...api.issuesTags, newTag] };
             setApi(updatedApi);
             onChange(updatedApi);
             showNewTagForm(false);
@@ -51,7 +51,7 @@ export function TeamApiIssueTags({ value, onChange, basePath }) {
                 className="badge d-flex align-items-center justify-content-center px-3 py-2"
                 style={{
                   backgroundColor: issueTag.color,
-                  color: '#fff'
+                  color: '#fff',
                 }}
               >
                 {issueTag.name}
@@ -67,10 +67,9 @@ export function TeamApiIssueTags({ value, onChange, basePath }) {
                       if (i === j) issue.name = e.target.value;
                       return issue;
                     }),
-                  })
-                  setUpdated(true)
-                }
-                }
+                  });
+                  setUpdated(true);
+                }}
               />
               <ColorTag
                 className="pe-3"
@@ -100,11 +99,19 @@ export function TeamApiIssueTags({ value, onChange, basePath }) {
           {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
         </div>
       </div>
-      {updated && <div className="col-sm-12 d-flex justify-content-end">
-        <button className="btn btn-outline-success ml-auto" onClick={() => { onChange(api); setUpdated(false) }}>
-          {translateMethod('Save')}
-        </button>
-      </div>}
+      {updated && (
+        <div className="col-sm-12 d-flex justify-content-end">
+          <button
+            className="btn btn-outline-success ml-auto"
+            onClick={() => {
+              onChange(api);
+              setUpdated(false);
+            }}
+          >
+            {translateMethod('Save')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -159,7 +166,7 @@ const NewTag = ({ issuesTags, handleCreate, onCancel }) => {
       </div>
     </div>
   );
-}
+};
 
 function ColorTag({ initialColor, handleColorChange, presetColors, className }) {
   const sketchColorToReadableColor = (c) => {

@@ -10,12 +10,11 @@ export const SearchPanel = ({ teams }) => {
 
   const { translateMethod } = useContext(I18nContext);
 
-  const { tenant, connectedUser } = useSelector((state) => state.context)
+  const { tenant, connectedUser } = useSelector((state) => state.context);
 
   useEffect(() => {
-    debouncedSearch("")
+    debouncedSearch('');
   }, []);
-
 
   const search = (inputValue) => {
     const options = [
@@ -39,21 +38,23 @@ export const SearchPanel = ({ teams }) => {
       options: options.filter((i) => i.label.toLowerCase().includes(inputValue.toLowerCase())),
     };
 
-    return Services.search(inputValue)
-      .then((result) => setResults([
+    return Services.search(inputValue).then((result) =>
+      setResults([
         utils,
         ...result.map((item) => ({ ...item, label: translateMethod(item.label) })),
-      ]));
+      ])
+    );
   };
 
-  const debouncedSearch = _.debounce(search, 100, { leading: true })
+  const debouncedSearch = _.debounce(search, 100, { leading: true });
 
   return (
-    <div className='ms-3 mt-2 col-8 d-flex flex-column panel'>
+    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
       <input
-        placeholder={translateMethod("search.placeholder")}
-        className='mb-3 form-control'
-        onChange={e => debouncedSearch(e.target.value)} />
+        placeholder={translateMethod('search.placeholder')}
+        className="mb-3 form-control"
+        onChange={(e) => debouncedSearch(e.target.value)}
+      />
       <div className="blocks">
         {results.map((r, idx) => {
           if (!r.options.length) {
@@ -62,50 +63,55 @@ export const SearchPanel = ({ teams }) => {
           return (
             <div key={idx} className="mb-3 block">
               <div className="mb-1 block__category">{r.label}</div>
-              <div className='ms-2 block__entries block__border d-flex flex-column'>
+              <div className="ms-2 block__entries block__border d-flex flex-column">
                 {r.options.map((option) => {
                   const team = teams.find((t) => t._id === option.team);
                   switch (option.type) {
                     case 'link':
                       return (
-                        <Link
-                          to={option.url}
-                          className='block__entry__link'
-                          key={option.value}
-                        >{option.label}</Link>
-                      )
+                        <Link to={option.url} className="block__entry__link" key={option.value}>
+                          {option.label}
+                        </Link>
+                      );
                     case 'tenant':
                       return (
                         <Link
                           to={`/settings/tenants/${option.value}`}
-                          className='block__entry__link'
+                          className="block__entry__link"
                           key={option.value}
-                        >{option.label}</Link>
-                      )
+                        >
+                          {option.label}
+                        </Link>
+                      );
                     case 'team':
                       return (
                         <Link
                           to={`/${option.value}/settings`}
-                          className='block__entry__link'
+                          className="block__entry__link"
                           key={option.value}
-                        >{option.label}</Link>
-                      )
+                        >
+                          {option.label}
+                        </Link>
+                      );
                     case 'api':
                       return (
                         <Link
-                          to={`/${team ? team._humanReadableId : option.team}/${option.value}/${option.version}/description`}
-                          className='block__entry__link'
+                          to={`/${team ? team._humanReadableId : option.team}/${option.value}/${
+                            option.version
+                          }/description`}
+                          className="block__entry__link"
                           key={option.value}
-                        >{option.label}</Link>
-                      )
+                        >
+                          {option.label}
+                        </Link>
+                      );
                   }
-
                 })}
               </div>
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
-}
+  );
+};

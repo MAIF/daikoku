@@ -23,10 +23,9 @@ export const TeamApiInfos = ({
 
   useEffect(() => {
     return () => {
-      injectSubMenu(null)
-    }
-  }, [])
-  
+      injectSubMenu(null);
+    };
+  }, []);
 
   const steps = [
     {

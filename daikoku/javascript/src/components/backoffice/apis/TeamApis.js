@@ -10,8 +10,8 @@ import { I18nContext, setError } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamApis = () => {
-  const { currentTeam, tenant } = useSelector(state => state.context);
-  const dispatch = useDispatch()
+  const { currentTeam, tenant } = useSelector((state) => state.context);
+  const dispatch = useDispatch();
   useTeamBackOffice(currentTeam);
 
   const { translateMethod } = useContext(I18nContext);
@@ -27,7 +27,7 @@ export const TeamApis = () => {
       id: 'name',
       Header: translateMethod('Name'),
       style: { textAlign: 'left' },
-      accessor: (api) => api.apis ? api.name : `${api.name} - (${api.currentVersion})`,
+      accessor: (api) => (api.apis ? api.name : `${api.name} - (${api.currentVersion})`),
       sortType: 'basic',
       Cell: ({
         cell: {
@@ -36,14 +36,14 @@ export const TeamApis = () => {
       }) => {
         const api = original;
         if (api.apis) {
-          return <div className='d-flex flex-row justify-content-between'>
-            <span>{api.name}</span> 
-            <div className='iconized'>G</div>
-          </div>
+          return (
+            <div className="d-flex flex-row justify-content-between">
+              <span>{api.name}</span>
+              <div className="iconized">G</div>
+            </div>
+          );
         }
-        return (
-          <div>{`${api.name} - (${api.currentVersion})`}</div>
-        );
+        return <div>{`${api.name} - (${api.currentVersion})`}</div>;
       },
     },
     {
@@ -89,8 +89,12 @@ export const TeamApis = () => {
         },
       }) => {
         const api = original;
-        const viewUrl = api.apis ? `/${currentTeam._humanReadableId}/apigroups/${api._humanReadableId}/apis` : `/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`
-        const editUrl = api.apis ? `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos` : `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
+        const viewUrl = api.apis
+          ? `/${currentTeam._humanReadableId}/apigroups/${api._humanReadableId}/apis`
+          : `/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`;
+        const editUrl = api.apis
+          ? `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+          : `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
         return (
           <div className="btn-group">
             <Link
@@ -182,4 +186,4 @@ export const TeamApis = () => {
       </div>
     </Can>
   );
-}
+};

@@ -23,7 +23,7 @@ import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamApiKeysForApi = () => {
-  const {currentTeam, connectedUser} = useSelector(state => state.context);
+  const { currentTeam, connectedUser } = useSelector((state) => state.context);
   useTeamBackOffice(currentTeam);
 
   const [api, setApi] = useState({ name: '--', possibleUsagePlans: [] });
@@ -71,9 +71,7 @@ export const TeamApiKeysForApi = () => {
 
   const archiveApiKey = (subscription) => {
     return Services.archiveApiKey(currentTeam._id, subscription._id, !subscription.enabled)
-      .then(() =>
-        Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId)
-      )
+      .then(() => Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId))
       .then((subs) => setSubscriptions(subs));
   };
 
@@ -110,9 +108,7 @@ export const TeamApiKeysForApi = () => {
       rotationEvery,
       gracePeriod
     )
-      .then(() =>
-        Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId)
-      )
+      .then(() => Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId))
       .then((subs) => setSubscriptions(subs));
   };
 
@@ -241,7 +237,7 @@ export const TeamApiKeysForApi = () => {
       ) : null}
     </Can>
   );
-}
+};
 
 const ApiKeyCard = ({
   subscription,

@@ -28,14 +28,14 @@ export function SimpleNotification(props) {
             title={translateMethod('Ask to join a team')}
           />
         );
-      case 'TransferApiOwnership': 
+      case 'TransferApiOwnership':
         return (
-          <i 
+          <i
             className="fa-solid fa-arrow-down-from-dotted-line"
             style={{ marginRight: 5 }}
             title={translateMethod('transfer.api.ownership')}
           />
-        )  
+        );
       case 'ApiSubscription':
         return (
           <i
@@ -317,7 +317,8 @@ export function SimpleNotification(props) {
               )}
               {notification.action.type === 'TransferApiOwnership' && (
                 <div>
-                  {`request to transfer the ownership of `}<strong>{infos.api.name}</strong>
+                  {`request to transfer the ownership of `}
+                  <strong>{infos.api.name}</strong>
                 </div>
               )}
               {notification.action.type === 'ApiSubscription' && (

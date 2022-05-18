@@ -7,21 +7,14 @@ import { useParams, useNavigate, useMatch } from 'react-router-dom';
 import Select from 'react-select';
 
 import * as Services from '../../../services';
-import {
-  ApiDocumentation,
-  ApiPricing,
-  ApiSwagger,
-  ApiRedoc,
-  ApiPost,
-  ApiIssue,
-} from '.';
+import { ApiDocumentation, ApiPricing, ApiSwagger, ApiRedoc, ApiPost, ApiIssue } from '.';
 import { converter } from '../../../services/showdown';
 import { Can, manage, apikey, ActionWithTeamSelector, CanIDoAction, Option } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal, updateUser, I18nContext } from '../../../core';
 import StarsButton from './StarsButton';
 import { LoginOrRegisterModal } from '../modals';
-import { useApiFrontOffice } from '../../../contexts'
+import { useApiFrontOffice } from '../../../contexts';
 
 import 'highlight.js/styles/monokai.css';
 
@@ -115,7 +108,7 @@ const ApiHomeComponent = ({
   connectedUser,
   updateUser,
   tenant,
-  groupView
+  groupView,
 }) => {
   const [api, setApi] = useState(undefined);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -128,13 +121,15 @@ const ApiHomeComponent = ({
   const navigate = useNavigate();
   const defaultParams = useParams();
   const apiGroupMatch = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab');
-  const params = Option(apiGroupMatch).map(match => match.params).getOrElse(defaultParams);
+  const params = Option(apiGroupMatch)
+    .map((match) => match.params)
+    .getOrElse(defaultParams);
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const { client } = useContext(getApolloContext());
 
-  const { addMenu } = groupView ? { addMenu: () => { } } : useApiFrontOffice(api, ownerTeam)
+  const { addMenu } = groupView ? { addMenu: () => {} } : useApiFrontOffice(api, ownerTeam);
 
   useEffect(() => {
     updateSubscriptions(params.apiId);
@@ -142,16 +137,15 @@ const ApiHomeComponent = ({
 
   useEffect(() => {
     if (api) {
-      Services.team(api.team)
-        .then((ownerTeam) => setOwnerTeam(ownerTeam));
+      Services.team(api.team).then((ownerTeam) => setOwnerTeam(ownerTeam));
     }
   }, [api, params.versionId]);
-  
 
   useEffect(() => {
     if (myTeams && subscriptions && !groupView) {
-      const subscribingTeams = myTeams
-        .filter((team) => subscriptions.some((sub) => sub.team === team._id));
+      const subscribingTeams = myTeams.filter((team) =>
+        subscriptions.some((sub) => sub.team === team._id)
+      );
       const viewApiKeyLink = (
         <Can I={manage} a={apikey} teams={subscribingTeams}>
           <ActionWithTeamSelector
@@ -160,12 +154,12 @@ const ApiHomeComponent = ({
               false,
               'Select the team to view your api key'
             )}
-            teams={subscribingTeams.filter((t) =>
-              CanIDoAction(connectedUser, manage, apikey, t)
-            )}
+            teams={subscribingTeams.filter((t) => CanIDoAction(connectedUser, manage, apikey, t))}
             action={(teams) => {
-              const team = myTeams.find((t) => teams.includes(t._id))
-              navigate(`/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`);
+              const team = myTeams.find((t) => teams.includes(t._id));
+              navigate(
+                `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`
+              );
             }}
             withAllTeamSelector={false}
           >
@@ -174,12 +168,15 @@ const ApiHomeComponent = ({
             </span>
           </ActionWithTeamSelector>
         </Can>
-      )
+      );
 
-      addMenu({ blocks: { actions: { links: { viewApiKey: { label: 'view apikey', component: viewApiKeyLink } } } }})
+      addMenu({
+        blocks: {
+          actions: { links: { viewApiKey: { label: 'view apikey', component: viewApiKeyLink } } },
+        },
+      });
     }
-  }, [subscriptions, myTeams])
-
+  }, [subscriptions, myTeams]);
 
   const updateSubscriptions = (apiId) => {
     Promise.all([
@@ -310,7 +307,7 @@ const ApiHomeComponent = ({
         <h1 style={{ margin: 0 }}>{translateMethod(showAccessModal.error)}</h1>
         {(teams.length === 1 &&
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
-          showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
+        showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
             <h2 className="text-center my-3">{translateMethod('request_already_pending')}</h2>
             <button

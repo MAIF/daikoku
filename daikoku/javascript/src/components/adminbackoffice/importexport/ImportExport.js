@@ -32,11 +32,10 @@ export const ImportExport = () => {
   const actuallyImportState = (e) => {
     const files = e.target.files;
     setUploading(true);
-    Services.uploadExportFile(files[0])
-      .then(() => {
-        setUploading(false);
-        window.location.reload();
-      });
+    Services.uploadExportFile(files[0]).then(() => {
+      setUploading(false);
+      window.location.reload();
+    });
   };
 
   const migrate = () => {
@@ -84,9 +83,7 @@ export const ImportExport = () => {
               className="btn btn-outline-primary"
             >
               <i className="fas fa-upload me-1" />
-              {uploading
-                ? translateMethod('importing ...')
-                : translateMethod('import state')}
+              {uploading ? translateMethod('importing ...') : translateMethod('import state')}
             </button>
             <div className="d-flex justify-content-start mt-2">
               <SwitchButton
@@ -127,4 +124,4 @@ export const ImportExport = () => {
       </div>
     </Can>
   );
-}
+};

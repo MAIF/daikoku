@@ -45,8 +45,7 @@ export const TeamList = () => {
   };
 
   const updateTeams = () => {
-    Services.teams()
-      .then((teams) => setState({ ...state, teams }));
+    Services.teams().then((teams) => setState({ ...state, teams }));
   };
 
   const filteredTeams = state.search
@@ -130,4 +129,4 @@ export const TeamList = () => {
       </div>
     </Can>
   );
-}
+};

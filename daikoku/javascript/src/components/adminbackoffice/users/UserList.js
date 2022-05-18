@@ -11,7 +11,7 @@ import { I18nContext } from '../../../locales/i18n-context';
 import { useDaikokuBackOffice } from '../../../contexts';
 
 export const UserList = () => {
-  const { connectedUser, tenant } = useSelector(s => s.context);
+  const { connectedUser, tenant } = useSelector((s) => s.context);
   useDaikokuBackOffice();
 
   const [users, setUsers] = useState([]);
@@ -25,8 +25,7 @@ export const UserList = () => {
   const { translateMethod } = useContext(I18nContext);
 
   const updateUsers = () => {
-    Services.fetchAllUsers()
-      .then(setUsers);
+    Services.fetchAllUsers().then(setUsers);
   };
 
   const createNewUser = () => {
@@ -55,18 +54,17 @@ export const UserList = () => {
       )
       .then((ok) => {
         if (ok) {
-          Services.deleteUserById(user._id)
-            .then(() => {
-              toastr.info(
-                translateMethod(
-                  'remove.user.success',
-                  false,
-                  `user ${user.name} is successfully deleted`,
-                  user.name
-                )
-              );
-              updateUsers();
-            });
+          Services.deleteUserById(user._id).then(() => {
+            toastr.info(
+              translateMethod(
+                'remove.user.success',
+                false,
+                `user ${user.name} is successfully deleted`,
+                user.name
+              )
+            );
+            updateUsers();
+          });
         }
       });
   };
@@ -81,8 +79,8 @@ export const UserList = () => {
 
   const filteredUsers = search
     ? users.filter(({ name, email }) =>
-      [name, email].some((item) => item.toLowerCase().includes(search))
-    )
+        [name, email].some((item) => item.toLowerCase().includes(search))
+      )
     : users;
   return (
     <Can I={manage} a={daikoku} dispatchError>
@@ -147,8 +145,9 @@ export const UserList = () => {
                     },
                     {
                       action: () => toggleAdmin(user),
-                      iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
-                        }`,
+                      iconClass: `fas fa-shield-alt ${
+                        user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
+                      }`,
                       tooltip: translateMethod('toggle admin status'),
                     },
                   ]}
@@ -160,4 +159,4 @@ export const UserList = () => {
       </div>
     </Can>
   );
-}
+};

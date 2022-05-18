@@ -11,7 +11,7 @@ import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamApiKeyConsumption = () => {
-  const { currentTeam } = useSelector(state => state.context);
+  const { currentTeam } = useSelector((state) => state.context);
   useTeamBackOffice(currentTeam);
   const { translateMethod, Translation } = useContext(I18nContext);
   const params = useParams();
@@ -101,7 +101,7 @@ export const TeamApiKeyConsumption = () => {
       </div>
     </Can>
   );
-}
+};
 
 const PlanInformations = (props) => {
   const [state, setState] = useState({
@@ -127,4 +127,4 @@ const PlanInformations = (props) => {
       {state.informations.plan.customName || state.informations.plan.type}
     </h3>
   );
-}
+};

@@ -56,34 +56,33 @@ export function ApiDocumentation(props) {
   }, [props.api, params.pageId]);
 
   const fetchPage = () => {
-    Services.getDocDetails(props.api._humanReadableId, props.api.currentVersion)
-      .then((details) => {
-        const pageId = params.pageId || details.pages[0];
-        if (pageId) {
-          Services.getDocPage(props.api._id, pageId).then((page) => {
-            if (page.remoteContentEnabled) {
-              setState({
-                ...state,
-                details,
-                content: null,
-                contentType: page.contentType,
-                remoteContent: {
-                  url: page.contentUrl,
-                },
-              });
-            } else
-              setState({
-                ...state,
-                details,
-                content: page.content,
-                contentType: page.contentType,
-                remoteContent: null,
-              });
-          });
-        } else {
-          setState({ ...state, details });
-        }
-      });
+    Services.getDocDetails(props.api._humanReadableId, props.api.currentVersion).then((details) => {
+      const pageId = params.pageId || details.pages[0];
+      if (pageId) {
+        Services.getDocPage(props.api._id, pageId).then((page) => {
+          if (page.remoteContentEnabled) {
+            setState({
+              ...state,
+              details,
+              content: null,
+              contentType: page.contentType,
+              remoteContent: {
+                url: page.contentUrl,
+              },
+            });
+          } else
+            setState({
+              ...state,
+              details,
+              content: page.content,
+              contentType: page.contentType,
+              remoteContent: null,
+            });
+        });
+      } else {
+        setState({ ...state, details });
+      }
+    });
   };
 
   const api = props.api;

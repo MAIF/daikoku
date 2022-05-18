@@ -48,43 +48,47 @@ object AppError {
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
   def render(error: AppError): mvc.Result = error match {
-    case ApiVersionConflict                       => Conflict(toJson(ApiVersionConflict))
-    case ApiNotFound                              => NotFound(toJson(error))
-    case ApiGroupNotFound                         => NotFound(toJson(error))
-    case TeamNotFound                             => NotFound(toJson(error))
-    case UserNotFound                             => NotFound(toJson(error))
-    case NotificationNotFound                     => NotFound(toJson(error))
-    case OtoroshiSettingsNotFound                 => NotFound(toJson(error))
-    case TeamUnauthorized                         => play.api.mvc.Results.Unauthorized(toJson(error))
-    case TeamForbidden                            => play.api.mvc.Results.Forbidden(toJson(error))
-    case ApiUnauthorized                          => play.api.mvc.Results.Unauthorized(toJson(error) ++ Json.obj("status" -> 403))
-    case PlanUnauthorized                         => play.api.mvc.Results.Unauthorized(toJson(error))
-    case PlanNotFound                             => NotFound(toJson(error))
-    case ApiNotLinked                             => BadRequest(toJson(error))
-    case UserNotTeamAdmin(userId, teamId)         => play.api.mvc.Results.Unauthorized(toJson(error))
-    case OtoroshiError(e)                         => BadRequest(e)
-    case SubscriptionConflict                     => Conflict(toJson(error))
-    case ApiKeyRotationConflict                   => Conflict(toJson(error))
-    case ApiKeyRotationError(e)                   => BadRequest(e)
-    case ForbiddenAction                          => Forbidden(toJson(error))
-    case ApiKeyCustomMetadataNotPrivided          => BadRequest(toJson(error))
-    case SubscriptionNotFound                     => NotFound(toJson(error))
-    case SubscriptionParentExisted                => Conflict(toJson(error))
-    case SubscriptionAggregationDisabled          => BadRequest(toJson(error))
-    case SubscriptionAggregationTeamConflict      => Conflict(toJson(error))
-    case SubscriptionAggregationOtoroshiConflict  => Conflict(toJson(error))
-    case MissingParentSubscription                => NotFound(toJson(error))
-    case TranslationNotFound                      => NotFound(toJson(error))
-    case Unauthorized                             => play.api.mvc.Results.Unauthorized(toJson(error))
-    case ParsingPayloadError(message)             => BadRequest(toJson(error))
-    case NameAlreadyExists                        => Conflict(toJson(error))
+    case ApiVersionConflict       => Conflict(toJson(ApiVersionConflict))
+    case ApiNotFound              => NotFound(toJson(error))
+    case ApiGroupNotFound         => NotFound(toJson(error))
+    case TeamNotFound             => NotFound(toJson(error))
+    case UserNotFound             => NotFound(toJson(error))
+    case NotificationNotFound     => NotFound(toJson(error))
+    case OtoroshiSettingsNotFound => NotFound(toJson(error))
+    case TeamUnauthorized         => play.api.mvc.Results.Unauthorized(toJson(error))
+    case TeamForbidden            => play.api.mvc.Results.Forbidden(toJson(error))
+    case ApiUnauthorized =>
+      play.api.mvc.Results
+        .Unauthorized(toJson(error) ++ Json.obj("status" -> 403))
+    case PlanUnauthorized => play.api.mvc.Results.Unauthorized(toJson(error))
+    case PlanNotFound     => NotFound(toJson(error))
+    case ApiNotLinked     => BadRequest(toJson(error))
+    case UserNotTeamAdmin(userId, teamId) =>
+      play.api.mvc.Results.Unauthorized(toJson(error))
+    case OtoroshiError(e)                        => BadRequest(e)
+    case SubscriptionConflict                    => Conflict(toJson(error))
+    case ApiKeyRotationConflict                  => Conflict(toJson(error))
+    case ApiKeyRotationError(e)                  => BadRequest(e)
+    case ForbiddenAction                         => Forbidden(toJson(error))
+    case ApiKeyCustomMetadataNotPrivided         => BadRequest(toJson(error))
+    case SubscriptionNotFound                    => NotFound(toJson(error))
+    case SubscriptionParentExisted               => Conflict(toJson(error))
+    case SubscriptionAggregationDisabled         => BadRequest(toJson(error))
+    case SubscriptionAggregationTeamConflict     => Conflict(toJson(error))
+    case SubscriptionAggregationOtoroshiConflict => Conflict(toJson(error))
+    case MissingParentSubscription               => NotFound(toJson(error))
+    case TranslationNotFound                     => NotFound(toJson(error))
+    case Unauthorized                            => play.api.mvc.Results.Unauthorized(toJson(error))
+    case ParsingPayloadError(message)            => BadRequest(toJson(error))
+    case NameAlreadyExists                       => Conflict(toJson(error))
   }
 
   def toJson(error: AppError) = {
     error match {
       case OtoroshiError(e)       => e
       case ApiKeyRotationError(e) => e
-      case ParsingPayloadError(msg) => Json.obj("error" -> "Error while parsing payload", "msg" -> msg)
+      case ParsingPayloadError(msg) =>
+        Json.obj("error" -> "Error while parsing payload", "msg" -> msg)
       case err =>
         Json.obj("error" -> (err match {
           case ApiVersionConflict       => "This version already existed"
@@ -104,8 +108,8 @@ object AppError {
           case SubscriptionConflict => "conflict with subscription request"
           case ApiKeyRotationConflict =>
             "conflict, Api have already setup apikey rotation"
-          case ForbiddenAction          => "You're not authorized to do this action"
-          case TeamForbidden            => "You're not part of this team"
+          case ForbiddenAction => "You're not authorized to do this action"
+          case TeamForbidden   => "You're not part of this team"
           case ApiKeyCustomMetadataNotPrivided =>
             "You need to provide custom metadata"
           case SubscriptionNotFound => "Subscription not found"

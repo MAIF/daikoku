@@ -12,7 +12,7 @@ import { useUserBackOffice } from '../../../contexts';
 
 export const NotificationList = () => {
   useUserBackOffice();
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const { translateMethod, Translation } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
@@ -28,7 +28,6 @@ export const NotificationList = () => {
   });
 
   const isUntreatedNotification = (n) => n.status.status === 'Pending';
-
 
   useEffect(() => {
     Promise.all([
@@ -184,7 +183,7 @@ export const NotificationList = () => {
   }
 
   const notifByTeams = _.groupBy(state.notifications, 'team');
-  const openModal = p => openSubMetadataModal(p)(dispatch)
+  const openModal = (p) => openSubMetadataModal(p)(dispatch);
   return (
     <>
       <div className="row">
@@ -249,4 +248,4 @@ export const NotificationList = () => {
       )}
     </>
   );
-}
+};

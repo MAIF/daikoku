@@ -107,26 +107,28 @@ class EntitiesController(DaikokuAction: DaikokuAction,
   }
 
   def newApiGroup() = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(s"@{user.name} has asked for a template entity of type ApiGroup"))(ctx) {
-      Ok(Api(
-        id = ApiId(BSONObjectID.generate().stringify),
-        tenant = ctx.tenant.id,
-        team = TeamId("none"),
-        name = "New API",
-        apis = Some(Set.empty),
-        smallDescription = "A new API group",
-        description = "A new API group",
-        lastUpdate = DateTime.now(),
-        documentation = ApiDocumentation(
-          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+    PublicUserAccess(AuditTrailEvent(
+      s"@{user.name} has asked for a template entity of type ApiGroup"))(ctx) {
+      Ok(
+        Api(
+          id = ApiId(BSONObjectID.generate().stringify),
           tenant = ctx.tenant.id,
-          lastModificationAt = DateTime.now(),
-          pages = Seq.empty
-        ),
-        visibility = ApiVisibility.Public,
-        possibleUsagePlans = Seq.empty,
-        defaultUsagePlan = UsagePlanId("default")
-      ).asJson)
+          team = TeamId("none"),
+          name = "New API",
+          apis = Some(Set.empty),
+          smallDescription = "A new API group",
+          description = "A new API group",
+          lastUpdate = DateTime.now(),
+          documentation = ApiDocumentation(
+            id = ApiDocumentationId(BSONObjectID.generate().stringify),
+            tenant = ctx.tenant.id,
+            lastModificationAt = DateTime.now(),
+            pages = Seq.empty
+          ),
+          visibility = ApiVisibility.Public,
+          possibleUsagePlans = Seq.empty,
+          defaultUsagePlan = UsagePlanId("default")
+        ).asJson)
     }
   }
 

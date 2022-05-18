@@ -1,25 +1,25 @@
 import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { useSelector } from 'react-redux';
-import {
-  Link, NavLink, Route,
-  Routes,
-  useLocation
-} from 'react-router-dom';
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { useTeamBackOffice } from '../../contexts';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
 import {
-  TeamApi, TeamApiGroup, TeamApiKeyConsumption, TeamApiKeys,
+  TeamApi,
+  TeamApiGroup,
+  TeamApiKeyConsumption,
+  TeamApiKeys,
   TeamApiKeysForApi,
-  TeamApis, TeamAssets, TeamBilling, TeamConsumption, TeamEdit, TeamIncome, TeamMembers
+  TeamApis,
+  TeamAssets,
+  TeamBilling,
+  TeamConsumption,
+  TeamEdit,
+  TeamIncome,
+  TeamMembers,
 } from '../backoffice';
-import {
-  Can, daikoku, manage, tenant as TENANT
-} from '../utils';
-
-
-
+import { Can, daikoku, manage, tenant as TENANT } from '../utils';
 
 const BackOfficeContent = (props) => {
   return (
@@ -30,15 +30,14 @@ const BackOfficeContent = (props) => {
 };
 
 const TeamBackOfficeHome = () => {
-  const { currentTeam } = useSelector(state => state.context);
+  const { currentTeam } = useSelector((state) => state.context);
   useTeamBackOffice(currentTeam);
 
   const { Translation } = useContext(I18nContext);
   const [team, setTeam] = useState();
 
   useEffect(() => {
-    Services.teamHome(currentTeam._id)
-      .then(setTeam);
+    Services.teamHome(currentTeam._id).then(setTeam);
 
     document.title = `${currentTeam.name}`;
   }, []);
@@ -70,10 +69,7 @@ const TeamBackOfficeHome = () => {
                 </Translation>
               </span>
             </Link>
-            <Link
-              to={`/${currentTeam._humanReadableId}/settings/apikeys`}
-              className="home-tile"
-            >
+            <Link to={`/${currentTeam._humanReadableId}/settings/apikeys`} className="home-tile">
               <span className="home-tile-number">{team.subscriptionsCount}</span>
               <span className="home-tile-text">
                 <Translation i18nkey="apis subcriptions" count={team.subscriptionsCount}>
@@ -123,20 +119,17 @@ const TeamBackOfficeHome = () => {
       </div>
     </div>
   );
-}
-
-
+};
 
 export const TeamBackOffice = ({ isLoading, title }) => {
-  const { currentTeam } = useSelector(s => s.context);
-  const error = useSelector(s => s.error)
+  const { currentTeam } = useSelector((s) => s.context);
+  const error = useSelector((s) => s.error);
 
   useEffect(() => {
     if (title) {
       document.title = title;
     }
   }, [title]);
-
 
   if (!currentTeam) {
     return null;
@@ -177,24 +170,9 @@ export const TeamBackOffice = ({ isLoading, title }) => {
             <Route path={`/apikeys/:apiId/:versionId`} element={<TeamApiKeysForApi />} />
             <Route path={`/apikeys`} element={<TeamApiKeys />} />
             <Route path={`/members`} element={<TeamMembers />} />
-            <Route
-              path={`/apis/:apiId/:versionId/:tab/*`}
-              element={
-                <TeamApi />
-              }
-            />
-            <Route
-              path={`/apis/:apiId/:tab`}
-              element={
-                <TeamApi creation />
-              }
-            />
-            <Route 
-              path={`/apigroups/:apiGroupId/:tab/*`}
-              element={
-                <TeamApiGroup />
-              }
-            />
+            <Route path={`/apis/:apiId/:versionId/:tab/*`} element={<TeamApi />} />
+            <Route path={`/apis/:apiId/:tab`} element={<TeamApi creation />} />
+            <Route path={`/apigroups/:apiGroupId/:tab/*`} element={<TeamApiGroup />} />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />
           </Routes>
@@ -204,21 +182,15 @@ export const TeamBackOffice = ({ isLoading, title }) => {
   );
 };
 
-export const UserBackOffice = ({
-  tab,
-  title,
-  notificationSubMenu,
-  isLoading,
-  children,
-}) => {
+export const UserBackOffice = ({ tab, title, notificationSubMenu, isLoading, children }) => {
   useEffect(() => {
     if (title) {
       document.title = title;
     }
   }, [title]);
 
-  const { tenant } = useSelector(s => s.context);
-  const error = useSelector(s => s.error);
+  const { tenant } = useSelector((s) => s.context);
+  const error = useSelector((s) => s.error);
 
   const location = useLocation();
   const { translateMethod, Translation } = useContext(I18nContext);

@@ -9,10 +9,10 @@ import { TeamMembersSimpleComponent } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 
 export const TeamMembersForAdmin = () => {
-  useTenantBackOffice()
+  useTenantBackOffice();
 
-  const connectedUser = useSelector(s => s.context.connectedUser)
-  const dispatch = useDispatch()
+  const connectedUser = useSelector((s) => s.context.connectedUser);
+  const dispatch = useDispatch();
 
   const [team, setTeam] = useState();
   const params = useParams();

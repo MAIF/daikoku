@@ -5,17 +5,30 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import controllers.AppError.{
+  SubscriptionAggregationDisabled,
+  SubscriptionParentExisted
+}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  ApiSubscriptionFormat,
+  SeqApiSubscriptionFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -1721,19 +1734,23 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(
-          teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
-          teamConsumer.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator)))),
-        apis = Seq(defaultApi))
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator)))
+        ),
+        apis = Seq(defaultApi)
+      )
 
       val session = loginWithBlocking(userAdmin, tenant)
       val transfer = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/_transfer",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/_transfer",
         method = "POST",
         body = Some(Json.obj("team" -> teamConsumer.id.asJson))
       )(tenant, session)
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true
-
 
       val resp = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
       resp.status mustBe 200
@@ -1742,7 +1759,6 @@ class ApiControllerSpec()
         (resp.json \ "notifications").as[JsArray])
       eventualNotifications.isSuccess mustBe true
       val notification: Notification = eventualNotifications.get.head
-
 
       val acceptNotif = httpJsonCallBlocking(
         path = s"/api/notifications/${notification.id.value}/accept",
@@ -1753,7 +1769,9 @@ class ApiControllerSpec()
       (acceptNotif.json \ "done").as[Boolean] mustBe true
 
       val respVerif =
-        httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(tenant,
+        httpJsonCallBlocking(
+          s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
+          tenant,
           session)
       respVerif.status mustBe 200
       val eventualApi = json.ApiFormat.reads(respVerif.json)
@@ -1762,24 +1780,30 @@ class ApiControllerSpec()
     }
 
     "transfer API ownership to another team (with all versions)" in {
-      val defaultApiV2 = defaultApi.copy(id = ApiId(BSONObjectID.generate().stringify), currentVersion = Version("2.0.0"))
+      val defaultApiV2 =
+        defaultApi.copy(id = ApiId(BSONObjectID.generate().stringify),
+                        currentVersion = Version("2.0.0"))
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(
-          teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
-          teamConsumer.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator)))),
-        apis = Seq(defaultApi, defaultApiV2))
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator)))
+        ),
+        apis = Seq(defaultApi, defaultApiV2)
+      )
 
       val session = loginWithBlocking(userAdmin, tenant)
       val transfer = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/_transfer",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/_transfer",
         method = "POST",
         body = Some(Json.obj("team" -> teamConsumer.id.asJson))
       )(tenant, session)
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true
-
 
       val resp = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
       resp.status mustBe 200
@@ -1788,7 +1812,6 @@ class ApiControllerSpec()
         (resp.json \ "notifications").as[JsArray])
       eventualNotifications.isSuccess mustBe true
       val notification: Notification = eventualNotifications.get.head
-
 
       val acceptNotif = httpJsonCallBlocking(
         path = s"/api/notifications/${notification.id.value}/accept",
@@ -1799,13 +1822,19 @@ class ApiControllerSpec()
       (acceptNotif.json \ "done").as[Boolean] mustBe true
 
       val respVerif =
-        httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(tenant, session)
+        httpJsonCallBlocking(
+          s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
+          tenant,
+          session)
       respVerif.status mustBe 200
       val eventualApi = json.ApiFormat.reads(respVerif.json)
       eventualApi.isSuccess mustBe true
       eventualApi.get.team mustBe teamConsumerId
       val respVerif2 =
-        httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}/apis/${defaultApiV2.id.value}/${defaultApiV2.currentVersion.value}")(tenant, session)
+        httpJsonCallBlocking(
+          s"/api/teams/${teamConsumerId.value}/apis/${defaultApiV2.id.value}/${defaultApiV2.currentVersion.value}")(
+          tenant,
+          session)
       respVerif2.status mustBe 200
       val eventualApi2 = json.ApiFormat.reads(respVerif.json)
       eventualApi2.isSuccess mustBe true

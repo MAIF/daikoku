@@ -51,7 +51,7 @@ const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translat
 
   useEffect(() => {
     const otoroshiTarget = rawValues.otoroshiTarget;
-    
+
     if (otoroshiTarget && otoroshiTarget.otoroshiSettings) {
       Promise.all([
         Services.getOtoroshiGroupsAsTeamAdmin(
@@ -421,11 +421,9 @@ export const TeamApiPricings = (props) => {
 
   useEffect(() => {
     return () => {
-      props.injectSubMenu(null)
-    }
+      props.injectSubMenu(null);
+    };
   }, []);
-  
-  
 
   const pathes = {
     type: type.object,
@@ -617,7 +615,7 @@ export const TeamApiPricings = (props) => {
   const cancelEdition = () => {
     setPlanForEdition(undefined);
     setMode(possibleMode.list);
-    props.injectSubMenu(null)
+    props.injectSubMenu(null);
     setCreation(false);
   };
 
@@ -889,7 +887,8 @@ export const TeamApiPricings = (props) => {
         },
         costPerMonth: {
           type: type.number,
-          label: ({ rawValues }) => translateMethod(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
+          label: ({ rawValues }) =>
+            translateMethod(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
           placeholder: translateMethod('Cost per billing period'),
           props: {
             step: 1,

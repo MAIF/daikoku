@@ -121,12 +121,14 @@ export const ApiCard = (props) => {
               </button>
             </Can>
             {accessButton()}
-            {!props.groupView && <StarsButton
-              stars={api.stars}
-              starred={props.user.starredApis.includes(api._id)}
-              toggleStar={props.toggleStar}
-              connectedUser={props.connectedUser}
-            />}
+            {!props.groupView && (
+              <StarsButton
+                stars={api.stars}
+                starred={props.user.starredApis.includes(api._id)}
+                toggleStar={props.toggleStar}
+                connectedUser={props.connectedUser}
+              />
+            )}
           </div>
         </div>
       </div>

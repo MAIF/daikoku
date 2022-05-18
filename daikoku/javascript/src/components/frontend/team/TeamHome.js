@@ -25,7 +25,7 @@ const TeamHomeComponent = (props) => {
     Promise.all([
       client.query({
         query: Services.graphql.myVisibleApis,
-        variables: { teamId }
+        variables: { teamId },
       }),
       Services.team(teamId),
       Services.teams(),
@@ -172,7 +172,7 @@ const TeamHomeComponent = (props) => {
       />
     </main>
   );
-}
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,

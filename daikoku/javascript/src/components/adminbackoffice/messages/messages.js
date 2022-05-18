@@ -36,7 +36,7 @@ export const AdminMessages = () => {
 
   const [possibleNewUsers, setPossibleNewUsers] = useState([]);
 
-  const connectedUser = useSelector(s => s.context.connectedUser);
+  const connectedUser = useSelector((s) => s.context.connectedUser);
 
   useEffect(() => {
     Services.fetchAllUsers().then((users) => setUsers(users));
@@ -190,9 +190,7 @@ export const AdminMessages = () => {
         ) //todo: maybe order
           .map(({ chat, user, messages, unreadCount, maxDate }, idx) => {
             const lastMessageDateDisplayed =
-              moment().diff(maxDate, 'days') > 1
-                ? maxDate.format('D MMM.')
-                : maxDate.fromNow(true);
+              moment().diff(maxDate, 'days') > 1 ? maxDate.format('D MMM.') : maxDate.fromNow(true);
             return (
               <div
                 key={idx}

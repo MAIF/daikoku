@@ -24,10 +24,16 @@ const ContactModalComponent = (props) => {
 
   const sendEmail = () => {
     if (!honeyName && validity) {
-      Services.sendEmails(name, email, subject, body, props.tenant._id, props.team, props.api, language)
-        .then(
-          () => props.closeModal()
-        );
+      Services.sendEmails(
+        name,
+        email,
+        subject,
+        body,
+        props.tenant._id,
+        props.team,
+        props.api,
+        language
+      ).then(() => props.closeModal());
     }
   };
 
