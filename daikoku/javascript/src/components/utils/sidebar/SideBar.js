@@ -47,20 +47,20 @@ export const SideBar = () => {
   }, []);
 
   const closeOnEsc = (e) => {
-    if ((e.key == 'Escape' || e.key == 'Esc')) {
+    if (e.key == 'Escape' || e.key == 'Esc') {
       e.preventDefault();
-      console.debug("esc touch")
-      setPanelState(state.closed)
+      console.debug('esc touch');
+      setPanelState(state.closed);
       return false;
     }
-  }
+  };
   useEffect(() => {
     window.addEventListener('keydown', closeOnEsc, true);
 
     return () => {
-      window.removeEventListener('keydown', closeOnEsc, true)
-    }
-  }, [])
+      window.removeEventListener('keydown', closeOnEsc, true);
+    };
+  }, []);
 
   const impersonatorStyle = impersonator
     ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }
