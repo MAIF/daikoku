@@ -71,7 +71,7 @@ const TeamApiComponent = (props) => {
   });
   const [versions, setVersions] = useState([params.versionId])
 
-  const { addMenu } = useApiBackOffice(api, props.creation)
+  const methods = useApiBackOffice(api, props.creation)
 
   const teamApiDocumentationRef = useRef();
 
@@ -89,30 +89,32 @@ const TeamApiComponent = (props) => {
   useEffect(() => {
     document.title = `${props.currentTeam.name} - ${api ? api.name : translateMethod('API')}`;
 
-    addMenu({
-      blocks: {
-        links: {
+    if (!props.creation) {
+      methods.addMenu({
+        blocks: {
           links: {
-            version: {
-              order: 1,
-              component: <div className='d-flex flex-row'>
-                <Select
-                  name="versions-selector"
-                  value={{ value: params.versionId, label: params.versionId }}
-                  options={versions}
-                  onChange={(e) => navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${e.value}/${tab}`)}
-                  classNamePrefix="reactSelect"
-                  className="flex-grow-1"
-                  menuPlacement="auto"
-                  menuPosition="fixed"
-                />
-                < CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
-              </div>
-            },
+            links: {
+              version: {
+                order: 1,
+                component: <div className='d-flex flex-row mb-3'>
+                  <Select
+                    name="versions-selector"
+                    value={{ value: params.versionId, label: params.versionId }}
+                    options={versions}
+                    onChange={(e) => navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${e.value}/${tab}`)}
+                    classNamePrefix="reactSelect"
+                    className="flex-grow-1"
+                    menuPlacement="auto"
+                    menuPosition="fixed"
+                  />
+                  < CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
+                </div>
+              },
+            }
           }
         }
-      }
-    })
+      })
+    }
   }, [api, versions]);
 
   const reloadState = () => {
@@ -137,24 +139,26 @@ const TeamApiComponent = (props) => {
     }
 
     if (props.creation) {
-      return Services.createTeamApi(props.currentTeam._id, editedApi).then((createdApi) => {
-        if (createdApi.error) {
-          toastr.error(translateMethod(createdApi.error));
-          return createdApi;
-        } else if (createdApi.name) {
-          toastr.success(
-            translateMethod(
-              'api.created.success',
-              false,
-              `Api "${createdApi.name}" created`,
-              createdApi.name
-            )
-          );
-          navigate(
-            `/${props.currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`
-          );
-        }
-      });
+      return Services.createTeamApi(props.currentTeam._id, editedApi)
+        .then((createdApi) => {
+          if (createdApi.error) {
+            toastr.error(translateMethod(createdApi.error));
+            return createdApi;
+          } else if (createdApi.name) {
+            toastr.success(
+              translateMethod(
+                'api.created.success',
+                false,
+                `Api "${createdApi.name}" created`,
+                createdApi.name
+              )
+            );
+            methods.setApi(createdApi)
+            navigate(
+              `/${props.currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`
+            );
+          }
+        });
     } else {
       return Services.saveTeamApiWithId(
         props.currentTeam._id,
@@ -218,7 +222,7 @@ const TeamApiComponent = (props) => {
         </Link>
       )
       if (props.creation) {
-        addMenu({
+        methods.addMenu({
           blocks: {
             actions: {
               links: {
@@ -230,12 +234,12 @@ const TeamApiComponent = (props) => {
           }
         })
       } else {
-        addMenu({
+        methods.addMenu({
           blocks: {
             actions: {
               links: {
                 view: {
-                  component: 
+                  component:
                     <Link
                       to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
                       className="btn btn-sm btn-access-negative mb-2"
@@ -319,7 +323,7 @@ const TeamApiComponent = (props) => {
                     save={save}
                     creation={props.creation}
                     expertMode={props.expertMode}
-                    injectSubMenu={component => addMenu({ blocks: { links: { links: { plans: { childs: { menu: {component} } } } } } })}
+                    injectSubMenu={component => methods.addMenu({ blocks: { links: { links: { plans: { childs: { menu: { component } } } } } } })}
                     openApiSelectModal={props.openApiSelectModal}
                   />
                 )}
@@ -331,7 +335,7 @@ const TeamApiComponent = (props) => {
                     save={save}
                     creation={props.creation}
                     expertMode={props.expertMode}
-                    injectSubMenu={component => addMenu({ blocks: { links: { links: { informations: { childs: { menu: { component } } } } } } })}
+                    injectSubMenu={component => methods.addMenu({ blocks: { links: { links: { informations: { childs: { menu: { component } } } } } } })}
                     openTestingApiKeyModal={props.openTestingApiKeyModal}
                     openSubMetadataModal={props.openSubMetadataModal}
                   />

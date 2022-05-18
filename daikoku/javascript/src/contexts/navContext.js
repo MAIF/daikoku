@@ -119,7 +119,7 @@ export const useApiFrontOffice = (api, team) => {
             component: <button
               className="btn btn-sm btn-access-negative mb-2"
               onClick={() => openContactModal(connectedUser.name, connectedUser.email, tenant._id, api.team, api._id)(dispatch)}>
-              {translateMethod(`contact ${team?.name}`)}
+              {translateMethod(`contact.team`, false, undefined, team?.name)}
             </button>
           }
         }
@@ -197,7 +197,7 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
             component: <Can I={manage} a={API} team={team}>
               <Link
                 to={`/${team?._humanReadableId}/settings/apigroups/${apigroup?._humanReadableId}/infos`}
-                className="btn btn-sm btn-access-negative mb-2">{translateMethod('Edit API group')}</Link>
+                className="btn btn-sm btn-access-negative mb-2">{translateMethod('Edit APIs group')}</Link>
             </Can>
           },
           contact: {
@@ -205,7 +205,7 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
             component: <button
               className="btn btn-sm btn-access-negative mb-2"
               onClick={() => openContactModal(connectedUser.name, connectedUser.email, tenant._id, apigroup.team, apigroup._id)(dispatch)}>
-              {translateMethod(`contact ${team?.name}`)}
+              {translateMethod(`contact.team`, false, undefined, team?.name)}
             </button>
           }
         }
@@ -261,7 +261,7 @@ export const useApiBackOffice = (api, creation) => {
           plans: { order: 3, visible: !creation, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
           documentation: { order: 4, visible: !creation, label: translateMethod("Documentation"), action: () => navigateTo('documentation'), className: { active: currentTab === 'documentation' } },
           news: { order: 5, visible: !creation, label: translateMethod("News"), action: () => navigateTo('news'), className: { active: currentTab === 'news' } },
-          subscriptions: { order: 5, visible: !creation, label: translateMethod("API Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
+          subscriptions: { order: 5, visible: !creation, label: translateMethod("Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
           consumptions: { order: 5, visible: !creation, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
           settings: { order: 5, visible: !creation, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
         }
@@ -279,7 +279,7 @@ export const useApiBackOffice = (api, creation) => {
     setOffice(officeMode.back)
     setApi(api)
     setTeam(currentTeam)
-  }, [api?._id, params])
+  }, [api?._id, api?.name, params])
 
   useEffect(() => {
     addMenu(schema(params.tab))
@@ -292,7 +292,7 @@ export const useApiBackOffice = (api, creation) => {
   }, [])
 
 
-  return { addMenu };
+  return { addMenu, setApi };
 }
 
 export const useApiGroupBackOffice = (apiGroup, creation) => {
@@ -312,7 +312,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
         links: {
           informations: { order: 2, label: translateMethod("Informations"), action: () => navigateTo('infos'), className: { active: currentTab === 'infos' } },
           plans: { order: 3, visible: !creation, label: translateMethod("Plans"), action: () => navigateTo('plans'), className: { active: currentTab === 'plans' } },
-          subscriptions: { order: 5, visible: !creation, label: translateMethod("API group Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
+          subscriptions: { order: 5, visible: !creation, label: translateMethod("Subscriptions"), action: () => navigateTo('subscriptions'), className: { active: currentTab === 'subscriptions' } },
           consumptions: { order: 5, visible: !creation, label: translateMethod("Consumptions"), action: () => navigateTo('stats'), className: { active: currentTab === 'stats' } },
           settings: { order: 5, visible: !creation, label: translateMethod("Settings"), action: () => navigateTo('settings'), className: { active: currentTab === 'settings' } },
         }
@@ -325,7 +325,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
                 to={`/${currentTeam._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
                 className="btn btn-sm btn-access-negative mb-2"
               >
-                {translateMethod('View this API Group')}
+                {translateMethod('View this APIs Group')}
               </Link>
           },
           back: {
@@ -363,7 +363,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
     setOffice(officeMode.back)
     setApiGroup(apiGroup)
     setTeam(currentTeam)
-  }, [apiGroup?._id, params])
+  }, [apiGroup?._id, apiGroup?.name, params])
 
   useEffect(() => {
     addMenu(schema(params.tab))
@@ -381,7 +381,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
 
 
 
-  return { addMenu };
+  return { addMenu, setApiGroup };
 }
 
 export const useTeamBackOffice = (team) => {

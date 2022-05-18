@@ -25,7 +25,7 @@ const Image = ({ setValue, rawValues, value, error, onChange, tenant, team }) =>
             onlyPreview
             team={team}
             teamId={team._id}
-            label={translateMethod('Set api image from asset')}
+            label={translateMethod('Set image from asset')}
             onSelect={(asset) => onChange(origin + asset.link)}
           />
         </div>
@@ -170,7 +170,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
 
   const flow = (expert) => [
     {
-      label: 'Basic',
+      label: translateMethod('Basic.informations'),
       flow: ['published', 'name', 'smallDescription', 'image', 'header'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),

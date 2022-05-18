@@ -11,7 +11,6 @@ import { NavContext } from '../../../../contexts';
 
 export const AddPanel = ({ teams }) => {
   const { translateMethod } = useContext(I18nContext);
-  const { team } = useContext(NavContext);
 
   const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => state.context)
   const dispatch = useDispatch();
@@ -118,26 +117,26 @@ export const AddPanel = ({ teams }) => {
           <div className='block__entries d-flex flex-column'>
             {connectedUser.isDaikokuAdmin && 
             <span className='block__entry__link d-flex align-items-center justify-content-between'>
-              <span>tenant</span>
+              <span>{translateMethod('Tenant')}</span>
               <button className="btn btn-sm btn-access-negative me-1">
                 <i className="fas fa-plus-circle" />
               </button>
             </span>
             }
             <span className='block__entry__link d-flex align-items-center justify-content-between' onClick={createTeam}>
-              <span>team</span>
+              <span>{translateMethod('Team')}</span>
               <button className="btn btn-sm btn-access-negative me-1">
                 <i className="fas fa-plus-circle" />
               </button>
             </span>
             <span className='block__entry__link d-flex align-items-center justify-content-between' onClick={() => createApi(maybeTeam)}>
-              <span>API</span>
+              <span>{translateMethod('API')}</span>
               <button className="btn btn-sm btn-access-negative me-1">
                 <i className="fas fa-plus-circle" />
               </button>
             </span>
             <span className='block__entry__link d-flex align-items-center justify-content-between' onClick={() => createApiGroup(maybeTeam)}>
-              <span>API group</span>
+              <span>{translateMethod('API group')}</span>
               <button className="btn btn-sm btn-access-negative me-1">
                 <i className="fas fa-plus-circle" />
               </button>

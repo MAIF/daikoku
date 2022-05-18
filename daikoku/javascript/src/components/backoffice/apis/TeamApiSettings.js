@@ -17,11 +17,11 @@ export const TeamApiSettings = ({ api, apiGroup }) => {
     Services.transferApiOwnership(team, api.team, api._id)
       .then(r => {
         if (r.notify) {
-          toastr.info('Team has been notified. please wait until acceptation')
+          toastr.info(translateMethod('team.transfer.notified'))
         } else if (r.error) {
           toastr.error(r.error)
         } else {
-          toastr.error('oops')
+          toastr.error(translateMethod('issues.on_error'))
         }
       })
   }
@@ -29,16 +29,19 @@ export const TeamApiSettings = ({ api, apiGroup }) => {
   const transferSchema = {
     team: {
       type: type.string,
-      label: 'New owner team',
+      label: translateMethod('new.owner'),
       format: format.select,
       optionsFrom: Services.teams().then(teams => sortBy(teams.filter(team => team._id !== api.team), 'name')),
-      transformer: team => ({ label: team.name, value: team._id })
+      transformer: team => ({ label: team.name, value: team._id }),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.team'))
+      ]
     },
     comfirm: {
       type: type.string,
-      label: `please type ${api.name} to confirm`,
+      label: translateMethod('type.api.name.confirmation', false, undefined, api.name),
       constraints: [
-        constraints.oneOf([api.name], `please type ${api.name} to valid the transfer`)
+        constraints.oneOf([api.name], translateMethod('constraints.type.api.name', false, undefined, api.name))
       ]
     }
   }

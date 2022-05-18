@@ -22,7 +22,7 @@ export const TeamApiGroup = () => {
 
   const creation = location?.state?.newApiGroup
   
-  const { addMenu } = useApiGroupBackOffice(apiGroup, creation)
+  const methods = useApiGroupBackOffice(apiGroup, creation)
 
 
   useEffect(() => {
@@ -50,8 +50,9 @@ export const TeamApiGroup = () => {
                 createdGroup.name
               )
             );
-            navigate(
-              `/${currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`
+
+            methods.setApiGroup(createdGroup)
+            navigate(`/${currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`
             );
           }
         });
@@ -156,7 +157,7 @@ export const TeamApiGroup = () => {
     },
     apis: {
       type: type.string,
-      label: translateMethod('APIs'),
+      label: translateMethod('API', true),
       format: format.select,
       isMulti: true,
       optionsFrom: Services.teamApis(currentTeam._id).then(apis => apis.filter(api => api._id !== apiGroup?._id && !api.apis)),
@@ -170,7 +171,7 @@ export const TeamApiGroup = () => {
   };
   const flow = [
     {
-      label: translateMethod('Basic'),
+      label: translateMethod('Basic.informations'),
       flow: ['published', 'name', 'smallDescription', 'apis'].filter((entry) =>
         simpleOrExpertMode(entry, expertMode)
       ),
@@ -239,7 +240,7 @@ export const TeamApiGroup = () => {
                     save={save}
                     creation={creation}
                     expertMode={expertMode}
-                    injectSubMenu={component => addMenu({ blocks: { links: { links: { plans: { childs: { menu: { component } } } } } } })}
+                    injectSubMenu={component => methods.addMenu({ blocks: { links: { links: { plans: { childs: { menu: { component } } } } } } })}
                     openApiSelectModal={() => alert('oops')}
                   />
                 </div>))}
