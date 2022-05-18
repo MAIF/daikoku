@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { v4 as uuid } from 'uuid';
 
 import * as Services from '../../../../services';
 import { I18nContext } from '../../../../locales/i18n-context';
@@ -100,9 +101,9 @@ export const SearchPanel = ({ teams }) => {
                             option.version
                           }/description`}
                           className="block__entry__link"
-                          key={option.value}
+                          key={`${uuid()} - ${option.value}`}
                         >
-                          {option.label}
+                          {`${option.label} - ${option.version}`}
                         </Link>
                       );
                   }

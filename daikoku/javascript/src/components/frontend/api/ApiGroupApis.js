@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useContext } from 'react';
 import { getApolloContext } from '@apollo/client';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { ApiList } from '../../frontend';
-import { converter } from '../../../services/showdown';
-import { CanIDoAction, manage, api as API } from '../../utils';
 import { updateTeamPromise } from '../../../core';
+import * as Services from '../../../services';
+import { converter } from '../../../services/showdown';
+import { ApiList } from '../../frontend';
+import { api as API, CanIDoAction, manage } from '../../utils';
 
 export const ApiGroupApis = ({ apiGroup }) => {
   const navigate = useNavigate();

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { converter } from '../../services/showdown';
 
 export const MaybeHomePage = ({ tenant }) => {
   const connectedUser = useSelector((state) => state.connectedUser);
