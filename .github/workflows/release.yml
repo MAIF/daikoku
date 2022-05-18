@@ -35,14 +35,14 @@ jobs:
     - uses: technote-space/get-diff-action@v4
       id: fmt-diff
     - name: Commit formatted sources
-      if: steps.fmt-diff.outputs.diff
+      if: steps.fmt-diff.outputs.count != '0'
       run: |
         git config --local user.email "daikoku-github-actions@users.noreply.github.com"
         git config --local user.name "daikoku-github-actions"
         git add --all
         git commit -am "Format sources before release"
     - name: Push formatted sources
-      if: steps.fmt-diff.outputs.diff
+      if: steps.fmt-diff.outputs.count != '0'
       uses: ad-m/github-push-action@master
       with:
         branch: ${{ github.ref }}
@@ -62,7 +62,7 @@ jobs:
     - uses: technote-space/get-diff-action@v4
       id: manual-diff
     - name: Commit manual
-      if: steps.manual-diff.outputs.diff
+      if: steps.manual-diff.outputs.count != '0'
       run: |
         git config --local user.email "daikoku-github-actions@users.noreply.github.com"
         git config --local user.name "daikoku-github-actions"
@@ -70,7 +70,7 @@ jobs:
         git commit -am "Update documentation before release"
     - name: Push manual
       uses: ad-m/github-push-action@master
-      if: steps.manual-diff.outputs.diff
+      if: steps.manual-diff.outputs.count != '0'
       with:
         branch: ${{ github.ref }}
         github_token: ${{ secrets.GITHUB_TOKEN}}
