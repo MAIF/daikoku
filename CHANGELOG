@@ -301,3 +301,20 @@ We'd like to thank all the contributors who worked on this release!
 
 - Daikoku 1.5.2 - User creation not working [#404](https://github.com/MAIF/daikoku/issues/404)
 
+## [v1.5.4] - 2022-05-18
+
+## :star: New Features
+
+- Provide a way to login instead of redirect to login page [#410](https://github.com/MAIF/daikoku/issues/410)
+- New sidebar [#403](https://github.com/MAIF/daikoku/issues/403)
+- API groups [#402](https://github.com/MAIF/daikoku/issues/402)
+- Add ability to Transfer API ownership [#395](https://github.com/MAIF/daikoku/issues/395)
+
+## :beetle: Bug Fixes
+
+- contact modal doesn't work [#414](https://github.com/MAIF/daikoku/issues/414)
+- Api edition is broken on swagger page [#413](https://github.com/MAIF/daikoku/issues/413)
+- Search bar allow to access teams list [#412](https://github.com/MAIF/daikoku/issues/412)
+- Tenant edition page is not accessible from sidebar [#411](https://github.com/MAIF/daikoku/issues/411)
+- Link to API from search bar is broken [#400](https://github.com/MAIF/daikoku/issues/400)
+
