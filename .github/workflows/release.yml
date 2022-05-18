@@ -33,7 +33,7 @@ jobs:
       id: fmt
       run: |
         sh ./scripts/build.sh fmt
-        echo "::set-output name=DIFF::$(git diff --numstat | wc -l)"
+        echo '::set-output name=DIFF::$(git diff --numstat | wc -l)'
 
     - name: Commit formatted sources
       if: steps.fmt.outputs.DIFF != '0'
@@ -58,7 +58,7 @@ jobs:
         sbt "release with-defaults release-version ${{ github.event.inputs.releaseversion }}"
         cd ..
         sh ./scripts/build.sh manual
-        echo "::set-output name=diff::$(git diff --numstat | wc -l)"
+        echo '::set-output name=diff::$(git diff --numstat | wc -l)'
         cd ..
     - name: Commit manual
       if: steps.manual.outputs.diff != '0'
