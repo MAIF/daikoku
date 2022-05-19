@@ -1,13 +1,13 @@
-
 .steps {
   padding-left: 24px;
   font-weight: 500;
   color: $aside-text-color;
-  
+
   .step {
     margin-bottom: 8px;
     height: 30px;
     position: relative;
+
     &::after {
       content: '';
       background: $pagination-border-color;
@@ -19,6 +19,7 @@
       border-radius: 50%;
       transition: all .2s ease;
     }
+
     &:not(:last-child) {
       &::before {
         content: '';
@@ -29,8 +30,9 @@
         height: 18px;
         background: $pagination-border-color;
       }
-            
+
     }
+
     &.active {
 
       &::after {
@@ -43,16 +45,44 @@
       &::after {
         background-color: $info-color;
       }
+
       &::before {
         background: $info-color;
       }
     }
-       
+
     .step-content {
       line-height: 26px;
       font-size: 14px;
       font-weight: normal;
     }
   }
-  
+
+}
+
+.ant-steps {
+  .ant-steps-item {
+
+    
+
+    .ant-steps-item-container {
+      color: $aside-text-color;
+
+      .ant-steps-item-icon {
+        .ant-steps-icon-dot {
+          background: $info-color;
+        }
+      }
+    }
+
+    &.ant-steps-item-disabled {
+      .ant-steps-item-icon {
+        .ant-steps-icon-dot {
+          background: $pagination-border-color;
+        }
+      }
+    }
+
+
+  }
 }

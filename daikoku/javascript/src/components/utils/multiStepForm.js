@@ -4,8 +4,24 @@ import { createMachine, assign } from 'xstate';
 import { useMachine } from '@xstate/react';
 import { Form } from '@maif/react-forms';
 import _ from 'lodash';
+import { Steps, Popover } from 'antd';
+
+const { Step } = Steps
 
 import { Spinner, Option } from '../utils';
+
+
+const customDot = (dot, { status, index }) => (
+  <Popover
+    content={
+      <span>
+        step {index} status: {status}
+      </span>
+    }
+  >
+    {dot}
+  </Popover>
+);
 
 export const MultiStepForm = ({
   value,
@@ -40,23 +56,23 @@ export const MultiStepForm = ({
       const skipStep =
         !!step.skipTo || !creation
           ? {
-              SKIP: {
-                target: step.skipTo || (nextStep ? nextStep.id : 'save'),
-              },
-            }
+            SKIP: {
+              target: step.skipTo || (nextStep ? nextStep.id : 'save'),
+            },
+          }
           : {};
       const previousStepObj = previousStep
         ? {
-            PREVIOUS: {
-              target: previousStep ? previousStep.id : null,
-            },
-          }
+          PREVIOUS: {
+            target: previousStep ? previousStep.id : null,
+          },
+        }
         : {};
 
       const disableStep = !!step.disabled
         ? {
-            always: [{ target: nextStep ? nextStep.id : 'save', cond: `guard_${step.id}` }],
-          }
+          always: [{ target: nextStep ? nextStep.id : 'save', cond: `guard_${step.id}` }],
+        }
         : {};
 
       acc[step.id] = {
@@ -183,6 +199,16 @@ export const MultiStepForm = ({
   const step = steps.find((s) => s.id === current.value);
   return (
     <div className="d-flex flex-column">
+      {!getBreadcrumb && <div className='my-3'>
+        <Breadcrumb
+          context={current.context}
+          steps={steps}
+          currentStep={current.value}
+          chooseStep={(s) => send(`TO_${s}`, { value: current.context.value })}
+          creation={creation}
+          direction="horizontal"
+        />
+      </div>}
       <div className="d-flex flex-row flex-grow-1 col-12">
         {step.component && (
           <ComponentedForm
@@ -267,38 +293,33 @@ const ComponentedForm = ({ value, valid, component, reference }) => {
 const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction, context }) => {
   const currentIdx = steps.findIndex((s) => s.id === currentStep);
 
-  const handleChooseStep = (idx, disabled) => {
+  const handleChooseStep = (idx) => {
+    const disabled = Option(steps[idx])
+      .map(step => step.disabled)
+      .map((d) => (typeof d === 'function' ? d(context) : d))
+      .getOrElse(false);
     if (!disabled && (!creation || idx < currentIdx)) {
       chooseStep(steps[idx].id.toUpperCase());
     }
   };
 
   return (
-    <div
-      className={classNames('d-flex steps', {
-        'flex-column': direction === 'vertical',
-        'flex-row': direction !== 'vertical',
-      })}
-    >
+    <Steps
+      direction={direction}
+      current={currentIdx}
+      progressDot={customDot}
+      onChange={(idx) => handleChooseStep(idx)}>
       {steps.map((step, idx) => {
         const disabled = Option(step.disabled)
           .map((d) => (typeof d === 'function' ? d(context) : d))
           .getOrElse(false);
         return (
-          <div
-            className={classNames('step d-flex cursor-pointer ', {
-              active: currentIdx === idx,
-              finished: currentIdx > idx,
-              wait: currentIdx < idx,
-              'cursor-forbidden': disabled || (creation && idx > currentIdx),
-            })}
-            key={idx}
-            onClick={() => handleChooseStep(idx, disabled)}
-          >
-            <div className="step-content">{step.label}</div>
-          </div>
-        );
+          <Step
+            title={step.label}
+            disabled={disabled || (creation && idx > currentIdx)}
+          />
+        )
       })}
-    </div>
-  );
+    </Steps>
+  )
 };

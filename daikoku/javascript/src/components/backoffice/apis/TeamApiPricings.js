@@ -17,6 +17,7 @@ import {
 import { currencies } from '../../../services/currencies';
 import * as Services from '../../../services';
 import { toastr } from 'react-redux-toastr';
+import { Breadcrumb } from 'antd';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -418,6 +419,8 @@ export const TeamApiPricings = (props) => {
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
   const { translateMethod, language } = useContext(I18nContext);
+
+  const [breadcrumb, setBreadcrumb] = useState();
 
   useEffect(() => {
     return () => {
@@ -1130,14 +1133,13 @@ export const TeamApiPricings = (props) => {
                   creation={true}
                 />
               </div>
-              <div className="col md-8">
+              <div className="col-md-8 d-flex">
                 <MultiStepForm
                   value={planForEdition}
                   steps={steps}
                   initial="info"
                   creation={creation}
                   save={savePlan}
-                  getBreadcrumb={(_, breadcrumb) => props.injectSubMenu(breadcrumb)}
                   labels={{
                     previous: translateMethod('Previous'),
                     skip: translateMethod('Skip'),
