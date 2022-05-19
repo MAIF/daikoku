@@ -63,7 +63,7 @@ export const GuestPanel = () => {
                   return (
                     <div className="d-flex justify-content-end mt-3">
                       <button
-                        type="button"
+                        type="submit"
                         className="btn btn-outline-success ms-2"
                         onClick={valid}
                       >
