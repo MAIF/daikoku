@@ -8,6 +8,10 @@
   &:hover {
     color: $navbar-text-hover-color;
     text-decoration: none;
+
+    &::before{
+      border-color: $navbar-text-hover-color;
+    } 
   }
 }
 
@@ -23,6 +27,7 @@
   border-radius: 50%;
   border: 2px solid $navbar-text-color;
   box-sizing: content-box;
+  z-index: 1;
 }
 
 .notification-prop a:hover {

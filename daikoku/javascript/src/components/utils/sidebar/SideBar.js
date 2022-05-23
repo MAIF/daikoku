@@ -10,7 +10,7 @@ import { I18nContext } from '../../../locales/i18n-context';
 import { MessagesContext } from '../../backoffice';
 import { NavContext } from '../../../contexts';
 
-import { AddPanel, GuestPanel, SearchPanel, SettingsPanel } from './panels';
+import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';
 import { Companion } from './companions';
 
 export const state = {
@@ -66,6 +66,8 @@ export const SideBar = () => {
     ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }
     : {};
 
+  const isAdmin = connectedUser.isDaikokuAdmin || isTenantAdmin
+
   return (
     <div className="navbar-container d-flex flex-row">
       <div className="navbar d-flex flex-column p-2 align-items-center justify-content-between">
@@ -106,32 +108,44 @@ export const SideBar = () => {
         </div>
 
         <div className="navbar_bottom">
-          <div className="nav_item mb-3">
-            {(connectedUser.isDaikokuAdmin || isTenantAdmin) && (
+
+          {isAdmin && (
               <Link
                 to="/settings/messages"
-                className={classNames('messages-link cursor-pointer', {
-                  'unread-messages': totalUnread > 0,
-                })}
+              className={classNames('nav-item mb-3 notification-link cursor-pointer', {
+                'unread-notifications': totalUnread > 0,
+              })}
                 title={translateMethod('Access to the messages')}
               >
                 <MessageSquare />
               </Link>
-            )}
-          </div>
-          {!connectedUser.isGuest && (
-            <div className="nav_item mb-3">
-              <Link
-                className={classNames({
-                  'notification-link': true,
-                  'unread-notifications': !!unreadNotificationsCount,
-                })}
-                to="/notifications"
-                title={translateMethod('Access to the notifications')}
-              >
-                <Bell />
-              </Link>
+          )}
+          {!connectedUser.isGuest && !isAdmin && (
+            <div className={classNames('nav-item mb-3 notification-link cursor-pointer', {
+              'unread-notifications': totalUnread > 0,
+            })}>
+              <MessageSquare onClick={() => {
+                  setPanelState(state.opened);
+                  setPanelContent(<MessagePanel />);
+                }}
+              />
             </div>
+          )}
+          {!connectedUser.isGuest && (
+            <>
+              <div className="nav_item mb-3">
+                <Link
+                  className={classNames({
+                    'notification-link': true,
+                    'unread-notifications': !!unreadNotificationsCount,
+                  })}
+                  to="/notifications"
+                  title={translateMethod('Access to the notifications')}
+                >
+                  <Bell />
+                </Link>
+              </div>
+            </>
           )}
           <div className="nav_item mb-3" style={{ color: '#fff' }}>
             <img
@@ -150,8 +164,8 @@ export const SideBar = () => {
               title={
                 impersonator
                   ? `${connectedUser.name} (${connectedUser.email}) ${translateMethod(
-                      'Impersonated by'
-                    )} ${impersonator.name} (${impersonator.email})`
+                    'Impersonated by'
+                  )} ${impersonator.name} (${impersonator.email})`
                   : connectedUser.name
               }
               alt="user menu"

@@ -5,7 +5,7 @@ import { connect, useDispatch, useSelector } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
-import { SideBar, Spinner, Error, Footer, Discussion } from '../components/utils';
+import { SideBar, Spinner, Error, Footer } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise, history, setError } from '../core';
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
@@ -417,9 +417,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             transitionOut="fadeOut"
             closeOnToastrClick
           />
-          <Routes>
-            <Route path="/*" element={<Discussion />} />
-          </Routes>
           <Routes>
             {['/settings', '/notifications', '/me', '/:teamId/settings'].map((r) => (
               <Route key={r} path={r} element={<></>} />
