@@ -62,27 +62,27 @@ export const MessagePanel = () => {
       <div className="mb-3 panel__title">
         <h3>{translateMethod('Discuss with an admin')}</h3>
       </div>
-      <div className="blocks">
+      <div className="d-flex mb-3">
+        <input
+          className='form-control'
+          disabled={loading ? 'disabled' : null}
+          type="text"
+          placeholder={translateMethod('Your message')}
+          value={loading ? '...' : newMessage}
+          onKeyDown={handleKeyDown}
+          onChange={(e) => setNewMessage(e.target.value)}
+        />
+        <button
+          disabled={loading ? 'disabled' : null}
+          className="ms-2 btn btn-outline-primary"
+          onClick={sendMessage}
+        >
+          <Send />
+        </button>
+      </div>
+      <div className="blocks" style={{overflow:'auto', height:'100vh'}}>
         <div className="mb-3 block">
           <div className="ms-2 block__entries d-flex flex-column">
-            <div className="d-flex mb-3">
-              <input
-                className='form-control'
-                disabled={loading ? 'disabled' : null}
-                type="text"
-                placeholder={translateMethod('Your message')}
-                value={loading ? '...' : newMessage}
-                onKeyDown={handleKeyDown}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-              <button
-                disabled={loading ? 'disabled' : null}
-                className="btn btn-outline-primary"
-                onClick={sendMessage}
-              >
-                <Send />
-              </button>
-            </div>
             <div className="stream flex-grow-1">
               {dialog.reverse().map((group, idx) => {
                 return (
