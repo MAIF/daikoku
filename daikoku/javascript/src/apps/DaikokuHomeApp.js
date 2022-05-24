@@ -104,6 +104,7 @@ export const SignupComponent = () => {
   const flow = ['name', 'email', 'avatar', 'password', 'confirmPassword'];
 
   const createAccount = (data) => {
+    setUser(data)
     return fetch('/account', {
       method: 'POST',
       credentials: 'include',
@@ -154,6 +155,7 @@ export const SignupComponent = () => {
         schema={schema}
         flow={flow}
         onSubmit={createAccount}
+        value={user}
         footer={({ reset, valid }) => {
           return (
             <div className="d-flex justify-content-end">
