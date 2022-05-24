@@ -43,7 +43,7 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
 
   return (
     <div className="row">
-      <div className="col-md-9 offset-3">
+      <div className="col-12">
         <div className="error-page d-flex flex-column">
           <div>
             <h1 data-h1={error.status}>{error.status}</h1>
