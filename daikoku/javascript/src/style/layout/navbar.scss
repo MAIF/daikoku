@@ -107,8 +107,11 @@ a.navbar-brand, #teamSelector:hover {
   transition: width .2s ease-in-out;
 
   &.opened {
-    width: calc(35vw - 55px);
-    overflow-y: auto;
+    width: calc(75vw - 55px);
+    overflow-y: auto;      
+    @media screen and (min-width:768px){
+      width: calc(35vw - 55px);
+    }
   }
 
   .navbar-panel__back {
@@ -134,7 +137,10 @@ a.navbar-brand, #teamSelector:hover {
   transition: width .2s ease-in-out;
 
   &.opened {
-    width: 65vw;
+    width: 25vw;
+    @media screen and (min-width:768px){
+      width: 65vw;
+    }
   }
 }
 
