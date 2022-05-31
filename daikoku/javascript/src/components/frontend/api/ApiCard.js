@@ -59,7 +59,7 @@ export const ApiCard = (props) => {
 
   if (props.view === 'GRID') {
     return (
-      <div className="col-4">
+      <div className="col-12 col-md-4">
         <div className="card mb-4 shadow-sm api-card ">
           <div
             className={classNames('card-img-top card-link card-skin', { 'card-skin': !api.image })}
