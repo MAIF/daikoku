@@ -141,7 +141,7 @@ export const SignupComponent = () => {
   }
 
   return (
-    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px', minWidth: '448px' }}>
+    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
       <h1 className="h1-rwd-reduce text-center">
         <Translation i18nkey="Create account">Create account</Translation>
       </h1>
