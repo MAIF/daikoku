@@ -137,18 +137,6 @@ export const TeamBackOffice = ({ isLoading, title }) => {
 
   return (
     <div className="row">
-      <button
-        id="toggle-sidebar"
-        type="button"
-        className="navbar-toggle btn btn-sm btn-access-negative float-left me-2"
-        data-toggle="collapse"
-        data-target="#sidebar"
-        aria-expanded="false"
-        aria-controls="sidebar"
-      >
-        <span className="sr-only">Toggle sidebar</span>
-        <span className="chevron" />
-      </button>
       <main role="main" className="ml-sm-auto px-4 mt-3">
         <div
           className={classNames('back-office-overlay', {
