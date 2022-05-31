@@ -277,12 +277,11 @@ export const ResetPasswordComponent = (props) => {
         footer={({ reset, valid }) => {
           return (
             <div className="d-flex justify-content-end">
-              <button className="btn btn-outline-primary m-3" onClick={reset}>
+              <button className="btn btn-outline-danger m-3" onClick={reset}>
                 Cancel
               </button>
-              <button className="btn btn-outline-danger m-3" onClick={valid}>
+              <button className="btn btn-outline-success m-3" onClick={valid}>
                 <span>
-                  <i className="fas fa-bomb mr-1" />
                   <Translation i18nkey="Reset password">Reset password</Translation>
                 </span>
               </button>
