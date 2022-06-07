@@ -1,33 +1,19 @@
 package fr.maif.otoroshi.daikoku.env
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiFormat,
-  CmsPageIdFormat,
-  TenantFormat
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  CmsPage,
-  CmsPageId,
-  DatastoreId,
-  Evolution,
-  TenantId
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, CmsPageIdFormat, TeamFormat, TenantFormat, UserFormat}
+import fr.maif.otoroshi.daikoku.domain.{Api, ApiId, CanJson, CmsPage, CmsPageId, DatastoreId, Evolution, Team, TeamId, Tenant, TenantId, User, UserId, ValueType}
+import fr.maif.otoroshi.daikoku.env.evolution_150.version
+import fr.maif.otoroshi.daikoku.env.evolution_151.version
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
-import play.api.libs.json.{
-  JsArray,
-  JsError,
-  JsObject,
-  JsString,
-  JsSuccess,
-  Json
-}
+import play.api.libs.json.{Format, JsArray, JsError, JsObject, JsString, JsSuccess, Json}
+import play.mvc.BodyParser.Of
 import reactivemongo.bson.BSONObjectID
-import storage.DataStore
+import storage.{DataStore, Repo}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -197,9 +183,87 @@ object evolution_151 extends EvolutionScript {
     }
 }
 
+object evolution_155 extends EvolutionScript {
+  override def version: String = "1.5.5"
+
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext) => Future[Done] =
+    (_: Option[DatastoreId],
+     dataStore: DataStore,
+     mat: Materializer,
+     ec: ExecutionContext) => {
+
+      AppLogger.info(s"Begin evolution $version - Rewrite all _humanReadableId - sorry for the inconvenience caused")
+
+     val userSource =  dataStore.userRepo
+        .streamAllRaw()(ec)
+        .mapAsync(10) { value =>
+          UserFormat.reads(value) match {
+            case JsSuccess(v, _) =>
+              dataStore.userRepo
+                .save(v)(ec)
+            case JsError(errors) =>
+              FastFuture.successful(
+                AppLogger.error(s"Evolution $version : $errors"))
+          }
+        }
+     val tenantSource =  dataStore.tenantRepo
+        .streamAllRaw()(ec)
+        .mapAsync(10) { value =>
+          TenantFormat.reads(value) match {
+            case JsSuccess(v, _) =>
+              dataStore.tenantRepo
+                .save(v)(ec)
+            case JsError(errors) =>
+              FastFuture.successful(
+                AppLogger.error(s"Evolution $version : $errors"))
+          }
+        }
+     val teamSource =  dataStore.teamRepo
+       .forAllTenant()
+        .streamAllRaw()(ec)
+        .mapAsync(10) { value =>
+          TeamFormat.reads(value) match {
+            case JsSuccess(v, _) =>
+              dataStore.teamRepo
+                .forAllTenant()
+                .save(v)(ec)
+            case JsError(errors) =>
+              FastFuture.successful(
+                AppLogger.error(s"Evolution $version : $errors"))
+          }
+        }
+     val apiSource =  dataStore.apiRepo
+        .forAllTenant()
+        .streamAllRaw()(ec)
+        .mapAsync(10) { value =>
+          ApiFormat.reads(value) match {
+            case JsSuccess(v, _) =>
+              dataStore.apiRepo
+                .forAllTenant()
+                .save(v)(ec)
+            case JsError(errors) =>
+              FastFuture.successful(
+                AppLogger.error(s"Evolution $version : $errors"))
+          }
+        }
+
+     val repos = Seq(
+       userSource,
+       tenantSource,
+       teamSource,
+       apiSource
+      )
+
+      Source(repos)
+        .flatMapConcat(x => x)
+        .runWith(Sink.ignore)(mat)
+
+    }
+}
+
 object evolutions {
   val list: Set[EvolutionScript] =
-    Set(evolution_102, evolution_150, evolution_151)
+    Set(evolution_102, evolution_150, evolution_151, evolution_155)
   def run(dataStore: DataStore)(implicit ec: ExecutionContext,
                                 mat: Materializer): Future[Done] =
     Source(list)
