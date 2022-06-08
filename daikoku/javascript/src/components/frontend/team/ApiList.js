@@ -236,7 +236,7 @@ const ApiListComponent = (props) => {
         )}
       </div>
       <div className="row mb-2 view-selectors">
-        <div className="col-9 d-flex justify-content-end">
+        <div className="col-12 col-sm-9 d-flex justify-content-end">
           <button
             className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
             onClick={() => setView(LIST)}
@@ -254,7 +254,7 @@ const ApiListComponent = (props) => {
       <div className="row">
         <div
           className={classNames('section d-flex flex-column', {
-            'col-9': !props.groupView,
+            'col-12 col-sm-9': !props.groupView,
             'col-12': props.groupView,
           })}
         >
@@ -310,7 +310,7 @@ const ApiListComponent = (props) => {
           </div>
         </div>
         {!props.groupView && (
-          <div className="d-flex col-3 col-sm-3 text-muted flex-column px-3">
+          <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
             {!props.team && !props.connectedUser.isGuest && (
               <YourTeams teams={props.myTeams} redirectToTeam={redirectToTeam} />
             )}

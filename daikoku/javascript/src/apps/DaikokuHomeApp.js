@@ -29,7 +29,7 @@ const AvatarInput = ({ rawValues, value, error, onChange }) => {
           onChange={(e) => onChange(e.target.value)}
         />
         <button type="button" className="btn btn-access btn-block" onClick={setGravatarLink}>
-          <i className="fas fa-user-circle mr-1" />
+          <i className="fas fa-user-circle me-1" />
           <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
         </button>
       </div>
@@ -142,7 +142,7 @@ export const SignupComponent = () => {
   }
 
   return (
-    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px', minWidth: '448px' }}>
+    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
       <h1 className="h1-rwd-reduce text-center">
         <Translation i18nkey="Create account">Create account</Translation>
       </h1>
@@ -263,7 +263,7 @@ export const ResetPasswordComponent = (props) => {
     );
   }
   return (
-    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px', minWidth: '448px' }}>
+    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
       <h1 className="h1-rwd-reduce text-center mt-2">
         <Translation i18nkey="Reset password">Reset password</Translation>
       </h1>
@@ -279,12 +279,11 @@ export const ResetPasswordComponent = (props) => {
         footer={({ reset, valid }) => {
           return (
             <div className="d-flex justify-content-end">
-              <button className="btn btn-outline-primary m-3" onClick={reset}>
+              <button className="btn btn-outline-danger m-3" onClick={reset}>
                 Cancel
               </button>
-              <button className="btn btn-outline-danger m-3" onClick={valid}>
+              <button className="btn btn-outline-success m-3" onClick={valid}>
                 <span>
-                  <i className="fas fa-bomb mr-1" />
                   <Translation i18nkey="Reset password">Reset password</Translation>
                 </span>
               </button>

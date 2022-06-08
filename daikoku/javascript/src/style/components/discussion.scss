@@ -1,5 +1,5 @@
 .messages-sender{
-  width: 25%;
+  // width: 25%;
   background-color: $aside-bg-color;
   height: calc(100vh - 160px);
   overflow: scroll;
@@ -15,9 +15,9 @@
   }
 }
 .messages-content{
-  width: 75%;
+  // width: 75%;
   overflow: scroll;
-  height: calc(100vh - 220px);
+  height: calc(100vh - 240px);
 }
 
 .dicussion-component {
