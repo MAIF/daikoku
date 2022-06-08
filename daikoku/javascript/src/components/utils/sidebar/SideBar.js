@@ -80,7 +80,9 @@ export const SideBar = () => {
               width: '40px',
             }}
           >
-            <img src={tenant.logo} />
+            <img style={{
+              width: '40px',
+            }} src={tenant.logo} />
           </Link>
 
           {!connectedUser.isGuest && (
