@@ -98,11 +98,11 @@ export const useApiFrontOffice = (api, team) => {
           documentation: {
             label: translateMethod('Documentation'),
             action: () => {
-              if (api?.documentation?.page?.length) navigateTo('documentation');
+              if (api?.documentation?.pages?.length) navigateTo('documentation');
             },
             className: {
               active: currentTab === 'documentation',
-              disabled: !api?.documentation?.page?.length,
+              disabled: !api?.documentation?.pages?.length,
             },
           },
           swagger: {
@@ -240,11 +240,11 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
           documentation: {
             label: translateMethod('Documentation'),
             action: () => {
-              if (apigroup?.documentation?.page?.length) navigateTo('documentation');
+              if (apigroup?.documentation?.pages?.length) navigateTo('documentation');
             },
             className: {
               active: currentTab === 'documentation',
-              disabled: !apigroup?.documentation?.page?.length,
+              disabled: !apigroup?.documentation?.pages?.length,
             },
           },
           news: {

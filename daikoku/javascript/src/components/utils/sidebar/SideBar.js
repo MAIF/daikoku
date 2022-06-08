@@ -114,7 +114,7 @@ export const SideBar = () => {
           {isAdmin && (
               <Link
                 to="/settings/messages"
-              className={classNames('nav-item mb-3 notification-link cursor-pointer', {
+              className={classNames('nav-item mb-3 notification-link messages-link cursor-pointer', {
                 'unread-notifications': totalUnread > 0,
               })}
                 title={translateMethod('Access to the messages')}
@@ -123,7 +123,7 @@ export const SideBar = () => {
               </Link>
           )}
           {!connectedUser.isGuest && !isAdmin && (
-            <div className={classNames('nav-item mb-3 notification-link cursor-pointer', {
+            <div className={classNames('nav-item mb-3 notification-link messages-link cursor-pointer', {
               'unread-notifications': totalUnread > 0,
             })}>
               <MessageSquare onClick={() => {

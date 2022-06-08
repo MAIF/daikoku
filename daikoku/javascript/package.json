@@ -21,7 +21,7 @@
   "dependencies": {
     "@apollo/client": "^3.6.4",
     "@fortawesome/fontawesome-free": "6.1.1",
-    "@maif/react-forms": "^1.0.54",
+    "@maif/react-forms": "^1.0.60",
     "@popperjs/core": "^2.11.5",
     "@xstate/react": "3.0.0",
     "antd": "4.20.5",
@@ -86,7 +86,7 @@
     "crypto-browserify": "^3.12.0",
     "css-loader": "6.7.1",
     "css-minimizer-webpack-plugin": "3.4.1",
-    "cypress": "9.6.1",
+    "cypress": "^10.0.3",
     "cypress-waitfor": "1.1.0",
     "eslint": "8.15.0",
     "eslint-plugin-react": "7.29.4",
