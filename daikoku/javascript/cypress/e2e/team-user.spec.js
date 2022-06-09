@@ -17,6 +17,7 @@ describe('API page', { scrollBehavior: false }, () => {
       .get('h1').should(($div) => {
         expect($div.text().trim()).contains('test API');
       })
+      .wait(500)
       .get('.block__entry__link').contains('Plans').click()
       .get('.card').should('have.length', 2)
       .get('.block__entry__link').contains('Documentation').click()
