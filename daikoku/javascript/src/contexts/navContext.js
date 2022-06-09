@@ -560,8 +560,6 @@ export const useTeamBackOffice = (team) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/:tab*');
 
-  console.debug({team})
-
   const schema = (currentTab) => ({
     title: team.name,
     blocks: {

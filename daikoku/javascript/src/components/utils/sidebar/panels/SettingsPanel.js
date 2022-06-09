@@ -32,7 +32,7 @@ const DarkModeActivator = ({ initialDark }) => {
   );
 };
 
-export const SettingsPanel = ({}) => {
+export const SettingsPanel = ({ }) => {
   const [version, setVersion] = useState();
 
   const { translateMethod, isTranslationMode } = useContext(I18nContext);
@@ -98,11 +98,9 @@ export const SettingsPanel = ({}) => {
           <div className="mb-3 block">
             <div className="mb-1 block__category">{translateMethod('settings')}</div>
             <div className="ms-2 block__entries block__border d-flex flex-column">
-              {isTenantAdmin && (
-                <Link to="/settings/settings" className="block__entry__link">
-                  {tenant.name} {translateMethod('settings')}
-                </Link>
-              )}
+              <Link to="/settings/settings" className="block__entry__link">
+                {tenant.name} {translateMethod('settings')}
+              </Link>
               {connectedUser.isDaikokuAdmin && (
                 <Link to="/settings/tenants" className="block__entry__link">
                   {translateMethod('Daikoku settings')}

@@ -14,7 +14,7 @@ import {
   SmtpClientConfig,
   SendGridConfig,
 } from './mailer';
-import { Can, manage, tenant, Spinner } from '../../utils';
+import { Can, manage, tenant as TENANT, Spinner } from '../../utils';
 import { BooleanInput } from '../../inputs/BooleanInput';
 import { I18nContext } from '../../../locales/i18n-context';
 import { getApolloContext, gql } from '@apollo/client';
@@ -952,7 +952,7 @@ const TenantEdition = (props) => {
   }
 
   return (
-    <Can I={manage} a={tenant} dispatchError>
+    <Can I={manage} a={TENANT} dispatchError>
       <div className="row">
         <div className="col-12 d-flex justify-content-start align-items-center mb-2">
           <div className="avatar__container">

@@ -1,3 +1,4 @@
+import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { Option } from '..';
@@ -74,7 +75,6 @@ const CanComponent = ({
         whichOne,
         tenant
       );
-
   if (!authorized) {
     if (dispatchError) {
       setError({ error: { status: 401, message: 'unauthorized', from: 'CAN component' } });
