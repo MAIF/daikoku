@@ -253,7 +253,7 @@ const TeamApiComponent = (props) => {
                 view: {
                   component: (
                     <Link
-                      to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
+                      to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/infos`}
                       className="btn btn-sm btn-access-negative mb-2"
                     >
                       {translateMethod('View this Api')}

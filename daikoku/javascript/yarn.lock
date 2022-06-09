@@ -8850,19 +8850,7 @@ react-redux@8.0.1:
     react-is "^18.0.0"
     use-sync-external-store "^1.0.0"
 
-react-redux@=7.2.8:
-  version "7.2.8"
-  resolved "https://registry.yarnpkg.com/react-redux/-/react-redux-7.2.8.tgz#a894068315e65de5b1b68899f9c6ee0923dd28de"
-  integrity sha512-6+uDjhs3PSIclqoCk0kd6iX74gzrGc3W5zcAjbrFgEdIjRSQObdIwfx80unTkVUYvbQ95Y8Av3OvFHq1w5EOUw==
-  dependencies:
-    "@babel/runtime" "^7.15.4"
-    "@types/react-redux" "^7.1.20"
-    hoist-non-react-statics "^3.3.2"
-    loose-envify "^1.4.0"
-    prop-types "^15.7.2"
-    react-is "^17.0.2"
-
-react-redux@^7.2.4:
+react-redux@=7.2.6, react-redux@^7.2.4:
   version "7.2.6"
   resolved "https://registry.yarnpkg.com/react-redux/-/react-redux-7.2.6.tgz#49633a24fe552b5f9caf58feb8a138936ddfe9aa"
   integrity sha512-10RPdsz0UUrRL1NZE0ejTkucnclYSgXp5q+tB5SWx2qeG2ZJQJyymgAhwKy73yiL/13btfB6fPr+rgbMAaZIAQ==
@@ -9151,14 +9139,14 @@ redux-thunk@2.4.1:
   resolved "https://registry.yarnpkg.com/redux-thunk/-/redux-thunk-2.4.1.tgz#0dd8042cf47868f4b29699941de03c9301a75714"
   integrity sha512-OOYGNY5Jy2TWvTL1KgAlVy6dcx3siPJ1wTq741EPyUKfn6W6nChdICjZwCd0p8AZBs5kWpZlbkXW2nE/zjUa+Q==
 
-redux@4.2.0, redux@=4.2.0:
+redux@4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/redux/-/redux-4.2.0.tgz#46f10d6e29b6666df758780437651eeb2b969f13"
   integrity sha512-oSBmcKKIuIR4ME29/AeNUnl5L+hvBq7OaJWzaptTQJAntaPvxIJqfnjbaEiCzzaIz+XmVILfqAM3Ob0aXLPfjA==
   dependencies:
     "@babel/runtime" "^7.9.2"
 
-redux@^4.0.0, redux@^4.1.2:
+redux@=4.1.2, redux@^4.0.0, redux@^4.1.2:
   version "4.1.2"
   resolved "https://registry.yarnpkg.com/redux/-/redux-4.1.2.tgz#140f35426d99bb4729af760afcf79eaaac407104"
   integrity sha512-SH8PglcebESbd/shgf6mii6EIoRM0zrQyjcuQ+ojmfxjTtE0z9Y8pa62iA/OJ58qjP6j27uyW4kUF4jl/jd6sw==
@@ -10232,7 +10220,7 @@ svgo@^2.7.0:
     picocolors "^1.0.0"
     stable "^0.1.8"
 
-swagger-client@^3.18.5:
+swagger-client@^3.18.4, swagger-client@^3.18.5:
   version "3.18.5"
   resolved "https://registry.yarnpkg.com/swagger-client/-/swagger-client-3.18.5.tgz#8034df561452f4bbd36871a8072394b7ca883106"
   integrity sha512-c0txGDtfQTJnaIBaEKCwtRNcUaaAfj+RXI4QVV9p3WW+AUCQqp4naCjaDNNsOfMkE4ySyhnblbL+jGqAVC7snw==
@@ -10251,10 +10239,10 @@ swagger-client@^3.18.5:
     traverse "~0.6.6"
     url "~0.11.0"
 
-swagger-editor@4.2.7:
-  version "4.2.7"
-  resolved "https://registry.yarnpkg.com/swagger-editor/-/swagger-editor-4.2.7.tgz#cf2a0541e70719980b2fd189ca6c6fadbb82214f"
-  integrity sha512-At3VUR5CCPjG4CKoYwV/2lPczxPYwaKVDjj6YTg++a98FxL6Keoy8MKpgOp2IfHeE1dAwqK8nyTiYfmUhHnDFg==
+swagger-editor@4.2.2:
+  version "4.2.2"
+  resolved "https://registry.yarnpkg.com/swagger-editor/-/swagger-editor-4.2.2.tgz#bfb9502a1417bd13b38fdba8f6e883ba015fbc5e"
+  integrity sha512-8cFYvF7tPtex+hktPj6tcfR7Nan4riHvZr/MkJ+R8iD262Eijg0AZsZdNomCxipCW+nwZfyLI/gebuswe+tvzg==
   dependencies:
     ajv "^6.12.3"
     ajv-errors "^1.0.1"
@@ -10281,13 +10269,13 @@ swagger-editor@4.2.7:
     react-dropzone "^12.0.4"
     react-file-download "^0.3.2"
     react-immutable-proptypes "^2.1.0"
-    react-redux "=7.2.8"
+    react-redux "=7.2.6"
     react-split-pane "^0.1.82"
     react-transition-group "^1.1.1"
-    redux "=4.2.0"
+    redux "=4.1.2"
     reselect "^4.0.0"
-    swagger-client "^3.18.5"
-    swagger-ui "^4.11.0"
+    swagger-client "^3.18.4"
+    swagger-ui "^4.9.1"
     traverse "^0.6.6"
     validator "=13.7.0"
     yaml-js "^0.3.1"
@@ -10297,10 +10285,10 @@ swagger-ui-dist@4.11.1:
   resolved "https://registry.yarnpkg.com/swagger-ui-dist/-/swagger-ui-dist-4.11.1.tgz#1e9c0e62bdac632f7b206c95ef9cbe986097606a"
   integrity sha512-pf3kfSTYdF9mYFY2VnfJ51wnXlSVhEGdtymhpHzfbFw2jTbiEWgBoVz5EB9aW2EaJvUGTM1YHAXYZX7Jk4RdAQ==
 
-swagger-ui@^4.11.0:
-  version "4.11.1"
-  resolved "https://registry.yarnpkg.com/swagger-ui/-/swagger-ui-4.11.1.tgz#9fae75f650d2e033b85b1864602e279635e35c6b"
-  integrity sha512-+Yc9qdIvDGoEsQMXQig4b8sYgvB3gU2IZH+ZTZBsIgK8NsQWkuMRIXd0CqsFKd8lm0ui2BqhSxRnIOIGihASUg==
+swagger-ui@^4.9.1:
+  version "4.12.0"
+  resolved "https://registry.yarnpkg.com/swagger-ui/-/swagger-ui-4.12.0.tgz#8294d17fc20d26197aaffe001da57e8d58cceee4"
+  integrity sha512-ffNcDTQFWu5dEzJywQ4QEcgQZlBaHaeYCjifuWePds8anzqCZXVpeJSD7RCirUs+8D051YevRSu3ZjqNUNyvrQ==
   dependencies:
     "@babel/runtime-corejs3" "^7.16.8"
     "@braintree/sanitize-url" "=6.0.0"

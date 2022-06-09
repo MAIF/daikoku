@@ -560,6 +560,8 @@ export const useTeamBackOffice = (team) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/:tab*');
 
+  console.debug({team})
+
   const schema = (currentTab) => ({
     title: team.name,
     blocks: {
@@ -586,6 +588,7 @@ export const useTeamBackOffice = (team) => {
               members: {
                 label: translateMethod('Members'),
                 action: () => navigateTo('members'),
+                visible: team.type !== 'Personal',
                 className: { active: currentTab === 'members' },
               },
             },

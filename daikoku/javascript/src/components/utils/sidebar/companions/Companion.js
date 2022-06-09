@@ -86,39 +86,41 @@ export const Companion = () => {
                                   className="entry__submenu d-flex flex-column"
                                   key={`${performance.now()}-submenu-${idx}`}
                                 >
-                                  {Object.values(entry.childs).map((entry, idx) => {
-                                    if (entry.action) {
-                                      return (
-                                        <span
-                                          key={`${performance.now()}-child-${idx}`}
-                                          className={classNames(
-                                            'submenu__entry__link',
-                                            entry.className
-                                          )}
-                                          onClick={() => entry.action()}
-                                        >
-                                          {entry.label}
-                                        </span>
-                                      );
-                                    } else if (entry.link) {
-                                      return (
-                                        <Link
-                                          key={`${performance.now()}-child-${idx}`}
-                                          className={classNames(
-                                            'submenu__entry__link',
-                                            entry.className
-                                          )}
-                                          to={entry.link}
-                                        >
-                                          {entry.label}
-                                        </Link>
-                                      );
-                                    } else if (entry.component) {
-                                      return React.cloneElement(entry.component, {
-                                        key: `${performance.now()}-child-${idx}`,
-                                      });
-                                    }
-                                  })}
+                                  {Object.values(entry.childs)
+                                    .filter((x) => x.visible || x.visible === undefined)
+                                    .map((entry, idx) => {
+                                      if (entry.action) {
+                                        return (
+                                          <span
+                                            key={`${performance.now()}-child-${idx}`}
+                                            className={classNames(
+                                              'submenu__entry__link',
+                                              entry.className
+                                            )}
+                                            onClick={() => entry.action()}
+                                          >
+                                            {entry.label}
+                                          </span>
+                                        );
+                                      } else if (entry.link) {
+                                        return (
+                                          <Link
+                                            key={`${performance.now()}-child-${idx}`}
+                                            className={classNames(
+                                              'submenu__entry__link',
+                                              entry.className
+                                            )}
+                                            to={entry.link}
+                                          >
+                                            {entry.label}
+                                          </Link>
+                                        );
+                                      } else if (entry.component) {
+                                        return React.cloneElement(entry.component, {
+                                          key: `${performance.now()}-child-${idx}`,
+                                        });
+                                      }
+                                    })}
                                 </div>
                               )}
                             </>
