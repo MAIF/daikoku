@@ -702,27 +702,3 @@ case class ApiWithAuthorizations(api: Api,
                                    Seq.empty)
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
-
-case class ApiGroup(
-    id: ApiGroupId,
-    tenant: TenantId,
-    deleted: Boolean = false,
-    team: TeamId,
-    name: String,
-    smallDescription: String,
-    description: String,
-    published: Boolean = false,
-    apis: Set[ApiId],
-    visibility: ApiVisibility,
-    tags: Set[String] = Set.empty,
-    categories: Set[String] = Set.empty,
-    possibleUsagePlans: Seq[UsagePlan],
-    defaultUsagePlan: UsagePlanId,
-    authorizedTeams: Seq[TeamId] = Seq.empty,
-    posts: Seq[ApiPostId] = Seq.empty,
-    issues: Seq[ApiIssueId] = Seq.empty,
-    issuesTags: Set[ApiIssueTag] = Set.empty,
-    stars: Int = 0,
-) extends CanJson[ApiGroup] {
-  override def asJson: JsValue = json.ApiGroupFormat.writes(this)
-}

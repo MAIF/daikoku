@@ -271,16 +271,7 @@ object json {
 
     override def writes(o: ApiId): JsValue = JsString(o.value)
   }
-  val ApiGroupIdFormat = new Format[ApiGroupId] {
-    override def reads(json: JsValue): JsResult[ApiGroupId] =
-      Try {
-        JsSuccess(ApiGroupId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
 
-    override def writes(o: ApiGroupId): JsValue = JsString(o.value)
-  }
   val TenantModeFormat = new Format[TenantMode] {
     override def reads(json: JsValue): JsResult[TenantMode] =
       json.asOpt[String].map(_.toLowerCase) match {
@@ -3251,82 +3242,6 @@ object json {
         "applied" -> o.applied,
         "date" -> DateTimeFormat.writes(o.date)
       )
-    }
-
-  val ApiGroupFormat: Format[ApiGroup] =
-    new Format[ApiGroup] {
-
-      override def reads(json: JsValue): JsResult[ApiGroup] =
-        Try {
-          JsSuccess(
-            ApiGroup(
-              id = (json \ "_id").as(ApiGroupIdFormat),
-              tenant = (json \ "_tenant").as(TenantIdFormat),
-              deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-              team = (json \ "team").as(TeamIdFormat),
-              name = (json \ "name").as[String],
-              description = (json \ "description").asOpt[String].getOrElse(""),
-              smallDescription =
-                (json \ "smallDescription").asOpt[String].getOrElse(""),
-              published = (json \ "published").asOpt[Boolean].getOrElse(false),
-              apis = (json \ "apis").as(SetApiIdFormat),
-              visibility = (json \ "visibility").as(ApiVisibilityFormat),
-              tags = (json \ "tags")
-                .asOpt[Seq[String]]
-                .map(_.toSet)
-                .getOrElse(Set.empty),
-              categories = (json \ "categories")
-                .asOpt[Seq[String]]
-                .map(_.toSet)
-                .getOrElse(Set.empty),
-              possibleUsagePlans = (json \ "possibleUsagePlans")
-                .as(SeqUsagePlanFormat),
-              defaultUsagePlan =
-                (json \ "defaultUsagePlan").as(UsagePlanIdFormat),
-              authorizedTeams = (json \ "authorizedTeams")
-                .asOpt(SeqTeamIdFormat)
-                .getOrElse(Seq.empty),
-              posts = (json \ "posts")
-                .asOpt(SeqPostIdFormat)
-                .getOrElse(Seq.empty),
-              issues = (json \ "issues")
-                .asOpt(SeqIssueIdFormat)
-                .getOrElse(Seq.empty),
-              issuesTags = (json \ "issuesTags")
-                .asOpt(SetApiTagFormat)
-                .getOrElse(Set.empty),
-              stars = (json \ "stars").asOpt[Int].getOrElse(0),
-            )
-          )
-        } recover {
-          case e => JsError(e.getMessage)
-        } get
-
-      override def writes(o: ApiGroup): JsValue =
-        Json.obj(
-          "_id" -> ApiGroupIdFormat.writes(o.id),
-          "_humanReadableId" -> o.name.urlPathSegmentSanitized,
-          "_tenant" -> o.tenant.asJson,
-          "_deleted" -> o.deleted,
-          "team" -> TeamIdFormat.writes(o.team),
-          "name" -> o.name,
-          "smallDescription" -> o.smallDescription,
-          "description" -> o.description,
-          "published" -> o.published,
-          "apis" -> SetApiIdFormat.writes(o.apis),
-          "visibility" -> ApiVisibilityFormat.writes(o.visibility),
-          "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
-          "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
-          "possibleUsagePlans" -> JsArray(
-            o.possibleUsagePlans.map(UsagePlanFormat.writes)),
-          "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
-          "authorizedTeams" -> JsArray(
-            o.authorizedTeams.map(TeamIdFormat.writes)),
-          "posts" -> SeqPostIdFormat.writes(o.posts),
-          "issues" -> SeqIssueIdFormat.writes(o.issues),
-          "issuesTags" -> SetApiTagFormat.writes(o.issuesTags),
-          "stars" -> o.stars,
-        )
     }
 
   val SeqOtoroshiSettingsFormat = Format(Reads.seq(OtoroshiSettingsFormat),

@@ -288,8 +288,6 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
   }
 }
 
-trait ApiGroupRepo extends TenantCapableRepo[ApiGroup, ApiGroupId]
-
 trait AuditTrailRepo extends TenantCapableRepo[JsObject, DatastoreId]
 
 trait ConsumptionRepo
@@ -327,8 +325,6 @@ trait DataStore {
   def teamRepo: TeamRepo
 
   def apiRepo: ApiRepo
-
-  def apiGroupRepo: ApiGroupRepo
 
   def apiSubscriptionRepo: ApiSubscriptionRepo
 

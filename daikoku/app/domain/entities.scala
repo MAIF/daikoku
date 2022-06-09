@@ -7,11 +7,6 @@ trait CanJson[A] {
   def asJson: JsValue
 }
 
-trait ApiOrGroupId {
-  def value: String
-  def asJson: JsValue
-}
-
 sealed trait ValueType {
   def value: String
 }
@@ -38,14 +33,7 @@ case class TeamId(value: String) extends ValueType with CanJson[TeamId] {
 }
 case class ApiId(value: String)
     extends ValueType
-    with ApiOrGroupId
     with CanJson[ApiId] {
-  def asJson: JsValue = JsString(value)
-}
-case class ApiGroupId(value: String)
-    extends ValueType
-    with ApiOrGroupId
-    with CanJson[ApiGroupId] {
   def asJson: JsValue = JsString(value)
 }
 case class ApiSubscriptionId(value: String)
