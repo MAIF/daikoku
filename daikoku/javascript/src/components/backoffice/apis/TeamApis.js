@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -20,7 +20,7 @@ export const TeamApis = () => {
     document.title = `${currentTeam.name} - ${translateMethod('API', true)}`;
   }, []);
 
-  let table;
+  let table = useRef();
 
   const columns = [
     {
@@ -140,22 +140,22 @@ export const TeamApis = () => {
         published: !api.published,
       },
       api.currentVersion
-    ).then(() => table.update());
+    ).then(() => table.current.update());
   };
 
   const deleteApi = (api) => {
-    window
-      .confirm(
-        translateMethod('delete.api.confirm', false, 'Are you sure you want to delete this api ?')
-      )
+    window.confirm(
+      translateMethod('delete.api.confirm', false, 'Are you sure you want to delete this api ?')
+    )
       .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi(currentTeam._id, api._id).then(() => {
-            toastr.success(
-              translateMethod('delete.api.success', false, 'API deleted successfully', api.name)
-            );
-            table.update();
-          });
+          Services.deleteTeamApi(currentTeam._id, api._id)
+            .then(() => {
+              toastr.success(
+                translateMethod('delete.api.success', false, 'API deleted successfully', api.name)
+              );
+              table.current.update();
+            });
         }
       });
   };
@@ -179,7 +179,7 @@ export const TeamApis = () => {
               showActions={false}
               showLink={false}
               extractKey={(item) => item._id}
-              injectTable={(t) => (table = t)}
+              injectTable={(t) => (table.current = t)}
             />
           </div>
         </div>
