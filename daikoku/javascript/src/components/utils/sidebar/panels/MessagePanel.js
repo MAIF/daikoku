@@ -10,7 +10,7 @@ import { MessagesContext } from '../../../backoffice';
 import * as MessageEvents from '../../../../services/messages';
 
 export const MessagePanel = () => {
-  const { connectedUser, tenant } = useSelector(s => s.context)
+  const { connectedUser, tenant } = useSelector((s) => s.context);
 
   const [newMessage, setNewMessage] = useState('');
 
@@ -30,7 +30,7 @@ export const MessagePanel = () => {
     if (totalUnread > 0) {
       readMessages(messages[0].chat);
     }
-  }, [])
+  }, []);
 
   const handleKeyDown = (event) => {
     if (!newMessage.trim()) return;
@@ -64,7 +64,7 @@ export const MessagePanel = () => {
       </div>
       <div className="d-flex mb-3">
         <input
-          className='form-control'
+          className="form-control"
           disabled={loading ? 'disabled' : null}
           type="text"
           placeholder={translateMethod('Your message')}
@@ -80,7 +80,7 @@ export const MessagePanel = () => {
           <Send />
         </button>
       </div>
-      <div className="blocks" style={{overflow:'auto', height:'100vh'}}>
+      <div className="blocks" style={{ overflow: 'auto', height: '100vh' }}>
         <div className="mb-3 block">
           <div className="ms-2 block__entries d-flex flex-column">
             <div className="stream flex-grow-1">
@@ -124,21 +124,22 @@ export const MessagePanel = () => {
               {Option(lastClosedDates.find((x) => x.chat === connectedUser._id)).exists(
                 (l) => l.date
               ) && (
-                  <div className="d-flex flex-row justify-content-center my-1">
-                    <button
-                      disabled={loading ? 'disabled' : null}
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => getPreviousMessages(connectedUser._id)}
-                    >
-                      <Translation i18nkey="Load previous messages">Load previous messages</Translation>
-                    </button>
-                  </div>
-                )}
+                <div className="d-flex flex-row justify-content-center my-1">
+                  <button
+                    disabled={loading ? 'disabled' : null}
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => getPreviousMessages(connectedUser._id)}
+                  >
+                    <Translation i18nkey="Load previous messages">
+                      Load previous messages
+                    </Translation>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-
-}
+};

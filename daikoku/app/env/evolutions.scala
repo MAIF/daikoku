@@ -4,13 +4,42 @@ import akka.{Done, NotUsed}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, CmsPageIdFormat, TeamFormat, TenantFormat, UserFormat}
-import fr.maif.otoroshi.daikoku.domain.{Api, ApiId, CanJson, CmsPage, CmsPageId, DatastoreId, Evolution, Team, TeamId, Tenant, TenantId, User, UserId, ValueType}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  CmsPageIdFormat,
+  TeamFormat,
+  TenantFormat,
+  UserFormat
+}
+import fr.maif.otoroshi.daikoku.domain.{
+  Api,
+  ApiId,
+  CanJson,
+  CmsPage,
+  CmsPageId,
+  DatastoreId,
+  Evolution,
+  Team,
+  TeamId,
+  Tenant,
+  TenantId,
+  User,
+  UserId,
+  ValueType
+}
 import fr.maif.otoroshi.daikoku.env.evolution_150.version
 import fr.maif.otoroshi.daikoku.env.evolution_151.version
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
-import play.api.libs.json.{Format, JsArray, JsError, JsObject, JsString, JsSuccess, Json}
+import play.api.libs.json.{
+  Format,
+  JsArray,
+  JsError,
+  JsObject,
+  JsString,
+  JsSuccess,
+  Json
+}
 import play.mvc.BodyParser.Of
 import reactivemongo.bson.BSONObjectID
 import storage.{DataStore, Repo}
@@ -186,15 +215,19 @@ object evolution_151 extends EvolutionScript {
 object evolution_155 extends EvolutionScript {
   override def version: String = "1.5.5"
 
-  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext) => Future[Done] =
+  override def script: (Option[DatastoreId],
+                        DataStore,
+                        Materializer,
+                        ExecutionContext) => Future[Done] =
     (_: Option[DatastoreId],
      dataStore: DataStore,
      mat: Materializer,
      ec: ExecutionContext) => {
 
-      AppLogger.info(s"Begin evolution $version - Rewrite all _humanReadableId - sorry for the inconvenience caused")
+      AppLogger.info(
+        s"Begin evolution $version - Rewrite all _humanReadableId - sorry for the inconvenience caused")
 
-     val userSource =  dataStore.userRepo
+      val userSource = dataStore.userRepo
         .streamAllRaw()(ec)
         .mapAsync(10) { value =>
           UserFormat.reads(value) match {
@@ -206,7 +239,7 @@ object evolution_155 extends EvolutionScript {
                 AppLogger.error(s"Evolution $version : $errors"))
           }
         }
-     val tenantSource =  dataStore.tenantRepo
+      val tenantSource = dataStore.tenantRepo
         .streamAllRaw()(ec)
         .mapAsync(10) { value =>
           TenantFormat.reads(value) match {
@@ -218,8 +251,8 @@ object evolution_155 extends EvolutionScript {
                 AppLogger.error(s"Evolution $version : $errors"))
           }
         }
-     val teamSource =  dataStore.teamRepo
-       .forAllTenant()
+      val teamSource = dataStore.teamRepo
+        .forAllTenant()
         .streamAllRaw()(ec)
         .mapAsync(10) { value =>
           TeamFormat.reads(value) match {
@@ -232,7 +265,7 @@ object evolution_155 extends EvolutionScript {
                 AppLogger.error(s"Evolution $version : $errors"))
           }
         }
-     val apiSource =  dataStore.apiRepo
+      val apiSource = dataStore.apiRepo
         .forAllTenant()
         .streamAllRaw()(ec)
         .mapAsync(10) { value =>
@@ -247,11 +280,11 @@ object evolution_155 extends EvolutionScript {
           }
         }
 
-     val repos = Seq(
-       userSource,
-       tenantSource,
-       teamSource,
-       apiSource
+      val repos = Seq(
+        userSource,
+        tenantSource,
+        teamSource,
+        apiSource
       )
 
       Source(repos)

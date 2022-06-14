@@ -104,7 +104,7 @@ export const SignupComponent = () => {
   const flow = ['name', 'email', 'avatar', 'password', 'confirmPassword'];
 
   const createAccount = (data) => {
-    setUser(data)
+    setUser(data);
     return fetch('/account', {
       method: 'POST',
       credentials: 'include',

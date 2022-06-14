@@ -31,9 +31,7 @@ case class UserId(value: String) extends ValueType with CanJson[UserId] {
 case class TeamId(value: String) extends ValueType with CanJson[TeamId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiId(value: String)
-    extends ValueType
-    with CanJson[ApiId] {
+case class ApiId(value: String) extends ValueType with CanJson[ApiId] {
   def asJson: JsValue = JsString(value)
 }
 case class ApiSubscriptionId(value: String)

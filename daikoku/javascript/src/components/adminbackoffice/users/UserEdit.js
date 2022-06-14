@@ -56,8 +56,9 @@ const Avatar = ({ setValue, rawValues, value, onChange, tenant }) => {
     <div className="">
       <div className="float-right mb-4 position-relative">
         <img
-          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
-            }`}
+          src={`${rawValues?.picture}${
+            rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
+          }`}
           style={{
             width: 100,
             borderRadius: '50%',
@@ -215,11 +216,10 @@ export const UserEdit = () => {
       });
       setCreate(true);
     } else {
-      Services.findUserById(params.userId)
-        .then((user) => {
-          setUser(user);
-          setCreate(false);
-        });
+      Services.findUserById(params.userId).then((user) => {
+        setUser(user);
+        setCreate(false);
+      });
     }
   }, []);
 
@@ -243,30 +243,28 @@ export const UserEdit = () => {
 
   const save = (u) => {
     if (create) {
-      Services.createUser(u)
-        .then(() => {
-          toastr.success(
-            translateMethod(
-              'user.created.success',
-              false,
-              `user ${user.name} successfully created`,
-              user.name
-            )
-          );
-        });
+      Services.createUser(u).then(() => {
+        toastr.success(
+          translateMethod(
+            'user.created.success',
+            false,
+            `user ${user.name} successfully created`,
+            user.name
+          )
+        );
+      });
     } else {
-      Services.updateUserById(u)
-        .then((updatedUser) => {
-          setUser(updatedUser);
-          toastr.success(
-            translateMethod(
-              'user.updated.success',
-              false,
-              `user ${user.name} successfully updated`,
-              user.name
-            )
-          );
-        });
+      Services.updateUserById(u).then((updatedUser) => {
+        setUser(updatedUser);
+        toastr.success(
+          translateMethod(
+            'user.updated.success',
+            false,
+            `user ${user.name} successfully updated`,
+            user.name
+          )
+        );
+      });
     }
   };
 

@@ -43,12 +43,13 @@ export const ImportExport = () => {
       error: '',
       onSuccessMessage: '',
     });
-    Services.migrateMongoToPostgres()
-      .then((res) => setMigration({
+    Services.migrateMongoToPostgres().then((res) =>
+      setMigration({
         processing: false,
         error: res.error || '',
         onSuccessMessage: res.error ? '' : res.message,
-      }));
+      })
+    );
   };
 
   const { processing, error, onSuccessMessage } = migration;
@@ -78,7 +79,7 @@ export const ImportExport = () => {
               {uploading ? translateMethod('importing ...') : translateMethod('import state')}
             </button>
             <div className="d-flex justify-content-start align-items-center mt-2">
-              <label className='me-3'>{translateMethod('audittrail.export.label')}</label>
+              <label className="me-3">{translateMethod('audittrail.export.label')}</label>
               <BooleanInput onChange={setExportAuditTrail} value={exportAuditTrail} />
             </div>
             <input

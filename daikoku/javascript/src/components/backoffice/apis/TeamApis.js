@@ -144,18 +144,18 @@ export const TeamApis = () => {
   };
 
   const deleteApi = (api) => {
-    window.confirm(
-      translateMethod('delete.api.confirm', false, 'Are you sure you want to delete this api ?')
-    )
+    window
+      .confirm(
+        translateMethod('delete.api.confirm', false, 'Are you sure you want to delete this api ?')
+      )
       .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi(currentTeam._id, api._id)
-            .then(() => {
-              toastr.success(
-                translateMethod('delete.api.success', false, 'API deleted successfully', api.name)
-              );
-              table.current.update();
-            });
+          Services.deleteTeamApi(currentTeam._id, api._id).then(() => {
+            toastr.success(
+              translateMethod('delete.api.success', false, 'API deleted successfully', api.name)
+            );
+            table.current.update();
+          });
         }
       });
   };

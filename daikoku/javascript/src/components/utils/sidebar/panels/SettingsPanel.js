@@ -32,7 +32,7 @@ const DarkModeActivator = ({ initialDark }) => {
   );
 };
 
-export const SettingsPanel = ({ }) => {
+export const SettingsPanel = ({}) => {
   const [version, setVersion] = useState();
 
   const { translateMethod, isTranslationMode } = useContext(I18nContext);
