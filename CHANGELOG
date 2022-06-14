@@ -318,3 +318,17 @@ We'd like to thank all the contributors who worked on this release!
 - Tenant edition page is not accessible from sidebar [#411](https://github.com/MAIF/daikoku/issues/411)
 - Link to API from search bar is broken [#400](https://github.com/MAIF/daikoku/issues/400)
 
+## [v1.5.5] - 2022-06-14
+
+## :star: New Features
+
+- display multistep breadcrumb out of Sidebar &nd horizontally [#418](https://github.com/MAIF/daikoku/issues/418)
+- Add a companion dedicated to message [#417](https://github.com/MAIF/daikoku/issues/417)
+
+## :beetle: Bug Fixes
+
+- humanReadableId could not be identical with bdd from frontoffice [#424](https://github.com/MAIF/daikoku/issues/424)
+- bugs [#421](https://github.com/MAIF/daikoku/issues/421)
+- bug with signup form [#420](https://github.com/MAIF/daikoku/issues/420)
+- Type enter to submit login form [#419](https://github.com/MAIF/daikoku/issues/419)
+
