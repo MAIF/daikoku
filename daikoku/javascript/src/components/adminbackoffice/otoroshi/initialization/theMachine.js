@@ -1,5 +1,5 @@
 import { Machine, assign } from 'xstate';
-import faker from 'faker';
+import { nanoid } from 'nanoid';
 
 import * as Services from '../../../../services';
 
@@ -210,7 +210,7 @@ export const theMachine = Machine({
               .then((newApi) =>
                 createdApis.map((api) => ({
                   ...newApi,
-                  _id: faker.random.alphaNumeric(32),
+                  _id: nanoi(32),
                   name: api.name,
                   team: api.team,
                   published: true,

@@ -1,19 +1,15 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import Select from 'react-select';
 import Pagination from 'react-paginate';
-import _, { filter } from 'lodash';
-import faker from 'faker';
+import _ from 'lodash';
 import { Grid, List } from 'react-feather';
 import classNames from 'classnames';
 import { useNavigate } from 'react-router-dom';
 
 import { ApiCard } from '../api';
-import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
+import { Can, manage, api } from '../../utils';
 import { updateTeamPromise, openCreationTeamModal, I18nContext } from '../../../core';
-
-import * as Services from '../../../services';
 
 const all = { value: 'All', label: 'All' };
 const GRID = 'GRID';

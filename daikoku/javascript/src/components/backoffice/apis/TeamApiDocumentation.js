@@ -1,6 +1,6 @@
-import React, { Component, useEffect, useState, useImperativeHandle, useContext } from 'react';
+import React, { useEffect, useState, useImperativeHandle, useContext } from 'react';
 import { useParams } from 'react-router-dom';
-import faker from 'faker';
+import { nanoid } from 'nanoid';
 import _ from 'lodash';
 import { connect } from 'react-redux';
 
@@ -232,7 +232,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     }
 
     Services.createDocPage(team._id, value._id, {
-      _id: faker.random.alphaNumeric(32),
+      _id: nanoid(32),
       _tenant: value._tenant,
       api: value._id,
       title: 'New page',

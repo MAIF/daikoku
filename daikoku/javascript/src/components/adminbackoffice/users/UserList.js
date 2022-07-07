@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import faker from 'faker';
+import { nanoid } from 'nanoid';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
 
@@ -25,19 +25,17 @@ export const UserList = () => {
   const { translateMethod } = useContext(I18nContext);
 
   const updateUsers = () => {
-    Services.fetchAllUsers().then(setUsers);
+    Services.fetchAllUsers()
+    .then(setUsers);
   };
 
   const createNewUser = () => {
     const user = {
-      _id: faker.random.alphaNumeric(32),
+      _id: nanoid(32),
       tenants: [tenant._id],
       origins: ['Local'],
-      name: faker.name.findName(),
-      email: faker.internet.email(),
       picture: '/assets/images/anonymous.jpg',
       isDaikokuAdmin: false,
-      password: '',
       hardwareKeyRegistrations: [],
     };
     navigate(`/settings/users/${user._id}`, {

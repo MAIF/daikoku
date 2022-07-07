@@ -1,14 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { Form, type, constraints } from '@maif/react-forms'
 
 import * as Services from '../../../services';
 import { Can, manage, tenant as TENANT, Spinner } from '../../utils';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../locales/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
-
-const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 export const TenantOtoroshi = () => {
   const { tenant } = useSelector((s) => s.context);
@@ -19,149 +18,98 @@ export const TenantOtoroshi = () => {
   const location = useLocation();
   const params = useParams();
 
-  const [state, setState] = useState({
-    otoroshi: null,
-    create: false,
-  });
+  const [create, setCreate] = useState(false);
+  const [otoroshi, setOtoroshi] = useState();
 
   const formSchema = {
-    _id: {
-      type: 'string',
-      disabled: true,
-      props: { label: translateMethod('Id'), placeholder: '---' },
-    },
     url: {
-      type: 'string',
-      props: {
-        label: translateMethod('Otoroshi Url'),
-        placeholder: 'https://otoroshi-api.foo.bar',
-      },
+      type: type.string,
+      label: translateMethod('Otoroshi Url'),
+      placeholder: 'https://otoroshi-api.foo.bar',
     },
     host: {
-      type: 'string',
-      props: {
-        label: translateMethod('Otoroshi Host'),
-        placeholder: 'otoroshi-api.foo.bar',
-      },
+      type: type.string,
+      label: translateMethod('Otoroshi Host'),
+      placeholder: 'otoroshi-api.foo.bar',
     },
     clientId: {
-      type: 'string',
-      props: { label: translateMethod('Otoroshi client id') },
+      type: type.string,
+      label: translateMethod('Otoroshi client id'),
     },
     clientSecret: {
-      type: 'string',
-      props: { label: translateMethod('Otoroshi client secret') },
+      type: type.string,
+      label: translateMethod('Otoroshi client secret'),
     },
   };
-
-  const formFlow = ['_id', 'url', 'host', 'clientId', 'clientSecret'];
 
   useEffect(() => {
     if (location && location.state && location.state.newSettings) {
-      setState({ ...state, otoroshi: location.state.newSettings, create: true });
+      setOtoroshi(location.state.newSettings);
+      setCreate(true);
     } else {
-      Services.oneOtoroshi(tenant._id, params.otoroshiId).then((otoroshi) =>
-        setState({ ...state, otoroshi })
-      );
+      Services.oneOtoroshi(tenant._id, params.otoroshiId)
+        .then((otoroshi) => setOtoroshi(otoroshi));
     }
   }, []);
 
-  const save = () => {
-    if (state.create) {
-      Services.createOtoroshiSettings(tenant._id, state.otoroshi).then((result) => {
-        if (result.error) {
-          toastr.error('Failure', result.error);
-        } else {
-          toastr.success(translateMethod('otoroshi.settings.created.success'));
-          setState({ ...state, create: false });
-        }
-      });
-    } else {
-      Services.saveOtoroshiSettings(tenant._id, state.otoroshi).then((result) => {
-        if (result.error) {
-          toastr.error('Failure', result.error);
-        } else {
-          toastr.success(translateMethod('otoroshi.settings.updated.success'));
-          setState({ ...state, create: false });
-        }
-      });
-    }
-  };
-
-  const onDelete = () => {
-    window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
-      if (ok) {
-        Services.deleteOtoroshiSettings(tenant._id, state.otoroshi._id).then(() => {
-          toastr.success(translateMethod('otoroshi.settings.deleted.success'));
-          navigate('/settings/otoroshis');
+  const save = (data) => {
+    if (create) {
+      Services.createOtoroshiSettings(tenant._id, data)
+        .then((result) => {
+          if (result.error) {
+            toastr.error('Failure', result.error);
+          } else {
+            toastr.success(translateMethod('otoroshi.settings.created.success'));
+            navigate('/settings/otoroshis')
+          }
         });
-      }
-    });
+    } else {
+      Services.saveOtoroshiSettings(tenant._id, data)
+        .then((result) => {
+          if (result.error) {
+            toastr.error('Failure', result.error);
+          } else {
+            toastr.success(translateMethod('otoroshi.settings.updated.success'));
+            navigate('/settings/otoroshis')
+          }
+        });
+    }
   };
 
   return (
     <Can I={manage} a={TENANT} dispatchError>
       <div className="row">
-        {!state.create && (
+        {!create && (
           <h1>
             <Translation i18nkey="Otoroshi settings">Otoroshi settings</Translation>
           </h1>
         )}
-        {state.create && (
+        {create && (
           <h1>
             <Translation i18nkey="New otoroshi settings">New otoroshi settings</Translation>
           </h1>
         )}
       </div>
       <div className="row">
-        {state.otoroshi && (
-          <React.Suspense fallback={<Spinner />}>
-            <LazyForm
-              flow={formFlow}
-              schema={formSchema}
-              value={state.otoroshi}
-              onChange={(otoroshi) => setState({ ...state, otoroshi })}
-              style={{ marginBottom: 20, paddingTop: 20 }}
-            />
-          </React.Suspense>
+        {otoroshi && (
+          <Form
+            schema={formSchema}
+            value={otoroshi}
+            onSubmit={save}
+            options={{
+              actions: {
+                submit: {
+                  label: create ? translateMethod('Create') : translateMethod('Save')
+                },
+                cancel: {
+                  display: true,
+                  label: translateMethod('Back'),
+                  action: () => navigate('/settings/otoroshis')
+                }
+              }
+            }}
+          />
         )}
-      </div>
-      <div className="row">
-        <div className="d-flex justify-content-end">
-          <Link className="btn btn-outline-primary" to="/settings/otoroshis">
-            <i className="fas fa-chevron-left me-1" />
-            <Translation i18nkey="Back">Back</Translation>
-          </Link>
-          {!state.create && (
-            <button
-              style={{ marginLeft: 5 }}
-              type="button"
-              className="btn btn-outline-danger"
-              onClick={onDelete}
-            >
-              <i className="fas fa-trash me-1" />
-              <Translation i18nkey="Delete">Delete</Translation>
-            </button>
-          )}
-          <button
-            style={{ marginLeft: 5 }}
-            type="button"
-            className="btn btn-outline-success"
-            onClick={save}
-          >
-            {!state.create && (
-              <span>
-                <i className="fas fa-save me-1" />
-                <Translation i18nkey="Save">Save</Translation>
-              </span>
-            )}
-            {state.create && (
-              <span>
-                <Translation i18nkey="Create">Create</Translation>
-              </span>
-            )}
-          </button>
-        </div>
       </div>
     </Can>
   );

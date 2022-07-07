@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
-import faker from 'faker';
+import { nanoid } from 'nanoid';
 import moment from 'moment';
 
 import * as Services from '../../../services';
@@ -17,7 +17,7 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
   const [lastClosedDates, setLastClosedDates] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const sseId = faker.random.alphaNumeric(64);
+  const sseId = nanoid(64);
 
   useEffect(() => {
     if (!connectedUser.isGuest) {
@@ -108,7 +108,7 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
     Option(lastClosedDates.find((item) => item.chat === chat))
       .map((item) => item.date)
       .fold(
-        () => {},
+        () => { },
         (date) => {
           setLoading(true);
           Services.myChatMessages(chat, date).then((result) => {

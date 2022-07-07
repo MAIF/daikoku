@@ -1,7 +1,7 @@
-import faker from 'faker';
+import { nanoid } from 'nanoid';
 
 export const newPossibleUsagePlan = (customName) => ({
-  _id: faker.random.alphaNumeric(32),
+  _id: nanoid(32),
   type: 'FreeWithQuotas',
   currency: { code: 'EUR' },
   customName,

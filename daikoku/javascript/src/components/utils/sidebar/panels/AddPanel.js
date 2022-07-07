@@ -1,13 +1,11 @@
 import React, { useContext } from 'react';
 import { useNavigate, useMatch } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import faker from 'faker';
 
 import * as Services from '../../../../services';
 import { openCreationTeamModal, openTeamSelectorModal } from '../../../../core/modal';
 import { manage, CanIDoAction, api as API, Option } from '../..';
 import { I18nContext } from '../../../../locales/i18n-context';
-import { NavContext } from '../../../../contexts';
 
 export const AddPanel = ({ teams }) => {
   const { translateMethod } = useContext(I18nContext);
@@ -43,18 +41,7 @@ export const AddPanel = ({ teams }) => {
 
         return Services.fetchNewApi()
           .then((e) => {
-            const verb = faker.hacker.verb();
-            const name =
-              verb.charAt(0).toUpperCase() +
-              verb.slice(1) +
-              ' ' +
-              faker.hacker.adjective() +
-              ' ' +
-              faker.hacker.noun() +
-              ' api';
-
-            const _humanReadableId = name.replace(/\s/gi, '-').toLowerCase().trim();
-            return { ...e, name, _humanReadableId, team: team._id };
+            return { ...e, team: team._id };
           })
           .then((newApi) =>
             navigate(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
@@ -83,18 +70,7 @@ export const AddPanel = ({ teams }) => {
 
         return Services.fetchNewApiGroup()
           .then((e) => {
-            const verb = faker.hacker.verb();
-            const name =
-              verb.charAt(0).toUpperCase() +
-              verb.slice(1) +
-              ' ' +
-              faker.hacker.adjective() +
-              ' ' +
-              faker.hacker.noun() +
-              ' apigroup';
-
-            const _humanReadableId = name.replace(/\s/gi, '-').toLowerCase().trim();
-            return { ...e, name, _humanReadableId, team: team._id };
+            return { ...e, team: team._id };
           })
           .then((newApiGroup) =>
             navigate(`/${team._humanReadableId}/settings/apigroups/${newApiGroup._id}/infos`, {

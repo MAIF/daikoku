@@ -3,6 +3,7 @@ const TerserJSPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
@@ -136,10 +137,11 @@ module.exports = (env, argv) => {
     },
 
     plugins: [
+      // new BundleAnalyzerPlugin(),
       new MiniCssExtractPlugin({
         filename: isProd ? '[name].min.css' : '[name].css',
         chunkFilename: isProd ? '[id].min.css' : '[id].css'
-      }),
+      })
     ],
     resolve: {
       alias: {

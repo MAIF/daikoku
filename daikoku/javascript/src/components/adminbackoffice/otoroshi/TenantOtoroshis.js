@@ -1,12 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { connect, useSelector } from 'react-redux';
-import { v4 as uuid } from 'uuid';
-import faker from 'faker';
+import { useSelector } from 'react-redux';
+import { nanoid } from 'nanoid';
 
 import * as Services from '../../../services';
 import { Table } from '../../inputs';
-import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant as TENANT } from '../../utils';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../locales/i18n-context';
@@ -14,7 +12,7 @@ import { useTenantBackOffice } from '../../../contexts';
 
 export const TenantOtoroshis = () => {
   const { tenant, connectedUser } = useSelector((s) => s.context);
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
 
   useTenantBackOffice();
@@ -84,23 +82,21 @@ export const TenantOtoroshis = () => {
   ];
 
   const onDelete = (id) => {
-    window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
-      if (ok) {
-        Services.deleteOtoroshiSettings(tenant._id, id).then(() => {
-          toastr.success(translateMethod('otoroshi.settings.deleted.success'));
-          table.update();
-        });
-      }
-    });
+    window.confirm(translateMethod('otoroshi.settings.delete.confirm'))
+      .then((ok) => {
+        if (ok) {
+          Services.deleteOtoroshiSettings(tenant._id, id)
+            .then(() => {
+              toastr.success(translateMethod('otoroshi.settings.deleted.success'));
+              table.update();
+            });
+        }
+      });
   };
 
   const createNewSettings = () => {
     const settings = {
-      _id: uuid(),
-      url: 'https://otoroshi-api.foo.bar',
-      host: 'otoroshi-api.foo.bar',
-      clientId: faker.random.alphaNumeric(16),
-      clientSecret: faker.random.alphaNumeric(64),
+      _id: nanoid(32)
     };
     navigate(`/settings/otoroshis/${settings._id}`, {
       state: {

@@ -21,7 +21,7 @@
   "dependencies": {
     "@apollo/client": "^3.6.4",
     "@fortawesome/fontawesome-free": "6.1.1",
-    "@maif/react-forms": "^1.1.0",
+    "@maif/react-forms": "^1.2.1",
     "@popperjs/core": "^2.11.5",
     "@xstate/react": "3.0.0",
     "antd": "4.20.5",
@@ -32,7 +32,6 @@
     "classnames": "2.3.1",
     "connected-react-router": "6.9.2",
     "es6-shim": "0.35.6",
-    "faker": "5.5.3",
     "get-value": "3.0.1",
     "graphql": "^16.5.0",
     "highlight.js": "11.5.1",
@@ -42,6 +41,7 @@
     "json5": "2.2.1",
     "lodash": "4.17.21",
     "moment": "2.29.3",
+    "nanoid": "^4.0.0",
     "popper.js": "1.16.1",
     "prop-types": "15.8.1",
     "query-string": "7.1.1",
@@ -103,6 +103,7 @@
     "style-loader": "3.3.1",
     "url-loader": "4.1.1",
     "webpack": "5.72.1",
+    "webpack-bundle-analyzer": "^4.5.0",
     "webpack-cli": "4.9.2",
     "webpack-dev-server": "4.9.0"
   }

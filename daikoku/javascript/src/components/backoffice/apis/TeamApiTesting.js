@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Form, type, format, constraints } from '@maif/react-forms';
-import faker from 'faker';
-import _, { flow } from 'lodash';
+import { nanoid } from 'nanoid';
+import _ from 'lodash';
 import { useSelector } from 'react-redux';
 
 import { Option } from '../../utils';
@@ -14,18 +14,18 @@ export const TeamApiTesting = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
-    const random = faker.random.alphaNumeric(16);
+    const random = nanoid(16);
     const newConfig =
       testing.config && testing.config.otoroshiSettings
         ? testing.config
         : {
-            otoroshiSettings: null,
-            authorizedEntities: null,
-            clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
-            api: props.value._id,
-            tag: `daikoku_testing_${random}`,
-            metadata: props.metadata,
-          };
+          otoroshiSettings: null,
+          authorizedEntities: null,
+          clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
+          api: props.value._id,
+          tag: `daikoku_testing_${random}`,
+          metadata: props.metadata,
+        };
 
     props.openSubMetadataModal({
       save: (metadata) =>

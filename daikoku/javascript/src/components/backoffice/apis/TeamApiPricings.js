@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import faker from 'faker';
+import { nanoid } from 'nanoid';
 import { constraints, type, format } from '@maif/react-forms';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -549,7 +549,7 @@ export const TeamApiPricings = (props) => {
   };
 
   const createNewPlan = () => {
-    const newPlan = newPossibleUsagePlan(faker.commerce.productName() + ' plan');
+    const newPlan = newPossibleUsagePlan('new plan');
     setPlanForEdition(newPlan);
     setMode(possibleMode.creation);
     setCreation(true);
@@ -590,7 +590,7 @@ export const TeamApiPricings = (props) => {
   const clonePlanAndEdit = (plan) => {
     const clone = {
       ..._.cloneDeep(plan),
-      _id: faker.random.alphaNumeric(32),
+      _id: nanoid(32),
       customName: `${plan.customName} (copy)`,
     };
     setPlanForEdition(clone);
@@ -605,7 +605,7 @@ export const TeamApiPricings = (props) => {
       onClose: (plan) => {
         const clone = {
           ..._.cloneDeep(plan),
-          _id: faker.random.alphaNumeric(32),
+          _id: nanoid(32),
           customName: `${plan.customName} (import)`,
         };
         setPlanForEdition(clone);
