@@ -8,11 +8,11 @@ import { SketchPicker } from 'react-color';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { UserBackOffice } from '../../backoffice';
 import { Can, tenant as TENANT, manage, Option } from '../../utils';
 
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
 import { I18nContext } from '../../../core';
+import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 
 const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 
@@ -30,6 +30,8 @@ export function TenantStyleEditComponent(props) {
     preview: false,
   });
 
+  useDaikokuBackOffice()
+
   useEffect(() => {
     if (props.location && props.location.state && props.location.state.newTenant) {
       setState({
@@ -40,16 +42,17 @@ export function TenantStyleEditComponent(props) {
         create: true,
       });
     } else {
-      Services.oneTenant(params.tenantId).then((tenant) => {
-        const style = state.style.map(({ value, defaultColor, group }) => {
-          const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
-            () => defaultColor,
-            (value) => value[1]
-          );
-          return { value, color: color, group };
+      Services.oneTenant(params.tenantId)
+        .then((tenant) => {
+          const style = state.style.map(({ value, defaultColor, group }) => {
+            const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
+              () => defaultColor,
+              (value) => value[1]
+            );
+            return { value, color: color, group };
+          });
+          setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
         });
-        setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
-      });
     }
   }, []);
 
@@ -82,68 +85,68 @@ export function TenantStyleEditComponent(props) {
       .then(() => toastr.success(translateMethod('Tenant updated successfully')));
   };
 
+  if (!state.tenant) {
+    return null;
+  }
+
   return (
-    <UserBackOffice tab="Tenants" isLoading={!state.tenant}>
-      {state.tenant && (
-        <Can I={manage} a={TENANT} dispatchError>
-          <div className="d-flex flex-row justify-content-between mb-1">
-            <div>
-              <button
-                className="btn btn-access-negative"
-                onClick={() => setState({ ...state, preview: !state.preview })}
-              >
-                <Translation i18nkey="Preview">Preview</Translation>
-              </button>
-            </div>
-            <div>
-              <button className="btn btn-access-negative" onClick={() => goBack()}>
-                <Translation i18nkey="Cancel">Cancel</Translation>
-              </button>
-              <button className="btn btn-access-negative mx-2" onClick={() => reset()}>
-                <Translation i18nkey="Reset">Reset</Translation>
-              </button>
-              <button className="btn btn-outline-success" onClick={() => save()}>
-                <Translation i18nkey="Save">Save</Translation>
-              </button>
-            </div>
+    <Can I={manage} a={TENANT} dispatchError>
+      <div className="d-flex flex-row justify-content-between mb-1">
+        <div>
+          <button
+            className="btn btn-access-negative"
+            onClick={() => setState({ ...state, preview: !state.preview })}
+          >
+            <Translation i18nkey="Preview">Preview</Translation>
+          </button>
+        </div>
+        <div>
+          <button className="btn btn-access-negative" onClick={() => goBack()}>
+            <Translation i18nkey="Cancel">Cancel</Translation>
+          </button>
+          <button className="btn btn-access-negative mx-2" onClick={() => reset()}>
+            <Translation i18nkey="Reset">Reset</Translation>
+          </button>
+          <button className="btn btn-outline-success" onClick={() => save()}>
+            <Translation i18nkey="Save">Save</Translation>
+          </button>
+        </div>
+      </div>
+      <div className="flex-row d-flex ">
+        {!state.preview && (
+          <div className="flex-grow-0">
+            {sortBy(Object.entries(groupBy(state.style, 'group')).map(([group, colors]) => ({ group, colors })), 'group')
+              .map((item, idx) => {
+                const { group, colors } = item;
+                return (
+                  <div key={idx}>
+                    <h3>{group}</h3>
+                    <div>
+                      {sortBy(colors, ['value']).map((item, idx) => {
+                        const property = state.style.find((c) => c.value === item.value);
+                        return (
+                          <div key={idx}>
+                            <label htmlFor={item.value}>
+                              {item.value.replace(/-/gi, ' ').trim()}
+                            </label>
+                            <ColorPicker
+                              presetColors={state.style.map((c) => c.color)}
+                              initialColor={property.color}
+                              handleColorChange={(color) => updateStyleProp(item, color)}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
-          <div className="flex-row d-flex ">
-            {!state.preview && (
-              <div className="flex-grow-0">
-                {sortBy( Object.entries(groupBy(state.style, 'group')).map(([group, colors]) => ({ group, colors })), 'group')
-                  .map((item, idx) => {
-                    const { group, colors } = item;
-                    return (
-                      <div key={idx}>
-                        <h3>{group}</h3>
-                        <div>
-                          {sortBy(colors, ['value']).map((item, idx) => {
-                            const property = state.style.find((c) => c.value === item.value);
-                            return (
-                              <div key={idx}>
-                                <label htmlFor={item.value}>
-                                  {item.value.replace(/-/gi, ' ').trim()}
-                                </label>
-                                <ColorPicker
-                                  presetColors={state.style.map((c) => c.color)}
-                                  initialColor={property.color}
-                                  handleColorChange={(color) => updateStyleProp(item, color)}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-            <Preview className="flex-grow-1" variables={state.style} />
-          </div>
-        </Can>
-      )}
-    </UserBackOffice>
-  );
+        )}
+        <Preview className="flex-grow-1" variables={state.style} />
+      </div>
+    </Can>
+  )
 }
 
 const mapStateToProps = (state) => ({

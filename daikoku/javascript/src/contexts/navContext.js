@@ -648,14 +648,15 @@ export const useTeamBackOffice = (team) => {
   return { addMenu };
 };
 
-export const useTenantBackOffice = () => {
+export const useTenantBackOffice = (maybeTenant) => {
   const { setMode, setOffice, addMenu, setMenu, setTenant } = useContext(NavContext);
   const { translateMethod } = useContext(I18nContext);
 
   const navigate = useNavigate();
   const match = useMatch('/settings/:tab*');
 
-  const tenant = useSelector((state) => state.context.tenant);
+  const currentTenant = useSelector((state) => state.context.tenant);
+  const tenant = maybeTenant || currentTenant;
 
   const schema = (currentTab) => ({
     title: tenant.name,

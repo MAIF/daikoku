@@ -5,7 +5,6 @@ import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { UserBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, asset, Spinner, tenant as TENANT } from '../../utils';
 import { openWysywygModal } from '../../../core/modal';

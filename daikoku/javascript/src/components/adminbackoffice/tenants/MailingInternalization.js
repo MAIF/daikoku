@@ -5,7 +5,6 @@ import { Link, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 
 import { Can, manage, Spinner, tenant as TENANT } from '../../utils';
-import { UserBackOffice } from '../../backoffice';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';

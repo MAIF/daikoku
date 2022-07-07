@@ -4,7 +4,6 @@ import moment from 'moment';
 import { Table } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
 import * as Services from '../../../services';
-import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 import { useTenantBackOffice } from '../../../contexts';
 
