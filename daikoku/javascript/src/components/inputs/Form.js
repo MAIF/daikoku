@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import isFunction from 'lodash/isFunction';
+import get from 'get-value';
+import set from 'set-value';
 
 import { Spinner } from '../utils';
 
@@ -14,16 +17,11 @@ import {
   LabelInput,
   TextareaInput,
 } from '.';
-
 const LazyCodeInput = React.lazy(() => import('./CodeInput.js'));
 const LazySingleMarkdownInput = React.lazy(() => import('./SingleMarkdownInput.js'));
 const LazyArrayForm = React.lazy(() => import('./ArrayForm'));
-
-import _ from 'lodash';
 import { Collapse } from './Collapse';
 
-import get from 'get-value';
-import set from 'set-value';
 
 class FormComponent extends Component {
   static propTypes = {
@@ -48,7 +46,7 @@ class FormComponent extends Component {
   };
 
   generateStep(name, idx) {
-    if (_.isFunction(name)) {
+    if (isFunction(name)) {
       return React.createElement(name, {});
     } else if (React.isValidElement(name)) {
       return name;
@@ -115,8 +113,8 @@ class FormComponent extends Component {
       // console.log('generate', name, 'of type', type, 'from', this.props.schema);
       let component = null;
       const visible = this.props.schema[name].visible;
-      const realDisabled = _.isFunction(disabled) ? disabled(this.props.value) : disabled;
-      if (visible && _.isFunction(visible) && !visible(this.props.value)) {
+      const realDisabled = isFunction(disabled) ? disabled(this.props.value) : disabled;
+      if (visible && isFunction(visible) && !visible(this.props.value)) {
         component = null;
       } else if (type) {
         if (type === 'array') {
@@ -229,7 +227,7 @@ class FormComponent extends Component {
               />
             </React.Suspense>
           );
-        } else if (_.isFunction(type)) {
+        } else if (isFunction(type)) {
           component = React.createElement(type, {
             ...props,
             disabled,

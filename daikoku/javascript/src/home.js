@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom';
 import jQuery from 'jquery';
 import { Provider } from 'react-redux';
 
-import { I18nProvider, store } from './core';
+import { store } from './core/store'
+import { I18nProvider } from './locales/i18n-context';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';

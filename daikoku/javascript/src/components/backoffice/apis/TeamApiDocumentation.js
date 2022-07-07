@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useImperativeHandle, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { nanoid } from 'nanoid';
-import _ from 'lodash';
+import cloneDeep from 'lodash/cloneDeep';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
@@ -194,12 +194,12 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   }
 
   function onUp() {
-    let pages = _.cloneDeep(value.documentation.pages);
+    let pages = cloneDeep(value.documentation.pages);
     if (selected) {
       const oldIndex = pages.indexOf(selected._id);
       if (oldIndex >= 0) {
         pages = pages.move(oldIndex, oldIndex - 1);
-        const newValue = _.cloneDeep(value);
+        const newValue = cloneDeep(value);
         newValue.documentation.pages = pages;
         props.onChange(newValue);
         props.save(newValue).then(() => {
@@ -210,12 +210,12 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   }
 
   function onDown() {
-    let pages = _.cloneDeep(value.documentation.pages);
+    let pages =cloneDeep(value.documentation.pages);
     if (selected) {
       const oldIndex = pages.indexOf(selected._id);
       if (oldIndex < pages.length) {
         pages = pages.move(oldIndex, oldIndex + 1);
-        const newValue = _.cloneDeep(value);
+        const newValue = cloneDeep(value);
         newValue.documentation.pages = pages;
         props.onChange(newValue);
         props.save(newValue).then(() => {
@@ -241,9 +241,9 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       lastModificationAt: Date.now(),
       content: '# New page\n\nA new page',
     }).then((page) => {
-      let pages = _.cloneDeep(value.documentation.pages);
+      let pages = cloneDeep(value.documentation.pages);
       pages.splice(index, 0, page._id);
-      const newValue = _.cloneDeep(value);
+      const newValue = cloneDeep(value);
       newValue.documentation.pages = pages;
       setSelected(page);
       props.onChange(newValue);
@@ -262,8 +262,8 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       .then((ok) => {
         if (ok) {
           Services.deleteDocPage(team._id, value._id, selected._id).then(() => {
-            let pages = _.cloneDeep(value.documentation.pages).filter((p) => p !== selected._id);
-            const newValue = _.cloneDeep(value);
+            let pages = cloneDeep(value.documentation.pages).filter((p) => p !== selected._id);
+            const newValue = cloneDeep(value);
             newValue.documentation.pages = pages;
             setDeletedPage(true);
             setSelected(null);

@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SketchPicker } from 'react-color';
 import { toastr } from 'react-redux-toastr';
+import uniq from 'lodash/uniq';
+
 import { I18nContext } from '../../../../core';
 
 export function TeamApiIssueTags({ value, onChange, basePath }) {
@@ -230,7 +232,7 @@ function ColorTag({ initialColor, handleColorChange, presetColors, className }) 
         <div style={styles.popover}>
           <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
           <SketchPicker
-            presetColors={_.uniq(presetColors).sort()}
+            presetColors={uniq(presetColors).sort()}
             color={color}
             onChange={(value) => setPickerValue(value)}
           />

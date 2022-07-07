@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import take from 'lodash/take';
 import showdown from 'showdown';
 
 export function DaikokuExtension() {
@@ -10,7 +10,7 @@ export function DaikokuExtension() {
       const path = window.location.pathname;
       const rawParts = path.split('/');
       rawParts.shift();
-      const parts = _.take(rawParts, 5);
+      const parts = take(rawParts, 5);
       const teamId = parts[1];
       const apiId = parts[3];
       const versionId = parts[4];

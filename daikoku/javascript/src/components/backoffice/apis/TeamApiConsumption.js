@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import moment from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
-import _ from 'lodash';
+import find from 'lodash/find';
 
 import * as Services from '../../../services';
 
@@ -13,7 +13,7 @@ import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../ut
 import { I18nContext } from '../../../core';
 
 const Currency = ({ plan }) => {
-  const cur = _.find(currencies, (c) => c.code === plan.currency.code);
+  const cur = find(currencies, (c) => c.code === plan.currency.code);
   return (
     <span>
       {' '}

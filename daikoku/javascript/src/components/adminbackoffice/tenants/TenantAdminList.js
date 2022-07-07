@@ -2,7 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useSelector } from 'react-redux';
 import Select from 'react-select';
 import { toastr } from 'react-redux-toastr';
-import _ from 'lodash';
+import values from 'lodash/values';
+import sortBy from 'lodash/sortBy';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
@@ -158,7 +159,7 @@ const AdminList = () => {
             onChange={(slug) => setSelectedAdmin(slug.value)}
             value={selectedAdmin}
             filterOption={(data, search) =>
-              _.values(data.value)
+              values(data.value)
                 .filter((e) => typeof e === 'string')
                 .some((v) => v.includes(search))
             }
@@ -172,7 +173,7 @@ const AdminList = () => {
         </div>
       </div>
       <PaginatedComponent
-        items={_.sortBy(filteredAdmins, [(a) => a.name.toLowerCase()])}
+        items={sortBy(filteredAdmins, [(a) => a.name.toLowerCase()])}
         count={15}
         formatter={(admin) => {
           return (

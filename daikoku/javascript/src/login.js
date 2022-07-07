@@ -10,7 +10,7 @@ import '@fortawesome/fontawesome-free/css/all.css';
 
 import { LoginPage } from './components/utils/login';
 import { registerAlert, registerConfirm, registerPrompt } from './components/utils/window';
-import { I18nProvider } from './core';
+import { I18nProvider } from './locales/i18n-context';
 
 window.$ = jQuery;
 window.jQuery = jQuery;

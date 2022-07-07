@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
-import { PropTypes } from 'prop-types';
-import _ from 'lodash';
+import find from 'lodash/find';
+import difference from 'lodash/difference';
 import { getApolloContext } from '@apollo/client';
 
 import { currencies } from '../../../services/currencies';
@@ -8,7 +8,6 @@ import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import {
   Can,
-  CanIDoAction,
   access,
   apikey,
   getCurrencySymbol,
@@ -21,7 +20,7 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 
 const Curreny = ({ plan }) => {
-  const cur = _.find(currencies, (c) => c.code === plan.currency.code);
+  const cur = find(currencies, (c) => c.code === plan.currency.code);
   return (
     <span>
       {' '}
@@ -31,7 +30,7 @@ const Curreny = ({ plan }) => {
 };
 
 const currency = (plan) => {
-  const cur = _.find(currencies, (c) => c.code === plan.currency.code);
+  const cur = find(currencies, (c) => c.code === plan.currency.code);
   return `${cur.name}(${cur.symbol})`;
 };
 
@@ -182,7 +181,7 @@ const ApiPricingCardComponent = (props) => {
         t._id === props.ownerTeam._id
     );
 
-  const allPossibleTeams = _.difference(
+  const allPossibleTeams = difference(
     authorizedTeams.map((t) => t._id),
     props.subscriptions
       .filter((_) => !plan.allowMultipleKeys)
@@ -190,7 +189,7 @@ const ApiPricingCardComponent = (props) => {
       .map((s) => s.team)
   );
 
-  const isPending = !_.difference(
+  const isPending = !difference(
     allPossibleTeams,
     props.pendingSubscriptions.map((s) => s.action.team)
   ).length;

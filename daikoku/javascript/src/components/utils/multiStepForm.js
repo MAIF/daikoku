@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useEffect, useRef, useImperativeHandle } from 'react';
-import classNames from 'classnames';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { createMachine, assign } from 'xstate';
 import { useMachine } from '@xstate/react';
 import { Form } from '@maif/react-forms';
-import _ from 'lodash';
+import omit from 'lodash/omit';
 import { Steps, Popover } from 'antd';
 
 const { Step } = Steps;
@@ -86,7 +85,7 @@ export const MultiStepForm = ({
             actions: ['reset'],
           },
           ...previousStepObj,
-          ..._.omit(tos, `TO_${step.id.toUpperCase()}`),
+          ...omit(tos, `TO_${step.id.toUpperCase()}`),
           ...skipStep,
         },
       };

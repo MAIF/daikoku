@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import Creatable from 'react-select/creatable';
 import { toastr } from 'react-redux-toastr';
-import _ from 'lodash';
+import sortBy from 'lodash/sortBy';
 
 import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
@@ -256,7 +256,7 @@ export const SubscriptionMetadataModal = (props) => {
                 )}
                 collapsed={false}
               >
-                {_.sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key']).map(
+                {sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key']).map(
                   ({ key, possibleValues }, idx) => {
                     return (
                       <div className="d-flex flex-row mb-1" key={idx}>

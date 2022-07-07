@@ -1,9 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../services';
-import _ from 'lodash';
+import sortBy from 'lodash/sortBy';
 import { useNavigate } from 'react-router-dom';
 
-import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useTenantBackOffice } from '../../../contexts';
@@ -109,7 +108,7 @@ export const TeamList = () => {
           </div>
         </div>
         <PaginatedComponent
-          items={_.sortBy(filteredTeams, [(team) => team.name.toLowerCase()])}
+          items={sortBy(filteredTeams, [(team) => team.name.toLowerCase()])}
           count={8}
           formatter={(team) => {
             return (

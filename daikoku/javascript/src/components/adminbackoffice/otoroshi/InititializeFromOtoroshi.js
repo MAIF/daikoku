@@ -1,6 +1,6 @@
 import { getApolloContext, gql } from '@apollo/client';
 import { useMachine } from '@xstate/react';
-import _ from 'lodash';
+import orderBy from 'lodash/orderBy';
 import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -108,7 +108,7 @@ export const InitializeFromOtoroshi = () => {
       });
   };
 
-  const orderedServices = _.orderBy(state.context.services, ['groiupId', 'name']);
+  const orderedServices = orderBy(state.context.services, ['groiupId', 'name']);
   const filterServices = (inputValue) =>
     Promise.resolve(
       orderedServices
@@ -136,7 +136,7 @@ export const InitializeFromOtoroshi = () => {
     />
   ));
 
-  const orderedApikeys = _.orderBy(state.context.apikeys, ['clientName']);
+  const orderedApikeys = orderBy(state.context.apikeys, ['clientName']);
 
   const filterApikeys = (entitie) => {
     return orderedApikeys.filter((apikey) =>

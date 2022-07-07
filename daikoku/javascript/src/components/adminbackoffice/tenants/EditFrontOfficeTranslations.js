@@ -1,9 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { nanoid } from 'nanoid';
+import { toastr } from 'react-redux-toastr';
+import sortBy from 'lodash/sortBy';
+
+import { PaginatedComponent } from '../../utils';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { v4 as uuid } from 'uuid';
-import { PaginatedComponent } from '../../utils';
-import { toastr } from 'react-redux-toastr';
 
 const TranslationInput = ({ key, tsl, save }) => {
   const [edited, setEdited] = useState(false);
@@ -108,7 +110,7 @@ export function EditFrontOfficeTranslations(props) {
                 (f) => f.key === key && f.language === language.toLowerCase()
               );
               return {
-                _id: uuid(),
+                _id: nanoid(32),
                 key,
                 language: language.toLowerCase(),
                 value: existingTranslation ? existingTranslation.value : value,
@@ -158,7 +160,7 @@ export function EditFrontOfficeTranslations(props) {
         onChange={(e) => setSearched(e.target.value.toLowerCase())}
       />
       <PaginatedComponent
-        items={_.sortBy(filteredTranslations, [([key]) => key])}
+        items={sortBy(filteredTranslations, [([key]) => key])}
         count={8}
         columnMode
         formatter={([key, tsl]) => {

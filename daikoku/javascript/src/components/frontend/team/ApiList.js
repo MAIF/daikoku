@@ -2,7 +2,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import Select from 'react-select';
 import Pagination from 'react-paginate';
-import _ from 'lodash';
+import find from 'lodash/find';
+import sortBy from 'lodash/sortBy';
+import groupBy from 'lodash/groupBy';
 import { Grid, List } from 'react-feather';
 import classNames from 'classnames';
 import { useNavigate } from 'react-router-dom';
@@ -65,10 +67,10 @@ const ApiListComponent = (props) => {
   };
 
   const tagMatches = (api, term) => {
-    return !!_.find(api.tags, (tag) => tag.trim().toLowerCase().indexOf(term) > -1);
+    return !!find(api.tags, (tag) => tag.trim().toLowerCase().indexOf(term) > -1);
   };
   const categoryMatches = (api, term) => {
-    return !!_.find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
+    return !!find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
   };
   const teamMatch = (api, searched) => {
     const ownerTeam = props.teams.find((t) => t._id === api.team._id);
@@ -132,20 +134,18 @@ const ApiListComponent = (props) => {
     (api) => selectedTag.value === all.value || api.tags.includes(selectedTag.value)
   );
 
-  const filteredApis = _.chain(
+  const filteredApis = Object.values(groupBy((
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (teamMatch(api, searchedTrim)) {
-            return true;
-          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-        })
-  )
-    .groupBy('_humanReadableId')
+        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (teamMatch(api, searchedTrim)) {
+          return true;
+        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+      })), '_humanReadableId'))
     .map((value) => {
       if (value.length === 1) return value[0];
 
@@ -155,7 +155,6 @@ const ApiListComponent = (props) => {
 
       return app;
     })
-    .value();
 
   const paginateApis = (() => {
     const starredApis = [],
@@ -394,7 +393,7 @@ const YourTeams = ({ teams, redirectToTeam, ...props }) => {
         onChange={(e) => setSearchedTeam(e.target.value)}
       />
       <div className="d-flex flex-column">
-        {_.sortBy(maybeTeams, (team) => team.name.toLowerCase())
+        {sortBy(maybeTeams, (team) => team.name.toLowerCase())
           .slice(0, 5)
           .map((team) => {
             return (

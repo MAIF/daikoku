@@ -1,15 +1,15 @@
 /* eslint-disable react/display-name */
 import React, { useContext, useEffect, useState } from 'react';
-import _ from 'lodash';
+import findIndex from 'lodash/findIndex';
 import hljs from 'highlight.js';
 import { Link, useParams } from 'react-router-dom';
 import asciidoctor from 'asciidoctor';
 
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
+import { I18nContext } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
-import { I18nContext } from '../../../core';
 
 const asciidoctorConverter = asciidoctor();
 
@@ -95,7 +95,7 @@ export function ApiDocumentation(props) {
   const apiId = params.apiId;
   const pageId = params.pageId;
   const versionId = params.versionId;
-  const idx = _.findIndex(details.pages, (p) => p === pageId);
+  const idx = findIndex(details.pages, (p) => p === pageId);
 
   let prevId = null;
   let nextId = null;

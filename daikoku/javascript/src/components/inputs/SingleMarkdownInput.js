@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import AceEditor from 'react-ace';
-import _ from 'lodash';
+import isFunction from 'lodash/isFunction';
 import { converter } from '../../services/showdown';
 import 'brace/mode/html';
 import 'brace/mode/json';
@@ -209,7 +209,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
   };
 
   let code = props.value;
-  const team = _.isFunction(props.team) ? props.team() : props.team;
+  const team = isFunction(props.team) ? props.team() : props.team;
 
   return (
     <div className="mb-3 row">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { v4 as uuid } from 'uuid';
+import debounce from 'lodash/debounce';
 
 import * as Services from '../../../../services';
 import { I18nContext } from '../../../../locales/i18n-context';
@@ -47,7 +48,7 @@ export const SearchPanel = ({ teams }) => {
     );
   };
 
-  const debouncedSearch = _.debounce(search, 100, { leading: true });
+  const debouncedSearch = debounce(search, 100, { leading: true });
 
   return (
     <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
@@ -101,7 +102,7 @@ export const SearchPanel = ({ teams }) => {
                             option.version
                           }/description`}
                           className="block__entry__link"
-                          key={`${uuid()} - ${option.value}`}
+                          key={`${option.value}-${option.version}`}
                         >
                           {`${option.label} - ${option.version}`}
                         </Link>

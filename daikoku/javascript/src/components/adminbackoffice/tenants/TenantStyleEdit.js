@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
-import _ from 'lodash';
+import uniq from 'lodash/uniq';
+import sortBy from 'lodash/sortBy';
+import groupBy from 'lodash/groupBy';
 import { toastr } from 'react-redux-toastr';
 import { SketchPicker } from 'react-color';
 import { useParams } from 'react-router-dom';
@@ -108,18 +110,14 @@ export function TenantStyleEditComponent(props) {
           <div className="flex-row d-flex ">
             {!state.preview && (
               <div className="flex-grow-0">
-                {_.chain(state.style)
-                  .groupBy('group')
-                  .map((value, key) => ({ group: key, colors: value }))
-                  .sortBy('group')
-                  .value()
+                {sortBy( Object.entries(groupBy(state.style, 'group')).map(([group, colors]) => ({ group, colors })), 'group')
                   .map((item, idx) => {
                     const { group, colors } = item;
                     return (
                       <div key={idx}>
                         <h3>{group}</h3>
                         <div>
-                          {_.sortBy(colors, ['value']).map((item, idx) => {
+                          {sortBy(colors, ['value']).map((item, idx) => {
                             const property = state.style.find((c) => c.value === item.value);
                             return (
                               <div key={idx}>
@@ -278,7 +276,7 @@ const ColorPicker = ({ initialColor, handleColorChange, presetColors }) => {
         <div style={styles.popover}>
           <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
           <SketchPicker
-            presetColors={_.uniq(presetColors).sort()}
+            presetColors={uniq(presetColors).sort()}
             color={color}
             onChange={(value) => setPickerValue(value)}
           />

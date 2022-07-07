@@ -4,6 +4,8 @@ import { nanoid } from 'nanoid';
 import { constraints, type, format } from '@maif/react-forms';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import { toastr } from 'react-redux-toastr';
+import cloneDeep from 'lodash/cloneDeep';
 
 import { I18nContext } from '../../../core';
 import {
@@ -16,8 +18,6 @@ import {
 } from '../../utils';
 import { currencies } from '../../../services/currencies';
 import * as Services from '../../../services';
-import { toastr } from 'react-redux-toastr';
-import { Breadcrumb } from 'antd';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -542,8 +542,8 @@ export const TeamApiPricings = (props) => {
   }, [props.value]);
 
   const deletePlan = (plan) => {
-    let plans = _.cloneDeep(props.value.possibleUsagePlans).filter((p) => p._id !== plan._id);
-    const newValue = _.cloneDeep(props.value);
+    let plans = cloneDeep(props.value.possibleUsagePlans).filter((p) => p._id !== plan._id);
+    const newValue = cloneDeep(props.value);
     newValue.possibleUsagePlans = plans;
     props.save(newValue);
   };
@@ -589,7 +589,7 @@ export const TeamApiPricings = (props) => {
 
   const clonePlanAndEdit = (plan) => {
     const clone = {
-      ..._.cloneDeep(plan),
+      ...cloneDeep(plan),
       _id: nanoid(32),
       customName: `${plan.customName} (copy)`,
     };
@@ -604,7 +604,7 @@ export const TeamApiPricings = (props) => {
       teamId: props.team._id,
       onClose: (plan) => {
         const clone = {
-          ..._.cloneDeep(plan),
+          ...cloneDeep(plan),
           _id: nanoid(32),
           customName: `${plan.customName} (import)`,
         };

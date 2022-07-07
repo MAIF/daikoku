@@ -1,13 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import _ from 'lodash';
+import groupBy from 'lodash/groupBy';
 
 import * as Services from '../../../services';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotifications, openSubMetadataModal, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
-import { useParams } from 'react-router-dom';
 import { useUserBackOffice } from '../../../contexts';
 
 export const NotificationList = () => {
@@ -182,7 +181,7 @@ export const NotificationList = () => {
     return null;
   }
 
-  const notifByTeams = _.groupBy(state.notifications, 'team');
+  const notifByTeams = groupBy(state.notifications, 'team');
   const openModal = (p) => openSubMetadataModal(p)(dispatch);
   return (
     <>

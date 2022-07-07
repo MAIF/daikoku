@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { nanoid } from 'nanoid';
-import _ from 'lodash';
+import sortBy from 'lodash/sortBy';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
@@ -110,7 +110,7 @@ export const UserList = () => {
             </div>
           </div>
           <PaginatedComponent
-            items={_.sortBy(filteredUsers, [(user) => user.name.toLowerCase()])}
+            items={sortBy(filteredUsers, [(user) => user.name.toLowerCase()])}
             count={15}
             formatter={(user) => {
               return (

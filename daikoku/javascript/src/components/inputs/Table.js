@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useContext, useImperativeHandle } from 'react';
 import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
 import classNames from 'classnames';
-import _ from 'lodash';
+import debounce from 'lodash/debounce';
 import PropTypes from 'prop-types';
 import Pagination from 'react-paginate';
 import Select from 'react-select';
@@ -140,7 +140,7 @@ export const Table = React.forwardRef(
     );
 
     useEffect(() => {
-      const sizeListener = _.debounce(() => {
+      const sizeListener = debounce(() => {
         forceUpdate();
       }, 400);
       window.addEventListener('resize', sizeListener);

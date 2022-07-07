@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import _ from 'lodash';
+import sortBy from 'lodash/sortBy';
 import { toastr } from 'react-redux-toastr';
 import classnames from 'classnames';
 
@@ -316,7 +316,7 @@ export const TeamMembersSimpleComponent = (props) => {
               translateMethod('Permission', true)
             );
           }}
-          items={_.sortBy(filteredMembers, [(member) => member.name.toLowerCase()])}
+          items={sortBy(filteredMembers, [(member) => member.name.toLowerCase()])}
           count={15}
           formatter={(member) => {
             const isAdmin = userHavePemission(member, administrator);
@@ -394,7 +394,7 @@ export const TeamMembersSimpleComponent = (props) => {
       {state.tab === TABS.pending &&
         (filteredPending.length > 0 ? (
           <PaginatedComponent
-            items={_.sortBy(filteredPending, [(member) => member.name.toLowerCase()])}
+            items={sortBy(filteredPending, [(member) => member.name.toLowerCase()])}
             count={15}
             formatter={(member) => {
               const invitedUser = member.name === 'invited user';

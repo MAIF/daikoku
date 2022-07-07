@@ -1,8 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { merge } from 'lodash';
+import merge from 'lodash/merge';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate, Link, useMatch } from 'react-router-dom';
-import _ from 'lodash';
 
 import { I18nContext, openContactModal } from '../core';
 import { Can, manage, api as API } from '../components/utils';
@@ -723,12 +722,6 @@ export const useTenantBackOffice = () => {
     navigate(`/settings/${navTab}`);
   };
 
-  // useEffect(() => {
-  //   if (match.params.tab && !_.isEmpty(menu)) {
-  //     addMenu(schema(match.params.tab))
-  //   }
-  // }, [match.params.tab, tenant])
-
   useEffect(() => {
     setMenu(schema(match.params.tab));
     setMode(navMode.tenant);
@@ -786,12 +779,6 @@ export const useDaikokuBackOffice = () => {
     navigate(`/settings/${navTab}`);
   };
 
-  // useEffect(() => {
-  //   if (match.params.tab && !_.isEmpty(menu)) {
-  //     addMenu(schema(match.params.tab))
-  //   }
-  // }, [match.params.tab])
-
   useEffect(() => {
     setMode(navMode.daikoku);
     setOffice(officeMode.back);
@@ -839,12 +826,6 @@ export const useUserBackOffice = () => {
   const navigateTo = (navTab) => {
     navigate(`/${navTab}`);
   };
-
-  // useEffect(() => {
-  //   if (match.params.tab && !_.isEmpty(menu)) {
-  //     addMenu(schema(match.params.tab))
-  //   }
-  // }, [match.params.tab])
 
   useEffect(() => {
     setMode(navMode.user);

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import * as _ from 'lodash';
+import sortBy from 'lodash/sortBy';
 
 import { OtoroshiStatsVizualization } from '../../utils';
 import * as Services from '../../../services';
@@ -23,7 +23,7 @@ export const TeamConsumption = () => {
       label: translateMethod('Hits by api/plan'),
       title: translateMethod('Hits by api/plan'),
       formatter: (data) =>
-        _.sortBy(
+        sortBy(
           data.reduce((acc, item) => {
             const value = acc.find((a) => a.name === item.apiName) || { count: 0 };
             return [
@@ -34,7 +34,7 @@ export const TeamConsumption = () => {
           ['name']
         ),
       formatter2: (data) =>
-        _.sortBy(
+        sortBy(
           data.reduce((acc, item) => {
             const plan = `${item.apiName} - ${item.plan}`;
             const value = acc.find((a) => a.name === plan) || { count: 0 };

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import _ from 'lodash';
+import sortBy from 'lodash/sortBy';
+
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
 import { I18nContext } from '../../../core';
@@ -75,7 +75,7 @@ export const TenantList = () => {
             </div>
           </div>
           <PaginatedComponent
-            items={_.sortBy(filteredTenants, [(tenant) => tenant.name.toLowerCase()])}
+            items={sortBy(filteredTenants, [(tenant) => tenant.name.toLowerCase()])}
             count={15}
             formatter={(tenant) => {
               return (

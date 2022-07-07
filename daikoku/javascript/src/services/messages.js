@@ -1,4 +1,5 @@
-import _ from 'lodash';
+import orderBy from 'lodash/orderBy';
+import last from 'lodash/last';
 
 let callback = [];
 
@@ -52,11 +53,11 @@ export function removeCallback(id) {
 }
 
 export const fromMessagesToDialog = (messages) =>
-  _.orderBy(messages, ['date']).reduce((dialog, message) => {
+  orderBy(messages, ['date']).reduce((dialog, message) => {
     if (!dialog.length) {
       return [[message]];
     } else {
-      const last = _.last(dialog);
+      const last = last(dialog);
       if (last.some((m) => m.sender === message.sender)) {
         return [...dialog.slice(0, dialog.length - 1), [...last, message]];
       } else {

@@ -2,7 +2,11 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useSelector } from 'react-redux';
 import classNames from 'classnames';
 import { Send, ChevronLeft } from 'react-feather';
-import _ from 'lodash';
+import head from'lodash/head';
+import sortBy from'lodash/sortBy';
+import values from'lodash/values';
+import orderBy from'lodash/orderBy';
+import maxBy from'lodash/maxBy';
 import moment from 'moment';
 import Select from 'react-select';
 
@@ -54,7 +58,7 @@ export const AdminMessages = () => {
         const { chat } = m;
         const [actualGroup, others] = partition(groups, (g) => g.chat === chat);
         const user = users.find((u) => u._id === chat);
-        const updatedGroup = Option(_.head(actualGroup))
+        const updatedGroup = Option(head(actualGroup))
           .map((g) => ({ ...g, messages: [...g.messages, m] }))
           .getOrElse({ chat, user, messages: [m] });
 
@@ -93,7 +97,7 @@ export const AdminMessages = () => {
   const sendMessage = () => {
     if (!loading && newMessage.trim()) {
       const participants = Option(groupedMessages.find((g) => g.chat === selectedChat))
-        .map((g) => _.head(g.messages))
+        .map((g) => head(g.messages))
         .map((m) => m.participants)
         .getOrElse([selectedChat, ...adminTeam.users.map((u) => u.userId)]);
 
@@ -120,7 +124,7 @@ export const AdminMessages = () => {
     });
   };
 
-  const orderedMessages = _.sortBy(groupedMessages, 'chat');
+  const orderedMessages = sortBy(groupedMessages, 'chat');
   const dialog = Option(groupedMessages.find(({ chat }) => chat === selectedChat))
     .map((g) => MessagesEvents.fromMessagesToDialog(g.messages))
     .getOrElse([]);
@@ -171,15 +175,15 @@ export const AdminMessages = () => {
           value={null}
           onChange={({ value }) => createDialog(value)}
           filterOption={(data, search) =>
-            _.values(data.value)
+            values(data.value)
               .filter((e) => typeof e === 'string')
               .some((v) => v.includes(search))
           }
           classNamePrefix="reactSelect"
         />
-        {_.orderBy(
+        {orderBy(
           orderedMessages.map(({ chat, user, messages }) => {
-            const maxMessage = _.maxBy(messages, 'date');
+            const maxMessage = maxBy(messages, 'date');
             const maxDate = Option(maxMessage)
               .map((m) => moment(m.date))
               .getOrElse(moment());

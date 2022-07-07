@@ -41,14 +41,6 @@ module.exports = (env, argv) => {
         ]
       },
       {
-        test: /\.less$/,
-        use: [
-          'style-loader', // creates style nodes from JS strings
-          'css-loader', // translates CSS into CommonJS
-          'less-loader' // compiles less to CSS, using less by default
-        ]
-      },
-      {
         test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
         use: [
           {

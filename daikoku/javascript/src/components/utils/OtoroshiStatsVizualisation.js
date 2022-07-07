@@ -4,7 +4,7 @@ import { Histogram, RoundChart } from './Recharts';
 import { converterBase2 } from 'byte-converter';
 import moment from 'moment';
 import Select from 'react-select';
-import _ from 'lodash';
+import maxBy from 'lodash/maxBy';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Spinner } from './Spinner';
 import { I18nContext } from '../../core';
@@ -25,7 +25,7 @@ class Period {
   format = (consumptions) => {
     let time = '';
     if (consumptions && consumptions.length) {
-      const maxDate = _.maxBy(consumptions, (o) => o.to);
+      const maxDate = maxBy(consumptions, (o) => o.to);
       if (maxDate && moment(maxDate.to).startOf('day').isSame(moment().startOf('day'))) {
         time = moment(maxDate.to).format('HH:mm');
       }

@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Form, constraints, type, format } from '@maif/react-forms';
 import { toastr } from 'react-redux-toastr';
-import { sortBy } from 'lodash';
+import sortBy from 'lodash/sortBy';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 

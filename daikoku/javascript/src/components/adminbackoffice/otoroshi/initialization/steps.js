@@ -3,7 +3,8 @@ import Select, { components } from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
 import classNames from 'classnames';
-import _ from 'lodash';
+import orderBy from 'lodash/orderBy';
+import cloneDeep from 'lodash/cloneDeep';
 
 import { Table } from '../../../inputs';
 import * as Services from '../../../../services';
@@ -417,7 +418,7 @@ const SelectApi = ({ apis, setSelectedApi, selectedApi }) => {
   const { translateMethod } = useContext(I18nContext);
   return (
     <Select
-      options={_.orderBy(apis, ['label'])}
+      options={orderBy(apis, ['label'])}
       style={{ with: '175px' }}
       onChange={(slug) => setSelectedApi(slug.value)}
       value={apis.find((a) => !!selectedApi && a.value._id === selectedApi._id)}
@@ -445,7 +446,7 @@ const SelectPlan = ({
       isLoading={!selectedApi || loadingPlan}
       onChange={(slug, { action }) => setSelectedPlan(action === 'clear' ? undefined : slug.value)}
       onCreateOption={setNewPlan}
-      options={_.orderBy(possiblePlans, ['label'])}
+      options={orderBy(possiblePlans, ['label'])}
       value={possiblePlans.find((a) => !!selectedPlan && a.value._id === selectedPlan._id)}
       placeholder={translateMethod('Select a plan')}
       formatCreateLabel={(value) =>
@@ -466,7 +467,7 @@ const SelectTeam = ({ loading, setNewTeam, teams, selectedTeam, setSelectedTeam,
       isLoading={loading}
       onChange={(slug, { action }) => setSelectedTeam(action === 'clear' ? undefined : slug.value)}
       onCreateOption={setNewTeam}
-      options={_.orderBy(teams, ['label'])}
+      options={orderBy(teams, ['label'])}
       value={teams.find((t) => t.value === selectedTeam)}
       placeholder={translateMethod('Select a team')}
       formatCreateLabel={(value) =>
@@ -519,8 +520,8 @@ export const ApiKeyStep = (props) => {
           className="w-50"
           components={(props) => <components.Group {...props} />}
           options={[
-            { label: 'Services', options: _.orderBy(services, ['label']) },
-            { label: 'Service groups', options: _.orderBy(groups, ['label']) },
+            { label: 'Services', options: orderBy(services, ['label']) },
+            { label: 'Service groups', options: orderBy(groups, ['label']) },
           ]}
           onChange={setSelectedEntity}
           value={selectedEntity}
@@ -632,7 +633,7 @@ const ApiKey = (props) => {
   //add new plan effect
   useEffect(() => {
     if (newPlan) {
-      let plans = _.cloneDeep(selectedApi.possibleUsagePlans);
+      let plans = cloneDeep(selectedApi.possibleUsagePlans);
       const newPossiblePlan = newPossibleUsagePlan(newPlan);
       const plan = {
         ...newPossiblePlan,
@@ -645,7 +646,7 @@ const ApiKey = (props) => {
         },
       };
       plans.push(plan);
-      const value = _.cloneDeep(selectedApi);
+      const value = cloneDeep(selectedApi);
       value.possibleUsagePlans = plans;
 
       setSelectedPlan(plan);

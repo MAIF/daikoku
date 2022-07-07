@@ -1,5 +1,5 @@
 import React from 'react';
-import _ from 'lodash';
+import sortBy from 'lodash/sortBy';
 import moment from 'moment';
 
 import {
@@ -85,7 +85,7 @@ export function Histogram(props) {
           <YAxis tickFormatter={formatTick} />
           <CartesianGrid strokeDasharray="3 3" />
           <Tooltip />
-          {_.sortBy(seriesName, (sn) => sn).map((sn, idx) => (
+          {sortBy(seriesName, (sn) => sn).map((sn, idx) => (
             <Area
               key={sn}
               type="monotone"

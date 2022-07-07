@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
-import { sortBy } from 'lodash';
+import sortBy from 'lodash/sortBy';
 import { getApolloContext } from '@apollo/client';
 import { Form, constraints, format, type } from '@maif/react-forms';
 

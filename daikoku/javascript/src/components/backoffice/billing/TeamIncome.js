@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getApolloContext } from '@apollo/client';
 import moment from 'moment';
-import _ from 'lodash';
+import maxBy from 'lodash/maxBy';
 
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
@@ -89,7 +89,7 @@ export const TeamIncome = () => {
   };
 
   const total = state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
-  const mostRecentConsumption = _.maxBy(state.consumptions, (c) => c.to);
+  const mostRecentConsumption = maxBy(state.consumptions, (c) => c.to);
   const lastDate =
     mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 

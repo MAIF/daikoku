@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Option } from '../components';
+import { Option } from '../components/utils/Option';
 import * as Services from '../services';
 import translationEng from '../locales/en/translation.json';
 import translationFr from '../locales/fr/translation.json';

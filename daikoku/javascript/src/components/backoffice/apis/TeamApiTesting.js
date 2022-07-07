@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
-import { Form, type, format, constraints } from '@maif/react-forms';
+import { Form, type, format } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
-import _ from 'lodash';
 import { useSelector } from 'react-redux';
 
 import { Option } from '../../utils';

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
-import _ from 'lodash';
+import isFunction from 'lodash/isFunction';
+import isString from 'lodash/isString';
 
 import { OPEN_MODAL } from '../../core/modal';
 
@@ -19,7 +20,7 @@ function Alert(props) {
     return document.body.removeEventListener('keydown', defaultButton);
   }, []);
 
-  const res = _.isFunction(props.message) ? props.message(props.close) : props.message;
+  const res = isFunction(props.message) ? props.message(props.close) : props.message;
 
   return (
     <div>
@@ -32,9 +33,9 @@ function Alert(props) {
             </div>
             <div className="modal-body">
               <div className="modal-description">
-                {_.isString(res) && <p>{res}</p>}
-                {!_.isString(res) && !_.isFunction(res) && res}
-                {!_.isString(res) && _.isFunction(res) && res(props.close)}
+                {isString(res) && <p>{res}</p>}
+                {!isString(res) && !isFunction(res) && res}
+                {!isString(res) && isFunction(res) && res(props.close)}
               </div>
             </div>
             <div className="modal-footer">
