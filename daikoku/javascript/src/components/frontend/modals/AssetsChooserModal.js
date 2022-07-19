@@ -223,7 +223,7 @@ export function AssetChooserComponent(props) {
   if (!state.assets.length) {
     return (
       <BeautifulTitle title={translateMethod('No assets found')}>
-        <button type="button" className="btn btn-sm btn-access-negative ms-1 cursor-help" disabled>
+        <button type="button" className="btn btn-access-negative ms-1 cursor-help" disabled>
           <i
             className={classNames('fas me-1', {
               'fa-user-circle': !!props.onlyPreview,
