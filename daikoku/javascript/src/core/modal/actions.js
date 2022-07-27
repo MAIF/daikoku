@@ -109,6 +109,13 @@ export const openApiDocumentationSelectModal = (modalProps) => (dispatch) =>
     modalType: 'apiDocumentationSelectModal',
   });
 
+export const openFormModal = (modalProps) =>
+  ({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'formModal',
+  });
+
 export const closeModal = () => (dispatch) => {
   return dispatch({
     type: CLOSE_MODAL,

@@ -13,3 +13,4 @@ export * from './LoginOrRegisterModal';
 export * from './ApiKeySelectModal';
 export * from './ApiSelectModal';
 export * from './ApiDocumentationSelectModal';
+export * from './FormModal';

@@ -22,6 +22,7 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
     apiKeySelectModal: Modals.ApiKeySelectModal,
     apiSelectModal: Modals.ApiSelectModal,
     apiDocumentationSelectModal: Modals.ApiDocumentationSelectModal,
+    formModal: Modals.FormModal
   };
 
   const [modalIsOpen, setModalIsOpen] = useState(open);

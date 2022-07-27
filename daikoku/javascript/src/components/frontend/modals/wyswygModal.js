@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { PropTypes } from 'prop-types';
 import { Spinner } from '../../utils';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
@@ -44,11 +43,4 @@ export const WysiwygModal = ({ closeModal, action, value, team, title }) => {
       </div>
     </div>
   );
-};
-
-WysiwygModal.propTypes = {
-  closeModal: PropTypes.func.isRequired,
-  action: PropTypes.func.isRequired,
-  value: PropTypes.string.isRequired,
-  title: PropTypes.string,
 };
