@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useImperativeHandle, useContext } from 'react';
 import { useParams } from 'react-router-dom';
+import { Form, constraints, format, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import cloneDeep from 'lodash/cloneDeep';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
-import { Spinner } from '../../utils';
-import { AssetChooserByModal } from '../../frontend';
+import { Spinner, BeautifulTitle } from '../../utils';
+import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
-
-const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 Array.prototype.move = function (from, to) {
   this.splice(to, 0, this.splice(from, 1)[0]);
@@ -48,10 +47,20 @@ const mimeTypes = [
   { label: '.css fichier css', value: 'text/css' },
 ];
 
+const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.';
+const longLoremIpsum = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
+
+Cras ut ultrices quam. Nulla eu purus sed turpis consequat sodales. Aenean vitae efficitur velit, vel accumsan felis. Curabitur aliquam odio dictum urna convallis faucibus. Vivamus eu dignissim lorem. Donec sed hendrerit massa. Suspendisse volutpat, nisi at fringilla consequat, eros lacus aliquam metus, eu convallis nulla mauris quis lacus. Aliquam ultricies, mi eget feugiat vestibulum, enim nunc eleifend nisi, nec tincidunt turpis elit id diam. Nunc placerat accumsan tincidunt. Nulla ut interdum dui. Praesent venenatis cursus aliquet. Nunc pretium rutrum felis nec pharetra.
+
+Vivamus sapien ligula, hendrerit a libero vitae, convallis maximus massa. Praesent ante leo, fermentum vitae libero finibus, blandit porttitor risus. Nulla ac hendrerit turpis. Sed varius velit at libero feugiat luctus. Nunc rhoncus sem dolor, nec euismod justo rhoncus vitae. Vivamus finibus nulla a purus vestibulum sagittis. Maecenas maximus orci at est lobortis, nec facilisis erat rhoncus. Sed tempus leo et est dictum lobortis. Vestibulum rhoncus, nisl ut porta sollicitudin, arcu urna egestas arcu, eget efficitur neque ipsum ut felis. Ut commodo purus quis turpis tempus tincidunt. Donec id hendrerit eros. Vestibulum vitae justo consectetur, egestas nisi ac, eleifend odio.
+
+Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit amet urna semper tempus vel non metus. Integer sed ligula diam. Aenean molestie ultrices libero eget suscipit. Phasellus maximus euismod eros ut scelerisque. Ut quis tempus metus. Sed mollis volutpat velit eget pellentesque. Integer hendrerit ultricies massa eu tincidunt. Quisque at cursus augue. Sed diam odio, molestie sed dictum eget, efficitur nec nulla. Nullam vulputate posuere nunc nec laoreet. Integer varius sed erat vitae cursus. Vivamus auctor augue enim, a fringilla mauris molestie eget.
+
+Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`;
+
 function AssetButton(props) {
   const { translateMethod } = useContext(I18nContext);
 
-  const team = props.parentProps().team;
   return (
     <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
@@ -60,15 +69,13 @@ function AssetButton(props) {
         style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}
       >
         <AssetChooserByModal
-          team={team}
-          teamId={team._id}
+          team={props.team}
+          teamId={props.team._id}
           label={translateMethod('Set from asset')}
           onSelect={(asset) => {
-            props.onRawChange({
-              ...props.rawValue,
-              contentType: asset.contentType,
-              remoteContentUrl: asset.link,
-            });
+            console.debug({props, asset})
+            props.onChange(asset.link);
+            props.setValue('contentType', asset.contentType)
           }}
         />
       </div>
@@ -89,51 +96,111 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const flow = [
-    '_id',
     'title',
     'level',
     'contentType',
-    `>>> ${translateMethod('Remote content')}`,
     'remoteContentEnabled',
     'remoteContentUrl',
-    'assetButton',
     'remoteContentHeaders',
-    '<<<',
     'content',
   ];
 
   const schema = {
-    _id: { type: 'string', disabled: true, props: { label: translateMethod('Id') } },
-    title: { type: 'string', props: { label: translateMethod('Page title') } },
-    //index: { type: 'number', props: { label: 'Page index' } },
-    level: { type: 'number', props: { label: translateMethod('Page level') } },
-    content: {
-      type: 'markdown',
+    title: {
+      type: type.string,
+      label: translateMethod('Page title'),
+      constraints: [
+        constraints.required(translateMethod("constraints.required.name"))
+      ]
+    },
+    level: {
+      type: type.number,
+      label: translateMethod('Page level'),
+      defaultValue: 0,
       props: {
-        label: 'Page content',
-        height: '800px',
-        team: team,
+        min: 0, step: 1
       },
     },
+    content: {
+      type: type.string,
+      format: format.markdown,
+      visible: ({ rawValues }) => !rawValues.remoteContentEnabled,
+      label: translateMethod('Page content'),
+      props: {
+        height: '800px',
+        team: team,
+        actions: (insert) => {
+          return (
+            <>
+              <button
+                type="button"
+                className="btn-for-descriptionToolbar"
+                aria-label={translateMethod('Lorem Ipsum')}
+                title={translateMethod('Lorem Ipsum')}
+                onClick={() => insert(loremIpsum)}
+              >
+                <i className={`fas fa-feather-alt`} />
+              </button>
+              <button
+                type="button"
+                className="btn-for-descriptionToolbar"
+                aria-label={translateMethod('Long Lorem Ipsum')}
+                title={translateMethod('Long Lorem Ipsum')}
+                onClick={() => insert(longLoremIpsum)}
+              >
+                <i className={`fas fa-feather`} />
+              </button>
+              <BeautifulTitle
+                placement="bottom"
+                title={translateMethod('image url from asset')}
+              >
+                <AssetChooserByModal
+                  typeFilter={MimeTypeFilter.image}
+                  onlyPreview
+                  tenantMode={false}
+                  team={team}
+                  teamId={team._id}
+                  icon="fas fa-file-image"
+                  classNames="btn-for-descriptionToolbar"
+                  onSelect={(asset) =>
+                    insert(asset.link)
+                  }
+                />
+              </BeautifulTitle>
+            </>
+          )
+        }
+      }
+    },
     remoteContentEnabled: {
-      type: 'bool',
-      props: { label: translateMethod('Remote content') },
+      type: type.bool,
+      label: translateMethod('Remote content'),
     },
     contentType: {
-      type: 'select',
-      props: { label: translateMethod('Content type'), possibleValues: mimeTypes },
+      type: type.string,
+      format: format.select,
+      label: translateMethod('Content type'),
+      options: mimeTypes,
     },
     remoteContentUrl: {
-      type: 'string',
-      props: { label: translateMethod('Content URL') },
-    },
-    assetButton: {
-      type: AssetButton,
-      props: { label: '', parentProps: () => props },
+      type: type.string,
+      visible: ({ rawValues }) => !!rawValues.remoteContentEnabled,
+      label: translateMethod('Content URL'),
+      render: ({onChange, value, setValue}) => {
+        return (
+          <div className='flex-grow-1 ms-3'>
+            <input className='mrf-input mb-3' value={value} onChange={onChange} />
+            <div className="col-12 d-flex justify-content-end">
+              <AssetButton onChange={onChange} team={team} value={value} setValue={setValue} />
+            </div>
+          </div>
+        )
+      }
     },
     remoteContentHeaders: {
-      type: 'object',
-      props: { label: translateMethod('Content headers') },
+      type: type.object,
+      visible: ({ rawValues }) => !!rawValues.remoteContentEnabled,
+      label: translateMethod('Content headers'),
     },
   };
 
@@ -143,7 +210,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     saveCurrentPage() {
-      onSave();
+      savePage();
     },
   }));
 
@@ -165,7 +232,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   function select(selectedPage) {
     if (selected) {
-      onSave(selected)
+      savePage(selected)
         .then(updateDetails)
         .then(() => {
           Services.getDocPage(value._id, selectedPage._id).then((page) => {
@@ -181,10 +248,9 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     }
   }
 
-  function onSave(page) {
-    const data = page || selected;
-    if (data)
-      return Services.saveDocPage(team._id, value._id, data).then(() => {
+  function savePage(page) {
+    return Services.saveDocPage(team._id, value._id, page || selected)
+      .then(() => {
         updateDetails();
       });
   }
@@ -210,7 +276,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   }
 
   function onDown() {
-    let pages =cloneDeep(value.documentation.pages);
+    let pages = cloneDeep(value.documentation.pages);
     if (selected) {
       const oldIndex = pages.indexOf(selected._id);
       if (oldIndex < pages.length) {
@@ -359,7 +425,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
               </button>
             </div>
             <React.Suspense fallback={<Spinner />}>
-              <LazyForm flow={flow} schema={schema} value={selected} onChange={setSelected} />
+              <Form flow={flow} schema={schema} value={selected} onSubmit={savePage} />
             </React.Suspense>
           </div>
         )}

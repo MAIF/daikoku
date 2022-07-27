@@ -1142,5 +1142,8 @@
   "type.api.name.confirmation": "Veuillez saisir %s pour confirmer",
   "constraints.required.team": "L'équipe est requise",
   "constraints.type.api.name": "Veuillez saisir %s pour valider le transfert",
-  "Set image from asset": "Définir l'image depuis un asset"
+  "Set image from asset": "Définir l'image depuis un asset",
+  "Page content": "Contenu de la page",
+  "Version number": "Numéro de version",
+  "New version": "Nouvelle version"
 }

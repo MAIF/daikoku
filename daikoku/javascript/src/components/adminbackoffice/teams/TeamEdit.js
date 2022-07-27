@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Form, type, format, constraints } from '@maif/react-forms';
 
 import * as Services from '../../../services';
-import { AvatarChooser, Can, manage, tenant, Spinner } from '../../utils';
+import { AvatarChooser, Can, manage, tenant } from '../../utils';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../locales/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
@@ -78,7 +78,7 @@ export const TeamEditForAdmin = () => {
         });
     } else {
       Services.updateTeam(data)
-        .then((t) => {
+        .then(() => {
           toastr.success(translateMethod('team.updated'));
           back()
         });

@@ -36,7 +36,7 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
 
   const promptVersion = () => {
     window
-      .prompt('Version number', undefined, false, 'New version', `Current version : ${versionId}`)
+      .prompt(translateMethod('Version number'), undefined, false, translateMethod('New version'), versionId)
       .then((newVersion) => {
         if (newVersion) {
           if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
@@ -72,7 +72,6 @@ const TeamApiComponent = (props) => {
   const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId');
 
   const [api, setApi] = useState();
-  const [otoroshiSettings, setOtoroshiSettings] = useState([]);
   const [apiVersion, setApiVersion] = useState({
     value: params.versionId,
     label: params.versionId,
@@ -83,7 +82,7 @@ const TeamApiComponent = (props) => {
 
   const teamApiDocumentationRef = useRef();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
@@ -203,17 +202,7 @@ const TeamApiComponent = (props) => {
   }
 
   useEffect(() => {
-    if (!!api) {
-      const deleteApi = () => {
-        window.confirm(translateMethod('delete.api.confirm')).then((ok) => {
-          if (ok) {
-            Services.deleteTeamApi(props.currentTeam._id, api._id)
-              .then(() => navigate(`/${props.currentTeam._humanReadableId}/settings/apis`))
-              .then(() => toastr.success(translateMethod('deletion successful')));
-          }
-        });
-      };
-
+    if (api) {
       const backButton = (
         <Link
           className="d-flex justify-content-around mt-3 align-items-center"
@@ -299,34 +288,18 @@ const TeamApiComponent = (props) => {
             <div className="section col container-api">
               <div className="mt-2">
                 {tab === 'documentation' && (
-                  <>
-                    <TeamApiDocumentation
-                      creationInProgress={props.creation}
-                      team={props.currentTeam}
-                      teamId={teamId}
-                      value={api}
-                      onChange={(api) => setApi(api)}
-                      save={save}
-                      versionId={params.versionId}
-                      params={params}
-                      reloadState={reloadState}
-                      ref={teamApiDocumentationRef}
-                    />
-                    <div className="row">
-                      <div className="d-flex form-back-fixedBtns">
-                        <button
-                          type="button"
-                          className="btn btn-outline-success ms-1"
-                          onClick={() => save(api)}
-                        >
-                          <span>
-                            <i className="fas fa-save me-1" />
-                            <Translation i18nkey="Save">Save</Translation>
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  </>
+                  <TeamApiDocumentation
+                    creationInProgress={props.creation}
+                    team={props.currentTeam}
+                    teamId={teamId}
+                    value={api}
+                    onChange={(api) => setApi(api)}
+                    save={save}
+                    versionId={params.versionId}
+                    params={params}
+                    reloadState={reloadState}
+                    ref={teamApiDocumentationRef}
+                  />
                 )}
                 {tab === 'plans' && (
                   <TeamApiPricings

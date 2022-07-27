@@ -117,7 +117,7 @@ export const I18nProvider = ({ user, tenant, children }) => {
               type="text"
               className="form-control"
               value={translatedMessage}
-              onChange={(e) => {}}
+              onChange={() => {}}
             />
             <button
               className="btn btn-sm btn-outline-success mx-1"
