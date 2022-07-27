@@ -993,11 +993,14 @@
   "constraints.required.title": "Le titre est requis",
   "constraints.required.version": "La version est requise",
   "constraints.required.content": "Le contenu est requis",
+  "constraints.required.file": "Le fichier est requis",
   "constraints.format.url": "%s doit être une URL valide",
   "constraints.matches.email": "Votre courriel doit être une addresse électronique valide",
   "constraint.matches.password": "Votre mot de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spécial (#$^+=!*()@%&).",
   "constraint.oneof.confirm.password": "La confirmation du mot de passe doit être identique au mot de passe",
   "constraints.reserved.char.version": "Certains caractères sont reservés pour la version (%s)",
+  "constraints.file.type.forbidden": "Le type du fichier est interdit",
+  "constraints.file.type.required": "Le content-type du fichier est requis",
   "SEO": "SEO",
   "Robot.txt.label": "Contenu du fichier robots.txt",
   "Robot.txt.content": "Le contenu du fichier robots.txt servi par Daikoku",
@@ -1148,5 +1151,7 @@
   "Page content": "Contenu de la page",
   "Version number": "Numéro de version",
   "New version": "Nouvelle version",
-  "doc.page.save.success": "La page de documentation a été sauvegardée avec succès"
+  "doc.page.save.success": "La page de documentation a été sauvegardée avec succès",
+  "File": "File",
+  "asset.update.successful": "L'asser a été modifié avec succès"
 }

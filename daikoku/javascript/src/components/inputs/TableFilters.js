@@ -4,7 +4,7 @@ import { Sliders } from 'react-feather';
 import { SwitchButton } from './Switch';
 
 // Define a default UI for filtering
-export const DefaultColumnFilter = ({ column: { filterValue, preFilteredRows, setFilter } }) => {
+export const DefaultColumnFilter = ({ column: { filterValue, setFilter } }) => {
   return (
     <div className="mb-3 pb-0">
       <div className="input-group input-group-sm mb-2 pe-2">
@@ -31,7 +31,7 @@ export const DefaultColumnFilter = ({ column: { filterValue, preFilteredRows, se
 // slider to set the filter value between a column's
 // min and max values
 export const BooleanColumnFilter = ({
-  column: { filterValue, setFilter, preFilteredRows, id },
+  column: { filterValue, setFilter },
 }) => {
   return (
     <span className="d-flex justify-content-around">

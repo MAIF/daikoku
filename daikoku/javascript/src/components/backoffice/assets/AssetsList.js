@@ -1,16 +1,15 @@
 /* eslint-disable react/display-name */
-import React, { useState, useEffect, useContext } from 'react';
-import { connect } from 'react-redux';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { useParams } from 'react-router-dom';
+import { constraints, format, type } from '@maif/react-forms';
 
 import * as Services from '../../../services';
 import { Table } from '../../inputs';
-import { Can, manage, asset, Spinner, tenant as TENANT } from '../../utils';
-import { openWysywygModal } from '../../../core/modal';
+import { Can, manage, asset, tenant as TENANT } from '../../utils';
+import { openWysywygModal, openFormModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
 
-const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -84,24 +83,6 @@ const maybeCreateThumbnail = (id, file) => {
   });
 };
 
-const handleAssetType = (tenantMode, type, translateMethod) => {
-  return new Promise(function (resolve, reject) {
-    if (tenantMode) {
-      return resolve(true);
-    } else if (
-      (type === 'text/html' ||
-        type === 'text/css' ||
-        type === 'text/javascript' ||
-        type === 'application/x-javascript',
-      type === 'font/openntype')
-    ) {
-      return reject(translateMethod('content type is not allowed'));
-    } else {
-      return resolve(true);
-    }
-  });
-};
-
 const ReplaceButton = (props) => {
   const [file, setFile] = useState();
   const [input, setInput] = useState();
@@ -155,113 +136,64 @@ const ReplaceButton = (props) => {
   );
 };
 
-const FileInput = (props) => {
-  const [uploading, setUploading] = useState(false);
-  const [input, setInput] = useState(undefined);
-
-  const { Translation } = useContext(I18nContext);
-
-  const setFiles = (e) => {
-    const files = e.target.files;
-    setUploading(true);
-    props.setFiles(files).then(() => setUploading(false));
-  };
-
-  const trigger = () => {
-    input.click();
-  };
-
-  return (
-    <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-      <input
-        ref={(r) => setInput(r)}
-        type="file"
-        multiple
-        className="form-control hide"
-        onChange={setFiles}
-      />
-      <button
-        type="button"
-        className="btn btn-outline-success pl"
-        disabled={uploading}
-        onClick={trigger}
-      >
-        {uploading && <i className="fas fa-spinner me-1" />}
-        {!uploading && <i className="fas fa-upload me-1" />}
-        <Translation i18nkey="Select file">Select file</Translation>
-      </button>
-    </div>
-  );
-};
-
-const AddAsset = (props) => {
-  const { translateMethod, Translation } = useContext(I18nContext);
-  return (
-    <div className="mb-3 row">
-      <label className="col-xs-12 col-sm-2 col-form-label" />
-      <div className="col-sm-10">
-        <button
-          type="button"
-          className="btn btn-access-negative"
-          title={translateMethod('Add asset')}
-          disabled={props.disabled ? 'disabled' : undefined}
-          onClick={() => props.addAsset()}
-        >
-          <i className="fas fa-plus me-1" />
-          <Translation i18nkey="Add asset">Add asset</Translation>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal }) => {
-  const [assets, setAssets] = useState([]);
-  const [newAsset, setNewAsset] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [assetList, setAssetList] = useState([]);
-  const [error, setError] = useState(undefined);
+export const AssetsList = ({ tenantMode }) => {
+  const tableRef = useRef();
+  const dispatch = useDispatch();
+  const { currentTeam, tenant } = useSelector((state) => state.context);
 
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    setLoading(false);
-  }, [error, assetList]);
-
-  useEffect(() => {
-    fetchAssets();
-
     document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod(
       'Asset',
       true
     )}`;
   }, []);
 
-  const flow = ['filename', 'title', 'description', 'contentType', 'input', 'add'];
-
+  const acceptableMimeTypes = mimeTypes
+    .filter((mt) => (tenantMode ? true : !mt.tenantModeOnly))
   const schema = {
-    filename: { type: 'string', props: { label: translateMethod('Asset filename') } },
-    title: { type: 'string', props: { label: translateMethod('Asset title') } },
-    description: { type: 'string', props: { label: translateMethod('Description') } },
+    filename: {
+      type: type.string,
+      label: translateMethod('Asset filename'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.name'))
+      ]
+    },
+    title: {
+      type: type.string,
+      label: translateMethod('Asset title'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.title'))
+      ]
+    },
+    description: {
+      type: type.string,
+      label: translateMethod('Description')
+    },
     contentType: {
-      type: 'select',
-      props: {
-        label: translateMethod('Content-Type'),
-        possibleValues: mimeTypes
-          .filter((mt) => (tenantMode ? true : !mt.tenantModeOnly))
-          .map(({ label, value }) => ({ label, value })),
-      },
+      type: type.string,
+      format: format.select,
+      label: translateMethod('Content-Type'),
+      options: acceptableMimeTypes,
+      constraints: [
+        constraints.required(translateMethod('constraints.file.type.required')),
+        constraints.oneOf(acceptableMimeTypes, translateMethod("constraints.file.type.forbidden"))
+      ]
     },
-    input: {
-      type: FileInput,
-      props: { setFiles: (f) => setFiles(f) },
-    },
-    add: {
-      type: AddAsset,
-      disabled: Object.keys(newAsset).length === 0,
-      props: {
-        addAsset: () => addAsset(),
+    file: {
+      type: type.file,
+      label: translateMethod('File'),
+      onChange: ({ value, setValue }) => {
+        const file = value[0]
+        setValue('filename', file.name)
+        setValue('title', file.name.slice(0, file.name.lastIndexOf('.')))
+        setValue('contentType', file.type)
       },
+      constraints: [
+        constraints.required(translateMethod("constraints.required.file")),
+        constraints.test('test.file.type', translateMethod("constraints.file.type.forbidden"), (v) => { console.debug(v); return false; })
+      ]
     },
   };
 
@@ -325,7 +257,7 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
       Header: translateMethod('Actions'),
       disableSortBy: true,
       disableFilters: true,
-      style: { textAlign: 'center' },
+      style: { textAlign: 'right' },
       accessor: (item) => item._id,
       Cell: ({
         cell: {
@@ -349,9 +281,7 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
               tenantMode={tenantMode}
               teamId={currentTeam ? currentTeam._id : undefined}
               displayError={(error) => toastr.error(error)}
-              postAction={() => {
-                fetchAssets();
-              }}
+              postAction={() => tableRef.current.update()}
             />
             <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
               <button
@@ -396,21 +326,35 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
     })
       .then((response) => response.text())
       .then((value) =>
-        openWysywygModal({
+        dispatch(openWysywygModal({
           action: (value) => {
             const textFileAsBlob = new Blob([value], { type: 'text/plain' });
             const file = new File([textFileAsBlob], asset.filename);
 
             if (tenantMode) {
-              Services.updateTenantAsset(asset.meta.asset, asset.contentType, file);
+              Services.updateTenantAsset(asset.meta.asset, asset.contentType, file)
+                .then((r) => {
+                  if (r.error) {
+                    toastr.error(r.error)
+                  } else {
+                    toastr.success(translateMethod('asset.update.successful'))
+                  }
+                });
             } else {
-              Services.updateAsset(currentTeam._id, asset.meta.asset, asset.contentType, file);
+              Services.updateAsset(currentTeam._id, asset.meta.asset, asset.contentType, file)
+                .then((r) => {
+                  if (r.error) {
+                    toastr.error(r.error)
+                  } else {
+                    toastr.success(translateMethod('asset.update.successful'))
+                  }
+                })
             }
           },
           title: asset.meta.filename,
           value,
           team: currentTeam,
-        })
+        }))
       );
   };
 
@@ -435,9 +379,8 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
       .confirm(translateMethod('delete asset', 'Are you sure you want to delete that asset ?'))
       .then((ok) => {
         if (ok) {
-          serviceDelete(asset.meta.asset).then(() => {
-            fetchAssets();
-          });
+          serviceDelete(asset.meta.asset)
+            .then(() => tableRef.current.update());
         }
       });
   };
@@ -449,137 +392,74 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
     } else {
       getAssets = Services.listAssets(currentTeam._id);
     }
-    setLoading(true);
-    getAssets
-      .then((assets) => {
-        if (assets.error) {
-          setError(assets.error);
-        } else {
-          setAssetList(assets);
-        }
-      })
-      .catch((e) => {
-        setError(e);
-      });
+    return getAssets
   };
 
-  const addAsset = () => {
-    const multiple = assets.length > 1;
-    const files = [...assets];
-    setLoading(true);
-    const promises = files.map((file) => {
-      const formData = file;
-      if (formData && newAsset.filename && newAsset.title) {
-        if (tenantMode) {
-          return Services.storeTenantAsset(
-            multiple ? file.name : newAsset.filename || '--',
-            multiple ? file.name.slice(0, file.name.lastIndexOf('.')) : newAsset.title || '--',
-            newAsset.description || '--',
-            multiple ? file.type : newAsset.contentType,
-            formData
-          ).then((asset) => {
-            return maybeCreateThumbnail(asset.id, formData).then(() => {
-              setNewAsset({});
-            });
-          });
-        } else {
-          return handleAssetType(tenantMode, file.type, translateMethod)
-            .then(() =>
-              Services.storeAsset(
-                currentTeam._id,
-                multiple ? file.name : newAsset.filename || '--',
-                multiple ? file.name.slice(0, file.name.lastIndexOf('.')) : newAsset.title || '--',
-                newAsset.description || '--',
-                multiple ? file.type : newAsset.contentType,
-                formData
-              )
-                .then((asset) => {
-                  return maybeCreateThumbnail(asset.id, formData);
-                })
-                .then(() => {
-                  setNewAsset({});
-                })
-            )
-            .catch(({ error }) => toastr.error(error));
-        }
-      } else {
-        toastr.error(
-          translateMethod('Upload error'),
-          'You have to provide at least a title and a filename for a file.'
-        );
-        return Promise.resolve('');
-      }
-    });
-    Promise.all(promises)
-      .then(() => {
-        fetchAssets();
-      })
-      .catch(() => setLoading(false));
-  };
-
-  const setFiles = (assets) =>
-    new Promise((resolve, reject) => {
-      const file = assets[0];
-      if (!file) {
-        reject(translateMethod('no file found'));
-      } else {
-        setAssets(assets);
-        setNewAsset({
-          filename: file.name,
-          title: file.name.slice(0, file.name.lastIndexOf('.')),
-          contentType: file.type,
-        });
-        resolve();
-      }
-    });
-
-  const params = useParams();
+  const addAsset = (asset) => {
+    const file = asset.file[0];
+    if (tenantMode) {
+      return Services.storeTenantAsset(
+        asset.filename,
+        asset.title,
+        asset.description || '--',
+        asset.contentType,
+        file
+      )
+        .then((r) => maybeCreateThumbnail(r.id, file))
+        .then(() => tableRef.current.update())
+    } else {
+      return Services.storeAsset(
+        currentTeam._id,
+        asset.filename,
+        asset.title,
+        asset.description || '--',
+        asset.contentType,
+        file
+      )
+        .then((asset) => maybeCreateThumbnail(asset.id, file))
+        .then(() => tableRef.current.update())
+    }
+  }
 
   return (
     <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
-      {loading && <Spinner />}
-      {error && <div className="alert alert-danger">{error}</div>}
-      {!loading && !error && (
-        <>
-          <div className="row">
-            <div className="col-12 mb-3 d-flex justify-content-start">
-              <React.Suspense fallback={<Spinner />}>
-                <LazyForm
-                  flow={flow}
-                  schema={schema}
-                  value={newAsset}
-                  onChange={(newAsset) => setNewAsset(newAsset)}
-                />
-              </React.Suspense>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <Table
-                selfUrl="assets"
-                defaultTitle="Team assets"
-                defaultValue={() => ({})}
-                itemName="asset"
-                columns={columns}
-                fetchItems={() => Promise.resolve(assetList)}
-                showActions={false}
-                showLink={false}
-                extractKey={(item) => item.key}
-              />
-            </div>
-          </div>
-        </>
-      )}
+      <div className="row">
+        <div className="col-12 mb-3 d-flex justify-content-end">
+          <button
+            className='btn btn-outline-success'
+            onClick={() => dispatch(openFormModal({
+              title: translateMethod("add asset"),
+              schema,
+              onSubmit: addAsset,
+              options: {
+                actions: {
+                  submit: {
+                    label: "add asset"
+                  }
+                }
+              }
+            }))}>
+
+            {translateMethod("add asset")}
+          </button>
+        </div>
+      </div>
+      <div className="row">
+        <div className="col">
+          <Table
+            selfUrl="assets"
+            defaultTitle="Team assets"
+            defaultValue={() => ({})}
+            itemName="asset"
+            columns={columns}
+            fetchItems={() => fetchAssets()}
+            showActions={false}
+            showLink={false}
+            extractKey={(item) => item.key}
+            injectTable={(t) => tableRef.current = t}
+          />
+        </div>
+      </div>
     </Can>
   );
 };
-
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  openWysywygModal: (modalProps) => openWysywygModal(modalProps),
-};
-
-export const AssetsList = connect(mapStateToProps, mapDispatchToProps)(AssetsListComponent);

@@ -30,7 +30,6 @@ import {
 import {
   NotificationList,
   MyProfile,
-  AssetsList,
   MessagesProvider,
 } from '../components/backoffice';
 

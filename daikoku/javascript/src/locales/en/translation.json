@@ -990,12 +990,15 @@
     "constraints.required.title": "Title is required",
     "constraints.required.version": "Version is required",
     "constraints.required.content": "Content is required",
+    "constraints.required.file": "File is required",
     "constraints.format.url": "%s must be a valid URL",
     "constraints.matches.email": "Your mail must be a valid email address",
     "constraint.matches.password": "Your password must have 8 letters min with capital, number and special character (#$^+=!*()@%&)",
     "constraint.oneof.confirm.password": "confirm and password must be equal",
     "constraints.test.password": "wrong password",
     "constraints.reserved.char.version": "Some characters are reserved for version (%s)",
+    "constraints.file.type.forbidden": "File type is forbidden",
+    "constraints.file.type.required": "File content-type is required",
     "SEO": "SEO",
     "Robot.txt.label": "Robots.txt content",
     "Robot.txt.content": "the content of the robots.txt file serve by Daikoku",
@@ -1146,5 +1149,7 @@
     "Page content": "Page content",
     "Version number": "Version number",
     "New version": "New version",
-    "doc.page.save.success": "Documentation page save successful"
+    "doc.page.save.success": "Documentation page save successful",
+    "File": "File",
+    "asset.update.successful": "Asset update successful"
 }

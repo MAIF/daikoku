@@ -7,7 +7,7 @@ const HEADERS = {
 
 const customFetch = (
   url,
-  { headers = HEADERS, credentials = 'include', method = 'GET', body, ...props } = {}
+  { headers = HEADERS, method = 'GET', body, ...props } = {}
 ) => fetch(url, { headers, method, body, ...props }).then((r) => r.json());
 
 export const me = () => customFetch('/api/me');

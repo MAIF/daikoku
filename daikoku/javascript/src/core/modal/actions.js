@@ -24,13 +24,11 @@ export const openAssetSelectorModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openWysywygModal = (modalProps) => (dispatch) => {
-  return dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'wysywygModal',
-  });
-};
+export const openWysywygModal = (modalProps) => ({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'wysywygModal',
+});
 
 export const openSaveOrCancelModal = (modalProps) => (dispatch) => {
   return dispatch({
@@ -58,13 +56,13 @@ export const openSubMetadataModal = (modalProps) => (dispatch) => {
 
 export const openContactModal =
   (name = undefined, email = undefined, tenant, team = undefined, api = undefined) =>
-  (dispatch) => {
-    return dispatch({
-      type: OPEN_MODAL,
-      modalProps: { name, email, tenant, team, api },
-      modalType: 'contactModal',
-    });
-  };
+    (dispatch) => {
+      return dispatch({
+        type: OPEN_MODAL,
+        modalProps: { name, email, tenant, team, api },
+        modalType: 'contactModal',
+      });
+    };
 
 export const openTestingApiKeyModal = (modalProps) => (dispatch) => {
   return dispatch({
@@ -110,11 +108,11 @@ export const openApiDocumentationSelectModal = (modalProps) => (dispatch) =>
   });
 
 export const openFormModal = (modalProps) =>
-  ({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'formModal',
-  });
+({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'formModal',
+});
 
 export const closeModal = () => (dispatch) => {
   return dispatch({
