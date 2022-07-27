@@ -1145,5 +1145,6 @@
   "Set image from asset": "Définir l'image depuis un asset",
   "Page content": "Contenu de la page",
   "Version number": "Numéro de version",
-  "New version": "Nouvelle version"
+  "New version": "Nouvelle version",
+  "doc.page.save.success": "La page de documentation a été sauvegardée avec succès"
 }

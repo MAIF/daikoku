@@ -1143,5 +1143,6 @@
     "Set image from asset": "Set image from asset",
     "Page content": "Page content",
     "Version number": "Version number",
-    "New version": "New version"
+    "New version": "New version",
+    "doc.page.save.success": "Documentation page save successful"
 }

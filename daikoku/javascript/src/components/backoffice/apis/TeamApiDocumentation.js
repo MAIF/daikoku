@@ -9,6 +9,7 @@ import * as Services from '../../../services';
 import { Spinner, BeautifulTitle } from '../../utils';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
+import { toastr } from 'react-redux-toastr';
 
 Array.prototype.move = function (from, to) {
   this.splice(to, 0, this.splice(from, 1)[0]);
@@ -89,7 +90,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(undefined);
-  const [error, setError] = useState();
 
   const [deletedPage, setDeletedPage] = useState(false);
 
@@ -236,13 +236,13 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         .then(updateDetails)
         .then(() => {
           Services.getDocPage(value._id, selectedPage._id).then((page) => {
-            if (page.error) setError(page.error);
+            if (page.error) toastr.error(page.error);
             else setSelected(page);
           });
         });
     } else {
       Services.getDocPage(value._id, selectedPage._id).then((page) => {
-        if (page.error) setError(page.error);
+        if (page.error) toastr.error(page.error);
         else setSelected(page);
       });
     }
@@ -252,6 +252,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     return Services.saveDocPage(team._id, value._id, page || selected)
       .then(() => {
         updateDetails();
+        toastr.success(translateMethod("doc.page.save.success"))
       });
   }
 
