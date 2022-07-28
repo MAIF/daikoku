@@ -16,6 +16,7 @@ const mimeTypes = [
   { label: '.avi	AVI : Audio Video Interleaved', value: 'video/x-msvideo' },
   { label: '.gif	fichier Graphics Interchange Format (GIF)', value: 'image/gif' },
   { label: '.jpg	image JPEG', value: 'image/jpeg' },
+  { label: '.jpeg	image JPEG', value: 'image/jpeg' },
   { label: '.svg  image SVG', value: 'image/svg+xml' },
   { label: '.md	Markown file', value: 'text/markdown' },
   { label: '.mpeg	vidéo MPEG', value: 'video/mpeg' },
@@ -178,7 +179,7 @@ export const AssetsList = ({ tenantMode }) => {
       options: acceptableMimeTypes,
       constraints: [
         constraints.required(translateMethod('constraints.file.type.required')),
-        constraints.oneOf(acceptableMimeTypes, translateMethod("constraints.file.type.forbidden"))
+        constraints.oneOf(acceptableMimeTypes.map(m => m.value), translateMethod("constraints.file.type.forbidden"))
       ]
     },
     file: {
@@ -192,7 +193,9 @@ export const AssetsList = ({ tenantMode }) => {
       },
       constraints: [
         constraints.required(translateMethod("constraints.required.file")),
-        constraints.test('test.file.type', translateMethod("constraints.file.type.forbidden"), (v) => { console.debug(v); return false; })
+        constraints.test('test.file.type', 
+          translateMethod("constraints.file.type.forbidden"), 
+          (v) => acceptableMimeTypes.some(mimeType => mimeType.value === v[0].type))
       ]
     },
   };

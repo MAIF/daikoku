@@ -45,7 +45,6 @@ import {
   AuditTrailList,
   SessionList,
   ImportExport,
-  TeamEditForAdmin,
   TeamMembersForAdmin,
   TeamList,
   TenantAdminList,
@@ -291,14 +290,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                       title={`${tenant.title} - ${translateMethod('Import / Export')}`}
                     >
                       <ImportExport />
-                    </RouteWithTitle>
-                  }
-                />
-                <Route
-                  path="/settings/teams/:teamSettingId"
-                  element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team')}`}>
-                      <TeamEditForAdmin />
                     </RouteWithTitle>
                   }
                 />

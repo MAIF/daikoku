@@ -1,196 +1,154 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Form, type, format, constraints } from '@maif/react-forms';
+import md5 from 'js-md5';
 
 import { I18nContext, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
-
-import { AvatarChooser, Spinner } from '../../utils';
+import { AssetChooserByModal, MimeTypeFilter } from '../../frontend'
 import { useTeamBackOffice } from '../../../contexts';
 
-const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-export const TeamEditForm = (props) => {
-  const { translateMethod } = useContext(I18nContext);
+const Avatar = ({ rawValues, value, getValue, onChange, team }) => {
+  const { Translation, translateMethod } = useContext(I18nContext);
 
-  const flow = ['name', 'description', 'contact', 'avatar', 'avatarFrom', 'apiKeyVisibility'];
-
-  const schema = {
-    _id: {
-      type: 'string',
-      props: { label: translateMethod('Id'), disabled: true },
-    },
-    _tenant: {
-      type: 'select',
-      props: {
-        label: translateMethod('Tenant'),
-        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
-        valuesFrom: '/api/tenants',
-        transformer: (tenant) => ({ label: tenant.name, value: tenant._id }),
-      },
-    },
-    type: {
-      type: 'select',
-      props: {
-        label: translateMethod('Type'),
-        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
-        possibleValues: [
-          { label: translateMethod('Personal'), value: 'Personal' },
-          {
-            label: translateMethod('Organization'),
-            value: 'Organization',
-          },
-        ],
-      },
-    },
-    name: {
-      type: 'string',
-      props: {
-        label: translateMethod('Name'),
-        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
-      },
-    },
-    description: {
-      type: 'string',
-      props: {
-        label: translateMethod('Description'),
-        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
-      },
-    },
-    contact: {
-      type: 'string',
-      props: {
-        label: translateMethod('Team contact'),
-        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
-      },
-    },
-    avatar: {
-      type: 'string',
-      props: {
-        label: translateMethod('Team avatar'),
-        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
-      },
-    },
-    avatarFrom: {
-      type: AvatarChooser,
-      props: {
-        team: () => props.team,
-        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
-      },
-    },
-    apiKeyVisibility: {
-      type: 'select',
-      props: {
-        label: translateMethod('apikey visibility'),
-        disabled: props.team.type === 'Personal' || props.team.type === 'Admin',
-        possibleValues: [
-          { label: translateMethod('Administrator'), value: 'Administrator' },
-          { label: translateMethod('ApiEditor'), value: 'ApiEditor' },
-          { label: translateMethod('User'), value: 'User' },
-        ],
-      },
-    },
+  const setGravatarLink = () => {
+    const email = getValue('contact').toLowerCase().trim();
+    const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
+    onChange(url);
   };
 
-  if (!props.team) {
+
+  return (
+    <div className="d-flex flex-row align-items-center">
+      <div className="float-right mb-4 position-relative">
+        <img
+          src={`${rawValues?.avatar}${rawValues?.avatar?.startsWith('http') ? '' : `?${Date.now()}`
+            }`}
+          style={{
+            width: 100,
+            borderRadius: '50%',
+            backgroundColor: 'white',
+          }}
+          alt="avatar"
+          className="mx-3"
+        />
+      </div>
+      <div className="d-flex flex-column flex-grow-1">
+        <input
+          type="text"
+          className="form-control mb-1"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <div className='d-flex justify-content-end'>
+          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.contact ? 'disabled' : null}>
+            <i className="fas fa-user-circle me-1" />
+            <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
+          </button>
+          <AssetChooserByModal
+            typeFilter={MimeTypeFilter.image}
+            onlyPreview
+            tenantMode={false}
+            team={team}
+            label={translateMethod('Set avatar from asset')}
+            onSelect={(asset) => onChange(asset.link)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const teamSchema = (team, translateMethod) =>  ({
+  name: {
+    type: type.string,
+    label: translateMethod('Name'),
+    disabled: team.type === 'Personal' || team.type === 'Admin',
+    constraints: [
+      constraints.required(translateMethod('constraints.required.name'))
+    ]
+  },
+  description: {
+    type: type.string,
+    label: translateMethod('Description'),
+    disabled: team.type === 'Personal' || team.type === 'Admin',
+  },
+  contact: {
+    type: type.string,
+    label: translateMethod('Team contact'),
+    disabled: team.type === 'Personal' || team.type === 'Admin',
+  },
+  avatar: {
+    type: type.string,
+    label: translateMethod('Team avatar'),
+    render: (v) => Avatar({ ...v, team: team }),
+    disabled: team.type === 'Personal' || team.type === 'Admin',
+  },
+  apiKeyVisibility: {
+    type: type.string,
+    format: format.buttonsSelect,
+    label: translateMethod('apikey visibility'),
+    disabled: team.type === 'Personal' || team.type === 'Admin',
+    defaultValue: 'User',
+    options: [
+      { label: translateMethod('Administrator'), value: 'Administrator' },
+      { label: translateMethod('ApiEditor'), value: 'ApiEditor' },
+      { label: translateMethod('User'), value: 'User' },
+    ],
+  },
+});
+
+export const TeamEditForm = ({ team, updateTeam }) => {
+  const { translateMethod } = useContext(I18nContext);
+
+  
+
+  if (!team) {
     return null;
   }
 
   useEffect(() => {
-    document.title = `${props.team.name} - ${translateMethod('Edition')}`;
+    document.title = `${team.name} - ${translateMethod('Edition')}`;
   }, []);
 
   return (
-    <>
-      <div className="row d-flex justify-content-start align-items-center mb-2">
-        {props.team && (
-          <div className="d-flex ms-1 avatar__container">
-            <img className="img-fluid" src={props.team.avatar} alt="avatar" />
-          </div>
-        )}
-        <h1 className="h1-rwd-reduce ms-2">{props.team.name}</h1>
-      </div>
-      <div className="row">
-        <React.Suspense fallback={<Spinner />}>
-          <LazyForm
-            flow={flow}
-            schema={schema}
-            value={props.team}
-            onChange={(team) => props.updateTeam(team)}
-          />
-        </React.Suspense>
-      </div>
-    </>
+    <Form
+      schema={teamSchema(team, translateMethod)}
+      value={team}
+      onSubmit={(team) => updateTeam(team)}
+    />
   );
 };
 
 const TeamEditComponent = ({ currentTeam }) => {
-  const [team, setTeam] = useState(currentTeam);
   const navigate = useNavigate();
   useTeamBackOffice(currentTeam);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
-  const members = () => {
-    navigate(`/${team._humanReadableId}/settings/members`);
-  };
 
-  const save = () => {
-    Services.updateTeam(team).then((updatedTeam) => {
-      if (team._humanReadableId !== updatedTeam._humanReadableId) {
-        navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
-      }
-      toastr.success(
-        translateMethod(
-          'team.updated.success',
-          false,
-          `team ${team.name} successfully updated`,
-          team.name
-        )
-      );
-    });
+  const save = (data) => {
+    Services.updateTeam(data)
+      .then((updatedTeam) => {
+        if (data._humanReadableId !== updatedTeam._humanReadableId) {
+          navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
+        }
+        toastr.success(
+          translateMethod(
+            'team.updated.success',
+            false,
+            `team ${updatedTeam.name} successfully updated`,
+            updatedTeam.name
+          )
+        );
+      });
   };
 
   return (
-    <>
-      <TeamEditForm team={team} updateTeam={setTeam} />
-      <div className="row">
-        <div className="d-flex justify-content-end">
-          <Link
-            className="btn btn-outline-primary"
-            to={`/${currentTeam._humanReadableId}/settings`}
-          >
-            <i className="fas fa-chevron-left me-1" />
-            <Translation i18nkey="Back">Back</Translation>
-          </Link>
-          {team && team.type !== 'Personal' && (
-            <button
-              style={{ marginLeft: 5 }}
-              type="button"
-              className="btn btn-outline-primary"
-              onClick={members}
-            >
-              <span>
-                <i className="fas fa-users me-1" />
-                <Translation i18nkey="Members">Members</Translation>
-              </span>
-            </button>
-          )}
-          <button
-            style={{ marginLeft: 5 }}
-            type="button"
-            className="btn btn-outline-success"
-            onClick={save}
-          >
-            <span>
-              <i className="fas fa-save me-1" />
-              <Translation i18nkey="Save">Save</Translation>
-            </span>
-          </button>
-        </div>
-      </div>
-    </>
+    <TeamEditForm team={currentTeam} updateTeam={save} />
   );
 };
 

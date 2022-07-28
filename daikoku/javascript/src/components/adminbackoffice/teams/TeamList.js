@@ -1,13 +1,17 @@
 import React, { useContext, useEffect, useState } from 'react';
-import * as Services from '../../../services';
-import sortBy from 'lodash/sortBy';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import sortBy from 'lodash/sortBy';
+import { toastr } from 'react-redux-toastr';
 
+import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext, openFormModal } from '../../../core';
 import { useTenantBackOffice } from '../../../contexts';
+import { teamSchema } from '../../backoffice/teams/TeamEdit';
 
 export const TeamList = () => {
+  const dispatch = useDispatch();
   useTenantBackOffice();
 
   const [state, setState] = useState({
@@ -59,7 +63,28 @@ export const TeamList = () => {
         tooltip: translateMethod('Delete team'),
       },
       {
-        redirect: () => navigate(`/settings/teams/${team._humanReadableId}`),
+        redirect: () => dispatch(openFormModal({
+          title: translateMethod('Create a new team'),
+          schema: teamSchema(team, translateMethod),
+          onSubmit: (data) => Services.updateTeam(data)
+            .then(r => {
+              if (r.error) {
+                toastr.error(r.error)
+              } else {
+                updateTeams()
+                toastr.success(translateMethod("Team %s updated successfully", false, "", data.name))
+              }
+            }),
+          options: {
+            actions: {
+              submit: {
+                label: translateMethod('Create')
+              },
+
+            }
+          },
+          value: team
+        })),
         iconClass: 'fas fa-pen',
         tooltip: translateMethod('Edit team'),
       },

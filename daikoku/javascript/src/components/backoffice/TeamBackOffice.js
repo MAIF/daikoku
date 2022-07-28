@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { useSelector } from 'react-redux';
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
 import { useTeamBackOffice } from '../../contexts';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
@@ -19,7 +19,6 @@ import {
   TeamIncome,
   TeamMembers,
 } from '../backoffice';
-import { Can, daikoku, manage, tenant as TENANT } from '../utils';
 
 const BackOfficeContent = (props) => {
   return (

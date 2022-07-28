@@ -3,9 +3,11 @@ import { useNavigate, useMatch } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 
 import * as Services from '../../../../services';
-import { openCreationTeamModal, openTeamSelectorModal } from '../../../../core/modal';
+import { openFormModal, openTeamSelectorModal } from '../../../../core/modal';
 import { manage, CanIDoAction, api as API, Option } from '../..';
 import { I18nContext } from '../../../../locales/i18n-context';
+import { teamSchema } from '../../../backoffice/teams/TeamEdit'
+import { toastr } from 'react-redux-toastr';
 
 export const AddPanel = ({ teams }) => {
   const { translateMethod } = useContext(I18nContext);
@@ -20,7 +22,28 @@ export const AddPanel = ({ teams }) => {
   );
 
   const createTeam = () => {
-    Services.fetchNewTeam().then((team) => openCreationTeamModal({ team })(dispatch));
+    Services.fetchNewTeam()
+      .then((team) => dispatch(openFormModal({
+        title: translateMethod('Create a new team'),
+        schema: teamSchema(team, translateMethod),
+        onSubmit: (data) => Services.createTeam(data)
+          .then(r => {
+            if (r.error) {
+              toastr.error(r.error)
+            } else {
+              toastr.success(translateMethod("Team %s created successfully", false, "", data.name))
+            }
+          }),
+        options: {
+          actions: {
+            submit: {
+              label: translateMethod('Create')
+            },
+
+          }
+        },
+        value: team
+      })));
   };
 
   const createApi = (teamId) => {
