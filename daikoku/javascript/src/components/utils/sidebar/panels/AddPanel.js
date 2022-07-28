@@ -34,14 +34,7 @@ export const AddPanel = ({ teams }) => {
               toastr.success(translateMethod("Team %s created successfully", false, "", data.name))
             }
           }),
-        options: {
-          actions: {
-            submit: {
-              label: translateMethod('Create')
-            },
-
-          }
-        },
+        actionLabel: translateMethod('Create'),
         value: team
       })));
   };

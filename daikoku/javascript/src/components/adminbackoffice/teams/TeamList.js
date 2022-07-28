@@ -75,18 +75,11 @@ export const TeamList = () => {
                 toastr.success(translateMethod("Team %s updated successfully", false, "", data.name))
               }
             }),
-          options: {
-            actions: {
-              submit: {
-                label: translateMethod('Create')
-              },
-
-            }
-          },
           value: team
         })),
         iconClass: 'fas fa-pen',
         tooltip: translateMethod('Edit team'),
+        actionLabel: translateMethod('Create')
       },
     ];
 

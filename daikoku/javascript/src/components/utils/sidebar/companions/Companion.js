@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import classNames from 'classnames';
 import { ChevronLeft, ChevronRight } from 'react-feather';
+import { Link } from 'react-router-dom';
 
 import { state } from '..';
 import { NavContext, navMode } from '../../../../contexts';

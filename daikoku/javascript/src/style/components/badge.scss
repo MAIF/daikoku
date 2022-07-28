@@ -5,3 +5,11 @@
 //     background-color: $badge-tags-bg-hover-color;
 //   }
 // }
+
+.issue__tag {
+  border-radius: 7px;
+  font-weight: 500;
+  font-size: 15px;
+  padding: 0 7px;
+  white-space: nowrap;
+}

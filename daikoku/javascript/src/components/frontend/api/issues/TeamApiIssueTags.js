@@ -1,18 +1,20 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SketchPicker } from 'react-color';
-import { toastr } from 'react-redux-toastr';
+import { constraints, type } from '@maif/react-forms';
 import uniq from 'lodash/uniq';
+import { SketchPicker } from 'react-color';
+import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
+import { useDispatch } from 'react-redux';
 
-import { I18nContext } from '../../../../core';
+import { I18nContext, openFormModal } from '../../../../core';
+import { randomColor } from '../../../utils';
 
-export function TeamApiIssueTags({ value, onChange, basePath }) {
-  const [showTagForm, showNewTagForm] = useState(false);
+export function TeamApiIssueTags({ value, onChange }) {
   const [api, setApi] = useState(value);
   const [updated, setUpdated] = useState(false);
 
   const { translateMethod } = useContext(I18nContext);
-  const navigate = useNavigate();
+
+  const dispatch = useDispatch();
 
   function deleteTag(id) {
     setApi({
@@ -23,81 +25,106 @@ export function TeamApiIssueTags({ value, onChange, basePath }) {
 
   return (
     <div style={{ paddingBottom: '250px' }}>
-      {showTagForm ? (
-        <NewTag
-          issuesTags={api.issuesTags}
-          handleCreate={(newTag) => {
-            const updatedApi = { ...api, issuesTags: [...api.issuesTags, newTag] };
-            setApi(updatedApi);
-            onChange(updatedApi);
-            showNewTagForm(false);
-          }}
-          onCancel={() => showNewTagForm(false)}
-        />
-      ) : (
-        <div className="mb-3 row">
-          <label className="col-xs-12 col-sm-2">Actions</label>
-          <div className="col-sm-10">
-            <button className="btn btn-outline-success" onClick={() => showNewTagForm(true)}>
-              {translateMethod('issues.new_tag')}
-            </button>
-          </div>
+      <div className="mb-3 row">
+        <div className="col-sm-10">
+          <button className='btn btn-outline-success'  onClick={() => dispatch(openFormModal({
+            title: translateMethod('issues.create_tag'),
+            schema: {
+              name: {
+                type: type.string,
+                label: translateMethod('Name'),
+                constraints: [
+                  constraints.required(translateMethod('constraints.required.name'))
+                ]
+              },
+              color: {
+                type: type.string,
+                label: translateMethod('Color'),
+                defaultValue: '#fd0643',
+                render: ({ value, onChange }) => {
+                  return (
+                    <div className='d-flex flex-row'>
+                      <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
+                        style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
+                        onClick={() => onChange(randomColor())}>
+                        <RefreshCcw />
+                      </div>
+                      <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
+                    </div>
+                  )
+                },
+                constraints: [
+                  constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translateMethod('color.unavailable'))
+                ]
+              }
+            },
+            onSubmit: (data) => {
+              const updatedApi = { ...api, issuesTags: [...api.issuesTags, data] };
+              onChange(updatedApi);
+              setApi(updatedApi)
+            },
+            value: { color: randomColor() },
+            actionLabel: translateMethod('Create')
+          }))}>{translateMethod('issues.new_tag')}</button>
         </div>
-      )}
+      </div>
       <div className="mb-3 row pt-3">
         <label className="col-xs-12 col-sm-2">{translateMethod('issues.tags')}</label>
         <div className="col-sm-10">
-          {api.issuesTags.map((issueTag, i) => (
-            <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
-              <span
-                className="badge d-flex align-items-center justify-content-center px-3 py-2"
-                style={{
-                  backgroundColor: issueTag.color,
-                  color: '#fff',
-                }}
-              >
-                {issueTag.name}
-              </span>
-              <input
-                type="text"
-                className="form-control mx-3"
-                value={issueTag.name}
-                onChange={(e) => {
-                  setApi({
-                    ...api,
-                    issuesTags: api.issuesTags.map((issue, j) => {
-                      if (i === j) issue.name = e.target.value;
-                      return issue;
-                    }),
-                  });
-                  setUpdated(true);
-                }}
-              />
-              <ColorTag
-                className="pe-3"
-                initialColor={issueTag.color}
-                handleColorChange={(color) =>
-                  setApi({
-                    ...api,
-                    issuesTags: api.issuesTags.map((issue, j) => {
-                      if (i === j) issue.color = color;
-                      return issue;
-                    }),
-                  })
-                }
-                presetColors={[]}
-              />
-              <div className="ml-auto">
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  type="button"
-                  onClick={() => deleteTag(issueTag.id)}
+          {api.issuesTags
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((issueTag, i) => (
+              <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
+                <span
+                  className="badge d-flex align-items-center justify-content-center px-3 py-2"
+                  style={{
+                    backgroundColor: issueTag.color,
+                    color: '#fff',
+                  }}
                 >
-                  {translateMethod('Delete')}
-                </button>
+                  {issueTag.name}
+                </span>
+                <input
+                  type="text"
+                  className="form-control mx-3"
+                  value={issueTag.name}
+                  onChange={(e) => {
+                    setApi({
+                      ...api,
+                      issuesTags: api.issuesTags.map((issue, j) => {
+                        if (i === j) issue.name = e.target.value;
+                        return issue;
+                      }),
+                    });
+                    setUpdated(true);
+                  }}
+                />
+                <ColorTag
+                  className="pe-3"
+                  initialColor={issueTag.color}
+                  handleColorChange={(color) => {
+                    setApi({
+                      ...api,
+                      issuesTags: api.issuesTags.map((issue, j) => {
+                        if (i === j) issue.color = color;
+                        return issue;
+                      }),
+                    })
+                    setUpdated(true);
+                  }}
+                  presetColors={[]}
+                />
+                <div className="ml-auto">
+                  <button
+                    className="btn btn-sm btn-outline-danger"
+                    type="button"
+                    onClick={() => deleteTag(issueTag.id)}
+                  >
+                    {translateMethod('Delete')}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
           {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
         </div>
       </div>
@@ -117,58 +144,6 @@ export function TeamApiIssueTags({ value, onChange, basePath }) {
     </div>
   );
 }
-
-const NewTag = ({ issuesTags, handleCreate, onCancel }) => {
-  const [tag, setTag] = useState({ name: '', color: '#2980b9' });
-
-  const { translateMethod } = useContext(I18nContext);
-
-  function confirmTag() {
-    if (tag.name.length <= 0) toastr.error('Tag name must be filled');
-    else if (issuesTags.find((t) => t.name === tag.name)) toastr.error('Tag name already existing');
-    else {
-      handleCreate(tag);
-      setTag({ name: '', color: '#2980b9' });
-    }
-  }
-
-  return (
-    <div className="mb-3 row">
-      <label className="col-xs-12 col-sm-2">{translateMethod('issues.new_tag')}</label>
-      <div className="col-sm-10">
-        <div className="d-flex align-items-end">
-          <div className="pe-3" style={{ flex: 0.5 }}>
-            <label htmlFor="tag">{translateMethod('issues.tag_name')}</label>
-            <input
-              className="form-control"
-              type="text"
-              id="tag"
-              value={tag.name}
-              onChange={(e) => setTag({ ...tag, name: e.target.value })}
-              placeholder={translateMethod('issues.tag_name')}
-            />
-          </div>
-          <div className="px-3">
-            <label htmlFor="color">{translateMethod('issues.tag_color')}</label>
-            <ColorTag
-              initialColor={tag.color || '#2980b9'}
-              handleColorChange={(color) => setTag({ ...tag, color })}
-              presetColors={[]}
-            />
-          </div>
-          <div className="ml-auto">
-            <button className="btn btn-outline-danger me-2" type="button" onClick={onCancel}>
-              {translateMethod('Cancel')}
-            </button>
-            <button className="btn btn-outline-success" type="button" onClick={confirmTag}>
-              {translateMethod('issues.create_tag')}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 function ColorTag({ initialColor, handleColorChange, presetColors, className }) {
   const sketchColorToReadableColor = (c) => {

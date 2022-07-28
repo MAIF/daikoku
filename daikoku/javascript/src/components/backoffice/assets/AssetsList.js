@@ -431,16 +431,10 @@ export const AssetsList = ({ tenantMode }) => {
           <button
             className='btn btn-outline-success'
             onClick={() => dispatch(openFormModal({
-              title: translateMethod("add asset"),
+              title: translateMethod("Add asset"),
               schema,
               onSubmit: addAsset,
-              options: {
-                actions: {
-                  submit: {
-                    label: "add asset"
-                  }
-                }
-              }
+              actionLabel: translateMethod('Add asset')
             }))}>
 
             {translateMethod("add asset")}

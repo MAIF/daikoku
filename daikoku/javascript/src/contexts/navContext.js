@@ -34,8 +34,6 @@ export const NavProvider = ({ children, loginAction, loginProvider }) => {
   const [team, setTeam] = useState();
   const [tenant, setTenant] = useState();
 
-  const [creation, setCreation] = useState(false);
-
   const addMenu = (value) => {
     setMenu((menu) => ({ ...merge(menu, value) }));
   };
@@ -62,7 +60,6 @@ export const NavProvider = ({ children, loginAction, loginProvider }) => {
         setTeam,
         tenant,
         setTenant,
-        setCreation,
       }}
     >
       {children}
@@ -130,12 +127,9 @@ export const useApiFrontOffice = (api, team) => {
           },
           issues: {
             label: translateMethod('Issues'),
-            action: () => {
-              if (api.issues.length) navigateTo('issues');
-            },
+            action: () => navigateTo('issues'),
             className: {
               active: currentTab === 'issues' || currentTab === 'labels',
-              disabled: !api?.issues?.length,
             },
           },
         },
@@ -255,12 +249,9 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
           },
           issues: {
             label: translateMethod('Issues'),
-            action: () => {
-              if (apigroup.issues.length) navigateTo('issues');
-            },
+            action: () => navigateTo('issues'),
             className: {
               active: currentTab === 'issues' || currentTab === 'labels',
-              disabled: !apigroup?.issues?.length,
             },
           },
         },

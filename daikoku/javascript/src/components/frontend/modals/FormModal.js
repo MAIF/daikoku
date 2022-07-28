@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Form } from '@maif/react-forms';
 
-export const FormModal = ({ title, value, schema, flow, onSubmit, options, closeModal }) => {
+export const FormModal = ({ title, value, schema, flow, onSubmit, options, closeModal, actionLabel }) => {
+  const ref = useRef();
   return (
     <div className="modal-content">
       <div className="modal-header">
@@ -9,7 +10,8 @@ export const FormModal = ({ title, value, schema, flow, onSubmit, options, close
         <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
       <div className="modal-body">
-        <Form 
+        <Form
+          ref={ref}
           schema={schema}
           flow={flow}
           value={value}
@@ -17,8 +19,19 @@ export const FormModal = ({ title, value, schema, flow, onSubmit, options, close
             onSubmit(data)
             closeModal()
           }}
-          options={options}
+          options={{
+            ...options, actions: {
+              submit: { display: false },
+              cancel: { display: false },
+              reset: { display: false },
+            }
+          }}
         />
+      </div>
+      <div className="modal-footer">
+        <button type="button" className="btn btn-outline-success" onClick={() => ref.current.handleSubmit()}>
+          {actionLabel}
+        </button>
       </div>
     </div>
   );

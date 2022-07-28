@@ -1,16 +1,18 @@
-import React, { useContext } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { Form, constraints, format, type } from '@maif/react-forms';
 import moment from 'moment';
-import { useEffect, useState } from 'react';
-import { converter } from '../../../../services/showdown';
-import * as Services from '../../../../services';
+import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
+import X from 'react-feather/dist/icons/x';
+import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import Select from 'react-select';
-import { api as API, manage } from '../../..';
-import { Can } from '../../../utils';
-import { I18nContext } from '../../../../core';
+import { useNavigate, useParams } from 'react-router-dom';
+import Select from 'react-select/creatable';
 
-const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
+import { api as API, manage } from '../../..';
+import { I18nContext, openFormModal } from '../../../../core';
+import * as Services from '../../../../services';
+import { converter } from '../../../../services/showdown';
+import { Can, getColorByBgColor, randomColor } from '../../../utils';
 
 const styles = {
   commentHeader: {
@@ -23,7 +25,6 @@ const styles = {
   },
   getStatus: (open) => ({
     textTransform: 'capitalize',
-    borderRadius: '12px',
     backgroundColor: open ? '#28a745' : '#dc3545',
     width: 'fit-content',
     padding: '6px 12px',
@@ -38,84 +39,60 @@ const styles = {
   },
 };
 
-export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }) {
+export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, onChange }) {
   const [issue, setIssue] = useState({ comments: [] });
   const [editionMode, handleEdition] = useState(false);
-  const [newComment, setNewComment] = useState('');
-  const [showTag, onTagEdit] = useState(false);
-
   const [tags, setTags] = useState([]);
 
   const navigate = useNavigate();
-
   const id = issueId || useParams().issueId;
+
+  const dispatch = useDispatch();
 
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.getAPIIssue(api._humanReadableId, id).then((res) => {
-      if (res.error) navigate(`${basePath}/issues`);
-      else {
-        const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
-        setIssue({ ...res, tags: entryTags });
-        setTags(entryTags);
-      }
-    });
+    Services.getAPIIssue(api._humanReadableId, id)
+      .then((res) => {
+        if (res.error) {
+          navigate(`${basePath}/issues`);
+        } else {
+          const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
+          setIssue({ ...res, tags: entryTags });
+          setTags(entryTags);
+        }
+      });
   }, [id]);
 
   useEffect(() => {
-    if (newComment.length > 0) {
-      setNewComment('');
-      updateIssue();
+    if (tags.length !== api.tags.length) {
+      updateIssue({ ...issue, tags: tags.map(t => t.value) })
     }
-  }, [issue.comments]);
+  }, [tags])
 
-  function updateIssue() {
-    if (issue.title.length <= 0) toastr.error(translateMethod('issues.timeline.title.error'));
-    else {
-      handleEdition(false);
-      onTagEdit(false);
-      Services.updateIssue(api._id, team._id, id, {
-        ...issue,
-        tags: tags.map((tag) => tag.value),
-      }).then((res) => {
-        if (res.error) toastr.error(res.error);
-        else
-          setIssue({
-            ...issue,
-            tags: tags.length > 0 ? tags : issue.tags,
-          });
+  function updateIssue(updatedIssue) {
+    handleEdition(false);
+    Services.updateIssue(api._id, team._id, id, updatedIssue)
+      .then((res) => {
+        if (res.error) {
+          toastr.error(res.error);
+        } else
+          setIssue(updatedIssue);
       });
-    }
   }
 
-  function updateComment(i) {
-    if (issue.comments[i].content.length <= 0)
-      toastr.error(translateMethod('issues.timeline.comment_content.error'));
-    else {
-      setIssue({
-        ...issue,
-        comments: issue.comments.map((comment, j) => {
-          if (i === j) comment.editing = false;
-          return comment;
-        }),
-      });
-      updateIssue();
-    }
-  }
+  function updateComment(i, newContent) {
+    const updatedIssue = {
+      ...issue,
+      comments: issue.comments.map((comment, j) => {
+        if (i === j) {
+          return { ...comment, content: newContent, editing: false }
+        }
+        return comment;
+      }),
+    };
 
-  function deleteIssue() {
-    window.confirm(translateMethod('issues.confirm_delete')).then((ok) => {
-      if (ok)
-        Services.updateIssue(api._humanReadableId, team._id, id, {
-          ...issue,
-          _deleted: true,
-          tags: issue.tags.map((tag) => tag.value),
-        }).then((res) => {
-          if (res.error) toastr.error(translateMethod('issues.on_error'));
-          else navigate(`${basePath}/issues`);
-        });
-    });
+    updateIssue(updatedIssue);
   }
 
   function editComment(i) {
@@ -144,59 +121,68 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
     });
   }
 
-  function handleEditCommentContent(newValue, i) {
-    setIssue({
+  function createComment(content) {
+    const updatedIssue = {
       ...issue,
-      comments: issue.comments.map((comment, j) => {
-        if (i === j) comment.content = newValue;
-        return comment;
-      }),
-    });
-  }
-
-  function createComment() {
-    if (newComment.length <= 0) toastr.error(translateMethod('issues.on_missing_comment_content'));
-    else {
-      setIssue({
-        ...issue,
-        comments: [
-          ...issue.comments,
-          {
-            by: connectedUser,
-            content: newComment,
-          },
-        ],
-      });
+      comments: [
+        ...issue.comments,
+        {
+          by: connectedUser,
+          content,
+        }
+      ]
     }
-  }
-
-  function setIssueStatus(value) {
-    Services.updateIssue(api._humanReadableId, team._id, id, {
-      ...issue,
-      open: value,
-      tags: issue.tags.map((tag) => tag.value),
-    }).then(() => setIssue({ ...issue, open: value }));
+    updateIssue(updatedIssue);
   }
 
   function closeIssue() {
-    const newIssue = {
+    const closedIssue = {
       ...issue,
       open: false,
-      comments:
-        newComment.length > 0
-          ? [
-              ...issue.comments,
-              {
-                by: connectedUser,
-                content: newComment,
-              },
-            ]
-          : issue.comments,
-    };
-    Services.updateIssue(api._humanReadableId, team._id, id, {
-      ...newIssue,
       tags: issue.tags.map((tag) => tag.value),
-    }).then(() => setIssue(newIssue));
+    };
+    updateIssue(closedIssue)
+  }
+
+  const handleTagCreation = (name) => {
+    dispatch(openFormModal({
+      title: translateMethod('issues.create_tag'),
+      schema: {
+        name: {
+          type: type.string,
+          label: translateMethod('Name'),
+          constraints: [
+            constraints.required(translateMethod('constraints.required.name'))
+          ]
+        },
+        color: {
+          type: type.string,
+          label: translateMethod('Color'),
+          defaultValue: '#fd0643',
+          render: ({ value, onChange }) => {
+            return (
+              <div className='d-flex flex-row'>
+                <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
+                  style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
+                  onClick={() => onChange(randomColor())}>
+                  <RefreshCcw />
+                </div>
+                <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
+              </div>
+            )
+          },
+          constraints: [
+            constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translateMethod('color.unavailable'))
+          ]
+        }
+      },
+      onSubmit: (data) => {
+        const updatedApi = { ...api, issuesTags: [...api.issuesTags, data] };
+        onChange(updatedApi);
+      },
+      value: { name, color: randomColor() },
+      actionLabel: translateMethod('Create')
+    }))
   }
 
   return (
@@ -216,33 +202,29 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
           </h1>
         )}
         {connectedUser && !connectedUser.isGuest && (
-          <div className="d-flex">
-            {editionMode ? (
-              <div className="d-flex ms-3">
-                <button className="btn btn-success me-1" onClick={updateIssue}>
-                  {translateMethod('Save')}
-                </button>
-                <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
-                  {translateMethod('Cancel')}
-                </button>
-              </div>
-            ) : (
-              <>
-                <button
-                  className="btn btn-outline-secondary me-1"
-                  onClick={() => handleEdition(true)}
-                >
-                  {translateMethod('Edit')}
-                </button>
-                <Link
-                  to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/new`}
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  <button className="btn btn-success">{translateMethod('issues.new_issue')}</button>
-                </Link>
-              </>
-            )}
-          </div>
+          <Can I={manage} a={API} team={team}>
+            <div className="d-flex">
+              {editionMode ? (
+                <div className="d-flex ms-3">
+                  <button className="btn btn-success me-1" onClick={() => updateIssue(issue)}>
+                    {translateMethod('Save')}
+                  </button>
+                  <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
+                    {translateMethod('Cancel')}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    className="btn btn-outline-secondary me-1"
+                    onClick={() => handleEdition(true)}
+                  >
+                    {translateMethod('Edit')}
+                  </button>
+                </>
+              )}
+            </div>
+          </Can>
         )}
       </div>
       <div className="d-flex align-items-center pb-3 mb-3">
@@ -272,108 +254,58 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
               i={i}
               editComment={() => editComment(i)}
               removeComment={() => removeComment(i)}
-              handleEditCommentContent={(e) => handleEditCommentContent(e, i)}
-              updateComment={() => updateComment(i)}
+              updateComment={(content) => updateComment(i, content)}
               connectedUser={connectedUser}
             />
           ))}
           {connectedUser && !connectedUser.isGuest && (
             <NewComment
-              content={newComment}
               picture={connectedUser.picture}
               open={issue.open}
-              handleContent={setNewComment}
               createComment={createComment}
               closeIssue={closeIssue}
-              openIssue={() => setIssueStatus(true)}
+              openIssue={() => updateIssue({ ...issue, open: true })}
               team={team}
             />
           )}
         </div>
         <div className="col-md-3">
           <div>
-            <div className="d-flex">
-              <label htmlFor="tags">{translateMethod('issues.tags')}</label>
-              {!showTag && connectedUser && !connectedUser.isGuest && (
-                <Can I={manage} a={API} team={team}>
-                  <i
-                    className="fas fa-cog ml-auto"
-                    onClick={() => {
-                      setTags(issue.tags);
-                      onTagEdit(true);
-                    }}
-                  ></i>
-                </Can>
+            <div className="d-flex flex-column align-items-start mb-2">
+              <label htmlFor="tags" className='me-1'>{translateMethod('issues.tags')}</label>
+              {connectedUser && !connectedUser.isGuest && (
+                <Select
+                  id="tags"
+                  onChange={(value) => setTags([...tags, value])}
+                  options={api.issuesTags
+                    .filter((tag) => !tags.some(t => tag.id === t.value))
+                    .map((tag) => ({ value: tag.id, label: tag.name }))}
+                  className="input-select reactSelect w-100"
+                  classNamePrefix="reactSelect"
+                  onCreateOption={handleTagCreation}
+                />
               )}
             </div>
-            <div id="tags">
-              {showTag ? (
-                <>
-                  <Select
-                    id="tags"
-                    isMulti
-                    onChange={(values) => setTags(values ? [...values] : [])}
-                    options={api.issuesTags.map((iss) => ({ value: iss.id, label: iss.name }))}
-                    value={tags}
-                    className="input-select reactSelect"
-                    classNamePrefix="reactSelect"
-                  />
-                  <button
-                    className="btn btn-outline-danger my-3 me-1"
-                    onClick={() => {
-                      setTags([]);
-                      onTagEdit(false);
+            <div id="tags" className='d-flex flex-column flex-wrap'>
+              {tags.map((tag) => {
+                const bgColor = api.issuesTags.find((t) => t.id === tag.value).color;
+                return (
+                  <div
+                    className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center"
+                    style={{
+                      backgroundColor: bgColor,
+                      color: getColorByBgColor(bgColor)
                     }}
+                    key={tag.value}
                   >
-                    {translateMethod('Cancel')}
-                  </button>
-                  <button className="btn btn-outline-success my-3" onClick={updateIssue}>
-                    {translateMethod('Save')}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {(tags || []).map((tag) => (
-                    <span
-                      className="badge bg-primary me-1"
-                      style={{
-                        backgroundColor: api.issuesTags.find((t) => t.id === tag.value).color,
-                      }}
-                      key={tag.value}
-                    >
-                      {tag.label}
-                    </span>
-                  ))}
-                  {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
-                </>
-              )}
+                    <span className='me-2'>{tag.label}</span>
+                    <span className='cursor-pointer' onClick={() => setTags(tags.filter(t => t.value !== tag.value))}><X /></span>
+                  </div>
+                )
+              })}
+              {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
             </div>
           </div>
-
-          {connectedUser && !connectedUser.isGuest && (
-            <>
-              <Can I={manage} a={API} team={team}>
-                <hr className="hr-apidescription" />
-                <div>
-                  <label htmlFor="actions">{translateMethod('issues.actions')}</label>
-                  <div id="actions">
-                    <i className="fa fa-trash"></i>
-                    <button
-                      style={{
-                        ...styles.bold,
-                        border: 0,
-                        background: 'transparent',
-                        outline: 'none',
-                      }}
-                      onClick={deleteIssue}
-                    >
-                      {translateMethod('issues.delete_issue')}
-                    </button>
-                  </div>
-                </div>
-              </Can>
-            </>
-          )}
         </div>
       </div>
     </div>
@@ -387,7 +319,6 @@ function Comment({
   editing,
   editComment,
   removeComment,
-  handleEditCommentContent,
   updateComment,
   connectedUser,
   i,
@@ -439,23 +370,25 @@ function Comment({
         </div>
         {editing ? (
           <div className="p-3" style={styles.commentBody}>
-            <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
-              <LazySingleMarkdownInput
-                fullWidth
-                height="300px"
-                value={content}
-                fixedWitdh="0px"
-                onChange={handleEditCommentContent}
-              />
-            </React.Suspense>
-            <div className="d-flex mt-3 justify-content-end">
-              <button className="btn btn-outline-danger me-1" onClick={editComment}>
-                {translateMethod('Cancel')}
-              </button>
-              <button className="btn btn-success" onClick={updateComment}>
-                {translateMethod('issues.update')}
-              </button>
-            </div>
+            <Form
+              schema={{
+                content: {
+                  type: type.string,
+                  format: format.markdown,
+                  label: null
+                }
+              }}
+              value={{ content }}
+              options={{
+                actions: {
+                  cancel: {
+                    display: true,
+                    action: editComment
+                  }
+                }
+              }}
+              onSubmit={data => updateComment(data.content)}
+            />
           </div>
         ) : (
           <div
@@ -470,8 +403,6 @@ function Comment({
 }
 
 function NewComment({
-  handleContent,
-  content,
   picture,
   createComment,
   closeIssue,
@@ -504,33 +435,42 @@ function NewComment({
             backgroundColor: '#fff',
           }}
         >
-          <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
-            <LazySingleMarkdownInput
-              fullWidth={true}
-              height="300px"
-              value={content}
-              fixedWitdh="0px"
-              onChange={handleContent}
-            />
-          </React.Suspense>
-          <div className="d-flex mt-3 justify-content-end">
-            <Can I={manage} a={API} team={team}>
-              {open ? (
-                <button className="btn btn-outline-danger me-1" onClick={closeIssue}>
-                  <i className="fa fa-exclamation-circle me-2" />
-                  {translateMethod('issues.actions.close')}
-                </button>
-              ) : (
-                <button className="btn btn-outline-success me-1" onClick={openIssue}>
-                  <i className="fa fa-exclamation-circle me-2" />
-                  {translateMethod('issues.actions.reopen')}
-                </button>
-              )}
-            </Can>
-            <button className="btn btn-success" onClick={createComment}>
-              {translateMethod('issues.actions.comment')}
-            </button>
-          </div>
+          <Form
+            schema={{
+              content: {
+                type: type.string,
+                format: format.markdown,
+                label: null,
+                constraints: [
+                  constraints.required(translateMethod('constraints.required.content'))
+                ]
+              }
+            }}
+            footer={({ valid }) => {
+              return (
+                <div className="d-flex mt-3 justify-content-end">
+                  <Can I={manage} a={API} team={team}>
+                    {open && (
+                      <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
+                        <i className="fa fa-exclamation-circle me-2" />
+                        {translateMethod('issues.actions.close')}
+                      </button>
+                    )}
+                    {!open && (
+                      <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
+                        <i className="fa fa-exclamation-circle me-2" />
+                        {translateMethod('issues.actions.reopen')}
+                      </button>
+                    )}
+                  </Can>
+                  <button type="button" className="btn btn-success" onClick={valid}>
+                    {translateMethod('issues.actions.comment')}
+                  </button>
+                </div>
+              )
+            }}
+            onSubmit={data => createComment(data.content)}
+          />
         </div>
       </div>
     </div>

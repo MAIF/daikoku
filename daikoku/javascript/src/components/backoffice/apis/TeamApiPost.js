@@ -35,15 +35,6 @@ export function TeamApiPost({ team, api }) {
     },
   };
 
-  const formOptions = {
-    actions: {
-      submit: {
-        label: translateMethod('team_api_post.publish')
-      },
-
-    }
-  }
-
   const [state, setState] = useState({
     posts: [],
     pagination: {
@@ -163,8 +154,8 @@ export function TeamApiPost({ team, api }) {
                 title: translateMethod('team_api_post.update'),
                 schema,
                 onSubmit: savePost,
-                options: formOptions,
-                value: post
+                value: post,
+                actionLabel: translateMethod('team_api_post.publish')
               }))}><i className="fas fa-pen" /></button>
             <button
               className="btn btn-sm btn-outline-danger me-1"
@@ -190,7 +181,7 @@ export function TeamApiPost({ team, api }) {
               title: translateMethod('team_api_post.new'),
               schema,
               onSubmit: publishPost,
-              options: formOptions
+              actionLabel: translateMethod('team_api_post.publish')
             }))}
           >
             {translateMethod('team_api_post.new')}

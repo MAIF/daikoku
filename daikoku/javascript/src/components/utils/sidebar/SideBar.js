@@ -8,7 +8,6 @@ import * as Services from '../../../services';
 import { updateNotifications } from '../../../core/context/actions';
 import { I18nContext } from '../../../locales/i18n-context';
 import { MessagesContext } from '../../backoffice';
-import { NavContext } from '../../../contexts';
 
 import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';
 import { Companion } from './companions';
@@ -30,8 +29,6 @@ export const SideBar = () => {
 
   const { totalUnread } = useContext(MessagesContext);
   const { translateMethod } = useContext(I18nContext);
-  const { setMode, navMode, setBackOfficeMode, setFrontOfficeMode, ...navContext } =
-    useContext(NavContext);
 
   useEffect(() => {
     setPanelState(state.closed);
@@ -49,7 +46,6 @@ export const SideBar = () => {
   const closeOnEsc = (e) => {
     if (e.key == 'Escape' || e.key == 'Esc') {
       e.preventDefault();
-      console.debug('esc touch');
       setPanelState(state.closed);
       return false;
     }

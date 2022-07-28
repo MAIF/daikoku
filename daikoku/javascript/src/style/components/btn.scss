@@ -56,7 +56,7 @@ button {
 .btn-outline-success.disabled,.btn-outline-success:disabled,.btn-outline-primary.disabled, .btn-outline-primary:disabled{
   border-color:#9e9e9e;
   color:#9e9e9e;
-  &:hover{
+  &:hover, &.active{
     color:#9e9e9e !important;
   }
 }
@@ -64,27 +64,30 @@ button {
 .btn-outline-success{
   color:$success-color;
   border-color: $success-color;
-  &:hover{
+  &:hover,&.active{
     color: #fff;
     background-color: $success-color;
+    border-color: $success-color;
   }
 }
 
 .btn-outline-danger{
   color:$danger-color;
   border-color: $danger-color;
-  &:hover{
+  &:hover, &.active{
     color: #fff;
     background-color: $danger-color;
+    border-color: $danger-color;
   }
 }
 
 .btn-outline-primary{
   color:$info-color;
   border-color: $info-color;
-  &:hover{
+  &:hover, &.active{
     color: #fff;
     background-color: $info-color;
+    border-color: $info-color;
   }
 }
 

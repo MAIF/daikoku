@@ -1,24 +1,20 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Routes, useParams, Route, Navigate } from 'react-router-dom';
-import { ApiFilter } from './ApiFilter';
+import { toastr } from 'react-redux-toastr';
+
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
-import { NewIssue } from './NewIssue';
 import { TeamApiIssueTags } from './TeamApiIssueTags';
 import * as Services from '../../../../services';
-import { toastr } from 'react-redux-toastr';
 import { Can, manage, api as API } from '../../../utils';
 import { I18nContext } from '../../../../core';
-import { NavContext } from '../../../../contexts';
 
 export function ApiIssue({ ownerTeam, ...props }) {
-  const { issueId, versionId, apiId } = useParams();
+  const { issueId, versionId } = useParams();
   const [api, setRootApi] = useState();
-  const params = useParams();
 
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
-  const { addMenu } = useContext(NavContext);
 
   const { translateMethod } = useContext(I18nContext);
 
@@ -59,7 +55,6 @@ export function ApiIssue({ ownerTeam, ...props }) {
   return (
     <div className="container-fluid">
       <Routes>
-        <Route path={'/new'} element={<NewIssue api={api} basePath={`${basePath}/issues`} />} />
         <Route
           path="/:issueId"
           element={
@@ -69,27 +64,14 @@ export function ApiIssue({ ownerTeam, ...props }) {
               api={api}
               connectedUser={props.connectedUser}
               basePath={basePath}
+              onChange={onChange}
             />
           }
         />
         <Route
           path="/"
           element={
-            <>
-              <ApiFilter
-                pathname={basePath}
-                tags={api.issuesTags}
-                handleFilter={(value) => setFilter(value)}
-                filter={filter}
-                connectedUser={props.connectedUser}
-                api={api}
-                team={ownerTeam._id}
-                ownerTeam={ownerTeam}
-                selectedVersion={selectedVersion}
-                setSelectedVersion={setSelectedVersion}
-              />
-              <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} />
-            </>
+            <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} ownerTeam={ownerTeam} setSelectedVersion={setSelectedVersion} setFilter={setFilter}/>
           }
         />
       </Routes>

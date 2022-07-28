@@ -74,7 +74,6 @@ function AssetButton(props) {
           teamId={props.team._id}
           label={translateMethod('Set from asset')}
           onSelect={(asset) => {
-            console.debug({props, asset})
             props.onChange(asset.link);
             props.setValue('contentType', asset.contentType)
           }}
