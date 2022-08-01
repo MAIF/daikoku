@@ -14,7 +14,6 @@ export const TeamApiInfos = ({
   tenant,
   openTestingApiKeyModal,
   openSubMetadataModal,
-  otoroshiSettings,
 }) => {
   const { translateMethod } = useContext(I18nContext);
 
@@ -50,7 +49,7 @@ export const TeamApiInfos = ({
       id: 'testing',
       label: translateMethod('Testing'),
       component: (p) =>
-        TeamApiTesting({ ...p, openTestingApiKeyModal, openSubMetadataModal, otoroshiSettings }),
+        TeamApiTesting({ ...p, openTestingApiKeyModal, openSubMetadataModal }),
       skipTo: 'save',
     },
   ];

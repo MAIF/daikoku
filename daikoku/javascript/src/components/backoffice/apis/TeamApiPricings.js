@@ -39,7 +39,7 @@ const SUBSCRIPTION_PLAN_TYPES = {
   PayPerUse: { defaultName: 'Pay per use', defaultDescription: 'Plan priced on usage' },
 };
 
-const OtoroshiServicesAndGroupSelector = ({ rawValues, error, onChange, translateMethod }) => {
+const OtoroshiServicesAndGroupSelector = ({ rawValues, onChange, translateMethod }) => {
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState(undefined);
   const [services, setServices] = useState(undefined);
@@ -232,13 +232,11 @@ const CustomMetadataInput = ({ value, onChange, setValue }) => {
         </div>
       )}
       {(value || []).map(({ key, possibleValues }, idx) => (
-        <div className="col-sm-10">
+        <div key={idx} className="col-sm-10">
           <div className="input-group">
             <input
-              // disabled={props.disabled}
               type="text"
               className="form-control col-5 me-1"
-              // placeholder={props.placeholderKey}
               value={key}
               onChange={(e) => changeKey(e, key)}
             />
@@ -418,9 +416,8 @@ export const TeamApiPricings = (props) => {
   const [planForEdition, setPlanForEdition] = useState();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
-  const { translateMethod, language } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
-  const [breadcrumb, setBreadcrumb] = useState();
 
   useEffect(() => {
     return () => {
@@ -516,7 +513,7 @@ export const TeamApiPricings = (props) => {
     },
   ];
 
-  const getRightBillingFlow = (plan, expertMode) => {
+  const getRightBillingFlow = (plan) => {
     if (!plan) {
       return [];
     }
@@ -639,8 +636,8 @@ export const TeamApiPricings = (props) => {
           format: format.select,
           label: translateMethod('Type'),
           onChange: ({ rawValues, setValue, value }) => {
-            const isDescIsDefault = Object.entries(SUBSCRIPTION_PLAN_TYPES)
-              .map(([_, { defaultDescription }]) => defaultDescription)
+            const isDescIsDefault = Object.values(SUBSCRIPTION_PLAN_TYPES)
+              .map(({ defaultDescription }) => defaultDescription)
               .some((d) => !rawValues.customDescription || d === rawValues.customDescription);
 
             if (isDescIsDefault) {
@@ -729,7 +726,7 @@ export const TeamApiPricings = (props) => {
                 clientIdOnly: {
                   type: type.bool,
                   label: ({ rawValues }) => {
-                    if (!!rawValues.aggregationApiKeysSecurity) {
+                    if (rawValues.aggregationApiKeysSecurity) {
                       return `${translateMethod('Read only apikey')} (${translateMethod(
                         'disabled.due.to.aggregation.security'
                       )})`;
@@ -747,7 +744,7 @@ export const TeamApiPricings = (props) => {
                 readOnly: {
                   type: type.bool,
                   label: ({ rawValues }) => {
-                    if (!!rawValues.aggregationApiKeysSecurity) {
+                    if (rawValues.aggregationApiKeysSecurity) {
                       return `${translateMethod('Read only apikey')} (${translateMethod(
                         'disabled.due.to.aggregation.security'
                       )})`;
@@ -1049,7 +1046,7 @@ export const TeamApiPricings = (props) => {
             !!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length,
           label: ({ rawValues }) =>
             translateMethod('Subscription') +
-            (!!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length
+            (rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length
               ? ` (${translateMethod('Subscription.manual.help')})`
               : ''),
           options: [

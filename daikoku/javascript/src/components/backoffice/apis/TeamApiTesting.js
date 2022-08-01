@@ -9,7 +9,7 @@ import { I18nContext } from '../../../core';
 
 export const TeamApiTesting = (props) => {
   const testing = props.value.testing;
-  const team = useSelector((s) => s.context.currentTeam);
+  const currentTeam = useSelector((s) => s.context.currentTeam);
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
@@ -30,8 +30,7 @@ export const TeamApiTesting = (props) => {
       save: (metadata) =>
         props.openTestingApiKeyModal({
           metadata,
-          otoroshiSettings: props.otoroshiSettings,
-          teamId: team._id,
+          teamId: currentTeam._id,
           config: newConfig,
           update: testing.config && testing.config.otoroshiSettings,
           title: translateMethod('Otoroshi settings'),
@@ -56,30 +55,27 @@ export const TeamApiTesting = (props) => {
   };
 
   const deleteOtoroshiKey = () => {
-    window.confirm(translateMethod('otoroshi.testing.delete.confirm')).then((ok) => {
-      if (ok)
-        Services.deleteTestingApiKey(props.team._id, {
-          otoroshiSettings: testing.config.otoroshiSettings,
-          authorizedEntities: testing.config.authorizedEntities,
-          clientId: testing.username,
-        }).then(() =>
-          props.onAction({
-            ...props.value,
-            testing: {
-              config: {},
-              enabled: false,
-              name: undefined,
-              auth: 'Basic',
-              username: undefined,
-              password: undefined,
-            },
-          })
-        );
-    });
-  };
-
-  const setTesting = (t) => {
-    props.onChange({ ...props.value, testing: t });
+    window.confirm(translateMethod('otoroshi.testing.delete.confirm'))
+      .then((ok) => {
+        if (ok)
+          Services.deleteTestingApiKey(currentTeam._id, {
+            otoroshiSettings: testing.config.otoroshiSettings,
+            authorizedEntities: testing.config.authorizedEntities,
+            clientId: testing.username,
+          }).then(() =>
+            props.onChange({
+              ...props.value,
+              testing: {
+                config: {},
+                enabled: false,
+                name: undefined,
+                auth: 'Basic',
+                username: undefined,
+                password: undefined,
+              },
+            })
+          );
+      });
   };
 
   const otoKeyExists = Option(props.value.testing)
