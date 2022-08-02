@@ -996,6 +996,7 @@
   "constraints.required.file": "Le fichier est requis",
   "constraints.required.otoroshi.settings": "les paramètre Otoroshi sont requis",
   "constraints.required.authorizedEntities": "les entitées autorisées sont requise",
+  "constraints.required.value": "la valeure est requise",
   "constraints.format.url": "%s doit être une URL valide",
   "constraints.matches.email": "Votre courriel doit être une addresse électronique valide",
   "constraint.matches.password": "Votre mot de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spécial (#$^+=!*()@%&).",
@@ -1004,6 +1005,7 @@
   "constraints.file.type.forbidden": "Le type du fichier est interdit",
   "constraints.file.type.required": "Le content-type du fichier est requis",
   "constraint.min.authorizedEntities": "Les entitées autorisées doivent contenire au minimum une service ou un groupe",
+  "constraint.test.required.variables": "la valeurs doit contenir les variables requises",
   "SEO": "SEO",
   "Robot.txt.label": "Contenu du fichier robots.txt",
   "Robot.txt.content": "Le contenu du fichier robots.txt servi par Daikoku",
@@ -1156,5 +1158,9 @@
   "New version": "Nouvelle version",
   "doc.page.save.success": "La page de documentation a été sauvegardée avec succès",
   "File": "File",
-  "asset.update.successful": "L'asser a été modifié avec succès"
+  "asset.update.successful": "L'asset a été modifié avec succès",
+  "asset.update": "Mise àjour d'un asset",
+  "Translation": "Traduction",
+  "Default mail template": "Modèle de courriel par défaut",
+  "Translate": "Traduire"
 }

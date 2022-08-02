@@ -10,7 +10,6 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
   const MODAL_TYPES = {
     teamSelector: Modals.TeamSelectorModal,
     assetSelector: Modals.AssetSelectorModal,
-    wysywygModal: Modals.WysiwygModal,
     saveOrCancelModal: Modals.SaverOrCancelModal,
     teamCreation: Modals.TeamCreationModal,
     contactModal: Modals.ContactModal,

@@ -34,15 +34,15 @@ class TranslationController(
 
   val languages = supportedLangs.availables.map(_.language)
 
+  def getLanguages() = DaikokuAction.async { ctx =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has reset translations - @{tenant._id}"))( ctx.tenant.id.value,ctx) { (_, _) =>
+      FastFuture.successful(Ok(Json.stringify(JsArray(languages.map(JsString.apply)))))
+    }}
   def getTranslations(domain: Option[String]) =
     DaikokuActionMaybeWithGuest.async { ctx =>
-      UberPublicUserAccess(
-        AuditTrailEvent(
-          s"@{user.name} has requested translations of s${domain}"))(ctx) {
+      UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has requested translations of s$domain"))(ctx) {
         domain match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "Domain missing")))
+          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Domain missing")))
           case Some(prefix) =>
             (if (prefix == "all")
                env.dataStore.translationRepo
@@ -57,8 +57,7 @@ class TranslationController(
                 val defaultTranslations =
                   if (prefix == "mail")
                     messagesApi.messages
-                      .map(v =>
-                        (v._1, v._2.filter(k => k._1.startsWith(prefix))))
+                      .map(v => (v._1, v._2.filter(k => k._1.startsWith(prefix))))
                       .flatMap { v =>
                         v._2
                           .map {
@@ -73,8 +72,9 @@ class TranslationController(
                               )
                           }
                           .filter(t => languages.contains(t.language))
-                      } else Seq.empty
-
+                      } else {
+                        Seq.empty
+                      }
                 Ok(
                   if (prefix == "mail")
                     Json.obj(

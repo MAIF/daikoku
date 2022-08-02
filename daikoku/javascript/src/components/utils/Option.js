@@ -15,7 +15,7 @@ export const Some = (x) => ({
 export const None = {
   map: () => None,
   flatMap: () => None,
-  fold: (ifEmpty, _f) => ifEmpty(),
+  fold: (ifEmpty) => ifEmpty(),
   orElse: (x) => Option(x),
   getOrElse: (ifEmpty) => ifEmpty,
   getOrNull: () => undefined,

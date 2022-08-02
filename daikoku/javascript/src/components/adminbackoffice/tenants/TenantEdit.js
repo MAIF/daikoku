@@ -175,7 +175,7 @@ const ThemeUpdatorFromUI = (props) => {
       <button
         type="button"
         className="btn btn-access-negative"
-        onClick={(e) => {
+        onClick={() => {
           const RedirectToUI = () => navigate(`/settings/tenants/${props.tenant()._id}/style`);
           if (props.isTenantUpdated()) {
             props.openModal({

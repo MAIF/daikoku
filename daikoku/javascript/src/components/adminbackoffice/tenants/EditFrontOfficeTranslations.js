@@ -1,94 +1,17 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { nanoid } from 'nanoid';
+import React, { useContext, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import sortBy from 'lodash/sortBy';
+import { nanoid } from 'nanoid';
+import { type, format, constraints } from '@maif/react-forms';
 
-import { PaginatedComponent } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext, openFormModal } from '../../../core';
 import * as Services from '../../../services';
+import { Table } from '../../inputs';
 
-const TranslationInput = ({ key, tsl, save }) => {
-  const [edited, setEdited] = useState(false);
-  const [values, setValues] = useState(tsl);
-
-  const entryValues = tsl;
-
-  const onChange = (newValue, translation) => {
-    setValues(
-      values.map((value) => {
-        const { key, language } = value;
-        if (key === translation.key && language === translation.language)
-          return {
-            ...translation,
-            value: newValue,
-          };
-        return value;
-      })
-    );
-  };
-
-  return (
-    <div className="px-3 py-1 section mb-2" key={`${key}`}>
-      <div className="d-flex align-items-center justify-content-between">
-        <div>
-          <span className="badge bg-info me-3 align-self-center">Default</span>
-          <span style={{ fontWeight: 'bold' }}>{tsl.length > 0 ? tsl[0].default : key}</span>
-        </div>
-        {!edited && (
-          <button className="btn btn-sm btn-outline-info" onClick={setEdited}>
-            <i className="fas fa-edit" />
-          </button>
-        )}
-        {edited && (
-          <div className="d-flex">
-            <button
-              className="btn btn-sm btn-outline-success mx-1"
-              onClick={() => {
-                save(values);
-                setEdited(false);
-              }}
-            >
-              <i className="fas fa-save" />
-            </button>
-            <button
-              className="btn btn-sm btn-outline-danger"
-              onClick={() => {
-                setValues(entryValues);
-                setEdited(false);
-              }}
-            >
-              <i className="fas fa-times" />
-            </button>
-          </div>
-        )}
-      </div>
-      {edited &&
-        values.map((v) => {
-          const { key, language, value } = v;
-          return (
-            <div className="input-group input-group-sm mt-2">
-              <div className="input-group-prepend">
-                <div className="input-group-text" style={{ minWidth: '38px' }}>
-                  {language}
-                </div>
-              </div>
-              <input
-                className="form-control"
-                key={`${key}${language}`}
-                value={value}
-                onChange={(e) => onChange(e.target.value, v)}
-              />
-            </div>
-          );
-        })}
-    </div>
-  );
-};
 
 export function EditFrontOfficeTranslations(props) {
-  const [translations, setTranslations] = useState({});
-  const [filteredTranslations, setFilteredTranslations] = useState([]);
-  const [searched, setSearched] = useState('');
+  const dispatch = useDispatch();
+  const table = useRef();
 
   const {
     updateTranslation,
@@ -101,11 +24,11 @@ export function EditFrontOfficeTranslations(props) {
   }, []);
 
   const loadTranslations = () => {
-    Services.getTranslations('all').then((store) => {
-      setTranslations(
-        Object.entries({ ...globalTranslations })
-          .map(([language, { _, translations: t }]) =>
-            Object.entries(t).map(([key, value]) => {
+    return Services.getTranslations('all').then((store) => {
+      const t = Object.entries({ ...globalTranslations })
+        .map(([language, { translations: t }]) =>
+          Object.entries(t)
+            .map(([key, value]) => {
               const existingTranslation = store.translations.find(
                 (f) => f.key === key && f.language === language.toLowerCase()
               );
@@ -120,63 +43,101 @@ export function EditFrontOfficeTranslations(props) {
                   : undefined,
                 default: value,
               };
-            })
-          )
-          .flatMap((f) => f)
-          .filter((f) => typeof f.default === 'string' || f.default instanceof String)
-          .reduce(
-            (acc, current) => ({
-              ...acc,
-              [current.key]: acc[current.key] ? [...acc[current.key], current] : [current],
-            }),
-            {}
-          )
-      );
+            }))
+        .flatMap((f) => f)
+        .filter((f) => typeof f.default === 'string' || f.default instanceof String)
+        .reduce(
+          (acc, current) => ({
+            ...acc,
+            [current.key]: acc[current.key] ? [...acc[current.key], current] : [current],
+          }),
+          {}
+        )
+      return Object.entries(t)
+        .map(([message, translations]) => ({ message, translations }))
     });
   };
 
-  useEffect(() => {
-    if (!searched || searched.length === 0) setFilteredTranslations(Object.entries(translations));
-    else {
-      let filtered = Object.entries(translations).filter(([key]) =>
-        key.toLowerCase().includes(searched)
-      );
-      if (filtered.length === 0)
-        filtered = Object.entries(translations).filter(([_, tsl]) =>
-          tsl.find((t) => t.value.toLowerCase().includes(searched))
-        );
-
-      setFilteredTranslations(filtered);
+  const columns = [
+    {
+      id: 'message',
+      Header: translateMethod('mailing_internalization.message_text'),
+      style: { textAlign: 'left' },
+      accessor: (translation) => translateMethod(translation.message),
+      sortType: 'basic',
+      Cell: ({
+        cell: {
+          row: { original }
+        }
+      }) => {
+        return (
+          <div>
+            {translateMethod(original.message)}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'actions',
+      style: { textAlign: 'center', width: '120px'},
+      Header: translateMethod('Translate'),
+      disableSortBy: true,
+      disableFilters: true,
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
+        return (
+          <div className='d-flex flex-row flex-wrap justify-content-end'>
+            {original.translations.map(translation => {
+              return (
+                <button type='button' key={translation.language}
+                  className='btn btn-outline-success me-2'
+                  onClick={() => dispatch(openFormModal({
+                    title: `${translateMethod('Translation')} : [${translation.language}]`,
+                    schema: {
+                      value: {
+                        type: type.string,
+                        format: format.markdown,
+                        label: translateMethod(original.message),
+                        constraints: [
+                          constraints.required(translateMethod('constraints.required.value')),
+                        ]
+                      }
+                    },
+                    value: translation,
+                    actionLabel: translateMethod('Translate'),
+                    onSubmit: t => updateTranslation(t)
+                    .then(() => {
+                      toastr.success(translateMethod('mailing_internalization.translation_updated'))
+                      table.current.update()
+                    })
+                  }))}>
+                  {translation.language}
+                </button>
+              )
+            })}
+          </div>
+        )
+      }
     }
-  }, [translations, searched]);
+  ]
 
   return (
     <div>
-      <input
-        type="text"
-        className="form-control my-3"
-        placeholder={translateMethod('Search translation')}
-        value={searched}
-        onChange={(e) => setSearched(e.target.value.toLowerCase())}
-      />
-      <PaginatedComponent
-        items={sortBy(filteredTranslations, [([key]) => key])}
-        count={8}
-        columnMode
-        formatter={([key, tsl]) => {
-          return (
-            <TranslationInput
-              key={key}
-              tsl={tsl}
-              save={(values) => {
-                Promise.all(values.map((value) => updateTranslation(value))).then(() => {
-                  toastr.success(translateMethod('mailing_internalization.translation_updated'));
-                  loadTranslations();
-                });
-              }}
-            />
-          );
-        }}
+      <Table
+        selfUrl="translations"
+        defaultTitle="Translations"
+        defaultValue={() => ([])}
+        defaultSort="message"
+        itemName="translation"
+        columns={columns}
+        fetchItems={() => loadTranslations()}
+        showActions={false}
+        showLink={false}
+        extractKey={(item) => item[0]}
+        injectTable={(t) => (table.current = t)}
       />
     </div>
   );

@@ -7,7 +7,7 @@ import { constraints, format, type } from '@maif/react-forms';
 import * as Services from '../../../services';
 import { Table } from '../../inputs';
 import { Can, manage, asset, tenant as TENANT } from '../../utils';
-import { openWysywygModal, openFormModal } from '../../../core/modal';
+import { openFormModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
 
 
@@ -328,10 +328,18 @@ export const AssetsList = ({ tenantMode }) => {
       credentials: 'include',
     })
       .then((response) => response.text())
-      .then((value) =>
-        dispatch(openWysywygModal({
-          action: (value) => {
-            const textFileAsBlob = new Blob([value], { type: 'text/plain' });
+      .then((content) =>
+        dispatch(openFormModal({
+          title: translateMethod('asset.update'),
+          schema: {
+            content: {
+              type: type.string,
+              format: format.markdown,
+              label: null,
+            }
+          },
+          onSubmit: (data) => {
+            const textFileAsBlob = new Blob([data.content], { type: 'text/plain' });
             const file = new File([textFileAsBlob], asset.filename);
 
             if (tenantMode) {
@@ -354,9 +362,8 @@ export const AssetsList = ({ tenantMode }) => {
                 })
             }
           },
-          title: asset.meta.filename,
-          value,
-          team: currentTeam,
+          value: {content},
+          actionLabel: translateMethod('Update')
         }))
       );
   };

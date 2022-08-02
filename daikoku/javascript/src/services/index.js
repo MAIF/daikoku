@@ -624,6 +624,9 @@ export const testingCall = (teamId, apiId, body) =>
 export const getTranslations = (domain) =>
   customFetch(`/api/translations${domain ? `?domain=${domain}` : ''}`);
 
+export const getTranslationLanguages = () => 
+  customFetch('/api/translations/_languages')
+
 export const saveTranslation = (translation) =>
   customFetch('/api/translations', {
     method: 'PUT',

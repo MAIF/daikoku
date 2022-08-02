@@ -3061,7 +3061,9 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn(e.getMessage)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: Translation): JsValue = Json.obj(

@@ -215,6 +215,7 @@ POST    /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.otoroshi.daikoku.ctrls.TenantController.removeAdminFromTenant(tenantId, adminId)
 
 GET     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.getTranslations(domain: Option[String] ?= None)
+GET     /api/translations/_languages                    fr.maif.otoroshi.daikoku.ctrls.TranslationController.getLanguages()
 PUT     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTranslation()
 POST    /api/translations/:translationId/_reset         fr.maif.otoroshi.daikoku.ctrls.TranslationController.resetTranslation(translationId: String)
 DELETE /api/translations                                fr.maif.otoroshi.daikoku.ctrls.TranslationController.deleteTranslation()

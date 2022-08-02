@@ -993,6 +993,7 @@
     "constraints.required.file": "File is required",
     "constraints.required.otoroshi.settings": "Otoroshi settings are required",
     "constraints.required.authorizedEntities": "Authorized entities are required",
+    "constraints.required.value": "value is required",
     "constraints.format.url": "%s must be a valid URL",
     "constraints.matches.email": "Your mail must be a valid email address",
     "constraint.matches.password": "Your password must have 8 letters min with capital, number and special character (#$^+=!*()@%&)",
@@ -1002,6 +1003,7 @@
     "constraints.file.type.forbidden": "File type is forbidden",
     "constraints.file.type.required": "File content-type is required",
     "constraint.min.authorizedEntities": "Authorized entities must contains one service or one group min.",
+    "constraint.test.required.variables": "value must contains required variables",
     "SEO": "SEO",
     "Robot.txt.label": "Robots.txt content",
     "Robot.txt.content": "the content of the robots.txt file serve by Daikoku",
@@ -1154,5 +1156,9 @@
     "New version": "New version",
     "doc.page.save.success": "Documentation page save successful",
     "File": "File",
-    "asset.update.successful": "Asset update successful"
+    "asset.update.successful": "Asset update successful",
+    "asset.update": "Asset update",
+    "Translation": "Translation",
+    "Default mail template": "Default mail template",
+    "Translate": "Translate"
 }

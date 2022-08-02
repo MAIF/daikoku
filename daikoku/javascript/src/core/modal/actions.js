@@ -24,12 +24,6 @@ export const openAssetSelectorModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openWysywygModal = (modalProps) => ({
-  type: OPEN_MODAL,
-  modalProps,
-  modalType: 'wysywygModal',
-});
-
 export const openSaveOrCancelModal = (modalProps) => (dispatch) => {
   return dispatch({
     type: OPEN_MODAL,

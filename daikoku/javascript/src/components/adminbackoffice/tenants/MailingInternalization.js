@@ -1,106 +1,20 @@
-import React, { Suspense, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 import { useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router-dom';
-import { v4 as uuid } from 'uuid';
+import { nanoid } from 'nanoid';
+import { constraints, Form, format, type } from '@maif/react-forms';
 
-import { Can, manage, Spinner, tenant as TENANT } from '../../utils';
+import { AssetChooserByModal, MimeTypeFilter } from '../../frontend/modals/AssetsChooserModal';
+import { Can, manage, Spinner, tenant as TENANT, Option } from '../../utils';
 import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../locales/i18n-context';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
 import { useTenantBackOffice } from '../../../contexts';
-
-const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
-
-const MarkdownComponent = ({
-  value,
-  translationKey,
-  language,
-  saveTranslation,
-  handleInputChange,
-  resetTranslation,
-  lastModificationAt,
-}) => (
-  <Suspense fallback={<div>loading ...</div>}>
-    <div style={{ position: 'relative' }} className="my-2">
-      <LazySingleMarkdownInput
-        fullWidth
-        value={value}
-        onChange={(code) => handleInputChange(translationKey, language, code)}
-      />
-      <div style={{ position: 'absolute', top: 0, right: 0 }}>
-        {lastModificationAt && (
-          <button
-            type="button"
-            onClick={() => resetTranslation(translationKey, language)}
-            className="btn btn-outline-info"
-          >
-            <i className="fas fa-undo" />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => saveTranslation(translationKey, language)}
-          className="btn btn-outline-success ms-1"
-        >
-          <i className="fas fa-save" />
-        </button>
-      </div>
-    </div>
-  </Suspense>
-);
-
-const Collapse = ({
-  label,
-  children,
-  edited,
-  toggleTranslation,
-  translationKey,
-  defaultTranslation,
-}) => {
-  function getRequiredVariables(str) {
-    let dels = [];
-    const words = [];
-    for (let i = 0; i < str.length; i++) {
-      if (str[i] === '[') dels.push(i);
-      else if (str[i] === ']' && dels.length > 0) {
-        let pos = dels[dels.length - 1];
-        dels.pop();
-
-        const len = i - 1 - pos;
-        words.push(str.substring(pos + 1, (pos < len ? len : len + pos) + 1));
-      }
-    }
-    return words;
-  }
-
-  return (
-    <div>
-      <div className="row">
-        <div className="col-12 d-flex justify-space-between">
-          <span style={{ fontWeight: 'bold', flex: 1 }}>{label}</span>
-          <div style={{ flex: 1 }} className="text-center">
-            {getRequiredVariables(defaultTranslation).map((word, i) => (
-              <span className="badge bg-info me-2" key={`translationKey${i}`}>
-                [{word}]
-              </span>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="btn btn-access-negative btn-sm"
-            style={{ float: 'right' }}
-            onClick={() => toggleTranslation(translationKey)}
-          >
-            <i className={`fas fa-eye${!edited ? '' : '-slash'}`} />
-          </button>
-        </div>
-      </div>
-      {edited && children}
-      <hr />
-    </div>
-  );
-};
+import { BeautifulTitle } from '../../utils/BeautifulTitle';
+import { useDispatch } from 'react-redux';
+import { openFormModal } from '../../../core';
+import { Table } from '../../inputs';
 
 const EditMailtemplate = ({ tenantId }) => {
   const [tenant, setTenant] = useState(undefined);
@@ -109,41 +23,31 @@ const EditMailtemplate = ({ tenantId }) => {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.oneTenant(tenantId).then((tenant) => {
-      setTenant(tenant);
+    Services.oneTenant(tenantId)
+      .then((tenant) => {
+        setTenant(tenant);
 
-      const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
-      Services.getTranslations(KEY_MAIL_TEMPLATE).then((data) => {
-        if (data.translations.length === 0) {
-          setMailTemplateTranslations(
-            ['fr', 'en']
-              .map((l) => ({
-                _id: uuid(),
-                key: KEY_MAIL_TEMPLATE,
-                language: l,
-                value: '{{email}}',
-                _tenant: tenant._id,
-              }))
-              .flatMap((t) => t)
-          );
-        } else setMailTemplateTranslations(data.translations);
+        const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
+
+        Promise.all([
+          Services.getTranslationLanguages(),
+          Services.getTranslations(KEY_MAIL_TEMPLATE)
+        ])
+          .then(([languages, data]) => {
+            const templates = languages.map((language) => {
+              return Option(data.translations.find(t => t.language === language))
+                .getOrElse({
+                  _id: nanoid(),
+                  key: KEY_MAIL_TEMPLATE,
+                  language,
+                  value: '{{email}}',
+                  _tenant: tenant._id
+                })
+            })
+            setMailTemplateTranslations(templates)
+          });
       });
-    });
   }, []);
-
-  const handleTranslation = (key, language, value) => {
-    setMailTemplateTranslations(
-      mailTemplateTranslations.map((translation) => {
-        if (translation.language === language && translation.key === key)
-          return {
-            ...translation,
-            value,
-          };
-
-        return translation;
-      })
-    );
-  };
 
   const saveTenant = () => {
     Services.saveTenant(tenant).then(manageError);
@@ -167,26 +71,6 @@ const EditMailtemplate = ({ tenantId }) => {
       .then(manageError);
   };
 
-  const resetTranslation = (translation) => {
-    Services.resetTranslation(translation)
-      .then((res) => {
-        if (!res.error)
-          setMailTemplateTranslations(
-            mailTemplateTranslations.map((t) => {
-              if (t._id === translation._id)
-                return {
-                  ...res,
-                  value: '{{email}}',
-                };
-
-              return t;
-            })
-          );
-        return res;
-      })
-      .then(manageError);
-  };
-
   const manageError = (res) => {
     if (res.error) toastr.error(res.error);
     else toastr.success(translateMethod('mailing_internalization.translation_updated'));
@@ -194,146 +78,210 @@ const EditMailtemplate = ({ tenantId }) => {
 
   if (!tenant) return <Spinner />;
 
+  const translationSchema = {
+    value: {
+      type: type.string,
+      format: format.markdown,
+      label: null,
+      defaultValue: '{{email}}',
+      props: {
+        actions: (insert) => {
+          return (
+            <BeautifulTitle
+              placement="bottom"
+              title={translateMethod('image url from asset')}
+            >
+              <AssetChooserByModal
+                typeFilter={MimeTypeFilter.image}
+                onlyPreview
+                tenantMode={true}
+                icon="fas fa-file-image"
+                classNames="btn-for-descriptionToolbar"
+                onSelect={(asset) =>
+                  insert(asset.link)
+                }
+              />
+            </BeautifulTitle>
+          )
+        }
+      }
+    }
+  }
+
   return (
     <div className="col-12 pb-3">
-      <Suspense fallback={<div>loading ...</div>}>
-        <div className="my-3">
-          <span className="h5">Default mail template</span>
-          <div className="mt-3">
-            <MarkdownComponent
-              value={tenant.mailerSettings?.template || '{{email}}'}
-              language="en"
-              saveTranslation={saveTenant}
-              handleInputChange={(k, l, template) =>
-                setTenant({
-                  ...tenant,
-                  mailerSettings: {
-                    ...tenant.mailerSettings,
-                    template,
-                  },
-                })
-              }
-              resetTranslation={() =>
-                setTenant({
-                  ...tenant,
-                  mailerSettings: {
-                    ...tenant.mailerSettings,
-                    template: '{{email}}',
-                  },
-                })
-              }
-              lastModificationAt={tenant.mailerSettings?.template !== '{{email}}'}
-            />
-          </div>
+      <div className="my-3">
+        <span className="h5">{translateMethod('Default mail template')}</span>
+        <div className="mt-3">
+          <Form
+            value={tenant?.mailerSettings?.template}
+            schema={translationSchema}
+            onSubmit={t => {
+              saveTenant({
+                ...tenant,
+                mailerSettings: {
+                  ...tenant.mailerSettings,
+                  template: t.value,
+                },
+              })
+                .then(manageError)
+            }}
+          />
         </div>
-        {mailTemplateTranslations.map((translation) => {
-          const { language, value, key, _id, lastModificationAt } = translation;
+      </div>
+      {mailTemplateTranslations
+        .map((translation) => {
           return (
-            <div className="my-3" key={`${key}-${language}`}>
-              <span className="h5">Translation : {language}</span>
+            <div className="my-3" key={`${translation.key}-${translation.language}`}>
+              <span className="h5">{translateMethod('Translation')} : {translation.language}</span>
               <div className="mt-3">
-                <MarkdownComponent
-                  value={value}
-                  language={language}
-                  saveTranslation={() => saveTranslation(translation)}
-                  handleInputChange={(k, l, newValue) => handleTranslation(key, language, newValue)}
-                  resetTranslation={() => resetTranslation(translation)}
-                  lastModificationAt={lastModificationAt}
+                <Form
+                  value={translation}
+                  schema={translationSchema}
+                  onSubmit={saveTranslation}
                 />
               </div>
             </div>
           );
         })}
-      </Suspense>
     </div>
   );
 };
 
 export const MailingInternalization = () => {
-  const tenant = useSelector((s) => s.context);
   useTenantBackOffice();
+  const table = useRef();
+  const { tenant } = useSelector((s) => s.context);
 
-  const [translations, setTranslations] = useState([]);
-  const params = useParams();
-
-  useEffect(() => {
-    Services.getTranslations('mail').then((res) => setTranslations(res.translations));
-  }, []);
+  const { domain } = useParams();
+  const dispatch = useDispatch();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  function saveTranslation(key, language) {
-    Services.saveTranslation(
-      translations
-        .find(([k, _]) => k === key)[1]
-        .find((translation) => translation.key === key && translation.language === language)
-    ).then((res) => {
-      if (res.error)
-        toastr.error(translateMethod('mailing_internalization.failed_translation_update'));
-      else {
-        toastr.success(translateMethod('mailing_internalization.translation_updated'));
-        editTranslations(key, language, [
-          { action: (_) => res.lastModificationAt, field: 'lastModificationAt' },
-          { action: (_) => false, field: 'edited' },
-        ]);
+  function saveTranslation(translation) {
+    Services.saveTranslation(translation)
+      .then((res) => {
+        if (res.error)
+          toastr.error(translateMethod('mailing_internalization.failed_translation_update'));
+        else {
+          toastr.success(translateMethod('mailing_internalization.translation_updated'));
+          table.current.update();
+        }
+      });
+  }
+
+  function getRequiredVariables(str) {
+    let dels = [];
+    const words = [];
+    for (let i = 0; i < str.length; i++) {
+      if (str[i] === '[') dels.push(i);
+      else if (str[i] === ']' && dels.length > 0) {
+        let pos = dels[dels.length - 1];
+        dels.pop();
+
+        const len = i - 1 - pos;
+        words.push(str.substring(pos + 1, (pos < len ? len : len + pos) + 1));
       }
-    });
+    }
+    return words;
   }
 
-  function handleInputChange(editedKey, language, value) {
-    editTranslations(editedKey, language, [{ action: (_) => value, field: 'value' }]);
-  }
-
-  function toggleTranslation(editedKey) {
-    setTranslations(
-      translations.map(([key, values, defaultTranslation, edited]) => [
-        key,
-        values,
-        defaultTranslation,
-        key === editedKey ? (edited === undefined ? true : !edited) : edited,
-      ])
-    );
-  }
-
-  function resetTranslation(key, language) {
-    Services.resetTranslation(
-      translations
-        .find(([k, _]) => k === key)[1]
-        .find((translation) => translation.key === key && translation.language === language)
-    ).then((res) => {
-      if (res.error) toastr.error(translateMethod('Failed to reset translation'));
-      else {
-        toastr.success(translateMethod('Translation reset'));
-        editTranslations(key, language, [
-          { action: (_) => undefined, field: 'lastModificationAt' },
-          { action: (_) => res.value, field: 'value' },
-        ]);
+  const columns = [
+    {
+      id: 'message',
+      Header: translateMethod('mailing_internalization.message_text'),
+      style: { textAlign: 'left' },
+      accessor: (translation) => translateMethod(translation[0]),
+      sortType: 'basic',
+      Cell: ({
+        cell: {
+          row: { original }
+        }
+      }) => {
+        return (
+          <div>
+            {translateMethod(original[0])}
+          </div>
+        )
       }
-    });
-  }
-
-  function editTranslations(editedKey, language, actions) {
-    setTranslations(
-      translations.map(([key, values, defaultTranslation, edited]) => {
-        if (key === editedKey)
-          return [
-            key,
-            values.map((translation) => {
-              if (translation.key === editedKey && translation.language === language)
-                actions.forEach(
-                  ({ action, field }) => (translation[field] = action(translation[field]))
-                );
-              return translation;
-            }),
-            defaultTranslation,
-            edited,
-          ];
-        return [key, values, defaultTranslation, edited];
-      })
-    );
-  }
-
-  const { domain } = params;
+    },
+    {
+      id: 'variables',
+      Header: translateMethod('mailing_internalization.required_variables'),
+      style: { textAlign: 'left' },
+      disableSortBy: true,
+      disableFilters: true,
+      accessor: (translation) => translation.defaultTranslation,
+      Cell: ({
+        cell: {
+          row: { original }
+        }
+      }) => {
+        return (
+          <div>
+            {
+              getRequiredVariables(original[2])
+                .map((word, i) => (
+                  <span className="badge bg-info me-2" key={`translationKey${i}`}>
+                    [{word}]
+                  </span>
+                ))
+            }
+          </div>
+        )
+      }
+    },
+    {
+      id: 'actions',
+      style: { textAlign: 'center' },
+      Header: translateMethod('Translate'),
+      disableSortBy: true,
+      disableFilters: true,
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
+        const requiredVariables = getRequiredVariables(original[2])
+          .map((word, i) => (
+            <span className="badge bg-info me-2" key={`translationKey${i}`}>
+              [{word}]
+            </span>
+          ))
+        return (
+          <div className='d-flex flex-row flex-wrap justify-content-around'>
+            {original[1].map(value => {
+              return (
+                <button type='button' key={value.language}
+                  className='btn btn-outline-success'
+                  onClick={() => dispatch(openFormModal({
+                    title: `${translateMethod('Translation')} : [${value.language}]`,
+                    schema: {
+                      value: {
+                        type: type.string,
+                        format: format.markdown,
+                        label: translateMethod(original[0]),
+                        constraints: [
+                          constraints.required(translateMethod('constraints.required.value')),
+                          constraints.test('variables', 'constraint.test.required.variables', (value) => {
+                            return !!value && requiredVariables.every(v => value.includes(v))
+                          })
+                        ]
+                      }
+                    },
+                    value,
+                    actionLabel: translateMethod('Translate'),
+                    onSubmit: saveTranslation
+                  }))}>
+                  {value.language}
+                </button>
+              )
+            })}
+          </div>
+        )
+      }
+    }
+  ]
 
   return (
     <Can I={manage} a={TENANT} dispatchError>
@@ -380,27 +328,19 @@ export const MailingInternalization = () => {
               {translateMethod('mailing_internalization.required_variables')}
             </span>
           </div>
-          {translations.map(([key, values, defaultTranslation, edited]) => (
-            <Collapse
-              label={translateMethod(key)}
-              edited={edited === undefined ? false : edited}
-              translationKey={key}
-              toggleTranslation={toggleTranslation}
-              defaultTranslation={defaultTranslation}
-              key={`${key}-collapse`}
-            >
-              {values.map((v, i) => (
-                <MarkdownComponent
-                  {...v}
-                  key={`${key}-${v.language}-${i}`}
-                  translationKey={key}
-                  saveTranslation={saveTranslation}
-                  resetTranslation={resetTranslation}
-                  handleInputChange={handleInputChange}
-                />
-              ))}
-            </Collapse>
-          ))}
+          <Table
+            selfUrl="translations"
+            defaultTitle="Translations"
+            defaultValue={() => ([])}
+            defaultSort="message"
+            itemName="translation"
+            columns={columns}
+            fetchItems={() => Services.getTranslations('mail').then(r => r.translations)}
+            showActions={false}
+            showLink={false}
+            extractKey={(item) => item[0]}
+            injectTable={(t) => (table.current = t)}
+          />
         </div>
       )}
       {domain === 'mail-template' && <EditMailtemplate tenantId={tenant._id} />}
