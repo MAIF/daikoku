@@ -10,7 +10,6 @@ export * from './AvatarWithAction';
 export * from './Errors';
 export * from './Option';
 export * from './permissions';
-// export * from './TranslationForm';
 export * from './Footer';
 export * from './BeautifulTitle';
 export * from './entities';
