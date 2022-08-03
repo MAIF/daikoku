@@ -649,7 +649,7 @@ export const useTenantBackOffice = (maybeTenant) => {
   const currentTenant = useSelector((state) => state.context.tenant);
   const tenant = maybeTenant || currentTenant;
 
-  const schema = (currentTab) => ({
+  const schema = (currentTab, subTab) => ({
     title: tenant.name,
     blocks: {
       links: {
@@ -657,8 +657,35 @@ export const useTenantBackOffice = (maybeTenant) => {
         links: {
           settings: {
             label: translateMethod('Settings'),
-            action: () => navigateTo('settings'),
+            action: () => navigateTo('settings/general'),
             className: { active: currentTab === 'settings' },
+            childs: {
+              general: {
+                label: translateMethod('General'),
+                action: () => navigateTo('settings/general'),
+                className: { active: subTab === 'general' },
+              },
+              custom: {
+                label: translateMethod('Customization'),
+                action: () => navigateTo('settings/customization'),
+                className: { active: subTab === 'customization' },
+              },
+              audit: {
+                label: translateMethod('audit'),
+                action: () => navigateTo('settings/audit'),
+                className: { active: subTab === 'audit' },
+              },
+              mail: {
+                label: translateMethod('mail'),
+                action: () => navigateTo('settings/mail'),
+                className: { active: subTab === 'mail' },
+              },
+              authentication: {
+                label: translateMethod('authentication'),
+                action: () => navigateTo('settings/authentication'),
+                className: { active: subTab === 'authentication' },
+              },
+            },
           },
           message: {
             label: translateMethod('Message', true),
@@ -715,7 +742,7 @@ export const useTenantBackOffice = (maybeTenant) => {
   };
 
   useEffect(() => {
-    setMenu(schema(match.params.tab));
+    setMenu(schema(match.params.tab, match.params['*']));
     setMode(navMode.tenant);
     setOffice(officeMode.back);
     setTenant(tenant);
@@ -725,7 +752,7 @@ export const useTenantBackOffice = (maybeTenant) => {
       setTenant(undefined);
       setMenu({});
     };
-  }, [tenant]);
+  }, [tenant, match]);
 
   return { addMenu, tenant };
 };
