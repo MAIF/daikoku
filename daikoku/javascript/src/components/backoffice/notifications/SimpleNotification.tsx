@@ -5,15 +5,17 @@ import { useNavigate } from 'react-router-dom';
 import { formatPlanType, Option } from '../../utils';
 import { I18nContext } from '../../../core';
 
-export function SimpleNotification(props) {
+export function SimpleNotification(props: any) {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod, language, Translation } = useContext(I18nContext);
 
   const navigate = useNavigate();
 
-  const typeFormatter = (type) => {
+  const typeFormatter = (type: any) => {
     switch (type) {
       case 'ApiAccess':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-key"
             style={{ marginRight: 5 }}
@@ -22,6 +24,7 @@ export function SimpleNotification(props) {
         );
       case 'TeamAccess':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-users"
             style={{ marginRight: 5 }}
@@ -30,6 +33,7 @@ export function SimpleNotification(props) {
         );
       case 'TransferApiOwnership':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fa-solid fa-arrow-down-from-dotted-line"
             style={{ marginRight: 5 }}
@@ -38,6 +42,7 @@ export function SimpleNotification(props) {
         );
       case 'ApiSubscription':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-file-signature"
             style={{ marginRight: 5 }}
@@ -46,6 +51,7 @@ export function SimpleNotification(props) {
         );
       case 'OtoroshiSyncSubscriptionError':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-pastafarianism"
             style={{ marginRight: 5 }}
@@ -54,6 +60,7 @@ export function SimpleNotification(props) {
         );
       case 'OtoroshiSyncApiError':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-pastafarianism"
             style={{ marginRight: 5 }}
@@ -62,6 +69,7 @@ export function SimpleNotification(props) {
         );
       case 'ApiKeyDeletionInformation':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-trash"
             style={{ marginRight: 5 }}
@@ -70,6 +78,7 @@ export function SimpleNotification(props) {
         );
       case 'ApiKeyRotationInProgress':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
@@ -78,6 +87,7 @@ export function SimpleNotification(props) {
         );
       case 'ApiKeyRotationEnded':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
@@ -86,6 +96,7 @@ export function SimpleNotification(props) {
         );
       case 'TeamInvitation':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-envelope-alt"
             style={{ marginRight: 5 }}
@@ -94,6 +105,7 @@ export function SimpleNotification(props) {
         );
       case 'ApiKeyRefresh':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
@@ -102,6 +114,7 @@ export function SimpleNotification(props) {
         );
       case 'NewPostPublished':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-newspaper-alt"
             style={{ marginRight: 5 }}
@@ -110,6 +123,7 @@ export function SimpleNotification(props) {
         );
       case 'NewIssueOpen':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-exclamation-circle"
             style={{ marginRight: 5 }}
@@ -118,6 +132,7 @@ export function SimpleNotification(props) {
         );
       case 'NewCommentOnIssue':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <i
             className="fas fa-comment-circle"
             style={{ marginRight: 5 }}
@@ -127,7 +142,7 @@ export function SimpleNotification(props) {
     }
   };
 
-  const actionFormatter = (notification) => {
+  const actionFormatter = (notification: any) => {
     const { status, date } = notification.status;
     const { notificationType } = notification;
 
@@ -137,14 +152,18 @@ export function SimpleNotification(props) {
         notification.action.type === 'NewCommentOnIssue')
     ) {
       return (
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <div>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <button
             type="button"
             className="btn btn-outline-success btn-sm me-1"
             onClick={() => props.accept()}
           >
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <i className="fas fa-check" />
           </button>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <button
             type="button"
             className="btn btn-sm btn-outline-success"
@@ -153,6 +172,7 @@ export function SimpleNotification(props) {
               navigate(notification.action.linkTo);
             }}
           >
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <i className="fas fa-eye" />
           </button>
         </div>
@@ -163,7 +183,9 @@ export function SimpleNotification(props) {
           switch (props.notification.action.type) {
             case 'ApiSubscription':
               return (
+                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 <div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                   <a
                     className="btn btn-outline-success btn-sm me-1"
                     href="#"
@@ -179,36 +201,44 @@ export function SimpleNotification(props) {
                       })
                     }
                   >
+                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <i className="fas fa-check" />
                   </a>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                   <a
                     className="btn btn-outline-danger btn-sm"
                     href="#"
                     title={translateMethod('Reject')}
                     onClick={() => props.reject()}
                   >
+                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <i className="fas fa-times" />
                   </a>
                 </div>
               );
             default:
               return (
+                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 <div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                   <a
                     className="btn btn-outline-success btn-sm me-1"
                     href="#"
                     title={translateMethod('Accept')}
                     onClick={() => props.accept()}
                   >
+                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <i className="fas fa-check" />
                   </a>
                   {notificationType === 'AcceptOrReject' && (
+                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                     <a
                       className="btn btn-outline-danger btn-sm"
                       href="#"
                       title={translateMethod('Reject')}
                       onClick={() => props.reject()}
                     >
+                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                       <i className="fas fa-times" />
                     </a>
                   )}
@@ -217,25 +247,31 @@ export function SimpleNotification(props) {
           }
         case 'Accepted':
           return (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <a
               className="btn disabled"
               title={moment(date).format(
                 translateMethod('moment.date.format', 'DD MMM. YYYY à HH:mm z')
               )}
+              // @ts-expect-error TS(2322): Type '{ children: Element; className: string; titl... Remove this comment to see the full error message
               disabled
             >
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <i className="fas fa-check" />
             </a>
           );
         case 'Rejected':
           return (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <a
               className="btn disabled"
               title={moment(date).format(
                 translateMethod('moment.date.format', 'DD MMM. YYYY à HH:mm z')
               )}
+              // @ts-expect-error TS(2322): Type '{ children: Element; className: string; titl... Remove this comment to see the full error message
               disabled
             >
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <i className="fas fa-times" />
             </a>
           );
@@ -243,11 +279,11 @@ export function SimpleNotification(props) {
     }
   };
 
-  const fromFormatter = (action, sender) => {
+  const fromFormatter = (action: any, sender: any) => {
     switch (action.type) {
       case 'ApiAccess':
         return `${sender.name}/${Option(props.getTeam(action.team))
-          .map((team) => team.name)
+          .map((team: any) => team.name)
           .getOrNull()}`;
       case 'TeamAccess':
       case 'NewPostPublished':
@@ -260,7 +296,7 @@ export function SimpleNotification(props) {
         return props.getTeam(action.team).name;
       case 'ApiSubscription':
         return `${sender.name}/${Option(props.getTeam(action.team))
-          .map((team) => team.name)
+          .map((team: any) => team.name)
           .getOrNull()}`;
       case 'OtoroshiSyncSubscriptionError':
         return 'Otoroshi verifier job';
@@ -283,7 +319,7 @@ export function SimpleNotification(props) {
     const api = getApi(notification.action.api);
     const plan = !api
       ? { customName: translateMethod('deleted') }
-      : api.possibleUsagePlans.find((p) => p._id === notification.action.plan);
+      : api.possibleUsagePlans.find((p: any) => p._id === notification.action.plan);
     infos = { api: api || { name: translateMethod('Deleted API') }, plan };
   }
 
@@ -294,172 +330,149 @@ export function SimpleNotification(props) {
 
   moment.locale(language);
 
-  return (
-    <div style={style}>
+  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+  return (<div style={style}>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="alert section" role="alert">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="d-flex flex-column">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="d-flex align-items-center">
             {typeFormatter(notification.action.type)}
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <h5 className="alert-heading mb-0">
-              {notification.action.type === 'ApiAccess' && (
-                <div>
-                  <Translation i18nkey="notif.api.access" replacements={[infos.api.name]}>
-                    Request access to {infos.api.name}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'ApiAccess' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="notif.api.access" replacements={[(infos as any).api.name]}>
+                    Request access to {(infos as any).api.name}
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'TeamAccess' && (
-                <div>
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'TeamAccess' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                   <Translation i18nkey="notif.membership.team">
                     membership request to your team
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'TransferApiOwnership' && (
-                <div>
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'TransferApiOwnership' && (<div>
                   {`request to transfer the ownership of `}
-                  <strong>{infos.api.name}</strong>
-                </div>
-              )}
-              {notification.action.type === 'ApiSubscription' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.api.subscription"
-                    replacements={[
-                      infos.api.name,
-                      Option(infos.plan.customName).getOrElse(
-                        formatPlanType(infos.plan, translateMethod)
-                      ),
-                    ]}
-                  >
-                    Request subscription to {infos.api.name} for plan {infos.plan.type}
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <strong>{(infos as any).api.name}</strong>
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'ApiSubscription' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="notif.api.subscription" replacements={[
+            (infos as any).api.name,
+            Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translateMethod)),
+        ]}>
+                    Request subscription to {(infos as any).api.name} for plan {(infos as any).plan.type}
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'ApiKeyDeletionInformation' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.apikey.deletion"
-                    replacements={[notification.action.clientId, notification.action.api]}
-                  >
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'ApiKeyDeletionInformation' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="notif.apikey.deletion" replacements={[notification.action.clientId, notification.action.api]}>
                     Your apiKey with clientId {notification.action.clientId} for api{' '}
                     {notification.action.api} has been deleted
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'OtoroshiSyncSubscriptionError' && (
-                <div>{notification.action.message}</div>
-              )}
-              {notification.action.type === 'OtoroshiSyncApiError' && (
-                <div>{notification.action.message}</div>
-              )}
-              {notification.action.type === 'ApiKeyRotationInProgress' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.apikey.rotation.inprogress"
-                    replacements={[
-                      notification.action.clientId,
-                      notification.action.api,
-                      notification.action.plan,
-                    ]}
-                  >
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'OtoroshiSyncSubscriptionError' && (<div>{notification.action.message}</div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'OtoroshiSyncApiError' && (<div>{notification.action.message}</div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'ApiKeyRotationInProgress' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="notif.apikey.rotation.inprogress" replacements={[
+            notification.action.clientId,
+            notification.action.api,
+            notification.action.plan,
+        ]}>
                     Your apiKey with clientId {notification.action.clientId} (
                     {notification.action.api}/{notification.action.plan}) has started its rotation.
                     Its clientSecret hab been updated.
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'ApiKeyRotationEnded' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.apikey.rotation.ended"
-                    replacements={[
-                      notification.action.clientId,
-                      notification.action.api,
-                      notification.action.plan,
-                    ]}
-                  >
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'ApiKeyRotationEnded' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="notif.apikey.rotation.ended" replacements={[
+            notification.action.clientId,
+            notification.action.api,
+            notification.action.plan,
+        ]}>
                     Your apiKey with clientId {notification.action.clientId} (
                     {notification.action.api}/{notification.action.plan}) has ended its rotation.
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'ApiKeyRefresh' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.apikey.refresh"
-                    replacements={[
-                      notification.action.subscription,
-                      notification.action.api,
-                      notification.action.plan,
-                    ]}
-                  >
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'ApiKeyRefresh' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="notif.apikey.refresh" replacements={[
+            notification.action.subscription,
+            notification.action.api,
+            notification.action.plan,
+        ]}>
                     Your subscription {notification.action.subscription} ({notification.action.api}/
                     {notification.action.plan}) has been refreshed.
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'TeamInvitation' && (
-                <div>
-                  <Translation
-                    i18nkey="team.invitation"
-                    replacements={[
-                      notification.sender.name,
-                      props.getTeam(notification.action.team).name,
-                    ]}
-                  >
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'TeamInvitation' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="team.invitation" replacements={[
+            notification.sender.name,
+            props.getTeam(notification.action.team).name,
+        ]}>
                     {notification.sender.name}, as admin of{' '}
                     {props.getTeam(notification.action.team).name}, invit you in his team.
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'NewPostPublished' && (
-                <div>
-                  <Translation
-                    i18nkey="team.invitation"
-                    replacements={[
-                      notification.sender.name,
-                      props.getTeam(notification.action.teamId).name,
-                    ]}
-                  >
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'NewPostPublished' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="team.invitation" replacements={[
+            notification.sender.name,
+            props.getTeam(notification.action.teamId).name,
+        ]}>
                     {notification.sender.name}, as admin of{' '}
                     {props.getTeam(notification.action.teamId).name}, has published a new post on{' '}
                     {notification.action.apiName}.
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'NewIssueOpen' && (
-                <div>
-                  <Translation
-                    i18nkey="issues.notification"
-                    replacements={[notification.action.apiName]}
-                  >
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'NewIssueOpen' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="issues.notification" replacements={[notification.action.apiName]}>
                     {notification.sender.name} has published a new issue on{' '}
                     {notification.action.apiName}.
                   </Translation>
-                </div>
-              )}
-              {notification.action.type === 'NewCommentOnIssue' && (
-                <div>
-                  <Translation
-                    i18nkey="issues.comment.notification"
-                    replacements={[notification.action.apiName]}
-                  >
+                </div>)}
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              {notification.action.type === 'NewCommentOnIssue' && (<div>
+                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                  <Translation i18nkey="issues.comment.notification" replacements={[notification.action.apiName]}>
                     {notification.sender.name} has published a new comment on issue of{' '}
                     {notification.action.apiName}.
                   </Translation>
-                </div>
-              )}
+                </div>)}
             </h5>
           </div>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="d-flex mt-1 justify-content-end">{actionFormatter(notification)}</div>
         </div>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <hr />
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="d-flex justify-content-between" style={{ fontSize: 12 }}>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="">{fromFormatter(notification.action, notification.sender)}</div>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="">{moment(notification.date).toNow(true)}</div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
 }

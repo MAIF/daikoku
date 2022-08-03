@@ -1,12 +1,14 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'swag... Remove this comment to see the full error message
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import 'swagger-ui-dist/swagger-ui.css';
 import { LoginOrRegisterModal } from '../..';
 import { I18nContext } from '../../../core';
 
-export function ApiSwagger(props) {
+export function ApiSwagger(props: any) {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   const [state, setState] = useState({
@@ -28,12 +30,8 @@ export function ApiSwagger(props) {
           });
         else drawSwaggerUi();
         setTimeout(() => {
-          [...document.querySelectorAll('.scheme-container')].map(
-            (i) => (i.style.display = 'none')
-          );
-          [...document.querySelectorAll('.information-container')].map(
-            (i) => (i.style.display = 'none')
-          );
+          [...document.querySelectorAll('.scheme-container')].map((i) => ((i as any).style.display = 'none'));
+          [...document.querySelectorAll('.information-container')].map((i) => ((i as any).style.display = 'none'));
           handleAuthorize(false);
         }, 500);
       });
@@ -42,39 +40,40 @@ export function ApiSwagger(props) {
 
   const drawSwaggerUi = () => {
     if (props.api.swagger) {
-      window.ui = SwaggerUIBundle({
-        // TODO: this current team is actually needed by the api
-        url: `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`,
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        docExpansion: 'list',
-        presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
-        plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-        requestInterceptor: (req) => {
-          if (req.loadSpec) return req;
-          const body = JSON.stringify({
+      (window as any).ui = SwaggerUIBundle({
+    // TODO: this current team is actually needed by the api
+    url: `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`,
+    dom_id: '#swagger-ui',
+    deepLinking: true,
+    docExpansion: 'list',
+    presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+    plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+    requestInterceptor: (req: any) => {
+        if (req.loadSpec)
+            return req;
+        const body = JSON.stringify({
             credentials: req.credentials,
             url: req.url,
             method: req.method,
             body: req.body,
             headers: req.headers,
-          });
-          const newReq = {
+        });
+        const newReq = {
             url: `/api/teams/${props.teamId}/testing/${props.api._id}/call`,
             method: 'POST',
             body,
             headers: {
-              accept: 'application/json',
-              'content-type': 'application/json',
+                accept: 'application/json',
+                'content-type': 'application/json',
             },
-          };
-          return newReq;
-        },
-      });
+        };
+        return newReq;
+    },
+});
     }
   };
 
-  const handleAuthorize = (canCreate) => {
+  const handleAuthorize = (canCreate: any) => {
     // TODO: at start, try to see if user has test key for it and use it
     //if (canCreate && props.testing.auth === "ApiKey") {
     //  // TODO: create a key dedicated for tests and use it
@@ -83,18 +82,14 @@ export function ApiSwagger(props) {
     //} else
     if (props.testing.auth === 'ApiKey') {
       // window.ui.preauthorizeApiKey('api_key', 'hello');
-      // console.log('ApiKey', props.testing.name, props.testing.username)
-      // window.ui.preauthorizeApiKey(props.testing.name, props.testing.username);
-      window.ui.preauthorizeApiKey(props.testing.name, 'fake-' + props.api._id);
+// console.log('ApiKey', props.testing.name, props.testing.username)
+// window.ui.preauthorizeApiKey(props.testing.name, props.testing.username);
+(window as any).ui.preauthorizeApiKey(props.testing.name, 'fake-' + props.api._id);
     } else if (props.testing.auth === 'Basic') {
       // window.ui.preauthorizeBasic('api_key', 'user', 'pass');
-      // console.log('Baisc', props.testing.name, props.testing.username, props.testing.password)
-      // window.ui.preauthorizeBasic(props.testing.name, props.testing.username, props.testing.password);
-      window.ui.preauthorizeBasic(
-        props.testing.name,
-        'fake-' + props.api._id,
-        'fake-' + props.api._id
-      );
+// console.log('Baisc', props.testing.name, props.testing.username, props.testing.password)
+// window.ui.preauthorizeBasic(props.testing.name, props.testing.username, props.testing.password);
+(window as any).ui.preauthorizeBasic(props.testing.name, 'fake-' + props.api._id, 'fake-' + props.api._id);
     } else {
       if (canCreate) {
         window.alert('Unknown authentication type');
@@ -108,6 +103,7 @@ export function ApiSwagger(props) {
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
     return (
+      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <LoginOrRegisterModal
         {...props}
         showOnlyMessage={true}
@@ -117,11 +113,14 @@ export function ApiSwagger(props) {
     );
 
   const api = props.api;
+  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
   if (!api) return <div>{translateMethod('api_data.missing', false, undefined, ['Swagger'])}</div>;
 
   if (state.error || state.info)
     return (
+      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <div className="d-flex justify-content-center w-100">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <span className={`alert alert-${state.error ? 'danger' : 'info'} text-center`}>
           {state.error ? state.error : state.info}
         </span>
@@ -129,8 +128,10 @@ export function ApiSwagger(props) {
     );
   else
     return (
+      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <div style={{ width: '100%' }}>
         {/*<button type="button" className="btn btn-success" onClick={e => handleAuthorize(true)}>Use apikey (soon)</button>*/}
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div id="swagger-ui" style={{ width: '100%' }} />
       </div>
     );

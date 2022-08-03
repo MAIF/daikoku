@@ -20,7 +20,7 @@ const initialState = {
   expertMode: false,
 };
 
-export function contextReducer(state = initialState, action) {
+export function contextReducer(state = initialState, action: any) {
   switch (action.type) {
     case LOGIN:
       return {
@@ -32,6 +32,7 @@ export function contextReducer(state = initialState, action) {
       };
 
     case LOGOUT:
+      // @ts-expect-error TS(2783): 'history' is specified more than once, so this usa... Remove this comment to see the full error message
       return { history: state.history, ...initialState };
 
     case IMPERSONATE:
@@ -57,6 +58,7 @@ export function contextReducer(state = initialState, action) {
       };
 
     case TOGGLE_EXPERT_MODE:
+      // @ts-expect-error TS(2345): Argument of type 'boolean' is not assignable to pa... Remove this comment to see the full error message
       localStorage.setItem('expertMode', !state.expertMode);
       return {
         ...state,

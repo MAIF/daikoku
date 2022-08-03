@@ -15,12 +15,14 @@ export const TenantList = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
     getTenants();
   }, []);
 
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  const getTenants = (_) => Services.allTenants().then(setTenants);
+  const getTenants = (_: any) => Services.allTenants().then(setTenants);
 
   const createNewTenant = () => {
     Services.fetchNewTenant().then((newTenant) => {
@@ -32,90 +34,82 @@ export const TenantList = () => {
     });
   };
 
-  const removeTenant = (tenantId) => {
-    window.confirm(translateMethod('delete.tenant.confirm')).then((ok) => {
-      if (ok) {
+  const removeTenant = (tenantId: any) => {
+    (window.confirm(translateMethod('delete.tenant.confirm')) as any).then((ok: any) => {
+    if (ok) {
+        // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
         Services.deleteTenant(tenantId).then(() => getTenants());
-      }
-    });
+    }
+});
   };
 
   const filteredTenants = search
-    ? tenants.filter(({ name }) => name.toLowerCase().includes(search))
+    ? tenants.filter(({ name }) => (name as any).toLowerCase().includes(search))
     : tenants;
-  return (
-    <Can I={manage} a={daikoku} dispatchError>
+  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+  return (<Can I={manage} a={daikoku} dispatchError>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="row">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="col">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="d-flex justify-content-between align-items-center">
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <h1>
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <Translation i18nkey="Tenant" isPlural>
                 Tenants
               </Translation>
-              <a
-                className="btn btn-sm btn-access-negative mb-1 ms-1"
-                title={translateMethod('Create a new tenant')}
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  createNewTenant();
-                }}
-              >
-                <i className="fas fa-plus-circle" />
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translateMethod('Create a new tenant')} href="#" onClick={(e) => {
+        e.preventDefault();
+        createNewTenant();
+    }}>
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                <i className="fas fa-plus-circle"/>
               </a>
             </h1>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <div className="col-5">
-              <input
-                placeholder={translateMethod('Find a tenant')}
-                className="form-control"
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                }}
-              />
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              <input placeholder={translateMethod('Find a tenant')} className="form-control" onChange={(e) => {
+        // @ts-expect-error TS(2345): Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
+        setSearch(e.target.value);
+    }}/>
             </div>
           </div>
-          <PaginatedComponent
-            items={sortBy(filteredTenants, [(tenant) => tenant.name.toLowerCase()])}
-            count={15}
-            formatter={(tenant) => {
-              return (
-                <AvatarWithAction
-                  key={tenant._id}
-                  avatar={tenant.style.logo}
-                  infos={
-                    <>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+          <PaginatedComponent items={sortBy(filteredTenants, [(tenant) => (tenant as any).name.toLowerCase()])} count={15} formatter={(tenant) => {
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+        return (<AvatarWithAction key={tenant._id} avatar={tenant.style.logo} infos={<>
+                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                       <span className="text-truncate">{tenant.name}</span>
-                    </>
-                  }
-                  actions={[
-                    {
-                      action: () => removeTenant(tenant._id),
-                      iconClass: 'fas fa-trash delete-icon',
-                      tooltip: translateMethod('Remove tenant'),
-                    },
-                    {
-                      redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}`),
-                      iconClass: 'fas fa-pen',
-                      tooltip: translateMethod('Edit tenant'),
-                    },
-                    {
-                      link: `/api/tenants/${tenant._id}/_redirect`,
-                      iconClass: 'fas fa-link',
-                      tooltip: translateMethod('Go to tenant'),
-                    },
-                    {
-                      redirect: () =>
-                        navigate(`/settings/tenants/${tenant._humanReadableId}/admins`),
-                      iconClass: 'fas fa-user-shield',
-                      tooltip: translateMethod('Admins'),
-                    },
-                  ]}
-                />
-              );
-            }}
-          />
+                    </>} actions={[
+                {
+                    action: () => removeTenant(tenant._id),
+                    iconClass: 'fas fa-trash delete-icon',
+                    tooltip: translateMethod('Remove tenant'),
+                },
+                {
+                    // @ts-expect-error TS(2322): Type '{ redirect: () => void; iconClass: string; t... Remove this comment to see the full error message
+                    redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}`),
+                    iconClass: 'fas fa-pen',
+                    tooltip: translateMethod('Edit tenant'),
+                },
+                {
+                    link: `/api/tenants/${tenant._id}/_redirect`,
+                    iconClass: 'fas fa-link',
+                    tooltip: translateMethod('Go to tenant'),
+                },
+                {
+                    // @ts-expect-error TS(2322): Type '{ redirect: () => void; iconClass: string; t... Remove this comment to see the full error message
+                    redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}/admins`),
+                    iconClass: 'fas fa-user-shield',
+                    tooltip: translateMethod('Admins'),
+                },
+            ]}/>);
+    }}/>
         </div>
       </div>
-    </Can>
-  );
+    </Can>);
 };

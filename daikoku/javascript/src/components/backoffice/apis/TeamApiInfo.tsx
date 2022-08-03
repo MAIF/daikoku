@@ -4,29 +4,44 @@ import * as Services from '../../../services';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { I18nContext } from '../../../core';
 
-const Image = ({ setValue, rawValues, value, error, onChange, tenant, team }) => {
+const Image = ({
+  setValue,
+  rawValues,
+  value,
+  error,
+  onChange,
+  tenant,
+  team
+}: any) => {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
   const domain = tenant?.domain || window.location.origin;
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className="d-flex flex-row align-items-center">
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="d-flex flex-column flex-grow-1">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <input
           type="text"
           className="form-control"
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
         />
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="d-flex mt-1 justify-content-end">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <AssetChooserByModal
+            // @ts-expect-error TS(2322): Type '{ typeFilter: (value: any) => any; onlyPrevi... Remove this comment to see the full error message
             typeFilter={MimeTypeFilter.image}
             onlyPreview
             team={team}
             teamId={team._id}
             label={translateMethod('Set image from asset')}
-            onSelect={(asset) => onChange(origin + asset.link)}
+            onSelect={(asset: any) => onChange(origin + asset.link)}
           />
         </div>
       </div>
@@ -35,7 +50,7 @@ const Image = ({ setValue, rawValues, value, error, onChange, tenant, team }) =>
 };
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-export const teamApiInfoForm = (translateMethod, team, tenant) => {
+export const teamApiInfoForm = (translateMethod: any, team: any, tenant: any) => {
   const schema = {
     isDefault: {
       type: type.bool,
@@ -80,7 +95,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       type: type.string,
       label: translateMethod('Image'),
       //todo: render custom for image from asset
-      render: (v) => Image({ ...v, team, tenant }),
+      render: (v: any) => Image({ ...v, team, tenant }),
       constraints: [
         // constraints.matches(
         //   /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
@@ -101,7 +116,7 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
             '',
             reservedVersionCharacters.join(' ')
           ),
-          (name) => (name || '').split('').every((c) => !reservedVersionCharacters.includes(c))
+          (name) => (name || '').split('').every((c: any) => !reservedVersionCharacters.includes(c))
         ),
       ],
     },
@@ -133,7 +148,10 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       createOption: true,
       label: translateMethod('Categories'),
       optionsFrom: '/api/categories',
-      transformer: (t) => ({ label: t, value: t }),
+      transformer: (t: any) => ({
+        label: t,
+        value: t
+      }),
       expert: true,
     },
     visibility: {
@@ -156,19 +174,23 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
       defaultValue: [],
       visible: {
         ref: 'visibility',
-        test: (v) => v !== 'Public',
+        test: (v: any) => v !== 'Public',
       },
       label: translateMethod('Authorized teams'),
       optionsFrom: '/api/teams',
-      transformer: (t) => ({ label: t.name, value: t._id }),
+      transformer: (t: any) => ({
+        label: t.name,
+        value: t._id
+      }),
     },
   };
 
-  const simpleOrExpertMode = (entry, expert) => {
+  const simpleOrExpertMode = (entry: any, expert: any) => {
+    // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     return !!expert || !schema[entry]?.expert;
   };
 
-  const flow = (expert) => [
+  const flow = (expert: any) => [
     {
       label: translateMethod('Basic.informations'),
       flow: ['published', 'name', 'smallDescription', 'image', 'header'].filter((entry) =>
@@ -206,5 +228,5 @@ export const teamApiInfoForm = (translateMethod, team, tenant) => {
     },
   };
 
-  return { schema, flow: (expert) => flow(expert), adminFlow, adminSchema };
+  return { schema, flow: (expert: any) => flow(expert), adminFlow, adminSchema };
 };

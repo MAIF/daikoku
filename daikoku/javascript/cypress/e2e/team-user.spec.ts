@@ -75,20 +75,19 @@ describe('Team back-office', { scrollBehavior: false }, () => {
   });
 
   it('Team income works', () => {
-    cy
-      .get('.block__entry__link').contains('Billing').click()
-      .url().should('include', '/testers/settings/billing')
-      .get('.submenu__entry__link').contains('Income').click()
-      .url().should('include', '/testers/settings/income')
-      .get('.month__and__total button.btn-access-negative').click()
-      .waitFor('.col.apis', {
-        timeout: 200, // The time in ms to poll for changes
-        tries: 300,   // How many times to try before failing
-        // 300 tries at 200ms timeout = 1min
-      })
-      .get('.col.apis').should('be.visible')
-      .get('.api__billing__card').click()
-      .get('.col.apikeys h3').should('have.text', 'test API');
+    (cy
+    .get('.block__entry__link').contains('Billing').click()
+    .url().should('include', '/testers/settings/billing')
+    .get('.submenu__entry__link').contains('Income').click()
+    .url().should('include', '/testers/settings/income')
+    .get('.month__and__total button.btn-access-negative').click() as any).waitFor('.col.apis', {
+    timeout: 200,
+    tries: 300, // How many times to try before failing
+    // 300 tries at 200ms timeout = 1min
+})
+    .get('.col.apis').should('be.visible')
+    .get('.api__billing__card').click()
+    .get('.col.apikeys h3').should('have.text', 'test API');
   });
 
   // it('Team billing works', () => {

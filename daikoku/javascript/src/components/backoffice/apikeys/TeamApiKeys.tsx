@@ -9,12 +9,13 @@ import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamApiKeys = () => {
-  const { currentTeam, connectedUser } = useSelector((state) => state.context);
+  const { currentTeam, connectedUser } = useSelector((state) => (state as any).context);
   useTeamBackOffice(currentTeam);
 
   const tableRef = useRef();
   const [showApiKey, setShowApiKey] = useState(false);
 
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
@@ -33,33 +34,37 @@ export const TeamApiKeys = () => {
     {
       Header: translateMethod('Api Name'),
       style: { textAlign: 'left' },
-      accessor: (api) => api.name,
+      accessor: (api: any) => api.name,
     },
     {
       Header: translateMethod('Version'),
       style: { textAlign: 'left' },
-      accessor: (api) => api.currentVersion,
+      accessor: (api: any) => api.currentVersion,
     },
     {
       Header: translateMethod('Actions'),
       style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
-      accessor: (item) => item._id,
+      accessor: (item: any) => item._id,
       Cell: ({
         cell: {
           row: { original },
-        },
-      }) => {
+        }
+      }: any) => {
         const api = original;
         return (
           showApiKey && (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <div style={{ minWidth: 100 }}>
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <Link
                 to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                 className="btn btn-sm btn-access-negative"
               >
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <i className="fas fa-eye me-1" />
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Translation i18nkey="Api keys">Api keys</Translation>
               </Link>
             </div>
@@ -70,19 +75,14 @@ export const TeamApiKeys = () => {
   ];
 
   const cleanSubs = () => {
-    window
-      .confirm(
-        translateMethod(
-          'clean.archived.sub.confirm',
-          false,
-          'Are you sure you want to clean archived subscriptions ?'
-        )
-      )
-      .then((ok) => {
-        if (ok) {
-          Services.cleanArchivedSubscriptions(currentTeam._id).then(() =>
-            tableRef?.current?.update()
-          );
+    (window
+    .confirm(translateMethod('clean.archived.sub.confirm', false, 'Are you sure you want to clean archived subscriptions ?')) as any).then((ok: any) => {
+    if (ok) {
+        // @ts-expect-error TS(2339): Property 'update' does not exist on type 'never'.
+        Services.cleanArchivedSubscriptions(currentTeam._id).then(() => tableRef?.current?.update());
+    }
+});
+          Services.cleanArchivedSubscriptions(currentTeam._id).then(() => (tableRef?.current as any)?.update());
         }
       });
   };
@@ -112,7 +112,7 @@ export const TeamApiKeys = () => {
               fetchItems={() => Services.subscribedApis(currentTeam._id)}
               showActions={false}
               showLink={false}
-              extractKey={(item) => item._id}
+              extractKey={(item: any) => item._id}
               ref={tableRef}
             />
             <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>

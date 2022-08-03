@@ -10,8 +10,13 @@ import {
 } from './';
 
 export const login =
-  ({ user, team, tenant, language }) =>
-  (dispatch) => {
+  ({
+    user,
+    team,
+    tenant,
+    language
+  }: any) =>
+  (dispatch: any) => {
     return dispatch({
       type: LOGIN,
       user,
@@ -21,29 +26,31 @@ export const login =
     });
   };
 
-export const logout = () => (dispatch) => {
+export const logout = () => (dispatch: any) => {
   return dispatch({
     type: LOGOUT,
   });
 };
 
 export const impersonate =
-  ({ impersonator }) =>
-  (dispatch) => {
+  ({
+    impersonator
+  }: any) =>
+  (dispatch: any) => {
     return dispatch({
       type: IMPERSONATE,
       impersonator,
     });
   };
 
-export const updateTeam = (team) => (dispatch) => {
+export const updateTeam = (team: any) => (dispatch: any) => {
   return dispatch({
     type: UPDATE_TEAM,
     team,
   });
 };
 
-export const updateTeamPromise = (team) => (dispatch) => {
+export const updateTeamPromise = (team: any) => (dispatch: any) => {
   return Promise.resolve(
     dispatch({
       type: UPDATE_TEAM,
@@ -52,28 +59,28 @@ export const updateTeamPromise = (team) => (dispatch) => {
   );
 };
 
-export const updateNotifications = (unreadNotificationsCount) => (dispatch) => {
+export const updateNotifications = (unreadNotificationsCount: any) => (dispatch: any) => {
   return dispatch({
     type: UPDATE_NOTIFS,
     unreadNotificationsCount,
   });
 };
 
-export const updateTenant = (tenant) => (dispatch) => {
+export const updateTenant = (tenant: any) => (dispatch: any) => {
   return dispatch({
     type: UPDATE_TENANT,
     tenant,
   });
 };
 
-export const updateUser = (user) => (dispatch) => {
+export const updateUser = (user: any) => (dispatch: any) => {
   return dispatch({
     type: UPDATE_USER,
     user,
   });
 };
 
-export const toggleExpertMode = () => (dispatch) => {
+export const toggleExpertMode = () => (dispatch: any) => {
   return dispatch({
     type: TOGGLE_EXPERT_MODE,
   });

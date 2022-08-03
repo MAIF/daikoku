@@ -8,14 +8,14 @@ import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './s
 import { permissions } from './permissions';
 
 export const CanIDoAction = (
-  user,
-  action,
-  what,
-  team,
-  apiCreationPermitted,
-  isTenantAdmin,
-  whichOne,
-  currentTenant
+  user: any,
+  action: any,
+  what: any,
+  team: any,
+  apiCreationPermitted: any,
+  isTenantAdmin: any,
+  whichOne: any,
+  currentTenant: any
 ) => {
   if (what === tenant) {
     return (isTenantAdmin && whichOne._id === currentTenant._id) || user.isDaikokuAdmin;
@@ -24,28 +24,29 @@ export const CanIDoAction = (
   //   return false
   else {
     const realPerm = Option(team)
-      .map((t) => t.users)
-      .flatMap((users) => Option(users.find((u) => u.userId === user._id)))
-      .map((userWithPermission) => userWithPermission.teamPermission)
-      .map((ability) => permissions[ability])
-      .flatMap((perms) => Option(perms.find((p) => p.what === what)))
-      .map((perm) =>
-        Option(perm.condition).fold(
-          () => perm.action,
-          (condition) => (condition(team) ? perm.action : doNothing)
-        )
+      .map((t: any) => t.users)
+      .flatMap((users: any) => Option(users.find((u: any) => u.userId === user._id)))
+      .map((userWithPermission: any) => userWithPermission.teamPermission)
+      // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
+      .map((ability: any) => permissions[ability])
+      .flatMap((perms: any) => Option(perms.find((p: any) => p.what === what)))
+      .map((perm: any) => Option(perm.condition).fold(
+      () => perm.action,
+      (condition: any) => condition(team) ? perm.action : doNothing
+    )
       )
       .fold(
         () => doNothing,
-        (perm) => perm
+        (perm: any) => perm
       );
 
     return action <= realPerm || user.isDaikokuAdmin;
   }
 };
 
-export const CanIDoActionForOneOfTeams = (user, action, what, teams, apiCreationPermitted) => {
-  return teams.some((team) => CanIDoAction(user, action, what, team, apiCreationPermitted, false));
+export const CanIDoActionForOneOfTeams = (user: any, action: any, what: any, teams: any, apiCreationPermitted: any) => {
+  // @ts-expect-error TS(2554): Expected 8 arguments, but got 6.
+  return teams.some((team: any) => CanIDoAction(user, action, what, team, apiCreationPermitted, false));
 };
 
 const CanComponent = ({
@@ -61,8 +62,8 @@ const CanComponent = ({
   isTenantAdmin,
   tenant,
   whichOne = tenant,
-  apiCreationPermitted,
-}) => {
+  apiCreationPermitted
+}: any) => {
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams, apiCreationPermitted)
     : CanIDoAction(
@@ -85,11 +86,11 @@ const CanComponent = ({
   return children;
 };
 
-const mapStateToProps = (state) => ({
-  ...state.context,
+const mapStateToProps = (state: any) => ({
+  ...state.context
 });
 const mapDispatchToProps = {
-  setError: (error) => setError(error),
+  setError: (error: any) => setError(error),
 };
 
 export const Can = connect(mapStateToProps, mapDispatchToProps)(CanComponent);

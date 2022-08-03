@@ -2,8 +2,10 @@ import React, { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-export const MaybeHomePage = ({ tenant }) => {
-  const connectedUser = useSelector((state) => state.connectedUser);
+export const MaybeHomePage = ({
+  tenant
+}: any) => {
+  const connectedUser = useSelector((state) => (state as any).connectedUser);
 
   const navigate = useNavigate();
 

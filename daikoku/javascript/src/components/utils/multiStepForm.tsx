@@ -9,9 +9,14 @@ const { Step } = Steps;
 
 import { Spinner, Option } from '../utils';
 
-const customDot = (dot, { status, index }) => (
+const customDot = (dot: any, {
+  status,
+  index
+}: any) => (
+  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
   <Popover
     content={
+      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <span>
         step {index} status: {status}
       </span>
@@ -29,15 +34,15 @@ export const MultiStepForm = ({
   report,
   getBreadcrumb,
   save,
-  labels,
-}) => {
+  labels
+}: any) => {
   const ref = useRef();
 
   useEffect(() => {
     send('RESET', { value });
   }, [value]);
 
-  const tos = steps.reduce((acc, step) => {
+  const tos = steps.reduce((acc: any, step: any) => {
     return {
       ...acc,
       [`TO_${step.id.toUpperCase()}`]: {
@@ -48,7 +53,7 @@ export const MultiStepForm = ({
   }, {});
 
   const states = steps.reduce(
-    (acc, step, i) => {
+    (acc: any, step: any, i: any) => {
       const nextStep = steps[i + 1];
       const previousStep = steps[i - 1];
       const skipStep =
@@ -95,15 +100,15 @@ export const MultiStepForm = ({
       save: {
         invoke: {
           id: 'save_step',
-          src: (context) => {
-            return (callBack, _onEvent) => {
+          src: (context: any) => {
+            return (callBack: any, _onEvent: any) => {
               return save(context)
-                .then((response) => {
+                .then((response: any) => {
                   if (response?.error) {
                     return callBack({ type: 'FAILURE', error: response.error });
                   }
                 })
-                .catch((error) => {
+                .catch((error: any) => {
                   return callBack({ type: 'FAILURE', error });
                 });
             };
@@ -113,6 +118,7 @@ export const MultiStepForm = ({
           FAILURE: {
             target: 'failure',
             actions: assign({
+              // @ts-expect-error TS(2339): Property 'error' does not exist on type 'EventObje... Remove this comment to see the full error message
               error: (_context, { error }) => error,
             }),
           },
@@ -127,11 +133,11 @@ export const MultiStepForm = ({
   );
 
   const guards = steps
-    .filter((s) => !!s.disabled)
-    .reduce((acc, step) => {
+    .filter((s: any) => !!s.disabled)
+    .reduce((acc: any, step: any) => {
       return {
         ...acc,
-        [`guard_${step.id}`]: (context, event) => {
+        [`guard_${step.id}`]: (context: any, event: any) => {
           if (typeof step.disabled === 'function') {
             return step.disabled(context);
           } else {
@@ -153,10 +159,10 @@ export const MultiStepForm = ({
           guards,
           actions: {
             setValue: assign((context, response) => {
-              return { ...context, ...response.value };
+              return { ...context, ...(response as any).value };
             }),
             reset: assign((_, response) => {
-              return { ...response.value };
+              return { ...(response as any).value };
             }),
           },
         }
@@ -170,11 +176,12 @@ export const MultiStepForm = ({
     if (!!getBreadcrumb) {
       getBreadcrumb(
         current.value,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <Breadcrumb
           context={current.context}
           steps={steps}
           currentStep={current.value}
-          chooseStep={(s) => send(`TO_${s}`, { value: current.context.value })}
+          chooseStep={(s: any) => send(`TO_${s}`, { value: current.context.value })}
           creation={creation}
           direction="vertical"
         />
@@ -189,32 +196,39 @@ export const MultiStepForm = ({
   }, [current.value]);
 
   if (current.matches('save')) {
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     return <Spinner />;
   }
   if (current.matches('failure')) {
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     return <div>{current.context.error}</div>;
   }
-  const step = steps.find((s) => s.id === current.value);
+  const step = steps.find((s: any) => s.id === current.value);
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className="d-flex flex-column">
       {!getBreadcrumb && (
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <div className="my-3">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Breadcrumb
             context={current.context}
             steps={steps}
             currentStep={current.value}
-            chooseStep={(s) => send(`TO_${s}`, { value: current.context.value })}
+            chooseStep={(s: any) => send(`TO_${s}`, { value: current.context.value })}
             creation={creation}
             direction="horizontal"
           />
         </div>
       )}
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="d-flex flex-row flex-grow-1 col-12">
         {step.component && (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <ComponentedForm
             reference={ref}
             value={current.context}
-            valid={(response) => send('NEXT', { value: response })}
+            valid={(response: any) => send('NEXT', { value: response })}
             component={step.component}
             steps={steps}
             step={step}
@@ -224,23 +238,28 @@ export const MultiStepForm = ({
           />
         )}
         {step.schema && (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <Form
             key={step.id}
             onSubmit={(response) => {
               send('NEXT', { value: response });
             }}
-            onError={(errors, e) => console.error(errors, e)}
+            // @ts-expect-error TS(2322): Type '(errors: any, e: any) => void' is not assign... Remove this comment to see the full error message
+            onError={(errors: any, e: any) => console.error(errors, e)}
             schema={step.schema}
             flow={typeof step.flow === 'function' ? step.flow(current.context) : step.flow}
             ref={ref}
             value={current.context}
+            // @ts-expect-error TS(2322): Type '() => null' is not assignable to type '(prop... Remove this comment to see the full error message
             footer={() => null}
           />
         )}
         {!!report && report(current.context.value, current.value)}
       </div>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="d-flex justify-content-between">
-        {steps.findIndex((s) => s.id === step.id) !== 0 && (
+        {steps.findIndex((s: any) => s.id === step.id) !== 0 && (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <button
             className="btn btn-outline-danger me-1 my-3"
             disabled={step.id === initial}
@@ -249,8 +268,10 @@ export const MultiStepForm = ({
             {labels?.previous || 'Previous'}
           </button>
         )}
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="flex-grow-1 d-flex justify-content-end my-3">
-          {steps.findIndex((s) => s.id === step.id) !== steps.length - 1 && (
+          {steps.findIndex((s: any) => s.id === step.id) !== steps.length - 1 && (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <button
               className="btn btn-outline-primary me-1"
               disabled={!!creation && !step.skipTo}
@@ -259,15 +280,18 @@ export const MultiStepForm = ({
               {labels?.skip || 'Skip'}
             </button>
           )}
-          {steps.findIndex((s) => s.id === step.id) !== steps.length - 1 && (
+          {steps.findIndex((s: any) => s.id === step.id) !== steps.length - 1 && (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <button
               className="btn btn-outline-success me-1"
+              // @ts-expect-error TS(2532): Object is possibly 'undefined'.
               onClick={() => ref.current.handleSubmit()}
             >
               {labels?.next || 'Next'}
             </button>
           )}
-          {steps.findIndex((s) => s.id === step.id) === steps.length - 1 && (
+          {steps.findIndex((s: any) => s.id === step.id) === steps.length - 1 && (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <button className="btn btn-outline-success" onClick={() => ref.current.handleSubmit()}>
               {labels?.save || 'Save'}
             </button>
@@ -278,25 +302,38 @@ export const MultiStepForm = ({
   );
 };
 
-const ComponentedForm = ({ value, valid, component, reference }) => {
+const ComponentedForm = ({
+  value,
+  valid,
+  component,
+  reference
+}: any) => {
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className="d-flex flex-column flex-grow-1">
       {React.createElement(component, {
         value,
-        onChange: (x) => valid(x),
+        onChange: (x: any) => valid(x),
         reference,
       })}
     </div>
   );
 };
 
-const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction, context }) => {
-  const currentIdx = steps.findIndex((s) => s.id === currentStep);
+const Breadcrumb = ({
+  steps,
+  currentStep,
+  chooseStep,
+  creation,
+  direction,
+  context
+}: any) => {
+  const currentIdx = steps.findIndex((s: any) => s.id === currentStep);
 
-  const handleChooseStep = (idx) => {
+  const handleChooseStep = (idx: any) => {
     const disabled = Option(steps[idx])
-      .map((step) => step.disabled)
-      .map((d) => (typeof d === 'function' ? d(context) : d))
+      .map((step: any) => step.disabled)
+      .map((d: any) => typeof d === 'function' ? d(context) : d)
       .getOrElse(false);
     if (!disabled && (!creation || idx < currentIdx)) {
       chooseStep(steps[idx].id.toUpperCase());
@@ -304,16 +341,18 @@ const Breadcrumb = ({ steps, currentStep, chooseStep, creation, direction, conte
   };
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <Steps
       direction={direction}
       current={currentIdx}
       progressDot={customDot}
       onChange={(idx) => handleChooseStep(idx)}
     >
-      {steps.map((step, idx) => {
+      {steps.map((step: any, idx: any) => {
         const disabled = Option(step.disabled)
-          .map((d) => (typeof d === 'function' ? d(context) : d))
+          .map((d: any) => typeof d === 'function' ? d(context) : d)
           .getOrElse(false);
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         return <Step title={step.label} disabled={disabled || (creation && idx > currentIdx)} />;
       })}
     </Steps>

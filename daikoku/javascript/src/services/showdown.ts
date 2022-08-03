@@ -1,4 +1,5 @@
 import take from 'lodash/take';
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'show... Remove this comment to see the full error message
 import showdown from 'showdown';
 
 export function DaikokuExtension() {
@@ -6,7 +7,7 @@ export function DaikokuExtension() {
   const refextension = {
     type: 'lang',
     regex: /@ref:\[(.*)\]\((.*)\)/g,
-    replace: (expression, title, docId) => {
+    replace: (expression: any, title: any, docId: any) => {
       const path = window.location.pathname;
       const rawParts = path.split('/');
       rawParts.shift();
@@ -38,7 +39,7 @@ export function DaikokuExtension() {
   const warningTitleExtension = {
     type: 'lang',
     regex: /@@@ warning \{ title='(.*)' \}/g,
-    replace: (expr, title) => {
+    replace: (expr: any, title: any) => {
       return `<div class="note note-warning"><div class="note-title">${title}</div>`;
     },
   };
@@ -54,7 +55,7 @@ export function DaikokuExtension() {
   const noteTitleExtension = {
     type: 'lang',
     regex: /@@@ note \{ title='(.*)' \}/g,
-    replace: (expr, title) => {
+    replace: (expr: any, title: any) => {
       return `<div class="note"><div class="note-title">${title}</div>`;
     },
   };

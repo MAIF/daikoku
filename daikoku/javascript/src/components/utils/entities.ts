@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 
-export const newPossibleUsagePlan = (customName) => ({
+export const newPossibleUsagePlan = (customName: any) => ({
   _id: nanoid(32),
   type: 'FreeWithQuotas',
   currency: { code: 'EUR' },
@@ -9,14 +9,17 @@ export const newPossibleUsagePlan = (customName) => ({
   maxPerSecond: 10,
   maxPerDay: 1000,
   maxPerMonth: 1000,
+
   billingDuration: {
     value: 1,
     unit: 'month',
   },
+
   visibility: 'Public',
   subscriptionProcess: 'Automatic',
   integrationProcess: 'ApiKey',
   rotation: false,
+
   otoroshiTarget: {
     otoroshiSettings: null,
     authorizedEntities: { groups: [], services: [] },
@@ -34,5 +37,5 @@ export const newPossibleUsagePlan = (customName) => ({
         notFound: [],
       },
     },
-  },
+  }
 });

@@ -1,13 +1,14 @@
 import React from 'react';
 import AceEditor from 'react-ace';
 
-export default function SingleJsonInput(props) {
-  const onChange = (e) => {
+export default function SingleJsonInput(props: any) {
+  const onChange = (e: any) => {
     props.onChange(e);
   };
 
   let code = props.value;
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <AceEditor
       mode="json"
       theme="monokai"

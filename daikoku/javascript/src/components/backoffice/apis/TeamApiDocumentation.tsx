@@ -9,11 +9,12 @@ import * as Services from '../../../services';
 import { Spinner, BeautifulTitle } from '../../utils';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 
-Array.prototype.move = function (from, to) {
-  this.splice(to, 0, this.splice(from, 1)[0]);
-  return this;
+(Array.prototype as any).move = function (from: any, to: any) {
+    this.splice(to, 0, this.splice(from, 1)[0]);
+    return this;
 };
 
 const mimeTypes = [
@@ -59,21 +60,27 @@ Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit 
 
 Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`;
 
-function AssetButton(props) {
+function AssetButton(props: any) {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className="mb-3 row">
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <label className="col-xs-12 col-sm-2 col-form-label" />
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div
         className="col-sm-10"
         style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}
       >
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <AssetChooserByModal
+          // @ts-expect-error TS(2322): Type '{ team: any; teamId: any; label: any; onSele... Remove this comment to see the full error message
           team={props.team}
           teamId={props.team._id}
           label={translateMethod('Set from asset')}
-          onSelect={(asset) => {
+          onSelect={(asset: any) => {
             props.onChange(asset.link);
             props.setValue('contentType', asset.contentType)
           }}
@@ -83,7 +90,9 @@ function AssetButton(props) {
   );
 }
 
+// @ts-expect-error TS(2345): Argument of type '(props: { children?: ReactNode; ... Remove this comment to see the full error message
 const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
+  // @ts-expect-error TS(2339): Property 'team' does not exist on type '{ children... Remove this comment to see the full error message
   const { team, value, versionId, creationInProgress } = props;
   const params = useParams();
 
@@ -92,6 +101,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   const [deletedPage, setDeletedPage] = useState(false);
 
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const flow = [
@@ -123,51 +133,58 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     content: {
       type: type.string,
       format: format.markdown,
-      visible: ({ rawValues }) => !rawValues.remoteContentEnabled,
+      visible: ({
+        rawValues
+      }: any) => !rawValues.remoteContentEnabled,
       label: translateMethod('Page content'),
       props: {
         height: '800px',
         team: team,
-        actions: (insert) => {
-          return (
-            <>
-              <button
-                type="button"
-                className="btn-for-descriptionToolbar"
-                aria-label={translateMethod('Lorem Ipsum')}
-                title={translateMethod('Lorem Ipsum')}
-                onClick={() => insert(loremIpsum)}
-              >
-                <i className={`fas fa-feather-alt`} />
-              </button>
-              <button
-                type="button"
-                className="btn-for-descriptionToolbar"
-                aria-label={translateMethod('Long Lorem Ipsum')}
-                title={translateMethod('Long Lorem Ipsum')}
-                onClick={() => insert(longLoremIpsum)}
-              >
-                <i className={`fas fa-feather`} />
-              </button>
-              <BeautifulTitle
-                placement="bottom"
-                title={translateMethod('image url from asset')}
-              >
-                <AssetChooserByModal
-                  typeFilter={MimeTypeFilter.image}
-                  onlyPreview
-                  tenantMode={false}
-                  team={team}
-                  teamId={team._id}
-                  icon="fas fa-file-image"
-                  classNames="btn-for-descriptionToolbar"
-                  onSelect={(asset) =>
-                    insert(asset.link)
-                  }
-                />
-              </BeautifulTitle>
-            </>
-          )
+        actions: (insert: any) => {
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+          return <>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+            <button
+              type="button"
+              className="btn-for-descriptionToolbar"
+              aria-label={translateMethod('Lorem Ipsum')}
+              title={translateMethod('Lorem Ipsum')}
+              onClick={() => insert(loremIpsum)}
+            >
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              <i className={`fas fa-feather-alt`} />
+            </button>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+            <button
+              type="button"
+              className="btn-for-descriptionToolbar"
+              aria-label={translateMethod('Long Lorem Ipsum')}
+              title={translateMethod('Long Lorem Ipsum')}
+              onClick={() => insert(longLoremIpsum)}
+            >
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              <i className={`fas fa-feather`} />
+            </button>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+            <BeautifulTitle
+              placement="bottom"
+              title={translateMethod('image url from asset')}
+            >
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              <AssetChooserByModal
+                // @ts-expect-error TS(2322): Type '{ typeFilter: (value: any) => any; onlyPrevi... Remove this comment to see the full error message
+                typeFilter={MimeTypeFilter.image}
+                onlyPreview
+                tenantMode={false}
+                team={team}
+                teamId={team._id}
+                icon="fas fa-file-image"
+                classNames="btn-for-descriptionToolbar"
+                onSelect={(asset: any) => insert(asset.link)
+                }
+              />
+            </BeautifulTitle>
+          </>;
         }
       }
     },
@@ -183,13 +200,23 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     },
     remoteContentUrl: {
       type: type.string,
-      visible: ({ rawValues }) => !!rawValues.remoteContentEnabled,
+      visible: ({
+        rawValues
+      }: any) => !!rawValues.remoteContentEnabled,
       label: translateMethod('Content URL'),
-      render: ({onChange, value, setValue}) => {
+      render: ({
+        onChange,
+        value,
+        setValue
+      }: any) => {
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <div className='flex-grow-1 ms-3'>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <input className='mrf-input mb-3' value={value} onChange={onChange} />
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <div className="col-12 d-flex justify-content-end">
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <AssetButton onChange={onChange} team={team} value={value} setValue={setValue} />
             </div>
           </div>
@@ -198,7 +225,9 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     },
     remoteContentHeaders: {
       type: type.object,
-      visible: ({ rawValues }) => !!rawValues.remoteContentEnabled,
+      visible: ({
+        rawValues
+      }: any) => !!rawValues.remoteContentEnabled,
       label: translateMethod('Content headers'),
     },
   };
@@ -209,6 +238,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     saveCurrentPage() {
+      // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
       savePage();
     },
   }));
@@ -223,13 +253,13 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   useEffect(() => {
     if (selected || deletedPage) {
       setDeletedPage(false);
-      props.save(value).then(() => {
-        updateDetails();
-      });
+      (props as any).save(value).then(() => {
+    updateDetails();
+});
     }
   }, [value]);
 
-  function select(selectedPage) {
+  function select(selectedPage: any) {
     if (selected) {
       savePage(selected)
         .then(updateDetails)
@@ -247,7 +277,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     }
   }
 
-  function savePage(page) {
+  function savePage(page: any) {
     return Services.saveDocPage(team._id, value._id, page || selected)
       .then(() => {
         updateDetails();
@@ -255,22 +285,22 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       });
   }
 
-  function isSelected(page) {
-    return selected && page._id === selected._id;
+  function isSelected(page: any) {
+    return selected && page._id === (selected as any)._id;
   }
 
   function onUp() {
     let pages = cloneDeep(value.documentation.pages);
     if (selected) {
-      const oldIndex = pages.indexOf(selected._id);
+      const oldIndex = pages.indexOf((selected as any)._id);
       if (oldIndex >= 0) {
         pages = pages.move(oldIndex, oldIndex - 1);
         const newValue = cloneDeep(value);
         newValue.documentation.pages = pages;
-        props.onChange(newValue);
-        props.save(newValue).then(() => {
-          updateDetails();
-        });
+        (props as any).onChange(newValue);
+        (props as any).save(newValue).then(() => {
+    updateDetails();
+});
       }
     }
   }
@@ -278,15 +308,15 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   function onDown() {
     let pages = cloneDeep(value.documentation.pages);
     if (selected) {
-      const oldIndex = pages.indexOf(selected._id);
+      const oldIndex = pages.indexOf((selected as any)._id);
       if (oldIndex < pages.length) {
         pages = pages.move(oldIndex, oldIndex + 1);
         const newValue = cloneDeep(value);
         newValue.documentation.pages = pages;
-        props.onChange(newValue);
-        props.save(newValue).then(() => {
-          updateDetails();
-        });
+        (props as any).onChange(newValue);
+        (props as any).save(newValue).then(() => {
+    updateDetails();
+});
       }
     }
   }
@@ -294,7 +324,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   function addNewPage() {
     let index = value.documentation.pages.length;
     if (selected) {
-      index = value.documentation.pages.indexOf(selected._id) + 1;
+      index = value.documentation.pages.indexOf((selected as any)._id) + 1;
     }
 
     Services.createDocPage(team._id, value._id, {
@@ -312,48 +342,60 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       const newValue = cloneDeep(value);
       newValue.documentation.pages = pages;
       setSelected(page);
-      props.onChange(newValue);
+      (props as any).onChange(newValue);
     });
   }
 
   function deletePage() {
-    window
-      .confirm(
-        translateMethod(
-          'delete.documentation.page.confirm',
-          false,
-          'Are you sure you want to delete this page ?'
-        )
-      )
-      .then((ok) => {
-        if (ok) {
-          Services.deleteDocPage(team._id, value._id, selected._id).then(() => {
-            let pages = cloneDeep(value.documentation.pages).filter((p) => p !== selected._id);
+    (window
+    .confirm(translateMethod('delete.documentation.page.confirm', false, 'Are you sure you want to delete this page ?')) as any).then((ok: any) => {
+    if (ok) {
+        // @ts-expect-error TS(2531): Object is possibly 'null'.
+        Services.deleteDocPage(team._id, value._id, selected._id).then(() => {
+            // @ts-expect-error TS(2531): Object is possibly 'null'.
+            let pages = cloneDeep(value.documentation.pages).filter((p: any) => p !== selected._id);
             const newValue = cloneDeep(value);
             newValue.documentation.pages = pages;
             setDeletedPage(true);
             setSelected(null);
+            // @ts-expect-error TS(2339): Property 'onChange' does not exist on type '{ chil... Remove this comment to see the full error message
             props.onChange(newValue);
+        });
+    }
+});
+            // @ts-expect-error TS(2304): Cannot find name 'newValue'.
+            (props as any).onChange(newValue);
           });
         }
       });
   }
 
   function importPage() {
-    props.openApiDocumentationSelectModal({
-      api: value,
-      teamId: props.teamId,
-      onClose: () => {
+    // @ts-expect-error TS(2304): Cannot find name 'props'.
+    (props as any).openApiDocumentationSelectModal({
+    // @ts-expect-error TS(2304): Cannot find name 'value'.
+    api: value,
+    // @ts-expect-error TS(2304): Cannot find name 'props'.
+    teamId: (props as any).teamId,
+    onClose: () => {
+        // @ts-expect-error TS(2304): Cannot find name 'props'.
         props.reloadState();
+        // @ts-expect-error TS(2304): Cannot find name 'updateDetails'.
+        updateDetails();
+    },
+});
+        // @ts-expect-error TS(2304): Cannot find name 'props'.
+        (props as any).reloadState();
+        // @ts-expect-error TS(2304): Cannot find name 'updateDetails'.
         updateDetails();
       },
     });
   }
 
+  // @ts-expect-error TS(2304): Cannot find name 'value'.
   if (value === null) return null;
 
-  return (
-    <div className="row">
+  return (<div className="row">
       <div className="col-12 col-sm-6 col-lg-3 p-1">
         <table className="table table-striped table-hover table-sm table-plan-name section">
           <thead className="thead-light">
@@ -362,85 +404,60 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                 Plan title{' '}
                 <div className="btn-group">
                   <button onClick={onUp} type="button" className="btn btn-sm btn-outline-success">
-                    <i className="fas fa-arrow-up" />
+                    <i className="fas fa-arrow-up"/>
                   </button>
                   <button onClick={onDown} type="button" className="btn btn-sm btn-outline-success">
-                    <i className="fas fa-arrow-down" />
+                    <i className="fas fa-arrow-down"/>
                   </button>
-                  <button
-                    onClick={addNewPage}
-                    type="button"
-                    className="btn btn-sm btn-outline-primary"
-                  >
-                    <i className="fas fa-plus" />
+                  <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
+                    <i className="fas fa-plus"/>
                   </button>
-                  <button
-                    onClick={importPage}
-                    type="button"
-                    className="btn btn-sm btn-outline-primary"
-                  >
-                    <i className="fas fa-download" />
+                  <button onClick={importPage} type="button" className="btn btn-sm btn-outline-primary">
+                    <i className="fas fa-download"/>
                   </button>
                 </div>
               </th>
             </tr>
           </thead>
-          {details && (
-            <tbody>
-              {details.titles.map((page, index) => {
-                return (
-                  <tr key={page._id}>
-                    <td
-                      className={isSelected(page) ? 'planSelected' : ''}
-                      onClick={() => select(page)}
-                    >
+          {details && (<tbody>
+              {(details as any).titles.map((page: any, index: any) => {
+            return (<tr key={page._id}>
+                    <td className={isSelected(page) ? 'planSelected' : ''} onClick={() => select(page)}>
                       <div className="d-flex justify-content-between">
                         {index + 1} - {page.title}
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-primary float-right"
-                        >
-                          <i className="fas fa-edit" />
+                        <button type="button" className="btn btn-sm btn-outline-primary float-right">
+                          <i className="fas fa-edit"/>
                         </button>
                       </div>
                     </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          )}
+                  </tr>);
+        })}
+            </tbody>)}
         </table>
       </div>
       <div className="col-12 col-sm-6 col-lg-9">
-        {!!selected && (
-          <div>
+        {!!selected && (<div>
             <div className="d-flex justify-content-end">
-              <button
-                onClick={deletePage}
-                type="button"
-                className="btn btn-sm btn-outline-danger mb-2"
-              >
-                <i className="fas fa-trash me-1" />
+              <button onClick={deletePage} type="button" className="btn btn-sm btn-outline-danger mb-2">
+                <i className="fas fa-trash me-1"/>
                 <Translation i18nkey="Delete page">Delete page</Translation>
               </button>
             </div>
             <React.Suspense fallback={<Spinner />}>
-              <Form flow={flow} schema={schema} value={selected} onSubmit={savePage} />
+              <Form flow={flow} schema={schema} value={selected} onSubmit={savePage}/>
             </React.Suspense>
-          </div>
-        )}
+          </div>)}
       </div>
-    </div>
-  );
+    </div>);
 });
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state: any) => ({
   ...state.context,
-  error: state.error,
+  error: state.error
 });
 
 const mapDispatchToProps = {
-  openApiDocumentationSelectModal: (team) => openApiDocumentationSelectModal(team),
+  openApiDocumentationSelectModal: (team: any) => openApiDocumentationSelectModal(team),
 };
 
 export const TeamApiDocumentation = connect(mapStateToProps, mapDispatchToProps, null, {

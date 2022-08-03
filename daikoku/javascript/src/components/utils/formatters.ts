@@ -2,19 +2,19 @@ import moment from 'moment';
 
 import { currencies } from '../../services/currencies';
 
-export const formatCurrency = (number) => {
+export const formatCurrency = (number: any) => {
   return new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   }).format(number);
 };
 
-export const getCurrencySymbol = (code) => {
+export const getCurrencySymbol = (code: any) => {
   const currency = currencies.find((currency) => currency.code === code);
   return currency ? currency.symbol : undefined;
 };
 
-export const formatPlanType = (plan, translateMethod) => {
+export const formatPlanType = (plan: any, translateMethod: any) => {
   switch (plan.type) {
     case 'FreeWithoutQuotas':
       return translateMethod('FreeWithoutQuotas');
@@ -35,12 +35,12 @@ export const teamPermissions = {
   user: 'User',
 };
 
-export const formatDate = (date, language, format = 'l LT') => {
+export const formatDate = (date: any, language: any, format = 'l LT') => {
   moment.locale(language);
   return moment(date).format(format);
 };
 
-export const formatMessageDate = (date) => {
+export const formatMessageDate = (date: any) => {
   const messageDate = moment.isMoment(date) ? date : moment(date);
   const now = moment();
   const diffToNow = now.diff(messageDate, 'day');

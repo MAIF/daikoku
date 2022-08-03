@@ -1,6 +1,6 @@
 import { CLOSE_MODAL, OPEN_MODAL } from './';
 
-export const openCreationTeamModal = (modalProps) => (dispatch) => {
+export const openCreationTeamModal = (modalProps: any) => (dispatch: any) => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
@@ -8,7 +8,7 @@ export const openCreationTeamModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openTeamSelectorModal = (modalProps) => (dispatch) => {
+export const openTeamSelectorModal = (modalProps: any) => (dispatch: any) => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
@@ -16,7 +16,7 @@ export const openTeamSelectorModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openAssetSelectorModal = (modalProps) => (dispatch) => {
+export const openAssetSelectorModal = (modalProps: any) => (dispatch: any) => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
@@ -24,7 +24,7 @@ export const openAssetSelectorModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openSaveOrCancelModal = (modalProps) => (dispatch) => {
+export const openSaveOrCancelModal = (modalProps: any) => (dispatch: any) => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
@@ -32,7 +32,7 @@ export const openSaveOrCancelModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openLoginOrRegisterModal = (modalProps) => (dispatch) => {
+export const openLoginOrRegisterModal = (modalProps: any) => (dispatch: any) => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
@@ -40,7 +40,7 @@ export const openLoginOrRegisterModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openSubMetadataModal = (modalProps) => (dispatch) => {
+export const openSubMetadataModal = (modalProps: any) => (dispatch: any) => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
@@ -49,8 +49,8 @@ export const openSubMetadataModal = (modalProps) => (dispatch) => {
 };
 
 export const openContactModal =
-  (name = undefined, email = undefined, tenant, team = undefined, api = undefined) =>
-    (dispatch) => {
+  (name = undefined, email = undefined, tenant: any, team = undefined, api = undefined) =>
+    (dispatch: any) => {
       return dispatch({
         type: OPEN_MODAL,
         modalProps: { name, email, tenant, team, api },
@@ -58,7 +58,7 @@ export const openContactModal =
       });
     };
 
-export const openTestingApiKeyModal = (modalProps) => (dispatch) => {
+export const openTestingApiKeyModal = (modalProps: any) => (dispatch: any) => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
@@ -66,49 +66,43 @@ export const openTestingApiKeyModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openInvitationTeamModal = (modalProps) => (dispatch) =>
-  dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'teamInvitation',
-  });
-
-export const openJoinTeamModal = (modalProps) => (dispatch) =>
-  dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'joinTeamInvitation',
-  });
-
-export const openApiKeySelectModal = (modalProps) => (dispatch) =>
-  dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'apiKeySelectModal',
-  });
-
-export const openApiSelectModal = (modalProps) => (dispatch) =>
-  dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'apiSelectModal',
-  });
-
-export const openApiDocumentationSelectModal = (modalProps) => (dispatch) =>
-  dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'apiDocumentationSelectModal',
-  });
-
-export const openFormModal = (modalProps) =>
-({
+export const openInvitationTeamModal = (modalProps: any) => (dispatch: any) => dispatch({
   type: OPEN_MODAL,
   modalProps,
-  modalType: 'formModal',
+  modalType: 'teamInvitation',
 });
 
-export const closeModal = () => (dispatch) => {
+export const openJoinTeamModal = (modalProps: any) => (dispatch: any) => dispatch({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'joinTeamInvitation',
+});
+
+export const openApiKeySelectModal = (modalProps: any) => (dispatch: any) => dispatch({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'apiKeySelectModal',
+});
+
+export const openApiSelectModal = (modalProps: any) => (dispatch: any) => dispatch({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'apiSelectModal',
+});
+
+export const openApiDocumentationSelectModal = (modalProps: any) => (dispatch: any) => dispatch({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'apiDocumentationSelectModal',
+});
+
+export const openFormModal = (modalProps: any) => ({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'formModal'
+});
+
+export const closeModal = () => (dispatch: any) => {
   return dispatch({
     type: CLOSE_MODAL,
   });

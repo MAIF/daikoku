@@ -4,6 +4,7 @@ import Select from 'react-select';
 import { type, constraints, format } from '@maif/react-forms';
 import classNames from 'classnames';
 import { useDispatch, useSelector } from 'react-redux';
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../../services';
@@ -21,11 +22,12 @@ export function ApiFilter({
   refresh,
   ownerTeam,
   basePath
-}) {
+}: any) {
   const [availableApiVersions, setApiVersions] = useState([]);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
   const dispatch = useDispatch();
-  const { currentTeam } = useSelector((state) => state.context);
+  const { currentTeam } = useSelector((state) => (state as any).context);
 
   const schema = {
     title: {
@@ -46,8 +48,12 @@ export function ApiFilter({
       label: translateMethod('issues.tags'),
       format: format.select,
       options: api.issuesTags,
-      transformer: ({ value, name }) => ({ value, label: name }),
+      transformer: ({
+        value,
+        name
+      }: any) => ({ value, label: name }),
       isMulti: true,
+      // @ts-expect-error TS(2554): Expected 8 arguments, but got 4.
       visible: CanIDoAction(connectedUser, manage, API, currentTeam),
     },
     comments: {
@@ -66,7 +72,7 @@ export function ApiFilter({
     },
   };
 
-  const createIssue = (issue) => {
+  const createIssue = (issue: any) => {
     Services.createNewIssue(api._humanReadableId, team, issue)
       .then((res) => {
         if (res.error) {
@@ -85,8 +91,11 @@ export function ApiFilter({
 
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className="d-flex flex-row justify-content-between">
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="d-flex align-items-center">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <button
           className={classNames(`btn btn-outline-primary`, { active: filter === 'all' })}
           style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
@@ -94,6 +103,7 @@ export function ApiFilter({
         >
           {translateMethod('All')}
         </button>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <button
           className={classNames(`btn btn-outline-primary`, { active: filter === 'open' })}
           style={{ borderRadius: 0 }}
@@ -101,6 +111,7 @@ export function ApiFilter({
         >
           {translateMethod('issues.open')}
         </button>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <button
           className={classNames(`btn btn-outline-primary`, { active: filter === 'closed' })}
           style={{ borderLeft: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
@@ -108,6 +119,7 @@ export function ApiFilter({
         >
           {translateMethod('issues.closed')}
         </button>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Select
           id="apiVersion"
           onChange={(apiVersion) => setSelectedVersion(apiVersion)}
@@ -129,13 +141,18 @@ export function ApiFilter({
       </div>
 
       {connectedUser && !connectedUser.isGuest && (
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <div>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Can I={manage} a={API} team={ownerTeam}>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Link to={`${basePath}/labels`} className="btn btn-outline-primary">
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <i className="fa fa-tag me-1" />
               {translateMethod('issues.tags')}
             </Link>
           </Can>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <button
             className="btn btn-outline-success ms-1"
             onClick={() =>

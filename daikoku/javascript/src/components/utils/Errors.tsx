@@ -1,10 +1,11 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+// @ts-expect-error TS(6142): Module '../../locales/i18n-context' was resolved t... Remove this comment to see the full error message
 import { I18nContext } from '../../locales/i18n-context';
 import { setError, unsetError } from '../../core';
 
-const getErrorLabel = (status, error) => {
+const getErrorLabel = (status: any, error: any) => {
   // if (status) console.log(status, error);
   if (status === 400) {
     return 'Bad Request';
@@ -23,11 +24,16 @@ const getErrorLabel = (status, error) => {
   }
 };
 
-const ErrorComponent = ({ error, tenant, unsetError }) => {
+const ErrorComponent = ({
+  error,
+  tenant,
+  unsetError
+}: any) => {
   const navigate = useNavigate();
 
   const [label, setLabel] = useState();
 
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
@@ -42,14 +48,22 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
   }
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className="row">
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="col-12">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="error-page d-flex flex-column">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <h1 data-h1={error.status}>{error.status}</h1>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <p data-p={label}>{label}</p>
           </div>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Link
               className="btn btn-access-negative me-1"
               to="/apis"
@@ -57,8 +71,10 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
                 unsetError();
               }}
             >
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <i className="fas fa-home" /> {translateMethod('Go home')}
             </Link>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <button
               className="btn btn-access-negative"
               onClick={() => {
@@ -66,6 +82,7 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
                 setTimeout(unsetError, 300);
               }}
             >
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <i className="fas fa-angle-double-left" /> {translateMethod('go_back')}
             </button>
           </div>
@@ -75,13 +92,13 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
   );
 };
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state: any) => ({
   tenant: state.context.tenant,
-  error: state.error,
+  error: state.error
 });
 
 const mapDispatchToProps = {
-  setError: (error) => setError(error),
+  setError: (error: any) => setError(error),
   unsetError: () => unsetError(),
 };
 

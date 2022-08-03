@@ -17,23 +17,24 @@ const all = { value: 'All', label: 'All' };
 const GRID = 'GRID';
 const LIST = 'LIST';
 
-const computeTop = (arrayOfArray) => {
+const computeTop = (arrayOfArray: any) => {
   return arrayOfArray
     .flat()
-    .reduce((acc, value) => {
-      const val = acc.find((item) => item.value === value);
+    .reduce((acc: any, value: any) => {
+      const val = acc.find((item: any) => item.value === value);
       let newVal;
       if (val) {
         newVal = { ...val, count: val.count + 1 };
       } else {
         newVal = { value, label: value, count: 1 };
       }
-      return [...acc.filter((item) => item.value !== value), newVal];
+      return [...acc.filter((item: any) => item.value !== value), newVal];
     }, [])
-    .sort((a, b) => b.count - a.count);
+    .sort((a: any, b: any) => b.count - a.count);
 };
 
-const ApiListComponent = (props) => {
+const ApiListComponent = (props: any) => {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
@@ -54,26 +55,26 @@ const ApiListComponent = (props) => {
     computeTops(props.apis);
   }, [props.apis]);
 
-  const redirectToTeam = (team) => {
+  const redirectToTeam = (team: any) => {
     navigate(`/${team._humanReadableId}/settings`);
   };
 
-  const computeTops = (apis) => {
-    const tags = computeTop(apis.map((api) => api.tags));
-    const categories = computeTop(apis.map((api) => api.categories));
+  const computeTops = (apis: any) => {
+    const tags = computeTop(apis.map((api: any) => api.tags));
+    const categories = computeTop(apis.map((api: any) => api.categories));
 
     setTags(tags);
     setCategories(categories);
   };
 
-  const tagMatches = (api, term) => {
+  const tagMatches = (api: any, term: any) => {
     return !!find(api.tags, (tag) => tag.trim().toLowerCase().indexOf(term) > -1);
   };
-  const categoryMatches = (api, term) => {
+  const categoryMatches = (api: any, term: any) => {
     return !!find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
   };
-  const teamMatch = (api, searched) => {
-    const ownerTeam = props.teams.find((t) => t._id === api.team._id);
+  const teamMatch = (api: any, searched: any) => {
+    const ownerTeam = props.teams.find((t: any) => t._id === api.team._id);
     return ownerTeam && ownerTeam.name.trim().toLowerCase().indexOf(searched) > -1;
   };
   const clearFilter = () => {
@@ -82,42 +83,54 @@ const ApiListComponent = (props) => {
     setSearched('');
   };
 
-  const filterPreview = (count) => {
+  const filterPreview = (count: any) => {
     if (selectedCategory.value === all.value && selectedTag.value === all.value && !searched) {
       return null;
     }
 
     return (
+      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <div className="d-flex justify-content-between">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="preview">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <strong>{count}</strong> {`${translateMethod('result')}${count > 1 ? 's' : ''}`}
           &nbsp;
           {!!searched && (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <span>
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               {translateMethod('matching')} <strong>{searched}</strong>&nbsp;
             </span>
           )}
           {selectedCategory.value !== all.value && (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <span>
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               {translateMethod('categorised in')} <strong>{selectedCategory.value}</strong>
               &nbsp;
             </span>
           )}
           {selectedTag.value !== all.value && (
+            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <span>
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               {translateMethod('tagged')} <strong>{selectedTag.value}</strong>
             </span>
           )}
         </div>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="clear cursor-pointer" onClick={clearFilter}>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <i className="far fa-times-circle me-1" />
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Translation i18nkey="clear filter">clear filter</Translation>
         </div>
       </div>
     );
   };
 
-  const handlePageClick = (data) => {
+  const handlePageClick = (data: any) => {
     setOffset(data.selected * pageNumber);
     setSelectedPage(data.selected);
   };
@@ -127,17 +140,17 @@ const ApiListComponent = (props) => {
   const searchedTrim = searched.trim().toLowerCase();
 
   const categorisedApis = apis.filter(
-    (api) => selectedCategory.value === all.value || api.categories.includes(selectedCategory.value)
+    (api: any) => selectedCategory.value === all.value || api.categories.includes(selectedCategory.value)
   );
 
   const taggedApis = categorisedApis.filter(
-    (api) => selectedTag.value === all.value || api.tags.includes(selectedTag.value)
+    (api: any) => selectedTag.value === all.value || api.tags.includes(selectedTag.value)
   );
 
   const filteredApis = Object.values(groupBy((
     searchedTrim === ''
       ? taggedApis
-      : taggedApis.filter((api) => {
+      : taggedApis.filter((api: any) => {
         if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
           return true;
         } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
@@ -157,8 +170,8 @@ const ApiListComponent = (props) => {
     })
 
   const paginateApis = (() => {
-    const starredApis = [],
-      unstarredApis = [];
+    const starredApis: any = [],
+      unstarredApis: any = [];
     filteredApis.forEach((a) => {
       if (props.connectedUser.starredApis.includes(a._id)) starredApis.push(a);
       else unstarredApis.push(a);
@@ -166,18 +179,24 @@ const ApiListComponent = (props) => {
 
     return [
       ...starredApis.sort(
+        // @ts-expect-error TS(7006): Parameter 'a' implicitly has an 'any' type.
         (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
       ),
       ...unstarredApis.sort(
+        // @ts-expect-error TS(7006): Parameter 'a' implicitly has an 'any' type.
         (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
       ),
     ];
   })().slice(offset, offset + pageNumber);
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <section className="container">
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="row mb-2">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="col-12 col-sm mb-2">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <input
             type="text"
             className="form-control"
@@ -191,26 +210,32 @@ const ApiListComponent = (props) => {
             }}
           />
         </div>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Select
           name="tag-selector"
           className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
           value={selectedTag}
+          // @ts-expect-error TS(2322): Type '{ name: string; className: string; value: { ... Remove this comment to see the full error message
           clearable={false}
           options={[allTags(), ...tags]}
           onChange={(e) => {
+            // @ts-expect-error TS(2345): Argument of type 'SingleValue<{ value: string; lab... Remove this comment to see the full error message
             setSelectedTag(e);
             setOffset(0);
             setSelectedPage(0);
           }}
           classNamePrefix="reactSelect"
         />
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Select
           name="category-selector"
           className="category__selector filter__select reactSelect col-6 col-sm mb-2"
           value={selectedCategory}
+          // @ts-expect-error TS(2322): Type '{ name: string; className: string; value: { ... Remove this comment to see the full error message
           clearable={false}
           options={[allCategories(), ...categories]}
           onChange={(e) => {
+            // @ts-expect-error TS(2345): Argument of type 'SingleValue<{ value: string; lab... Remove this comment to see the full error message
             setSelectedCategory(e);
             setOffset(0);
             setSelectedPage(0);
@@ -218,41 +243,55 @@ const ApiListComponent = (props) => {
           classNamePrefix="reactSelect"
         />
         {props.team && (!props.tenant.creationSecurity || props.team.apisCreationPermission) && (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <Can I={manage} a={api} team={props.team}>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <div className="col-12 col-sm-2">
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <button
                 className="btn btn-access-negative mb-2 float-right"
+                // @ts-expect-error TS(2304): Cannot find name 'createNewApi'.
                 onClick={() => createNewApi(props.team._id)}
               >
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <i className="fas fa-plus-square" /> API
               </button>
             </div>
           </Can>
         )}
       </div>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="row mb-2 view-selectors">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="col-12 col-sm-9 d-flex justify-content-end">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <button
             className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
             onClick={() => setView(LIST)}
           >
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <List />
           </button>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <button
             className={classNames('btn btn-sm btn-access-negative', { active: view === GRID })}
             onClick={() => setView(GRID)}
           >
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Grid />
           </button>
         </div>
       </div>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="row">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div
           className={classNames('section d-flex flex-column', {
             'col-12 col-sm-9': !props.groupView,
             'col-12': props.groupView,
           })}
         >
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div
             className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
@@ -262,32 +301,13 @@ const ApiListComponent = (props) => {
           >
             {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => {
-              return (
-                <ApiCard
-                  key={api._id}
-                  user={user}
-                  api={api}
-                  showTeam={props.showTeam}
-                  teamVisible={props.teamVisible}
-                  team={props.teams.find((t) => t._id === api.team._id)}
-                  myTeams={props.myTeams}
-                  askForApiAccess={(teams) => props.askForApiAccess(api, teams)}
-                  redirectToTeamPage={(team) => props.redirectToTeamPage(team)}
-                  redirectToApiPage={() => props.redirectToApiPage(api)}
-                  redirectToEditPage={() => props.redirectToEditPage(api)}
-                  handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
-                  toggleStar={() => props.toggleStar(api)}
-                  handleCategorySelect={(category) =>
-                    setSelectedCategory(categories.find((c) => c.value === category))
-                  }
-                  view={view}
-                  connectedUser={props.connectedUser}
-                  groupView={props.groupView}
-                />
-              );
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+              return (<ApiCard key={api._id} user={user} api={api} showTeam={props.showTeam} teamVisible={props.teamVisible} team={props.teams.find((t: any) => t._id === api.team._id)} myTeams={props.myTeams} askForApiAccess={(teams: any) => props.askForApiAccess(api, teams)} redirectToTeamPage={(team: any) => props.redirectToTeamPage(team)} redirectToApiPage={() => props.redirectToApiPage(api)} redirectToEditPage={() => props.redirectToEditPage(api)} handleTagSelect={(tag: any) => setSelectedTag(tags.find((t) => (t as any).value === tag))} toggleStar={() => props.toggleStar(api)} handleCategorySelect={(category: any) => setSelectedCategory(categories.find((c) => (c as any).value === category))} view={view} connectedUser={props.connectedUser} groupView={props.groupView}/>);
             })}
           </div>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="apis__pagination">
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Pagination
               previousLabel={translateMethod('Previous')}
               nextLabel={translateMethod('Next')}
@@ -305,27 +325,31 @@ const ApiListComponent = (props) => {
           </div>
         </div>
         {!props.groupView && (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
             {!props.team && !props.connectedUser.isGuest && (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <YourTeams teams={props.myTeams} redirectToTeam={redirectToTeam} />
             )}
             {!!tags.length && (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <Top
                 className="p-3 rounded additionalContent mb-2"
                 title="Top tags"
                 icon="fas fa-tag me-2"
                 list={tags}
-                formatter={(tag) => tag.value}
+                formatter={(tag: any) => tag.value}
                 handleClick={setSelectedTag}
               />
             )}
             {!!categories.length && (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <Top
                 className="p-3 rounded additionalContent"
                 title="Top categories"
                 icon="fas fa-folder me-2"
                 list={categories}
-                formatter={(category) => category.value}
+                formatter={(category: any) => category.value}
                 handleClick={setSelectedCategory}
               />
             )}
@@ -336,28 +360,33 @@ const ApiListComponent = (props) => {
   );
 };
 
-const mapStateToProps = (state) => ({
-  ...state.context,
+const mapStateToProps = (state: any) => ({
+  ...state.context
 });
 
 const mapDispatchToProps = {
-  updateTeam: (team) => updateTeamPromise(team),
-  openCreationTeamModal: (modalProps) => openCreationTeamModal(modalProps),
+  updateTeam: (team: any) => updateTeamPromise(team),
+  openCreationTeamModal: (modalProps: any) => openCreationTeamModal(modalProps),
 };
 
 export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
 
-const Top = (props) => {
+const Top = (props: any) => {
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={`top__container ${props.className ? props.className : ''}`}>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <h5>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <i className={props.icon} />
           {props.title}
         </h5>
       </div>
-      {props.list.slice(0, 10).map((item, idx) => {
+      {props.list.slice(0, 10).map((item: any, idx: any) => {
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <span
             className="badge bg-warning me-1 cursor-pointer"
             key={idx}
@@ -371,32 +400,45 @@ const Top = (props) => {
   );
 };
 
-const YourTeams = ({ teams, redirectToTeam, ...props }) => {
+const YourTeams = ({
+  teams,
+  redirectToTeam,
+  ...props
+}: any) => {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   const [searchedTeam, setSearchedTeam] = useState();
   const maybeTeams = searchedTeam
-    ? teams.filter((team) => team.name.toLowerCase().includes(searchedTeam))
+    ? teams.filter((team: any) => team.name.toLowerCase().includes(searchedTeam))
     : teams;
   const language = props.currentlanguage;
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={'top__container p-3 rounded additionalContent mb-2'}>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <h5>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <i className="fas fa-users me-2" />
           {translateMethod('your teams', language)}
         </h5>
       </div>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <input
         placeholder={translateMethod('find team', language)}
         className="form-control"
+        // @ts-expect-error TS(2345): Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
         onChange={(e) => setSearchedTeam(e.target.value)}
       />
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="d-flex flex-column">
         {sortBy(maybeTeams, (team) => team.name.toLowerCase())
           .slice(0, 5)
           .map((team) => {
             return (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <span
                 className="p-1 cursor-pointer underline-on-hover text-break"
                 key={team._id}

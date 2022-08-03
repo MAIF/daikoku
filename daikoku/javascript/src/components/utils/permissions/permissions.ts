@@ -6,12 +6,12 @@ export const administrator = 'Administrator';
 export const user = 'User';
 export const apiEditor = 'ApiEditor';
 
-export const isUserIsTeamAdmin = (user, team) =>
-  Option(team.users.find((u) => u.userId === user._id))
-    .map((user) => user.teamPermission)
+export const isUserIsTeamAdmin = (user: any, team: any) =>
+  Option(team.users.find((u: any) => u.userId === user._id))
+    .map((user: any) => user.teamPermission)
     .fold(
       () => false,
-      (perm) => perm === administrator
+      (perm: any) => perm === administrator
     );
 
 export const permissions = {
@@ -19,7 +19,7 @@ export const permissions = {
     {
       action: manage,
       what: apikey,
-      condition: (team) => !team.apiKeyVisibility || team.apiKeyVisibility === 'User',
+      condition: (team: any) => !team.apiKeyVisibility || team.apiKeyVisibility === 'User',
     },
     { action: read, what: api },
     { action: read, what: asset },
@@ -32,7 +32,7 @@ export const permissions = {
     {
       action: manage,
       what: apikey,
-      condition: (team) => team.apiKeyVisibility !== 'Administrator',
+      condition: (team: any) => team.apiKeyVisibility !== 'Administrator',
     },
     { action: manage, what: asset },
     { action: read, what: team },

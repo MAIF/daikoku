@@ -1,20 +1,37 @@
 import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
+// @ts-expect-error TS(6142): Module './Recharts' was resolved to '/Users/qauber... Remove this comment to see the full error message
 import { Histogram, RoundChart } from './Recharts';
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'byte... Remove this comment to see the full error message
 import { converterBase2 } from 'byte-converter';
 import moment from 'moment';
 import Select from 'react-select';
 import maxBy from 'lodash/maxBy';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+// @ts-expect-error TS(6142): Module './Spinner' was resolved to '/Users/qaubert... Remove this comment to see the full error message
 import { Spinner } from './Spinner';
 import { I18nContext } from '../../core';
 
-Number.prototype.prettify = function () {
-  return toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ');
+(Number.prototype as any).prettify = function () {
+    return toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '
+
+ // @ts-expect-error TS(2554): Expected 2 arguments, but got 3.
+ ');
 };
 
 class Period {
-  constructor({ from, to, unitTime, label, value }) {
+  from: any;
+  label: any;
+  to: any;
+  unitTime: any;
+  value: any;
+  constructor({
+    from,
+    to,
+    unitTime,
+    label,
+    value
+  }: any) {
     this.from = from;
     this.to = to;
     this.unitTime = unitTime;
@@ -22,12 +39,12 @@ class Period {
     this.value = value;
   }
 
-  format = (consumptions) => {
+  format = (consumptions: any) => {
     let time = '';
     if (consumptions && consumptions.length) {
-      const maxDate = maxBy(consumptions, (o) => o.to);
-      if (maxDate && moment(maxDate.to).startOf('day').isSame(moment().startOf('day'))) {
-        time = moment(maxDate.to).format('HH:mm');
+      const maxDate = maxBy(consumptions, (o) => (o as any).to);
+      if (maxDate && moment((maxDate as any).to).startOf('day').isSame(moment().startOf('day'))) {
+        time = moment((maxDate as any).to).format('HH:mm');
       }
     }
 
@@ -41,7 +58,7 @@ class Period {
   };
 }
 
-const periods = (translateMethod) => ({
+const periods = (translateMethod: any) => ({
   today: new Period({
     from: moment().startOf('day'),
     to: () => moment().add(1, 'day').startOf('day'),
@@ -49,6 +66,7 @@ const periods = (translateMethod) => ({
     label: translateMethod('Today'),
     value: 'TODAY',
   }),
+
   yesterday: new Period({
     from: moment().subtract(1, 'day').startOf('day'),
     to: () => moment().startOf('day'),
@@ -56,6 +74,7 @@ const periods = (translateMethod) => ({
     label: translateMethod('Yesterday'),
     value: 'YESTERDAY',
   }),
+
   last7days: new Period({
     from: moment().subtract(7, 'days').startOf('day'),
     to: () => moment(),
@@ -63,6 +82,7 @@ const periods = (translateMethod) => ({
     label: translateMethod('Last 7 days'),
     value: 'LAST7',
   }),
+
   last30days: new Period({
     from: moment().subtract(30, 'days').startOf('day'),
     to: () => moment(),
@@ -70,16 +90,18 @@ const periods = (translateMethod) => ({
     label: translateMethod('Last 30 days'),
     value: 'LAST30',
   }),
+
   billingPeriod: new Period({
     from: moment().startOf('month'),
     to: () => moment().endOf('month'),
     unitTime: 'month',
     label: translateMethod('Billing period'),
     value: 'BILLING',
-  }),
+  })
 });
 
-export function OtoroshiStatsVizualization(props) {
+export function OtoroshiStatsVizualization(props: any) {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
   const [state, setState] = useState({
     tab: 0,
@@ -89,7 +111,7 @@ export function OtoroshiStatsVizualization(props) {
     error: false,
   });
 
-  const getMaxCall = (unitTime, plan) => {
+  const getMaxCall = (unitTime: any, plan: any) => {
     if (!plan) {
       return undefined;
     }
@@ -104,12 +126,14 @@ export function OtoroshiStatsVizualization(props) {
     }
   };
 
-  const tabs = (value, label) => {
+  const tabs = (value: any, label: any) => {
     const realLabel =
       label instanceof Function
-        ? label(state.consumptions, getMaxCall(state.period.unitTime, state.consumptions.plan))
+        ? // @ts-expect-error TS(2531): Object is possibly 'null'.
+          label(state.consumptions, getMaxCall(state.period.unitTime, state.consumptions.plan))
         : label;
     return (
+      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <a
         key={`tab-${value}`}
         className={classNames('data__navbar__tab', {
@@ -130,15 +154,19 @@ export function OtoroshiStatsVizualization(props) {
     xAxis,
     yAxis,
     dataKey,
-    parentKey,
-  }) => {
+    parentKey
+  }: any) => {
     switch (type) {
       case 'Histogram':
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         return <Histogram series={formatter(state.consumptions)} title={title} unit=" bytes" />;
       case 'LineChart':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <div style={{ width: '100%', height: 300 }}>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ResponsiveContainer>
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <LineChart
                 data={formatter(state.consumptions)}
                 margin={{
@@ -148,9 +176,13 @@ export function OtoroshiStatsVizualization(props) {
                   bottom: 5,
                 }}
               >
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <XAxis dataKey={xAxis} />
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <YAxis />
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Tooltip />
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Line type="monotone" dataKey={yAxis} stroke="#8884d8" dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -158,6 +190,7 @@ export function OtoroshiStatsVizualization(props) {
         );
       case 'RoundChart':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <RoundChart
             series={formatter(state.consumptions)}
             title={title}
@@ -168,6 +201,7 @@ export function OtoroshiStatsVizualization(props) {
         );
       case 'DoubleRoundChart':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <RoundChart
             series={formatter(state.consumptions)}
             series2={formatter2(state.consumptions)}
@@ -180,6 +214,7 @@ export function OtoroshiStatsVizualization(props) {
         );
       case 'Global':
         return (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <GlobalDataConsumption
             data={formatter ? formatter(state.consumptions) : state.consumptions}
           />
@@ -193,11 +228,11 @@ export function OtoroshiStatsVizualization(props) {
     updateConsumption(state.period.from, state.period.to());
   }, [state.period]);
 
-  const updateConsumption = (from, to) => {
+  const updateConsumption = (from: any, to: any) => {
     setState({ ...state, loading: true });
     props
       .fetchData(from, to)
-      .then((consumptions) => {
+      .then((consumptions: any) => {
         if (consumptions.error) {
           setState({ ...state, error: true, loading: false });
         } else {
@@ -213,7 +248,7 @@ export function OtoroshiStatsVizualization(props) {
     props
       .sync()
       .then(() => props.fetchData(from, to()))
-      .then((consumptions) => {
+      .then((consumptions: any) => {
         if (consumptions.error) {
           setState({ ...state, error: true, loading: false });
         } else {
@@ -224,35 +259,50 @@ export function OtoroshiStatsVizualization(props) {
   };
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="d-flex justify-content-start align-items-center">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Select
           name="period-select"
           className="col col-sm-3 reactSelect period-select"
           value={{ value: state.period.value, label: state.period.label }}
+          // @ts-expect-error TS(2322): Type '{ name: string; className: string; value: { ... Remove this comment to see the full error message
           clearable={false}
           options={Object.values(periods(translateMethod))}
+          // @ts-expect-error TS(2322): Type 'SingleValue<{ value: any; label: any; }>' is... Remove this comment to see the full error message
           onChange={(period) => setState({ ...state, period })}
           classNamePrefix="reactSelect"
         />
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <span className="col period-display">{state.period.format(state.consumptions)}</span>
         {props.sync && (
+          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <button className="btn btn-access-negative" onClick={sync}>
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <i className="fas fa-sync-alt" />
           </button>
         )}
       </div>
 
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="row mt-4">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="col">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="data-vizualisation">
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             {state.loading && <Spinner />}
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             {state.error && <div>Oops...</div>}
             {!state.loading &&
               !state.error && [
+                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 <div key="navbar" className="data__navbar">
-                  {props.mappers.map((tab, idx) => tabs(idx, tab.label))}
+                  {props.mappers.map((tab: any, idx: any) => tabs(idx, tab.label))}
                 </div>,
+                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 <div key="content" className="data__content">
                   {formatValue(props.mappers[state.tab])}
                 </div>,
@@ -264,10 +314,11 @@ export function OtoroshiStatsVizualization(props) {
   );
 }
 
-export function GlobalDataConsumption(props) {
+export function GlobalDataConsumption(props: any) {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
-  const computeValue = (value) => {
+  const computeValue = (value: any) => {
     let unit = 'Mb';
     let computedValue = parseFloat((converterBase2(value, 'B', 'MB') || 0).toFixed(3));
     if (computedValue > 1024.0) {
@@ -282,13 +333,16 @@ export function GlobalDataConsumption(props) {
       computedValue = parseFloat((converterBase2(value, 'B', 'PB') || 0).toFixed(3));
       unit = 'Pb';
     }
-    return `${computedValue ? computedValue.prettify() : 0} ${unit}`;
+    return `${computedValue ? (computedValue as any).prettify() : 0} ${unit}`;
   };
 
-  const row = (value, label) => {
+  const row = (value: any, label: any) => {
     return (
+      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <div className="global-data__row" key={label}>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <span>{value}</span>
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <span>{label}</span>
       </div>
     );

@@ -10,6 +10,7 @@ import 'brace/theme/monokai';
 import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 
+// @ts-expect-error TS(6142): Module './Help' was resolved to '/Users/qaubert/So... Remove this comment to see the full error message
 import { Help } from './Help';
 import { BeautifulTitle, Option } from '../utils';
 import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
@@ -17,12 +18,13 @@ import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
 import hljs from 'highlight.js';
 import { I18nContext } from '../../core';
 
-window.hljs = window.hljs || hljs;
+(window as any).hljs = (window as any).hljs || hljs;
 
-const SingleMardownInput = (props) => {
+const SingleMardownInput = (props: any) => {
   const [preview, setPreview] = useState(false);
   const [editor, setEditor] = useState(undefined);
 
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ const SingleMardownInput = (props) => {
       name: translateMethod('Add code'),
       icon: 'code',
       inject: (selected = ' ') => '```\n' + selected + '\n```\n',
-      move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
+      move: (pos: any, setPos: any) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
       name: translateMethod('Add quotes'),
@@ -101,25 +103,25 @@ const SingleMardownInput = (props) => {
       name: translateMethod('Warning'),
       icon: 'exclamation-triangle',
       inject: (selected = ' ') => `@@@ warning\n${selected}\n@@@\n`,
-      move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
+      move: (pos: any, setPos: any) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
       name: translateMethod('Warning with title'),
       icon: 'exclamation-circle',
       inject: (selected = ' ') => `@@@ warning { title='A nice title' }\n${selected}\n@@@\n`,
-      move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
+      move: (pos: any, setPos: any) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
       name: translateMethod('Note'),
       icon: 'sticky-note',
       inject: (selected = ' ') => `@@@ note\n${selected}\n@@@\n`,
-      move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
+      move: (pos: any, setPos: any) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
       name: translateMethod('Note with title'),
       icon: 'clipboard',
       inject: (selected = ' ') => `@@@ note { title='A nice title' }\n${selected}\n@@@\n`,
-      move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
+      move: (pos: any, setPos: any) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
       name: translateMethod('Lorem Ipsum'),
@@ -143,43 +145,50 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     },
     {
       name: translateMethod('Test asset'),
-      component: (idx) => (
-        <BeautifulTitle
-          placement="bottom"
-          title={translateMethod('image url from asset')}
-          key={`toolbar-btn-${idx}`}
-        >
-          <AssetChooserByModal
-            typeFilter={MimeTypeFilter.image}
-            onlyPreview
-            tenantMode={!props.team}
-            team={props.team}
-            teamId={Option(props.team)
-              .map((t) => t._id)
-              .getOrNull()}
-            icon="fas fa-file-image"
-            classNames="btn-for-descriptionToolbar"
-            onSelect={(asset) =>
-              editor.session.insert(editor.getCursorPosition(), origin + asset.link)
-            }
-          />
-        </BeautifulTitle>
-      ),
+      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+      component: (idx: any) => <BeautifulTitle
+        placement="bottom"
+        title={translateMethod('image url from asset')}
+        key={`toolbar-btn-${idx}`}
+      >
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+        <AssetChooserByModal
+          // @ts-expect-error TS(2322): Type '{ typeFilter: (value: any) => any; onlyPrevi... Remove this comment to see the full error message
+          typeFilter={MimeTypeFilter.image}
+          onlyPreview
+          tenantMode={!props.team}
+          team={props.team}
+          teamId={Option(props.team)
+            .map((t: any) => t._id)
+            .getOrNull()}
+          icon="fas fa-file-image"
+          classNames="btn-for-descriptionToolbar"
+          // @ts-expect-error TS(2532): Object is possibly 'undefined'.
+          onSelect={(asset: any) => editor.session.insert(editor.getCursorPosition(), origin + asset.link)
+          }
+        />
+      </BeautifulTitle>,
     },
   ];
 
   const showPreview = () => {
-    window.$('pre code').each((i, block) => {
-      window.hljs.highlightElement(block);
+    (window as any).$('pre code').each((i: any, block: any) => {
+    // @ts-expect-error TS(2339): Property 'hljs' does not exist on type 'Window & t... Remove this comment to see the full error message
+    window.hljs.highlightElement(block);
+});
+      // @ts-expect-error TS(2552): Cannot find name 'block'. Did you mean 'Lock'?
+      (window as any).hljs.highlightElement(block);
     });
   };
 
   const injectButtons = () => {
+    // @ts-expect-error TS(2304): Cannot find name 'commands'.
     return commands.map((command, idx) => {
       if (command.component) {
         return command.component(idx);
       }
       return (
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <button
           type="button"
           className="btn-for-descriptionToolbar"
@@ -187,28 +196,37 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
           title={command.name}
           key={`toolbar-btn-${idx}`}
           onClick={() => {
+            // @ts-expect-error TS(2304): Cannot find name 'editor'.
             const selection = editor.getSelection();
             if (selection) {
+              // @ts-expect-error TS(2304): Cannot find name 'editor'.
               editor.session.replace(
                 selection.getRange(),
+                // @ts-expect-error TS(2304): Cannot find name 'editor'.
                 command.inject(editor.getSelectedText())
               );
             } else {
+              // @ts-expect-error TS(2304): Cannot find name 'editor'.
               editor.session.insert(editor.getCursorPosition(), command.inject());
             }
             if (command.move) {
-              command.move(editor.getCursorPosition(), (p) => editor.moveCursorToPosition(p));
+              // @ts-expect-error TS(2304): Cannot find name 'editor'.
+              command.move(editor.getCursorPosition(), (p: any) => editor.moveCursorToPosition(p));
             }
+            // @ts-expect-error TS(2304): Cannot find name 'editor'.
             editor.focus();
           }}
         >
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <i className={`fas fa-${command.icon}`} />
         </button>
       );
     });
   };
 
+  // @ts-expect-error TS(2304): Cannot find name 'props'.
   let code = props.value;
+  // @ts-expect-error TS(2304): Cannot find name 'props'.
   const team = isFunction(props.team) ? props.team() : props.team;
 
   return (
@@ -246,7 +264,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               tenantMode={props.tenantMode}
               team={team}
               label={translateMethod('Set from asset')}
-              onSelect={(asset) => {
+              onSelect={(asset: any) => {
                 editor.session.insert(editor.getCursorPosition(), asset.link);
                 editor.focus();
               }}

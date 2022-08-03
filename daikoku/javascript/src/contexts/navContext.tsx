@@ -21,9 +21,14 @@ export const officeMode = {
   back: 'BACK',
 };
 
+// @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
 export const NavContext = React.createContext();
 
-export const NavProvider = ({ children, loginAction, loginProvider }) => {
+export const NavProvider = ({
+  children,
+  loginAction,
+  loginProvider
+}: any) => {
   const [mode, setMode] = useState(navMode.initial);
   const [office, setOffice] = useState(officeMode.front);
 
@@ -34,11 +39,12 @@ export const NavProvider = ({ children, loginAction, loginProvider }) => {
   const [team, setTeam] = useState();
   const [tenant, setTenant] = useState();
 
-  const addMenu = (value) => {
+  const addMenu = (value: any) => {
     setMenu((menu) => ({ ...merge(menu, value) }));
   };
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <NavContext.Provider
       value={{
         loginAction,
@@ -67,16 +73,19 @@ export const NavProvider = ({ children, loginAction, loginProvider }) => {
   );
 };
 
-export const useApiFrontOffice = (api, team) => {
+export const useApiFrontOffice = (api: any, team: any) => {
+  // @ts-expect-error TS(2339): Property 'setMode' does not exist on type 'unknown... Remove this comment to see the full error message
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
-  const { connectedUser, tenant } = useSelector((state) => state.context);
+  const { connectedUser, tenant } = useSelector((state) => (state as any).context);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const params = useParams();
 
-  const schema = (currentTab) => ({
+  const schema = (currentTab: any) => ({
     title: api?.name,
+
     blocks: {
       links: {
         order: 1,
@@ -140,7 +149,9 @@ export const useApiFrontOffice = (api, team) => {
           edit: {
             label: translateMethod('edit'),
             component: (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <Can I={manage} a={API} team={team}>
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Link
                   to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/${currentTab}`}
                   className="btn btn-sm btn-access-negative mb-2"
@@ -152,6 +163,7 @@ export const useApiFrontOffice = (api, team) => {
           },
           contact: {
             component: (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <button
                 className="btn btn-sm btn-access-negative mb-2"
                 onClick={() =>
@@ -170,10 +182,10 @@ export const useApiFrontOffice = (api, team) => {
           },
         },
       },
-    },
+    }
   });
 
-  const navigateTo = (navTab) => {
+  const navigateTo = (navTab: any) => {
     navigate(`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${navTab}`);
   };
 
@@ -201,16 +213,19 @@ export const useApiFrontOffice = (api, team) => {
 
   return { addMenu };
 };
-export const useApiGroupFrontOffice = (apigroup, team) => {
+export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
+  // @ts-expect-error TS(2339): Property 'setMode' does not exist on type 'unknown... Remove this comment to see the full error message
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
-  const { connectedUser, tenant } = useSelector((state) => state.context);
+  const { connectedUser, tenant } = useSelector((state) => (state as any).context);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const params = useParams();
 
-  const schema = (currentTab) => ({
+  const schema = (currentTab: any) => ({
     title: apigroup?.name,
+
     blocks: {
       links: {
         order: 1,
@@ -262,7 +277,9 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
           edit: {
             label: translateMethod('edit'),
             component: (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <Can I={manage} a={API} team={team}>
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Link
                   to={`/${team?._humanReadableId}/settings/apigroups/${apigroup?._humanReadableId}/infos`}
                   className="btn btn-sm btn-access-negative mb-2"
@@ -275,6 +292,7 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
           contact: {
             label: translateMethod('contact'),
             component: (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <button
                 className="btn btn-sm btn-access-negative mb-2"
                 onClick={() =>
@@ -293,10 +311,10 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
           },
         },
       },
-    },
+    }
   });
 
-  const navigateTo = (navTab) => {
+  const navigateTo = (navTab: any) => {
     navigate(`/${team._humanReadableId}/apigroups/${apigroup._humanReadableId}/${navTab}`);
   };
 
@@ -325,17 +343,20 @@ export const useApiGroupFrontOffice = (apigroup, team) => {
   return { addMenu };
 };
 
-export const useApiBackOffice = (api, creation) => {
+export const useApiBackOffice = (api: any, creation: any) => {
+  // @ts-expect-error TS(2339): Property 'setMode' does not exist on type 'unknown... Remove this comment to see the full error message
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector((state) => state.context);
+  const { currentTeam } = useSelector((state) => (state as any).context);
 
   const navigate = useNavigate();
   const params = useParams();
 
-  const schema = (currentTab) => ({
+  const schema = (currentTab: any) => ({
     title: api?.name,
+
     blocks: {
       links: {
         order: 2,
@@ -390,10 +411,10 @@ export const useApiBackOffice = (api, creation) => {
           },
         },
       },
-    },
+    }
   });
 
-  const navigateTo = (navTab) => {
+  const navigateTo = (navTab: any) => {
     navigate(
       `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`
     );
@@ -420,18 +441,21 @@ export const useApiBackOffice = (api, creation) => {
   return { addMenu, setApi };
 };
 
-export const useApiGroupBackOffice = (apiGroup, creation) => {
+export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
+  // @ts-expect-error TS(2339): Property 'setMode' does not exist on type 'unknown... Remove this comment to see the full error message
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu, setCreation } =
     useContext(NavContext);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector((state) => state.context);
+  const { currentTeam } = useSelector((state) => (state as any).context);
 
   const navigate = useNavigate();
   const params = useParams();
 
-  const schema = (currentTab) => ({
+  const schema = (currentTab: any) => ({
     title: apiGroup?.name,
+
     blocks: {
       links: {
         order: 2,
@@ -476,6 +500,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
         links: {
           view: {
             component: (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <Link
                 to={`/${currentTeam._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
                 className="btn btn-sm btn-access-negative mb-2"
@@ -486,6 +511,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
           },
           back: {
             component: (
+              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <Link
                 className="d-flex justify-content-around mt-3 align-items-center"
                 style={{
@@ -495,6 +521,7 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
                 }}
                 to={`/${currentTeam._humanReadableId}/settings/apis`}
               >
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <i className="fas fa-chevron-left" />
                 {translateMethod(
                   'back.to.team',
@@ -507,10 +534,10 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
           },
         },
       },
-    },
+    }
   });
 
-  const navigateTo = (navTab) => {
+  const navigateTo = (navTab: any) => {
     navigate(
       `/${currentTeam._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`
     );
@@ -541,17 +568,20 @@ export const useApiGroupBackOffice = (apiGroup, creation) => {
   return { addMenu, setApiGroup };
 };
 
-export const useTeamBackOffice = (team) => {
+export const useTeamBackOffice = (team: any) => {
+  // @ts-expect-error TS(2339): Property 'setMode' does not exist on type 'unknown... Remove this comment to see the full error message
   const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector((state) => state.context);
+  const { currentTeam } = useSelector((state) => (state as any).context);
 
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/:tab*');
 
-  const schema = (currentTab) => ({
+  const schema = (currentTab: any) => ({
     title: team.name,
+
     blocks: {
       links: {
         order: 1,
@@ -612,10 +642,10 @@ export const useTeamBackOffice = (team) => {
           },
         },
       },
-    },
+    }
   });
 
-  const navigateTo = (navTab) => {
+  const navigateTo = (navTab: any) => {
     navigate(`/${currentTeam._humanReadableId}/settings/${navTab}`);
   };
 
@@ -624,6 +654,7 @@ export const useTeamBackOffice = (team) => {
       setMode(navMode.team);
       setOffice(officeMode.back);
       setTeam(team);
+      // @ts-expect-error TS(2551): Property 'tab' does not exist on type 'Params<"tea... Remove this comment to see the full error message
       setMenu(schema(match?.params?.tab));
     }
   }, [team]);
@@ -639,18 +670,22 @@ export const useTeamBackOffice = (team) => {
   return { addMenu };
 };
 
-export const useTenantBackOffice = (maybeTenant) => {
+export const useTenantBackOffice = (maybeTenant: any) => {
+  // @ts-expect-error TS(2339): Property 'setMode' does not exist on type 'unknown... Remove this comment to see the full error message
   const { setMode, setOffice, addMenu, setMenu, setTenant } = useContext(NavContext);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   const navigate = useNavigate();
   const match = useMatch('/settings/:tab*');
 
-  const currentTenant = useSelector((state) => state.context.tenant);
+  const currentTenant = useSelector((state) => (state as any).context.tenant);
   const tenant = maybeTenant || currentTenant;
 
+  // @ts-expect-error TS(7006): Parameter 'currentTab' implicitly has an 'any' typ... Remove this comment to see the full error message
   const schema = (currentTab, subTab) => ({
     title: tenant.name,
+
     blocks: {
       links: {
         order: 1,
@@ -734,14 +769,15 @@ export const useTenantBackOffice = (maybeTenant) => {
           },
         },
       },
-    },
+    }
   });
 
-  const navigateTo = (navTab) => {
+  const navigateTo = (navTab: any) => {
     navigate(`/settings/${navTab}`);
   };
 
   useEffect(() => {
+    // @ts-expect-error TS(2531): Object is possibly 'null'.
     setMenu(schema(match.params.tab, match.params['*']));
     setMode(navMode.tenant);
     setOffice(officeMode.back);
@@ -758,13 +794,15 @@ export const useTenantBackOffice = (maybeTenant) => {
 };
 
 export const useDaikokuBackOffice = () => {
+  // @ts-expect-error TS(2339): Property 'setMode' does not exist on type 'unknown... Remove this comment to see the full error message
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   const navigate = useNavigate();
   const match = useMatch('/settings/:tab*');
 
-  const schema = (currentTab) => ({
+  const schema = (currentTab: any) => ({
     blocks: {
       links: {
         order: 1,
@@ -791,16 +829,17 @@ export const useDaikokuBackOffice = () => {
           },
         },
       },
-    },
+    }
   });
 
-  const navigateTo = (navTab) => {
+  const navigateTo = (navTab: any) => {
     navigate(`/settings/${navTab}`);
   };
 
   useEffect(() => {
     setMode(navMode.daikoku);
     setOffice(officeMode.back);
+    // @ts-expect-error TS(2531): Object is possibly 'null'.
     setMenu(schema(match.params.tab));
 
     return () => {
@@ -813,16 +852,19 @@ export const useDaikokuBackOffice = () => {
 };
 
 export const useUserBackOffice = () => {
+  // @ts-expect-error TS(2339): Property 'setMode' does not exist on type 'unknown... Remove this comment to see the full error message
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
-  const { connectedUser } = useSelector((state) => state.context);
+  const { connectedUser } = useSelector((state) => (state as any).context);
 
   const navigate = useNavigate();
   const match = useMatch('/:tab');
 
-  const schema = (currentTab) => ({
+  const schema = (currentTab: any) => ({
     title: connectedUser.name,
+
     blocks: {
       links: {
         order: 1,
@@ -839,16 +881,17 @@ export const useUserBackOffice = () => {
           },
         },
       },
-    },
+    }
   });
 
-  const navigateTo = (navTab) => {
+  const navigateTo = (navTab: any) => {
     navigate(`/${navTab}`);
   };
 
   useEffect(() => {
     setMode(navMode.user);
     setOffice(officeMode.back);
+    // @ts-expect-error TS(2531): Object is possibly 'null'.
     setMenu(schema(match.params.tab));
 
     return () => {

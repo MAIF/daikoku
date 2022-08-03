@@ -7,7 +7,10 @@ const initialState = {
   response: null,
 };
 
-export function errorReducer(state = initialState, { type, error }) {
+export function errorReducer(state = initialState, {
+  type,
+  error
+}: any) {
   switch (type) {
     case SET_ERROR:
       const err = { ...initialState, ...(error || {}) };

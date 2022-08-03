@@ -1,6 +1,7 @@
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'uuid... Remove this comment to see the full error message
 import { v4 as uuid } from 'uuid';
 
-export function DefaultApi(tenant, teamId) {
+export function DefaultApi(tenant: any, teamId: any) {
   return {
     _id: uuid(),
     _tenant: tenant,

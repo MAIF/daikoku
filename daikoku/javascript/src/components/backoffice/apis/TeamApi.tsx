@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation, useParams, useMatch, Link } from 'react-router-dom';
 import { connect } from 'react-redux';
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
 import { Plus } from 'react-feather';
@@ -29,26 +30,32 @@ import {
 } from '../../../core';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
+const CreateNewVersionButton = ({
+  apiId,
+  versionId,
+  teamId,
+  currentTeam,
+  tab
+}: any) => {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   const navigate = useNavigate();
 
   const promptVersion = () => {
-    window
-      .prompt(translateMethod('Version number'), undefined, false, translateMethod('New version'), versionId)
-      .then((newVersion) => {
-        if (newVersion) {
-          if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-            toastr.error(
-              "Can't create version with special characters : " + reservedCharacters.join(' | ')
-            );
-          else createNewVersion(newVersion);
-        }
-      });
+    (window
+    // @ts-expect-error TS(2554): Expected 0-2 arguments, but got 5.
+    .prompt(translateMethod('Version number'), undefined, false, translateMethod('New version'), versionId) as any).then((newVersion: any) => {
+    if (newVersion) {
+        if ((newVersion || '').split('').find((c: any) => reservedCharacters.includes(c)))
+            toastr.error("Can't create version with special characters : " + reservedCharacters.join(' | '));
+        else
+            createNewVersion(newVersion);
+    }
+});
   };
 
-  const createNewVersion = (newVersion) => {
+  const createNewVersion = (newVersion: any) => {
     Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
       if (res.error) toastr.error(res.error);
       else {
@@ -59,13 +66,15 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
   };
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <button onClick={promptVersion} className="btn btn-sm btn-outline-primary ms-1">
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Plus />
     </button>
   );
 };
 
-const TeamApiComponent = (props) => {
+const TeamApiComponent = (props: any) => {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -82,18 +91,19 @@ const TeamApiComponent = (props) => {
 
   const teamApiDocumentationRef = useRef();
 
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    if (location && location.state && location.state.newApi) {
-      setApi(location.state.newApi);
+    if (location && location.state && (location as any).state.newApi) {
+      setApi((location as any).state.newApi);
     } else {
       reloadState();
     }
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${api ? api.name : translateMethod('API')}`;
+    document.title = `${props.currentTeam.name} - ${api ? (api as any).name : translateMethod('API')}`;
 
     if (!props.creation) {
       methods.addMenu({
@@ -103,14 +113,19 @@ const TeamApiComponent = (props) => {
               version: {
                 order: 1,
                 component: (
+                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                   <div className="d-flex flex-row mb-3">
+                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <Select
                       name="versions-selector"
                       value={{ value: params.versionId, label: params.versionId }}
+                      // @ts-expect-error TS(2322): Type '(string | undefined)[]' is not assignable to... Remove this comment to see the full error message
                       options={versions}
                       onChange={(e) =>
                         navigate(
-                          `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${e.value}/${tab}`
+                          `/${props.currentTeam._humanReadableId}/settings/apis/${                          
+// @ts-expect-error TS(2532): Object is possibly 'undefined'.
+api._humanReadableId}/${e.value}/${tab}`
                         )
                       }
                       classNamePrefix="reactSelect"
@@ -118,6 +133,7 @@ const TeamApiComponent = (props) => {
                       menuPlacement="auto"
                       menuPosition="fixed"
                     />
+                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
                   </div>
                 ),
@@ -135,7 +151,10 @@ const TeamApiComponent = (props) => {
       Services.getAllApiVersions(props.currentTeam._id, params.apiId),
     ]).then(([api, v]) => {
       if (!api.error) {
-        const versions = (v || []).map((v) => ({ label: v, value: v }));
+        const versions = (v || []).map((v: any) => ({
+          label: v,
+          value: v
+        }));
         setApiVersion({ value: params.versionId, label: params.versionId });
         setApi(api);
         setVersions(versions);
@@ -145,8 +164,9 @@ const TeamApiComponent = (props) => {
     });
   };
 
-  const save = (editedApi) => {
+  const save = (editedApi: any) => {
     if (params.tab === 'documentation') {
+      // @ts-expect-error TS(2532): Object is possibly 'undefined'.
       teamApiDocumentationRef.current.saveCurrentPage();
     }
 
@@ -204,6 +224,7 @@ const TeamApiComponent = (props) => {
   useEffect(() => {
     if (api) {
       const backButton = (
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <Link
           className="d-flex justify-content-around mt-3 align-items-center"
           style={{
@@ -213,6 +234,7 @@ const TeamApiComponent = (props) => {
           }}
           to={`/${props.currentTeam._humanReadableId}/settings/apis`}
         >
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <i className="fas fa-chevron-left me-1" />
           {translateMethod(
             'back.to.team',
@@ -241,6 +263,7 @@ const TeamApiComponent = (props) => {
               links: {
                 view: {
                   component: (
+                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                     <Link
                       to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/infos`}
                       className="btn btn-sm btn-access-negative mb-2"
@@ -260,112 +283,72 @@ const TeamApiComponent = (props) => {
     }
   }, [api]);
 
-  return (
-    <Can I={manage} a={API} team={props.currentTeam} dispatchError>
+  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+  return (<Can I={manage} a={API} team={props.currentTeam} dispatchError>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       {!api && <Spinner />}
-      {api && (
-        <>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+      {api && (<>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="d-flex flex-row justify-content-between align-items-center">
-            {props.creation ? (
-              <h2>{api.name}</h2>
-            ) : (
-              <div
-                className="d-flex align-items-center justify-content-between"
-                style={{ flex: 1 }}
-              >
-                <h2 className="me-2">{api.name}</h2>
-              </div>
-            )}
-            <button
-              onClick={() => props.toggleExpertMode()}
-              className="btn btn-sm btn-outline-primary"
-            >
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+            {props.creation ? (<h2>{(api as any).name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                <h2 className="me-2">{(api as any).name}</h2>
+              </div>)}
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+            <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
               {props.expertMode && translateMethod('Standard mode')}
               {!props.expertMode && translateMethod('Expert mode')}
             </button>
           </div>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="row">
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <div className="section col container-api">
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <div className="mt-2">
-                {tab === 'documentation' && (
-                  <TeamApiDocumentation
-                    creationInProgress={props.creation}
-                    team={props.currentTeam}
-                    teamId={teamId}
-                    value={api}
-                    onChange={(api) => setApi(api)}
-                    save={save}
-                    versionId={params.versionId}
-                    params={params}
-                    reloadState={reloadState}
-                    ref={teamApiDocumentationRef}
-                  />
-                )}
-                {tab === 'plans' && (
-                  <TeamApiPricings
-                    value={api}
-                    team={props.currentTeam}
-                    tenant={props.tenant}
-                    save={save}
-                    creation={props.creation}
-                    expertMode={props.expertMode}
-                    injectSubMenu={(component) =>
-                      methods.addMenu({
-                        blocks: {
-                          links: { links: { plans: { childs: { menu: { component } } } } },
-                        },
-                      })
-                    }
-                    openApiSelectModal={props.openApiSelectModal}
-                  />
-                )}
-                {tab === 'infos' && (
-                  <TeamApiInfos
-                    value={api}
-                    team={props.currentTeam}
-                    tenant={props.tenant}
-                    save={save}
-                    creation={props.creation}
-                    expertMode={props.expertMode}
-                    injectSubMenu={(component) =>
-                      methods.addMenu({
-                        blocks: {
-                          links: { links: { informations: { childs: { menu: { component } } } } },
-                        },
-                      })
-                    }
-                    openTestingApiKeyModal={props.openTestingApiKeyModal}
-                    openSubMetadataModal={props.openSubMetadataModal}
-                  />
-                )}
-                {tab === 'news' && (
-                  <TeamApiPost value={api} team={props.currentTeam} api={api} params={params} />
-                )}
-                {tab === 'settings' && <TeamApiSettings api={api} />}
-                {tab === 'stats' && !match && <TeamApiConsumption api={api} />}
-                {tab === 'stats' && match && match.params.planId && (
-                  <TeamPlanConsumption api={api} />
-                )}
-                {tab === 'subscriptions' && <TeamApiSubscriptions api={api} />}
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                {tab === 'documentation' && (<TeamApiDocumentation creationInProgress={props.creation} team={props.currentTeam} teamId={teamId} value={api} onChange={(api: any) => setApi(api)} save={save} versionId={params.versionId} params={params} reloadState={reloadState} ref={teamApiDocumentationRef}/>)}
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                {tab === 'plans' && (<TeamApiPricings value={api} team={props.currentTeam} tenant={props.tenant} save={save} creation={props.creation} expertMode={props.expertMode} injectSubMenu={(component: any) => methods.addMenu({
+                blocks: {
+                    links: { links: { plans: { childs: { menu: { component } } } } },
+                },
+            })} openApiSelectModal={props.openApiSelectModal}/>)}
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                {tab === 'infos' && (<TeamApiInfos value={api} team={props.currentTeam} tenant={props.tenant} save={save} creation={props.creation} expertMode={props.expertMode} injectSubMenu={(component: any) => methods.addMenu({
+                blocks: {
+                    links: { links: { informations: { childs: { menu: { component } } } } },
+                },
+            })} openTestingApiKeyModal={props.openTestingApiKeyModal} openSubMetadataModal={props.openSubMetadataModal}/>)}
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                {tab === 'news' && (<TeamApiPost value={api} team={props.currentTeam} api={api} params={params}/>)}
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                {tab === 'settings' && <TeamApiSettings api={api}/>}
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                {tab === 'stats' && !match && <TeamApiConsumption api={api}/>}
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={api}/>)}
+                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                {tab === 'subscriptions' && <TeamApiSubscriptions api={api}/>}
               </div>
             </div>
           </div>
-        </>
-      )}
-    </Can>
-  );
+        </>)}
+    </Can>);
 };
 
-const mapStateToProps = (state) => ({
-  ...state.context,
+const mapStateToProps = (state: any) => ({
+  ...state.context
 });
 
 const mapDispatchToProps = {
-  setError: (error) => setError(error),
-  openSubMetadataModal: (props) => openSubMetadataModal(props),
-  openTestingApiKeyModal: (props) => openTestingApiKeyModal(props),
+  setError: (error: any) => setError(error),
+  openSubMetadataModal: (props: any) => openSubMetadataModal(props),
+  openTestingApiKeyModal: (props: any) => openTestingApiKeyModal(props),
   toggleExpertMode: () => toggleExpertMode(),
-  openApiSelectModal: (props) => openApiSelectModal(props),
+  openApiSelectModal: (props: any) => openApiSelectModal(props),
 };
 
 export const TeamApi = connect(mapStateToProps, mapDispatchToProps)(TeamApiComponent);

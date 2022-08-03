@@ -2,12 +2,15 @@ import React, { Component, useContext, useEffect } from 'react';
 import { SelectInput, TextInput, TextareaInput, ObjectInput, NumberInput } from '../../../inputs';
 import { Spinner } from '../../../utils';
 
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'set-... Remove this comment to see the full error message
 import set from 'set-value';
 import { I18nContext } from '../../../../core';
 
+// @ts-expect-error TS(6142): Module '../../../inputs/Form' was resolved to '/Us... Remove this comment to see the full error message
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function AlgoSettings(props) {
+export function AlgoSettings(props: any) {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
 
   if (!props.rawValue.readProfileFromToken) {
@@ -17,7 +20,7 @@ export function AlgoSettings(props) {
   const algo = props.algo || props.value;
   const path = props.path || '';
 
-  const changeTheValue = (path, value) => {
+  const changeTheValue = (path: any, value: any) => {
     if (path === '') {
       props.onChange(value);
     } else {
@@ -28,11 +31,14 @@ export function AlgoSettings(props) {
   };
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <SelectInput
+        // @ts-expect-error TS(2769): No overload matches this call.
         label={props.algoTitle || translateMethod('Algo.')}
         value={algo.type}
-        onChange={(e) => {
+        onChange={(e: any) => {
           switch (e) {
             case 'HSAlgoSettings':
               changeTheValue(path + '', {
@@ -79,120 +85,141 @@ export function AlgoSettings(props) {
         help="What kind of algorithm you want to use to verify/sign your JWT token with"
       />
       {algo.type === 'HSAlgoSettings' && [
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <SelectInput
           key="sha-size"
+          // @ts-expect-error TS(2769): No overload matches this call.
           label={translateMethod('SHA Size')}
           help={translateMethod('sha.size.help')}
           value={algo.size}
-          onChange={(v) => changeTheValue(path + '.size', v)}
+          onChange={(v: any) => changeTheValue(path + '.size', v)}
           possibleValues={[
             { label: '256', value: 256 },
             { label: '384', value: 384 },
             { label: '512', value: 512 },
           ]}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <TextInput
           key="hmac-secret"
           label={translateMethod('Hmac secret')}
           placeholder="secret"
           value={algo.secret}
           help={translateMethod('hmac.secet.help', 'The Hmac secret')}
-          onChange={(e) => changeTheValue(path + '.secret', e)}
+          onChange={(e: any) => changeTheValue(path + '.secret', e)}
         />,
       ]}
       {algo.type === 'RSAlgoSettings' && [
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <SelectInput
           key="sha-size"
+          // @ts-expect-error TS(2769): No overload matches this call.
           label={translateMethod('SHA Size')}
           help={translateMethod('sha.size.help')}
           value={algo.size}
-          onChange={(v) => changeTheValue(path + '.size', v)}
+          onChange={(v: any) => changeTheValue(path + '.size', v)}
           possibleValues={[
             { label: '256', value: 256 },
             { label: '384', value: 384 },
             { label: '512', value: 512 },
           ]}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <TextareaInput
           key="public-key"
           label={translateMethod('Public key')}
           value={algo.publicKey}
           help={translateMethod('The RSA public key')}
-          onChange={(e) => changeTheValue(path + '.publicKey', e)}
+          onChange={(e: any) => changeTheValue(path + '.publicKey', e)}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <TextareaInput
           key="private-key"
           label={translateMethod('Private key')}
           value={algo.privateKey}
           help={translateMethod('private.key.help')}
-          onChange={(e) => changeTheValue(path + '.privateKey', e)}
+          onChange={(e: any) => changeTheValue(path + '.privateKey', e)}
         />,
       ]}
       {algo.type === 'ESAlgoSettings' && [
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <SelectInput
           key="sha-size"
+          // @ts-expect-error TS(2769): No overload matches this call.
           label={translateMethod('SHA Size')}
           help={translateMethod('sha.size.help')}
           value={algo.size}
-          onChange={(v) => changeTheValue(path + '.size', v)}
+          onChange={(v: any) => changeTheValue(path + '.size', v)}
           possibleValues={[
             { label: '256', value: 256 },
             { label: '384', value: 384 },
             { label: '512', value: 512 },
           ]}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <TextareaInput
           key="public-key"
           label={translateMethod('Public key')}
           value={algo.publicKey}
           help={translateMethod('The ECDSA public key')}
-          onChange={(e) => changeTheValue(path + '.publicKey', e)}
+          onChange={(e: any) => changeTheValue(path + '.publicKey', e)}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <TextareaInput
           key="private-key"
           label={translateMethod('Private key')}
           value={algo.privateKey}
+          // @ts-expect-error TS(2552): Cannot find name 'translateMethodt'. Did you mean ... Remove this comment to see the full error message
           help={translateMethodt('ecdsa.private.key.help')}
-          onChange={(e) => changeTheValue(path + '.privateKey', e)}
+          onChange={(e: any) => changeTheValue(path + '.privateKey', e)}
         />,
       ]}
       {algo.type === 'JWKSAlgoSettings' && [
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <TextInput
           key="url"
           label={translateMethod('URL')}
           value={algo.url}
           help={translateMethod('The JWK Set url')}
-          onChange={(e) => changeTheValue(path + '.url', e)}
+          onChange={(e: any) => changeTheValue(path + '.url', e)}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <NumberInput
           key="http-call-timeout"
+          // @ts-expect-error TS(2769): No overload matches this call.
           label={translateMethod('HTTP call timeout')}
           suffix={translateMethod('millis.')}
           value={algo.timeout}
           help={translateMethod('Timeout for fetching the keyset')}
-          onChange={(e) => changeTheValue(path + '.timeout', e)}
+          onChange={(e: any) => changeTheValue(path + '.timeout', e)}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <NumberInput
           key="ttl"
+          // @ts-expect-error TS(2769): No overload matches this call.
           label={translateMethod('TTL')}
           suffix={translateMethod('millis.')}
           value={algo.ttl}
           help={translateMethod('Cache TTL for the keyset')}
-          onChange={(e) => changeTheValue(path + '.ttl', e)}
+          onChange={(e: any) => changeTheValue(path + '.ttl', e)}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <ObjectInput
           key="http-header"
+          // @ts-expect-error TS(2769): No overload matches this call.
           label={translateMethod('HTTP Headers')}
           value={algo.headers}
           help={translateMethod('The HTTP headers passed')}
-          onChange={(e) => changeTheValue(path + '.headers', e)}
+          onChange={(e: any) => changeTheValue(path + '.headers', e)}
         />,
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <SelectInput
           key="key-type"
+          // @ts-expect-error TS(2769): No overload matches this call.
           label={translateMethod('Key type')}
           help={translateMethod('Type of key')}
           value={algo.kty}
-          onChange={(v) => changeTheValue(path + '.kty', v)}
+          onChange={(v: any) => changeTheValue(path + '.kty', v)}
           possibleValues={[
             { label: 'RSA', value: 'RSA' },
             { label: 'EC', value: 'EC' },
@@ -229,32 +256,33 @@ const defaultConfig = {
   daikokuAdmins: [],
 };
 
-export function OAuth2Config(props) {
+export function OAuth2Config(props: any) {
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const fetchConfig = () => {
-    window.prompt(translateMethod('URL of the OIDC config')).then((url) => {
-      if (url) {
+    (window.prompt(translateMethod('URL of the OIDC config')) as any).then((url: any) => {
+    if (url) {
         return fetch('/api/oidc/_fetchConfig', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url,
-            id: props.value.id,
-            name: props.value.name,
-            desc: props.value.desc,
-          }),
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                url,
+                id: props.value.id,
+                name: props.value.name,
+                desc: props.value.desc,
+            }),
         })
-          .then((r) => r.json())
-          .then((config) => {
+            .then((r) => r.json())
+            .then((config) => {
             props.onChange(config);
-          });
-      }
-    });
+        });
+    }
+});
   };
 
   const formFlow = [
@@ -289,10 +317,15 @@ export function OAuth2Config(props) {
     },
     oidcProvider: {
       type: () => (
+        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <div className="mb-3 row">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <label className="col-xs-12 col-sm-2 col-form-label" />
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="col-sm-10">
+            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <button type="button" className="btn btn-success" onClick={fetchConfig}>
+              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <Translation i18nkey="Get from OIDC config 2">Get from OIDC config 2</Translation>
             </button>
           </div>
@@ -407,7 +440,9 @@ export function OAuth2Config(props) {
   }, []);
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <React.Suspense fallback={<Spinner />}>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <LazyForm
         value={props.value}
         onChange={(e) => {
@@ -415,6 +450,7 @@ export function OAuth2Config(props) {
         }}
         flow={formFlow}
         schema={formSchema}
+        // @ts-expect-error TS(2322): Type '{ value: any; onChange: (e: any) => void; fl... Remove this comment to see the full error message
         style={{ marginTop: 50 }}
       />
     </React.Suspense>

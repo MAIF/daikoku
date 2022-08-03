@@ -5,7 +5,7 @@ const CompressionPlugin = require('compression-webpack-plugin');
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-module.exports = (env, argv) => {
+module.exports = (env: any, argv: any) => {
   const isProd = argv.mode === 'production';
   const config = {
     mode: isProd ? 'production' : 'development',

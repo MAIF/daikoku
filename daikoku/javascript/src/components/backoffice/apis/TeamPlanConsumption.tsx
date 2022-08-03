@@ -7,9 +7,12 @@ import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
 
-export const TeamPlanConsumption = ({ apiGroup }) => {
-  const { currentTeam } = useSelector((state) => state.context);
+export const TeamPlanConsumption = ({
+  apiGroup
+}: any) => {
+  const { currentTeam } = useSelector((state) => (state as any).context);
 
+  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
   const { translateMethod } = useContext(I18nContext);
   const urlMatching = !!apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
@@ -21,17 +24,16 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
   const mappers = [
     {
       type: 'LineChart',
-      label: (data) => {
-        const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
+      label: (data: any) => {
+        const totalHits = data.reduce((acc: any, cons: any) => acc + cons.hits, 0);
         return translateMethod('data.in.plus.hits', false, `Data In (${totalHits})`, totalHits);
       },
       title: translateMethod('Data In'),
-      formatter: (data) =>
-        data.reduce((acc, item) => {
-          const date = moment(item.to).format('DD MMM.');
-          const value = acc.find((a) => a.date === date) || { count: 0 };
-          return [...acc.filter((a) => a.date !== date), { date, count: value.count + item.hits }];
-        }, []),
+      formatter: (data: any) => data.reduce((acc: any, item: any) => {
+        const date = moment(item.to).format('DD MMM.');
+        const value = acc.find((a: any) => a.date === date) || { count: 0 };
+        return [...acc.filter((a: any) => a.date !== date), { date, count: value.count + item.hits }];
+      }, []),
       xAxis: 'date',
       yAxis: 'count',
     },
@@ -39,28 +41,29 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
       type: 'RoundChart',
       label: translateMethod('Hits by apikey'),
       title: translateMethod('Hits by apikey'),
-      formatter: (data) =>
-        data.reduce((acc, item) => {
-          const value = acc.find((a) => a.name === item.clientId) || { count: 0 };
+      formatter: (data: any) => data.reduce((acc: any, item: any) => {
+        const value = acc.find((a: any) => a.name === item.clientId) || { count: 0 };
 
-          const team = teams.find((t) => t._id === item.team);
-          const name = team.name;
+        const team = teams.find((t) => (t as any)._id === item.team);
+        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
+        const name = team.name;
 
-          return [
-            ...acc.filter((a) => a.name !== item.clientId),
-            { clientId: item.clientId, name, count: value.count + item.hits },
-          ];
-        }, []),
+        return [
+          ...acc.filter((a: any) => a.name !== item.clientId),
+          { clientId: item.clientId, name, count: value.count + item.hits },
+        ];
+      }, []),
       dataKey: 'count',
     },
     {
       type: 'Global',
       label: translateMethod('Global informations'),
-      formatter: (data) => sumGlobalInformations(data),
+      formatter: (data: any) => sumGlobalInformations(data),
     },
   ];
 
   const getPlanInformation = () => {
+    // @ts-expect-error TS(2531): Object is possibly 'null'.
     return Services.teamApi(currentTeam._id, match.params.apiId, match.params.versionId).then(
       (api) => {
         if (api.error) {
@@ -68,22 +71,23 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
         }
         return {
           api,
-          plan: api.possibleUsagePlans.find((pp) => pp._id === match.params.planId),
+          // @ts-expect-error TS(2531): Object is possibly 'null'.
+          plan: api.possibleUsagePlans.find((pp: any) => pp._id === match.params.planId),
         };
       }
     );
   };
 
-  const sumGlobalInformations = (data) => {
-    const globalInformations = data.map((d) => d.globalInformations);
+  const sumGlobalInformations = (data: any) => {
+    const globalInformations = data.map((d: any) => d.globalInformations);
 
-    const value = globalInformations.reduce((acc, item) => {
+    const value = globalInformations.reduce((acc: any, item: any) => {
       Object.keys(item).forEach((key) => (acc[key] = (acc[key] || 0) + item[key]));
       return acc;
     }, {});
 
-    const howManyDuration = globalInformations.filter((d) => !!d.avgDuration).length;
-    const howManyOverhead = globalInformations.filter((d) => !!d.avgDuration).length;
+    const howManyDuration = globalInformations.filter((d: any) => !!d.avgDuration).length;
+    const howManyOverhead = globalInformations.filter((d: any) => !!d.avgDuration).length;
 
     return {
       ...value,
@@ -99,18 +103,27 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
   }, []);
 
   return (
+    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="row">
+        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className="col">
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <h1>Api Consumption</h1>
+          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <PlanInformations fetchData={() => getPlanInformation()} />
         </div>
       </div>
+      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <OtoroshiStatsVizualization
+        // @ts-expect-error TS(2304): Cannot find name 'params'.
         sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
-        fetchData={(from, to) => {
+        fetchData={(from: any, to: any) => {
           return Services.apiConsumption(
+            // @ts-expect-error TS(2531): Object is possibly 'null'.
             match.params.apiId,
+            // @ts-expect-error TS(2531): Object is possibly 'null'.
             match.params.planId,
             currentTeam._id,
             from.valueOf(),
@@ -123,26 +136,26 @@ export const TeamPlanConsumption = ({ apiGroup }) => {
   );
 };
 
-const PlanInformations = (props) => {
+const PlanInformations = (props: any) => {
   const [loading, setLoading] = useState(true);
   const [informations, setInformations] = useState();
 
   useEffect(() => {
-    props.fetchData().then((informations) => {
+    props.fetchData().then((informations: any) => {
       setInformations(informations);
       setLoading(false);
     });
   }, []);
 
+  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
   if (loading) return <Spinner width="50" height="50" />;
 
   if (!informations) {
     return null;
   }
 
-  return (
-    <h3>
-      {informations.api.name} - {informations.plan.customName || informations.plan.type}
-    </h3>
-  );
+  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+  return (<h3>
+      {(informations as any).api.name} - {(informations as any).plan.customName || (informations as any).plan.type}
+    </h3>);
 };

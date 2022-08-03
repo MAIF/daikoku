@@ -19,6 +19,7 @@ const apikeyCustomization = {
   },
 };
 
+// @ts-expect-error TS(2769): No overload matches this call.
 export const theMachine = Machine({
   id: 'the-machine',
   initial: 'otoroshiSelection',
@@ -67,19 +68,28 @@ export const theMachine = Machine({
         DONE_SERVICES: {
           target: 'completeServices',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'tenant' does not exist on type 'EventObj... Remove this comment to see the full error message
             tenant: (_context, { tenant }) => tenant,
+            // @ts-expect-error TS(2339): Property 'otoroshi' does not exist on type 'EventO... Remove this comment to see the full error message
             otoroshi: (_context, { otoroshi }) => otoroshi,
+            // @ts-expect-error TS(2339): Property 'groups' does not exist on type 'EventObj... Remove this comment to see the full error message
             groups: (_context, { groups = [] }) => groups,
+            // @ts-expect-error TS(2339): Property 'services' does not exist on type 'EventO... Remove this comment to see the full error message
             services: (_context, { services = [] }) => services,
           }),
         },
         DONE_APIKEYS: {
           target: 'completeApikeys',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'tenant' does not exist on type 'EventObj... Remove this comment to see the full error message
             tenant: (_context, { tenant }) => tenant,
+            // @ts-expect-error TS(2339): Property 'otoroshi' does not exist on type 'EventO... Remove this comment to see the full error message
             otoroshi: (_context, { otoroshi }) => otoroshi,
+            // @ts-expect-error TS(2339): Property 'groups' does not exist on type 'EventObj... Remove this comment to see the full error message
             groups: (_context, { groups = [] }) => groups,
+            // @ts-expect-error TS(2339): Property 'services' does not exist on type 'EventO... Remove this comment to see the full error message
             services: (_context, { services = [] }) => services,
+            // @ts-expect-error TS(2339): Property 'apikeys' does not exist on type 'EventOb... Remove this comment to see the full error message
             apikeys: (_context, { apikeys = [] }) => apikeys,
           }),
         },
@@ -108,15 +118,20 @@ export const theMachine = Machine({
         DONE_COMPLETE: {
           target: 'stepSelection',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'tenant' does not exist on type 'EventObj... Remove this comment to see the full error message
             tenant: (_context, { tenant }) => tenant,
+            // @ts-expect-error TS(2339): Property 'otoroshi' does not exist on type 'EventO... Remove this comment to see the full error message
             otoroshi: (_context, { otoroshi }) => otoroshi,
+            // @ts-expect-error TS(2339): Property 'groups' does not exist on type 'EventObj... Remove this comment to see the full error message
             groups: (_context, { groups = [] }) => groups,
+            // @ts-expect-error TS(2339): Property 'services' does not exist on type 'EventO... Remove this comment to see the full error message
             services: (_context, { services = [] }) => services,
           }),
         },
         FAILURE: {
           target: 'failure',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'error' does not exist on type 'EventObje... Remove this comment to see the full error message
             error: (_context, { error }) => error,
           }),
         },
@@ -156,12 +171,14 @@ export const theMachine = Machine({
         DONE_COMPLETE: {
           target: 'completeServices',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'newServices' does not exist on type 'Eve... Remove this comment to see the full error message
             services: ({ services }, { newServices = [] }) => [...services, ...newServices],
           }),
         },
         FAILURE: {
           target: 'failure',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'error' does not exist on type 'EventObje... Remove this comment to see the full error message
             error: (_context, { error }) => error,
           }),
         },
@@ -208,20 +225,23 @@ export const theMachine = Machine({
           return (callBack, _onEvent) => {
             Services.fetchNewApi()
               .then((newApi) =>
-                createdApis.map((api) => ({
+                createdApis.map((api: any) => ({
                   ...newApi,
+                  // @ts-expect-error TS(2552): Cannot find name 'nanoi'. Did you mean 'nanoid'?
                   _id: nanoi(32),
                   name: api.name,
                   team: api.team,
                   published: true,
-                  possibleUsagePlans: newApi.possibleUsagePlans.map((pp) => ({
+
+                  possibleUsagePlans: newApi.possibleUsagePlans.map((pp: any) => ({
                     ...pp,
+
                     otoroshiTarget: {
                       otoroshiSettings: context.otoroshi,
                       authorizedEntities: { groups: [], services: [api.id] },
                       apikeyCustomization,
-                    },
-                  })),
+                    }
+                  }))
                 }))
               )
               .then((apis) => Services.apisInit(apis))
@@ -237,6 +257,7 @@ export const theMachine = Machine({
         FAILURE: {
           target: 'failure',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'error' does not exist on type 'EventObje... Remove this comment to see the full error message
             error: (_context, { error }) => error,
           }),
         },
@@ -251,9 +272,9 @@ export const theMachine = Machine({
               .then((newApikeys) => {
                 if (newApikeys.error) callBack({ type: 'FAILURE', error: { ...newApikeys } });
                 else {
-                  const hasMore = newApikeys.length === context.perPage;
+                  const hasMore = newApikeys.length === (context as any).perPage;
                   if (hasMore) {
-                    callBack({ type: 'DONE_MORE', newApikeys, nextPage: context.page + 1 });
+                    callBack({ type: 'DONE_MORE', newApikeys, nextPage: (context as any).page + 1 });
                   } else {
                     callBack({ type: 'DONE_COMPLETE', newApikeys });
                   }
@@ -267,12 +288,14 @@ export const theMachine = Machine({
         DONE_COMPLETE: {
           target: 'completeApikeys',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'newApikeys' does not exist on type 'Even... Remove this comment to see the full error message
             apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys],
           }),
         },
         FAILURE: {
           target: 'failure',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'error' does not exist on type 'EventObje... Remove this comment to see the full error message
             error: (_context, { error }) => error,
           }),
         },
@@ -317,15 +340,16 @@ export const theMachine = Machine({
         id: 'daikokuSubscriptionsCreator',
         src: ({ tenant }, { createdSubs, callBackCreation }) => {
           return (callBack, _onEvent) => {
-            const subscriptions = createdSubs.map((apikey) => ({
+            const subscriptions = createdSubs.map((apikey: any) => ({
               apikey: {
                 clientName: apikey.clientName,
                 clientId: apikey.clientId,
                 clientSecret: apikey.clientSecret,
               },
+
               plan: apikey.plan._id,
               team: apikey.team,
-              api: apikey.api._id,
+              api: apikey.api._id
             }));
 
             Services.subscriptionsInit(subscriptions)
@@ -343,6 +367,7 @@ export const theMachine = Machine({
         FAILURE: {
           target: 'failure',
           actions: assign({
+            // @ts-expect-error TS(2339): Property 'error' does not exist on type 'EventObje... Remove this comment to see the full error message
             error: (_context, { error }) => error,
           }),
         },
