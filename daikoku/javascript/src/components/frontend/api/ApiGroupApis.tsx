@@ -27,8 +27,7 @@ export const ApiGroupApis = ({
     setLoading(true);
     Promise.all([
       Services.teams(),
-      // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-      client.query({
+            client.query({
         query: Services.graphql.myTeams,
       }),
     ]).then(([t, { data }]) => {
@@ -60,34 +59,24 @@ export const ApiGroupApis = ({
   const redirectToEditPage = (api: any) => {
     const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === (team as any)._id);
 
-    // @ts-expect-error TS(2554): Expected 8 arguments, but got 5.
-    if (CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
+        if (CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
       updateTeamPromise(adminTeam)(dispatch).then(() => {
         const url = api.apis
-          ? // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-            `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-          : // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-            `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+          ?             `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+          :             `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
         navigate(url);
       });
     }
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <main role="main">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <section className="organisation__header col-12 mb-4 p-3">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="container">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="row text-center">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-sm-7 d-flex flex-column justify-content-center">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <h1 className="jumbotron-heading">{apiGroup.name}</h1>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div
+        <main role="main">
+            <section className="organisation__header col-12 mb-4 p-3">
+                <div className="container">
+                    <div className="row text-center">
+                        <div className="col-sm-7 d-flex flex-column justify-content-center">
+                            <h1 className="jumbotron-heading">{apiGroup.name}</h1>
+                            <div
                 dangerouslySetInnerHTML={{
                   __html: converter.makeHtml(apiGroup.smallDescription || ''),
                 }}
@@ -96,10 +85,8 @@ export const ApiGroupApis = ({
           </div>
         </div>
       </section>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <ApiList
-        // @ts-expect-error TS(2322): Type '{ apis: any; teams: never[]; myTeams: never[... Remove this comment to see the full error message
-        apis={apiGroup.apis}
+            <ApiList
+                apis={apiGroup.apis}
         teams={teams}
         myTeams={myTeams}
         teamVisible={true}

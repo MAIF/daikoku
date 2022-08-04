@@ -1,9 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { constraints, type } from '@maif/react-forms';
 import uniq from 'lodash/uniq';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { SketchPicker } from 'react-color';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 import { useDispatch } from 'react-redux';
 
@@ -17,8 +15,7 @@ export function TeamApiIssueTags({
   const [api, setApi] = useState(value);
   const [updated, setUpdated] = useState(false);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   const dispatch = useDispatch();
 
@@ -30,14 +27,10 @@ export function TeamApiIssueTags({
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div style={{ paddingBottom: '250px' }}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="mb-3 row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col-sm-10">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button className='btn btn-outline-success'  onClick={() => dispatch(openFormModal({
+        <div style={{ paddingBottom: '250px' }}>
+            <div className="mb-3 row">
+                <div className="col-sm-10">
+                    <button className='btn btn-outline-success'  onClick={() => dispatch(openFormModal({
             title: translateMethod('issues.create_tag'),
             schema: {
               name: {
@@ -56,17 +49,13 @@ export function TeamApiIssueTags({
                   onChange
                 }: any) => {
                   return (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <div className='d-flex flex-row'>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
+                                        <div className='d-flex flex-row'>
+                                            <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
                         style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
                         onClick={() => onChange(randomColor())}>
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <RefreshCcw />
+                                                <RefreshCcw />
                       </div>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
+                                            <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
                     </div>
                   )
                 },
@@ -85,19 +74,14 @@ export function TeamApiIssueTags({
           }))}>{translateMethod('issues.new_tag')}</button>
         </div>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="mb-3 row pt-3">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <label className="col-xs-12 col-sm-2">{translateMethod('issues.tags')}</label>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col-sm-10">
+            <div className="mb-3 row pt-3">
+                <label className="col-xs-12 col-sm-2">{translateMethod('issues.tags')}</label>
+                <div className="col-sm-10">
           {api.issuesTags
             .sort((a: any, b: any) => a.name.localeCompare(b.name))
             .map((issueTag: any, i: any) => (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <span
+                            <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
+                                <span
                   className="badge d-flex align-items-center justify-content-center px-3 py-2"
                   style={{
                     backgroundColor: issueTag.color,
@@ -106,8 +90,7 @@ export function TeamApiIssueTags({
                 >
                   {issueTag.name}
                 </span>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <input
+                                <input
                   type="text"
                   className="form-control mx-3"
                   value={issueTag.name}
@@ -122,8 +105,7 @@ export function TeamApiIssueTags({
                     setUpdated(true);
                   }}
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <ColorTag
+                                <ColorTag
                   className="pe-3"
                   initialColor={issueTag.color}
                   handleColorChange={(color: any) => {
@@ -138,10 +120,8 @@ export function TeamApiIssueTags({
                   }}
                   presetColors={[]}
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <div className="ml-auto">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button
+                                <div className="ml-auto">
+                                    <button
                     className="btn btn-sm btn-outline-danger"
                     type="button"
                     onClick={() => deleteTag(issueTag.id)}
@@ -151,15 +131,12 @@ export function TeamApiIssueTags({
                 </div>
               </div>
             ))}
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
+                    {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
         </div>
       </div>
       {updated && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div className="col-sm-12 d-flex justify-content-end">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button
+                <div className="col-sm-12 d-flex justify-content-end">
+                    <button
             className="btn btn-outline-success ml-auto"
             onClick={() => {
               onChange(api);
@@ -233,20 +210,14 @@ function ColorTag({
   }, [pickerValue]);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className={className}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div style={styles.swatch} onClick={() => setDisplayColorPicker(true)}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div style={styles.color} />
+        <div className={className}>
+            <div style={styles.swatch} onClick={() => setDisplayColorPicker(true)}>
+                <div style={styles.color} />
       </div>
       {displayColorPicker ? (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div style={styles.popover}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <SketchPicker
+                <div style={styles.popover}>
+                    <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
+                    <SketchPicker
             presetColors={uniq(presetColors).sort()}
             color={color}
             onChange={(value: any) => setPickerValue(value)}

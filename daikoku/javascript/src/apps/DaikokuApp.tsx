@@ -2,15 +2,12 @@ import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter, BrowserRouter as Router, Route, Routes, useParams } from 'react-router-dom';
 import { Navigate } from 'react-router';
 import { connect, useDispatch, useSelector } from 'react-redux';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import ReduxToastr from 'react-redux-toastr';
 
-// @ts-expect-error TS(6142): Module '../components/frontend/modals/ModalRoot' w... Remove this comment to see the full error message
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { SideBar, Spinner, Error, Footer } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise, history, setError } from '../core';
-// @ts-expect-error TS(6142): Module '../components/backoffice/TeamBackOffice' w... Remove this comment to see the full error message
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { NavProvider } from '../contexts';
 
@@ -41,8 +38,7 @@ import {
   TenantOtoroshis,
   TenantList,
   TenantEdit,
-  // @ts-expect-error TS(2305): Module '"../components/adminbackoffice"' has no ex... Remove this comment to see the full error message
-  NewTenantEdit,
+    NewTenantEdit,
   TenantEditForAdmin,
   TenantStyleEdit,
   UserList,
@@ -60,12 +56,9 @@ import {
   CMSOffice,
 } from '../components/adminbackoffice';
 
-// @ts-expect-error TS(6142): Module './DaikokuHomeApp' was resolved to '/Users/... Remove this comment to see the full error message
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
-// @ts-expect-error TS(6142): Module '../locales/i18n-context' was resolved to '... Remove this comment to see the full error message
 import { I18nContext } from '../locales/i18n-context';
-// @ts-expect-error TS(6142): Module '../components/adminbackoffice/tenants/Tena... Remove this comment to see the full error message
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 
 const DaikokuAppComponent = ({
@@ -83,15 +76,12 @@ const DaikokuAppComponent = ({
     }
   }, []);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   if (!user) {
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <Router>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div
+            <Router>
+                <div
           role="root-container"
           className="container-fluid"
           style={{
@@ -100,20 +90,14 @@ const DaikokuAppComponent = ({
             paddingBottom: '6rem',
           }}
         >
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Routes>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Route
+                    <Routes>
+                        <Route
               path="/"
               element={
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <UnauthenticatedTopBar tenant={tenant} />
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <UnauthenticatedHome tenant={tenant} />
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <UnauthenticatedFooter tenant={tenant} />
+                                <>
+                                    <UnauthenticatedTopBar tenant={tenant} />
+                                    <UnauthenticatedHome tenant={tenant} />
+                                    <UnauthenticatedFooter tenant={tenant} />
                 </>
               }
             />
@@ -123,427 +107,315 @@ const DaikokuAppComponent = ({
     );
   }
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <BrowserRouter history={history}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <MessagesProvider>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <NavProvider loginAction={loginAction} loginProvider={loginProvider}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="d-flex flex-row">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <SideBar />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="wrapper flex-grow-1">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Routes>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+        <BrowserRouter history={history}>
+            <MessagesProvider>
+                <NavProvider loginAction={loginAction} loginProvider={loginProvider}>
+                    <div className="d-flex flex-row">
+                        <SideBar />
+                        <div className="wrapper flex-grow-1">
+                            <Routes>
+                                <Route
                   path="/me"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('My profile')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <MyProfile />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('My profile')}`}>
+                                            <MyProfile />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/2fa"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <UnauthenticatedRoute
-                      // @ts-expect-error TS(2322): Type '{ children: Element; title: string; tenant: ... Remove this comment to see the full error message
-                      title={`${tenant.title} - ${translateMethod('Verification code')}`}
+                                        <UnauthenticatedRoute
+                                            title={`${tenant.title} - ${translateMethod('Verification code')}`}
                       tenant={tenant}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TwoFactorAuthentication
+                                            <TwoFactorAuthentication
                         title={`${tenant.title} - ${translateMethod('Verification code')}`}
                       />
                     </UnauthenticatedRoute>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/reset"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <UnauthenticatedRoute
-                      // @ts-expect-error TS(2322): Type '{ children: Element; title: string; tenant: ... Remove this comment to see the full error message
-                      title={`${tenant.title} - ${translateMethod('Reset password')}`}
+                                        <UnauthenticatedRoute
+                                            title={`${tenant.title} - ${translateMethod('Reset password')}`}
                       tenant={tenant}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <ResetPassword />
+                                            <ResetPassword />
                     </UnauthenticatedRoute>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/signup"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <UnauthenticatedRoute
-                      // @ts-expect-error TS(2322): Type '{ children: Element; title: string; tenant: ... Remove this comment to see the full error message
-                      title={`${tenant.title} - ${translateMethod('Signup')}`}
+                                        <UnauthenticatedRoute
+                                            title={`${tenant.title} - ${translateMethod('Signup')}`}
                       tenant={tenant}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <Signup />
+                                            <Signup />
                     </UnauthenticatedRoute>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/notifications*"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Notifications')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <NotificationList />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Notifications')}`}>
+                                            <NotificationList />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/join"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Join team')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <JoinTeam />
+                                        <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Join team')}`}>
+                                            <JoinTeam />
                     </FrontOfficeRoute>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/apis"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Apis')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <MyHome />
+                                        <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Apis')}`}>
+                                            <MyHome />
                     </FrontOfficeRoute>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Home')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <MaybeHomePage tenant={tenant} />
+                                        <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Home')}`}>
+                                            <MaybeHomePage tenant={tenant} />
                     </FrontOfficeRoute>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/messages"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Message', true)}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <AdminMessages />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Message', true)}`}>
+                                            <AdminMessages />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/otoroshis/:otoroshiId"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshi')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TenantOtoroshi tenant={tenant} />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshi')}`}>
+                                            <TenantOtoroshi tenant={tenant} />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/otoroshis"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle
+                                        <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TenantOtoroshis tenant={tenant} />
+                                            <TenantOtoroshis tenant={tenant} />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/settings*"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle
+                                        <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <NewTenantEdit tenant={tenant} />
+                                            <NewTenantEdit tenant={tenant} />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/settings/old"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle
+                                        <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TenantEdit tenant={tenant} />
+                                            <TenantEdit tenant={tenant} />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/tenants/:tenantId"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenant edit')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TenantEditForAdmin />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenant edit')}`}>
+                                            <TenantEditForAdmin />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/tenants/:tenantId/style"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Style')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TenantStyleEdit />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Style')}`}>
+                                            <TenantStyleEdit />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/tenants"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenants', true)}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TenantList />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenants', true)}`}>
+                                            <TenantList />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/tenants/:tenantId/admins"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <DaikokuTenantAdminList />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
+                                            <DaikokuTenantAdminList />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/users/:userId"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('User')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <UserEdit />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('User')}`}>
+                                            <UserEdit />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/users"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Users', true)}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <UserList />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Users', true)}`}>
+                                            <UserList />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/audit"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Audit trail')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <AuditTrailList />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Audit trail')}`}>
+                                            <AuditTrailList />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/sessions"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('User sessions')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <SessionList />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('User sessions')}`}>
+                                            <SessionList />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/import-export"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle
+                                        <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('Import / Export')}`}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <ImportExport />
+                                            <ImportExport />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/teams/:teamSettingId/members"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team members')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TeamMembersForAdmin />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team members')}`}>
+                                            <TeamMembersForAdmin />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/teams"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Teams')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TeamList />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                                            <TeamList />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route path="/settings/assets" element={<TenantAssets />} />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route path="/settings/assets" element={<TenantAssets />} />
+                                <Route
                   path="/settings/admins"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TenantAdminList tenantMode={true} />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
+                                            <TenantAdminList tenantMode={true} />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/init"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Init')}`}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <InitializeFromOtoroshi />
+                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Init')}`}>
+                                            <InitializeFromOtoroshi />
                     </RouteWithTitle>
                   }
                 />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/settings/pages*"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <RouteWithTitle
+                                        <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('daikokuapp.pages_title')}`}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <CMSOffice />
+                                            <CMSOffice />
                     </RouteWithTitle>
                   }
                 />
                 {['/settings/internationalization', '/settings/internationalization/:domain'].map(
                   (r) => (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <Route
+                                        <Route
                       key={r}
                       path={r}
                       element={
-                        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                        <RouteWithTitle
+                                                <RouteWithTitle
                           title={`${tenant.title} - ${translateMethod('Internalization')}`}
                         >
-                          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                          <MailingInternalization tenant={tenant} />
+                                                    <MailingInternalization tenant={tenant} />
                         </RouteWithTitle>
                       }
                     />
                   )
                 )}
                 {!tenant.hideTeamsPage && (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  <Route
+                                    <Route
                     path="/teams"
                     element={
-                      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                      <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Teams')}`}>
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <TeamChooser />
+                                            <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                                                <TeamChooser />
                       </FrontOfficeRoute>
                     }
                   />
                 )}
 
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/:teamId/settings*"
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  element={<TeamBackOfficeRouter tenant={tenant} />}
+                                    element={<TeamBackOfficeRouter tenant={tenant} />}
                 />
 
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path=":teamId/apigroups/:apiGroupId/:tab/*"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <FrontOfficeRoute>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <ApiGroupHome />
+                                        <FrontOfficeRoute>
+                                            <ApiGroupHome />
                     </FrontOfficeRoute>
                   }
                 />
 
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/:teamId/:apiId/:versionId/:tab/*"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <FrontOfficeRoute>
+                                        <FrontOfficeRoute>
                       {' '}
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <ApiHome />{' '}
+                                            <ApiHome />{' '}
                     </FrontOfficeRoute>
                   }
                 />
 
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Route
+                                <Route
                   path="/:teamId"
                   element={
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <FrontOfficeRoute>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <TeamHome />
+                                        <FrontOfficeRoute>
+                                            <TeamHome />
                     </FrontOfficeRoute>
                   }
                 />
               </Routes>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Error />
+                            <Error />
             </div>
           </div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <ModalRoot />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <ReduxToastr
+                    <ModalRoot />
+                    <ReduxToastr
             timeOut={4000}
             newestOnTop={false}
             position="top-right"
@@ -551,14 +423,11 @@ const DaikokuAppComponent = ({
             transitionOut="fadeOut"
             closeOnToastrClick
           />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Routes>
+                    <Routes>
             {['/settings', '/notifications', '/me', '/:teamId/settings'].map((r) => (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <Route key={r} path={r} element={<></>} />
+                            <Route key={r} path={r} element={<></>} />
             ))}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Route path="/" element={<Footer isBackOffice={false} />} />
+                        <Route path="/" element={<Footer isBackOffice={false} />} />
           </Routes>
         </NavProvider>
       </MessagesProvider>
@@ -594,26 +463,20 @@ const TeamBackOfficeRouter = ({
 
   function getMyTeam() {
     Services.oneOfMyTeam(params.teamId).then((team) => {
-      // @ts-expect-error TS(2345): Argument of type '(dispatch: any) => any' is not a... Remove this comment to see the full error message
-      if (team.error) dispatch(setError(team.error));
-      // @ts-expect-error TS(2345): Argument of type '(dispatch: any) => Promise<any>'... Remove this comment to see the full error message
-      else dispatch(updateTeamPromise(team));
+            if (team.error) dispatch(setError(team.error));
+            else dispatch(updateTeamPromise(team));
       setLoading(false);
     });
   }
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  if (!currentTeam || loading) return <Spinner />;
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  else return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />;
+    if (!currentTeam || loading) return <Spinner />;
+    else return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />;
 };
 
 const FrontOfficeRoute = (props: any) => {
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <RouteWithTitle {...props}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <FrontOffice>{props.children}</FrontOffice>
+        <RouteWithTitle {...props}>
+            <FrontOffice>{props.children}</FrontOffice>
     </RouteWithTitle>
   );
 };
@@ -634,12 +497,10 @@ const UnauthenticatedRouteComponent = ({
   title
 }: any) => {
   if (connectedUser._humanReadableId) {
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return <Navigate to="/" />;
+        return <Navigate to="/" />;
   }
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return <RouteWithTitle title={title}>{children}</RouteWithTitle>;
+    return <RouteWithTitle title={title}>{children}</RouteWithTitle>;
 };
 
 const UnauthenticatedRoute = connect(mapStateToProps)(UnauthenticatedRouteComponent);

@@ -1,9 +1,7 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { nanoid } from 'nanoid';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'js-m... Remove this comment to see the full error message
 import md5 from 'js-md5';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import { Form, constraints, type, format } from '@maif/react-forms';
 
@@ -21,8 +19,7 @@ const Avatar = ({
   onChange,
   tenant
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'Translation' does not exist on type 'unk... Remove this comment to see the full error message
-  const { Translation } = useContext(I18nContext);
+    const { Translation } = useContext(I18nContext);
 
   const setFiles = (files: any) => {
     const file = files[0];
@@ -63,12 +60,9 @@ const Avatar = ({
     return null;
   }
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="float-right mb-4 position-relative">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <img
+        <div className="">
+            <div className="float-right mb-4 position-relative">
+                <img
           src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
             }`}
           style={{
@@ -79,40 +73,29 @@ const Avatar = ({
           alt="avatar"
           className="mx-3"
         />
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <PictureUpload setFiles={setFiles} />
+                <PictureUpload setFiles={setFiles} />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <input
+            <div className="">
+                <input
           type="text"
           className="form-control"
           value={value}
           onChange={(e) => changePicture(e.target.value)}
         />
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex mt-1 justify-content-end">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.email ? 'disabled' : null}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <i className="fas fa-user-circle me-1" />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
+                <div className="d-flex mt-1 justify-content-end">
+                    <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.email ? 'disabled' : null}>
+                        <i className="fas fa-user-circle me-1" />
+                        <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
           {isOtherOriginThanLocal && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <button
+                        <button
               type="button"
               className="btn btn-outline-primary"
               onClick={setPictureFromProvider}
-              // @ts-expect-error TS(2322): Type 'string | null' is not assignable to type 'bo... Remove this comment to see the full error message
-              disabled={rawValues.pictureFromProvider ? 'disabled' : null}
+                            disabled={rawValues.pictureFromProvider ? 'disabled' : null}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className="fas fa-user-circle me-1" />
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="Set avatar from auth. provider">
+                            <i className="fas fa-user-circle me-1" />
+                            <Translation i18nkey="Set avatar from auth. provider">
                 Set avatar from auth. Provider
               </Translation>
             </button>
@@ -126,8 +109,7 @@ const Avatar = ({
 const PictureUpload = (props: any) => {
   const [uploading, setUploading] = useState(false);
 
-  // @ts-expect-error TS(2339): Property 'Translation' does not exist on type 'unk... Remove this comment to see the full error message
-  const { Translation } = useContext(I18nContext);
+    const { Translation } = useContext(I18nContext);
 
   const setFiles = (e: any) => {
     const files = e.target.files;
@@ -143,30 +125,24 @@ const PictureUpload = (props: any) => {
   let input: any;
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="changePicture mx-3">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <input
+        <div className="changePicture mx-3">
+            <input
         ref={(r) => (input = r)}
         type="file"
         className="form-control hide"
         onChange={setFiles}
       />
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <button
+            <button
         type="button"
         className="btn btn-outline-secondary"
         disabled={uploading}
         onClick={trigger}
         style={{ width: 100, height: 100, borderRadius: '50%' }}
       >
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {uploading && <i className="fas fa-spinner" />}
+                {uploading && <i className="fas fa-spinner" />}
         {!uploading && (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="text-white">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Change your picture">Change your picture</Translation>
+                    <div className="text-white">
+                        <Translation i18nkey="Change your picture">Change your picture</Translation>
           </div>
         )}
       </button>
@@ -177,8 +153,7 @@ const PictureUpload = (props: any) => {
 export const UserEdit = () => {
   const tenant = useSelector((s) => (s as any).context.tenant);
   useDaikokuBackOffice();
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
@@ -227,12 +202,9 @@ export const UserEdit = () => {
           onChange(nanoid(32));
         };
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="d-flex flex-row">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <input className="form-control" disabled={true} value={value} />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button type="button" className="btn btn-outline-success ms-2" onClick={reloadToken}>
+                    <div className="d-flex flex-row">
+                        <input className="form-control" disabled={true} value={value} />
+                        <button type="button" className="btn btn-outline-success ms-2" onClick={reloadToken}>
               {translateMethod('Reload')}
             </button>
           </div>
@@ -264,10 +236,8 @@ export const UserEdit = () => {
   const removeUser = () => {
     (window.confirm(translateMethod('remove.user.confirm')) as any).then((ok: any) => {
     if (ok) {
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        Services.deleteUserById(user._id).then(() => {
-            // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-            toastr.info(translateMethod('remove.user.success', false, `user ${user.name} is successfully deleted`, user.name));
+                Services.deleteUserById(user._id).then(() => {
+                        toastr.info(translateMethod('remove.user.success', false, `user ${user.name} is successfully deleted`, user.name));
             navigate('/settings/users');
         });
     }
@@ -283,10 +253,8 @@ export const UserEdit = () => {
               'user.created.success',
               false,
               `user ${              
-// @ts-expect-error TS(2532): Object is possibly 'undefined'.
 user.name} successfully created`,
-              // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-              user.name
+                            user.name
             )
           );
           navigate("/settings/users")
@@ -300,10 +268,8 @@ user.name} successfully created`,
               'user.updated.success',
               false,
               `user ${              
-// @ts-expect-error TS(2532): Object is possibly 'undefined'.
 user.name} successfully updated`,
-              // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-              user.name
+                            user.name
             )
           );
           navigate("/settings/users")
@@ -318,44 +284,32 @@ user.name} successfully updated`,
 
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <Can I={manage} a={daikoku} dispatchError>
+        <Can I={manage} a={daikoku} dispatchError>
       {user && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <Form
+                <Form
           ref={ref}
-          // @ts-expect-error TS(2322): Type '{ name: { type: "string"; label: any; constr... Remove this comment to see the full error message
-          schema={schema}
+                    schema={schema}
           value={user}
           onSubmit={save}
           footer={({ reset, valid }) => {
             return (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <div className="d-flex justify-content-end">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <button className="btn btn-outline-danger" onClick={reset}>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <Translation i18nkey="Cancel">Cancel</Translation>
+                            <div className="d-flex justify-content-end">
+                                <button className="btn btn-outline-danger" onClick={reset}>
+                                    <Translation i18nkey="Cancel">Cancel</Translation>
                 </button>
                 {!create && (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  <button
+                                    <button
                     type="button"
                     className="btn btn-outline-danger ms-2"
                     onClick={removeUser}
                   >
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-trash me-1" />
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <Translation i18nkey="Delete">Delete</Translation>
+                                        <i className="fas fa-trash me-1" />
+                                        <Translation i18nkey="Delete">Delete</Translation>
                   </button>
                 )}
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <button className="btn btn-outline-success ms-2" onClick={valid}>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  {create && <Translation i18nkey="Save">Create</Translation>}
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  {!create && <Translation i18nkey="Save">Save</Translation>}
+                                <button className="btn btn-outline-success ms-2" onClick={valid}>
+                                    {create && <Translation i18nkey="Save">Create</Translation>}
+                                    {!create && <Translation i18nkey="Save">Save</Translation>}
                 </button>
               </div>
             );

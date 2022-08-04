@@ -1,5 +1,4 @@
 import React, { useEffect, useContext } from 'react';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'swag... Remove this comment to see the full error message
 import SwaggerEditor, { plugins } from 'swagger-editor';
 import { Form, type, format, constraints } from '@maif/react-forms';
 
@@ -55,8 +54,7 @@ const SwaggerEditorInput = ({
     };
   }, []);
 
-  // @ts-expect-error TS(2300): Duplicate identifier 'content'.
-  const initSwaggerEditor = (content: any) => {
+    const initSwaggerEditor = (content: any) => {
     (window as any).editor = SwaggerEditor({
     // eslint-disable-line no-undef
     dom_id: '#swagger-editor',
@@ -69,21 +67,17 @@ const SwaggerEditorInput = ({
 });
     (window as any).editor.specActions.updateSpec(content || JSON.stringify(defaultSwaggerContent, null, 2));
     unsubscribe = (window as any).editor.getStore().subscribe(() => {
-    // @ts-expect-error TS(2339): Property 'editor' does not exist on type 'Window &... Remove this comment to see the full error message
-    const content = window.editor.specSelectors.specStr();
+        const content = window.editor.specSelectors.specStr();
     onChange(content);
 });
-      // @ts-expect-error TS(2300): Duplicate identifier 'content'.
-      const content = (window as any).editor.specSelectors.specStr();
+            const content = (window as any).editor.specSelectors.specStr();
       onChange(content);
     });
   };
 
   const killSwaggerEditor = () => {
-    // @ts-expect-error TS(2304): Cannot find name 'unsubscribe'.
-    if (unsubscribe) {
-      // @ts-expect-error TS(2304): Cannot find name 'unsubscribe'.
-      unsubscribe();
+        if (unsubscribe) {
+            unsubscribe();
     }
     (window as any).editor = null;
     localStorage.removeItem('swagger-editor-content');
@@ -97,8 +91,7 @@ export const TeamApiSwagger = ({
   onChange,
   reference
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const swagger = value.swagger;
 
   const schema = {
@@ -142,17 +135,14 @@ export const TeamApiSwagger = ({
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <Form
+        <Form
       ref={reference}
-      // @ts-expect-error TS(2322): Type '{ url: { type: "string"; label: any; visible... Remove this comment to see the full error message
-      schema={schema}
+            schema={schema}
       onSubmit={(swagger) => {
         onChange({ ...value, swagger });
       }}
       value={value.swagger}
-      // @ts-expect-error TS(2322): Type '() => null' is not assignable to type '(prop... Remove this comment to see the full error message
-      footer={() => null}
+            footer={() => null}
     />
   );
 };

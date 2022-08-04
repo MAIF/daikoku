@@ -7,19 +7,43 @@ import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
 import { partition, Option } from '../../utils';
 
-// @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
-export const MessagesContext = React.createContext();
+const initMessageContext = {
+  messages: [],
+  totalUnread: 0,
+  sendNewMessage: () => { },
+  readMessages: () => { },
+  adminTeam: {},
+  closeChat: () => { },
+  getPreviousMessages: () => { },
+  lastClosedDates: null,
+  loading: false,
+  createNewChat: () => { },
+}
+
+type TMessageContext = {
+  messages: any,
+  totalUnread: number,
+  sendNewMessage: any,
+  readMessages: any,
+  adminTeam: any,
+  closeChat: any,
+  getPreviousMessages: any,
+  lastClosedDates: any,
+  loading: boolean,
+  createNewChat: any,
+}
+export const MessagesContext = React.createContext<TMessageContext>(initMessageContext);
 
 const MessagesProviderComponent = ({
   children,
   connectedUser
-}: any) => {
-  const [messages, setMessages] = useState([]);
-  const [adminTeam, setAdminTeam] = useState(undefined);
-  const [receivedMessage, setReceivedMessage] = useState(undefined);
-  const [totalUnread, setTotalUnread] = useState(0);
-  const [lastClosedDates, setLastClosedDates] = useState({});
-  const [loading, setLoading] = useState(false);
+}: { children: JSX.Element, connectedUser: any }) => {
+  const [messages, setMessages] = useState<Array<any>>([]);
+  const [adminTeam, setAdminTeam] = useState<any>(undefined);
+  const [receivedMessage, setReceivedMessage] = useState<any>(undefined);
+  const [totalUnread, setTotalUnread] = useState<number>(0);
+  const [lastClosedDates, setLastClosedDates] = useState<Array<any>>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const sseId = nanoid(64);
 
@@ -53,129 +77,81 @@ const MessagesProviderComponent = ({
       if ((lastClosedDates as any).every(({ chat }: any) => chat !== (receivedMessage as any).chat)) {
         setLoading(true);
         Services.lastDateChat((receivedMessage as any).chat, moment().format('x')).then((date) => {
-    setLastClosedDates([
-        // @ts-expect-error TS(2339): Property 'filter' does not exist on type '{}'.
-        ...lastClosedDates.filter((item: any) => item.chat !== receivedMessage.chat),
-        // @ts-expect-error TS(2339): Property 'chat' does not exist on type 'never'.
-        { chat: receivedMessage.chat, date },
-    ]);
-    setLoading(false);
-});
           setLastClosedDates([
-    ...(lastClosedDates as any).filter((item: any) => item.chat !== (receivedMessage as any).chat),
-    // @ts-expect-error TS(18004): No value exists in scope for the shorthand propert... Remove this comment to see the full error message
-    { chat: (receivedMessage as any).chat, date },
-]);
+            ...lastClosedDates.filter((item: any) => item.chat !== receivedMessage.chat),
+            { chat: receivedMessage.chat, date },
+          ]);
           setLoading(false);
         });
       }
-      // @ts-expect-error TS(2552): Cannot find name 'setMessages'. Did you mean 'post... Remove this comment to see the full error message
       setMessages([receivedMessage, ...messages]);
-      // @ts-expect-error TS(2304): Cannot find name 'setReceivedMessage'.
       setReceivedMessage(undefined);
     }
-  // @ts-expect-error TS(2304): Cannot find name 'receivedMessage'.
   }, [receivedMessage, totalUnread]);
 
   useEffect(() => {
-    // @ts-expect-error TS(2304): Cannot find name 'setTotalUnread'.
     setTotalUnread(messages.filter((m) => !(m as any).readBy.includes(connectedUser._id)).length);
-  // @ts-expect-error TS(2552): Cannot find name 'messages'. Did you mean 'onmessa... Remove this comment to see the full error message
   }, [messages]);
 
   const handleEvent = (m: any) => {
-    // @ts-expect-error TS(2304): Cannot find name 'setReceivedMessage'.
     setReceivedMessage(m);
   };
 
   const sendNewMessage = (newMessage: any, participants: any, chat: any) => {
-    // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
     setLoading(true);
-    // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
     return Services.sendMessage(newMessage, participants, chat).then(() => setLoading(false));
   };
 
   const readMessages = (chat: any) => {
     Services.setMessagesRead(chat)
-      // @ts-expect-error TS(2554): Expected 2 arguments, but got 1.
       .then(() => Services.myChatMessages(chat))
       .then((result) => {
-        // @ts-expect-error TS(2304): Cannot find name 'messages'.
         const [filterMessages] = partition(messages, (m: any) => m.chat !== chat);
 
-        // @ts-expect-error TS(2304): Cannot find name 'setMessages'.
         setMessages([...filterMessages, ...result.messages]);
-        // @ts-expect-error TS(2304): Cannot find name 'setLastClosedDates'.
         setLastClosedDates([
-    // @ts-expect-error TS(2304): Cannot find name 'lastClosedDates'.
-    ...(lastClosedDates as any).filter((item: any) => item.chat !== chat),
-    ...result.previousClosedDates,
-]);
+          ...(lastClosedDates as any).filter((item: any) => item.chat !== chat),
+          ...result.previousClosedDates,
+        ]);
       });
   };
 
   const closeChat = (chatid: any) => {
-    // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
     setLoading(true);
     return Services.closeMessageChat(chatid)
       .then(() => {
-        // @ts-expect-error TS(2304): Cannot find name 'adminTeam'.
         if (adminTeam.users.some((u: any) => u.userId === connectedUser._id)) {
           return Services.myMessages();
         }
         return Services.myAdminMessages();
       })
       .then(({ messages, previousClosedDates }) => {
-        // @ts-expect-error TS(2304): Cannot find name 'setMessages'.
         setMessages(messages);
-        // @ts-expect-error TS(2304): Cannot find name 'setLastClosedDates'.
         setLastClosedDates(previousClosedDates);
-        // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
         setLoading(false);
       });
   };
 
   const getPreviousMessages = (chat: any) => {
-    // @ts-expect-error TS(2304): Cannot find name 'lastClosedDates'.
     Option((lastClosedDates as any).find((item: any) => item.chat === chat))
-    .map((item: any) => item.date)
-    .fold(() => { }, (date: any) => {
-    // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
-    setLoading(true);
-    Services.myChatMessages(chat, date).then((result) => {
-        // @ts-expect-error TS(2304): Cannot find name 'setMessages'.
-        setMessages([...result.messages, ...messages]);
-        // @ts-expect-error TS(2304): Cannot find name 'setLastClosedDates'.
-        setLastClosedDates([
-            // @ts-expect-error TS(2304): Cannot find name 'lastClosedDates'.
+      .map((item: any) => item.date)
+      .fold(() => { }, (date: any) => {
+        setLoading(true);
+        Services.myChatMessages(chat, date).then((result) => {
+          setMessages([...result.messages, ...messages]);
+          setLastClosedDates([
             ...lastClosedDates.filter((item: any) => item.chat !== chat),
             ...result.previousClosedDates,
-        ]);
-        // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
-        setLoading(false);
-    });
-});
-            // @ts-expect-error TS(2304): Cannot find name 'setLastClosedDates'.
-            setLastClosedDates([
-    // @ts-expect-error TS(2304): Cannot find name 'lastClosedDates'.
-    ...(lastClosedDates as any).filter((item: any) => item.chat !== chat),
-    // @ts-expect-error TS(2304): Cannot find name 'result'.
-    ...result.previousClosedDates,
-]);
-            // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
-            setLoading(false);
-          });
-        }
-      );
+          ]);
+          setLoading(false);
+        });
+      });
   };
 
   const createNewChat = (chat: any) => {
-    // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
     setLoading(true);
     return Services.lastDateChat(chat, moment().format('x')).then((date) => {
-      // @ts-expect-error TS(2304): Cannot find name 'setLastClosedDates'.
       setLastClosedDates([...(lastClosedDates as any).filter((item: any) => item.chat !== chat), { chat, date }]);
-      // @ts-expect-error TS(2304): Cannot find name 'setLoading'.
       setLoading(false);
     });
   };
@@ -204,5 +180,4 @@ const mapStateToProps = (state: any) => ({
   ...state.context
 });
 
-// @ts-expect-error TS(2345): Argument of type '({ children, connectedUser }: an... Remove this comment to see the full error message
 export const MessagesProvider = connect(mapStateToProps)(MessagesProviderComponent);

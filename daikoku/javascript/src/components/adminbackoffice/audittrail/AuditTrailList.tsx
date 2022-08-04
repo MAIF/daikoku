@@ -2,15 +2,13 @@ import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 
 import { Table } from '../../inputs';
-// @ts-expect-error TS(6142): Module '../../inputs/datepicker' was resolved to '... Remove this comment to see the full error message
 import { OtoDatePicker } from '../../inputs/datepicker';
 import * as Services from '../../../services';
 import { Can, manage, tenant } from '../../utils';
 import { useTenantBackOffice } from '../../../contexts';
 
 export const AuditTrailList = () => {
-  // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
-  useTenantBackOffice();
+    useTenantBackOffice();
 
   const [from, setFrom] = useState(moment().subtract(1, 'hour'));
   const [to, setTo] = useState(moment());
@@ -58,18 +56,15 @@ export const AuditTrailList = () => {
       }: any) => {
         const value = original;
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <button
+                    <button
             type="button"
             className="btn btn-sm btn-outline-primary"
             onClick={() => {
               window.alert(
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
+                                <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
                   {JSON.stringify(value, null, 2)}
                 </pre>,
-                // @ts-expect-error TS(2554): Expected 0-1 arguments, but got 2.
-                'Event details'
+                                'Event details'
               );
             }}
           >
@@ -96,8 +91,7 @@ export const AuditTrailList = () => {
   };
 
   const topBar = () => {
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return <OtoDatePicker updateDateRange={updateDateRange} from={from} to={to} />;
+        return <OtoDatePicker updateDateRange={updateDateRange} from={from} to={to} />;
   };
 
   const fetchItems = () => {
@@ -107,22 +101,14 @@ export const AuditTrailList = () => {
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <Can I={manage} a={tenant} dispatchError>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <h1>Audit trail </h1>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="section">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="p-2">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Table
-                // @ts-expect-error TS(2322): Type '{ selfUrl: string; defaultTitle: string; def... Remove this comment to see the full error message
-                selfUrl="audit"
+        <Can I={manage} a={tenant} dispatchError>
+            <div className="row">
+                <div className="col">
+                    <h1>Audit trail </h1>
+                    <div className="section">
+                        <div className="p-2">
+                            <Table
+                                selfUrl="audit"
                 defaultTitle="Audit trail"
                 defaultValue={() => ({})}
                 itemName="event"

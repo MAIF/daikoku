@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 import sortBy from 'lodash/sortBy';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import classnames from 'classnames';
 
@@ -36,8 +35,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
     tab: TABS.members,
   });
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     updateMembers(props.currentTeam);
@@ -48,8 +46,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
       ([members, res]) => {
         setState({
           ...state,
-          // @ts-expect-error TS(2345): Argument of type '{ members: any; pendingUsers: an... Remove this comment to see the full error message
-          members,
+                    members,
           pendingUsers: res.pendingUsers,
           loading: false,
         });
@@ -209,8 +206,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
   };
 
   if (props.currentTeam.type === 'Personal') {
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return <Navigate to="/settings/me" />;
+        return <Navigate to="/settings/me" />;
   }
 
   if (!(state as any).members) {
@@ -224,12 +220,9 @@ export const TeamMembersSimpleComponent = (props: any) => {
   const filteredPending = (state as any).search
     ? state.pendingUsers.filter(({ name, email }) => [name, email].some((value) => (value as any).toLowerCase().includes((state as any).search)))
     : state.pendingUsers;
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return <>
-    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-    <div className="container-fluid" style={{ position: 'relative' }}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <button className="btn btn-success" type="button" onClick={() => {
+    return <>
+        <div className="container-fluid" style={{ position: 'relative' }}>
+            <button className="btn btn-success" type="button" onClick={() => {
         const { history, currentTeam, tenant, openInvitationModal } = props;
         openInvitationModal({
             history,
@@ -243,30 +236,21 @@ export const TeamMembersSimpleComponent = (props: any) => {
     }}>
         {translateMethod('team_member.invit_user')}
       </button>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col mt-3 onglets">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <ul className="nav nav-tabs flex-column flex-sm-row">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <li className="nav-item">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <span className={`nav-link cursor-pointer ${state.tab === TABS.members ? 'active' : ''}`} onClick={() => setState({ ...state, tab: TABS.members })}>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Translation i18nkey="Member" isPlural={(state as any).members.length > 1}>
+            <div className="row">
+                <div className="col mt-3 onglets">
+                    <ul className="nav nav-tabs flex-column flex-sm-row">
+                        <li className="nav-item">
+                            <span className={`nav-link cursor-pointer ${state.tab === TABS.members ? 'active' : ''}`} onClick={() => setState({ ...state, tab: TABS.members })}>
+                                <Translation i18nkey="Member" isPlural={(state as any).members.length > 1}>
                   Member
                 </Translation>
               </span>
             </li>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <li className="nav-item">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <span className={classnames('nav-link cursor-pointer', {
+                        <li className="nav-item">
+                            <span className={classnames('nav-link cursor-pointer', {
         active: state.tab === TABS.pending,
     })} onClick={() => setState({ ...state, tab: TABS.pending })}>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Translation i18nkey="pending members" replacements={[(state.pendingUsers || []).length]}>
+                                <Translation i18nkey="pending members" replacements={[(state.pendingUsers || []).length]}>
                   Pending ({(state.pendingUsers || []).length})
                 </Translation>
               </span>
@@ -275,50 +259,34 @@ export const TeamMembersSimpleComponent = (props: any) => {
         </div>
       </div>
     </div>
-    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-    {state.tab === TABS.members && (<PaginatedComponent help={() => {
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            alert(<div className="d-flex flex-column">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-shield-alt me-1"/>
+        {state.tab === TABS.members && (<PaginatedComponent help={() => {
+                        alert(<div className="d-flex flex-column">
+                            <div>
+                                <i className="fas fa-shield-alt me-1"/>
                 {translateMethod('permission.caption.administrator')}
               </div>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-pencil-alt me-1"/>
+                            <div>
+                                <i className="fas fa-pencil-alt me-1"/>
                 {translateMethod('permission.caption.apiEditor')}
               </div>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-user-alt me-1"/>
+                            <div>
+                                <i className="fas fa-user-alt me-1"/>
                 {translateMethod('permission.caption.user')}
               </div>
-            {/* @ts-expect-error TS(2554): Expected 0-1 arguments, but got 2. */}
-            </div>, translateMethod('Permission', true));
+                        </div>, translateMethod('Permission', true));
         }} items={sortBy(filteredMembers, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
             const isAdmin = userHavePemission(member, administrator);
             const isApiEditor = userHavePemission(member, apiEditor);
             if (member.isPending) {
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-question me-2"/>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <span className="team-member__name">{member.name}</span>
+                                return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<>
+                                        <i className="fas fa-question me-2"/>
+                                        <span className="team-member__name">{member.name}</span>
                   </>} actions={[]}/>);
             }
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  {userHavePemission(member, administrator) && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }}/>)}
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  {userHavePemission(member, apiEditor) && (<i className="fas fa-pencil-alt" style={{ marginRight: '10px' }}/>)}
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <span className="team-member__name">{member.name}</span>
+                        return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<>
+                                    {userHavePemission(member, administrator) && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }}/>)}
+                                    {userHavePemission(member, apiEditor) && (<i className="fas fa-pencil-alt" style={{ marginRight: '10px' }}/>)}
+                                    <span className="team-member__name">{member.name}</span>
                 </>} actions={[
                     {
                         action: () => removeMember(member),
@@ -348,11 +316,9 @@ export const TeamMembersSimpleComponent = (props: any) => {
                 ]}/>);
         }}/>)}
     {state.tab === TABS.pending &&
-        (filteredPending.length > 0 ? // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          (<PaginatedComponent items={sortBy(filteredPending, [(member) => (member as any).name.toLowerCase()])} count={15} formatter={(member) => {
+        (filteredPending.length > 0 ?           (<PaginatedComponent items={sortBy(filteredPending, [(member) => (member as any).name.toLowerCase()])} count={15} formatter={(member) => {
                 const invitedUser = member.name === 'invited user';
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<span className="team-member__name">
+                                return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<span className="team-member__name">
                     {invitedUser ? member.email : member.name}
                   </span>} actions={invitedUser
                         ? [
@@ -360,8 +326,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
                                 action: () => {
                                     window
                                         .confirm(translateMethod('team_member.confirm_remove_invitation'))
-                                        // @ts-expect-error TS(2339): Property 'then' does not exist on type 'boolean'.
-                                        .then((ok: any) => {
+                                                                                .then((ok: any) => {
                                         if (ok)
                                             Services.removeInvitation(props.currentTeam._id, member._id).then(() => updateMembers(props.currentTeam));
                                     });
@@ -371,22 +336,18 @@ export const TeamMembersSimpleComponent = (props: any) => {
                             },
                         ]
                         : []}/>);
-            }}/>) : // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              (<div className="p-3">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="team_member.no_pending_members"/>
+            }}/>) :               (<div className="p-3">
+                    <Translation i18nkey="team_member.no_pending_members"/>
         </div>))}
   </>;
                             (window
     .confirm(translateMethod('team_member.confirm_remove_invitation')) as any).then((ok: any) => {
     if (ok)
-        // @ts-expect-error TS(2304): Cannot find name 'member'.
-        Services.removeInvitation(props.currentTeam._id, member._id).then(() => updateMembers(props.currentTeam));
+                Services.removeInvitation(props.currentTeam._id, member._id).then(() => updateMembers(props.currentTeam));
 });
                           },
                           iconClass: 'fas fa-trash delete-icon',
-                          // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-                          tooltip: translateMethod('Remove invitation'),
+                                                    tooltip: translateMethod('Remove invitation'),
                         },
                       ]
                     : []
@@ -396,10 +357,8 @@ export const TeamMembersSimpleComponent = (props: any) => {
           }}
         />
       ) : (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div className="p-3">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="team_member.no_pending_members" />
+                <div className="p-3">
+                    <Translation i18nkey="team_member.no_pending_members" />
         </div>
       ))}
   </>;
@@ -407,18 +366,15 @@ export const TeamMembersSimpleComponent = (props: any) => {
 
 const TeamMembersComponent = (props: any) => {
   useTeamBackOffice(props.currentTeam);
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     document.title = `${props.currentTeam.name} - ${translateMethod('Member', true)}`;
   }, []);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <TeamMembersSimpleComponent {...props} />
+        <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
+            <TeamMembersSimpleComponent {...props} />
     </Can>
   );
 };

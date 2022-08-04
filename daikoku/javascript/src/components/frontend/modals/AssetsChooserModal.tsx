@@ -23,8 +23,7 @@ export const AssetSelectorModal = ({
   const [selectedAsset, setSelectedAsset] = useState({});
   const [search, setSearch] = useState();
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   const selectAssetAndCloseModal = () => {
     onSelect(selectedAsset);
@@ -35,39 +34,27 @@ export const AssetSelectorModal = ({
     (asset: any) => !search || asset.title.toLowerCase().includes(search)
   );
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return (<div className="modal-content">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-header">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h5 className="modal-title">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="Select an asset">Select an asset</Translation>
+    return (<div className="modal-content">
+            <div className="modal-header">
+                <h5 className="modal-title">
+                    <Translation i18nkey="Select an asset">Select an asset</Translation>
         </h5>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal}/>
+                <button type="button" className="btn-close" aria-label="Close" onClick={closeModal}/>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-body">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="asset-selection-body">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <input placeholder={translateMethod('Find an assets')} className="form-control" onChange={(e) => setSearch(e.target.value)}/>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className={classNames({
+            <div className="modal-body">
+                <div className="asset-selection-body">
+                    <input placeholder={translateMethod('Find an assets')} className="form-control" onChange={(e) => setSearch(e.target.value)}/>
+                    <div className={classNames({
         'asset-selection__container--column': !onlyPreview,
         'asset-selection__container--row': onlyPreview,
         tiles: onlyPreview,
     })}>
             {filteredAssets.map((asset: any, idx: any) => {
         if (onlyPreview) {
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            return (<div className={classNames('tile', {
-                    // @ts-expect-error TS(2339): Property 'value' does not exist on type '{}'.
-                    selected: asset.value === selectedAsset.value,
+                        return (<div className={classNames('tile', {
+                                        selected: asset.value === selectedAsset.value,
                 })} key={idx}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <img onClick={() => setSelectedAsset(asset)} onDoubleClick={() => {
+                                        <img onClick={() => setSelectedAsset(asset)} onDoubleClick={() => {
                     setSelectedAsset(asset);
                     selectAssetAndCloseModal();
                 }} src={asset.contentType.includes('svg')
@@ -75,60 +62,40 @@ export const AssetSelectorModal = ({
                     : `/asset-thumbnails/${asset.value}`} alt={translateMethod('Thumbnail')}/>
                   </div>);
         }
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        return (<div key={idx} className={classNames('asset-selection', {
-                // @ts-expect-error TS(2339): Property 'value' does not exist on type '{}'.
-                selected: asset.value === selectedAsset.value,
+                return (<div key={idx} className={classNames('asset-selection', {
+                                selected: asset.value === selectedAsset.value,
             })} onClick={() => setSelectedAsset(asset)}>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <span className="ms-2">{asset.title}</span>
+                                    <span className="ms-2">{asset.title}</span>
                 </div>);
     })}
           </div>
         </div>
 
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className={classNames('asset__preview', { open: !!(selectedAsset as any).title })}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          {(selectedAsset as any).title && (<div>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <p>file: {(selectedAsset as any).title}</p>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {(selectedAsset as any).desc && (selectedAsset as any).desc !== 'undefined' && (<em>{(selectedAsset as any).desc}</em>)}
+                <div className={classNames('asset__preview', { open: !!(selectedAsset as any).title })}>
+                    {(selectedAsset as any).title && (<div>
+                            <p>file: {(selectedAsset as any).title}</p>
+                            {(selectedAsset as any).desc && (selectedAsset as any).desc !== 'undefined' && (<em>{(selectedAsset as any).desc}</em>)}
             </div>)}
         </div>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-footer">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="Close">Close</Translation>
+            <div className="modal-footer">
+                <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
+                    <Translation i18nkey="Close">Close</Translation>
         </button>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-success" onClick={() => selectAssetAndCloseModal()}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="Select">Select</Translation>
+                <button type="button" className="btn btn-outline-success" onClick={() => selectAssetAndCloseModal()}>
+                    <Translation i18nkey="Select">Select</Translation>
         </button>
       </div>
     </div>);
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                return (<div className={classNames('tile', {
-        // @ts-expect-error TS(2552): Cannot find name 'asset'. Did you mean 'assets'?
-        selected: asset.value === (selectedAsset as any).value,
-    // @ts-expect-error TS(2304): Cannot find name 'idx'.
-    })} key={idx}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <img onClick={() => setSelectedAsset(asset)} onDoubleClick={() => {
-        // @ts-expect-error TS(2304): Cannot find name 'asset'.
-        setSelectedAsset(asset);
+                                return (<div className={classNames('tile', {
+                selected: asset.value === (selectedAsset as any).value,
+        })} key={idx}>
+                                        <img onClick={() => setSelectedAsset(asset)} onDoubleClick={() => {
+                setSelectedAsset(asset);
         selectAssetAndCloseModal();
-    // @ts-expect-error TS(2304): Cannot find name 'asset'.
-    }} src={asset.contentType.includes('svg')
-        ? // @ts-expect-error TS(2304): Cannot find name 'asset'.
-          asset.link
-        : // @ts-expect-error TS(2304): Cannot find name 'asset'.
-          `/asset-thumbnails/${asset.value}`} alt={translateMethod('Thumbnail')}/>
+        }} src={asset.contentType.includes('svg')
+        ?           asset.link
+        :           `/asset-thumbnails/${asset.value}`} alt={translateMethod('Thumbnail')}/>
                   </div>);
               }
 
@@ -138,55 +105,38 @@ export const AssetSelectorModal = ({
                   <span className="ms-2">{asset.title}</span>
                 </div>);
             })}
-          // @ts-expect-error TS(2304): Cannot find name 'div'.
-          </div>
-        // @ts-expect-error TS(2304): Cannot find name 'div'.
-        </div>
+                    </div>
+                </div>
 
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div className={classNames('asset__preview', { open: !!selectedAsset.title })}>
-          {/* @ts-expect-error TS(2304): Cannot find name 'selectedAsset'. */}
-          {selectedAsset.title && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <div>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <p>file: {selectedAsset.title}</p>
-              {/* @ts-expect-error TS(2304): Cannot find name 'selectedAsset'. */}
-              {selectedAsset.desc && selectedAsset.desc !== 'undefined' && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <em>{selectedAsset.desc}</em>
+                <div className={classNames('asset__preview', { open: !!selectedAsset.title })}>
+                    {selectedAsset.title && (
+                        <div>
+                            <p>file: {selectedAsset.title}</p>
+                            {selectedAsset.desc && selectedAsset.desc !== 'undefined' && (
+                                <em>{selectedAsset.desc}</em>
               )}
             </div>
           )}
         </div>
-      // @ts-expect-error TS(2304): Cannot find name 'div'.
-      </div>
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <div className="modal-footer">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="Close">Close</Translation>
+            </div>
+            <div className="modal-footer">
+                <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
+                    <Translation i18nkey="Close">Close</Translation>
         </button>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button
+                <button
           type="button"
           className="btn btn-outline-success"
-          // @ts-expect-error TS(2304): Cannot find name 'selectAssetAndCloseModal'.
-          onClick={() => selectAssetAndCloseModal()}
+                    onClick={() => selectAssetAndCloseModal()}
         >
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="Select">Select</Translation>
+                    <Translation i18nkey="Select">Select</Translation>
         </button>
       </div>
-    // @ts-expect-error TS(2304): Cannot find name 'div'.
-    </div>
+        </div>
   );
 };
 
 export function AssetChooserComponent(props: any) {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState({
     loading: true,
@@ -228,8 +178,7 @@ export function AssetChooserComponent(props: any) {
 
   let mounted: any;
 
-  // @ts-expect-error TS(2345): Argument of type '() => () => boolean' is not assi... Remove this comment to see the full error message
-  useEffect(() => {
+    useEffect(() => {
     mounted = true;
     getAssets(props.team);
 
@@ -254,8 +203,7 @@ export function AssetChooserComponent(props: any) {
     loading: false,
 });
           } else {
-            // @ts-expect-error TS(2322): Type 'unknown' is not assignable to type 'never[]'... Remove this comment to see the full error message
-            setState({ ...state, assets, loading: false });
+                        setState({ ...state, assets, loading: false });
           }
         }
       })
@@ -266,21 +214,16 @@ export function AssetChooserComponent(props: any) {
 
   if (state.assets && state.loading) {
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <button type="button" className="btn btn-outline-success ms-1" disabled>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Translation i18nkey="loading">loading...</Translation>
+            <button type="button" className="btn btn-outline-success ms-1" disabled>
+                <Translation i18nkey="loading">loading...</Translation>
       </button>
     );
   }
 
   if (state.error) {
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return (<BeautifulTitle title={(state.error as any).message}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-primary ms-1 cursor-help" disabled>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <i className={classNames('fas', {
+        return (<BeautifulTitle title={(state.error as any).message}>
+                <button type="button" className="btn btn-outline-primary ms-1 cursor-help" disabled>
+                    <i className={classNames('fas', {
         'fa-user-circle me-1': !!props.onlyPreview,
         'fa-file me-1': !props.onlyPreview,
     })}/>
@@ -291,12 +234,9 @@ export function AssetChooserComponent(props: any) {
 
   if (!state.assets.length) {
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <BeautifulTitle title={translateMethod('No assets found')}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-access-negative ms-1 cursor-help" disabled>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <i
+            <BeautifulTitle title={translateMethod('No assets found')}>
+                <button type="button" className="btn btn-access-negative ms-1 cursor-help" disabled>
+                    <i
             className={classNames('fas me-1', {
               'fa-user-circle': !!props.onlyPreview,
               'fa-file': !props.onlyPreview,
@@ -309,8 +249,7 @@ export function AssetChooserComponent(props: any) {
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <button
+        <button
       type="button"
       className={props.classNames ? props.classNames : 'btn btn-access-negative ms-1'}
       onClick={() =>
@@ -323,8 +262,7 @@ export function AssetChooserComponent(props: any) {
         })
       }
     >
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <i
+            <i
         className={
           props.icon
             ? props.icon

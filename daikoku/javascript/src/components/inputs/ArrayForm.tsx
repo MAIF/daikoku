@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-// @ts-expect-error TS(6142): Module './Help' was resolved to '/Users/qaubert/So... Remove this comment to see the full error message
 import { Help } from './Help';
 import Select from 'react-select';
 import { Spinner } from '../utils';
 
-// @ts-expect-error TS(6142): Module './Form' was resolved to '/Users/qaubert/So... Remove this comment to see the full error message
 const LazyForm = React.lazy(() => import('./Form'));
 
 const ArrayForm = (props: any) => {
@@ -37,51 +35,38 @@ const ArrayForm = (props: any) => {
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="mb-3 row">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {props.label} <Help text={props.help} />
+        <div className="mb-3 row">
+            <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
+                {props.label} <Help text={props.help} />
       </label>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Select
+            <Select
         className="col-11"
         value={{ label: selectedSelector, value: selectedSelector }}
         options={possibleValues.map((v: any) => ({
           label: v,
           value: v
         }))}
-        // @ts-expect-error TS(2531): Object is possibly 'null'.
-        onChange={(e) => setSelectedSelector(e.value)}
+                onChange={(e) => setSelectedSelector(e.value)}
         classNamePrefix="reactSelect"
       />
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="col-sm-10">
+            <div className="col-sm-10">
         {(props.prefix || props.suffix) && (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="input-group">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {props.prefix && <div className="input-group-addon">{props.prefix}</div>}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <React.Suspense fallback={<Spinner />}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <LazyForm
+                    <div className="input-group">
+                        {props.prefix && <div className="input-group-addon">{props.prefix}</div>}
+                        <React.Suspense fallback={<Spinner />}>
+                            <LazyForm
                 flow={props.flow}
                 schema={props.schema}
                 value={selectedValue}
                 onChange={onChange}
               />
             </React.Suspense>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {props.suffix && <div className="input-group-addon">{props.suffix}</div>}
+                        {props.suffix && <div className="input-group-addon">{props.suffix}</div>}
           </div>
         )}
         {!(props.prefix || props.suffix) && (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <React.Suspense fallback={<Spinner />}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <LazyForm
+                    <React.Suspense fallback={<Spinner />}>
+                        <LazyForm
               flow={props.flow}
               schema={props.schema}
               value={selectedValue}

@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-// @ts-expect-error TS(6142): Module './Help' was resolved to '/Users/qaubert/So... Remove this comment to see the full error message
 import { Help } from './Help';
 
 export class ObjectInput extends Component {
@@ -41,51 +40,32 @@ export class ObjectInput extends Component {
 
   render() {
     const values = Object.keys((this.props as any).value || {}).map((k) => [k, (this.props as any).value[k]]);
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return (<div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {values.length === 0 && (<div className="mb-3 row align-items-center">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <label htmlFor={`input-${(this.props as any).label}`} className="col-xs-12 col-sm-2 col-form-label">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Help text={(this.props as any).help} label={(this.props as any).label}/>
+        return (<div>
+                {values.length === 0 && (<div className="mb-3 row align-items-center">
+                        <label htmlFor={`input-${(this.props as any).label}`} className="col-xs-12 col-sm-2 col-form-label">
+                            <Help text={(this.props as any).help} label={(this.props as any).label}/>
             </label>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-sm-10">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <button disabled={(this.props as any).disabled} type="button" className="btn btn-outline-primary" onClick={this.addFirst}>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-plus"/>{' '}
+                        <div className="col-sm-10">
+                            <button disabled={(this.props as any).disabled} type="button" className="btn btn-outline-primary" onClick={this.addFirst}>
+                                <i className="fas fa-plus"/>{' '}
               </button>
             </div>
           </div>)}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {values.map((value, idx) => (<div key={`form-group-${idx}`} className="row mb-2 align-items-center">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {idx === 0 && (this.props as any).label && (<label className="col-xs-12 col-sm-2 col-form-label">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Help text={(this.props as any).help} label={(this.props as any).label}/>
+                {values.map((value, idx) => (<div key={`form-group-${idx}`} className="row mb-2 align-items-center">
+                        {idx === 0 && (this.props as any).label && (<label className="col-xs-12 col-sm-2 col-form-label">
+                                <Help text={(this.props as any).help} label={(this.props as any).label}/>
               </label>)}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {idx > 0 && (this.props as any).label && (<label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>)}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className={`col-sm-${(this.props as any).label ? '10' : '12'}`}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div className="input-group">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <input disabled={(this.props as any).disabled} type="text" className="form-control" placeholder={(this.props as any).placeholderKey} value={value[0]} onChange={(e) => this.changeKey(e, value[0])}/>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <input disabled={(this.props as any).disabled} type="text" className="form-control" placeholder={(this.props as any).placeholderValue} value={value[1]} onChange={(e) => this.changeValue(e, value[0])}/>
+                        {idx > 0 && (this.props as any).label && (<label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>)}
+                        <div className={`col-sm-${(this.props as any).label ? '10' : '12'}`}>
+                            <div className="input-group">
+                                <input disabled={(this.props as any).disabled} type="text" className="form-control" placeholder={(this.props as any).placeholderKey} value={value[0]} onChange={(e) => this.changeKey(e, value[0])}/>
+                                <input disabled={(this.props as any).disabled} type="text" className="form-control" placeholder={(this.props as any).placeholderValue} value={value[1]} onChange={(e) => this.changeValue(e, value[0])}/>
 
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <button disabled={(this.props as any).disabled} type="button" className="input-group-text btn btn-outline-danger" onClick={(e) => this.remove(e, value[0])}>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <i className="fas fa-trash"/>
+                                <button disabled={(this.props as any).disabled} type="button" className="input-group-text btn btn-outline-danger" onClick={(e) => this.remove(e, value[0])}>
+                                    <i className="fas fa-trash"/>
                 </button>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                {idx === values.length - 1 && (<button disabled={(this.props as any).disabled} type="button" className="input-group-text btn btn-outline-primary" onClick={this.addNext}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-plus"/>{' '}
+                                {idx === values.length - 1 && (<button disabled={(this.props as any).disabled} type="button" className="input-group-text btn btn-outline-primary" onClick={this.addNext}>
+                                        <i className="fas fa-plus"/>{' '}
                   </button>)}
               </div>
             </div>
@@ -133,65 +113,43 @@ export class VerticalObjectInput extends Component {
 
   render() {
     const values = Object.keys((this.props as any).value || {}).map((k) => [k, (this.props as any).value[k]]);
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return (<div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {values.length === 0 && (<div className="mb-3 row">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-xs-12">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <label htmlFor={`input-${(this.props as any).label}`} className="col-form-label">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Help text={(this.props as any).help} label={(this.props as any).label}/>
+        return (<div>
+                {values.length === 0 && (<div className="mb-3 row">
+                        <div className="col-xs-12">
+                            <label htmlFor={`input-${(this.props as any).label}`} className="col-form-label">
+                                <Help text={(this.props as any).help} label={(this.props as any).label}/>
               </label>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <button disabled={(this.props as any).disabled} type="button" className="btn btn-primary" onClick={this.addFirst}>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <i className="fas fa-plus"/>{' '}
+                            <div>
+                                <button disabled={(this.props as any).disabled} type="button" className="btn btn-primary" onClick={this.addFirst}>
+                                    <i className="fas fa-plus"/>{' '}
                 </button>
               </div>
             </div>
           </div>)}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {values.map((value, idx) => (<div key={`from-group-${idx}`} className="mb-3 row" style={{ marginBottom: 5, flexWrap: 'nowrap' }}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-xs-12">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {idx === 0 && (<label className="col-form-label">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <Help text={(this.props as any).help} label={(this.props as any).label}/>
+                {values.map((value, idx) => (<div key={`from-group-${idx}`} className="mb-3 row" style={{ marginBottom: 5, flexWrap: 'nowrap' }}>
+                        <div className="col-xs-12">
+                            {idx === 0 && (<label className="col-form-label">
+                                    <Help text={(this.props as any).help} label={(this.props as any).label}/>
                 </label>)}
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {idx > 0 && false && <label className="col-form-label">&nbsp;</label>}
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div className="input-group">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <input disabled={(this.props as any).disabled} type="text" className="form-control" style={{ width: '50%' }} placeholder={(this.props as any).placeholderKey} value={value[0]} onChange={(e) => this.changeKey(e, value[0])}/>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <input disabled={(this.props as any).disabled} type="text" className="form-control" style={{ width: '50%' }} placeholder={(this.props as any).placeholderValue} value={value[1]} onChange={(e) => this.changeValue(e, value[0])}/>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <span className="btn-group">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button disabled={(this.props as any).disabled} type="button" className="btn btn-sm btn-danger" style={{ marginRight: 0 }} onClick={(e) => this.remove(e, value[0])}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-trash"/>
+                            {idx > 0 && false && <label className="col-form-label">&nbsp;</label>}
+                            <div className="input-group">
+                                <input disabled={(this.props as any).disabled} type="text" className="form-control" style={{ width: '50%' }} placeholder={(this.props as any).placeholderKey} value={value[0]} onChange={(e) => this.changeKey(e, value[0])}/>
+                                <input disabled={(this.props as any).disabled} type="text" className="form-control" style={{ width: '50%' }} placeholder={(this.props as any).placeholderValue} value={value[1]} onChange={(e) => this.changeValue(e, value[0])}/>
+                                <span className="btn-group">
+                                    <button disabled={(this.props as any).disabled} type="button" className="btn btn-sm btn-danger" style={{ marginRight: 0 }} onClick={(e) => this.remove(e, value[0])}>
+                                        <i className="fas fa-trash"/>
                   </button>
                 </span>
               </div>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {idx === values.length - 1 && (<div style={{
+                            {idx === values.length - 1 && (<div style={{
                 display: 'flex',
                 width: '100%',
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginTop: 5,
             }}>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button disabled={(this.props as any).disabled} type="button" className="btn btn-sm btn-block btn-primary" style={{ marginRight: 0 }} onClick={this.addNext}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-plus"/>{' '}
+                                    <button disabled={(this.props as any).disabled} type="button" className="btn btn-sm btn-block btn-primary" style={{ marginRight: 0 }} onClick={this.addNext}>
+                                        <i className="fas fa-plus"/>{' '}
                   </button>
                 </div>)}
             </div>

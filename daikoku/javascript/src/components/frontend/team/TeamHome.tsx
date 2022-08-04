@@ -2,7 +2,6 @@ import React, { Component, useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-// @ts-expect-error TS(6142): Module './ApiList' was resolved to '/Users/qaubert... Remove this comment to see the full error message
 import { ApiList } from './ApiList';
 import { connect } from 'react-redux';
 import { Can, read, team } from '../../utils';
@@ -24,15 +23,13 @@ const TeamHomeComponent = (props: any) => {
 
   const fetchData = (teamId: any) => {
     Promise.all([
-      // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-      client.query({
+            client.query({
         query: Services.graphql.myVisibleApis,
         variables: { teamId },
       }),
       Services.team(teamId),
       Services.teams(),
-      // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-      client.query({
+            client.query({
         query: Services.graphql.myTeams,
       }),
     ]).then(
@@ -56,8 +53,7 @@ const TeamHomeComponent = (props: any) => {
               authorizations
             }: any) => ({ ...api, authorizations })),
             team,
-            // @ts-expect-error TS(2345): Argument of type '{ apis: any; team: any; teams: a... Remove this comment to see the full error message
-            teams,
+                        teams,
             myTeams: myTeams.map(({
               users,
               ...data
@@ -106,8 +102,7 @@ const TeamHomeComponent = (props: any) => {
 
   const redirectToApiPage = (api: any) => {
     if (api.visibility === 'Public' || api.authorized) {
-      // @ts-expect-error TS(2551): Property 'teams' does not exist on type '{ searche... Remove this comment to see the full error message
-      const apiOwner = state.teams.find((t: any) => t._id === api.team._id);
+            const apiOwner = state.teams.find((t: any) => t._id === api.team._id);
 
       const route = (version: any) => `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${
         api._humanReadableId
@@ -138,36 +133,22 @@ const TeamHomeComponent = (props: any) => {
 
   document.title = `${props.tenant.title} - ${(state.team as any).name}`;
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return (<main role="main">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <section className="organisation__header col-12 mb-4 p-3">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="container">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="row text-center">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-sm-4">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <img className="organisation__avatar" src={(state.team as any).avatar || '/assets/images/daikoku.svg'} alt="avatar"/>
+    return (<main role="main">
+            <section className="organisation__header col-12 mb-4 p-3">
+                <div className="container">
+                    <div className="row text-center">
+                        <div className="col-sm-4">
+                            <img className="organisation__avatar" src={(state.team as any).avatar || '/assets/images/daikoku.svg'} alt="avatar"/>
             </div>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-sm-7 d-flex flex-column justify-content-center">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <h1 className="jumbotron-heading">{(state.team as any).name}</h1>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div className="lead">{(state.team as any).description}</div>
+                        <div className="col-sm-7 d-flex flex-column justify-content-center">
+                            <h1 className="jumbotron-heading">{(state.team as any).name}</h1>
+                            <div className="lead">{(state.team as any).description}</div>
             </div>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-sm-1 d-flex flex-column">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Can I={read} a={team} team={state.team}>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <div>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <a href="#" className="float-right team__settings btn btn-sm btn-access-negative" onClick={() => redirectToTeamSettings(state.team)}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-cogs"/>
+                        <div className="col-sm-1 d-flex flex-column">
+                            <Can I={read} a={team} team={state.team}>
+                                <div>
+                                    <a href="#" className="float-right team__settings btn btn-sm btn-access-negative" onClick={() => redirectToTeamSettings(state.team)}>
+                                        <i className="fas fa-cogs"/>
                   </a>
                 </div>
               </Can>
@@ -175,8 +156,7 @@ const TeamHomeComponent = (props: any) => {
           </div>
         </div>
       </section>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <ApiList apis={state.apis} teams={state.teams} myTeams={(state as any).myTeams} teamVisible={false} askForApiAccess={askForApiAccess} toggleStar={toggleStar} redirectToApiPage={redirectToApiPage} redirectToEditPage={redirectToEditPage} redirectToTeamPage={redirectToTeamPage} showTeam={false} team={state.teams.find((team: any) => team._humanReadableId === params.teamId)}/>
+            <ApiList apis={state.apis} teams={state.teams} myTeams={(state as any).myTeams} teamVisible={false} askForApiAccess={askForApiAccess} toggleStar={toggleStar} redirectToApiPage={redirectToApiPage} redirectToEditPage={redirectToEditPage} redirectToTeamPage={redirectToTeamPage} showTeam={false} team={state.teams.find((team: any) => team._humanReadableId === params.teamId)}/>
     </main>);
 };
 

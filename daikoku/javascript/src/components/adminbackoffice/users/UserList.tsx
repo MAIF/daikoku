@@ -3,12 +3,10 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import sortBy from 'lodash/sortBy';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-// @ts-expect-error TS(6142): Module '../../../locales/i18n-context' was resolve... Remove this comment to see the full error message
 import { I18nContext } from '../../../locales/i18n-context';
 import { useDaikokuBackOffice } from '../../../contexts';
 
@@ -24,8 +22,7 @@ export const UserList = () => {
     updateUsers();
   }, []);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   const updateUsers = () => {
     Services.fetchAllUsers()
@@ -71,43 +68,29 @@ export const UserList = () => {
   const filteredUsers = search
     ? users.filter(({ name, email }) => [name, email].some((item) => (item as any).toLowerCase().includes(search)))
     : users;
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return (<Can I={manage} a={daikoku} dispatchError>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="d-flex justify-content-between align-items-center">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <h1>
+    return (<Can I={manage} a={daikoku} dispatchError>
+            <div className="row">
+                <div className="col">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <h1>
               {translateMethod('Users')}
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translateMethod('Create a new user')} href="#" onClick={(e) => {
+                            <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translateMethod('Create a new user')} href="#" onClick={(e) => {
         e.preventDefault();
         createNewUser();
     }}>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-user-plus"/>
+                                <i className="fas fa-user-plus"/>
               </a>
             </h1>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-5">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <input placeholder={translateMethod('Find a user')} className="form-control" onChange={(e) => {
-        // @ts-expect-error TS(2345): Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
-        setSearch(e.target.value);
+                        <div className="col-5">
+                            <input placeholder={translateMethod('Find a user')} className="form-control" onChange={(e) => {
+                setSearch(e.target.value);
     }}/>
             </div>
           </div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <PaginatedComponent items={sortBy(filteredUsers, [(user) => (user as any).name.toLowerCase()])} count={15} formatter={(user) => {
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        return (<AvatarWithAction key={user._id} avatar={user.picture} infos={<>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      {user.isDaikokuAdmin && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }}/>)}
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <span className="team__name text-truncate">{user.name}</span>
+                    <PaginatedComponent items={sortBy(filteredUsers, [(user) => (user as any).name.toLowerCase()])} count={15} formatter={(user) => {
+                return (<AvatarWithAction key={user._id} avatar={user.picture} infos={<>
+                                            {user.isDaikokuAdmin && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }}/>)}
+                                            <span className="team__name text-truncate">{user.name}</span>
                     </>} actions={[
                 {
                     action: () => removeUser(user),
@@ -115,8 +98,7 @@ export const UserList = () => {
                     tooltip: translateMethod('Remove user'),
                 },
                 {
-                    // @ts-expect-error TS(2322): Type '{ redirect: () => void; iconClass: string; t... Remove this comment to see the full error message
-                    redirect: () => navigate(`/settings/users/${user._humanReadableId}`),
+                                        redirect: () => navigate(`/settings/users/${user._humanReadableId}`),
                     iconClass: 'fas fa-pen',
                     tooltip: translateMethod('Edit user'),
                 },

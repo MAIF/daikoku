@@ -13,30 +13,23 @@ const Image = ({
   tenant,
   team
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const domain = tenant?.domain || window.location.origin;
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="d-flex flex-row align-items-center">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="d-flex flex-column flex-grow-1">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <input
+        <div className="d-flex flex-row align-items-center">
+            <div className="d-flex flex-column flex-grow-1">
+                <input
           type="text"
           className="form-control"
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
         />
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex mt-1 justify-content-end">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <AssetChooserByModal
-            // @ts-expect-error TS(2322): Type '{ typeFilter: (value: any) => any; onlyPrevi... Remove this comment to see the full error message
-            typeFilter={MimeTypeFilter.image}
+                <div className="d-flex mt-1 justify-content-end">
+                    <AssetChooserByModal
+                        typeFilter={MimeTypeFilter.image}
             onlyPreview
             team={team}
             teamId={team._id}
@@ -186,8 +179,7 @@ export const teamApiInfoForm = (translateMethod: any, team: any, tenant: any) =>
   };
 
   const simpleOrExpertMode = (entry: any, expert: any) => {
-    // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-    return !!expert || !schema[entry]?.expert;
+        return !!expert || !schema[entry]?.expert;
   };
 
   const flow = (expert: any) => [

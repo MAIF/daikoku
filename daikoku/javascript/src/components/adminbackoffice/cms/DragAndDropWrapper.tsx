@@ -22,14 +22,10 @@ export default ({
   };
 
   useEffect(() => {
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-    dropRef.current.addEventListener('dragenter', handleDrag);
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-    dropRef.current.addEventListener('dragleave', handleDrag);
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-    dropRef.current.addEventListener('dragover', handleDrag);
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-    dropRef.current.addEventListener('drop', handle);
+        dropRef.current.addEventListener('dragenter', handleDrag);
+        dropRef.current.addEventListener('dragleave', handleDrag);
+        dropRef.current.addEventListener('dragover', handleDrag);
+        dropRef.current.addEventListener('drop', handle);
 
     return () => {
       (dropRef.current as any)?.removeEventListener('dragenter', handleDrag);
@@ -40,8 +36,7 @@ export default ({
   }, []);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div style={{ position: 'relative' }} ref={dropRef}>
+        <div style={{ position: 'relative' }} ref={dropRef}>
       {children}
     </div>
   );

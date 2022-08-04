@@ -1,12 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Form, constraints, format, type } from '@maif/react-forms';
 import moment from 'moment';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import X from 'react-feather/dist/icons/x';
 import { useDispatch } from 'react-redux';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
@@ -59,8 +56,7 @@ export function ApiTimelineIssue({
 
   const dispatch = useDispatch();
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAPIIssue(api._humanReadableId, id)
@@ -100,8 +96,7 @@ export function ApiTimelineIssue({
       ...issue,
       comments: issue.comments.map((comment, j) => {
         if (i === j) {
-          // @ts-expect-error TS(2698): Spread types may only be created from object types... Remove this comment to see the full error message
-          return { ...comment, content: newContent, editing: false }
+                    return { ...comment, content: newContent, editing: false }
         }
         return comment;
       }),
@@ -181,17 +176,13 @@ export function ApiTimelineIssue({
             onChange
           }: any) => {
             return (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <div className='d-flex flex-row'>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
+                            <div className='d-flex flex-row'>
+                                <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
                   style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
                   onClick={() => onChange(randomColor())}>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <RefreshCcw />
+                                    <RefreshCcw />
                 </div>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
+                                <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
               </div>
             )
           },
@@ -209,51 +200,35 @@ export function ApiTimelineIssue({
     }))
   }
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return (<div className="container">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="d-flex align-items-center justify-content-between mb-2">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {editionMode ? (<input type="text" className="form-control" placeholder="Title" value={(issue as any).title} onChange={(e) => setIssue({ ...issue, title: e.target.value })}/>) : (<h1 style={{ fontSize: '1.5rem', margin: 0 }} className="pe-3">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {(issue as any).title} <span style={{ fontWeight: 'bold' }}>#{(issue as any).seqId}</span>
+    return (<div className="container">
+            <div className="d-flex align-items-center justify-content-between mb-2">
+                {editionMode ? (<input type="text" className="form-control" placeholder="Title" value={(issue as any).title} onChange={(e) => setIssue({ ...issue, title: e.target.value })}/>) : (<h1 style={{ fontSize: '1.5rem', margin: 0 }} className="pe-3">
+                        {(issue as any).title} <span style={{ fontWeight: 'bold' }}>#{(issue as any).seqId}</span>
           </h1>)}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {connectedUser && !connectedUser.isGuest && (<Can I={manage} a={API} team={team}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="d-flex">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {editionMode ? (<div className="d-flex ms-3">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button className="btn btn-success me-1" onClick={() => updateIssue(issue)}>
+                {connectedUser && !connectedUser.isGuest && (<Can I={manage} a={API} team={team}>
+                        <div className="d-flex">
+                            {editionMode ? (<div className="d-flex ms-3">
+                                    <button className="btn btn-success me-1" onClick={() => updateIssue(issue)}>
                     {translateMethod('Save')}
                   </button>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
+                                    <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
                     {translateMethod('Cancel')}
                   </button>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                </div>) : (<>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button className="btn btn-outline-secondary me-1" onClick={() => handleEdition(true)}>
+                                </div>) : (<>
+                                    <button className="btn btn-outline-secondary me-1" onClick={() => handleEdition(true)}>
                     {translateMethod('Edit')}
                   </button>
                 </>)}
             </div>
           </Can>)}
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="d-flex align-items-center pb-3 mb-3">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div style={styles.getStatus((issue as any).open)} className="d-flex justify-content-center align-items-center me-3">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <i className="fa fa-exclamation-circle me-2" style={{ color: '#fff' }}/>
+            <div className="d-flex align-items-center pb-3 mb-3">
+                <div style={styles.getStatus((issue as any).open)} className="d-flex justify-content-center align-items-center me-3">
+                    <i className="fa fa-exclamation-circle me-2" style={{ color: '#fff' }}/>
           {(issue as any).open ? translateMethod('issues.open') : translateMethod('issues.closed')}
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span className="pe-1" style={styles.bold}>
+                <div>
+                    <span className="pe-1" style={styles.bold}>
             {(issue as any).by ? (issue as any).by._humanReadableId : ''}
           </span>
           {translateMethod('issues.opened_message')}{' '}
@@ -262,81 +237,54 @@ export function ApiTimelineIssue({
         </div>
       </div>
 
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col-md-9">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          {issue.comments.map((comment, i) => (<Comment {...comment} key={`comment${i}`} i={i} editComment={() => editComment(i)} removeComment={() => removeComment(i)} updateComment={(content: any) => updateComment(i, content)} connectedUser={connectedUser}/>))}
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          {connectedUser && !connectedUser.isGuest && (<NewComment picture={connectedUser.picture} open={(issue as any).open} createComment={createComment} closeIssue={closeIssue} openIssue={() => updateIssue({ ...issue, open: true })} team={team}/>)}
+            <div className="row">
+                <div className="col-md-9">
+                    {issue.comments.map((comment, i) => (<Comment {...comment} key={`comment${i}`} i={i} editComment={() => editComment(i)} removeComment={() => removeComment(i)} updateComment={(content: any) => updateComment(i, content)} connectedUser={connectedUser}/>))}
+                    {connectedUser && !connectedUser.isGuest && (<NewComment picture={connectedUser.picture} open={(issue as any).open} createComment={createComment} closeIssue={closeIssue} openIssue={() => updateIssue({ ...issue, open: true })} team={team}/>)}
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col-md-3">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="d-flex flex-column align-items-start mb-2">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <label htmlFor="tags" className='me-1'>{translateMethod('issues.tags')}</label>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {connectedUser && !connectedUser.isGuest && (<Select id="tags" onChange={(value) => setTags([...tags, value])} options={api.issuesTags
+                <div className="col-md-3">
+                    <div>
+                        <div className="d-flex flex-column align-items-start mb-2">
+                            <label htmlFor="tags" className='me-1'>{translateMethod('issues.tags')}</label>
+                            {connectedUser && !connectedUser.isGuest && (<Select id="tags" onChange={(value) => setTags([...tags, value])} options={api.issuesTags
             .filter((tag: any) => !tags.some(t => tag.id === (t as any).value))
             .map((tag: any) => ({
             value: tag.id,
             label: tag.name
         }))} className="input-select reactSelect w-100" classNamePrefix="reactSelect" onCreateOption={handleTagCreation}/>)}
             </div>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div id="tags" className='d-flex flex-column flex-wrap'>
+                        <div id="tags" className='d-flex flex-column flex-wrap'>
               {tags.map((tag) => {
-        // @ts-expect-error TS(2339): Property 'value' does not exist on type 'never'.
-        const bgColor = api.issuesTags.find((t: any) => t.id === tag.value).color;
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        return (<div className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center" style={{
+                const bgColor = api.issuesTags.find((t: any) => t.id === tag.value).color;
+                return (<div className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center" style={{
                 backgroundColor: bgColor,
                 color: getColorByBgColor(bgColor)
-            // @ts-expect-error TS(2339): Property 'value' does not exist on type 'never'.
-            }} key={tag.value}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <span className='me-2'>{tag.label}</span>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <span className='cursor-pointer' onClick={() => setTags(tags.filter(t => t.value !== tag.value))}><X /></span>
+                        }} key={tag.value}>
+                                        <span className='me-2'>{tag.label}</span>
+                                        <span className='cursor-pointer' onClick={() => setTags(tags.filter(t => t.value !== tag.value))}><X /></span>
                   </div>);
     })}
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
+                            {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
             </div>
           </div>
         </div>
       </div>
     </div>);
-                // @ts-expect-error TS(2552): Cannot find name 'tag'. Did you mean 'tags'?
-                const bgColor = api.issuesTags.find((t: any) => t.id === (tag as any).value).color;
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                return (<div className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center" style={{
+                                const bgColor = api.issuesTags.find((t: any) => t.id === (tag as any).value).color;
+                                return (<div className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center" style={{
         backgroundColor: bgColor,
         color: getColorByBgColor(bgColor)
-    // @ts-expect-error TS(2552): Cannot find name 'tag'. Did you mean 'tags'?
-    }} key={(tag as any).value}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <span className='me-2'>{(tag as any).label}</span>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <span className='cursor-pointer' onClick={() => setTags(tags.filter(t => (t as any).value !== (tag as any).value))}><X /></span>
+        }} key={(tag as any).value}>
+                                        <span className='me-2'>{(tag as any).label}</span>
+                                        <span className='cursor-pointer' onClick={() => setTags(tags.filter(t => (t as any).value !== (tag as any).value))}><X /></span>
                   </div>);
               })}
-              // @ts-expect-error TS(2304): Cannot find name 'tags'.
-              {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
-            // @ts-expect-error TS(2304): Cannot find name 'div'.
+                            {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
+                        </div>
+                    </div>
+                </div>
             </div>
-          // @ts-expect-error TS(2304): Cannot find name 'div'.
-          </div>
-        // @ts-expect-error TS(2304): Cannot find name 'div'.
         </div>
-      // @ts-expect-error TS(2304): Cannot find name 'div'.
-      </div>
-    // @ts-expect-error TS(2304): Cannot find name 'div'.
-    </div>
   );
 }
 
@@ -353,16 +301,12 @@ function Comment({
 }: any) {
   const [showActions, toggleActions] = useState(false);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="d-flex pb-4">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="dropdown pe-2">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <img
+        <div className="d-flex pb-4">
+            <div className="dropdown pe-2">
+                <img
           style={{ width: 42 }}
           src={by.picture}
           className="dropdown-toggle logo-anonymous user-logo"
@@ -370,39 +314,28 @@ function Comment({
           alt="user menu"
         />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="container">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex px-3 py-2" style={styles.commentHeader}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span className="pe-1" style={styles.bold}>
+            <div className="container">
+                <div className="d-flex px-3 py-2" style={styles.commentHeader}>
+                    <span className="pe-1" style={styles.bold}>
             {by._humanReadableId}
           </span>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span className="pe-1">{translateMethod('issues.commented_on')}</span>
+                    <span className="pe-1">{translateMethod('issues.commented_on')}</span>
           {moment(createdDate).format(translateMethod('moment.date.format.without.hours'))}
           {by._id === connectedUser._id && editing !== true && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <>
+                        <>
               {showActions ? (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <div className="ml-auto">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button className="btn btn-xs btn-outline-secondary me-1" onClick={editComment}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-edit align-self-center" />
+                                <div className="ml-auto">
+                                    <button className="btn btn-xs btn-outline-secondary me-1" onClick={editComment}>
+                                        <i className="fas fa-edit align-self-center" />
                   </button>
                   {i !== 0 && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <button className="btn btn-xs btn-outline-danger" onClick={removeComment}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <i className="fas fa-trash align-self-center" />
+                                        <button className="btn btn-xs btn-outline-danger" onClick={removeComment}>
+                                            <i className="fas fa-trash align-self-center" />
                     </button>
                   )}
                 </div>
               ) : (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <i
+                                <i
                   className="fas fa-ellipsis-h align-self-center ml-auto"
                   style={{ cursor: 'pointer' }}
                   onClick={() => toggleActions(true)}
@@ -412,10 +345,8 @@ function Comment({
           )}
         </div>
         {editing ? (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="p-3" style={styles.commentBody}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Form
+                    <div className="p-3" style={styles.commentBody}>
+                        <Form
               schema={{
                 content: {
                   type: type.string,
@@ -436,8 +367,7 @@ function Comment({
             />
           </div>
         ) : (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div
+                    <div
             className="p-3"
             style={styles.commentBody}
             dangerouslySetInnerHTML={{ __html: converter.makeHtml(content) }}
@@ -456,15 +386,11 @@ function NewComment({
   openIssue,
   team
 }: any) {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="d-flex pb-4">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="dropdown pe-2">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <img
+        <div className="d-flex pb-4">
+            <div className="dropdown pe-2">
+                <img
           style={{ width: 42 }}
           src={picture}
           className="dropdown-toggle logo-anonymous user-logo"
@@ -472,14 +398,11 @@ function NewComment({
           alt="user menu"
         />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="container">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex px-3 py-2" style={styles.commentHeader}>
+            <div className="container">
+                <div className="d-flex px-3 py-2" style={styles.commentHeader}>
           {translateMethod('issues.new_comment')}
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div
+                <div
           className="p-3"
           style={{
             border: '1px solid #eee',
@@ -488,8 +411,7 @@ function NewComment({
             backgroundColor: '#fff',
           }}
         >
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Form
+                    <Form
             schema={{
               content: {
                 type: type.string,
@@ -502,29 +424,22 @@ function NewComment({
             }}
             footer={({ valid }) => {
               return (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <div className="d-flex mt-3 justify-content-end">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <Can I={manage} a={API} team={team}>
+                                <div className="d-flex mt-3 justify-content-end">
+                                    <Can I={manage} a={API} team={team}>
                     {open && (
-                      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                      <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <i className="fa fa-exclamation-circle me-2" />
+                                            <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
+                                                <i className="fa fa-exclamation-circle me-2" />
                         {translateMethod('issues.actions.close')}
                       </button>
                     )}
                     {!open && (
-                      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                      <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <i className="fa fa-exclamation-circle me-2" />
+                                            <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
+                                                <i className="fa fa-exclamation-circle me-2" />
                         {translateMethod('issues.actions.reopen')}
                       </button>
                     )}
                   </Can>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button type="button" className="btn btn-success" onClick={valid}>
+                                    <button type="button" className="btn btn-success" onClick={valid}>
                     {translateMethod('issues.actions.comment')}
                   </button>
                 </div>

@@ -11,8 +11,7 @@ export const TestingApiKeyModal = (props: any) => {
 
   const tenant = useSelector(s => (s as any).context.tenant);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   const schema = {
       otoroshiSettings: {
@@ -114,46 +113,32 @@ export const TestingApiKeyModal = (props: any) => {
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="modal-content" style={{ fontWeight: 'normal' }}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-header">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h5 className="modal-title">{props.title}</h5>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
+        <div className="modal-content" style={{ fontWeight: 'normal' }}>
+            <div className="modal-header">
+                <h5 className="modal-title">{props.title}</h5>
+                <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-body">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <React.Suspense fallback={<Spinner />}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Form
+            <div className="modal-body">
+                <React.Suspense fallback={<Spinner />}>
+                    <Form
             ref={formRef}
             schema={schema}
             value={props.config}
             onSubmit={apiKeyAction}
-            // @ts-expect-error TS(2322): Type '() => null' is not assignable to type '(prop... Remove this comment to see the full error message
-            footer={() => null}
+                        footer={() => null}
           />
         </React.Suspense>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-footer">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="Cancel">Cancel</Translation>
+            <div className="modal-footer">
+                <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
+                    <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button
+                <button
           type="button"
           className="btn btn-outline-success"
-          // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-          onClick={() => formRef.current.handleSubmit()}
+                    onClick={() => formRef.current.handleSubmit()}
         >
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey={props.update ? 'Update' : 'Create'}>
+                    <Translation i18nkey={props.update ? 'Update' : 'Create'}>
             {props.update ? 'Update' : 'Create'}
           </Translation>
         </button>

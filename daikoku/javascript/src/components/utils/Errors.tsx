@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-// @ts-expect-error TS(6142): Module '../../locales/i18n-context' was resolved t... Remove this comment to see the full error message
 import { I18nContext } from '../../locales/i18n-context';
 import { setError, unsetError } from '../../core';
 
@@ -33,8 +32,7 @@ const ErrorComponent = ({
 
   const [label, setLabel] = useState();
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     setLabel(getErrorLabel(error.status, error));
@@ -48,42 +46,31 @@ const ErrorComponent = ({
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="row">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="col-12">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="error-page d-flex flex-column">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <h1 data-h1={error.status}>{error.status}</h1>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <p data-p={label}>{label}</p>
+        <div className="row">
+            <div className="col-12">
+                <div className="error-page d-flex flex-column">
+                    <div>
+                        <h1 data-h1={error.status}>{error.status}</h1>
+                        <p data-p={label}>{label}</p>
           </div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Link
+                    <div>
+                        <Link
               className="btn btn-access-negative me-1"
               to="/apis"
               onClick={() => {
                 unsetError();
               }}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className="fas fa-home" /> {translateMethod('Go home')}
+                            <i className="fas fa-home" /> {translateMethod('Go home')}
             </Link>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button
+                        <button
               className="btn btn-access-negative"
               onClick={() => {
                 navigate(-1);
                 setTimeout(unsetError, 300);
               }}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className="fas fa-angle-double-left" /> {translateMethod('go_back')}
+                            <i className="fas fa-angle-double-left" /> {translateMethod('go_back')}
             </button>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Creatable from 'react-select/creatable';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import sortBy from 'lodash/sortBy';
 
@@ -27,8 +26,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
   const [isValid, setIsValid] = useState(false);
   const [loadingInput, setLoadingInput] = useState(false);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (api) {
@@ -51,8 +49,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
     .getOrElse([]);
 
       const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
-        // @ts-expect-error TS(7031): Binding element 'accMeta' implicitly has an 'any' ... Remove this comment to see the full error message
-        ([accMeta, accCustomMeta], item: any) => {
+                ([accMeta, accCustomMeta], item: any) => {
           if (
             plan &&
     (plan as any).otoroshiTarget.apikeyCustomization.customMetadata.some((x: any) => x.key === item[0])
@@ -124,8 +121,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
     };
     if (isValid) {
       if (action instanceof Promise) {
-        // @ts-expect-error TS(2349): This expression is not callable.
-        action(subProps).then(() => props.closeModal());
+                action(subProps).then(() => props.closeModal());
       } else {
         props.closeModal();
         action(subProps);
@@ -136,32 +132,24 @@ export const SubscriptionMetadataModal = (props: Props) => {
   const renderInput = (key: any, possibleValues: any) => {
     const createOption = (newValue: any) => {
       setLoadingInput(true);
-      // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-      Services.saveTeamApi(api.team, {
-    // @ts-expect-error TS(2698): Spread types may only be created from object types... Remove this comment to see the full error message
-    ...api,
+            Services.saveTeamApi(api.team, {
+        ...api,
     possibleUsagePlans: [
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        ...api.possibleUsagePlans.filter((p: any) => p._id !== (props as any).plan),
+                ...api.possibleUsagePlans.filter((p: any) => p._id !== (props as any).plan),
         {
-            // @ts-expect-error TS(2698): Spread types may only be created from object types... Remove this comment to see the full error message
-            ...plan,
+                        ...plan,
             otoroshiTarget: {
-                // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-                ...plan.otoroshiTarget,
+                                ...plan.otoroshiTarget,
                 apikeyCustomization: {
-                    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-                    ...plan.otoroshiTarget.apikeyCustomization,
+                                        ...plan.otoroshiTarget.apikeyCustomization,
                     customMetadata: [
-                        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-                        ...plan.otoroshiTarget.apikeyCustomization.customMetadata.filter((m: any) => m.key !== key),
+                                                ...plan.otoroshiTarget.apikeyCustomization.customMetadata.filter((m: any) => m.key !== key),
                         { key, possibleValues: [...possibleValues, newValue] },
                     ],
                 },
             },
         },
     ],
-// @ts-expect-error TS(2532): Object is possibly 'undefined'.
 }, api.currentVersion).then((api) => {
     setMetadata({ ...metadata, [key]: newValue });
     setLoadingInput(false);
@@ -171,32 +159,27 @@ export const SubscriptionMetadataModal = (props: Props) => {
 
     if (!possibleValues || possibleValues.length == 0) {
       return (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <input
+                <input
           className="form-control flex-grow-1"
-          // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-          value={metadata[key] || ''}
+                    value={metadata[key] || ''}
           onChange={(e) => setMetadata({ ...metadata, [key]: e.target.value })}
           required
         />
       );
     } else {
       return (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <Creatable
+                <Creatable
           className="reactSelect flex-grow-1"
           isClearable={true}
           isDisabled={loadingInput}
           isLoading={loadingInput}
-          // @ts-expect-error TS(2531): Object is possibly 'null'.
-          onChange={(e) => setMetadata({ ...metadata, [key]: e.value })}
+                    onChange={(e) => setMetadata({ ...metadata, [key]: e.value })}
           onCreateOption={(v) => createOption(v)}
           options={possibleValues.sort().map((v: any) => ({
             label: v,
             value: v
           }))}
-          // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-          value={{ label: metadata[key], value: metadata[key] }}
+                    value={{ label: metadata[key], value: metadata[key] }}
           formatCreateLabel={(value) =>
             translateMethod('create.metadata.option.label', false, `Create option ${value}`, value)
           }
@@ -206,102 +189,68 @@ export const SubscriptionMetadataModal = (props: Props) => {
     }
   };
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return (<div className="modal-content">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-header">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {!api && (<h5 className="modal-title">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Subscription metadata">Subscription metadata</Translation>
+    return (<div className="modal-content">
+            <div className="modal-header">
+                {!api && (<h5 className="modal-title">
+                        <Translation i18nkey="Subscription metadata">Subscription metadata</Translation>
           </h5>)}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {api && (<h5 className="modal-title">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Subscription metadata title" replacements={[(api as any).name]}>
+                {api && (<h5 className="modal-title">
+                        <Translation i18nkey="Subscription metadata title" replacements={[(api as any).name]}>
               Subscription metadata - {(api as any).name}
             </Translation>
           </h5>)}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
+                <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-body">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {loading && <Spinner />}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {!loading && (<>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {!(props as any).description && (props as any).creationMode && (<div className="modal-description">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[
+            <div className="modal-body">
+                {loading && <Spinner />}
+                {!loading && (<>
+                        {!(props as any).description && (props as any).creationMode && (<div className="modal-description">
+                                <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[
                 (props as any).team.name,
-                // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-                plan.customName || formatPlanType(plan, translateMethod),
+                                plan.customName || formatPlanType(plan, translateMethod),
             ]}>
                   {(props as any).team.name} ask you an apikey for plan{' '}
-                  {/* @ts-expect-error TS(2532): Object is possibly 'undefined'. */}
-                  {plan.customName || formatPlanType(plan, translateMethod)}
+                                    {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
               </div>)}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {!(props as any).description && !(props as any).creationMode && (<div className="modal-description">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Translation i18nkey="subscription.metadata.modal.update.description" replacements={[
+                        {!(props as any).description && !(props as any).creationMode && (<div className="modal-description">
+                                <Translation i18nkey="subscription.metadata.modal.update.description" replacements={[
                 (props as any).team.name,
-                // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-                plan.customName || formatPlanType(plan, translateMethod),
+                                plan.customName || formatPlanType(plan, translateMethod),
             ]}>
                   Team: {(props as any).team.name} - Plan:{' '}
-                  {/* @ts-expect-error TS(2532): Object is possibly 'undefined'. */}
-                  {plan.customName || formatPlanType(plan, translateMethod)}
+                                    {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
               </div>)}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {(props as any).description && <div className="modal-description">{(props as any).description}</div>}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {!!plan && (<Collapse label={translateMethod('mandatory.metadata.label', false, `Mandatory metadata (${(plan as any).otoroshiTarget.apikeyCustomization.customMetadata.length})`, (plan as any).otoroshiTarget.apikeyCustomization.customMetadata.length)} collapsed={false}>
+                        {(props as any).description && <div className="modal-description">{(props as any).description}</div>}
+                        {!!plan && (<Collapse label={translateMethod('mandatory.metadata.label', false, `Mandatory metadata (${(plan as any).otoroshiTarget.apikeyCustomization.customMetadata.length})`, (plan as any).otoroshiTarget.apikeyCustomization.customMetadata.length)} collapsed={false}>
                 {sortBy((plan as any).otoroshiTarget.apikeyCustomization.customMetadata, ['key']).map(({ key, possibleValues }, idx) => {
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                return (<div className="d-flex flex-row mb-1" key={idx}>
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <input className="form-control me-1" value={key} disabled="disabled"/>
+                                return (<div className="d-flex flex-row mb-1" key={idx}>
+                                                <input className="form-control me-1" value={key} disabled="disabled"/>
                         {renderInput(key, possibleValues)}
                       </div>);
             })}
               </Collapse>)}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Collapse label={translateMethod('Additional metadata')} collapsed={true}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <ObjectInput value={customMetadata} onChange={(values: any) => {
+                        <Collapse label={translateMethod('Additional metadata')} collapsed={true}>
+                            <ObjectInput value={customMetadata} onChange={(values: any) => {
             setCustomMetadata({ ...values });
         }}/>
             </Collapse>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Collapse label={translateMethod('Custom quotas')} collapsed={true}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <NumberInput step="1" min="0" label={translateMethod('Max. requests per second')} value={customMaxPerSecond} onChange={(value: any) => setCustomMaxPerSecond(Number(value))}/>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <NumberInput step="1" min="0" label={translateMethod('Max. requests per day')} value={customMaxPerDay} onChange={(value: any) => setCustomMaxPerDay(Number(value))}/>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <NumberInput step="1" min="0" label={translateMethod('Max. requests per month')} value={customMaxPerMonth} onChange={(value: any) => setCustomMaxPerMonth(Number(value))}/>
+                        <Collapse label={translateMethod('Custom quotas')} collapsed={true}>
+                            <NumberInput step="1" min="0" label={translateMethod('Max. requests per second')} value={customMaxPerSecond} onChange={(value: any) => setCustomMaxPerSecond(Number(value))}/>
+                            <NumberInput step="1" min="0" label={translateMethod('Max. requests per day')} value={customMaxPerDay} onChange={(value: any) => setCustomMaxPerDay(Number(value))}/>
+                            <NumberInput step="1" min="0" label={translateMethod('Max. requests per month')} value={customMaxPerMonth} onChange={(value: any) => setCustomMaxPerMonth(Number(value))}/>
             </Collapse>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Collapse label={translateMethod('Other custom props')} collapsed={true}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <BooleanInput label={translateMethod('Read only apikey')} value={customReadOnly} onChange={(readOnly: any) => setCustomReadOnly(readOnly)}/>
+                        <Collapse label={translateMethod('Other custom props')} collapsed={true}>
+                            <BooleanInput label={translateMethod('Read only apikey')} value={customReadOnly} onChange={(readOnly: any) => setCustomReadOnly(readOnly)}/>
             </Collapse>
           </>)}
 
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="modal-footer">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Cancel">Cancel</Translation>
+                <div className="modal-footer">
+                    <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
+                        <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button type="button" className="btn btn-outline-success" disabled={isValid ? undefined : 'disabled'} onClick={() => actionAndClose(props.save)}>
+                    <button type="button" className="btn btn-outline-success" disabled={isValid ? undefined : 'disabled'} onClick={() => actionAndClose(props.save)}>
             {(props as any).creationMode ? translateMethod('Accept') : translateMethod('Update')}
           </button>
         </div>

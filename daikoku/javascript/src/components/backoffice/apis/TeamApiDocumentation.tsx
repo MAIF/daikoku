@@ -9,7 +9,6 @@ import * as Services from '../../../services';
 import { Spinner, BeautifulTitle } from '../../utils';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 
 (Array.prototype as any).move = function (from: any, to: any) {
@@ -61,23 +60,17 @@ Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit 
 Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`;
 
 function AssetButton(props: any) {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="mb-3 row">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <label className="col-xs-12 col-sm-2 col-form-label" />
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div
+        <div className="mb-3 row">
+            <label className="col-xs-12 col-sm-2 col-form-label" />
+            <div
         className="col-sm-10"
         style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}
       >
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <AssetChooserByModal
-          // @ts-expect-error TS(2322): Type '{ team: any; teamId: any; label: any; onSele... Remove this comment to see the full error message
-          team={props.team}
+                <AssetChooserByModal
+                    team={props.team}
           teamId={props.team._id}
           label={translateMethod('Set from asset')}
           onSelect={(asset: any) => {
@@ -90,10 +83,8 @@ function AssetButton(props: any) {
   );
 }
 
-// @ts-expect-error TS(2345): Argument of type '(props: { children?: ReactNode; ... Remove this comment to see the full error message
 const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
-  // @ts-expect-error TS(2339): Property 'team' does not exist on type '{ children... Remove this comment to see the full error message
-  const { team, value, versionId, creationInProgress } = props;
+    const { team, value, versionId, creationInProgress } = props;
   const params = useParams();
 
   const [selected, setSelected] = useState(null);
@@ -101,8 +92,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   const [deletedPage, setDeletedPage] = useState(false);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   const flow = [
     'title',
@@ -141,39 +131,31 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         height: '800px',
         team: team,
         actions: (insert: any) => {
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          return <>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button
+                    return <>
+                        <button
               type="button"
               className="btn-for-descriptionToolbar"
               aria-label={translateMethod('Lorem Ipsum')}
               title={translateMethod('Lorem Ipsum')}
               onClick={() => insert(loremIpsum)}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className={`fas fa-feather-alt`} />
+                            <i className={`fas fa-feather-alt`} />
             </button>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button
+                        <button
               type="button"
               className="btn-for-descriptionToolbar"
               aria-label={translateMethod('Long Lorem Ipsum')}
               title={translateMethod('Long Lorem Ipsum')}
               onClick={() => insert(longLoremIpsum)}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className={`fas fa-feather`} />
+                            <i className={`fas fa-feather`} />
             </button>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <BeautifulTitle
+                        <BeautifulTitle
               placement="bottom"
               title={translateMethod('image url from asset')}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <AssetChooserByModal
-                // @ts-expect-error TS(2322): Type '{ typeFilter: (value: any) => any; onlyPrevi... Remove this comment to see the full error message
-                typeFilter={MimeTypeFilter.image}
+                            <AssetChooserByModal
+                                typeFilter={MimeTypeFilter.image}
                 onlyPreview
                 tenantMode={false}
                 team={team}
@@ -210,14 +192,10 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         setValue
       }: any) => {
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className='flex-grow-1 ms-3'>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <input className='mrf-input mb-3' value={value} onChange={onChange} />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="col-12 d-flex justify-content-end">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <AssetButton onChange={onChange} team={team} value={value} setValue={setValue} />
+                    <div className='flex-grow-1 ms-3'>
+                        <input className='mrf-input mb-3' value={value} onChange={onChange} />
+                        <div className="col-12 d-flex justify-content-end">
+                            <AssetButton onChange={onChange} team={team} value={value} setValue={setValue} />
             </div>
           </div>
         )
@@ -238,8 +216,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     saveCurrentPage() {
-      // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
-      savePage();
+            savePage();
     },
   }));
 
@@ -350,50 +327,38 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     (window
     .confirm(translateMethod('delete.documentation.page.confirm', false, 'Are you sure you want to delete this page ?')) as any).then((ok: any) => {
     if (ok) {
-        // @ts-expect-error TS(2531): Object is possibly 'null'.
-        Services.deleteDocPage(team._id, value._id, selected._id).then(() => {
-            // @ts-expect-error TS(2531): Object is possibly 'null'.
-            let pages = cloneDeep(value.documentation.pages).filter((p: any) => p !== selected._id);
+                Services.deleteDocPage(team._id, value._id, selected._id).then(() => {
+                        let pages = cloneDeep(value.documentation.pages).filter((p: any) => p !== selected._id);
             const newValue = cloneDeep(value);
             newValue.documentation.pages = pages;
             setDeletedPage(true);
             setSelected(null);
-            // @ts-expect-error TS(2339): Property 'onChange' does not exist on type '{ chil... Remove this comment to see the full error message
-            props.onChange(newValue);
+                        props.onChange(newValue);
         });
     }
 });
-            // @ts-expect-error TS(2304): Cannot find name 'newValue'.
-            (props as any).onChange(newValue);
+                        (props as any).onChange(newValue);
           });
         }
       });
   }
 
   function importPage() {
-    // @ts-expect-error TS(2304): Cannot find name 'props'.
-    (props as any).openApiDocumentationSelectModal({
-    // @ts-expect-error TS(2304): Cannot find name 'value'.
-    api: value,
-    // @ts-expect-error TS(2304): Cannot find name 'props'.
-    teamId: (props as any).teamId,
+        (props as any).openApiDocumentationSelectModal({
+        api: value,
+        teamId: (props as any).teamId,
     onClose: () => {
-        // @ts-expect-error TS(2304): Cannot find name 'props'.
-        props.reloadState();
-        // @ts-expect-error TS(2304): Cannot find name 'updateDetails'.
-        updateDetails();
+                props.reloadState();
+                updateDetails();
     },
 });
-        // @ts-expect-error TS(2304): Cannot find name 'props'.
-        (props as any).reloadState();
-        // @ts-expect-error TS(2304): Cannot find name 'updateDetails'.
-        updateDetails();
+                (props as any).reloadState();
+                updateDetails();
       },
     });
   }
 
-  // @ts-expect-error TS(2304): Cannot find name 'value'.
-  if (value === null) return null;
+    if (value === null) return null;
 
   return (<div className="row">
       <div className="col-12 col-sm-6 col-lg-3 p-1">

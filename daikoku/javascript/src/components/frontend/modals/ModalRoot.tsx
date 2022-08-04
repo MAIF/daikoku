@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import ReactModal from 'react-modal';
 import ClasseNames from 'classnames';
 
@@ -31,8 +30,7 @@ const ModalContainer = ({
   };
 
   const [modalIsOpen, setModalIsOpen] = useState(open);
-  // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-  const SpecifiedModal = MODAL_TYPES[modalType];
+    const SpecifiedModal = MODAL_TYPES[modalType];
 
   useEffect(() => {
     setModalIsOpen(open);
@@ -43,10 +41,8 @@ const ModalContainer = ({
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <ReactModal
+        <div>
+            <ReactModal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
         contentLabel="Example Modal"
@@ -55,8 +51,7 @@ const ModalContainer = ({
         bodyOpenClassName="modal-open"
         className="modal-dialog modal-lg"
       >
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {SpecifiedModal ? <SpecifiedModal closeModal={closeModal} {...modalProps} /> : null}
+                {SpecifiedModal ? <SpecifiedModal closeModal={closeModal} {...modalProps} /> : null}
       </ReactModal>
     </div>
   );

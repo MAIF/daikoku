@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Form } from '@maif/react-forms';
+import { Form} from '@maif/react-forms';
 
 export const FormModal = ({
   title,
@@ -11,20 +11,14 @@ export const FormModal = ({
   closeModal,
   actionLabel
 }: any) => {
-  const ref = useRef();
+  const ref = useRef<any>();
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className="modal-content">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="modal-header">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <h5 className="modal-title">{title}</h5>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="modal-body">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Form
           ref={ref}
           schema={schema}
@@ -43,10 +37,8 @@ export const FormModal = ({
           }}
         />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className="modal-footer">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-success" onClick={() => ref.current.handleSubmit()}>
+        <button type="button" className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
           {actionLabel}
         </button>
       </div>

@@ -5,7 +5,7 @@ const CompressionPlugin = require('compression-webpack-plugin');
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-module.exports = (env: any, argv: any) => {
+module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
   const config = {
     mode: isProd ? 'production' : 'development',
@@ -18,15 +18,20 @@ module.exports = (env: any, argv: any) => {
       }
     },
     entry: {
-      'daikoku.login': path.resolve(__dirname, 'src/login.js'),
-      'daikoku.home': path.resolve(__dirname, 'src/home.js'),
-      daikoku: path.resolve(__dirname, 'src/index.js'),
+      'daikoku.login': path.resolve(__dirname, 'src/login.tsx'),
+      'daikoku.home': path.resolve(__dirname, 'src/home.tsx'),
+      daikoku: path.resolve(__dirname, 'src/index.tsx'),
     },
     module: {
       rules: [{
         test: /\.js$/,
         exclude: /node_modules/,
         loader: 'babel-loader'
+      },
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        loader: 'ts-loader'
       },
       {
         test: /\.css$/,

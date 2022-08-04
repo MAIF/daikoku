@@ -1,6 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Form, constraints, type, format } from '@maif/react-forms';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import sortBy from 'lodash/sortBy';
 import { useSelector } from 'react-redux';
@@ -13,8 +12,7 @@ export const TeamApiSettings = ({
   api,
   apiGroup
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const { currentTeam } = useSelector((s) => (s as any).context);
   const navigate = useNavigate();
 
@@ -72,40 +70,29 @@ export const TeamApiSettings = ({
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div
+        <div>
+            <div
         className="action mb-3"
         style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
       >
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h3>{translateMethod('transfer.api.ownership.title')}</h3>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <i>{translateMethod('transfer.api.ownership.description')}</i>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Form
+                <h3>{translateMethod('transfer.api.ownership.title')}</h3>
+                <i>{translateMethod('transfer.api.ownership.description')}</i>
+                <Form
           schema={transferSchema}
           onSubmit={transferOwnership}
           options={{ actions: { submit: { label: translateMethod('Transfer') } } }}
         />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div
+            <div
         className="action d-flex flex-row align-items-center"
         style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
       >
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <h3>{translateMethod('delete.api.title')}</h3>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <i>{translateMethod('delete.api.description')}</i>
+                <div>
+                    <h3>{translateMethod('delete.api.title')}</h3>
+                    <i>{translateMethod('delete.api.description')}</i>
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
+                <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
+                    <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
             {translateMethod('Delete this Api')}
           </button>
         </div>

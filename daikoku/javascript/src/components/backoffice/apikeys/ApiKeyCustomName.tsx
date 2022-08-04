@@ -19,10 +19,8 @@ export const ApiKeyCustomName = ({
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="input-group">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <input
+        <div className="input-group">
+            <input
         className="form-control"
         type="text"
         value={customName}
@@ -30,16 +28,13 @@ export const ApiKeyCustomName = ({
         onKeyPress={(e) => handleKeyPress(e)}
       />
       {changes && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div className="input-group-append">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button
+                <div className="input-group-append">
+                    <button
             className="btn btn-outline-secondary"
             type="button"
             onClick={() => updateCustomName(customName)}
           >
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <i className="fas fa-arrow-circle-right" />
+                        <i className="fas fa-arrow-circle-right" />
           </button>
         </div>
       )}

@@ -1,7 +1,6 @@
 /* eslint-disable react/display-name */
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import { constraints, format, type } from '@maif/react-forms';
 
@@ -68,8 +67,7 @@ const maybeCreateThumbnail = (id: any, file: any) => {
         img.onload = function () {
           canvas.width = 128; //img.width;
           canvas.height = 128; //img.height;
-          // @ts-expect-error TS(2531): Object is possibly 'null'.
-          ctx.drawImage(img, 0, 0, 128, 128);
+                    ctx.drawImage(img, 0, 0, 128, 128);
           const base64 = canvas.toDataURL();
           canvas.toBlob((blob) => {
             Services.storeThumbnail(id, blob).then(() => {
@@ -77,8 +75,7 @@ const maybeCreateThumbnail = (id: any, file: any) => {
             });
           });
         };
-        // @ts-expect-error TS(2322): Type 'string | ArrayBuffer | null' is not assignab... Remove this comment to see the full error message
-        img.src = event.target.result;
+                img.src = event.target.result;
       };
       reader.readAsDataURL(file);
     } else {
@@ -90,8 +87,7 @@ const maybeCreateThumbnail = (id: any, file: any) => {
 const ReplaceButton = (props: any) => {
   const [file, setFile] = useState();
   const [input, setInput] = useState();
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (file) {
@@ -113,36 +109,27 @@ const ReplaceButton = (props: any) => {
   }, [file]);
 
   const trigger = () => {
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-    input.click();
+        input.click();
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <button type="button" onClick={trigger} className="btn btn-sm btn-outline-primary">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <i className="fas fa-retweet" />
+        <>
+            <button type="button" onClick={trigger} className="btn btn-sm btn-outline-primary">
+                <i className="fas fa-retweet" />
       </button>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <input
-        // @ts-expect-error TS(2345): Argument of type 'HTMLInputElement | null' is not ... Remove this comment to see the full error message
-        ref={(r) => setInput(r)}
+            <input
+                ref={(r) => setInput(r)}
         type="file"
         multiple
         className="form-control hide"
         onChange={(e) => {
-          // @ts-expect-error TS(2531): Object is possibly 'null'.
-          const file = e.target.files[0];
-          // @ts-expect-error TS(2531): Object is possibly 'null'.
-          if (e.target.files.length > 1) {
+                    const file = e.target.files[0];
+                    if (e.target.files.length > 1) {
             props.displayError(translateMethod('error.replace.files.multi'));
           } else if (props.asset.contentType !== file.type) {
             props.displayError(translateMethod('error.replace.files.content.type'));
           } else {
-            // @ts-expect-error TS(2345): Argument of type 'File' is not assignable to param... Remove this comment to see the full error message
-            setFile(file);
+                        setFile(file);
           }
         }}
       />
@@ -157,8 +144,7 @@ export const AssetsList = ({
   const dispatch = useDispatch();
   const { currentTeam, tenant } = useSelector((state) => (state as any).context);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod(
@@ -256,8 +242,7 @@ export const AssetsList = ({
           type === 'image/svg+xml'
         ) {
           return (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <img
+                        <img
               src={`/asset-thumbnails/${item.meta.asset}?${new Date().getTime()}`}
               width="64"
               height="64"
@@ -288,58 +273,45 @@ export const AssetsList = ({
       }: any) => {
         const item = original;
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="btn-group">
+                    <div className="btn-group">
             {item.contentType.startsWith('text') && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <button
+                            <button
                 type="button"
                 onClick={() => readAndUpdate(item)}
                 className="btn btn-sm btn-outline-primary"
               >
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-pen" />
+                                <i className="fas fa-pen" />
               </button>
             )}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <ReplaceButton
+                        <ReplaceButton
               asset={item}
               tenantMode={tenantMode}
               teamId={currentTeam ? currentTeam._id : undefined}
               displayError={(error: any) => toastr.error(error)}
-              // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-              postAction={() => tableRef.current.update()}
+                            postAction={() => tableRef.current.update()}
             />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <button
+                        <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
+                            <button
                 className="btn btn-sm btn-outline-primary"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
               >
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-eye" />
+                                <i className="fas fa-eye" />
               </button>
             </a>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <button
+                        <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
+                            <button
                 className="btn btn-sm btn-outline-primary me-1"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
               >
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-download" />
+                                <i className="fas fa-download" />
               </button>
             </a>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button
+                        <button
               type="button"
               onClick={() => deleteAsset(item)}
               className="btn btn-sm btn-outline-danger"
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className="fas fa-trash" />
+                            <i className="fas fa-trash" />
             </button>
           </div>
         );
@@ -421,8 +393,7 @@ export const AssetsList = ({
     .confirm(translateMethod('delete asset', 'Are you sure you want to delete that asset ?')) as any).then((ok: any) => {
     if (ok) {
         serviceDelete(asset.meta.asset)
-            // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-            .then(() => tableRef.current.update());
+                        .then(() => tableRef.current.update());
     }
 });
   };
@@ -430,8 +401,7 @@ export const AssetsList = ({
   const fetchAssets = () => {
     let getAssets;
     if (tenantMode) {
-      // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
-      getAssets = Services.listTenantAssets();
+            getAssets = Services.listTenantAssets();
     } else {
       getAssets = Services.listAssets(currentTeam._id);
     }
@@ -449,8 +419,7 @@ export const AssetsList = ({
         file
       )
         .then((r) => maybeCreateThumbnail(r.id, file))
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        .then(() => tableRef.current.update())
+                .then(() => tableRef.current.update())
     } else {
       return Services.storeAsset(
         currentTeam._id,
@@ -461,20 +430,15 @@ export const AssetsList = ({
         file
       )
         .then((asset) => maybeCreateThumbnail(asset.id, file))
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        .then(() => tableRef.current.update())
+                .then(() => tableRef.current.update())
     }
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col-12 mb-3 d-flex justify-content-end">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button
+        <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
+            <div className="row">
+                <div className="col-12 mb-3 d-flex justify-content-end">
+                    <button
             className='btn btn-outline-success'
             onClick={() => dispatch(openFormModal({
               title: translateMethod("Add asset"),
@@ -487,14 +451,10 @@ export const AssetsList = ({
           </button>
         </div>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Table
-            // @ts-expect-error TS(2322): Type '{ selfUrl: string; defaultTitle: string; def... Remove this comment to see the full error message
-            selfUrl="assets"
+            <div className="row">
+                <div className="col">
+                    <Table
+                        selfUrl="assets"
             defaultTitle="Team assets"
             defaultValue={() => ({})}
             itemName="asset"

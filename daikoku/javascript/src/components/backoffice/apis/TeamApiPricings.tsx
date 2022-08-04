@@ -4,7 +4,6 @@ import { nanoid } from 'nanoid';
 import { constraints, type, format } from '@maif/react-forms';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import cloneDeep from 'lodash/cloneDeep';
 
@@ -51,8 +50,7 @@ const OtoroshiServicesAndGroupSelector = ({
   const [disabled, setDisabled] = useState(true);
   const [value, setValue] = useState(undefined);
 
-  // @ts-expect-error TS(2339): Property 'Translation' does not exist on type 'unk... Remove this comment to see the full error message
-  const { Translation } = useContext(I18nContext);
+    const { Translation } = useContext(I18nContext);
 
   const params = useParams();
 
@@ -77,22 +75,18 @@ const OtoroshiServicesAndGroupSelector = ({
               value: g.id,
               type: 'group'
             })));
-          // @ts-expect-error TS(2345): Argument of type 'never[]' is not assignable to pa... Remove this comment to see the full error message
-          else setGroups([]);
+                    else setGroups([]);
           if (!services.error)
             setServices(services.map((g: any) => ({
               label: g.name,
               value: g.id,
               type: 'service'
             })));
-          // @ts-expect-error TS(2345): Argument of type 'never[]' is not assignable to pa... Remove this comment to see the full error message
-          else setServices([]);
+                    else setServices([]);
         })
         .catch(() => {
-          // @ts-expect-error TS(2345): Argument of type 'never[]' is not assignable to pa... Remove this comment to see the full error message
-          setGroups([]);
-          // @ts-expect-error TS(2345): Argument of type 'never[]' is not assignable to pa... Remove this comment to see the full error message
-          setServices([]);
+                    setGroups([]);
+                    setServices([]);
         });
     }
     setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
@@ -106,8 +100,7 @@ const OtoroshiServicesAndGroupSelector = ({
 
   useEffect(() => {
     if (!!groups && !!services && !!rawValues.otoroshiTarget.authorizedEntities) {
-      // @ts-expect-error TS(2345): Argument of type 'any[]' is not assignable to para... Remove this comment to see the full error message
-      setValue([
+            setValue([
     ...rawValues.otoroshiTarget.authorizedEntities.groups.map((authGroup: any) => (groups as any).find((g: any) => g.value === authGroup)),
     ...rawValues.otoroshiTarget.authorizedEntities.services.map((authService: any) => (services as any).find((g: any) => g.value === authService)),
 ].filter((f) => f));
@@ -125,64 +118,48 @@ const OtoroshiServicesAndGroupSelector = ({
             case 'group':
               return {
                 ...acc,
-                // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-                groups: [...acc.groups, groups.find((g: any) => g.value === entitie.value).value],
+                                groups: [...acc.groups, groups.find((g: any) => g.value === entitie.value).value],
               };
             case 'service':
               return {
                 ...acc,
-                // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-                services: [...acc.services, services.find((s: any) => s.value === entitie.value).value],
+                                services: [...acc.services, services.find((s: any) => s.value === entitie.value).value],
               };
           }
         },
         { groups: [], services: [] }
       );
-      // @ts-expect-error TS(2345): Argument of type 'any[]' is not assignable to para... Remove this comment to see the full error message
-      setValue([
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        ...value.groups.map((authGroup: any) => groups.find((g: any) => g.value === authGroup)),
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        ...value.services.map((authService: any) => services.find((g: any) => g.value === authService)),
+            setValue([
+                ...value.groups.map((authGroup: any) => groups.find((g: any) => g.value === authGroup)),
+                ...value.services.map((authService: any) => services.find((g: any) => g.value === authService)),
       ]);
       onChange(value);
     }
   };
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return (<div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Select id={`input-label`} isMulti name={`search-label`} isLoading={loading} isDisabled={disabled && !loading} placeholder={translateMethod('Authorized.entities.placeholder')} components={(props: any) => <components.Group {...props}/>} options={[
+    return (<div>
+            <Select id={`input-label`} isMulti name={`search-label`} isLoading={loading} isDisabled={disabled && !loading} placeholder={translateMethod('Authorized.entities.placeholder')} components={(props: any) => <components.Group {...props}/>} options={[
         { label: 'Service groups', options: groups },
         { label: 'Services', options: services },
     ]} value={value} onChange={onValueChange} classNamePrefix="reactSelect" className="reactSelect"/>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="col-12 d-flex flex-row mt-1">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex flex-column flex-grow-1">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <strong className="font-italic">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Authorized Groups">Authorized Groups</Translation>
+            <div className="col-12 d-flex flex-row mt-1">
+                <div className="d-flex flex-column flex-grow-1">
+                    <strong className="font-italic">
+                        <Translation i18nkey="Authorized Groups">Authorized Groups</Translation>
           </strong>
           {!!value &&
         (value as any).filter((x: any) => x.type === 'group')
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
+                        .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
                   {g.label}
                 </span>))}
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex flex-column flex-grow-1">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <strong className="font-italic">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Authorized Services">Authorized Services</Translation>
+                <div className="d-flex flex-column flex-grow-1">
+                    <strong className="font-italic">
+                        <Translation i18nkey="Authorized Services">Authorized Services</Translation>
           </strong>
           {!!value &&
         (value as any).filter((x: any) => x.type === 'service')
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
+                        .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
                   {g.label}
                 </span>))}
         </div>
@@ -235,15 +212,11 @@ const CustomMetadataInput = ({
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
+        <div>
       {!value?.length && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div className="col-sm-10">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button type="button" className="btn btn-outline-primary" onClick={addFirst}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <i className="fas fa-plus" />{' '}
+                <div className="col-sm-10">
+                    <button type="button" className="btn btn-outline-primary" onClick={addFirst}>
+                        <i className="fas fa-plus" />{' '}
           </button>
         </div>
       )}
@@ -251,19 +224,15 @@ const CustomMetadataInput = ({
         key,
         possibleValues
       }: any, idx: any) => (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div key={idx} className="col-sm-10">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="input-group">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <input
+                <div key={idx} className="col-sm-10">
+                    <div className="input-group">
+                        <input
               type="text"
               className="form-control col-5 me-1"
               value={key}
               onChange={(e) => changeKey(e, key)}
             />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <CreatableSelect
+                        <CreatableSelect
               isMulti
               onChange={(e) =>
                 changeValue(
@@ -279,24 +248,20 @@ const CustomMetadataInput = ({
               className="input-select reactSelect flex-grow-1"
               classNamePrefix="reactSelect"
             />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button
+                        <button
               type="button"
               className="input-group-text btn btn-outline-danger"
               onClick={(e) => remove(e, key)}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className="fas fa-trash" />
+                            <i className="fas fa-trash" />
             </button>
             {idx === value.length - 1 && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <button
+                            <button
                 type="button"
                 className="input-group-text btn btn-outline-primary"
                 onClick={addNext}
               >
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-plus" />{' '}
+                                <i className="fas fa-plus" />{' '}
               </button>
             )}
           </div>
@@ -316,8 +281,7 @@ const Card = ({
   duplicatePlan,
   creation
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   let pricing = translateMethod('Free');
   const req = translateMethod('req.');
@@ -347,11 +311,9 @@ const Card = ({
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="card hoverable-card mb-4 shadow-sm" style={{ position: 'relative' }}>
+        <div className="card hoverable-card mb-4 shadow-sm" style={{ position: 'relative' }}>
       {isDefault && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <i
+                <i
           className="fas fa-star"
           style={{
             position: 'absolute',
@@ -363,90 +325,64 @@ const Card = ({
         />
       )}
       {!creation && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div
+                <div
           className="dropdown"
           style={{ position: 'absolute', top: '15px', left: '15px', zIndex: '100' }}
         >
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <i
+                    <i
             className="fa fa-cog cursor-pointer dropdown-menu-button"
             style={{ fontSize: '20px' }}
             data-bs-toggle="dropdown"
             aria-expanded="false"
             id="dropdownMenuButton"
           />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
             {!isDefault && plan.visibility !== PRIVATE && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <span className="dropdown-item cursor-pointer" onClick={makeItDefault}>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Translation i18nkey="Make default plan">Make default plan</Translation>
+                            <span className="dropdown-item cursor-pointer" onClick={makeItDefault}>
+                                <Translation i18nkey="Make default plan">Make default plan</Translation>
               </span>
             )}
             {!isDefault && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <span onClick={toggleVisibility} className="dropdown-item cursor-pointer">
+                            <span onClick={toggleVisibility} className="dropdown-item cursor-pointer">
                 {plan.visibility === PUBLIC && (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  <Translation i18nkey="Make it private">Make it private</Translation>
+                                    <Translation i18nkey="Make it private">Make it private</Translation>
                 )}
                 {plan.visibility === PRIVATE && (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  <Translation i18nkey="Make it public">Make it public</Translation>
+                                    <Translation i18nkey="Make it public">Make it public</Translation>
                 )}
               </span>
             )}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="dropdown-divider" />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <span className="dropdown-item cursor-pointer" onClick={duplicatePlan}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="Duplicate plan">duplicate</Translation>
+                        <div className="dropdown-divider" />
+                        <span className="dropdown-item cursor-pointer" onClick={duplicatePlan}>
+                            <Translation i18nkey="Duplicate plan">duplicate</Translation>
             </span>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <span className="dropdown-item cursor-pointer" onClick={editPlan}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="Edit plan">Edit</Translation>
+                        <span className="dropdown-item cursor-pointer" onClick={editPlan}>
+                            <Translation i18nkey="Edit plan">Edit</Translation>
             </span>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="dropdown-divider" />
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <span
+                        <div className="dropdown-divider" />
+                        <span
               className="dropdown-item cursor-pointer btn-danger-negative"
               onClick={deleteWithConfirm}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="Delete plan">delete</Translation>
+                            <Translation i18nkey="Delete plan">delete</Translation>
             </span>
           </div>
         </div>
       )}
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="card-img-top card-link card-skin" data-holder-rendered="true">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
+            <div className="card-img-top card-link card-skin" data-holder-rendered="true">
+                <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="card-body plan-body d-flex flex-column">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <p className="card-text text-justify">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span>{plan.customDescription}</span>
+            <div className="card-body plan-body d-flex flex-column">
+                <p className="card-text text-justify">
+                    <span>{plan.customDescription}</span>
         </p>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex flex-column mb-2">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span className="plan-quotas">
+                <div className="d-flex flex-column mb-2">
+                    <span className="plan-quotas">
             {!plan.maxPerSecond && !plan.maxPerMonth && translateMethod('plan.limits.unlimited')}
             {!!plan.maxPerSecond && !!plan.maxPerMonth && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <div>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <div>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <Translation
+                            <div>
+                                <div>
+                                    <Translation
                     i18nkey="plan.limits"
                     replacements={[plan.maxPerSecond, plan.maxPerMonth]}
                   >
@@ -456,10 +392,8 @@ const Card = ({
               </div>
             )}
           </span>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span className="plan-pricing">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="plan.pricing" replacements={[pricing]}>
+                    <span className="plan-pricing">
+                        <Translation i18nkey="plan.pricing" replacements={[pricing]}>
               pricing: {pricing}
             </Translation>
           </span>
@@ -477,8 +411,7 @@ export const TeamApiPricings = (props: any) => {
   const [planForEdition, setPlanForEdition] = useState();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
 
   useEffect(() => {
@@ -609,8 +542,7 @@ export const TeamApiPricings = (props: any) => {
 
   const createNewPlan = () => {
     const newPlan = newPossibleUsagePlan('new plan');
-    // @ts-expect-error TS(2345): Argument of type '{ _id: string; type: string; cur... Remove this comment to see the full error message
-    setPlanForEdition(newPlan);
+        setPlanForEdition(newPlan);
     setMode(possibleMode.creation);
     setCreation(true);
   };
@@ -703,8 +635,7 @@ export const TeamApiPricings = (props: any) => {
                         .map(({ defaultDescription }) => defaultDescription)
                         .some((d) => !rawValues.customDescription || d === rawValues.customDescription);
                     if (isDescIsDefault) {
-                        // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-                        setValue('customDescription', SUBSCRIPTION_PLAN_TYPES[value].defaultDescription);
+                                                setValue('customDescription', SUBSCRIPTION_PLAN_TYPES[value].defaultDescription);
                     }
                 },
                 options: planTypes,
@@ -1069,8 +1000,7 @@ export const TeamApiPricings = (props: any) => {
                     if (value)
                         window
                             .confirm(translateMethod('aggregation.api_key.security.notification'))
-                            // @ts-expect-error TS(2339): Property 'then' does not exist on type 'boolean'.
-                            .then((ok: any) => {
+                                                        .then((ok: any) => {
                             if (ok) {
                                 setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
                                 setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false);
@@ -1129,80 +1059,61 @@ export const TeamApiPricings = (props: any) => {
               (window
     .confirm(translateMethod('aggregation.api_key.security.notification')) as any).then((ok: any) => {
     if (ok) {
-        // @ts-expect-error TS(2304): Cannot find name 'setValue'.
-        setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
-        // @ts-expect-error TS(2304): Cannot find name 'setValue'.
-        setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false);
+                setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
+                setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false);
     }
 });
           },
         },
         allowMutlipleApiKeys: {
           type: type.bool,
-          // @ts-expect-error TS(2304): Cannot find name 'label'.
-          label: translateMethod('Allow multiple apiKey demands'),
+                    label: translateMethod('Allow multiple apiKey demands'),
         },
         subscriptionProcess: {
           type: type.string,
           format: format.buttonsSelect,
-          // @ts-expect-error TS(2304): Cannot find name 'disabled'.
-          disabled: ({
+                    disabled: ({
             rawValues
           }: any) =>
             !!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length,
-          // @ts-expect-error TS(2304): Cannot find name 'label'.
-          label: ({
+                    label: ({
             rawValues
           }: any) =>
-            // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-            translateMethod('Subscription') +
+                        translateMethod('Subscription') +
             (rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length
-              ? // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-                ` (${translateMethod('Subscription.manual.help')})`
+              ?                 ` (${translateMethod('Subscription.manual.help')})`
               : ''),
-          // @ts-expect-error TS(2695): Left side of comma operator is unused and has no s... Remove this comment to see the full error message
-          options: [
+                    options: [
             {
-              // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-              label: translateMethod('Automatic'),
+                            label: translateMethod('Automatic'),
               value: 'Automatic',
             },
-            // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-            { label: translateMethod('Manual'), value: 'Manual' },
+                        { label: translateMethod('Manual'), value: 'Manual' },
           ],
-          // @ts-expect-error TS(2695): Left side of comma operator is unused and has no s... Remove this comment to see the full error message
-          constraints: [
+                    constraints: [
             constraints.oneOf(
               ['Automatic', 'Manual'],
-              // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-              translateMethod('constraints.oneof.sub.process')
+                            translateMethod('constraints.oneof.sub.process')
             ),
           ],
         },
         integrationProcess: {
           type: type.string,
           format: format.buttonsSelect,
-          // @ts-expect-error TS(2304): Cannot find name 'label'.
-          label: () => translateMethod('Integration'),
-          // @ts-expect-error TS(2695): Left side of comma operator is unused and has no s... Remove this comment to see the full error message
-          options: [
+                    label: () => translateMethod('Integration'),
+                    options: [
             {
-              // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-              label: translateMethod('Automatic'),
+                            label: translateMethod('Automatic'),
               value: 'Automatic',
             },
-            // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-            { label: translateMethod('ApiKey'), value: 'ApiKey' },
+                        { label: translateMethod('ApiKey'), value: 'ApiKey' },
           ],
-          // @ts-expect-error TS(2304): Cannot find name 'expert'.
-          expert: true,
+                    expert: true,
         },
       },
-      // @ts-expect-error TS(2695): Left side of comma operator is unused and has no s... Remove this comment to see the full error message
-      flow: [
+            flow: [
         {
-          // @ts-expect-error TS(2304): Cannot find name 'translateMethod'.
-          label: translateMethod('Security'),
+                    label: translateMethod('Security'),
           flow: ['autoRotation', 'allowMutlipleApiKeys', 'aggregationApiKeysSecurity'],
           inline: true,
         },

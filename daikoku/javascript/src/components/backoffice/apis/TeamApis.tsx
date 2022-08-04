@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
@@ -15,8 +14,7 @@ export const TeamApis = () => {
   const dispatch = useDispatch();
   useTeamBackOffice(currentTeam);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translateMethod('API', true)}`;
@@ -39,17 +37,13 @@ export const TeamApis = () => {
         const api = original;
         if (api.apis) {
           return (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <div className="d-flex flex-row justify-content-between">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <span>{api.name}</span>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div className="iconized">G</div>
+                        <div className="d-flex flex-row justify-content-between">
+                            <span>{api.name}</span>
+                            <div className="iconized">G</div>
             </div>
           );
         }
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        return <div>{`${api.name} - (${api.currentVersion})`}</div>;
+                return <div>{`${api.name} - (${api.currentVersion})`}</div>;
       },
     },
     {
@@ -71,15 +65,12 @@ export const TeamApis = () => {
       }: any) => {
         const api = original;
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <Can I={manage} a={API} team={currentTeam}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <SwitchButton
+                    <Can I={manage} a={API} team={currentTeam}>
+                        <SwitchButton
               onSwitch={() => togglePublish(api)}
               checked={api.published}
               disabled={api.visibility === 'AdminOnly'}
-              // @ts-expect-error TS(2322): Type '{ onSwitch: () => void; checked: any; disabl... Remove this comment to see the full error message
-              large
+                            large
               noText
             />
           </Can>
@@ -105,41 +96,33 @@ export const TeamApis = () => {
           ? `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
           : `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="btn-group">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Link
+                    <div className="btn-group">
+                        <Link
               rel="noopener"
               to={viewUrl}
               className="btn btn-sm btn-access-negative"
               title="View this Api"
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className="fas fa-eye" />
+                            <i className="fas fa-eye" />
             </Link>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Can I={manage} a={API} team={currentTeam}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Link
+                        <Can I={manage} a={API} team={currentTeam}>
+                            <Link
                 key={`edit-${api._humanReadableId}`}
                 to={editUrl}
                 className="btn btn-sm btn-access-negative"
                 title="Edit this Api"
               >
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-edit" />
+                                <i className="fas fa-edit" />
               </Link>
               {api.visibility !== 'AdminOnly' && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <button
+                                <button
                   key={`delete-${api._humanReadableId}`}
                   type="button"
                   className="btn btn-sm btn-access-negative"
                   title="Delete this Api"
                   onClick={() => deleteApi(api)}
                 >
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <i className="fas fa-trash" />
+                                    <i className="fas fa-trash" />
                 </button>
               )}
             </Can>
@@ -157,8 +140,7 @@ export const TeamApis = () => {
         published: !api.published,
       },
       api.currentVersion
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-    ).then(() => table.current.update());
+        ).then(() => table.current.update());
   };
 
   const deleteApi = (api: any) => {
@@ -167,8 +149,7 @@ export const TeamApis = () => {
     if (ok) {
         Services.deleteTeamApi(currentTeam._id, api._id).then(() => {
             toastr.success(translateMethod('delete.api.success', false, 'API deleted successfully', api.name));
-            // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-            table.current.update();
+                        table.current.update();
         });
     }
 });
@@ -178,18 +159,12 @@ export const TeamApis = () => {
     setError({ error: { status: 403, message: 'Creation security enabled' } })(dispatch);
   }
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <Can I={read} a={API} dispatchError={true} team={currentTeam}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="p-2">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Table
-              // @ts-expect-error TS(2322): Type '{ selfUrl: string; defaultTitle: string; def... Remove this comment to see the full error message
-              selfUrl="apis"
+        <Can I={read} a={API} dispatchError={true} team={currentTeam}>
+            <div className="row">
+                <div className="col">
+                    <div className="p-2">
+                        <Table
+                            selfUrl="apis"
               defaultTitle="Team Apis"
               defaultValue={() => ({})}
               defaultSort="name"

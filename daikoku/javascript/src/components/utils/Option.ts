@@ -1,9 +1,7 @@
-// @ts-expect-error TS(7023): 'Option' implicitly has return type 'any' because ... Remove this comment to see the full error message
 export const Option = (x: any) => x === undefined || x === null ? None : Some(x);
 
 export const Some = (x: any) => ({
-  // @ts-expect-error TS(7023): 'map' implicitly has return type 'any' because it ... Remove this comment to see the full error message
-  map: (f: any) => Option(f(x)),
+    map: (f: any) => Option(f(x)),
   flatMap: (f: any) => f(x),
   fold: (_ifEmpty: any, f: any) => f(x),
   orElse: () => Option(x),

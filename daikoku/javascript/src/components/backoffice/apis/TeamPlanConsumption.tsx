@@ -12,8 +12,7 @@ export const TeamPlanConsumption = ({
 }: any) => {
   const { currentTeam } = useSelector((state) => (state as any).context);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const urlMatching = !!apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
     : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
@@ -45,8 +44,7 @@ export const TeamPlanConsumption = ({
         const value = acc.find((a: any) => a.name === item.clientId) || { count: 0 };
 
         const team = teams.find((t) => (t as any)._id === item.team);
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        const name = team.name;
+                const name = team.name;
 
         return [
           ...acc.filter((a: any) => a.name !== item.clientId),
@@ -63,16 +61,14 @@ export const TeamPlanConsumption = ({
   ];
 
   const getPlanInformation = () => {
-    // @ts-expect-error TS(2531): Object is possibly 'null'.
-    return Services.teamApi(currentTeam._id, match.params.apiId, match.params.versionId).then(
+        return Services.teamApi(currentTeam._id, match.params.apiId, match.params.versionId).then(
       (api) => {
         if (api.error) {
           return null;
         }
         return {
           api,
-          // @ts-expect-error TS(2531): Object is possibly 'null'.
-          plan: api.possibleUsagePlans.find((pp: any) => pp._id === match.params.planId),
+                    plan: api.possibleUsagePlans.find((pp: any) => pp._id === match.params.planId),
         };
       }
     );
@@ -103,28 +99,19 @@ export const TeamPlanConsumption = ({
   }, []);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <h1>Api Consumption</h1>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <PlanInformations fetchData={() => getPlanInformation()} />
+        <div>
+            <div className="row">
+                <div className="col">
+                    <h1>Api Consumption</h1>
+                    <PlanInformations fetchData={() => getPlanInformation()} />
         </div>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <OtoroshiStatsVizualization
-        // @ts-expect-error TS(2304): Cannot find name 'params'.
-        sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
+            <OtoroshiStatsVizualization
+                sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
         fetchData={(from: any, to: any) => {
           return Services.apiConsumption(
-            // @ts-expect-error TS(2531): Object is possibly 'null'.
-            match.params.apiId,
-            // @ts-expect-error TS(2531): Object is possibly 'null'.
-            match.params.planId,
+                        match.params.apiId,
+                        match.params.planId,
             currentTeam._id,
             from.valueOf(),
             to.valueOf()
@@ -147,15 +134,13 @@ const PlanInformations = (props: any) => {
     });
   }, []);
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  if (loading) return <Spinner width="50" height="50" />;
+    if (loading) return <Spinner width="50" height="50" />;
 
   if (!informations) {
     return null;
   }
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return (<h3>
+    return (<h3>
       {(informations as any).api.name} - {(informations as any).plan.customName || (informations as any).plan.type}
     </h3>);
 };

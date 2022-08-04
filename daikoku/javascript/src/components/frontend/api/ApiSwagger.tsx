@@ -1,6 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'swag... Remove this comment to see the full error message
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import 'swagger-ui-dist/swagger-ui.css';
@@ -8,8 +7,7 @@ import { LoginOrRegisterModal } from '../..';
 import { I18nContext } from '../../../core';
 
 export function ApiSwagger(props: any) {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   const [state, setState] = useState({
     error: undefined,
@@ -103,8 +101,7 @@ export function ApiSwagger(props: any) {
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <LoginOrRegisterModal
+            <LoginOrRegisterModal
         {...props}
         showOnlyMessage={true}
         asFlatFormat
@@ -113,26 +110,21 @@ export function ApiSwagger(props: any) {
     );
 
   const api = props.api;
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  if (!api) return <div>{translateMethod('api_data.missing', false, undefined, ['Swagger'])}</div>;
+    if (!api) return <div>{translateMethod('api_data.missing', false, undefined, ['Swagger'])}</div>;
 
   if (state.error || state.info)
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <div className="d-flex justify-content-center w-100">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <span className={`alert alert-${state.error ? 'danger' : 'info'} text-center`}>
+            <div className="d-flex justify-content-center w-100">
+                <span className={`alert alert-${state.error ? 'danger' : 'info'} text-center`}>
           {state.error ? state.error : state.info}
         </span>
       </div>
     );
   else
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <div style={{ width: '100%' }}>
+            <div style={{ width: '100%' }}>
         {/*<button type="button" className="btn btn-success" onClick={e => handleAuthorize(true)}>Use apikey (soon)</button>*/}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div id="swagger-ui" style={{ width: '100%' }} />
+                <div id="swagger-ui" style={{ width: '100%' }} />
       </div>
     );
 }

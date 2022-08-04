@@ -21,8 +21,7 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   const finalAction = () => {
     if (selectedTeams.length) {
@@ -34,30 +33,24 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
     if (selectedTeams.length === allTeams.length) {
       setSelectedTeams([]);
     } else {
-      // @ts-expect-error TS(2345): Argument of type 'any[]' is not assignable to para... Remove this comment to see the full error message
-      setSelectedTeams([...allTeams.map((t) => t._id)]);
+            setSelectedTeams([...allTeams.map((t) => t._id)]);
     }
   };
 
   const getButton = (team: any) => {
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <button type="button" className="btn btn-sm btn-access disabled">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation i18nkey="Request in progress" />
+                <button type="button" className="btn btn-sm btn-access disabled">
+                    <Translation i18nkey="Request in progress" />
         </button>
       );
     } else if (allowMultipleDemand || !acceptedTeams.includes(team._id)) {
-      // @ts-expect-error TS(2345): Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
-      if (selectedTeams.includes(team._id)) {
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        return <CheckSquare />;
+            if (selectedTeams.includes(team._id)) {
+                return <CheckSquare />;
       }
 
       if (allTeamSelector) {
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        return <Square />;
+                return <Square />;
       }
     }
   };
@@ -72,12 +65,10 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
       (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
     ) {
       if (allTeamSelector) {
-        // @ts-expect-error TS(2345): Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
-        if (selectedTeams.includes(team._id)) {
+                if (selectedTeams.includes(team._id)) {
           setSelectedTeams(selectedTeams.filter((t) => t !== team._id));
         } else {
-          // @ts-expect-error TS(2322): Type 'any' is not assignable to type 'never'.
-          setSelectedTeams([...selectedTeams, team._id]);
+                    setSelectedTeams([...selectedTeams, team._id]);
         }
       } else {
         actionAndClose([team._id]);
@@ -95,41 +86,29 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="modal-content">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-header">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h5 className="modal-title">{title}</h5>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
+        <div className="modal-content">
+            <div className="modal-header">
+                <h5 className="modal-title">{title}</h5>
+                <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-body">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="modal-description">{description}</div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="team-selection__container">
+            <div className="modal-body">
+                <div className="modal-description">{description}</div>
+                <div className="team-selection__container">
           {!!allTeamSelector && !!allTeams.length && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <div
+                        <div
               key={'all'}
               className="team-selection team-selection__all-team selectable"
               onClick={() => toggleAllTeam()}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <span className="ms-2">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Translation i18nkey="All">All</Translation>
+                            {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
+                            <span className="ms-2">
+                                <Translation i18nkey="All">All</Translation>
               </span>
             </div>
           )}
           {teams.map((team) => {
             return (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <div
+                            <div
                 key={team._id}
                 className={classNames('team-selection team-selection__team', {
                   selectable:
@@ -143,22 +122,18 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
                 onClick={() => doTeamAction(team)}
               >
                 {getButton(team)}
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <span className="ms-2">{getTeamLabel(team)}</span>
+                                <span className="ms-2">{getTeamLabel(team)}</span>
               </div>
             );
           })}
         </div>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-footer">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
+            <div className="modal-footer">
+                <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
           {translateMethod('Close')}
         </button>
         {!!allTeamSelector && (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <button
+                    <button
             type="button"
             className={classNames('btn btn-outline-success', {
               disabled: !selectedTeams.length,

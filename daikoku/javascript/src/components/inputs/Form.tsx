@@ -1,9 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import isFunction from 'lodash/isFunction';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'get-... Remove this comment to see the full error message
 import get from 'get-value';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'set-... Remove this comment to see the full error message
 import set from 'set-value';
 
 import { Spinner } from '../utils';
@@ -18,13 +16,9 @@ import {
   LabelInput,
   TextareaInput,
 } from '.';
-// @ts-expect-error TS(6142): Module './CodeInput.js' was resolved to '/Users/qa... Remove this comment to see the full error message
 const LazyCodeInput = React.lazy(() => import('./CodeInput.js'));
-// @ts-expect-error TS(2322): Type 'Promise<typeof import("/Users/qaubert/Source... Remove this comment to see the full error message
 const LazySingleMarkdownInput = React.lazy(() => import('./SingleMarkdownInput.js'));
-// @ts-expect-error TS(6142): Module './ArrayForm' was resolved to '/Users/qaube... Remove this comment to see the full error message
 const LazyArrayForm = React.lazy(() => import('./ArrayForm'));
-// @ts-expect-error TS(6142): Module './Collapse' was resolved to '/Users/qauber... Remove this comment to see the full error message
 import { Collapse } from './Collapse';
 
 type FormComponentProps = {
@@ -47,8 +41,7 @@ class FormComponent extends Component<FormComponentProps> {
     // }
     const newValue = { ...this.props.value };
     set(newValue, name, value);
-    // @ts-expect-error TS(2722): Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-    this.props.onChange(newValue);
+        this.props.onChange(newValue);
   };
 
   getValue = (name: any, defaultValue: any) => {
@@ -69,8 +62,7 @@ class FormComponent extends Component<FormComponentProps> {
         this.collapsedState = true;
         this.collapsedLabel = name.replace('>>>', '');
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState}>
+                    <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState}>
             {collapsed}
           </Collapse>
         );
@@ -89,8 +81,7 @@ class FormComponent extends Component<FormComponentProps> {
         this.collapsedState = false;
         this.collapsedLabel = name.replace('<<<', '');
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState}>
+                    <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState}>
             {collapsed}
           </Collapse>
         );
@@ -109,14 +100,12 @@ class FormComponent extends Component<FormComponentProps> {
         delete this.collapsedState;
         delete this.collapsedLabel;
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState} lineEnd={true}>
+                    <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState} lineEnd={true}>
             {collapsed}
           </Collapse>
         );
       } else {
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        return <hr key={idx} />;
+                return <hr key={idx} />;
       }
     } else {
       // console.log('name', name)
@@ -132,12 +121,10 @@ class FormComponent extends Component<FormComponentProps> {
         component = null;
       } else if (type) {
         if (type === 'array') {
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          component = (<ArrayInput disabled={realDisabled} key={name} value={this.getValue(name, [])} {...props} onChange={(v: any) => this.changeValue(name, v)} currentLanguage={(this.props as any).currentLanguage}/>);
+                    component = (<ArrayInput disabled={realDisabled} key={name} value={this.getValue(name, [])} {...props} onChange={(v: any) => this.changeValue(name, v)} currentLanguage={(this.props as any).currentLanguage}/>);
         } else if (type === 'object') {
           component = (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <ObjectInput
+                        <ObjectInput
               disabled={disabled}
               key={name}
               value={this.getValue(name, {})}
@@ -147,8 +134,7 @@ class FormComponent extends Component<FormComponentProps> {
           );
         } else if (type === 'bool') {
           component = (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <BooleanInput
+                        <BooleanInput
               disabled={disabled}
               key={name}
               value={this.getValue(name, false)}
@@ -158,8 +144,7 @@ class FormComponent extends Component<FormComponentProps> {
           );
         } else if (type === 'select') {
           component = (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <SelectInput
+                        <SelectInput
               disabled={disabled}
               key={name}
               value={this.getValue(name, '')}
@@ -169,8 +154,7 @@ class FormComponent extends Component<FormComponentProps> {
           );
         } else if (type === 'string') {
           component = (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <TextInput
+                        <TextInput
               disabled={disabled}
               key={name}
               value={this.getValue(name, '')}
@@ -180,8 +164,7 @@ class FormComponent extends Component<FormComponentProps> {
           );
         } else if (type === 'text') {
           component = (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <TextareaInput
+                        <TextareaInput
               disabled={disabled}
               key={name}
               value={this.getValue(name, '')}
@@ -191,10 +174,8 @@ class FormComponent extends Component<FormComponentProps> {
           );
         } else if (type === 'code') {
           return (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <React.Suspense key={name} fallback={<div>loading...</div>}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <LazyCodeInput
+                        <React.Suspense key={name} fallback={<div>loading...</div>}>
+                            <LazyCodeInput
                 disabled={disabled}
                 key={name}
                 value={this.getValue(name, '')}
@@ -204,18 +185,14 @@ class FormComponent extends Component<FormComponentProps> {
             </React.Suspense>
           );
         } else if (type === 'markdown') {
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          component = (<React.Suspense key={name} fallback={<div>loading...</div>}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <LazySingleMarkdownInput currentLanguage={(this.props as any).currentLanguage} disabled={disabled} key={name} value={this.getValue(name, '')} {...props} onChange={(v: any) => this.changeValue(name, v)}/>
+                    component = (<React.Suspense key={name} fallback={<div>loading...</div>}>
+                            <LazySingleMarkdownInput currentLanguage={(this.props as any).currentLanguage} disabled={disabled} key={name} value={this.getValue(name, '')} {...props} onChange={(v: any) => this.changeValue(name, v)}/>
             </React.Suspense>);
         } else if (type === 'label') {
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          component = <LabelInput key={name} value={this.getValue(name, '')} {...props} />;
+                    component = <LabelInput key={name} value={this.getValue(name, '')} {...props} />;
         } else if (type === 'number') {
           component = (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <NumberInput
+                        <NumberInput
               disabled={disabled}
               key={name}
               value={this.getValue(name, 0)}
@@ -225,10 +202,8 @@ class FormComponent extends Component<FormComponentProps> {
           );
         } else if (type === 'arrayForm') {
           component = (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <React.Suspense key={name} fallback={<Spinner />}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <LazyArrayForm
+                        <React.Suspense key={name} fallback={<Spinner />}>
+                            <LazyArrayForm
                 disabled={disabled}
                 key={name}
                 value={this.getValue(name, '')}
@@ -246,8 +221,7 @@ class FormComponent extends Component<FormComponentProps> {
             value: this.getValue(name, {}),
             changeValue: this.changeValue,
             onChange: (v: any) => this.changeValue(name, v),
-            // @ts-expect-error TS(2722): Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-            onRawChange: (v: any) => this.props.onChange(v),
+                        onRawChange: (v: any) => this.props.onChange(v),
           });
         } else if (React.isValidElement(type)) {
           component = type;
@@ -273,8 +247,7 @@ class FormComponent extends Component<FormComponentProps> {
       delete this.collapsedState;
       delete this.collapsedLabel;
       return (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <Collapse key="last" label={collapsedLabel} collapsed={collapsedState}>
+                <Collapse key="last" label={collapsedLabel} collapsed={collapsedState}>
           {collapsed}
         </Collapse>
       );
@@ -284,10 +257,8 @@ class FormComponent extends Component<FormComponentProps> {
   }
 
   render() {
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return (<form style={{ ...(this.props as any).style }} className="col-12 section pt-2 pe-2">
-        {/* @ts-expect-error TS(2532): Object is possibly 'undefined'. */}
-        {this.props.flow.map((step, idx) => this.generateStep(step, idx))}
+        return (<form style={{ ...(this.props as any).style }} className="col-12 section pt-2 pe-2">
+                {this.props.flow.map((step, idx) => this.generateStep(step, idx))}
         {this.generateLastStep()}
       </form>);
   }

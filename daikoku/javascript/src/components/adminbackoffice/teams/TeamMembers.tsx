@@ -9,8 +9,7 @@ import { TeamMembersSimpleComponent } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 
 export const TeamMembersForAdmin = () => {
-  // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
-  useTenantBackOffice();
+    useTenantBackOffice();
 
   const connectedUser = useSelector((s) => (s as any).context.connectedUser);
   const dispatch = useDispatch();
@@ -27,10 +26,8 @@ export const TeamMembersForAdmin = () => {
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <Can I={manage} a={tenant} dispatchError>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <TeamMembersSimpleComponent
+        <Can I={manage} a={tenant} dispatchError>
+            <TeamMembersSimpleComponent
         currentTeam={team}
         connectedUser={connectedUser}
         updateTeam={(team: any) => Promise.resolve(setTeam(team))}

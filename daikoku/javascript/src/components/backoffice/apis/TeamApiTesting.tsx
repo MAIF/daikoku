@@ -10,8 +10,7 @@ import { I18nContext } from '../../../core';
 export const TeamApiTesting = (props: any) => {
   const testing = props.value.testing;
   const currentTeam = useSelector((s) => (s as any).context.currentTeam);
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
     const random = nanoid(16);
@@ -50,8 +49,7 @@ export const TeamApiTesting = (props: any) => {
       }),
       config: testing.config,
       api: props.value,
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      description: <div>Description</div>,
+            description: <div>Description</div>,
     });
   };
 
@@ -114,34 +112,26 @@ export const TeamApiTesting = (props: any) => {
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="d-flex">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Form
+        <div className="d-flex">
+            <Form
         ref={props.reference}
         schema={schema}
         onSubmit={(testing) => props.onChange({ ...props.value, testing })}
         value={props.value.testing}
-        // @ts-expect-error TS(2322): Type '() => null' is not assignable to type '(prop... Remove this comment to see the full error message
-        footer={() => null}
+                footer={() => null}
       />
       {!otoKeyExists && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div className="col-6 d-flex justify-content-center align-items-center">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button className="btn btn-outline-success" onClick={handleOtoroshiUsage}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="testing.key.creation">
+                <div className="col-6 d-flex justify-content-center align-items-center">
+                    <button className="btn btn-outline-success" onClick={handleOtoroshiUsage}>
+                        <Translation i18nkey="testing.key.creation">
               Use Otoroshi to create testing ApiKey
             </Translation>
           </button>
         </div>
       )}
       {!!otoKeyExists && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div className="d-flex flex-column pt-2 pe-2">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div
+                <div className="d-flex flex-column pt-2 pe-2">
+                    <div
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -149,25 +139,20 @@ export const TeamApiTesting = (props: any) => {
               alignItems: 'flex-start',
             }}
           >
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <p>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="otoroshi.test.key.modal.description">
+                        <p>
+                            <Translation i18nkey="otoroshi.test.key.modal.description">
                 In order to make everything work, you'll have to add a tags match (OneTageIn /
                 AllTagIn) in your service descriptor in the 'Api Keys Constraints' section. Make
                 sure this service descriptor is the right one for testing and not a production
                 system.
               </Translation>
             </p>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <p>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="otoroshi.test.key.modal.tag.name">
+                        <p>
+                            <Translation i18nkey="otoroshi.test.key.modal.tag.name">
                 The tag you need to add is the following
               </Translation>
             </p>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div
+                        <div
               style={{
                 padding: 10,
                 borderRadius: 5,
@@ -182,17 +167,12 @@ export const TeamApiTesting = (props: any) => {
               {testing.config.tag}
             </div>
           </div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="d-flex justify-content-center align-items-center flex-grow-1">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="Delete Testing ApiKey">Delete Testing ApiKey</Translation>
+                    <div className="d-flex justify-content-center align-items-center flex-grow-1">
+                        <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
+                            <Translation i18nkey="Delete Testing ApiKey">Delete Testing ApiKey</Translation>
             </button>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button className="btn btn-outline-success ms-1" onClick={handleOtoroshiUsage}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="Update Testing ApiKey">Update Testing ApiKey</Translation>
+                        <button className="btn btn-outline-success ms-1" onClick={handleOtoroshiUsage}>
+                            <Translation i18nkey="Update Testing ApiKey">Update Testing ApiKey</Translation>
             </button>
           </div>
         </div>

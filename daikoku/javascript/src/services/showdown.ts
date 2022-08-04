@@ -1,5 +1,4 @@
 import take from 'lodash/take';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'show... Remove this comment to see the full error message
 import showdown from 'showdown';
 
 export function DaikokuExtension() {

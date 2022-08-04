@@ -7,21 +7,16 @@ export const MailTemplateButton = ({
   openModal,
   save
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="mb-3 row">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <label className="col-xs-12 col-sm-2 col-form-label">
+        <div className="mb-3 row">
+            <label className="col-xs-12 col-sm-2 col-form-label">
         {translateMethod('mailing_internalization.mail_template_tab')}
       </label>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="col-sm-10">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button
+            <div className="col-sm-10">
+                <button
           type="button"
           className="btn btn-outline-success"
           onClick={() => {

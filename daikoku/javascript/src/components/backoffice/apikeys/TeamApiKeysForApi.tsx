@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
 import sortBy from 'lodash/sortBy';
@@ -37,8 +36,7 @@ export const TeamApiKeysForApi = () => {
   const location = useLocation();
   const params = useParams();
   const { client } = useContext(getApolloContext());
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     Promise.all([
@@ -47,8 +45,7 @@ export const TeamApiKeysForApi = () => {
     ])
       .then(([api, subscriptions]) =>
         Promise.all([
-          // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-          client.query({
+                    client.query({
             query: Services.graphql.apisByIds,
             variables: { ids: [...new Set(subscriptions.map((s: any) => s.api))] },
           }),
@@ -129,8 +126,7 @@ export const TeamApiKeysForApi = () => {
     return api.possibleUsagePlans.find((p) => (p as any)._id === subscription.plan);
   };
 
-  // @ts-expect-error TS(2554): Expected 8 arguments, but got 4.
-  const showApiKey = CanIDoAction(connectedUser, read, apikey, currentTeam);
+    const showApiKey = CanIDoAction(connectedUser, read, apikey, currentTeam);
 
   const search = searched.trim().toLowerCase();
   const filteredApiKeys =
@@ -154,38 +150,26 @@ export const TeamApiKeysForApi = () => {
   const sortedApiKeys = sorted
     .filter((f) => (f as any).parent)
     .reduce((acc, sub) => {
-    // @ts-expect-error TS(2339): Property 'parent' does not exist on type 'never'.
-    return acc.find((a) => a._id === sub.parent)
+        return acc.find((a) => a._id === sub.parent)
         ? acc.map((a) => {
-            // @ts-expect-error TS(2339): Property 'parent' does not exist on type 'never'.
-            if (a._id === sub.parent)
+                        if (a._id === sub.parent)
                 a.children.push(sub);
             return a;
         })
-        : // @ts-expect-error TS(2698): Spread types may only be created from object types... Remove this comment to see the full error message
-          [...acc, { ...sub, children: [] }];
-// @ts-expect-error TS(2698): Spread types may only be created from object types... Remove this comment to see the full error message
+        :           [...acc, { ...sub, children: [] }];
 }, sorted.filter((f) => !(f as any).parent).map((sub) => ({ ...sub, children: [] })));
-        // @ts-expect-error TS(2304): Cannot find name 'acc'.
-        return acc.find((a) => a._id === (sub as any).parent)
-    ? // @ts-expect-error TS(2304): Cannot find name 'acc'.
-      acc.map((a) => {
-        // @ts-expect-error TS(2304): Cannot find name 'sub'.
-        if (a._id === sub.parent)
-            // @ts-expect-error TS(2304): Cannot find name 'sub'.
-            a.children.push(sub);
+                return acc.find((a) => a._id === (sub as any).parent)
+    ?       acc.map((a) => {
+                if (a._id === sub.parent)
+                        a.children.push(sub);
         return a;
     })
-    : // @ts-expect-error TS(2304): Cannot find name 'acc'.
-      [...acc, { ...sub, children: [] }];a._id === (sub as any).parent) a.children.push(sub);
-              // @ts-expect-error TS(2304): Cannot find name 'a'.
-              return a;
+    :       [...acc, { ...sub, children: [] }];a._id === (sub as any).parent) a.children.push(sub);
+                            return a;
             })
-          // @ts-expect-error TS(2304): Cannot find name 'acc'.
-          : [...acc, { ...sub, children: [] }];
+                    : [...acc, { ...sub, children: [] }];
       },
-      // @ts-expect-error TS(2304): Cannot find name 'sorted'.
-      sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] }))
+            sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] }))
     );
 
   return (<Can I={read} a={apikey} team={currentTeam} dispatchError>
@@ -218,10 +202,8 @@ export const TeamApiKeysForApi = () => {
                 return (<ApiKeyCard currentTeam={currentTeam} openInfoNotif={(message: any) => toastr.info(message)} statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`} key={subscription._id} subscription={subscription} showApiKey={showApiKey} plan={plan} api={api} subscribedApis={subscribedApis} updateCustomName={(name: any) => updateCustomName(subscription, name)} archiveApiKey={() => archiveApiKey(subscription)} makeUniqueApiKey={() => makeUniqueApiKey(subscription)} toggleRotation={(enabled: any, rotationEvery: any, gracePeriod: any) => toggleApiKeyRotation(subscription, plan, enabled, rotationEvery, gracePeriod)} regenerateSecret={() => regenerateApiKeySecret(subscription)} disableRotation={(api as any).visibility === 'AdminOnly' || (plan as any).autoRotation}/>);
               }}
             />
-          // @ts-expect-error TS(2304): Cannot find name 'div'.
-          </div>
-        // @ts-expect-error TS(2304): Cannot find name 'div'.
-        </div>
+                    </div>
+                </div>
       ) : null}
     </Can>
   );
@@ -257,8 +239,7 @@ const ApiKeyCard = ({
 
   const { _id, integrationToken } = subscription;
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   let inputRef = React.createRef();
   let clipboard = React.createRef();
@@ -297,8 +278,7 @@ const ApiKeyCard = ({
       constraints: [
         constraints.positive(),
         constraints.lessThan(
-          // @ts-expect-error TS(2345): Argument of type 'Reference<unknown>' is not assig... Remove this comment to see the full error message
-          constraints.ref('rotationEvery'),
+                    constraints.ref('rotationEvery'),
           translateMethod('constraint.apikey.grace.period')
         ),
       ],
@@ -327,20 +307,14 @@ const ApiKeyCard = ({
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="col-12 col-sm-6 col-md-4 mb-2">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="card">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="card-header" style={{ position: 'relative' }}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="d-flex align-items-center justify-content-between">
+        <div className="col-12 col-sm-6 col-md-4 mb-2">
+            <div className="card">
+                <div className="card-header" style={{ position: 'relative' }}>
+                    <div className="d-flex align-items-center justify-content-between">
             {!settingMode &&
               (!editMode ? (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <BeautifulTitle
+                                <>
+                                    <BeautifulTitle
                     title={customName}
                     style={{
                       wordBreak: 'break-all',
@@ -354,56 +328,43 @@ const ApiKeyCard = ({
                   >
                     {customName}
                   </BeautifulTitle>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button
+                                    <button
                     disabled={!subscription.enabled}
                     type="button"
                     className="btn btn-sm btn-access-negative ms-2"
                     onClick={() => setEditMode(true)}
                   >
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-pen cursor-pointer a-fake" />
+                                        <i className="fas fa-pen cursor-pointer a-fake" />
                   </button>
                 </>
               ) : (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <div className="input-group">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <input
+                                <div className="input-group">
+                                    <input
                     type="text"
                     className="form-control"
                     value={customName}
-                    // @ts-expect-error TS(2322): Type 'RefObject<unknown>' is not assignable to typ... Remove this comment to see the full error message
-                    ref={inputRef}
+                                        ref={inputRef}
                     onChange={(e) => setCustomName(e.target.value)}
                   />
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <div className="input-group-append">
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <span
+                                    <div className="input-group-append">
+                                        <span
                       className="input-group-text cursor-pointer"
                       onClick={handleCustomNameChange}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <i className="fas fa-check accept" />
+                                            <i className="fas fa-check accept" />
                     </span>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <span className="input-group-text cursor-pointer" onClick={abortCustomNameEdit}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <i className="fas fa-times escape a-fake" />
+                                        <span className="input-group-text cursor-pointer" onClick={abortCustomNameEdit}>
+                                            <i className="fas fa-times escape a-fake" />
                     </span>
                   </div>
                 </div>
               ))}
             {settingMode ? (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <h3>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Translation i18nkey="ApiKey rotation">ApiKey rotation</Translation>
+                            <h3>
+                                <Translation i18nkey="ApiKey rotation">ApiKey rotation</Translation>
               </h3>
             ) : (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <span
+                            <span
                 className="badge bg-secondary"
                 style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
               >
@@ -412,45 +373,32 @@ const ApiKeyCard = ({
             )}
           </div>
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="card-body" style={{ margin: 0 }}>
+                <div className="card-body" style={{ margin: 0 }}>
           {!settingMode && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <div>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div className="d-flex justify-content-end mb-3">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <div className="d-flex justify-content-around">
+                        <div>
+                            <div className="d-flex justify-content-end mb-3">
+                                <div className="d-flex justify-content-around">
                   {!subscription.parent && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <BeautifulTitle title={translateMethod('Reset secret')}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <button
+                                        <BeautifulTitle title={translateMethod('Reset secret')}>
+                                            <button
                         type="button"
                         className="btn btn-sm btn-outline-danger ms-1"
                         disabled={!subscription.enabled}
                         onClick={regenerateSecret}
                       >
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <i className="fas fa-sync-alt" />
+                                                <i className="fas fa-sync-alt" />
                       </button>
                     </BeautifulTitle>
                   )}
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <Can I={read} a={stat} team={currentTeam}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <BeautifulTitle title={translateMethod('View usage statistics')}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <Link to={statsLink} className="btn btn-sm btn-access-negative ms-1">
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <i className="fas fa-chart-bar" />
+                                    <Can I={read} a={stat} team={currentTeam}>
+                                        <BeautifulTitle title={translateMethod('View usage statistics')}>
+                                            <Link to={statsLink} className="btn btn-sm btn-access-negative ms-1">
+                                                <i className="fas fa-chart-bar" />
                       </Link>
                     </BeautifulTitle>
                   </Can>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <BeautifulTitle title={translateMethod('Copy to clipboard')}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <button
+                                    <BeautifulTitle title={translateMethod('Copy to clipboard')}>
+                                        <button
                       type="button"
                       disabled={!subscription.enabled}
                       className="btn btn-sm btn-access-negative ms-1"
@@ -460,29 +408,23 @@ const ApiKeyCard = ({
                         openInfoNotif(translateMethod('Credientials copied'));
                       }}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <i className="fas fa-copy" />
+                                            <i className="fas fa-copy" />
                     </button>
                   </BeautifulTitle>
                   {!subscription.parent && !disableRotation && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <BeautifulTitle title={translateMethod('Setup rotation')}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <button
+                                        <BeautifulTitle title={translateMethod('Setup rotation')}>
+                                            <button
                         type="button"
                         className="btn btn-sm btn-access-negative ms-1"
                         onClick={() => setSettingMode(true)}
                       >
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <i className="fas fa-history" />
+                                                <i className="fas fa-history" />
                       </button>
                     </BeautifulTitle>
                   )}
                   {!subscription.parent && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <BeautifulTitle title={translateMethod('Enable/Disable')}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <button
+                                        <BeautifulTitle title={translateMethod('Enable/Disable')}>
+                                            <button
                         type="button"
                         disabled={subscription.parent ? !subscription.parentUp : false}
                         className={classNames('btn btn-sm ms-1', {
@@ -495,53 +437,41 @@ const ApiKeyCard = ({
                         })}
                         onClick={archiveApiKey}
                       >
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <i className="fas fa-power-off" />
+                                                <i className="fas fa-power-off" />
                       </button>
                     </BeautifulTitle>
                   )}
                   {subscription.parent && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <button
+                                        <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
+                                            <button
                         type="button"
                         className="btn btn-sm ms-1 btn-outline-danger"
                         onClick={makeUniqueApiKey}
                       >
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <i className="fas fa-share" />
+                                                <i className="fas fa-share" />
                       </button>
                     </BeautifulTitle>
                   )}
                 </div>
               </div>
               {subscription.apiKey && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <div className="row">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <ul className="nav nav-tabs flex-column flex-sm-row mb-2 col-12">
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <li className="nav-item cursor-pointer">
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <span
+                                <div className="row">
+                                    <ul className="nav nav-tabs flex-column flex-sm-row mb-2 col-12">
+                                        <li className="nav-item cursor-pointer">
+                                            <span
                         className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
                         onClick={() => setActiveTab('apikey')}
                       >
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <Translation i18nkey="ApiKey">ApiKey</Translation>
+                                                <Translation i18nkey="ApiKey">ApiKey</Translation>
                       </span>
                     </li>
                     {!disableRotation && (
-                      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                      <li className="nav-item  cursor-pointer">
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <span
+                                            <li className="nav-item  cursor-pointer">
+                                                <span
                           className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
                           onClick={() => setActiveTab('token')}
                         >
-                          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                          <Translation i18nkey="Integration token">Integration token</Translation>
+                                                    <Translation i18nkey="Integration token">Integration token</Translation>
                         </span>
                       </li>
                     )}
@@ -549,19 +479,13 @@ const ApiKeyCard = ({
                 </div>
               )}
               {activeTab == 'apikey' && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <div className="mb-3">
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <label htmlFor={`client-id-${_id}`} className="">
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <Translation i18nkey="Client Id">Client Id</Translation>
+                                <>
+                                    <div className="mb-3">
+                                        <label htmlFor={`client-id-${_id}`} className="">
+                                            <Translation i18nkey="Client Id">Client Id</Translation>
                     </label>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <div className="">
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <input
+                                        <div className="">
+                                            <input
                         readOnly
                         disabled={!subscription.enabled}
                         className="form-control input-sm"
@@ -570,17 +494,12 @@ const ApiKeyCard = ({
                       />
                     </div>
                   </div>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <div className="mb-3">
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <label htmlFor={`client-secret-${_id}`} className="">
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <Translation i18nkey="Client secret">Client secret</Translation>
+                                    <div className="mb-3">
+                                        <label htmlFor={`client-secret-${_id}`} className="">
+                                            <Translation i18nkey="Client secret">Client secret</Translation>
                     </label>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <div className="input-group">
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <input
+                                        <div className="input-group">
+                                            <input
                         readOnly
                         disabled={!subscription.enabled}
                         type={hide ? 'password' : ''}
@@ -589,10 +508,8 @@ const ApiKeyCard = ({
                         value={subscription.apiKey.clientSecret}
                         aria-describedby={`client-secret-addon-${_id}`}
                       />
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <div className="input-group-append">
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <span
+                                            <div className="input-group-append">
+                                                <span
                           onClick={() => {
                             if (subscription.enabled) {
                               setHide(!hide);
@@ -604,8 +521,7 @@ const ApiKeyCard = ({
                           })}
                           id={`client-secret-addon-${_id}`}
                         >
-                          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                          {hide ? <i className="fas fa-eye" /> : <i className="fas fa-eye-slash" />}
+                                                    {hide ? <i className="fas fa-eye" /> : <i className="fas fa-eye-slash" />}
                         </span>
                       </div>
                     </div>
@@ -613,22 +529,15 @@ const ApiKeyCard = ({
                 </>
               )}
               {activeTab == 'token' && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <div className="mb-3">
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <label htmlFor={`token-${_id}`} className="">
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <Translation i18nkey="Integration token">Integration token</Translation>
+                                <>
+                                    <div className="mb-3">
+                                        <label htmlFor={`token-${_id}`} className="">
+                                            <Translation i18nkey="Integration token">Integration token</Translation>
                     </label>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <div className="">
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <textarea
+                                        <div className="">
+                                            <textarea
                         readOnly
-                        // @ts-expect-error TS(2322): Type 'string' is not assignable to type 'number'.
-                        rows="4"
+                                                rows="4"
                         className="form-control input-sm"
                         id={`token-${_id}`}
                         value={integrationToken}
@@ -639,22 +548,16 @@ const ApiKeyCard = ({
               )}
 
               {subscription.children.length > 0 && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <>
+                                <>
                   {showAggregatePlan && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <div className="text-center">
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <h5 className="modal-title">Aggregate plans</h5>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <div>
+                                        <div className="text-center">
+                                            <h5 className="modal-title">Aggregate plans</h5>
+                                            <div>
                         {subscription.children.map((aggregate: any) => {
                           const api = subscribedApis.find((a: any) => a._id === aggregate.api);
                           return (
-                            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                            <div key={aggregate._id}>
-                              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                              <Link
+                                                        <div key={aggregate._id}>
+                                                            <Link
                                 to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api.currentVersion}`}
                               >
                                 {`${aggregate.apiName}/${
@@ -667,8 +570,7 @@ const ApiKeyCard = ({
                       </div>
                     </div>
                   )}
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button
+                                    <button
                     className={`btn btn-sm btn-outline-info mx-auto d-flex ${
                       showAggregatePlan ? 'mt-3' : ''
                     }`}
@@ -683,10 +585,8 @@ const ApiKeyCard = ({
             </div>
           )}
 
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <input
-            // @ts-expect-error TS(2322): Type 'RefObject<unknown>' is not assignable to typ... Remove this comment to see the full error message
-            ref={clipboard}
+                    <input
+                        ref={clipboard}
             style={{ position: 'fixed', left: 0, top: -250 }}
             type="text"
             readOnly
@@ -697,11 +597,9 @@ const ApiKeyCard = ({
             }
           />
           {settingMode && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <div className="d-flex flex-column flex-grow-0">
+                        <div className="d-flex flex-column flex-grow-0">
               {!plan.autoRotation && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <Form
+                                <Form
                   schema={settingsSchema}
                   onSubmit={handleChanges}
                   value={Option(subscription.rotation).getOrElse({
@@ -711,19 +609,13 @@ const ApiKeyCard = ({
                   })}
                   footer={({ valid }) => {
                     return (
-                      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                      <div className="d-flex justify-content-end mt-3">
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <button className="btn btn-outline-danger" onClick={abort}>
-                          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                          <Translation i18nkey="Back">Back</Translation>
+                                            <div className="d-flex justify-content-end mt-3">
+                                                <button className="btn btn-outline-danger" onClick={abort}>
+                                                    <Translation i18nkey="Back">Back</Translation>
                         </button>
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        <button className="btn btn-outline-success ms-2" onClick={valid}>
-                          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                          <i className="fas fa-save me-1"></i>
-                          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                          <Translation i18nkey="Save">Save</Translation>
+                                                <button className="btn btn-outline-success ms-2" onClick={valid}>
+                                                    <i className="fas fa-save me-1"></i>
+                                                    <Translation i18nkey="Save">Save</Translation>
                         </button>
                       </div>
                     );
@@ -742,10 +634,8 @@ const Help = ({
   message
 }: any) => {
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <BeautifulTitle placement="bottom" title={message}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <i className="ms-4 far fa-question-circle" />
+        <BeautifulTitle placement="bottom" title={message}>
+            <i className="ms-4 far fa-question-circle" />
     </BeautifulTitle>
   );
 };

@@ -3,16 +3,13 @@ import { connect } from 'react-redux';
 import uniq from 'lodash/uniq';
 import sortBy from 'lodash/sortBy';
 import groupBy from 'lodash/groupBy';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { SketchPicker } from 'react-color';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { Can, tenant as TENANT, manage, Option } from '../../utils';
 
-// @ts-expect-error TS(2307): Cannot find module '!!raw-loader!../../../style/va... Remove this comment to see the full error message
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
 import { I18nContext } from '../../../core';
 import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
@@ -20,8 +17,7 @@ import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 
 export function TenantStyleEditComponent(props: any) {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
   const params = useParams();
 
   const [state, setState] = useState({
@@ -43,8 +39,7 @@ export function TenantStyleEditComponent(props: any) {
         tenant: {
           ...props.location.state.newTenant,
         },
-        // @ts-expect-error TS(2345): Argument of type '{ tenant: any; create: boolean; ... Remove this comment to see the full error message
-        create: true,
+                create: true,
       });
     } else {
       Services.oneTenant(params.tenantId)
@@ -56,8 +51,7 @@ export function TenantStyleEditComponent(props: any) {
             );
             return { value, color: color, group };
           });
-          // @ts-expect-error TS(2322): Type '{ value: any; color: any; group: any; }[]' i... Remove this comment to see the full error message
-          setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
+                    setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
         });
     }
   }, []);
@@ -73,8 +67,7 @@ export function TenantStyleEditComponent(props: any) {
     }, ':root {\n') + '}';
 
   const goBack = () => {
-    // @ts-expect-error TS(2552): Cannot find name 'navigate'. Did you mean 'navigat... Remove this comment to see the full error message
-    navigate(`/settings/tenants/${state.tenant._id}`);
+        navigate(`/settings/tenants/${state.tenant._id}`);
   };
 
   const reset = () => {
@@ -83,14 +76,11 @@ export function TenantStyleEditComponent(props: any) {
 
   const save = () => {
     Services.saveTenant({
-      // @ts-expect-error TS(2698): Spread types may only be created from object types... Remove this comment to see the full error message
-      ...state.tenant,
-      // @ts-expect-error TS(2531): Object is possibly 'null'.
-      style: { ...state.tenant.style, colorTheme: getStyleFromState() },
+            ...state.tenant,
+            style: { ...state.tenant.style, colorTheme: getStyleFromState() },
     })
       .then(() => {
-        // @ts-expect-error TS(2531): Object is possibly 'null'.
-        document.location.href = `/settings/tenants/${state.tenant._id}`;
+                document.location.href = `/settings/tenants/${state.tenant._id}`;
       })
       .then(() => toastr.success(translateMethod('Tenant updated successfully')));
   };
@@ -100,65 +90,45 @@ export function TenantStyleEditComponent(props: any) {
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <Can I={manage} a={TENANT} dispatchError>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="d-flex flex-row justify-content-between mb-1">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button
+        <Can I={manage} a={TENANT} dispatchError>
+            <div className="d-flex flex-row justify-content-between mb-1">
+                <div>
+                    <button
             className="btn btn-access-negative"
             onClick={() => setState({ ...state, preview: !state.preview })}
           >
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Preview">Preview</Translation>
+                        <Translation i18nkey="Preview">Preview</Translation>
           </button>
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button className="btn btn-access-negative" onClick={() => goBack()}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Cancel">Cancel</Translation>
+                <div>
+                    <button className="btn btn-access-negative" onClick={() => goBack()}>
+                        <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button className="btn btn-access-negative mx-2" onClick={() => reset()}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Reset">Reset</Translation>
+                    <button className="btn btn-access-negative mx-2" onClick={() => reset()}>
+                        <Translation i18nkey="Reset">Reset</Translation>
           </button>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <button className="btn btn-outline-success" onClick={() => save()}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="Save">Save</Translation>
+                    <button className="btn btn-outline-success" onClick={() => save()}>
+                        <Translation i18nkey="Save">Save</Translation>
           </button>
         </div>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="flex-row d-flex ">
+            <div className="flex-row d-flex ">
         {!state.preview && (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="flex-grow-0">
+                    <div className="flex-grow-0">
             {sortBy(Object.entries(groupBy(state.style, 'group')).map(([group, colors]) => ({ group, colors })), 'group')
               .map((item, idx) => {
                 const { group, colors } = item;
                 return (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  <div key={idx}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <h3>{group}</h3>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <div>
+                                    <div key={idx}>
+                                        <h3>{group}</h3>
+                                        <div>
                       {sortBy(colors, ['value']).map((item, idx) => {
                         const property = state.style.find((c) => c.value === item.value);
-                        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                        return (<div key={idx}>
-                            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                            <label htmlFor={item.value}>
+                                                return (<div key={idx}>
+                                                        <label htmlFor={item.value}>
                               {item.value.replace(/-/gi, ' ').trim()}
                             </label>
-                            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                            <ColorPicker presetColors={state.style.map((c) => (c as any).color)} initialColor={(property as any).color} handleColorChange={(color: any) => updateStyleProp(item, color)}/>
+                                                        <ColorPicker presetColors={state.style.map((c) => (c as any).color)} initialColor={(property as any).color} handleColorChange={(color: any) => updateStyleProp(item, color)}/>
                           </div>);
                       })}
                     </div>
@@ -167,8 +137,7 @@ export function TenantStyleEditComponent(props: any) {
               })}
           </div>
         )}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Preview className="flex-grow-1" variables={state.style} />
+                <Preview className="flex-grow-1" variables={state.style} />
       </div>
     </Can>
   );
@@ -221,8 +190,7 @@ class Preview extends React.Component {
   }
 
   render() {
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return (<iframe ref={(ref) => (this.iframe = ref)} style={{
+        return (<iframe ref={(ref) => (this.iframe = ref)} style={{
         height: '100vh',
         border: 'none',
         boxShadow: '0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)',
@@ -295,20 +263,14 @@ const ColorPicker = ({
   }, [initialColor]);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div style={styles.swatch} onClick={() => setDisplayColorPicker(true)}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div style={styles.color} />
+        <div>
+            <div style={styles.swatch} onClick={() => setDisplayColorPicker(true)}>
+                <div style={styles.color} />
       </div>
       {displayColorPicker ? (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <div style={styles.popover}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <SketchPicker
+                <div style={styles.popover}>
+                    <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
+                    <SketchPicker
             presetColors={uniq(presetColors).sort()}
             color={color}
             onChange={(value: any) => setPickerValue(value)}

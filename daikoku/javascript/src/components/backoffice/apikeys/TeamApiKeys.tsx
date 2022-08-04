@@ -15,8 +15,7 @@ export const TeamApiKeys = () => {
   const tableRef = useRef();
   const [showApiKey, setShowApiKey] = useState(false);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     setShowApiKey(
@@ -55,17 +54,13 @@ export const TeamApiKeys = () => {
         const api = original;
         return (
           showApiKey && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <div style={{ minWidth: 100 }}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Link
+                        <div style={{ minWidth: 100 }}>
+                            <Link
                 to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                 className="btn btn-sm btn-access-negative"
               >
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-eye me-1" />
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <Translation i18nkey="Api keys">Api keys</Translation>
+                                <i className="fas fa-eye me-1" />
+                                <Translation i18nkey="Api keys">Api keys</Translation>
               </Link>
             </div>
           )
@@ -78,8 +73,7 @@ export const TeamApiKeys = () => {
     (window
     .confirm(translateMethod('clean.archived.sub.confirm', false, 'Are you sure you want to clean archived subscriptions ?')) as any).then((ok: any) => {
     if (ok) {
-        // @ts-expect-error TS(2339): Property 'update' does not exist on type 'never'.
-        Services.cleanArchivedSubscriptions(currentTeam._id).then(() => tableRef?.current?.update());
+                Services.cleanArchivedSubscriptions(currentTeam._id).then(() => tableRef?.current?.update());
     }
 });
           Services.cleanArchivedSubscriptions(currentTeam._id).then(() => (tableRef?.current as any)?.update());

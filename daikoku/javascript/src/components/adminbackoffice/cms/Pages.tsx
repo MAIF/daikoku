@@ -19,8 +19,7 @@ export const Pages = ({
   pages,
   removePage
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
 
   let table;
@@ -42,11 +41,9 @@ export const Pages = ({
         const { contentType } = original;
         const item = CONTENT_TYPES.find((f) => f.value === contentType);
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <img
+                    <img
             style={{ width: '24px' }}
-            // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-            src={`/assets/file-icons/${item.value
+                        src={`/assets/file-icons/${item.value
               .replace('text/', '')
               .replace('application/', '')}.svg`}
           />
@@ -71,8 +68,7 @@ export const Pages = ({
         }
       }: any) =>
         original.path || (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <span className="badge bg-dark">{translateMethod('cms.pages.block')}</span>
+                    <span className="badge bg-dark">{translateMethod('cms.pages.block')}</span>
         ),
     },
     {
@@ -94,21 +90,17 @@ export const Pages = ({
       }: any) => {
         const value = original;
         return (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="d-flex justify-content-center">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Link
+                    <div className="d-flex justify-content-center">
+                        <Link
               to={`/_${value.path}`}
               target="_blank"
               rel="noopener noreferrer"
               className="m-1"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className="fas fa-eye" style={{ color: '#000' }} />
+                            <i className="fas fa-eye" style={{ color: '#000' }} />
             </Link>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <button
+                        <button
               className="m-1"
               style={{
                 border: 'none',
@@ -128,8 +120,7 @@ export const Pages = ({
 });
               }}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <i className="fas fa-trash" style={{ color: 'var(--danger-color, #dc3545)' }} />
+                            <i className="fas fa-trash" style={{ color: 'var(--danger-color, #dc3545)' }} />
             </button>
           </div>
         );
@@ -138,12 +129,9 @@ export const Pages = ({
   ];
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Table
-        // @ts-expect-error TS(2322): Type '{ selfUrl: string; defaultTitle: string; def... Remove this comment to see the full error message
-        selfUrl="pages"
+        <div>
+            <Table
+                selfUrl="pages"
         defaultTitle="Pages"
         defaultValue={pages}
         fetchItems={() => pages}

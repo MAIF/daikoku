@@ -7,8 +7,7 @@ export function ApiRedoc(props: any) {
   const [error, setError] = useState();
   const params = useParams();
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     const { tenant, connectedUser } = props;
@@ -20,8 +19,7 @@ export function ApiRedoc(props: any) {
       fetch(url).then((res) => {
         if (res.status > 300) setError(translateMethod('api_redoc.failed_to_retrieve_doc'));
         else {
-          // @ts-expect-error TS(2304): Cannot find name 'Redoc'.
-          // eslint-disable-next-line no-undef
+                    // eslint-disable-next-line no-undef
           Redoc.init(
             url,
             {
@@ -40,8 +38,7 @@ export function ApiRedoc(props: any) {
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <LoginOrRegisterModal
+            <LoginOrRegisterModal
         {...props}
         showOnlyMessage={true}
         asFlatFormat
@@ -51,18 +48,14 @@ export function ApiRedoc(props: any) {
 
   if (error)
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <div className="d-flex justify-content-center w-100">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <span className="alert alert-danger text-center">{error}</span>
+            <div className="d-flex justify-content-center w-100">
+                <span className="alert alert-danger text-center">{error}</span>
       </div>
     );
 
   const api = props.api;
   if (!api || !api.swagger)
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return <div>{translateMethod('api_data.missing', false, undefined, ['Api reference'])}</div>;
+        return <div>{translateMethod('api_data.missing', false, undefined, ['Api reference'])}</div>;
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return <div id="redoc-container" />;
+    return <div id="redoc-container" />;
 }

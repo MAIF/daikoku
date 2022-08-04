@@ -12,28 +12,24 @@ const MessagesEvents = {
       eventSource = new EventSource('/api/messages/_sse');
       eventSource.addEventListener(
         'open',
-        // @ts-expect-error TS(7006): Parameter 'e' implicitly has an 'any' type.
-        (e) => {
+        () => {
           // console.log('SSE opened');
         },
         false
       );
       eventSource.addEventListener(
         'error',
-        // @ts-expect-error TS(7006): Parameter 'e' implicitly has an 'any' type.
-        (e) => {
+        () => {
           // console.error('SSE error', e);
         },
         false
       );
       eventSource.addEventListener(
         'message',
-        // @ts-expect-error TS(7006): Parameter 'e' implicitly has an 'any' type.
-        (e) => {
+        (e: any) => {
           // console.log('New event', e);
           const data = JSON.parse(e.data);
-          // @ts-expect-error TS(7006): Parameter 'item' implicitly has an 'any' type.
-          callback.forEach((item) => item.cb(data));
+          callback.forEach((item: any) => item.cb(data));
         },
         false
       );
@@ -53,18 +49,16 @@ export function addCallback(cb: any, id: any) {
 }
 
 export function removeCallback(id: any) {
-  // @ts-expect-error TS(7006): Parameter 'c' implicitly has an 'any' type.
-  callback = callback.filter((c) => c.id !== id);
+  callback = callback.filter((c:any) => c.id !== id);
 }
 
 export const fromMessagesToDialog = (messages: any) => orderBy(messages, ['date']).reduce((dialog, message) => {
   if (!dialog.length) {
     return [[message]];
   } else {
-    // @ts-expect-error TS(7022): 'last' implicitly has type 'any' because it does n... Remove this comment to see the full error message
-    const last = last(dialog);
-    if (last.some((m: any) => m.sender === message.sender)) {
-      return [...dialog.slice(0, dialog.length - 1), [...last, message]];
+    const l:any = last(dialog);
+    if (l.some((m: any) => m.sender === message.sender)) {
+      return [...dialog.slice(0, dialog.length - 1), [...l, message]];
     } else {
       return [...dialog, [message]];
     }

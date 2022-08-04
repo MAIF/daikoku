@@ -6,8 +6,7 @@ import hljs from 'highlight.js';
 import { I18nContext } from '../../../core';
 
 export function UnauthenticatedHomeComponent(props: any) {
-  // @ts-expect-error TS(2339): Property 'Translation' does not exist on type 'unk... Remove this comment to see the full error message
-  const { Translation } = useContext(I18nContext);
+    const { Translation } = useContext(I18nContext);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -16,21 +15,14 @@ export function UnauthenticatedHomeComponent(props: any) {
   const displayInformation = pathname !== '/2fa' && pathname !== '/signup';
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <main role="main">
+        <main role="main">
       {displayInformation && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <section className="organisation__header col-12 mb-4 p-3">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="container">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="row text-center">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div className="col-sm-4">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <div className="avatar__container">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <img
+                <section className="organisation__header col-12 mb-4 p-3">
+                    <div className="container">
+                        <div className="row text-center">
+                            <div className="col-sm-4">
+                                <div className="avatar__container">
+                                    <img
                     src={props.tenant ? props.tenant.logo : '/assets/images/daikoku.svg'}
                     style={{
                       width: 'auto',
@@ -42,72 +34,53 @@ export function UnauthenticatedHomeComponent(props: any) {
                   />
                 </div>
               </div>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div className="col-sm-8">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                {!props.tenant.title && <h1 className="jumbotron-heading">Your APIs center</h1>}
+                            <div className="col-sm-8">
+                                {!props.tenant.title && <h1 className="jumbotron-heading">Your APIs center</h1>}
                 {!!props.tenant.title && (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  <h1 className="jumbotron-heading">{props.tenant.title}</h1>
+                                    <h1 className="jumbotron-heading">{props.tenant.title}</h1>
                 )}
 
                 {!props.tenant.description && (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  <p className="lead">
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    Daikoku is the perfect <a href="https://www.otoroshi.io">Otoroshi</a> companion
+                                    <p className="lead">
+                                        Daikoku is the perfect <a href="https://www.otoroshi.io">Otoroshi</a> companion
                     to manage, document, and expose your beloved APIs to your developpers community.
                     Publish a new API in a few seconds
                   </p>
                 )}
                 {!!props.tenant.description && (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                  <div
+                                    <div
                     dangerouslySetInnerHTML={{
                       __html: converter.makeHtml(props.tenant.description || ''),
                     }}
                   ></div>
                 )}
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <p>
+                                <p>
                   {props.tenant.authProvider === 'Local' && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <a className="btn btn-access-negative my-2 ms-2" href={'/signup'}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <i className="fas fa-plus-square me-1" />
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <Translation i18nkey="Create your account">Create your account</Translation>
+                                        <a className="btn btn-access-negative my-2 ms-2" href={'/signup'}>
+                                            <i className="fas fa-plus-square me-1" />
+                                            <Translation i18nkey="Create your account">Create your account</Translation>
                     </a>
                   )}
                   {false && props.tenant.authProvider === 'Local' && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <a className="btn btn-access-negative my-2 ms-2" href={'/reset'}>
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <i className="fas fa-bomb me-1" />
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <Translation i18nkey="Reset your password">Reset your password</Translation>
+                                        <a className="btn btn-access-negative my-2 ms-2" href={'/reset'}>
+                                            <i className="fas fa-bomb me-1" />
+                                            <Translation i18nkey="Reset your password">Reset your password</Translation>
                     </a>
                   )}
 
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <a className="btn btn-access-negative my-2 ms-2" href={`/auth/Local/login`}>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <i className="fas fa-user me-1" />
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <Translation i18nkey="Connect to your account">
+                                    <a className="btn btn-access-negative my-2 ms-2" href={`/auth/Local/login`}>
+                                        <i className="fas fa-user me-1" />
+                                        <Translation i18nkey="Connect to your account">
                       Connect to your account
                     </Translation>
                   </a>
                   {props.tenant.authProvider !== 'Local' && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <a
+                                        <a
                       className="btn btn-access-negative my-2 ms-2"
                       href={`/auth/${props.tenant.authProvider}/login`}
                     >
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <i className="fas fa-user me-1" />
-                      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                      <Translation i18nkey="Connect to your thrid party account">
+                                            <i className="fas fa-user me-1" />
+                                            <Translation i18nkey="Connect to your thrid party account">
                         Connect to your thrid party account
                       </Translation>
                     </a>
@@ -119,21 +92,15 @@ export function UnauthenticatedHomeComponent(props: any) {
         </section>
       )}
       {!!props.children && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <section className="container">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="row">{props.children}</div>
+                <section className="container">
+                    <div className="row">{props.children}</div>
         </section>
       )}
       {!props.children && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <section className="container">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="row">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div style={{ width: '100%' }}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <TenantDescription content={content} />
+                <section className="container">
+                    <div className="row">
+                        <div style={{ width: '100%' }}>
+                            <TenantDescription content={content} />
             </div>
           </div>
         </section>
@@ -151,10 +118,8 @@ function TenantDescription(props: any) {
 
   const content = props.content || '';
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="d-flex col flex-column p-3">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div
+        <div className="d-flex col flex-column p-3">
+            <div
         className="api-description"
         dangerouslySetInnerHTML={{ __html: converter.makeHtml(content) }}
       />

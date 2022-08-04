@@ -10,7 +10,6 @@ import 'brace/theme/monokai';
 import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 
-// @ts-expect-error TS(6142): Module './Help' was resolved to '/Users/qaubert/So... Remove this comment to see the full error message
 import { Help } from './Help';
 import { BeautifulTitle, Option } from '../utils';
 import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
@@ -24,8 +23,7 @@ const SingleMardownInput = (props: any) => {
   const [preview, setPreview] = useState(false);
   const [editor, setEditor] = useState(undefined);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, Translation } = useContext(I18nContext);
+    const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (preview) {
@@ -145,16 +143,13 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     },
     {
       name: translateMethod('Test asset'),
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      component: (idx: any) => <BeautifulTitle
+            component: (idx: any) => <BeautifulTitle
         placement="bottom"
         title={translateMethod('image url from asset')}
         key={`toolbar-btn-${idx}`}
       >
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <AssetChooserByModal
-          // @ts-expect-error TS(2322): Type '{ typeFilter: (value: any) => any; onlyPrevi... Remove this comment to see the full error message
-          typeFilter={MimeTypeFilter.image}
+                <AssetChooserByModal
+                    typeFilter={MimeTypeFilter.image}
           onlyPreview
           tenantMode={!props.team}
           team={props.team}
@@ -163,8 +158,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
             .getOrNull()}
           icon="fas fa-file-image"
           classNames="btn-for-descriptionToolbar"
-          // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-          onSelect={(asset: any) => editor.session.insert(editor.getCursorPosition(), origin + asset.link)
+                    onSelect={(asset: any) => editor.session.insert(editor.getCursorPosition(), origin + asset.link)
           }
         />
       </BeautifulTitle>,
@@ -173,61 +167,48 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
 
   const showPreview = () => {
     (window as any).$('pre code').each((i: any, block: any) => {
-    // @ts-expect-error TS(2339): Property 'hljs' does not exist on type 'Window & t... Remove this comment to see the full error message
-    window.hljs.highlightElement(block);
+        window.hljs.highlightElement(block);
 });
-      // @ts-expect-error TS(2552): Cannot find name 'block'. Did you mean 'Lock'?
-      (window as any).hljs.highlightElement(block);
+            (window as any).hljs.highlightElement(block);
     });
   };
 
   const injectButtons = () => {
-    // @ts-expect-error TS(2304): Cannot find name 'commands'.
-    return commands.map((command, idx) => {
+        return commands.map((command, idx) => {
       if (command.component) {
         return command.component(idx);
       }
       return (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <button
+                <button
           type="button"
           className="btn-for-descriptionToolbar"
           aria-label={command.name}
           title={command.name}
           key={`toolbar-btn-${idx}`}
           onClick={() => {
-            // @ts-expect-error TS(2304): Cannot find name 'editor'.
-            const selection = editor.getSelection();
+                        const selection = editor.getSelection();
             if (selection) {
-              // @ts-expect-error TS(2304): Cannot find name 'editor'.
-              editor.session.replace(
+                            editor.session.replace(
                 selection.getRange(),
-                // @ts-expect-error TS(2304): Cannot find name 'editor'.
-                command.inject(editor.getSelectedText())
+                                command.inject(editor.getSelectedText())
               );
             } else {
-              // @ts-expect-error TS(2304): Cannot find name 'editor'.
-              editor.session.insert(editor.getCursorPosition(), command.inject());
+                            editor.session.insert(editor.getCursorPosition(), command.inject());
             }
             if (command.move) {
-              // @ts-expect-error TS(2304): Cannot find name 'editor'.
-              command.move(editor.getCursorPosition(), (p: any) => editor.moveCursorToPosition(p));
+                            command.move(editor.getCursorPosition(), (p: any) => editor.moveCursorToPosition(p));
             }
-            // @ts-expect-error TS(2304): Cannot find name 'editor'.
-            editor.focus();
+                        editor.focus();
           }}
         >
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <i className={`fas fa-${command.icon}`} />
+                    <i className={`fas fa-${command.icon}`} />
         </button>
       );
     });
   };
 
-  // @ts-expect-error TS(2304): Cannot find name 'props'.
-  let code = props.value;
-  // @ts-expect-error TS(2304): Cannot find name 'props'.
-  const team = isFunction(props.team) ? props.team() : props.team;
+    let code = props.value;
+    const team = isFunction(props.team) ? props.team() : props.team;
 
   return (
     <div className="mb-3 row">

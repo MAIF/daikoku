@@ -5,18 +5,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import * as Services from '../../../../services';
 import { openFormModal, openTeamSelectorModal } from '../../../../core/modal';
 import { manage, CanIDoAction, api as API, Option } from '../..';
-// @ts-expect-error TS(6142): Module '../../../../locales/i18n-context' was reso... Remove this comment to see the full error message
 import { I18nContext } from '../../../../locales/i18n-context';
-// @ts-expect-error TS(6142): Module '../../../backoffice/teams/TeamEdit' was re... Remove this comment to see the full error message
 import { teamSchema } from '../../../backoffice/teams/TeamEdit'
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { toastr } from 'react-redux-toastr';
 
 export const AddPanel = ({
   teams
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => (state as any).context);
   const dispatch = useDispatch();
@@ -35,9 +31,9 @@ export const AddPanel = ({
         onSubmit: (data: any) => Services.createTeam(data)
           .then(r => {
             if (r.error) {
-              toastr.error(r.error)
+              toastr.error(translateMethod('Error'), r.error)
             } else {
-              toastr.success(translateMethod("Team %s created successfully", false, "", data.name))
+              toastr.success(translateMethod('Success'), translateMethod("Team %s created successfully", false, "", data.name))
             }
           }),
         actionLabel: translateMethod('Create'),
@@ -55,8 +51,7 @@ export const AddPanel = ({
           teams: myTeams
             .filter((t: any) => t.type !== 'Admin')
             .filter((t: any) => !tenant.creationSecurity || t.apisCreationPermission)
-            // @ts-expect-error TS(2554): Expected 8 arguments, but got 5.
-            .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+                        .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
           action: (teams: any) => createApi(teams[0]),
         })(dispatch);
       } else {
@@ -85,8 +80,7 @@ export const AddPanel = ({
           teams: myTeams
             .filter((t: any) => t.type !== 'Admin')
             .filter((t: any) => !tenant.creationSecurity || t.apisCreationPermission)
-            // @ts-expect-error TS(2554): Expected 8 arguments, but got 5.
-            .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+                        .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
           action: (teams: any) => createApiGroup(teams[0]),
         })(dispatch);
       } else {
@@ -109,75 +103,52 @@ export const AddPanel = ({
     .map((m: any) => m.params)
     .map((p: any) => p.teamId)
     .map((id: any) => myTeams.find((t: any) => t._humanReadableId === id))
-    // @ts-expect-error TS(2554): Expected 8 arguments, but got 5.
-    .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
+        .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
     .map((t: any) => t._id)
     .getOrNull();
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+        <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
       {/* todo: add a title if API page or tenant or Team */}
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h3>{translateMethod('Create')}</h3>
+            <div>
+                <h3>{translateMethod('Create')}</h3>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="blocks">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="mb-3 block">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="block__entries d-flex flex-column">
+            <div className="blocks">
+                <div className="mb-3 block">
+                    <div className="block__entries d-flex flex-column">
             {connectedUser.isDaikokuAdmin && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <span className="block__entry__link d-flex align-items-center justify-content-between">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <span>{translateMethod('Tenant')}</span>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <button className="btn btn-sm btn-access-negative me-1">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <i className="fas fa-plus-circle" />
+                            <span className="block__entry__link d-flex align-items-center justify-content-between">
+                                <span>{translateMethod('Tenant')}</span>
+                                <button className="btn btn-sm btn-access-negative me-1">
+                                    <i className="fas fa-plus-circle" />
                 </button>
               </span>
             )}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <span
+                        <span
               className="block__entry__link d-flex align-items-center justify-content-between"
               onClick={createTeam}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <span>{translateMethod('Team')}</span>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <button className="btn btn-sm btn-access-negative me-1">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-plus-circle" />
+                            <span>{translateMethod('Team')}</span>
+                            <button className="btn btn-sm btn-access-negative me-1">
+                                <i className="fas fa-plus-circle" />
               </button>
             </span>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <span
+                        <span
               className="block__entry__link d-flex align-items-center justify-content-between"
               onClick={() => createApi(maybeTeam)}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <span>{translateMethod('API')}</span>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <button className="btn btn-sm btn-access-negative me-1">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-plus-circle" />
+                            <span>{translateMethod('API')}</span>
+                            <button className="btn btn-sm btn-access-negative me-1">
+                                <i className="fas fa-plus-circle" />
               </button>
             </span>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <span
+                        <span
               className="block__entry__link d-flex align-items-center justify-content-between"
               onClick={() => createApiGroup(maybeTeam)}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <span>{translateMethod('API group')}</span>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <button className="btn btn-sm btn-access-negative me-1">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-plus-circle" />
+                            <span>{translateMethod('API group')}</span>
+                            <button className="btn btn-sm btn-access-negative me-1">
+                                <i className="fas fa-plus-circle" />
               </button>
             </span>
           </div>

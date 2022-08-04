@@ -2,22 +2,19 @@ import React from 'react';
 import { openTeamSelectorModal } from '../../core/modal';
 import { connect } from 'react-redux';
 
-type OwnActionWithTeamSelectorComponentProps = {
+type TActionWithTeamSelectorComponentProps = {
     title?: string;
     description?: string;
     teams: any[];
-    pendingTeams?: any[];
-    authorizedTeams?: any[];
+    pendingTeams: any[];
+    authorizedTeams: any[];
     action: (...args: any[]) => any;
     withAllTeamSelector?: boolean;
     closeOnSelect?: boolean;
     allowMultipleDemand?: boolean;
 };
 
-// @ts-expect-error TS(2565): Property 'defaultProps' is used before being assig... Remove this comment to see the full error message
-type ActionWithTeamSelectorComponentProps = OwnActionWithTeamSelectorComponentProps & typeof ActionWithTeamSelectorComponent.defaultProps;
-
-function ActionWithTeamSelectorComponent(props: ActionWithTeamSelectorComponentProps) {
+function ActionWithTeamSelectorComponent(props: TActionWithTeamSelectorComponentProps) {
   const openTeamSelectorModal = () => {
     if (props.teams.length === 1) props.action([props.teams[0]._id]);
     else
@@ -42,8 +39,7 @@ function ActionWithTeamSelectorComponent(props: ActionWithTeamSelectorComponentP
     return null;
   }
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return <>{React.cloneElement((props as any).children, { onClick: () => openTeamSelectorModal() })}</>;
+    return <>{React.cloneElement((props as any).children, { onClick: () => openTeamSelectorModal() })}</>;
 }
 
 ActionWithTeamSelectorComponent.defaultProps = {

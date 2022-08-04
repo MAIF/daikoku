@@ -15,8 +15,7 @@ export const TeamApiInfos = ({
   openTestingApiKeyModal,
   openSubMetadataModal
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   const informationForm = teamApiInfoForm(translateMethod, team, tenant);
   const descriptionForm = teamApiDescriptionForm(translateMethod);
@@ -56,8 +55,7 @@ export const TeamApiInfos = ({
 
   if (value.visibility === 'AdminOnly') {
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <MultiStepForm
+            <MultiStepForm
         value={value}
         steps={[
           {
@@ -81,8 +79,7 @@ export const TeamApiInfos = ({
     );
   }
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <MultiStepForm
+        <MultiStepForm
       value={value}
       steps={steps}
       initial="info"

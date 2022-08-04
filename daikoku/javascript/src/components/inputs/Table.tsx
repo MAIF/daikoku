@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useContext, useImperativeHandle } from 'react';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
 import classNames from 'classnames';
 import debounce from 'lodash/debounce';
@@ -19,8 +18,15 @@ export function useForceUpdate() {
 }
 
 type Props = {
-    columns: any[];
-    fetchItems: (...args: any[]) => any;
+  columns: any[];
+  fetchItems: (...args: any[]) => any;
+  injectTopBar?: () => void,
+  injectTable?: () => void,
+  defaultSort?: any,
+  defaultSortDesc?: any,
+  header?: boolean,
+  footer?: boolean,
+  onSelectRow?: any,
 };
 
 export const Table = React.forwardRef<any, Props>(
@@ -28,19 +34,12 @@ export const Table = React.forwardRef<any, Props>(
     {
       fetchItems,
       columns,
-      // @ts-expect-error TS(2339): Property 'injectTopBar' does not exist on type 'Pr... Remove this comment to see the full error message
       injectTopBar,
-      // @ts-expect-error TS(2339): Property 'injectTable' does not exist on type 'Pro... Remove this comment to see the full error message
       injectTable,
-      // @ts-expect-error TS(2339): Property 'defaultSort' does not exist on type 'Pro... Remove this comment to see the full error message
       defaultSort,
-      // @ts-expect-error TS(2339): Property 'defaultSortDesc' does not exist on type ... Remove this comment to see the full error message
       defaultSortDesc,
-      // @ts-expect-error TS(2339): Property 'header' does not exist on type 'PropsWit... Remove this comment to see the full error message
       header = true,
-      // @ts-expect-error TS(2339): Property 'footer' does not exist on type 'PropsWit... Remove this comment to see the full error message
       footer = true,
-      // @ts-expect-error TS(2339): Property 'onSelectRow' does not exist on type 'Pro... Remove this comment to see the full error message
       onSelectRow = undefined,
     },
     ref
@@ -56,7 +55,6 @@ export const Table = React.forwardRef<any, Props>(
       },
     }));
 
-    // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
     const { translateMethod, Translation } = useContext(I18nContext);
 
     const filterTypes = React.useMemo(
@@ -104,7 +102,6 @@ export const Table = React.forwardRef<any, Props>(
         return `${initialValue}`;
       }
 
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <input value={value} onChange={onChange} onBlur={onBlur} />;
     };
     const defaultColumn = React.useMemo(
@@ -202,19 +199,16 @@ export const Table = React.forwardRef<any, Props>(
     };
 
     useEffect(() => {
-      // @ts-expect-error TS(2774): This condition will always return true since this ... Remove this comment to see the full error message
       if (fetchItems) {
         update();
       }
     }, [fetchItems]);
 
     if (error) {
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <h3>{`Something went wrong: ${(error as any).error}`}</h3>;
     }
 
     if (loading) {
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <Spinner />;
     }
 
@@ -227,17 +221,13 @@ export const Table = React.forwardRef<any, Props>(
     };
 
     const tablePagination = (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <div className="d-flex flex-row align-items-center justify-content-end flex-grow-1">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <span>
           {rows.length}{' '}
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Translation i18nkey="Result" isPlural={rows.length > 1}>
             Results
           </Translation>
         </span>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Select
           className="reactSelect reactSelect-pagination col-3 ms-3 me-3"
           value={{
@@ -245,12 +235,10 @@ export const Table = React.forwardRef<any, Props>(
             value: pageSize,
           }}
           options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
-          // @ts-expect-error TS(2531): Object is possibly 'null'.
           onChange={(e) => setPageSize(Number(e.value))}
           classNamePrefix="reactSelect"
           styles={customStyles}
         />
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Pagination
           containerClassName="pagination"
           previousLabel={translateMethod('<')}
@@ -264,46 +252,34 @@ export const Table = React.forwardRef<any, Props>(
           pageClassName={'page-selector'}
           activeClassName={'active'}
         />
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <button
           type="button"
           className="ms-3 btn btn-sm btn-access-negative float-right"
           title={translateMethod('Reload the table content')}
           onClick={update}
         >
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span className="fas fa-sync-alt" />
         </button>
       </div>
     );
 
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className="rrow section">
             {header && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <div className="row" style={{ marginBottom: 10 }}>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <div className="col-md-12 d-flex">
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                   {injectTopBar && <div style={{ fontSize: 14 }}>{injectTopBar()}</div>}
                   {tablePagination}
                 </div>
               </div>
             )}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <table {...getTableProps()} className="reactTableV7">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <thead>
                 {headerGroups.map((headerGroup: any, idx: any) => (
-                  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                   <tr key={`thead-tr-${idx}`} {...headerGroup.getHeaderGroupProps()}>
                     {headerGroup.headers.map((column: any, idx: any) => (
-                      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                       <th
                         key={`thead-th-${idx}`}
                         className={classNames({
@@ -312,11 +288,9 @@ export const Table = React.forwardRef<any, Props>(
                         })}
                         style={column.style}
                       >
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                         <div {...column.getHeaderProps(column.getSortByToggleProps())}>
                           {column.render('Header')}
                         </div>
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                         <div className="my-2">
                           {column.canFilter ? column.render('Filter') : null}
                         </div>
@@ -325,12 +299,10 @@ export const Table = React.forwardRef<any, Props>(
                   </tr>
                 ))}
               </thead>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <tbody {...getTableBodyProps()}>
                 {page.map((row: any, idx: any) => {
                   prepareRow(row);
                   return (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                     <tr
                       {...row.getRowProps()}
                       key={`tr-${idx}`}
@@ -343,7 +315,6 @@ export const Table = React.forwardRef<any, Props>(
                     >
                       {row.cells.map((cell: any, idx: any) => {
                         return (
-                          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                           <td style={cell.column.style} {...cell.getCellProps()} key={`td-${idx}`}>
                             {cell.render('Cell')}
                           </td>

@@ -12,8 +12,7 @@ export const ApiDocumentationSelectModal = ({
   const [apis, setApis] = useState([]);
   const [pages, setPages] = useState([]);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAllApiDocumentation(teamId, api._humanReadableId, api.currentVersion).then(
@@ -47,35 +46,25 @@ export const ApiDocumentationSelectModal = ({
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="modal-content">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-header">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h5 className="modal-title">{translateMethod('api_select_modal.title')}</h5>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
+        <div className="modal-content">
+            <div className="modal-header">
+                <h5 className="modal-title">{translateMethod('api_select_modal.title')}</h5>
+                <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-body">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Select
+            <div className="modal-body">
+                <Select
           isMulti
           placeholder={translateMethod('Select all pages')}
           options={apis}
-          // @ts-expect-error TS(2322): Type 'Dispatch<SetStateAction<never[]>>' is not as... Remove this comment to see the full error message
-          onChange={setPages}
+                    onChange={setPages}
           classNamePrefix="reactSelect"
         />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-footer">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-danger" onClick={closeModal}>
+            <div className="modal-footer">
+                <button type="button" className="btn btn-outline-danger" onClick={closeModal}>
           {translateMethod('Close', 'Close')}
         </button>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-success" onClick={importPages}>
+                <button type="button" className="btn btn-outline-success" onClick={importPages}>
           {translateMethod('Choose', 'Close')}
         </button>
       </div>

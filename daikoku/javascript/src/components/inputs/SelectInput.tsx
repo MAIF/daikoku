@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import Select from 'react-select';
-// @ts-expect-error TS(6142): Module './Help' was resolved to '/Users/qaubert/So... Remove this comment to see the full error message
 import { Help } from './Help';
 import { Option } from '../utils';
 
@@ -28,8 +27,7 @@ export class SelectInput extends Component<{}, SelectInputState> {
 
   componentDidMount() {
     if ((this.props as any).valuesFrom) {
-      // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
-      this.reloadValues();
+            this.reloadValues();
     } else {
       this.setState({
         value: this.state.values.find((item: any) => item.value === this.state.value.value),
@@ -42,8 +40,7 @@ export class SelectInput extends Component<{}, SelectInputState> {
       this.reloadValues(nextProps.valuesFrom);
     }
     if (nextProps.valuesFrom && nextProps.value !== (this.props as any).value) {
-      // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-      this.reloadValues().then(() => {
+            this.reloadValues().then(() => {
         this.setState({ value: this.state.values.find((v: any) => v.value === nextProps.value) });
       });
     }
@@ -103,39 +100,26 @@ export class SelectInput extends Component<{}, SelectInputState> {
 
   render() {
     if (this.state.error) {
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      return (<div className="mb-3 row">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <label htmlFor={`input-${(this.props as any).label}`} className="col-xs-12 col-sm-2 col-form-label">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Help text={(this.props as any).help} label={(this.props as any).label}/>
+            return (<div className="mb-3 row">
+                    <label htmlFor={`input-${(this.props as any).label}`} className="col-xs-12 col-sm-2 col-form-label">
+                        <Help text={(this.props as any).help} label={(this.props as any).label}/>
           </label>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="col-sm-10">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div style={{ width: '100%' }}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <span>{(this.state.error as any).message ? (this.state.error as any).message : this.state.error}</span>
+                    <div className="col-sm-10">
+                        <div style={{ width: '100%' }}>
+                            <span>{(this.state.error as any).message ? (this.state.error as any).message : this.state.error}</span>
             </div>
           </div>
         </div>);
     }
     if ((this.props as any).classic && !(this.props as any).disabled) {
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      return (<div className="mb-3 row">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <label htmlFor={`input-${(this.props as any).label}`} className="col-xs-12 col-sm-2 col-form-label">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Help text={(this.props as any).help} label={(this.props as any).label}/>
+            return (<div className="mb-3 row">
+                    <label htmlFor={`input-${(this.props as any).label}`} className="col-xs-12 col-sm-2 col-form-label">
+                        <Help text={(this.props as any).help} label={(this.props as any).label}/>
           </label>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="col-sm-10">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div style={{ width: '100%' }}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <select className="form-control classic-select" value={this.state.value} onChange={this.onChangeClassic}>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                {this.state.values.map((value: any, idx: any) => (<option key={idx} value={value.value}>
+                    <div className="col-sm-10">
+                        <div style={{ width: '100%' }}>
+                            <select className="form-control classic-select" value={this.state.value} onChange={this.onChangeClassic}>
+                                {this.state.values.map((value: any, idx: any) => (<option key={idx} value={value.value}>
                     {value.label}
                   </option>))}
                 classNamePrefix="reactSelect"
@@ -144,19 +128,13 @@ export class SelectInput extends Component<{}, SelectInputState> {
           </div>
         </div>);
     }
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    return (<div className="mb-3 row">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <label htmlFor={`input-${(this.props as any).label}`} className="col-xs-12 col-sm-2 col-form-label">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Help text={(this.props as any).help} label={(this.props as any).label}/>
+        return (<div className="mb-3 row">
+                <label htmlFor={`input-${(this.props as any).label}`} className="col-xs-12 col-sm-2 col-form-label">
+                    <Help text={(this.props as any).help} label={(this.props as any).label}/>
         </label>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col-sm-10">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div style={{ width: '100%' }} className="input-select">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Select style={{ width: (this.props as any).more ? '100%' : '100%' }} name={`${(this.props as any).label}-search`} isLoading={this.state.loading} value={this.state.value} isDisabled={(this.props as any).disabled} placeholder={(this.props as any).placeholder} options={this.state.values} isClearable={(this.props as any).isClearable} onChange={this.onChange} classNamePrefix="reactSelect" className="reactSelect" menuPortalTarget={document.body} styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}/>
+                <div className="col-sm-10">
+                    <div style={{ width: '100%' }} className="input-select">
+                        <Select style={{ width: (this.props as any).more ? '100%' : '100%' }} name={`${(this.props as any).label}-search`} isLoading={this.state.loading} value={this.state.value} isDisabled={(this.props as any).disabled} placeholder={(this.props as any).placeholder} options={this.state.values} isClearable={(this.props as any).isClearable} onChange={this.onChange} classNamePrefix="reactSelect" className="reactSelect" menuPortalTarget={document.body} styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}/>
           </div>
         </div>
       </div>);

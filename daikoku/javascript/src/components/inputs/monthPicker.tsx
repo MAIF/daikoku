@@ -21,8 +21,7 @@ export const MonthPicker = ({
   updateDate,
   value
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'language' does not exist on type 'unknow... Remove this comment to see the full error message
-  const { language } = useContext(I18nContext);
+    const { language } = useContext(I18nContext);
 
   const dateFormat = getDateFormat(language);
 
@@ -31,8 +30,7 @@ export const MonthPicker = ({
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <DatePicker.MonthPicker
+        <DatePicker.MonthPicker
       defaultValue={value}
       onChange={onChange}
       format={dateFormat.format}

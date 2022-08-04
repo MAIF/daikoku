@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { I18nContext } from '../../core';
-// @ts-expect-error TS(6142): Module './Help' was resolved to '/Users/qaubert/So... Remove this comment to see the full error message
 import { Help } from './Help';
 
 const valueToSelectOption = (value: any) => {
@@ -23,14 +22,12 @@ export function ArrayInput(props: any) {
     inputValue: '',
   });
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (props.value) {
       if (props.valuesFrom) {
-        // @ts-expect-error TS(2554): Expected 1 arguments, but got 0.
-        reloadValues();
+                reloadValues();
       } else setState({ ...state, value: (props.value || []).map(valueToSelectOption) });
     }
   }, [props.valuesFrom]);
@@ -62,8 +59,7 @@ export function ArrayInput(props: any) {
     if (e) {
       if (e.some((item: any) => item.__isNew__)) {
         const newVals = e.filter((item: any) => item.__isNew__);
-        // @ts-expect-error TS(2322): Type 'any[]' is not assignable to type 'never[]'.
-        setState({ ...state, value: e, values: [...state.values, ...newVals] });
+                setState({ ...state, value: e, values: [...state.values, ...newVals] });
       } else {
         setState({ ...state, value: e });
         const finaItem = (item: any) => props.transformSet ? props.transformSet(item.value) : item.value;
@@ -100,22 +96,15 @@ export function ArrayInput(props: any) {
 
   const placeholder = translateMethod('array.input.placeholder');
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="mb-3 row" style={{ marginBottom: 15 }}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Help text={props.help} label={props.label} />
+        <div>
+            <div className="mb-3 row" style={{ marginBottom: 15 }}>
+                <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
+                    <Help text={props.help} label={props.label} />
         </label>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="col-sm-10">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div style={{ width: '100%' }}>
+                <div className="col-sm-10">
+                    <div style={{ width: '100%' }}>
             {!props.valuesFrom && !props.creatable && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <CreatableSelect
+                            <CreatableSelect
                 isDisabled={props.disabled}
                 components={{ DropdownIndicator: null }}
                 inputValue={state.inputValue}
@@ -133,8 +122,7 @@ export function ArrayInput(props: any) {
               />
             )}
             {!!props.valuesFrom && props.creatable && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <CreatableSelect
+                            <CreatableSelect
                 isDisabled={props.disabled}
                 components={{ DropdownIndicator: null }}
                 inputValue={state.inputValue}
@@ -149,8 +137,7 @@ export function ArrayInput(props: any) {
               />
             )}
             {!!props.valuesFrom && !props.creatable && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <Select
+                            <Select
                 name={`${props.label}-selector`}
                 className={props.selectClassName}
                 value={state.value}

@@ -30,21 +30,22 @@ export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 export const teamAllNotifications = (teamId: any, page = 0) =>
   customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`);
 export const teamNotifications = (teamId: any) => customFetch(`/api/teams/${teamId}/notifications`);
-// @ts-expect-error TS(2559): Type '{ Accept: string; 'Content-Type': string; }'... Remove this comment to see the full error message
-export const teamUnreadNotificationsCount = (teamId: any) => fetch(`/api/teams/${teamId}/notifications/unread-count`, { ...HEADERS }).then(
-  (r) => (r.status === 200 ? r.json() : { count: 0 }),
-  () => ({ count: 0 })
-);
+export const teamUnreadNotificationsCount = (teamId: any) => fetch(`/api/teams/${teamId}/notifications/unread-count`, { headers: HEADERS })
+  .then(
+    (r) => (r.status === 200 ? r.json() : { count: 0 }),
+    () => ({ count: 0 })
+  );
 export const myAllNotifications = (page = 0, pageSize = 10) =>
   customFetch(`/api/me/notifications/all?page=${page}&pageSize=${pageSize}`);
 export const myNotifications = (page = 0, pageSize = 10) =>
   customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`);
 
 export const myUnreadNotificationsCount = () =>
-  fetch('/api/me/notifications/unread-count').then(
-    (r) => (r.status === 200 ? r.json() : { count: 0 }),
-    () => ({ count: 0 })
-  );
+  fetch('/api/me/notifications/unread-count')
+    .then(
+      (r) => (r.status === 200 ? r.json() : { count: 0 }),
+      () => ({ count: 0 })
+    );
 
 export const acceptNotificationOfTeam = (NotificationId: any, values = {}) =>
   customFetch(`/api/notifications/${NotificationId}/accept`, {
@@ -604,7 +605,7 @@ export const testingCall = (teamId: any, apiId: any, body: any) =>
 
 export const getTranslations = (domain: any) => customFetch(`/api/translations${domain ? `?domain=${domain}` : ''}`);
 
-export const getTranslationLanguages = () => 
+export const getTranslationLanguages = () =>
   customFetch('/api/translations/_languages')
 
 export const saveTranslation = (translation: any) => customFetch('/api/translations', {
@@ -662,7 +663,7 @@ export const removeAdminFromTenant = (tenantId: any, adminId: any) =>
 
 export const myMessages = () => customFetch('/api/me/messages');
 
-export const myChatMessages = (chat: any, date: any) =>
+export const myChatMessages = (chat: any, date?: any) =>
   customFetch(`/api/me/messages?chat=${chat}${date ? `&date=${date}` : ''}`);
 
 export const myAdminMessages = () => customFetch('/api/me/messages/admin');
@@ -713,9 +714,9 @@ export const checkConnection = (config: any, user: any) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   });
 
@@ -842,9 +843,8 @@ export const extendApiKey = (apiId: any, apiKeyId: any, teams: any, plan: any) =
 export const getAllTeamSubscriptions = (team: any) => customFetch(`/api/subscriptions/teams/${team}`);
 
 export const getAllApiVersions = (teamId: any, apiId: any) =>
-  // @ts-expect-error TS(2559): Type '{ Accept: string; 'Content-Type': string; }'... Remove this comment to see the full error message
   fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
-    ...HEADERS,
+    headers: HEADERS,
   })
     .then((r) => r.json())
     .then((r) => (!r.error ? r.sort((a: any, b: any) => (a < b ? 1 : -1)) : []));

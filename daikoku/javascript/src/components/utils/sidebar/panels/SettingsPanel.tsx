@@ -4,15 +4,13 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import * as Services from '../../../../services';
 import { updateTenant } from '../../../../core/context/actions';
-// @ts-expect-error TS(6142): Module '../../../../locales/i18n-context' was reso... Remove this comment to see the full error message
 import { I18nContext } from '../../../../locales/i18n-context';
 import { CanIDoAction, manage, team } from '../../..';
 
 const DarkModeActivator = ({
   initialDark
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   const DARK = 'DARK';
   const LIGHT = 'LIGHT';
@@ -30,8 +28,7 @@ const DarkModeActivator = ({
   }, [theme]);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="block__entry__link" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
+        <div className="block__entry__link" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
       {theme === DARK ? translateMethod('Light mode') : translateMethod('Dark mode')}
     </div>
   );
@@ -40,8 +37,7 @@ const DarkModeActivator = ({
 export const SettingsPanel = ({}) => {
   const [version, setVersion] = useState();
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod, isTranslationMode } = useContext(I18nContext);
+    const { translateMethod, isTranslationMode } = useContext(I18nContext);
   const { tenant, connectedUser, impersonator, isTenantAdmin } = useSelector((state) => (state as any).context);
 
   const dispatch = useDispatch();
@@ -76,98 +72,69 @@ export const SettingsPanel = ({}) => {
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="mb-3 panel__title">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h3>{translateMethod('Settings')}</h3>
+        <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+            <div className="mb-3 panel__title">
+                <h3>{translateMethod('Settings')}</h3>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="blocks">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="mb-3 block">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="mb-1 block__category">{connectedUser.email}</div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="ms-2 block__entries block__border d-flex flex-column">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Link to="/me" className="block__entry__link">
+            <div className="blocks">
+                <div className="mb-3 block">
+                    <div className="mb-1 block__category">{connectedUser.email}</div>
+                    <div className="ms-2 block__entries block__border d-flex flex-column">
+                        <Link to="/me" className="block__entry__link">
               {translateMethod('My profile')}
             </Link>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <a href="/logout" className="block__entry__link">
+                        <a href="/logout" className="block__entry__link">
               {translateMethod('Logout')}
             </a>
             {impersonator && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <a href="/api/me/_deimpersonate" className="block__entry__link">
+                            <a href="/api/me/_deimpersonate" className="block__entry__link">
                 {translateMethod('Quit impersonation')}
               </a>
             )}
           </div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="dropdown-divider" />
+                    <div className="dropdown-divider" />
         </div>
         {(isTenantAdmin || connectedUser.isDaikokuAdmin) && (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="mb-3 block">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="mb-1 block__category">{translateMethod('settings')}</div>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="ms-2 block__entries block__border d-flex flex-column">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Link to="/settings/settings" className="block__entry__link">
+                    <div className="mb-3 block">
+                        <div className="mb-1 block__category">{translateMethod('settings')}</div>
+                        <div className="ms-2 block__entries block__border d-flex flex-column">
+                            <Link to="/settings/settings" className="block__entry__link">
                 {tenant.name} {translateMethod('settings')}
               </Link>
               {connectedUser.isDaikokuAdmin && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <Link to="/settings/tenants" className="block__entry__link">
+                                <Link to="/settings/tenants" className="block__entry__link">
                   {translateMethod('Daikoku settings')}
                 </Link>
               )}
             </div>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="dropdown-divider" />
+                        <div className="dropdown-divider" />
           </div>
         )}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="mb-3 block">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="mb-1 block__category">{translateMethod('actions')}</div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="ms-2 block__entries block__border d-flex flex-column">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <DarkModeActivator />
+                <div className="mb-3 block">
+                    <div className="mb-1 block__category">{translateMethod('actions')}</div>
+                    <div className="ms-2 block__entries block__border d-flex flex-column">
+                        <DarkModeActivator />
             {connectedUser.isDaikokuAdmin && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <span className="block__entry__link" onClick={reset}>
+                            <span className="block__entry__link" onClick={reset}>
                 {translateMethod('Reset')}
               </span>
             )}
             {isTenantAdmin && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <span className="block__entry__link" onClick={toggleMaintenanceMode}>
+                            <span className="block__entry__link" onClick={toggleMaintenanceMode}>
                 {translateMethod(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
               </span>
             )}
           </div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="dropdown-divider" />
+                    <div className="dropdown-divider" />
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="mb-3 block">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="mb-1 block__category">{translateMethod('version')}</div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="ms-2 block__entries block__border d-flex flex-column">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <span className="pe-none block__entry__link">
+                <div className="mb-3 block">
+                    <div className="mb-1 block__category">{translateMethod('version')}</div>
+                    <div className="ms-2 block__entries block__border d-flex flex-column">
+                        <span className="pe-none block__entry__link">
               {translateMethod('Version used')} : {version || '?.??.??'}
             </span>
           </div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="dropdown-divider" />
+                    <div className="dropdown-divider" />
         </div>
       </div>
     </div>

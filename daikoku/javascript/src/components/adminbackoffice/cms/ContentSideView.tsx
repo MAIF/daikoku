@@ -2,9 +2,7 @@ import { CodeInput, SelectInput } from '@maif/react-forms';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../../core';
-// @ts-expect-error TS(6142): Module './Editor' was resolved to '/Users/qaubert/... Remove this comment to see the full error message
 import Editor from './Editor';
-// @ts-expect-error TS(2732): Cannot find module './helpers.json'. Consider usin... Remove this comment to see the full error message
 import Helpers from './helpers.json';
 
 const CONTENT_TYPES_TO_MODE = {
@@ -21,18 +19,13 @@ const LinksView = ({
   editor,
   onChange
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <span>{translateMethod('cms.content_side_view.choose_link')}</span>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Copied>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {(setShow: any) => <SelectInput
+        <div>
+            <span>{translateMethod('cms.content_side_view.choose_link')}</span>
+            <Copied>
+                {(setShow: any) => <SelectInput
           possibleValues={[
             {
               label: translateMethod('cms.content_side_view.notifications'),
@@ -59,8 +52,7 @@ const LinksView = ({
 const Copied = ({
   children
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -69,16 +61,14 @@ const Copied = ({
 
   if (show)
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-      <div
+            <div
         className="my-2 text-center py-2"
         style={{
           backgroundColor: '#fff',
           borderRadius: '6px',
         }}
       >
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <span>{translateMethod('cms.inserted')}</span>
+                <span>{translateMethod('cms.inserted')}</span>
       </div>
     );
   else return children(setShow);
@@ -95,14 +85,10 @@ const PagesView = ({
   title,
   onChange
 }: any) => (
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  <div>
-    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-    <span>{title}</span>
-    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-    <Copied>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      {(setShow: any) => <SelectInput
+    <div>
+        <span>{title}</span>
+        <Copied>
+            {(setShow: any) => <SelectInput
         possibleValues={pages.map((page: any) => ({
           label: page.name,
           value: page.id
@@ -122,8 +108,7 @@ const TopActions = ({
   publish,
   setSelector
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
   const select = (id: any) => {
     setSelector(undefined);
@@ -131,8 +116,7 @@ const TopActions = ({
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div
+        <div
       className="d-flex justify-content-between"
       style={{
         position: 'absolute',
@@ -142,20 +126,15 @@ const TopActions = ({
       }}
       id="content_sideview_parent"
     >
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <button className="btn btn-sm btn-outline-primary me-1" type="button" onClick={select}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <i className="fas fa-plus pe-1" />
+            <button className="btn btn-sm btn-outline-primary me-1" type="button" onClick={select}>
+                <i className="fas fa-plus pe-1" />
         {translateMethod('cms.content_side.new_action')}
       </button>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="d-flex">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button className="btn btn-sm btn-outline-primary" onClick={() => navigate('revisions')}>
+            <div className="d-flex">
+                <button className="btn btn-sm btn-outline-primary" onClick={() => navigate('revisions')}>
           Révisions
         </button>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button
+                <button
           className="btn btn-sm btn-outline-success ms-1"
           type="button"
           onClick={() => {
@@ -179,33 +158,25 @@ const HelperView = ({
   editor
 }: any) => {
   const [value, setValue] = useState(content.example);
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     setValue(content.example);
   }, [content.example]);
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <h5>{translateMethod(`cms.content_side_view.${content.name}`)}</h5>
-      {content.parameters && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <div>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <h6>Parameters</h6>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <ul>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {(content.parameters || []).map((name: any) => <li key={`${name}`}>{name}</li>)}
+            <h5>{translateMethod(`cms.content_side_view.${content.name}`)}</h5>
+      {content.parameters && (
+                <div>
+                    <h6>Parameters</h6>
+                    <ul>
+                        {(content.parameters || []).map((name: any) => <li key={`${name}`}>{name}</li>)}
           </ul>
         </div>
       )}
       {content.link && (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <a
+                <a
           className="btn btn-sm btn-outline-info my-2"
           href={`https://maif.github.io/daikoku/swagger-ui/index.html${content.link}`}
           target="_blank"
@@ -214,10 +185,8 @@ const HelperView = ({
           Link to the model
         </a>
       )}
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <CodeInput onChange={setValue} value={value} width="-1" height="180px" useWrapMode={true} />
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <button
+            <CodeInput onChange={setValue} value={value} width="-1" height="180px" useWrapMode={true} />
+            <button
         className="btn btn-sm btn-outline-success mt-3"
         onClick={() => {
           onChange();
@@ -237,8 +206,7 @@ export const ContentSideView = ({
   publish,
   contentType
 }: any) => {
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
   const [sideView, setSideView] = useState(false);
   const [selector, setSelector] = useState('');
   const [search, setSearch] = useState('');
@@ -256,8 +224,7 @@ export const ContentSideView = ({
   useEffect(() => {
     setHelpers(
       Helpers.reduce(
-        // @ts-expect-error TS(7006): Parameter 'acc' implicitly has an 'any' type.
-        (acc, curr) => ({
+                (acc, curr) => ({
           ...acc,
 
           [curr.important || curr.category]: {
@@ -285,8 +252,7 @@ export const ContentSideView = ({
     else
       setHeight(
         window.innerHeight -
-          // @ts-expect-error TS(2531): Object is possibly 'null'.
-          document.getElementById('content_sideview_parent').getBoundingClientRect().top -
+                    document.getElementById('content_sideview_parent').getBoundingClientRect().top -
           75
       );
   };
@@ -323,8 +289,7 @@ export const ContentSideView = ({
     const term = value.toLowerCase().replace(/[\[\]&]+/g, '');
     setSearch(value);
 
-    // @ts-expect-error TS(2345): Argument of type '{ [k: string]: any; }' is not as... Remove this comment to see the full error message
-    setHelpers(Object.fromEntries(Object.entries(helpersList).map(([g, { helpers, ...rest }]) => [
+        setHelpers(Object.fromEntries(Object.entries(helpersList).map(([g, { helpers, ...rest }]) => [
     g,
     {
         ...rest,
@@ -339,29 +304,24 @@ export const ContentSideView = ({
 
   console.log(helpersList);
 
-  // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-  return (<div className="d-flex flex-column" style={{
+    return (<div className="d-flex flex-column" style={{
         position: 'relative',
         marginTop: '52px',
         flex: 1,
     }}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector}/>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <span style={{
+            <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector}/>
+            <span style={{
         fontStyle: 'italic',
         fontSize: '13px',
     }}>
         {translateMethod('cms.body.drag_and_drop_advice')}
       </span>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div style={{
+            <div style={{
         position: 'relative',
         border: '1px solid rgba(225,225,225,.5)',
         flex: 1,
     }}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {selectedPage.pageName && (<Link className="btn btn-sm px-1" style={{
+                {selectedPage.pageName && (<Link className="btn btn-sm px-1" style={{
             position: 'absolute',
             zIndex: 100,
             top: selectedPage.top - 42,
@@ -369,38 +329,28 @@ export const ContentSideView = ({
             backgroundColor: '#fff',
             border: '1px solid #f0f1f6',
             boxShadow: '0 1px 3px rgb(0 0 0 / 15%)',
-        // @ts-expect-error TS(2345): Argument of type '{ pageName: undefined; }' is not... Remove this comment to see the full error message
-        }} to={`/settings/pages/edit/${(selectedPage as any).id}`} onClick={() => setSelectedPage({ pageName: undefined })}>{`${translateMethod('cms.content_side_view.edit')} ${selectedPage.pageName}`}</Link>)}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Editor value={value} onChange={onChange} onLoad={(editorInstance: any) => {
+                }} to={`/settings/pages/edit/${(selectedPage as any).id}`} onClick={() => setSelectedPage({ pageName: undefined })}>{`${translateMethod('cms.content_side_view.edit')} ${selectedPage.pageName}`}</Link>)}
+                <Editor value={value} onChange={onChange} onLoad={(editorInstance: any) => {
         setRef(editorInstance);
         editorInstance.container.style.resize = 'both';
         document.addEventListener('mouseup', (e) => editorInstance.resize());
-    // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-    }} mode={CONTENT_TYPES_TO_MODE[contentType] || 'html'} height={height} width="-1"/>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        {sideView && (<div style={{
+        }} mode={CONTENT_TYPES_TO_MODE[contentType] || 'html'} height={height} width="-1"/>
+                {sideView && (<div style={{
             backgroundColor: '#fff',
             position: 'absolute',
             inset: 0,
         }}>
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <div className="d-flex" style={{ height: '100%', position: 'relative' }}>
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              {selector !== 'history' && (<div className="p-3" style={{
+                        <div className="d-flex" style={{ height: '100%', position: 'relative' }}>
+                            {selector !== 'history' && (<div className="p-3" style={{
                 flex: !selector ? 1 : 0.75,
                 backgroundColor: '#efefef',
                 overflowY: 'scroll',
             }}>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <div>
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <input type="text" className="form-control mb-2" placeholder={translateMethod('cms.content_side_view.search_text')} value={search} onChange={(e) => filterHelpers(e.target.value)} style={{ border: 'none' }}/>
+                                    <div>
+                                        <input type="text" className="form-control mb-2" placeholder={translateMethod('cms.content_side_view.search_text')} value={search} onChange={(e) => filterHelpers(e.target.value)} style={{ border: 'none' }}/>
                   </div>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <div className="d-flex flex-column">
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    {Object.entries(helpersList).map(([groupName, { helpers, collapsed }]) => (<div onClick={() => setHelpers(Object.fromEntries(Object.entries(helpersList).map(([g, { collapsed, ...rest }]) => {
+                                    <div className="d-flex flex-column">
+                                        {Object.entries(helpersList).map(([groupName, { helpers, collapsed }]) => (<div onClick={() => setHelpers(Object.fromEntries(Object.entries(helpersList).map(([g, { collapsed, ...rest }]) => {
                     if (g === groupName)
                         return [
                             g,
@@ -415,19 +365,15 @@ export const ContentSideView = ({
                         ];
                     return [g, { ...rest, collapsed }];
                 })))}>
-                        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                        {(helpers as any).filter((helper: any) => !helper.filtered).length > 0 && (<div style={{
+                                                {(helpers as any).filter((helper: any) => !helper.filtered).length > 0 && (<div style={{
                         background: '#fff',
                     }} className="p-2 px-3 mb-1 d-flex justify-content-between align-items-center">
-                            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                            <span>{groupName}</span>
-                            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                            <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
+                                                        <span>{groupName}</span>
+                                                        <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
                           </div>)}
                         {!collapsed &&
                     (helpers as any).filter((helper: any) => !helper.filtered)
-                        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                        .map((helper: any) => <button id={helper.name} type="button" key={helper.name} className="py-2 ps-3 mb-2" style={{
+                                                .map((helper: any) => <button id={helper.name} type="button" key={helper.name} className="py-2 ps-3 mb-2" style={{
                             textAlign: 'left',
                             flex: 1,
                             width: '100%',
@@ -445,26 +391,20 @@ export const ContentSideView = ({
                       </div>))}
                   </div>
                 </div>)}
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <div style={{ flex: selector ? 1 : 0 }} className="ms-2 p-3">
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <i className="fas fa-times" style={{
+                            <div style={{ flex: selector ? 1 : 0 }} className="ms-2 p-3">
+                                <i className="fas fa-times" style={{
             cursor: 'pointer',
             padding: '6px',
             position: 'absolute',
             top: '6px',
             right: '6px',
         }} onClick={() => setSideView(false)}/>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                {(selector as any)?.name === 'links' && (<LinksView editor={ref} onChange={() => setSideView(false)}/>)}
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                {(selector as any)?.name === 'pages' && (<PagesView pages={pages} prefix="daikoku-page-url" title={translateMethod('cms.content_side_view.link_to_insert')} editor={ref} onChange={() => setSideView(false)}/>)}
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                {(selector as any)?.name === 'blocks' && (<PagesView pages={pages} prefix="daikoku-include-block" title={translateMethod('cms.content_side_view.block_to_render')} editor={ref} onChange={() => setSideView(false)}/>)}
+                                {(selector as any)?.name === 'links' && (<LinksView editor={ref} onChange={() => setSideView(false)}/>)}
+                                {(selector as any)?.name === 'pages' && (<PagesView pages={pages} prefix="daikoku-page-url" title={translateMethod('cms.content_side_view.link_to_insert')} editor={ref} onChange={() => setSideView(false)}/>)}
+                                {(selector as any)?.name === 'blocks' && (<PagesView pages={pages} prefix="daikoku-include-block" title={translateMethod('cms.content_side_view.block_to_render')} editor={ref} onChange={() => setSideView(false)}/>)}
                 {((selector as any)?.name.startsWith('daikoku') ||
             !['links', 'blocks', 'pages'].includes((selector as any)?.name)) &&
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            selector && (<HelperView editor={ref} onChange={() => setSideView(false)} content={selector}/>)}
+                        selector && (<HelperView editor={ref} onChange={() => setSideView(false)} content={selector}/>)}
               </div>
             </div>
           </div>)}

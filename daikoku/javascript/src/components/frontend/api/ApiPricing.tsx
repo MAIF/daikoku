@@ -5,7 +5,6 @@ import { getApolloContext } from '@apollo/client';
 
 import { currencies } from '../../../services/currencies';
 import { formatPlanType } from '../../utils/formatters';
-// @ts-expect-error TS(6142): Module '../../utils/ActionWithTeamSelector' was re... Remove this comment to see the full error message
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import {
   Can,
@@ -25,67 +24,54 @@ const Curreny = ({
 }: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <span>
+        <span>
       {' '}
-      {/* @ts-expect-error TS(2532): Object is possibly 'undefined'. */}
-      {cur.name}({cur.symbol})
+            {cur.name}({cur.symbol})
     </span>
   );
 };
 
 const currency = (plan: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
-  // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-  return `${cur.name}(${cur.symbol})`;
+    return `${cur.name}(${cur.symbol})`;
 };
 
 const ApiPricingCardComponent = (props: any) => {
-  // @ts-expect-error TS(2339): Property 'Translation' does not exist on type 'unk... Remove this comment to see the full error message
-  const { Translation } = useContext(I18nContext);
+    const { Translation } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
   const renderFreeWithoutQuotas = () => (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <span>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Translation i18nkey="free.without.quotas.desc">
+        <span>
+            <Translation i18nkey="free.without.quotas.desc">
         You'll pay nothing and do whatever you want :)
       </Translation>
     </span>
   );
 
   const renderFreeWithQuotas = () => (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <span>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Translation i18nkey="free.with.quotas.desc" replacements={[props.plan.maxPerMonth]}>
+        <span>
+            <Translation i18nkey="free.with.quotas.desc" replacements={[props.plan.maxPerMonth]}>
         You'll pay nothing but you'll have {props.plan.maxPerMonth} authorized requests per month
       </Translation>
     </span>
   );
 
   const renderQuotasWithLimits = () => (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <span>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Translation
+        <span>
+            <Translation
         i18nkey="quotas.with.limits.desc"
         replacements={[props.plan.costPerMonth, currency(props.plan), props.plan.maxPerMonth]}
       >
         You'll pay {props.plan.costPerMonth}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Curreny plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
+                <Curreny plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
         per month
       </Translation>
     </span>
   );
 
   const renderQuotasWithoutLimits = () => (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <span>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <Translation
+        <span>
+            <Translation
         i18nkey="quotas.without.limits.desc"
         replacements={[
           props.plan.costPerMonth,
@@ -96,11 +82,9 @@ const ApiPricingCardComponent = (props: any) => {
         ]}
       >
         You'll pay {props.plan.costPerMonth}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Curreny plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
+                <Curreny plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
         you'll be charged {props.plan.costPerAdditionalRequest}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Curreny plan={props.plan} /> per additional request
+                <Curreny plan={props.plan} /> per additional request
       </Translation>
     </span>
   );
@@ -108,10 +92,8 @@ const ApiPricingCardComponent = (props: any) => {
   const renderPayPerUse = () => {
     if (props.plan.costPerMonth === 0.0) {
       return (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <span>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation
+                <span>
+                    <Translation
             i18nkey="pay.per.use.desc.default"
             replacements={[
               props.plan.costPerMonth,
@@ -121,20 +103,16 @@ const ApiPricingCardComponent = (props: any) => {
             ]}
           >
             You'll pay {props.plan.costPerMonth}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Curreny plan={props.plan} /> per month and you'll be charged{' '}
+                        <Curreny plan={props.plan} /> per month and you'll be charged{' '}
             {props.plan.costPerRequest}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Curreny plan={props.plan} /> per request
+                        <Curreny plan={props.plan} /> per request
           </Translation>
         </span>
       );
     } else {
       return (
-        // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-        <span>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <Translation
+                <span>
+                    <Translation
             i18nkey="pay.per.use.desc.default"
             replacements={[
               props.plan.costPerMonth,
@@ -144,8 +122,7 @@ const ApiPricingCardComponent = (props: any) => {
             ]}
           >
             You'll be charged {props.plan.costPerRequest}
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Curreny plan={props.plan} /> per request
+                        <Curreny plan={props.plan} /> per request
           </Translation>
         </span>
       );
@@ -157,8 +134,7 @@ const ApiPricingCardComponent = (props: any) => {
 
     Services.getAllTeamSubscriptions(team)
       .then((subscriptions) =>
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        client
+                client
           .query({
             query: Services.graphql.apisByIdsWithPlans,
             variables: { ids: [...new Set(subscriptions.map((s: any) => s.api))] },
@@ -220,8 +196,7 @@ const ApiPricingCardComponent = (props: any) => {
 
   const isAccepted = !allPossibleTeams.length;
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   let pricing = translateMethod('Free');
   const req = translateMethod('req.');
@@ -243,37 +218,26 @@ const ApiPricingCardComponent = (props: any) => {
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="card mb-4 shadow-sm">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="card-img-top card-link card-skin" data-holder-rendered="true">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
+        <div className="card mb-4 shadow-sm">
+            <div className="card-img-top card-link card-skin" data-holder-rendered="true">
+                <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="card-body plan-body d-flex flex-column">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <p className="card-text text-justify">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          {customDescription && <span>{customDescription}</span>}
+            <div className="card-body plan-body d-flex flex-column">
+                <p className="card-text text-justify">
+                    {customDescription && <span>{customDescription}</span>}
           {!customDescription && type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas()}
           {!customDescription && type === 'FreeWithQuotas' && renderFreeWithQuotas()}
           {!customDescription && type === 'QuotasWithLimits' && renderQuotasWithLimits()}
           {!customDescription && type === 'QuotasWithoutLimits' && renderQuotasWithoutLimits()}
           {!customDescription && type === 'PayPerUse' && renderPayPerUse()}
         </p>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex flex-column mb-2">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span className="plan-quotas">
+                <div className="d-flex flex-column mb-2">
+                    <span className="plan-quotas">
             {!plan.maxPerSecond && !plan.maxPerMonth && translateMethod('plan.limits.unlimited')}
             {!!plan.maxPerSecond && !!plan.maxPerMonth && (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-              <div>
-                {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                <div>
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <Translation
+                            <div>
+                                <div>
+                                    <Translation
                     i18nkey="plan.limits"
                     replacements={[plan.maxPerSecond, plan.maxPerMonth]}
                   >
@@ -283,51 +247,40 @@ const ApiPricingCardComponent = (props: any) => {
               </div>
             )}
           </span>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span className="plan-pricing">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            <Translation i18nkey="plan.pricing" replacements={[pricing]}>
+                    <span className="plan-pricing">
+                        <Translation i18nkey="plan.pricing" replacements={[pricing]}>
               pricing: {pricing}
             </Translation>
           </span>
         </div>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="d-flex justify-content-between align-items-center">
+                <div className="d-flex justify-content-between align-items-center">
           {plan.otoroshiTarget && !isAccepted && isPending && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="Request in progress">Request in progress</Translation>
+                        <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
+                            <Translation i18nkey="Request in progress">Request in progress</Translation>
             </button>
           )}
           {(!isAccepted || props.api.visibility === 'AdminOnly') && props.api.published && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <Can
+                        <Can
               I={access}
               a={apikey}
-              // @ts-expect-error TS(2322): Type '{ children: any[]; I: number; a: string; tea... Remove this comment to see the full error message
-              teams={authorizedTeams.filter(
+                            teams={authorizedTeams.filter(
                 (team: any) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
               )}
             >
               {props.api.visibility !== 'AdminOnly' && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <Can
+                                <Can
                   I={manage}
                   a={apikey}
-                  // @ts-expect-error TS(2322): Type '{ children: false | Element; I: number; a: s... Remove this comment to see the full error message
-                  teams={authorizedTeams.filter((team: any) => team._id === props.ownerTeam._id)}
+                                    teams={authorizedTeams.filter((team: any) => team._id === props.ownerTeam._id)}
                 >
                   {!plan.otoroshiTarget && (
-                    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                    <span className="badge bg-danger">Missing otoroshi target</span>
+                                        <span className="badge bg-danger">Missing otoroshi target</span>
                   )}
                 </Can>
               )}
               {(props.api.visibility === 'AdminOnly' ||
                 (plan.otoroshiTarget && !isAccepted && !isPending)) && (
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-                <ActionWithTeamSelector
+                                <ActionWithTeamSelector
                   title={translateMethod('team.selection.title', 'Select teams')}
                   description={translateMethod(
                     plan.subscriptionProcess === 'Automatic'
@@ -350,10 +303,8 @@ const ApiPricingCardComponent = (props: any) => {
                   withAllTeamSelector={false}
                   action={(teams) => showApiKeySelectModal(teams)}
                 >
-                  {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                  <button type="button" className="btn btn-sm btn-access-negative col-12">
-                    {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-                    <Translation
+                                    <button type="button" className="btn btn-sm btn-access-negative col-12">
+                                        <Translation
                       i18nkey={
                         plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
                       }
@@ -366,14 +317,12 @@ const ApiPricingCardComponent = (props: any) => {
             </Can>
           )}
           {props.connectedUser.isGuest && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-            <button
+                        <button
               type="button"
               className="btn btn-sm btn-access-negative mx-auto mt-3"
               onClick={() => props.openLoginOrRegisterModal({ ...props })}
             >
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <Translation i18nkey="Get API key">Get API key</Translation>
+                            <Translation i18nkey="Get API key">Get API key</Translation>
             </button>
           )}
         </div>
@@ -406,20 +355,13 @@ export function ApiPricing(props: any) {
   });
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="d-flex col flex-column pricing-content">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="album">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <div className="container">
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <div className="row">
-            {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-            {possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-md-4">
-              {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-              <ApiPricingCard
-                // @ts-expect-error TS(2322): Type '{ api: any; key: any; plan: any; myTeams: an... Remove this comment to see the full error message
-                api={api}
+        <div className="d-flex col flex-column pricing-content">
+            <div className="album">
+                <div className="container">
+                    <div className="row">
+                        {possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-md-4">
+                            <ApiPricingCard
+                                api={api}
                 key={plan._id}
                 plan={plan}
                 myTeams={props.myTeams}

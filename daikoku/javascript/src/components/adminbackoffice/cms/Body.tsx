@@ -1,16 +1,12 @@
 import { Form, type } from '@maif/react-forms';
 import React, { useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { I18nContext } from '../../../core';
-// @ts-expect-error TS(6142): Module './ContentSideView' was resolved to '/Users... Remove this comment to see the full error message
 import { ContentSideView } from './ContentSideView';
-// @ts-expect-error TS(6142): Module './DragAndDropWrapper' was resolved to '/Us... Remove this comment to see the full error message
 import DragAndDropWrapper from './DragAndDropWrapper';
 
 export default React.forwardRef(
-  // @ts-expect-error TS(2345): Argument of type '({ contentType, setFinalValue, s... Remove this comment to see the full error message
-  ({ contentType, setFinalValue, show, pages, inValue, publish, history }, ref) => {
-    // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-    const { translateMethod } = useContext(I18nContext);
+    ({ contentType, setFinalValue, show, pages, inValue, publish, history }, ref) => {
+        const { translateMethod } = useContext(I18nContext);
     const r = useRef();
 
     useEffect(() => {
@@ -21,16 +17,14 @@ export default React.forwardRef(
 
     useImperativeHandle(ref, () => ({
       handleSubmit() {
-        // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-        r.current.handleSubmit();
+                r.current.handleSubmit();
       },
     }));
 
     const handleDrop = (file: any) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
-        // @ts-expect-error TS(2531): Object is possibly 'null'.
-        const text = e.target.result;
+                const text = e.target.result;
         setValue({ draft: text });
       };
       reader.readAsText(file);
@@ -45,12 +39,10 @@ export default React.forwardRef(
           const [draft, setDraft] = useState('');
 
           useEffect(() => {
-    // @ts-expect-error TS(2339): Property 'draft' does not exist on type '{}'.
-    setDraft(value.draft);
+        setDraft(value.draft);
 }, [(value as any).draft]);
             setDraft((value as any).draft);
-          // @ts-expect-error TS(2339): Property 'draft' does not exist on type '{}'.
-          }, [value.draft]);
+                    }, [value.draft]);
 
           return (
             <DragAndDropWrapper handleDrop={handleDrop}>

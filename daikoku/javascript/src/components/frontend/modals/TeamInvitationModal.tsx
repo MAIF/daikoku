@@ -6,8 +6,7 @@ export const TeamInvitationModal = (props: any) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState(undefined);
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   function invitUser() {
     const { members, pendingUsers } = props;
@@ -35,45 +34,34 @@ export const TeamInvitationModal = (props: any) => {
   const isLDAPProvider = props.tenant && props.tenant.authProvider === 'LDAP';
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-header d-flex flex-column align-items-center">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <i className="fas fa-users fa-2x mb-3" />
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h5 className="modal-title text-center">
+        <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
+            <div className="modal-header d-flex flex-column align-items-center">
+                <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
+                <i className="fas fa-users fa-2x mb-3" />
+                <h5 className="modal-title text-center">
           {translateMethod('team_member.invite_user_to')}
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-          <span style={{ fontWeight: 'bold', display: 'block' }}>{props.team.name}</span>
+                    <span style={{ fontWeight: 'bold', display: 'block' }}>{props.team.name}</span>
         </h5>
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-body">
+            <div className="modal-body">
         {error && (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <div className="alert alert-danger" role="alert">
+                    <div className="alert alert-danger" role="alert">
             {translateMethod(error)}
           </div>
         )}
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <input
+                <input
           type="text"
           className="form-control"
           value={email}
           placeholder={translateMethod('Email')}
           onChange={(e) => {
-            // @ts-expect-error TS(2345): Argument of type '""' is not assignable to paramet... Remove this comment to see the full error message
-            setError('');
+                        setError('');
             setEmail(e.target.value);
           }}
         />
 
         {isLDAPProvider ? (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <button
+                    <button
             onClick={invitUser}
             className="btn btn-success mt-3 btn-block btn-lg"
             type="button"
@@ -81,8 +69,7 @@ export const TeamInvitationModal = (props: any) => {
             {translateMethod('Search')}
           </button>
         ) : (
-          // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-          <button
+                    <button
             className="btn btn-success mt-3 btn-block btn-lg"
             type="button"
             onClick={invitUser}

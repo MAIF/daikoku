@@ -40,14 +40,14 @@ export function Histogram(props: any) {
     return v;
   };
 
-  let data: any = [];
-  let seriesName = [];
+  let data: Array<any> = [];
+  let seriesName: Array<any> = [];
 
   // console.log(props.title, props.series);
 
   if (props.series && props.series[0]) {
     seriesName = props.series.map((s: any) => s.name);
-    const values = [];
+    const values: Array<any> = [];
     const size = props.series[0].data.length;
     for (let i = 0; i < size; i++) {
       let finalItem = {};
@@ -69,7 +69,6 @@ export function Histogram(props: any) {
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div
       style={{
         backgroundColor: '#fff',
@@ -79,22 +78,14 @@ export function Histogram(props: any) {
         alignItems: 'center',
       }}
     >
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <h4 className="recharts">{props.title}</h4>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <ResponsiveContainer height={props.height || 200}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <XAxis dataKey="name" />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <YAxis tickFormatter={formatTick} />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <CartesianGrid strokeDasharray="3 3" />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Tooltip />
           {sortBy(seriesName, (sn) => sn).map((sn, idx) => (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <Area
               key={sn}
               type="monotone"
@@ -129,7 +120,6 @@ export function RoundChart(props: any) {
   const renderCustomizedLabel = (props: any) => {
     const { x, y, cx } = props;
     return (
-      // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <text
         x={x}
         y={y}
@@ -144,7 +134,6 @@ export function RoundChart(props: any) {
   };
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div
       style={{
         display: 'flex',
@@ -154,13 +143,9 @@ export function RoundChart(props: any) {
       }}
       className="recharts"
     >
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <h4 className="recharts">{props.title}</h4>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <ResponsiveContainer height={props.size ? props.size + 150 : 200}>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <PieChart>
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Pie
             data={props.series}
             fill="#8884d8"
@@ -169,12 +154,10 @@ export function RoundChart(props: any) {
             label={!props.series2 && !props.noLabel && renderCustomizedLabel}
           >
             {props.series.map((entry: any, index: any) => (
-              // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <Cell key={entry.name} fill={colors[index % colors.length]} />
             ))}
           </Pie>
           {props.series2 && (
-            // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <Pie
               data={props.series2}
               fill="#8884d8"
@@ -187,14 +170,11 @@ export function RoundChart(props: any) {
                 const parentIdx = [...new Set(props.series.map((item: any) => item.name))].indexOf(
                   entry[props.parentKey]
                 );
-                // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 return <Cell key={entry.name} fill={colors[parentIdx % colors.length]} />;
               })}
             </Pie>
           )}
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Tooltip />
-          {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           {props.legend && <Legend verticalAlign="top" height={36} content={props.legend} />}
         </PieChart>
       </ResponsiveContainer>

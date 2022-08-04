@@ -12,8 +12,7 @@ export const ApiSelectModal = ({
   const [apis, setApis] = useState([]);
   const [plan, setPlan] = useState();
 
-  // @ts-expect-error TS(2339): Property 'translateMethod' does not exist on type ... Remove this comment to see the full error message
-  const { translateMethod } = useContext(I18nContext);
+    const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAllPlanOfApi(teamId, api._humanReadableId, api.currentVersion).then((apis) => {
@@ -43,40 +42,29 @@ export const ApiSelectModal = ({
   }, []);
 
   function clonePlan() {
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
-    onClose(plan.value);
+        onClose(plan.value);
     closeModal();
   }
 
   return (
-    // @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
-    <div className="modal-content">
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-header">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <h5 className="modal-title">{translateMethod('api_select_modal.title')}</h5>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
+        <div className="modal-content">
+            <div className="modal-header">
+                <h5 className="modal-title">{translateMethod('api_select_modal.title')}</h5>
+                <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-body">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <Select
+            <div className="modal-body">
+                <Select
           placeholder={translateMethod('Search')}
           options={apis}
-          // @ts-expect-error TS(2322): Type 'Dispatch<SetStateAction<undefined>>' is not ... Remove this comment to see the full error message
-          onChange={setPlan}
+                    onChange={setPlan}
           classNamePrefix="reactSelect"
         />
       </div>
-      {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-      <div className="modal-footer">
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-danger" onClick={closeModal}>
+            <div className="modal-footer">
+                <button type="button" className="btn btn-outline-danger" onClick={closeModal}>
           {translateMethod('Close', 'Close')}
         </button>
-        {/* @ts-expect-error TS(17004): Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
-        <button type="button" className="btn btn-outline-success" onClick={clonePlan}>
+                <button type="button" className="btn btn-outline-success" onClick={clonePlan}>
           {translateMethod('Choose', 'Close')}
         </button>
       </div>
