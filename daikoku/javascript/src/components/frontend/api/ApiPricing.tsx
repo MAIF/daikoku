@@ -18,60 +18,77 @@ import {
 import { openLoginOrRegisterModal, openApiKeySelectModal, I18nContext } from '../../../core';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
+import { any } from 'cypress/types/bluebird';
+import { placements } from '@popperjs/core';
 
 const Curreny = ({
   plan
 }: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
   return (
-        <span>
+    <span>
       {' '}
-            {cur.name}({cur.symbol})
+      {cur?.name}({cur?.symbol})
     </span>
   );
 };
 
 const currency = (plan: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
-    return `${cur.name}(${cur.symbol})`;
+  return `${cur?.name}(${cur?.symbol})`;
 };
 
-const ApiPricingCardComponent = (props: any) => {
-    const { Translation } = useContext(I18nContext);
+type ApiPricingProps = {
+  plan: any,
+  api: any,
+  askForApikeys: (team: any, plan: any, apiKey?: any) => void,
+  openApiKeySelectModal?: (props: any) => void, //FIXME: not an optional props ==> use useSelector to get it from hook instead
+  myTeams: any,
+  tenant:any,
+  ownerTeam: any,
+  subscriptions: any,
+  pendingSubscriptions: any,
+  connectedUser: any,
+  openLoginOrRegisterModal?: (props: any) => void //FIXME: not an optional props ==> use useSelector to get it from hook instead
+
+}
+
+const ApiPricingCardComponent = (props: ApiPricingProps) => {
+  const { Translation } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
   const renderFreeWithoutQuotas = () => (
-        <span>
-            <Translation i18nkey="free.without.quotas.desc">
+    <span>
+      <Translation i18nkey="free.without.quotas.desc">
         You'll pay nothing and do whatever you want :)
       </Translation>
     </span>
   );
 
   const renderFreeWithQuotas = () => (
-        <span>
-            <Translation i18nkey="free.with.quotas.desc" replacements={[props.plan.maxPerMonth]}>
+    <span>
+      <Translation i18nkey="free.with.quotas.desc" replacements={[props.plan.maxPerMonth]}>
         You'll pay nothing but you'll have {props.plan.maxPerMonth} authorized requests per month
       </Translation>
     </span>
   );
 
   const renderQuotasWithLimits = () => (
-        <span>
-            <Translation
+    <span>
+      <Translation
         i18nkey="quotas.with.limits.desc"
         replacements={[props.plan.costPerMonth, currency(props.plan), props.plan.maxPerMonth]}
       >
         You'll pay {props.plan.costPerMonth}
-                <Curreny plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
+        <Curreny plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
         per month
       </Translation>
     </span>
   );
 
   const renderQuotasWithoutLimits = () => (
-        <span>
-            <Translation
+    <span>
+      <Translation
         i18nkey="quotas.without.limits.desc"
         replacements={[
           props.plan.costPerMonth,
@@ -82,9 +99,9 @@ const ApiPricingCardComponent = (props: any) => {
         ]}
       >
         You'll pay {props.plan.costPerMonth}
-                <Curreny plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
+        <Curreny plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
         you'll be charged {props.plan.costPerAdditionalRequest}
-                <Curreny plan={props.plan} /> per additional request
+        <Curreny plan={props.plan} /> per additional request
       </Translation>
     </span>
   );
@@ -92,8 +109,8 @@ const ApiPricingCardComponent = (props: any) => {
   const renderPayPerUse = () => {
     if (props.plan.costPerMonth === 0.0) {
       return (
-                <span>
-                    <Translation
+        <span>
+          <Translation
             i18nkey="pay.per.use.desc.default"
             replacements={[
               props.plan.costPerMonth,
@@ -103,16 +120,16 @@ const ApiPricingCardComponent = (props: any) => {
             ]}
           >
             You'll pay {props.plan.costPerMonth}
-                        <Curreny plan={props.plan} /> per month and you'll be charged{' '}
+            <Curreny plan={props.plan} /> per month and you'll be charged{' '}
             {props.plan.costPerRequest}
-                        <Curreny plan={props.plan} /> per request
+            <Curreny plan={props.plan} /> per request
           </Translation>
         </span>
       );
     } else {
       return (
-                <span>
-                    <Translation
+        <span>
+          <Translation
             i18nkey="pay.per.use.desc.default"
             replacements={[
               props.plan.costPerMonth,
@@ -122,7 +139,7 @@ const ApiPricingCardComponent = (props: any) => {
             ]}
           >
             You'll be charged {props.plan.costPerRequest}
-                        <Curreny plan={props.plan} /> per request
+            <Curreny plan={props.plan} /> per request
           </Translation>
         </span>
       );
@@ -132,16 +149,19 @@ const ApiPricingCardComponent = (props: any) => {
   const showApiKeySelectModal = (team: any) => {
     const { api, plan } = props;
 
+    //FIXME: not bwaaagh !!
+    if (!client) {
+      return;
+    }
+
     Services.getAllTeamSubscriptions(team)
-      .then((subscriptions) =>
-                client
-          .query({
-            query: Services.graphql.apisByIdsWithPlans,
-            variables: { ids: [...new Set(subscriptions.map((s: any) => s.api))] },
-          })
-          .then(({ data }) => ({ apis: data.apis, subscriptions }))
-      )
-      .then(({ apis, subscriptions }) => {
+      .then((subscriptions) => client
+        .query({
+          query: Services.graphql.apisByIdsWithPlans,
+          variables: { ids: [...new Set(subscriptions.map((s: any) => s.api))] },
+        })
+        .then(({ data }) => ({ apis: data.apis, subscriptions }))
+      ).then(({ apis, subscriptions }) => {
         const filteredApiKeys = subscriptions
           .map((subscription: any) => {
             const api = apis.find((a: any) => a._id === subscription.api);
@@ -159,7 +179,7 @@ const ApiPricingCardComponent = (props: any) => {
         if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
           props.askForApikeys(team, plan);
         } else {
-          props.openApiKeySelectModal({
+          props.openApiKeySelectModal && props.openApiKeySelectModal({
             plan,
             apiKeys: filteredApiKeys,
             onSubscribe: () => props.askForApikeys(team, plan),
@@ -177,8 +197,8 @@ const ApiPricingCardComponent = (props: any) => {
     .filter((t: any) => !props.tenant.subscriptionSecurity || t.type !== 'Personal')
     .filter(
       (t: any) => props.api.visibility === 'Public' ||
-      props.api.authorizedTeams.includes(t._id) ||
-      t._id === props.ownerTeam._id
+        props.api.authorizedTeams.includes(t._id) ||
+        t._id === props.ownerTeam._id
     );
 
   const allPossibleTeams = difference(
@@ -196,7 +216,7 @@ const ApiPricingCardComponent = (props: any) => {
 
   const isAccepted = !allPossibleTeams.length;
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   let pricing = translateMethod('Free');
   const req = translateMethod('req.');
@@ -218,26 +238,26 @@ const ApiPricingCardComponent = (props: any) => {
   }
 
   return (
-        <div className="card mb-4 shadow-sm">
-            <div className="card-img-top card-link card-skin" data-holder-rendered="true">
-                <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
+    <div className="card mb-4 shadow-sm">
+      <div className="card-img-top card-link card-skin" data-holder-rendered="true">
+        <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
       </div>
-            <div className="card-body plan-body d-flex flex-column">
-                <p className="card-text text-justify">
-                    {customDescription && <span>{customDescription}</span>}
+      <div className="card-body plan-body d-flex flex-column">
+        <p className="card-text text-justify">
+          {customDescription && <span>{customDescription}</span>}
           {!customDescription && type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas()}
           {!customDescription && type === 'FreeWithQuotas' && renderFreeWithQuotas()}
           {!customDescription && type === 'QuotasWithLimits' && renderQuotasWithLimits()}
           {!customDescription && type === 'QuotasWithoutLimits' && renderQuotasWithoutLimits()}
           {!customDescription && type === 'PayPerUse' && renderPayPerUse()}
         </p>
-                <div className="d-flex flex-column mb-2">
-                    <span className="plan-quotas">
+        <div className="d-flex flex-column mb-2">
+          <span className="plan-quotas">
             {!plan.maxPerSecond && !plan.maxPerMonth && translateMethod('plan.limits.unlimited')}
             {!!plan.maxPerSecond && !!plan.maxPerMonth && (
-                            <div>
-                                <div>
-                                    <Translation
+              <div>
+                <div>
+                  <Translation
                     i18nkey="plan.limits"
                     replacements={[plan.maxPerSecond, plan.maxPerMonth]}
                   >
@@ -247,82 +267,82 @@ const ApiPricingCardComponent = (props: any) => {
               </div>
             )}
           </span>
-                    <span className="plan-pricing">
-                        <Translation i18nkey="plan.pricing" replacements={[pricing]}>
+          <span className="plan-pricing">
+            <Translation i18nkey="plan.pricing" replacements={[pricing]}>
               pricing: {pricing}
             </Translation>
           </span>
         </div>
-                <div className="d-flex justify-content-between align-items-center">
+        <div className="d-flex justify-content-between align-items-center">
           {plan.otoroshiTarget && !isAccepted && isPending && (
-                        <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
-                            <Translation i18nkey="Request in progress">Request in progress</Translation>
+            <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
+              <Translation i18nkey="Request in progress">Request in progress</Translation>
             </button>
           )}
           {(!isAccepted || props.api.visibility === 'AdminOnly') && props.api.published && (
-                        <Can
+            <Can
               I={access}
               a={apikey}
-                            teams={authorizedTeams.filter(
+              teams={authorizedTeams.filter(
                 (team: any) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
               )}
             >
               {props.api.visibility !== 'AdminOnly' && (
-                                <Can
+                <Can
                   I={manage}
                   a={apikey}
-                                    teams={authorizedTeams.filter((team: any) => team._id === props.ownerTeam._id)}
+                  teams={authorizedTeams.filter((team: any) => team._id === props.ownerTeam._id)}
                 >
                   {!plan.otoroshiTarget && (
-                                        <span className="badge bg-danger">Missing otoroshi target</span>
+                    <span className="badge bg-danger">Missing otoroshi target</span>
                   )}
                 </Can>
               )}
               {(props.api.visibility === 'AdminOnly' ||
                 (plan.otoroshiTarget && !isAccepted && !isPending)) && (
-                                <ActionWithTeamSelector
-                  title={translateMethod('team.selection.title', 'Select teams')}
-                  description={translateMethod(
-                    plan.subscriptionProcess === 'Automatic'
-                      ? 'team.selection.desc.get'
-                      : 'team.selection.desc.request',
-                    false,
-                    'You are going to get or request API keys. On which team do you want them for?'
-                  )}
-                  teams={authorizedTeams
-                    .filter((t: any) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-                    .filter(
-                      (team: any) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
-                    )
-                    .filter((t: any) => !props.tenant.subscriptionSecurity || t.type !== 'Personnal')}
-                  pendingTeams={props.pendingSubscriptions.map((s: any) => s.action.team)}
-                  authorizedTeams={props.subscriptions
-                    .filter((f: any) => !f._deleted)
-                    .map((subs: any) => subs.team)}
-                  allowMultipleDemand={plan.allowMultipleKeys}
-                  withAllTeamSelector={false}
-                  action={(teams) => showApiKeySelectModal(teams)}
-                >
-                                    <button type="button" className="btn btn-sm btn-access-negative col-12">
-                                        <Translation
-                      i18nkey={
-                        plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
-                      }
-                    >
-                      {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
-                    </Translation>
-                  </button>
-                </ActionWithTeamSelector>
-              )}
+                  <ActionWithTeamSelector
+                    title={translateMethod('team.selection.title', 'Select teams')}
+                    description={translateMethod(
+                      plan.subscriptionProcess === 'Automatic'
+                        ? 'team.selection.desc.get'
+                        : 'team.selection.desc.request',
+                      false,
+                      'You are going to get or request API keys. On which team do you want them for?'
+                    )}
+                    teams={authorizedTeams
+                      .filter((t: any) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+                      .filter(
+                        (team: any) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
+                      )
+                      .filter((t: any) => !props.tenant.subscriptionSecurity || t.type !== 'Personnal')}
+                    pendingTeams={props.pendingSubscriptions.map((s: any) => s.action.team)}
+                    authorizedTeams={props.subscriptions
+                      .filter((f: any) => !f._deleted)
+                      .map((subs: any) => subs.team)}
+                    allowMultipleDemand={plan.allowMultipleKeys}
+                    withAllTeamSelector={false}
+                    action={(teams) => showApiKeySelectModal(teams)}
+                  >
+                    <button type="button" className="btn btn-sm btn-access-negative col-12">
+                      <Translation
+                        i18nkey={
+                          plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
+                        }
+                      >
+                        {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
+                      </Translation>
+                    </button>
+                  </ActionWithTeamSelector>
+                )}
             </Can>
           )}
           {props.connectedUser.isGuest && (
-                        <button
+            <button
               type="button"
               className="btn btn-sm btn-access-negative mx-auto mt-3"
-              onClick={() => props.openLoginOrRegisterModal({ ...props })}
+              onClick={() => props.openLoginOrRegisterModal && props.openLoginOrRegisterModal({ ...props })}
             >
-                            <Translation i18nkey="Get API key">Get API key</Translation>
+              <Translation i18nkey="Get API key">Get API key</Translation>
             </button>
           )}
         </div>
@@ -350,18 +370,18 @@ export function ApiPricing(props: any) {
 
   const possibleUsagePlans = api.possibleUsagePlans.filter((plan: any) => {
     return plan.visibility === 'Public' ||
-    props.myTeams.some((team: any) => team._id === props.ownerTeam._id) ||
-    props.myTeams.some((team: any) => plan.authorizedTeams.includes(team._id));
+      props.myTeams.some((team: any) => team._id === props.ownerTeam._id) ||
+      props.myTeams.some((team: any) => plan.authorizedTeams.includes(team._id));
   });
 
   return (
-        <div className="d-flex col flex-column pricing-content">
-            <div className="album">
-                <div className="container">
-                    <div className="row">
-                        {possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-md-4">
-                            <ApiPricingCard
-                                api={api}
+    <div className="d-flex col flex-column pricing-content">
+      <div className="album">
+        <div className="container">
+          <div className="row">
+            {possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-md-4">
+              <ApiPricingCard
+                api={api}
                 key={plan._id}
                 plan={plan}
                 myTeams={props.myTeams}

@@ -19,8 +19,8 @@ import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 import { formatPlanType } from '../../utils/formatters';
 
-export const ApiGroupHome = ({}) => {
-  const [apiGroup, setApiGroup] = useState();
+export const ApiGroupHome = ({ }) => {
+  const [apiGroup, setApiGroup] = useState<any>();
   const [subscriptions, setSubscriptions] = useState([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
   const [myTeams, setMyTeams] = useState([]);
@@ -35,7 +35,7 @@ export const ApiGroupHome = ({}) => {
   const { addMenu } = useApiGroupFrontOffice(apiGroup, ownerTeam);
 
   const { client } = useContext(getApolloContext());
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (!!apiGroup && !!match) {
@@ -125,7 +125,11 @@ export const ApiGroupHome = ({}) => {
   }, [apiGroup, match?.params?.apiId, match?.params?.tab]);
 
   useEffect(() => {
-        client
+    //FIXME: handle case of appolo client is not setted
+    if (!client) {
+      return;
+    }
+    client
       .query({
         query: Services.graphql.apiByIdsWithPlans,
         variables: { id: params.apiGroupId },
@@ -141,7 +145,7 @@ export const ApiGroupHome = ({}) => {
         });
         return Promise.all([
           Services.team(group.team._humanReadableId),
-                    client.query({
+          client.query({
             query: Services.graphql.myTeams,
           }),
           updateSubscriptions(group),
@@ -163,7 +167,7 @@ export const ApiGroupHome = ({}) => {
   const askForApikeys = (teams: any, plan: any) => {
     const planName = formatPlanType(plan, translateMethod);
 
-        return Services.askForApiKey(apiGroup._id, teams, plan._id)
+    return Services.askForApiKey(apiGroup._id, teams, plan._id)
       .then((results) => {
         if (results.error) {
           return toastr.error(translateMethod('Error'), results.error);
@@ -172,29 +176,27 @@ export const ApiGroupHome = ({}) => {
           if (result.error) {
             return toastr.error(translateMethod('Error'), result.error);
           } else if (result.creation === 'done') {
-            const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
+            const team: any = myTeams.find((t) => (t as any)._id === result.subscription.team);
             return toastr.success(
               translateMethod('Done'),
               translateMethod(
                 'subscription.plan.accepted',
                 false,
-                `API key for ${planName} plan and the team ${                
-team.name} is available`,
+                `API key for ${planName} plan and the team ${team.name} is available`,
                 planName,
-                                team.name
+                team.name
               )
             );
           } else if (result.creation === 'waiting') {
-            const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
+            const team: any = myTeams.find((t) => (t as any)._id === result.subscription.team);
             return toastr.info(
               translateMethod('Pending request'),
               translateMethod(
                 'subscription.plan.waiting',
                 false,
-                `The API key request for ${planName} plan and the team ${                
-team.name} is pending acceptance`,
+                `The API key request for ${planName} plan and the team ${team.name} is pending acceptance`,
                 planName,
-                                team.name
+                team.name
               )
             );
           }
@@ -209,25 +211,25 @@ team.name} is pending acceptance`,
   }
 
   return (
-        <main role="main">
+    <main role="main">
       {params.tab !== 'apis' && (
-                <ApiHeader
+        <ApiHeader
           api={apiGroup}
           ownerTeam={ownerTeam}
           connectedUser={connectedUser}
           tab={params.tab}
         />
       )}
-            <div className="album py-2 col-12 min-vh-100">
-                <div className="container">
-                    <div className="row pt-3"></div>
+      <div className="album py-2 col-12 min-vh-100">
+        <div className="container">
+          <div className="row pt-3"></div>
           {params.tab === 'apis' && !match && (
-                        <ApiGroupApis apiGroup={apiGroup} ownerTeam={ownerTeam} subscriptions={subscriptions} />
+            <ApiGroupApis apiGroup={apiGroup} ownerTeam={ownerTeam} subscriptions={subscriptions} />
           )}
-                    {params.tab === 'apis' && match && <ApiHome groupView />}
-                    {params.tab === 'description' && <ApiDescription api={apiGroup} ownerTeam={ownerTeam} />}
+          {params.tab === 'apis' && match && <ApiHome groupView />}
+          {params.tab === 'description' && <ApiDescription api={apiGroup} ownerTeam={ownerTeam} />}
           {params.tab === 'pricing' && (
-                        <ApiPricing
+            <ApiPricing
               connectedUser={connectedUser}
               api={apiGroup}
               myTeams={myTeams}
@@ -239,18 +241,17 @@ team.name} is pending acceptance`,
             />
           )}
           {params.tab === 'documentation' && (
-                        <ApiDocumentation api={apiGroup} ownerTeam={ownerTeam} />
+            <ApiDocumentation api={apiGroup} ownerTeam={ownerTeam} />
           )}
           {params.tab === 'issues' && (
-                        <ApiIssue
+            <ApiIssue
               api={apiGroup}
-                            onChange={(editedApi: any) => setApi(editedApi)}
               ownerTeam={ownerTeam}
               connectedUser={connectedUser}
             />
           )}
           {params.tab === 'news' && (
-                        <ApiPost api={apiGroup} ownerTeam={ownerTeam} versionId={apiGroup.currentVersion} />
+            <ApiPost api={apiGroup} ownerTeam={ownerTeam} versionId={apiGroup.currentVersion} />
           )}
         </div>
       </div>

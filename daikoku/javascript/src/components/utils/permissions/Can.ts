@@ -12,7 +12,7 @@ export const CanIDoAction = (
   action: any,
   what: any,
   team: any,
-  apiCreationPermitted: any,
+  apiCreationPermitted?: any,
   isTenantAdmin?: any,
   whichOne?: any,
   currentTenant?: any
@@ -64,7 +64,7 @@ const CanComponent = ({
 }: { 
   I: any, 
   a: any, 
-  team: any, 
+  team?: any, 
   teams?: any, 
   connectedUser?: any, 
   dispatchError?: any, 

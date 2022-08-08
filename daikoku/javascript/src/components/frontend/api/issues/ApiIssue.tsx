@@ -19,7 +19,7 @@ export function ApiIssue({
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getRootApi(props.api._humanReadableId).then((rootApi) => {
@@ -29,15 +29,8 @@ export function ApiIssue({
 
   const onChange = (editedApi: any) => {
     Services.saveTeamApi(ownerTeam._id, editedApi, versionId)
-      .then((res) => {
-        props.onChange({
-          ...props.api,
-          issues: res.issues,
-          issuesTags: res.issuesTags,
-        });
-        setRootApi(res);
-      })
-      .then(() => toastr.success(translateMethod('Api saved')));
+      .then((res) => setRootApi(res))
+      .then(() => toastr.success(translateMethod('Success'), translateMethod('Api saved')));
   };
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? (api as any)._humanReadableId : ''}/${versionId}`;
@@ -48,20 +41,20 @@ export function ApiIssue({
 
   if (showLabels)
     return (
-            <div className="container-fluid">
-                <Can I={manage} a={API} team={ownerTeam} orElse={<Navigate to="/" />}>
-                    <TeamApiIssueTags value={api} onChange={onChange} basePath={`${basePath}/issues`} />
+      <div className="container-fluid">
+        <Can I={manage} a={API} team={ownerTeam} orElse={<Navigate to="/" />}>
+          <TeamApiIssueTags value={api} onChange={onChange} basePath={`${basePath}/issues`} />
         </Can>
       </div>
     );
 
   return (
-        <div className="container-fluid">
-            <Routes>
-                <Route
+    <div className="container-fluid">
+      <Routes>
+        <Route
           path="/:issueId"
           element={
-                        <ApiTimelineIssue
+            <ApiTimelineIssue
               issueId={issueId}
               team={ownerTeam}
               api={api}
@@ -71,10 +64,10 @@ export function ApiIssue({
             />
           }
         />
-                <Route
+        <Route
           path="/"
           element={
-                        <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} ownerTeam={ownerTeam} setSelectedVersion={setSelectedVersion} setFilter={setFilter}/>
+            <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} ownerTeam={ownerTeam} setSelectedVersion={setSelectedVersion} setFilter={setFilter} />
           }
         />
       </Routes>

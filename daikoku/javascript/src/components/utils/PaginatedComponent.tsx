@@ -12,6 +12,7 @@ type Props = {
   previousLabel?: string;
   nextLabel?: string;
   breakLabel?: string;
+  help?: any
 };
 
 export const PaginatedComponent = (props: Props) => {

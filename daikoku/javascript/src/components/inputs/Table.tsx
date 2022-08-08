@@ -19,9 +19,9 @@ export function useForceUpdate() {
 
 type Props = {
   columns: any[];
-  fetchItems: (...args: any[]) => any;
-  injectTopBar?: () => void,
-  injectTable?: () => void,
+  fetchItems?: (...args: any[]) => any;
+  injectTopBar?: () => JSX.Element,
+  injectTable?: (...args: any[]) => void,
   defaultSort?: any,
   defaultSortDesc?: any,
   header?: boolean,
@@ -180,21 +180,24 @@ export const Table = React.forwardRef<any, Props>(
     const update = () => {
       setLoading(true);
       const isPromise = Boolean(fetchItems && typeof fetchItems().then === 'function');
-      if (isPromise) {
-        return fetchItems().then(
-          (rawItems: any) => {
-            if (rawItems.error) {
-              setError(rawItems);
-            } else {
-              setItems(rawItems);
-              setLoading(false);
-            }
-          },
-          (e: any) => setError(e)
-        );
-      } else {
+      if (isPromise && fetchItems) {
+        return fetchItems()
+          .then(
+            (rawItems: any) => {
+              if (rawItems.error) {
+                setError(rawItems);
+              } else {
+                setItems(rawItems);
+                setLoading(false);
+              }
+            },
+            (e: any) => setError(e)
+          );
+      } else if (fetchItems) {
         setItems(fetchItems());
         setLoading(false);
+      } else {
+        setLoading(false)
       }
     };
 
@@ -235,7 +238,7 @@ export const Table = React.forwardRef<any, Props>(
             value: pageSize,
           }}
           options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
-          onChange={(e) => setPageSize(Number(e.value))}
+          onChange={(e: any) => setPageSize(Number(e.value))}
           classNamePrefix="reactSelect"
           styles={customStyles}
         />

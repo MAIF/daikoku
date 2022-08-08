@@ -18,7 +18,7 @@ const Avatar = ({
   onChange,
   team
 }: any) => {
-    const { Translation, translateMethod } = useContext(I18nContext);
+  const { Translation, translateMethod } = useContext(I18nContext);
 
   const setGravatarLink = () => {
     const email = getValue('contact').toLowerCase().trim();
@@ -28,9 +28,9 @@ const Avatar = ({
 
 
   return (
-        <div className="d-flex flex-row align-items-center">
-            <div className="float-right mb-4 position-relative">
-                <img
+    <div className="d-flex flex-row align-items-center">
+      <div className="float-right mb-4 position-relative">
+        <img
           src={`${rawValues?.avatar}${rawValues?.avatar?.startsWith('http') ? '' : `?${Date.now()}`
             }`}
           style={{
@@ -42,20 +42,20 @@ const Avatar = ({
           className="mx-3"
         />
       </div>
-            <div className="d-flex flex-column flex-grow-1">
-                <input
+      <div className="d-flex flex-column flex-grow-1">
+        <input
           type="text"
           className="form-control mb-1"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
-                <div className='d-flex justify-content-end'>
-                    <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.contact ? 'disabled' : null}>
-                        <i className="fas fa-user-circle me-1" />
-                        <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
+        <div className='d-flex justify-content-end'>
+          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.contact}>
+            <i className="fas fa-user-circle me-1" />
+            <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
-                    <AssetChooserByModal
-                        typeFilter={MimeTypeFilter.image}
+          <AssetChooserByModal
+            typeFilter={MimeTypeFilter.image}
             onlyPreview
             tenantMode={false}
             team={team}
@@ -68,7 +68,7 @@ const Avatar = ({
   );
 };
 
-export const teamSchema = (team, translateMethod) => ({
+export const teamSchema = (team: any, translateMethod: (props: any) => string) => ({
   name: {
     type: type.string,
     label: translateMethod('Name'),
@@ -115,9 +115,9 @@ export const TeamEditForm = ({
   team,
   updateTeam
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
-  
+
 
   if (!team) {
     return null;
@@ -128,7 +128,7 @@ export const TeamEditForm = ({
   }, []);
 
   return (
-        <Form
+    <Form
       schema={teamSchema(team, translateMethod)}
       value={team}
       onSubmit={(team) => updateTeam(team)}
@@ -142,7 +142,7 @@ const TeamEditComponent = ({
   const navigate = useNavigate();
   useTeamBackOffice(currentTeam);
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
 
   const save = (data: any) => {
@@ -152,6 +152,7 @@ const TeamEditComponent = ({
           navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
         }
         toastr.success(
+          translateMethod('Success'),
           translateMethod(
             'team.updated.success',
             false,
@@ -163,7 +164,7 @@ const TeamEditComponent = ({
   };
 
   return (
-        <TeamEditForm team={currentTeam} updateTeam={save} />
+    <TeamEditForm team={currentTeam} updateTeam={save} />
   );
 };
 

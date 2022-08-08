@@ -23,7 +23,7 @@ export function ApiFilter({
   basePath
 }: any) {
   const [availableApiVersions, setApiVersions] = useState([]);
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const dispatch = useDispatch();
   const { currentTeam } = useSelector((state) => (state as any).context);
 
@@ -51,7 +51,7 @@ export function ApiFilter({
         name
       }: any) => ({ value, label: name }),
       isMulti: true,
-            visible: CanIDoAction(connectedUser, manage, API, currentTeam),
+      visible: CanIDoAction(connectedUser, manage, API, currentTeam),
     },
     comments: {
       type: type.object,
@@ -73,9 +73,9 @@ export function ApiFilter({
     Services.createNewIssue(api._humanReadableId, team, issue)
       .then((res) => {
         if (res.error) {
-          toastr.error(res.error);
+          toastr.error(translateMethod('Error'), res.error);
         } else {
-          toastr.success('Issue created');
+          toastr.success(translateMethod(''), 'Issue created');
           refresh()
         }
       });
@@ -88,30 +88,30 @@ export function ApiFilter({
 
 
   return (
-        <div className="d-flex flex-row justify-content-between">
-            <div className="d-flex align-items-center">
-                <button
+    <div className="d-flex flex-row justify-content-between">
+      <div className="d-flex align-items-center">
+        <button
           className={classNames(`btn btn-outline-primary`, { active: filter === 'all' })}
           style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
           onClick={() => handleFilter('all')}
         >
           {translateMethod('All')}
         </button>
-                <button
+        <button
           className={classNames(`btn btn-outline-primary`, { active: filter === 'open' })}
           style={{ borderRadius: 0 }}
           onClick={() => handleFilter('open')}
         >
           {translateMethod('issues.open')}
         </button>
-                <button
+        <button
           className={classNames(`btn btn-outline-primary`, { active: filter === 'closed' })}
           style={{ borderLeft: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
           onClick={() => handleFilter('closed')}
         >
           {translateMethod('issues.closed')}
         </button>
-                <Select
+        <Select
           id="apiVersion"
           onChange={(apiVersion) => setSelectedVersion(apiVersion)}
           options={[
@@ -132,14 +132,14 @@ export function ApiFilter({
       </div>
 
       {connectedUser && !connectedUser.isGuest && (
-                <div>
-                    <Can I={manage} a={API} team={ownerTeam}>
-                        <Link to={`${basePath}/labels`} className="btn btn-outline-primary">
-                            <i className="fa fa-tag me-1" />
+        <div>
+          <Can I={manage} a={API} team={ownerTeam}>
+            <Link to={`${basePath}/labels`} className="btn btn-outline-primary">
+              <i className="fa fa-tag me-1" />
               {translateMethod('issues.tags')}
             </Link>
           </Can>
-                    <button
+          <button
             className="btn btn-outline-success ms-1"
             onClick={() =>
               Services.fetchNewIssue()

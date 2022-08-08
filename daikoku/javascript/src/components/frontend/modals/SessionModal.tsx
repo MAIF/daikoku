@@ -1,10 +1,12 @@
 import React, { useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../../locales/i18n-context';
 
 export const SessionModal = ({
   session
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const sessionExpires = translateMethod('session.expire.info');
@@ -36,17 +38,17 @@ export const SessionModal = ({
         const secondPing = _session.expires - Date.now() + 2000;
         setTimeout(() => {
           window.alert(
-                        (close: any) => <div style={{ width: '100%' }}>
-                            <p>{sessionExpires}</p>
-                            <div
+            (close: any) => <div style={{ width: '100%' }}>
+              <p>{sessionExpires}</p>
+              <div
                 style={{
                   width: '100%',
-                                    disllay: 'flex',
+                  display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
                 }}
               >
-                                <button
+                <button
                   type="button"
                   className="btn btn-success"
                   onClick={() => extendSession(close)}
@@ -55,16 +57,15 @@ export const SessionModal = ({
                 </button>
               </div>
             </div>,
-                        'Your session is expiring'
+            //@ts-ignore
+            'Your session is expiring'
           );
         }, firstPing);
-        reloadTimeout = setTimeout(() => {
-                    window.location = '/';
-        }, secondPing);
+        reloadTimeout = setTimeout(() => { navigate('/') }, secondPing);
       };
       setupTimeouts(session);
     }
   }, []);
 
-    return <></>;
+  return <></>;
 };

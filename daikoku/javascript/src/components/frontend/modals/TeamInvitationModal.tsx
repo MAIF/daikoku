@@ -4,9 +4,9 @@ import { I18nContext } from '../../../core';
 
 export const TeamInvitationModal = (props: any) => {
   const [email, setEmail] = useState('');
-  const [error, setError] = useState(undefined);
+  const [error, setError] = useState<string | undefined>(undefined);
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   function invitUser() {
     const { members, pendingUsers } = props;
@@ -14,15 +14,18 @@ export const TeamInvitationModal = (props: any) => {
     // const validator = ValidateEmail(email, translateMethod);
     const validator = true; //FIXME: use constraints instead of validation function
     if (validator) {
-      if (members.find((f: any) => f.email === email)) setError(translateMethod('User already in team'));
-      else if (pendingUsers.find((f: any) => f.email === email))
+      if (members.find((f: any) => f.email === email)) {
+        setError(translateMethod('User already in team'));
+      } else if (pendingUsers.find((f: any) => f.email === email)) {
         setError(translateMethod('User already invited'));
-      else if (props.tenant && props.tenant.authProvider == 'LDAP') {
+      } else if (props.tenant && props.tenant.authProvider == 'LDAP') {
         props.searchLdapMember(email).then((res: any) => {
           if (res.error) setError(res.error);
           else confirmInvitation();
         });
-      } else confirmInvitation();
+      } else {
+        confirmInvitation();
+      }
     } else setError((validator as any).error);
   }
 
@@ -34,34 +37,34 @@ export const TeamInvitationModal = (props: any) => {
   const isLDAPProvider = props.tenant && props.tenant.authProvider === 'LDAP';
 
   return (
-        <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
-            <div className="modal-header d-flex flex-column align-items-center">
-                <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
-                <i className="fas fa-users fa-2x mb-3" />
-                <h5 className="modal-title text-center">
+    <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
+      <div className="modal-header d-flex flex-column align-items-center">
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
+        <i className="fas fa-users fa-2x mb-3" />
+        <h5 className="modal-title text-center">
           {translateMethod('team_member.invite_user_to')}
-                    <span style={{ fontWeight: 'bold', display: 'block' }}>{props.team.name}</span>
+          <span style={{ fontWeight: 'bold', display: 'block' }}>{props.team.name}</span>
         </h5>
       </div>
-            <div className="modal-body">
+      <div className="modal-body">
         {error && (
-                    <div className="alert alert-danger" role="alert">
+          <div className="alert alert-danger" role="alert">
             {translateMethod(error)}
           </div>
         )}
-                <input
+        <input
           type="text"
           className="form-control"
           value={email}
           placeholder={translateMethod('Email')}
           onChange={(e) => {
-                        setError('');
+            setError('');
             setEmail(e.target.value);
           }}
         />
 
         {isLDAPProvider ? (
-                    <button
+          <button
             onClick={invitUser}
             className="btn btn-success mt-3 btn-block btn-lg"
             type="button"
@@ -69,7 +72,7 @@ export const TeamInvitationModal = (props: any) => {
             {translateMethod('Search')}
           </button>
         ) : (
-                    <button
+          <button
             className="btn btn-success mt-3 btn-block btn-lg"
             type="button"
             onClick={invitUser}

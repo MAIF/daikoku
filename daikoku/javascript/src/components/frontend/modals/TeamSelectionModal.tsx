@@ -4,24 +4,24 @@ import classNames from 'classnames';
 import { I18nContext } from '../../../core';
 
 type Props = {
-    closeModal: (...args: any[]) => any;
-    title: string;
-    description?: string;
-    teams: any[];
-    pendingTeams?: any[];
-    acceptedTeams?: any[];
-    action: (...args: any[]) => any;
-    allTeamSelector?: boolean;
-    allowMultipleDemand?: boolean;
+  closeModal: (...args: any[]) => any;
+  title: string;
+  description?: string;
+  teams: any[];
+  pendingTeams?: any[];
+  acceptedTeams?: any[];
+  action: (...args: any[]) => any;
+  allTeamSelector?: boolean;
+  allowMultipleDemand?: boolean;
 };
 
 export const TeamSelectorModal = ({ closeModal, title, description, teams, pendingTeams = [], acceptedTeams = [], action, allTeamSelector, allowMultipleDemand, }: Props) => {
-  const [selectedTeams, setSelectedTeams] = useState([]);
+  const [selectedTeams, setSelectedTeams] = useState<Array<any>>([]);
   const allTeams = teams.filter(
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const finalAction = () => {
     if (selectedTeams.length) {
@@ -33,24 +33,24 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
     if (selectedTeams.length === allTeams.length) {
       setSelectedTeams([]);
     } else {
-            setSelectedTeams([...allTeams.map((t) => t._id)]);
+      setSelectedTeams([...allTeams.map((t) => t._id)]);
     }
   };
 
   const getButton = (team: any) => {
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
-                <button type="button" className="btn btn-sm btn-access disabled">
-                    <Translation i18nkey="Request in progress" />
+        <button type="button" className="btn btn-sm btn-access disabled">
+          <Translation i18nkey="Request in progress" />
         </button>
       );
     } else if (allowMultipleDemand || !acceptedTeams.includes(team._id)) {
-            if (selectedTeams.includes(team._id)) {
-                return <CheckSquare />;
+      if (selectedTeams.includes(team._id)) {
+        return <CheckSquare />;
       }
 
       if (allTeamSelector) {
-                return <Square />;
+        return <Square />;
       }
     }
   };
@@ -65,10 +65,10 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
       (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
     ) {
       if (allTeamSelector) {
-                if (selectedTeams.includes(team._id)) {
+        if (selectedTeams.includes(team._id)) {
           setSelectedTeams(selectedTeams.filter((t) => t !== team._id));
         } else {
-                    setSelectedTeams([...selectedTeams, team._id]);
+          setSelectedTeams([...selectedTeams, team._id]);
         }
       } else {
         actionAndClose([team._id]);
@@ -86,29 +86,29 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
   };
 
   return (
-        <div className="modal-content">
-            <div className="modal-header">
-                <h5 className="modal-title">{title}</h5>
-                <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
+    <div className="modal-content">
+      <div className="modal-header">
+        <h5 className="modal-title">{title}</h5>
+        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
-            <div className="modal-body">
-                <div className="modal-description">{description}</div>
-                <div className="team-selection__container">
+      <div className="modal-body">
+        <div className="modal-description">{description}</div>
+        <div className="team-selection__container">
           {!!allTeamSelector && !!allTeams.length && (
-                        <div
+            <div
               key={'all'}
               className="team-selection team-selection__all-team selectable"
               onClick={() => toggleAllTeam()}
             >
-                            {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
-                            <span className="ms-2">
-                                <Translation i18nkey="All">All</Translation>
+              {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
+              <span className="ms-2">
+                <Translation i18nkey="All">All</Translation>
               </span>
             </div>
           )}
           {teams.map((team) => {
             return (
-                            <div
+              <div
                 key={team._id}
                 className={classNames('team-selection team-selection__team', {
                   selectable:
@@ -122,18 +122,18 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
                 onClick={() => doTeamAction(team)}
               >
                 {getButton(team)}
-                                <span className="ms-2">{getTeamLabel(team)}</span>
+                <span className="ms-2">{getTeamLabel(team)}</span>
               </div>
             );
           })}
         </div>
       </div>
-            <div className="modal-footer">
-                <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
+      <div className="modal-footer">
+        <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
           {translateMethod('Close')}
         </button>
         {!!allTeamSelector && (
-                    <button
+          <button
             type="button"
             className={classNames('btn btn-outline-success', {
               disabled: !selectedTeams.length,

@@ -33,8 +33,25 @@ const computeTop = (arrayOfArray: any) => {
     .sort((a: any, b: any) => b.count - a.count);
 };
 
-const ApiListComponent = (props: any) => {
-    const { translateMethod, Translation } = useContext(I18nContext);
+type TApiList = {
+  apis: Array<any>,
+  teams: Array<any>,
+  connectedUser?: any, //todo: props from redux => not optional
+  team?: any,
+  tenant?: any, //todo: props from redux => not optional
+  groupView?: any,
+  myTeams: any,
+  showTeam: any,
+  teamVisible: any,
+  askForApiAccess: (api: any, teams: any) => void,
+  redirectToTeamPage: (api: any) => void,
+  redirectToApiPage: (api: any) => void,
+  redirectToEditPage: (api: any) => void,
+  toggleStar: (api: any) => void
+}
+
+const ApiListComponent = (props: TApiList) => {
+  const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
   const allCategories = () => ({ value: 'All', label: translateMethod('All categories') });
@@ -43,8 +60,8 @@ const ApiListComponent = (props: any) => {
   const [searched, setSearched] = useState('');
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [selectedTag, setSelectedTag] = useState(allTags());
-  const [selectedCategory, setSelectedCategory] = useState(allCategories());
+  const [selectedTag, setSelectedTag] = useState<any>(allTags());
+  const [selectedCategory, setSelectedCategory] = useState<any>(allCategories());
   const [tags, setTags] = useState([]);
   const [categories, setCategories] = useState([]);
   const [view, setView] = useState(LIST);
@@ -88,30 +105,30 @@ const ApiListComponent = (props: any) => {
     }
 
     return (
-            <div className="d-flex justify-content-between">
-                <div className="preview">
-                    <strong>{count}</strong> {`${translateMethod('result')}${count > 1 ? 's' : ''}`}
+      <div className="d-flex justify-content-between">
+        <div className="preview">
+          <strong>{count}</strong> {`${translateMethod('result')}${count > 1 ? 's' : ''}`}
           &nbsp;
           {!!searched && (
-                        <span>
-                            {translateMethod('matching')} <strong>{searched}</strong>&nbsp;
+            <span>
+              {translateMethod('matching')} <strong>{searched}</strong>&nbsp;
             </span>
           )}
           {selectedCategory.value !== all.value && (
-                        <span>
-                            {translateMethod('categorised in')} <strong>{selectedCategory.value}</strong>
+            <span>
+              {translateMethod('categorised in')} <strong>{selectedCategory.value}</strong>
               &nbsp;
             </span>
           )}
           {selectedTag.value !== all.value && (
-                        <span>
-                            {translateMethod('tagged')} <strong>{selectedTag.value}</strong>
+            <span>
+              {translateMethod('tagged')} <strong>{selectedTag.value}</strong>
             </span>
           )}
         </div>
-                <div className="clear cursor-pointer" onClick={clearFilter}>
-                    <i className="far fa-times-circle me-1" />
-                    <Translation i18nkey="clear filter">clear filter</Translation>
+        <div className="clear cursor-pointer" onClick={clearFilter}>
+          <i className="far fa-times-circle me-1" />
+          <Translation i18nkey="clear filter">clear filter</Translation>
         </div>
       </div>
     );
@@ -166,19 +183,19 @@ const ApiListComponent = (props: any) => {
 
     return [
       ...starredApis.sort(
-                (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
+        (a: any, b: any) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
       ),
       ...unstarredApis.sort(
-                (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
+        (a: any, b: any) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
       ),
     ];
   })().slice(offset, offset + pageNumber);
 
   return (
-        <section className="container">
-            <div className="row mb-2">
-                <div className="col-12 col-sm mb-2">
-                    <input
+    <section className="container">
+      <div className="row mb-2">
+        <div className="col-12 col-sm mb-2">
+          <input
             type="text"
             className="form-control"
             placeholder={translateMethod('Search your API...')}
@@ -191,69 +208,57 @@ const ApiListComponent = (props: any) => {
             }}
           />
         </div>
-                <Select
+        <Select
           name="tag-selector"
           className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
           value={selectedTag}
-                    clearable={false}
+          isClearable={false}
           options={[allTags(), ...tags]}
-          onChange={(e) => {
-                        setSelectedTag(e);
+          onChange={(e: any) => {
+            setSelectedTag(e);
             setOffset(0);
             setSelectedPage(0);
           }}
           classNamePrefix="reactSelect"
         />
-                <Select
+        <Select
           name="category-selector"
           className="category__selector filter__select reactSelect col-6 col-sm mb-2"
           value={selectedCategory}
-                    clearable={false}
+          isClearable={false}
           options={[allCategories(), ...categories]}
-          onChange={(e) => {
-                        setSelectedCategory(e);
+          onChange={(e: any) => {
+            setSelectedCategory(e);
             setOffset(0);
             setSelectedPage(0);
           }}
           classNamePrefix="reactSelect"
         />
-        {props.team && (!props.tenant.creationSecurity || props.team.apisCreationPermission) && (
-                    <Can I={manage} a={api} team={props.team}>
-                        <div className="col-12 col-sm-2">
-                            <button
-                className="btn btn-access-negative mb-2 float-right"
-                                onClick={() => createNewApi(props.team._id)}
-              >
-                                <i className="fas fa-plus-square" /> API
-              </button>
-            </div>
-          </Can>
-        )}
       </div>
-            <div className="row mb-2 view-selectors">
-                <div className="col-12 col-sm-9 d-flex justify-content-end">
-                    <button
+      <div className="row mb-2 view-selectors">
+        <div className="col-12 col-sm-9 d-flex justify-content-end">
+          <button
             className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
             onClick={() => setView(LIST)}
           >
-                        <List />
+            <List />
           </button>
-                    <button
+          <button
             className={classNames('btn btn-sm btn-access-negative', { active: view === GRID })}
             onClick={() => setView(GRID)}
           >
-                        <Grid />
+            <Grid />
           </button>
         </div>
       </div>
-            <div className="row">
-                <div
+      <div className="row">
+        <div
           className={classNames('section d-flex flex-column', {
             'col-12 col-sm-9': !props.groupView,
             'col-12': props.groupView,
           })}
         >
-                    <div
+          <div
             className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
               'flex-wrap': view === GRID,
@@ -262,11 +267,28 @@ const ApiListComponent = (props: any) => {
           >
             {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => {
-                            return (<ApiCard key={api._id} user={user} api={api} showTeam={props.showTeam} teamVisible={props.teamVisible} team={props.teams.find((t: any) => t._id === api.team._id)} myTeams={props.myTeams} askForApiAccess={(teams: any) => props.askForApiAccess(api, teams)} redirectToTeamPage={(team: any) => props.redirectToTeamPage(team)} redirectToApiPage={() => props.redirectToApiPage(api)} redirectToEditPage={() => props.redirectToEditPage(api)} handleTagSelect={(tag: any) => setSelectedTag(tags.find((t) => (t as any).value === tag))} toggleStar={() => props.toggleStar(api)} handleCategorySelect={(category: any) => setSelectedCategory(categories.find((c) => (c as any).value === category))} view={view} connectedUser={props.connectedUser} groupView={props.groupView}/>);
+              return (<ApiCard
+                key={api._id}
+                user={user}
+                api={api}
+                showTeam={props.showTeam}
+                teamVisible={props.teamVisible}
+                team={props.teams.find((t: any) => t._id === api.team._id)}
+                myTeams={props.myTeams}
+                askForApiAccess={(teams: any) => props.askForApiAccess(api, teams)}
+                redirectToTeamPage={(team: any) => props.redirectToTeamPage(team)}
+                redirectToApiPage={() => props.redirectToApiPage(api)}
+                redirectToEditPage={() => props.redirectToEditPage(api)}
+                handleTagSelect={(tag: any) => setSelectedTag(tags.find((t) => (t as any).value === tag))}
+                toggleStar={() => props.toggleStar(api)}
+                handleCategorySelect={(category: any) => setSelectedCategory(categories.find((c) => (c as any).value === category))}
+                view={view}
+                connectedUser={props.connectedUser}
+                groupView={props.groupView} />);
             })}
           </div>
-                    <div className="apis__pagination">
-                        <Pagination
+          <div className="apis__pagination">
+            <Pagination
               previousLabel={translateMethod('Previous')}
               nextLabel={translateMethod('Next')}
               breakLabel="..."
@@ -283,12 +305,12 @@ const ApiListComponent = (props: any) => {
           </div>
         </div>
         {!props.groupView && (
-                    <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
+          <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
             {!props.team && !props.connectedUser.isGuest && (
-                            <YourTeams teams={props.myTeams} redirectToTeam={redirectToTeam} />
+              <YourTeams teams={props.myTeams} redirectToTeam={redirectToTeam} />
             )}
             {!!tags.length && (
-                            <Top
+              <Top
                 className="p-3 rounded additionalContent mb-2"
                 title="Top tags"
                 icon="fas fa-tag me-2"
@@ -298,7 +320,7 @@ const ApiListComponent = (props: any) => {
               />
             )}
             {!!categories.length && (
-                            <Top
+              <Top
                 className="p-3 rounded additionalContent"
                 title="Top categories"
                 icon="fas fa-folder me-2"
@@ -327,16 +349,16 @@ export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListCompo
 
 const Top = (props: any) => {
   return (
-        <div className={`top__container ${props.className ? props.className : ''}`}>
-            <div>
-                <h5>
-                    <i className={props.icon} />
+    <div className={`top__container ${props.className ? props.className : ''}`}>
+      <div>
+        <h5>
+          <i className={props.icon} />
           {props.title}
         </h5>
       </div>
       {props.list.slice(0, 10).map((item: any, idx: any) => {
         return (
-                    <span
+          <span
             className="badge bg-warning me-1 cursor-pointer"
             key={idx}
             onClick={() => props.handleClick(item)}
@@ -354,7 +376,7 @@ const YourTeams = ({
   redirectToTeam,
   ...props
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   const [searchedTeam, setSearchedTeam] = useState();
   const maybeTeams = searchedTeam
@@ -362,24 +384,24 @@ const YourTeams = ({
     : teams;
   const language = props.currentlanguage;
   return (
-        <div className={'top__container p-3 rounded additionalContent mb-2'}>
-            <div>
-                <h5>
-                    <i className="fas fa-users me-2" />
+    <div className={'top__container p-3 rounded additionalContent mb-2'}>
+      <div>
+        <h5>
+          <i className="fas fa-users me-2" />
           {translateMethod('your teams', language)}
         </h5>
       </div>
-            <input
+      <input
         placeholder={translateMethod('find team', language)}
         className="form-control"
-                onChange={(e) => setSearchedTeam(e.target.value)}
+        onChange={(e: any) => setSearchedTeam(e.target.value)}
       />
-            <div className="d-flex flex-column">
+      <div className="d-flex flex-column">
         {sortBy(maybeTeams, (team) => team.name.toLowerCase())
           .slice(0, 5)
           .map((team) => {
             return (
-                            <span
+              <span
                 className="p-1 cursor-pointer underline-on-hover text-break"
                 key={team._id}
                 onClick={() => redirectToTeam(team)}

@@ -3,31 +3,34 @@ import { openTeamSelectorModal } from '../../core/modal';
 import { connect } from 'react-redux';
 
 type TActionWithTeamSelectorComponentProps = {
-    title?: string;
-    description?: string;
-    teams: any[];
-    pendingTeams: any[];
-    authorizedTeams: any[];
-    action: (...args: any[]) => any;
-    withAllTeamSelector?: boolean;
-    closeOnSelect?: boolean;
-    allowMultipleDemand?: boolean;
+  title?: string;
+  description?: string;
+  teams: any[];
+  pendingTeams: any[];
+  authorizedTeams: any[];
+  action: (...args: any[]) => any;
+  withAllTeamSelector?: boolean;
+  closeOnSelect?: boolean;
+  allowMultipleDemand?: boolean;
+  children: JSX.Element
 };
 
 function ActionWithTeamSelectorComponent(props: TActionWithTeamSelectorComponentProps) {
   const openTeamSelectorModal = () => {
-    if (props.teams.length === 1) props.action([props.teams[0]._id]);
-    else
+    if (props.teams.length === 1) {
+      props.action([props.teams[0]._id]);
+    } else {
       (props as any).openTeamSelectorModal({
-    allTeamSelector: props.withAllTeamSelector,
-    title: props.title,
-    description: props.description,
-    teams: props.teams,
-    pendingTeams: props.pendingTeams,
-    acceptedTeams: props.authorizedTeams,
-    action: (teams: any) => props.action(teams),
-    allowMultipleDemand: props.allowMultipleDemand,
-});
+        allTeamSelector: props.withAllTeamSelector,
+        title: props.title,
+        description: props.description,
+        teams: props.teams,
+        pendingTeams: props.pendingTeams,
+        acceptedTeams: props.authorizedTeams,
+        action: (teams: any) => props.action(teams),
+        allowMultipleDemand: props.allowMultipleDemand,
+      });
+    }
   };
 
   if (
@@ -39,7 +42,7 @@ function ActionWithTeamSelectorComponent(props: TActionWithTeamSelectorComponent
     return null;
   }
 
-    return <>{React.cloneElement((props as any).children, { onClick: () => openTeamSelectorModal() })}</>;
+  return <>{React.cloneElement((props as any).children, { onClick: () => openTeamSelectorModal() })}</>;
 }
 
 ActionWithTeamSelectorComponent.defaultProps = {

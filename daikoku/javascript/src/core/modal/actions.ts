@@ -48,8 +48,7 @@ export const openSubMetadataModal = (modalProps: any) => (dispatch: any) => {
   });
 };
 
-export const openContactModal =
-  (name = undefined, email = undefined, tenant: any, team = undefined, api = undefined) =>
+export const openContactModal = (name = undefined, email = undefined, tenant: any, team = undefined, api = undefined) =>
     (dispatch: any) => {
       return dispatch({
         type: OPEN_MODAL,

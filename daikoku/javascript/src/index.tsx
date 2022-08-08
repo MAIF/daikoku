@@ -52,7 +52,7 @@ export function init(
   isTenantAdmin: any,
   apiCreationPermitted: any
 ) {
-    const expertMode = JSON.parse(localStorage.getItem('expertMode') || false);
+  const expertMode = JSON.parse(localStorage.getItem('expertMode') || 'false');
   const storeInst = store({
     connectedUser: user,
     tenant,
@@ -65,13 +65,13 @@ export function init(
   customizeFetch(storeInst);
 
   ReactDOM.render(
-        <Provider store={storeInst}>
-            <ApolloProvider client={client}>
-                <I18nProvider tenant={tenant} user={user}>
-                    <>
-                        <SessionModal session={session} />
-                        <DaikokuApp
-                            user={user}
+    <Provider store={storeInst}>
+      <ApolloProvider client={client}>
+        <I18nProvider tenant={tenant} user={user}>
+          <>
+            <SessionModal session={session} />
+            <DaikokuApp
+              user={user}
               tenant={tenant}
               impersonator={impersonator}
               loginProvider={tenant.authProvider}
@@ -94,9 +94,9 @@ export function init(
 export function login(provider: any, callback: any, tenant: any) {
   const storeInst = store({ tenant });
   ReactDOM.render(
-        <Provider store={storeInst}>
-            <I18nProvider tenant={tenant}>
-                <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
+    <Provider store={storeInst}>
+      <I18nProvider tenant={tenant}>
+        <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
       </I18nProvider>
     </Provider>,
     document.getElementById('app')
@@ -110,9 +110,9 @@ export function login(provider: any, callback: any, tenant: any) {
 export function initNotLogged(tenant: any) {
   const storeInst = store({ tenant });
   ReactDOM.render(
-        <Provider store={storeInst}>
-            <I18nProvider tenant={tenant}>
-                <DaikokuHomeApp tenant={tenant} />
+    <Provider store={storeInst}>
+      <I18nProvider tenant={tenant}>
+        <DaikokuHomeApp tenant={tenant} />
       </I18nProvider>
     </Provider>,
     document.getElementById('app')

@@ -6,7 +6,7 @@ import { formatPlanType, Option } from '../../utils';
 import { I18nContext } from '../../../core';
 
 export function SimpleNotification(props: any) {
-    const { translateMethod, language, Translation } = useContext(I18nContext);
+  const { translateMethod, language, Translation } = useContext(I18nContext);
 
   const navigate = useNavigate();
 
@@ -14,7 +14,7 @@ export function SimpleNotification(props: any) {
     switch (type) {
       case 'ApiAccess':
         return (
-                    <i
+          <i
             className="fas fa-key"
             style={{ marginRight: 5 }}
             title={translateMethod('Ask access to API')}
@@ -22,7 +22,7 @@ export function SimpleNotification(props: any) {
         );
       case 'TeamAccess':
         return (
-                    <i
+          <i
             className="fas fa-users"
             style={{ marginRight: 5 }}
             title={translateMethod('Ask to join a team')}
@@ -30,7 +30,7 @@ export function SimpleNotification(props: any) {
         );
       case 'TransferApiOwnership':
         return (
-                    <i
+          <i
             className="fa-solid fa-arrow-down-from-dotted-line"
             style={{ marginRight: 5 }}
             title={translateMethod('transfer.api.ownership')}
@@ -38,7 +38,7 @@ export function SimpleNotification(props: any) {
         );
       case 'ApiSubscription':
         return (
-                    <i
+          <i
             className="fas fa-file-signature"
             style={{ marginRight: 5 }}
             title={translateMethod('Subscription to an API')}
@@ -46,7 +46,7 @@ export function SimpleNotification(props: any) {
         );
       case 'OtoroshiSyncSubscriptionError':
         return (
-                    <i
+          <i
             className="fas fa-pastafarianism"
             style={{ marginRight: 5 }}
             title={translateMethod('Otoroshi sync error')}
@@ -54,7 +54,7 @@ export function SimpleNotification(props: any) {
         );
       case 'OtoroshiSyncApiError':
         return (
-                    <i
+          <i
             className="fas fa-pastafarianism"
             style={{ marginRight: 5 }}
             title={translateMethod('Otoroshi sync error')}
@@ -62,7 +62,7 @@ export function SimpleNotification(props: any) {
         );
       case 'ApiKeyDeletionInformation':
         return (
-                    <i
+          <i
             className="fas fa-trash"
             style={{ marginRight: 5 }}
             title={translateMethod('ApiKey deletion information')}
@@ -70,7 +70,7 @@ export function SimpleNotification(props: any) {
         );
       case 'ApiKeyRotationInProgress':
         return (
-                    <i
+          <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
             title={translateMethod('ApiKey rotation in progress')}
@@ -78,7 +78,7 @@ export function SimpleNotification(props: any) {
         );
       case 'ApiKeyRotationEnded':
         return (
-                    <i
+          <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
             title={translateMethod('ApiKey rotation ended')}
@@ -86,7 +86,7 @@ export function SimpleNotification(props: any) {
         );
       case 'TeamInvitation':
         return (
-                    <i
+          <i
             className="fas fa-envelope-alt"
             style={{ marginRight: 5 }}
             title={translateMethod('Team invitation')}
@@ -94,7 +94,7 @@ export function SimpleNotification(props: any) {
         );
       case 'ApiKeyRefresh':
         return (
-                    <i
+          <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
             title={translateMethod('Apikey refresh')}
@@ -102,7 +102,7 @@ export function SimpleNotification(props: any) {
         );
       case 'NewPostPublished':
         return (
-                    <i
+          <i
             className="fas fa-newspaper-alt"
             style={{ marginRight: 5 }}
             title={translateMethod('New Published Post')}
@@ -110,7 +110,7 @@ export function SimpleNotification(props: any) {
         );
       case 'NewIssueOpen':
         return (
-                    <i
+          <i
             className="fas fa-exclamation-circle"
             style={{ marginRight: 5 }}
             title={translateMethod('New issues open')}
@@ -118,7 +118,7 @@ export function SimpleNotification(props: any) {
         );
       case 'NewCommentOnIssue':
         return (
-                    <i
+          <i
             className="fas fa-comment-circle"
             style={{ marginRight: 5 }}
             title={translateMethod('New comment on issue')}
@@ -137,15 +137,15 @@ export function SimpleNotification(props: any) {
         notification.action.type === 'NewCommentOnIssue')
     ) {
       return (
-                <div>
-                    <button
+        <div>
+          <button
             type="button"
             className="btn btn-outline-success btn-sm me-1"
             onClick={() => props.accept()}
           >
-                        <i className="fas fa-check" />
+            <i className="fas fa-check" />
           </button>
-                    <button
+          <button
             type="button"
             className="btn btn-sm btn-outline-success"
             onClick={() => {
@@ -153,7 +153,7 @@ export function SimpleNotification(props: any) {
               navigate(notification.action.linkTo);
             }}
           >
-                        <i className="fas fa-eye" />
+            <i className="fas fa-eye" />
           </button>
         </div>
       );
@@ -163,8 +163,8 @@ export function SimpleNotification(props: any) {
           switch (props.notification.action.type) {
             case 'ApiSubscription':
               return (
-                                <div>
-                                    <a
+                <div>
+                  <a
                     className="btn btn-outline-success btn-sm me-1"
                     href="#"
                     title={translateMethod('Accept')}
@@ -179,37 +179,37 @@ export function SimpleNotification(props: any) {
                       })
                     }
                   >
-                                        <i className="fas fa-check" />
+                    <i className="fas fa-check" />
                   </a>
-                                    <a
+                  <a
                     className="btn btn-outline-danger btn-sm"
                     href="#"
                     title={translateMethod('Reject')}
                     onClick={() => props.reject()}
                   >
-                                        <i className="fas fa-times" />
+                    <i className="fas fa-times" />
                   </a>
                 </div>
               );
             default:
               return (
-                                <div>
-                                    <a
+                <div>
+                  <a
                     className="btn btn-outline-success btn-sm me-1"
                     href="#"
                     title={translateMethod('Accept')}
                     onClick={() => props.accept()}
                   >
-                                        <i className="fas fa-check" />
+                    <i className="fas fa-check" />
                   </a>
                   {notificationType === 'AcceptOrReject' && (
-                                        <a
+                    <a
                       className="btn btn-outline-danger btn-sm"
                       href="#"
                       title={translateMethod('Reject')}
                       onClick={() => props.reject()}
                     >
-                                            <i className="fas fa-times" />
+                      <i className="fas fa-times" />
                     </a>
                   )}
                 </div>
@@ -217,26 +217,24 @@ export function SimpleNotification(props: any) {
           }
         case 'Accepted':
           return (
-                        <a
+            <a
               className="btn disabled"
               title={moment(date).format(
                 translateMethod('moment.date.format', 'DD MMM. YYYY à HH:mm z')
               )}
-                            disabled
             >
-                            <i className="fas fa-check" />
+              <i className="fas fa-check" />
             </a>
           );
         case 'Rejected':
           return (
-                        <a
+            <a
               className="btn disabled"
               title={moment(date).format(
                 translateMethod('moment.date.format', 'DD MMM. YYYY à HH:mm z')
               )}
-                            disabled
             >
-                            <i className="fas fa-times" />
+              <i className="fas fa-times" />
             </a>
           );
       }
@@ -294,113 +292,113 @@ export function SimpleNotification(props: any) {
 
   moment.locale(language);
 
-    return (<div style={style}>
-            <div className="alert section" role="alert">
-                <div className="d-flex flex-column">
-                    <div className="d-flex align-items-center">
-            {typeFormatter(notification.action.type)}
-                        <h5 className="alert-heading mb-0">
-                            {notification.action.type === 'ApiAccess' && (<div>
-                                    <Translation i18nkey="notif.api.access" replacements={[(infos as any).api.name]}>
-                    Request access to {(infos as any).api.name}
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'TeamAccess' && (<div>
-                                    <Translation i18nkey="notif.membership.team">
-                    membership request to your team
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'TransferApiOwnership' && (<div>
-                  {`request to transfer the ownership of `}
-                                    <strong>{(infos as any).api.name}</strong>
-                </div>)}
-                            {notification.action.type === 'ApiSubscription' && (<div>
-                                    <Translation i18nkey="notif.api.subscription" replacements={[
-            (infos as any).api.name,
-            Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translateMethod)),
-        ]}>
-                    Request subscription to {(infos as any).api.name} for plan {(infos as any).plan.type}
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'ApiKeyDeletionInformation' && (<div>
-                                    <Translation i18nkey="notif.apikey.deletion" replacements={[notification.action.clientId, notification.action.api]}>
-                    Your apiKey with clientId {notification.action.clientId} for api{' '}
-                    {notification.action.api} has been deleted
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'OtoroshiSyncSubscriptionError' && (<div>{notification.action.message}</div>)}
-                            {notification.action.type === 'OtoroshiSyncApiError' && (<div>{notification.action.message}</div>)}
-                            {notification.action.type === 'ApiKeyRotationInProgress' && (<div>
-                                    <Translation i18nkey="notif.apikey.rotation.inprogress" replacements={[
-            notification.action.clientId,
-            notification.action.api,
-            notification.action.plan,
-        ]}>
-                    Your apiKey with clientId {notification.action.clientId} (
-                    {notification.action.api}/{notification.action.plan}) has started its rotation.
-                    Its clientSecret hab been updated.
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'ApiKeyRotationEnded' && (<div>
-                                    <Translation i18nkey="notif.apikey.rotation.ended" replacements={[
-            notification.action.clientId,
-            notification.action.api,
-            notification.action.plan,
-        ]}>
-                    Your apiKey with clientId {notification.action.clientId} (
-                    {notification.action.api}/{notification.action.plan}) has ended its rotation.
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'ApiKeyRefresh' && (<div>
-                                    <Translation i18nkey="notif.apikey.refresh" replacements={[
-            notification.action.subscription,
-            notification.action.api,
-            notification.action.plan,
-        ]}>
-                    Your subscription {notification.action.subscription} ({notification.action.api}/
-                    {notification.action.plan}) has been refreshed.
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'TeamInvitation' && (<div>
-                                    <Translation i18nkey="team.invitation" replacements={[
-            notification.sender.name,
-            props.getTeam(notification.action.team).name,
-        ]}>
-                    {notification.sender.name}, as admin of{' '}
-                    {props.getTeam(notification.action.team).name}, invit you in his team.
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'NewPostPublished' && (<div>
-                                    <Translation i18nkey="team.invitation" replacements={[
-            notification.sender.name,
-            props.getTeam(notification.action.teamId).name,
-        ]}>
-                    {notification.sender.name}, as admin of{' '}
-                    {props.getTeam(notification.action.teamId).name}, has published a new post on{' '}
-                    {notification.action.apiName}.
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'NewIssueOpen' && (<div>
-                                    <Translation i18nkey="issues.notification" replacements={[notification.action.apiName]}>
-                    {notification.sender.name} has published a new issue on{' '}
-                    {notification.action.apiName}.
-                  </Translation>
-                </div>)}
-                            {notification.action.type === 'NewCommentOnIssue' && (<div>
-                                    <Translation i18nkey="issues.comment.notification" replacements={[notification.action.apiName]}>
-                    {notification.sender.name} has published a new comment on issue of{' '}
-                    {notification.action.apiName}.
-                  </Translation>
-                </div>)}
-            </h5>
-          </div>
-                    <div className="d-flex mt-1 justify-content-end">{actionFormatter(notification)}</div>
+  return (<div style={style}>
+    <div className="alert section" role="alert">
+      <div className="d-flex flex-column">
+        <div className="d-flex align-items-center">
+          {typeFormatter(notification.action.type)}
+          <h5 className="alert-heading mb-0">
+            {notification.action.type === 'ApiAccess' && (<div>
+              <Translation i18nkey="notif.api.access" replacements={[(infos as any).api.name]}>
+                Request access to {(infos as any).api.name}
+              </Translation>
+            </div>)}
+            {notification.action.type === 'TeamAccess' && (<div>
+              <Translation i18nkey="notif.membership.team">
+                membership request to your team
+              </Translation>
+            </div>)}
+            {notification.action.type === 'TransferApiOwnership' && (<div>
+              {`request to transfer the ownership of `}
+              <strong>{(infos as any).api.name}</strong>
+            </div>)}
+            {notification.action.type === 'ApiSubscription' && (<div>
+              <Translation i18nkey="notif.api.subscription" replacements={[
+                (infos as any).api.name,
+                Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translateMethod)),
+              ]}>
+                Request subscription to {(infos as any).api.name} for plan {(infos as any).plan.type}
+              </Translation>
+            </div>)}
+            {notification.action.type === 'ApiKeyDeletionInformation' && (<div>
+              <Translation i18nkey="notif.apikey.deletion" replacements={[notification.action.clientId, notification.action.api]}>
+                Your apiKey with clientId {notification.action.clientId} for api{' '}
+                {notification.action.api} has been deleted
+              </Translation>
+            </div>)}
+            {notification.action.type === 'OtoroshiSyncSubscriptionError' && (<div>{notification.action.message}</div>)}
+            {notification.action.type === 'OtoroshiSyncApiError' && (<div>{notification.action.message}</div>)}
+            {notification.action.type === 'ApiKeyRotationInProgress' && (<div>
+              <Translation i18nkey="notif.apikey.rotation.inprogress" replacements={[
+                notification.action.clientId,
+                notification.action.api,
+                notification.action.plan,
+              ]}>
+                Your apiKey with clientId {notification.action.clientId} (
+                {notification.action.api}/{notification.action.plan}) has started its rotation.
+                Its clientSecret hab been updated.
+              </Translation>
+            </div>)}
+            {notification.action.type === 'ApiKeyRotationEnded' && (<div>
+              <Translation i18nkey="notif.apikey.rotation.ended" replacements={[
+                notification.action.clientId,
+                notification.action.api,
+                notification.action.plan,
+              ]}>
+                Your apiKey with clientId {notification.action.clientId} (
+                {notification.action.api}/{notification.action.plan}) has ended its rotation.
+              </Translation>
+            </div>)}
+            {notification.action.type === 'ApiKeyRefresh' && (<div>
+              <Translation i18nkey="notif.apikey.refresh" replacements={[
+                notification.action.subscription,
+                notification.action.api,
+                notification.action.plan,
+              ]}>
+                Your subscription {notification.action.subscription} ({notification.action.api}/
+                {notification.action.plan}) has been refreshed.
+              </Translation>
+            </div>)}
+            {notification.action.type === 'TeamInvitation' && (<div>
+              <Translation i18nkey="team.invitation" replacements={[
+                notification.sender.name,
+                props.getTeam(notification.action.team).name,
+              ]}>
+                {notification.sender.name}, as admin of{' '}
+                {props.getTeam(notification.action.team).name}, invit you in his team.
+              </Translation>
+            </div>)}
+            {notification.action.type === 'NewPostPublished' && (<div>
+              <Translation i18nkey="team.invitation" replacements={[
+                notification.sender.name,
+                props.getTeam(notification.action.teamId).name,
+              ]}>
+                {notification.sender.name}, as admin of{' '}
+                {props.getTeam(notification.action.teamId).name}, has published a new post on{' '}
+                {notification.action.apiName}.
+              </Translation>
+            </div>)}
+            {notification.action.type === 'NewIssueOpen' && (<div>
+              <Translation i18nkey="issues.notification" replacements={[notification.action.apiName]}>
+                {notification.sender.name} has published a new issue on{' '}
+                {notification.action.apiName}.
+              </Translation>
+            </div>)}
+            {notification.action.type === 'NewCommentOnIssue' && (<div>
+              <Translation i18nkey="issues.comment.notification" replacements={[notification.action.apiName]}>
+                {notification.sender.name} has published a new comment on issue of{' '}
+                {notification.action.apiName}.
+              </Translation>
+            </div>)}
+          </h5>
         </div>
-                <hr />
-                <div className="d-flex justify-content-between" style={{ fontSize: 12 }}>
-                    <div className="">{fromFormatter(notification.action, notification.sender)}</div>
-                    <div className="">{moment(notification.date).toNow(true)}</div>
-        </div>
+        <div className="d-flex mt-1 justify-content-end">{actionFormatter(notification)}</div>
       </div>
-    </div>);
+      <hr />
+      <div className="d-flex justify-content-between" style={{ fontSize: 12 }}>
+        <div className="">{fromFormatter(notification.action, notification.sender)}</div>
+        <div className="">{moment(notification.date).toNow(true)}</div>
+      </div>
+    </div>
+  </div>);
 }

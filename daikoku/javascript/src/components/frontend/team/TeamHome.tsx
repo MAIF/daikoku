@@ -10,7 +10,7 @@ import { setError, updateTeamPromise } from '../../../core';
 import { getApolloContext } from '@apollo/client';
 
 const TeamHomeComponent = (props: any) => {
-  const [state, setState] = useState({
+  const [state, setState] = useState<any>({
     searched: '',
     team: null,
     apis: [],
@@ -22,14 +22,17 @@ const TeamHomeComponent = (props: any) => {
   const { client } = useContext(getApolloContext());
 
   const fetchData = (teamId: any) => {
+    if (!client) {
+      return;
+    }
     Promise.all([
-            client.query({
+      client.query({
         query: Services.graphql.myVisibleApis,
         variables: { teamId },
       }),
       Services.team(teamId),
       Services.teams(),
-            client.query({
+      client.query({
         query: Services.graphql.myTeams,
       }),
     ]).then(
@@ -53,7 +56,7 @@ const TeamHomeComponent = (props: any) => {
               authorizations
             }: any) => ({ ...api, authorizations })),
             team,
-                        teams,
+            teams,
             myTeams: myTeams.map(({
               users,
               ...data
@@ -84,7 +87,7 @@ const TeamHomeComponent = (props: any) => {
         const alreadyStarred = props.connectedUser.starredApis.includes(api._id);
         setState({
           ...state,
-          apis: state.apis.map((a) => {
+          apis: state.apis.map((a: any) => {
             if ((a as any)._id === api._id) (a as any).stars += alreadyStarred ? -1 : 1;
             return a;
           }),
@@ -102,11 +105,10 @@ const TeamHomeComponent = (props: any) => {
 
   const redirectToApiPage = (api: any) => {
     if (api.visibility === 'Public' || api.authorized) {
-            const apiOwner = state.teams.find((t: any) => t._id === api.team._id);
+      const apiOwner = state.teams.find((t: any) => t._id === api.team._id);
 
-      const route = (version: any) => `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${
-        api._humanReadableId
-      }/${version}/description`;
+      const route = (version: any) => `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId
+        }/${version}/description`;
 
       navigate(route(api.currentVersion));
     }
@@ -133,31 +135,42 @@ const TeamHomeComponent = (props: any) => {
 
   document.title = `${props.tenant.title} - ${(state.team as any).name}`;
 
-    return (<main role="main">
-            <section className="organisation__header col-12 mb-4 p-3">
-                <div className="container">
-                    <div className="row text-center">
-                        <div className="col-sm-4">
-                            <img className="organisation__avatar" src={(state.team as any).avatar || '/assets/images/daikoku.svg'} alt="avatar"/>
-            </div>
-                        <div className="col-sm-7 d-flex flex-column justify-content-center">
-                            <h1 className="jumbotron-heading">{(state.team as any).name}</h1>
-                            <div className="lead">{(state.team as any).description}</div>
-            </div>
-                        <div className="col-sm-1 d-flex flex-column">
-                            <Can I={read} a={team} team={state.team}>
-                                <div>
-                                    <a href="#" className="float-right team__settings btn btn-sm btn-access-negative" onClick={() => redirectToTeamSettings(state.team)}>
-                                        <i className="fas fa-cogs"/>
-                  </a>
-                </div>
-              </Can>
-            </div>
+  return (<main role="main">
+    <section className="organisation__header col-12 mb-4 p-3">
+      <div className="container">
+        <div className="row text-center">
+          <div className="col-sm-4">
+            <img className="organisation__avatar" src={(state.team as any).avatar || '/assets/images/daikoku.svg'} alt="avatar" />
+          </div>
+          <div className="col-sm-7 d-flex flex-column justify-content-center">
+            <h1 className="jumbotron-heading">{(state.team as any).name}</h1>
+            <div className="lead">{(state.team as any).description}</div>
+          </div>
+          <div className="col-sm-1 d-flex flex-column">
+            <Can I={read} a={team} team={state.team}>
+              <div>
+                <a href="#" className="float-right team__settings btn btn-sm btn-access-negative" onClick={() => redirectToTeamSettings(state.team)}>
+                  <i className="fas fa-cogs" />
+                </a>
+              </div>
+            </Can>
           </div>
         </div>
-      </section>
-            <ApiList apis={state.apis} teams={state.teams} myTeams={(state as any).myTeams} teamVisible={false} askForApiAccess={askForApiAccess} toggleStar={toggleStar} redirectToApiPage={redirectToApiPage} redirectToEditPage={redirectToEditPage} redirectToTeamPage={redirectToTeamPage} showTeam={false} team={state.teams.find((team: any) => team._humanReadableId === params.teamId)}/>
-    </main>);
+      </div>
+    </section>
+    <ApiList
+      apis={state.apis}
+      teams={state.teams}
+      myTeams={(state as any).myTeams}
+      teamVisible={false}
+      askForApiAccess={askForApiAccess}
+      toggleStar={toggleStar}
+      redirectToApiPage={redirectToApiPage}
+      redirectToEditPage={redirectToEditPage}
+      redirectToTeamPage={redirectToTeamPage}
+      showTeam={false}
+      team={state.teams.find((team: any) => team._humanReadableId === params.teamId)} />
+  </main>);
 };
 
 const mapStateToProps = (state: any) => ({

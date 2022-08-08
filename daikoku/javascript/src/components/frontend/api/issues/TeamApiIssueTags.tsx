@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { constraints, type } from '@maif/react-forms';
 import uniq from 'lodash/uniq';
 import { SketchPicker } from 'react-color';
+//@ts-ignore
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 import { useDispatch } from 'react-redux';
 
@@ -15,7 +16,7 @@ export function TeamApiIssueTags({
   const [api, setApi] = useState(value);
   const [updated, setUpdated] = useState(false);
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   const dispatch = useDispatch();
 
@@ -27,10 +28,10 @@ export function TeamApiIssueTags({
   }
 
   return (
-        <div style={{ paddingBottom: '250px' }}>
-            <div className="mb-3 row">
-                <div className="col-sm-10">
-                    <button className='btn btn-outline-success'  onClick={() => dispatch(openFormModal({
+    <div style={{ paddingBottom: '250px' }}>
+      <div className="mb-3 row">
+        <div className="col-sm-10">
+          <button className='btn btn-outline-success' onClick={() => dispatch(openFormModal({
             title: translateMethod('issues.create_tag'),
             schema: {
               name: {
@@ -49,13 +50,13 @@ export function TeamApiIssueTags({
                   onChange
                 }: any) => {
                   return (
-                                        <div className='d-flex flex-row'>
-                                            <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
+                    <div className='d-flex flex-row'>
+                      <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
                         style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
                         onClick={() => onChange(randomColor())}>
-                                                <RefreshCcw />
+                        <RefreshCcw />
                       </div>
-                                            <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
+                      <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
                     </div>
                   )
                 },
@@ -74,14 +75,14 @@ export function TeamApiIssueTags({
           }))}>{translateMethod('issues.new_tag')}</button>
         </div>
       </div>
-            <div className="mb-3 row pt-3">
-                <label className="col-xs-12 col-sm-2">{translateMethod('issues.tags')}</label>
-                <div className="col-sm-10">
+      <div className="mb-3 row pt-3">
+        <label className="col-xs-12 col-sm-2">{translateMethod('issues.tags')}</label>
+        <div className="col-sm-10">
           {api.issuesTags
             .sort((a: any, b: any) => a.name.localeCompare(b.name))
             .map((issueTag: any, i: any) => (
-                            <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
-                                <span
+              <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
+                <span
                   className="badge d-flex align-items-center justify-content-center px-3 py-2"
                   style={{
                     backgroundColor: issueTag.color,
@@ -90,7 +91,7 @@ export function TeamApiIssueTags({
                 >
                   {issueTag.name}
                 </span>
-                                <input
+                <input
                   type="text"
                   className="form-control mx-3"
                   value={issueTag.name}
@@ -105,7 +106,7 @@ export function TeamApiIssueTags({
                     setUpdated(true);
                   }}
                 />
-                                <ColorTag
+                <ColorTag
                   className="pe-3"
                   initialColor={issueTag.color}
                   handleColorChange={(color: any) => {
@@ -120,8 +121,8 @@ export function TeamApiIssueTags({
                   }}
                   presetColors={[]}
                 />
-                                <div className="ml-auto">
-                                    <button
+                <div className="ml-auto">
+                  <button
                     className="btn btn-sm btn-outline-danger"
                     type="button"
                     onClick={() => deleteTag(issueTag.id)}
@@ -131,12 +132,12 @@ export function TeamApiIssueTags({
                 </div>
               </div>
             ))}
-                    {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
+          {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
         </div>
       </div>
       {updated && (
-                <div className="col-sm-12 d-flex justify-content-end">
-                    <button
+        <div className="col-sm-12 d-flex justify-content-end">
+          <button
             className="btn btn-outline-success ml-auto"
             onClick={() => {
               onChange(api);
@@ -185,11 +186,11 @@ function ColorTag({
       cursor: 'pointer',
     },
     popover: {
-      position: 'absolute',
+      position: 'absolute' as any,
       zIndex: '2',
     },
     cover: {
-      position: 'fixed',
+      position: 'fixed' as any,
       top: '0px',
       right: '0px',
       bottom: '0px',
@@ -210,15 +211,16 @@ function ColorTag({
   }, [pickerValue]);
 
   return (
-        <div className={className}>
-            <div style={styles.swatch} onClick={() => setDisplayColorPicker(true)}>
-                <div style={styles.color} />
+    <div className={className}>
+      <div style={styles.swatch} onClick={() => setDisplayColorPicker(true)}>
+        <div style={styles.color} />
       </div>
       {displayColorPicker ? (
-                <div style={styles.popover}>
-                    <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
-                    <SketchPicker
-            presetColors={uniq(presetColors).sort()}
+        <div style={styles.popover}>
+          <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
+          {/* @ts-ignore */}
+          <SketchPicker
+            presetColors={uniq<any>(presetColors).sort()}
             color={color}
             onChange={(value: any) => setPickerValue(value)}
           />

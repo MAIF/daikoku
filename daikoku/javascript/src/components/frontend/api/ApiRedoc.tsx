@@ -4,10 +4,10 @@ import { LoginOrRegisterModal } from '..';
 import { I18nContext } from '../../../core';
 
 export function ApiRedoc(props: any) {
-  const [error, setError] = useState();
+  const [error, setError] = useState<string | undefined>();
   const params = useParams();
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     const { tenant, connectedUser } = props;
@@ -17,9 +17,11 @@ export function ApiRedoc(props: any) {
       const url = `${window.location.origin}/api/teams/${props.teamId}/apis/${props.api._id}/${params.versionId}/swagger.json`;
 
       fetch(url).then((res) => {
-        if (res.status > 300) setError(translateMethod('api_redoc.failed_to_retrieve_doc'));
-        else {
-                    // eslint-disable-next-line no-undef
+        if (res.status > 300) {
+          setError(translateMethod('api_redoc.failed_to_retrieve_doc'));
+        } else {
+          //@ts-ignore
+          // eslint-disable-next-line no-undef
           Redoc.init(
             url,
             {
@@ -31,14 +33,16 @@ export function ApiRedoc(props: any) {
           );
         }
       });
-    } else setError(translateMethod('api_redoc.guest_user'));
+    } else {
+      setError(translateMethod('api_redoc.guest_user'));
+    }
   }, []);
 
   const { tenant, connectedUser } = props;
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
     return (
-            <LoginOrRegisterModal
+      <LoginOrRegisterModal
         {...props}
         showOnlyMessage={true}
         asFlatFormat
@@ -48,14 +52,14 @@ export function ApiRedoc(props: any) {
 
   if (error)
     return (
-            <div className="d-flex justify-content-center w-100">
-                <span className="alert alert-danger text-center">{error}</span>
+      <div className="d-flex justify-content-center w-100">
+        <span className="alert alert-danger text-center">{error}</span>
       </div>
     );
 
   const api = props.api;
   if (!api || !api.swagger)
-        return <div>{translateMethod('api_data.missing', false, undefined, ['Api reference'])}</div>;
+    return <div>{translateMethod('api_data.missing', false, undefined, ['Api reference'])}</div>;
 
-    return <div id="redoc-container" />;
+  return <div id="redoc-container" />;
 }

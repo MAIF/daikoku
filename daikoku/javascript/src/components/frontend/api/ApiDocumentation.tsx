@@ -18,12 +18,12 @@ export function ApiDocumentationCartidge({
 }: any) {
   const params = useParams();
   return (
-        <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
-            <ul>
+    <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
+      <ul>
         {details.titles.map((obj: any) => {
           return (
-                        <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
-                            <Link
+            <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
+              <Link
                 to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}
               >
                 {obj.title}
@@ -37,11 +37,11 @@ export function ApiDocumentationCartidge({
 }
 
 export function ApiDocumentation(props: any) {
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const params = useParams();
 
-  const [state, setState] = useState({
+  const [state, setState] = useState<any>({
     details: null,
     content: translateMethod('Loading page ...'),
   });
@@ -49,8 +49,8 @@ export function ApiDocumentation(props: any) {
   useEffect(() => {
     if (state.content)
       (window as any).$('pre code').each((i: any, block: any) => {
-    hljs.highlightElement(block);
-});
+        hljs.highlightElement(block);
+      });
   }, [state.content]);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function ApiDocumentation(props: any) {
               ...state,
               details,
               content: null,
-                            contentType: page.contentType,
+              contentType: page.contentType,
               remoteContent: {
                 url: page.contentUrl,
               },
@@ -77,7 +77,7 @@ export function ApiDocumentation(props: any) {
               ...state,
               details,
               content: page.content,
-                            contentType: page.contentType,
+              contentType: page.contentType,
               remoteContent: null,
             });
         });
@@ -107,33 +107,33 @@ export function ApiDocumentation(props: any) {
   if (next) nextId = next;
   if (prev) prevId = prev;
 
-    return (<>
-            {details && <ApiDocumentationCartidge details={details}/>}
-            <div className="col p-3">
-                <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
-                    {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
-                            <i className="fas fa-chevron-left me-1"/>
-                            <Translation i18nkey="Previous page">Previous page</Translation>
-            </Link>)}
-                    {nextId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
-                            <Translation i18nkey="Next page">Next page</Translation>
-                            <i className="fas fa-chevron-right ms-1"/>
-            </Link>)}
-        </div>
-                {!(state as any).remoteContent && (<AwesomeContentViewer contentType={(state as any).contentType} content={state.content}/>)}
-                {(state as any).remoteContent && (<AwesomeContentViewer contentType={(state as any).contentType} remoteContent={(state as any).remoteContent}/>)}
-                <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
-                    {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
-                            <i className="fas fa-chevron-left me-1"/>
-                            <Translation i18nkey="Previous page">Previous page</Translation>
-            </Link>)}
-                    {nextId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
-                            <Translation i18nkey="Next page">Next page</Translation>
-                            <i className="fas fa-chevron-right ms-1"/>
-            </Link>)}
-        </div>
+  return (<>
+    {details && <ApiDocumentationCartidge details={details} />}
+    <div className="col p-3">
+      <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
+        {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
+          <i className="fas fa-chevron-left me-1" />
+          <Translation i18nkey="Previous page">Previous page</Translation>
+        </Link>)}
+        {nextId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
+          <Translation i18nkey="Next page">Next page</Translation>
+          <i className="fas fa-chevron-right ms-1" />
+        </Link>)}
       </div>
-    </>);
+      {!(state as any).remoteContent && (<AwesomeContentViewer contentType={(state as any).contentType} content={state.content} />)}
+      {(state as any).remoteContent && (<AwesomeContentViewer contentType={(state as any).contentType} remoteContent={(state as any).remoteContent} />)}
+      <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
+        {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
+          <i className="fas fa-chevron-left me-1" />
+          <Translation i18nkey="Previous page">Previous page</Translation>
+        </Link>)}
+        {nextId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
+          <Translation i18nkey="Next page">Next page</Translation>
+          <i className="fas fa-chevron-right ms-1" />
+        </Link>)}
+      </div>
+    </div>
+  </>);
 }
 
 const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;
@@ -145,12 +145,12 @@ const Pdf = ({
   url
 }: any) => {
   return (
-        <embed src={url} type="application/pdf" style={{ width: '100%', height: '100vh', border: 0 }} />
+    <embed src={url} type="application/pdf" style={{ width: '100%', height: '100vh', border: 0 }} />
   );
 };
 
 function Markdown(props: any) {
-  const [content, setContent] = useState();
+  const [content, setContent] = useState<string>();
 
   useEffect(() => {
     if (props.url) update(props.url);
@@ -159,8 +159,8 @@ function Markdown(props: any) {
   useEffect(() => {
     if (content)
       (window as any).$('pre code').each((i: any, block: any) => {
-    hljs.highlightElement(block);
-});
+        hljs.highlightElement(block);
+      });
   }, [content]);
 
   const update = (url: any) => {
@@ -169,14 +169,14 @@ function Markdown(props: any) {
       credentials: 'include',
     })
       .then((r) => r.text())
-            .then(setContent);
+      .then(setContent);
   };
 
   if (!props.content && !content) {
     return null;
   }
   return (
-        <div
+    <div
       className="api-description"
       dangerouslySetInnerHTML={{
         __html: converter.makeHtml(props.content || content),
@@ -186,7 +186,7 @@ function Markdown(props: any) {
 }
 
 function Asciidoc(props: any) {
-  const [content, setContent] = useState();
+  const [content, setContent] = useState<string>();
 
   useEffect(() => {
     if (props.url) update(props.url);
@@ -195,8 +195,8 @@ function Asciidoc(props: any) {
   useEffect(() => {
     if (content)
       (window as any).$('pre code').each((i: any, block: any) => {
-    hljs.highlightElement(block);
-});
+        hljs.highlightElement(block);
+      });
   }, [content]);
 
   const update = (url: any) => {
@@ -205,17 +205,17 @@ function Asciidoc(props: any) {
       credentials: 'include',
     })
       .then((r) => r.text())
-            .then(setContent);
+      .then(setContent);
   };
 
   if (!props.content && !content) {
     return null;
   }
   return (
-        <div
+    <div
       className="api-description asciidoc"
       dangerouslySetInnerHTML={{
-                __html: asciidoctorConverter.convert(props.content || content),
+        __html: asciidoctorConverter.convert(props.content || content) as string,
       }}
     />
   );
@@ -226,7 +226,7 @@ function OpenDocument(props: any) {
     `${window.location.origin}/assets/viewerjs/index.html#${window.location.origin}${props.url}`
   );
   return (
-        <iframe
+    <iframe
       src={`/assets/viewerjs/index.html#${props.url}`}
       style={{ width: '100%', height: '100vh', border: 0 }}
     />
@@ -237,12 +237,12 @@ const mimeTypes = [
   {
     label: '.adoc Ascii doctor',
     value: 'text/asciidoc',
-        render: (url: any, content: any) => <Asciidoc url={url} content={content} />,
+    render: (url?: any, content?: any) => <Asciidoc url={url} content={content} />,
   },
   {
     label: '.avi Audio Video Interleaved file',
     value: 'video/x-msvideo',
-        render: (url: any) => <Video url={url} />,
+    render: (url: any) => <Video url={url} />,
   },
   // {
   //   label: '.doc Microsoft Word file',
@@ -257,57 +257,57 @@ const mimeTypes = [
   {
     label: '.gif Graphics Interchange Format file',
     value: 'image/gif',
-        render: (url: any) => <Image url={url} />,
+    render: (url: any) => <Image url={url} />,
   },
   {
     label: '.html HyperText Markup Language file',
     value: 'text/html',
-        render: (url: any, content: any) => (url ? <Html url={url} /> : <Markdown url={url} content={content} />),
+    render: (url: any, content: any) => (url ? <Html url={url} /> : <Markdown url={url} content={content} />),
   },
-    { label: '.jpg JPEG image', value: 'image/jpeg', render: (url: any) => <Image url={url} /> },
+  { label: '.jpg JPEG image', value: 'image/jpeg', render: (url: any) => <Image url={url} /> },
   {
     label: '.md	Markown file',
     value: 'text/markdown',
-        render: (url: any, content: any) => <Markdown url={url} content={content} />,
+    render: (url: any, content: any) => <Markdown url={url} content={content} />,
   },
-    { label: '.mpeg	MPEG video file ', value: 'video/mpeg', render: (url: any) => <Video url={url} /> },
+  { label: '.mpeg	MPEG video file ', value: 'video/mpeg', render: (url: any) => <Video url={url} /> },
   {
     label: '.odp OpenDocument presentation document ',
     value: 'application/vnd.oasis.opendocument.presentation',
-        render: (url: any) => <OpenDocument url={url} />,
+    render: (url: any) => <OpenDocument url={url} />,
   },
   {
     label: '.ods OpenDocument spreadsheet document ',
     value: 'application/vnd.oasis.opendocument.spreadsheet',
-        render: (url: any) => <OpenDocument url={url} />,
+    render: (url: any) => <OpenDocument url={url} />,
   },
   {
     label: '.odt OpenDocument text document ',
     value: 'application/vnd.oasis.opendocument.text',
-        render: (url: any) => <OpenDocument url={url} />,
+    render: (url: any) => <OpenDocument url={url} />,
   },
   {
     label: '.png Portable Network Graphics',
     value: 'image/png',
-        render: (url: any) => <Image url={url} />,
+    render: (url: any) => <Image url={url} />,
   },
   {
     label: '.pdf Adobe Portable Document Format (PDF)',
     value: 'application/pdf',
-        render: (url: any) => <Pdf url={url} />,
+    render: (url: any) => <Pdf url={url} />,
   },
-    { label: '.webm WEBM video file ', value: 'video/webm', render: (url: any) => <Video url={url} /> },
+  { label: '.webm WEBM video file ', value: 'video/webm', render: (url: any) => <Video url={url} /> },
 ];
 
 const AwesomeContentViewer = (props: any) => {
   const mimeType = mimeTypes.filter((t) => t.value === props.contentType)[0] || {
-        render: () => <TypeNotSupportedYet />,
+    render: () => <TypeNotSupportedYet />,
   };
   if (props.remoteContent) {
-        return mimeType.render(props.remoteContent.url);
+    return mimeType.render(props.remoteContent.url);
   } else if (props.content) {
     return mimeType.render(null, props.content);
   } else {
-        return <TypeNotSupportedYet />;
+    return <TypeNotSupportedYet />;
   }
 };

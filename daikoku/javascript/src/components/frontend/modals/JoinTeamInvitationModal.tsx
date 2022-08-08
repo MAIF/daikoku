@@ -5,7 +5,7 @@ import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
 export const JoinTeamInvitationModal = (props: any) => {
-  const [error, setError] = useState(undefined);
+  const [error, setError] = useState<string | undefined>(undefined);
   const [team, setTeam] = useState('');
   const [notificationId, setNotificationId] = useState('');
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export const JoinTeamInvitationModal = (props: any) => {
   function accept() {
     Services.acceptNotificationOfTeam(notificationId).then(() => {
       Services.removeTeamInvitation().then(() => {
-        toastr.success(translateMethod('team_member.has_joined'));
+        toastr.success(translateMethod('Success'), translateMethod('team_member.has_joined'));
         goToHome();
       });
     });
