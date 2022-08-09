@@ -1162,5 +1162,7 @@
   "asset.update": "Mise àjour d'un asset",
   "Translation": "Traduction",
   "Default mail template": "Modèle de courriel par défaut",
-  "Translate": "Traduire"
+  "Translate": "Traduire",
+  "Insert URL": "Insérer l'URL",
+  "custom.metadata.process.change.to.manual": "L'ajout de metadonnée personnalisée a été modifié le process de souscription en manuel"
 }

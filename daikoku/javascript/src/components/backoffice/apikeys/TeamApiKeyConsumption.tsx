@@ -13,7 +13,7 @@ import { useTeamBackOffice } from '../../../contexts';
 export const TeamApiKeyConsumption = () => {
   const { currentTeam } = useSelector((state) => (state as any).context);
   useTeamBackOffice(currentTeam);
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
   const params = useParams();
 
   const mappers = [
@@ -36,29 +36,28 @@ export const TeamApiKeyConsumption = () => {
   ];
 
   useEffect(() => {
-        document.title = `${props.currentTeam.name} - ${translateMethod('API key consumption')}`;
+    document.title = `${currentTeam.name} - ${translateMethod('API key consumption')}`;
   }, []);
 
   const getLabelForDataIn = (datas: any, max: any) => {
     let hits = datas.length ? datas.reduce((acc: any, data: any) => acc + data.hits, 0) : 0;
 
     return (
-            <div>
-                <div>
-                    <Translation i18nkey="Usage">Usage</Translation>
+      <div>
+        <div>
+          <Translation i18nkey="Usage">Usage</Translation>
         </div>
-                <div>
+        <div>
           {hits /*.prettify()*/}{' '}
-                    <Translation i18nkey="Hit" isPlural={hits > 1}>
+          <Translation i18nkey="Hit" isPlural={hits > 1}>
             hits
           </Translation>
         </div>
         {!!max && (
-                    <div>
-                        <Progress
+          <div>
+            <Progress
               status="normal"
               percent={(hits / max) * 100}
-                            default={'default'}
               showInfo={false}
             />
           </div>
@@ -68,26 +67,26 @@ export const TeamApiKeyConsumption = () => {
   };
 
   const getInformations = () => {
-        return Services.getSubscriptionInformations(params.subscription, props.currentTeam._id);
+    return Services.getSubscriptionInformations(params.subscription, currentTeam._id);
   };
 
   return (
-        <Can I={read} a={stat} team={props.currentTeam} dispatchError>
-            <div className="d-flex col flex-column pricing-content">
-                <div className="row">
-                    <div className="col-12">
-                        <h1>Api Consumption</h1>
-                        <PlanInformations fetchData={() => getInformations()} />
+    <Can I={read} a={stat} team={currentTeam} dispatchError>
+      <div className="d-flex col flex-column pricing-content">
+        <div className="row">
+          <div className="col-12">
+            <h1>Api Consumption</h1>
+            <PlanInformations fetchData={() => getInformations()} />
           </div>
-                    <div className="col section p-2">
-                        <OtoroshiStatsVizualization
+          <div className="col section p-2">
+            <OtoroshiStatsVizualization
               sync={() =>
-                                Services.syncSubscriptionConsumption(params.subscription, props.currentTeam._id)
+                Services.syncSubscriptionConsumption(params.subscription, currentTeam._id)
               }
               fetchData={(from: any, to: any) =>
                 Services.subscriptionConsumption(
                   params.subscription,
-                                    props.currentTeam._id,
+                  currentTeam._id,
                   from.valueOf(),
                   to.valueOf()
                 ).then((c) => c.consumptions)
@@ -113,15 +112,15 @@ const PlanInformations = (props: any) => {
   }, []);
 
   if (state.loading) {
-        return <Spinner width="50" height="50" />;
+    return <Spinner width="50" height="50" />;
   }
 
   if (!state.informations || !(state.informations as any).api) {
     return null;
   }
 
-    return (<h3>
-      {(state.informations as any).api.name} -{' '}
-      {(state.informations as any).plan.customName || (state.informations as any).plan.type}
-    </h3>);
+  return (<h3>
+    {(state.informations as any).api.name} -{' '}
+    {(state.informations as any).plan.customName || (state.informations as any).plan.type}
+  </h3>);
 };

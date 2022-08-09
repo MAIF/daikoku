@@ -1,4 +1,5 @@
 import React, { useEffect, useContext } from 'react';
+//@ts-ignore
 import SwaggerEditor, { plugins } from 'swagger-editor';
 import { Form, type, format, constraints } from '@maif/react-forms';
 
@@ -54,30 +55,31 @@ const SwaggerEditorInput = ({
     };
   }, []);
 
-    const initSwaggerEditor = (content: any) => {
-    (window as any).editor = SwaggerEditor({
-    // eslint-disable-line no-undef
-    dom_id: '#swagger-editor',
-    layout: 'EditorLayout',
-    plugins,
-    swagger2GeneratorUrl: 'https://generator.swagger.io/api/swagger.json',
-    oas3GeneratorUrl: 'https://generator3.swagger.io/openapi.json',
-    swagger2ConverterUrl: 'https://converter.swagger.io/api/convert',
-    spec: content || JSON.stringify(defaultSwaggerContent, null, 2),
-});
-    (window as any).editor.specActions.updateSpec(content || JSON.stringify(defaultSwaggerContent, null, 2));
-    unsubscribe = (window as any).editor.getStore().subscribe(() => {
-        const content = window.editor.specSelectors.specStr();
-    onChange(content);
-});
-            const content = (window as any).editor.specSelectors.specStr();
-      onChange(content);
+  const initSwaggerEditor = (content: any) => {
+    //@ts-ignore //FIXME typing monkey patch ???
+    window.editor = SwaggerEditor({
+      // eslint-disable-line no-undef
+      dom_id: '#swagger-editor',
+      layout: 'EditorLayout',
+      plugins,
+      swagger2GeneratorUrl: 'https://generator.swagger.io/api/swagger.json',
+      oas3GeneratorUrl: 'https://generator3.swagger.io/openapi.json',
+      swagger2ConverterUrl: 'https://converter.swagger.io/api/convert',
+      spec: content || JSON.stringify(defaultSwaggerContent, null, 2),
+    });
+    //@ts-ignore //FIXME typing monkey patch ???
+    window.editor.specActions.updateSpec(content || JSON.stringify(defaultSwaggerContent, null, 2));
+    //@ts-ignore //FIXME typing monkey patch ???
+    unsubscribe = window.editor.getStore().subscribe(() => {
+      //@ts-ignore //FIXME typing monkey patch ???
+      const c = window.editor.specSelectors.specStr();
+      onChange(c);
     });
   };
 
   const killSwaggerEditor = () => {
-        if (unsubscribe) {
-            unsubscribe();
+    if (unsubscribe) {
+      unsubscribe();
     }
     (window as any).editor = null;
     localStorage.removeItem('swagger-editor-content');
@@ -91,17 +93,15 @@ export const TeamApiSwagger = ({
   onChange,
   reference
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const swagger = value.swagger;
 
   const schema = {
     url: {
       type: type.string,
       label: translateMethod('URL'),
-      visible: {
-        ref: 'useContent',
-        test: (v: any) => !v,
-      },
+      deps: ['useContent'],
+      visible: ({ rawValues }: any) => !rawValues.useContent,
       constraints: [
         constraints.matches(
           /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
@@ -112,10 +112,8 @@ export const TeamApiSwagger = ({
     headers: {
       type: type.object,
       label: translateMethod('Headers'),
-      visible: {
-        ref: 'useContent',
-        test: (v: any) => !v,
-      },
+      deps:['useContent'],
+      visible: ({rawValues}: any) => !rawValues.useContent,
     },
     useContent: {
       type: type.bool,
@@ -126,23 +124,21 @@ export const TeamApiSwagger = ({
       type: type.string,
       format: format.code,
       label: 'swagger-content',
-      visible: {
-        ref: 'useContent',
-        test: (v: any) => !!v,
-      },
+      deps: ['useContent'],
+      visible: ({ rawValues }: any) => !rawValues.useContent,
       render: (v: any) => SwaggerEditorInput(v),
     },
   };
 
   return (
-        <Form
+    <Form
       ref={reference}
-            schema={schema}
+      schema={schema}
       onSubmit={(swagger) => {
         onChange({ ...value, swagger });
       }}
       value={value.swagger}
-            footer={() => null}
+      footer={() => <></>}
     />
   );
 };

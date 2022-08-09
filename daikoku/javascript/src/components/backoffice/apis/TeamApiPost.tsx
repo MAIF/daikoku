@@ -5,7 +5,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { constraints, type, format } from "@maif/react-forms";
 import moment from 'moment';
 
-import { Table, DefaultColumnFilter } from '../../inputs';
+import { Table, DefaultColumnFilter, TableRef } from '../../inputs';
 import { I18nContext, openFormModal } from '../../../core';
 import * as Services from '../../../services/index';
 
@@ -17,8 +17,8 @@ export function TeamApiPost({
   const location = useLocation();
   const params = useParams();
   const dispatch = useDispatch();
-    const { translateMethod } = useContext(I18nContext);
-  const table = useRef();
+  const { translateMethod } = useContext(I18nContext);
+  const table = useRef<TableRef>();
 
   const schema = {
     title: {
@@ -38,7 +38,7 @@ export function TeamApiPost({
     },
   };
 
-  const [state, setState] = useState({
+  const [state, setState] = useState<any>({
     posts: [],
     pagination: {
       limit: 1,
@@ -55,20 +55,20 @@ export function TeamApiPost({
     Services.getAPIPosts(api._humanReadableId, params.versionId, offset, limit)
       .then((data) => {
         setState({
-        posts: [
-        ...(reset ? [] : state.posts),
-        ...data.posts
-            .filter((p: any) => !state.posts.find((o) => (o as any)._id === p._id))
-            .map((p: any) => ({
-            ...p,
-            isOpen: false
-        })),
-    ],
-    pagination: {
-        ...state.pagination,
-        total: data.total,
-    },
-});
+          posts: [
+            ...(reset ? [] : state.posts),
+            ...data.posts
+              .filter((p: any) => !state.posts.find((o: any) => o._id === p._id))
+              .map((p: any) => ({
+                ...p,
+                isOpen: false
+              })),
+          ],
+          pagination: {
+            ...state.pagination,
+            total: data.total,
+          },
+        });
       });
   }
 
@@ -76,10 +76,10 @@ export function TeamApiPost({
     Services.savePost(api._id, team._id, post._id, post)
       .then((res) => {
         if (res.error) {
-          toastr.error(translateMethod('team_api_post.failed'));
+          toastr.error(translateMethod('Error'), translateMethod('team_api_post.failed'));
         } else {
-          toastr.success(translateMethod('team_api_post.saved'));
-                    table.current.update();
+          toastr.success(translateMethod('Success'), translateMethod('team_api_post.saved'));
+          table.current?.update();
         }
       });
   }
@@ -90,27 +90,27 @@ export function TeamApiPost({
       _id: '',
     }).then((res) => {
       if (res.error) {
-        toastr.error(translateMethod('team_api_post.failed'));
+        toastr.error(translateMethod('Error'), translateMethod('team_api_post.failed'));
       } else {
-        toastr.success(translateMethod('team_api_post.saved'));
-                table.current.update()
+        toastr.success(translateMethod('success'), translateMethod('team_api_post.saved'));
+        table.current?.update()
       }
     });
   }
 
   function removePost(postId: any) {
     return (window.confirm(translateMethod('team_api_post.delete.confirm')) as any).then((ok: any) => {
-    if (ok)
+      if (ok)
         Services.removePost(api._id, team._id, postId).then((res) => {
-            if (res.error) {
-                toastr.error(translateMethod('team_api_post.failed'));
-            }
-            else {
-                toastr.success(translateMethod('team_api_post.saved'));
-                                table.current.update();
-            }
+          if (res.error) {
+            toastr.error(translateMethod('Error'), translateMethod('team_api_post.failed'));
+          }
+          else {
+            toastr.success(translateMethod('Success'), translateMethod('team_api_post.saved'));
+            table.current?.update();
+          }
         });
-});
+    });
   }
 
   const columns = [
@@ -150,8 +150,8 @@ export function TeamApiPost({
       }: any) => {
         const post = original;
         return (
-                    <div>
-                        <button
+          <div>
+            <button
               className='btn btn-sm btn-outline-primary me-2'
               onClick={() => dispatch(openFormModal({
                 title: translateMethod('team_api_post.update'),
@@ -159,14 +159,14 @@ export function TeamApiPost({
                 onSubmit: savePost,
                 value: post,
                 actionLabel: translateMethod('team_api_post.publish')
-                            }))}><i className="fas fa-pen" /></button>
-                        <button
+              }))}><i className="fas fa-pen" /></button>
+            <button
               className="btn btn-sm btn-outline-danger me-1"
               onClick={() => {
                 removePost(post._id)
               }}
             >
-                            <i className="fas fa-trash" />
+              <i className="fas fa-trash" />
             </button>
           </div>
         )
@@ -175,10 +175,10 @@ export function TeamApiPost({
   ]
 
   return (
-        <div>
-            <div className="p-3">
-                <div className="d-flex align-items-center justify-content-end">
-                    <button
+    <div>
+      <div className="p-3">
+        <div className="d-flex align-items-center justify-content-end">
+          <button
             className="btn btn-outline-success"
             onClick={() => dispatch(openFormModal({
               title: translateMethod('team_api_post.new'),
@@ -190,18 +190,11 @@ export function TeamApiPost({
             {translateMethod('team_api_post.new')}
           </button>
         </div>
-                <Table
-                    selfUrl="posts"
-          defaultTitle="Team news"
-          defaultValue={() => ({})}
+        <Table
           defaultSort="lastModificationAt"
           defaultSortDesc={true}
-          itemName="post"
           columns={columns}
           fetchItems={() => Services.getAPIPosts(api._humanReadableId, params.versionId, 0, -1).then(r => r.posts)}
-          showActions={false}
-          showLink={false}
-          extractKey={(item: any) => item._id}
           injectTable={(t: any) => table.current = t}
         />
       </div>

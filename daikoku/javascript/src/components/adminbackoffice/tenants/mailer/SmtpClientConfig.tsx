@@ -11,7 +11,7 @@ export function SmtpClientConfig({
   onChange,
   ...props
 }: any) {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['host', 'port', 'fromTitle', 'fromEmail', 'template'];
 
@@ -41,18 +41,18 @@ export function SmtpClientConfig({
       },
     },
     template: {
-            type: () => <MailTemplateButton {...props} />,
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 
   return (
-        <React.Suspense fallback={<Spinner />}>
-            <LazyForm
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
         value={value}
         onChange={onChange}
         flow={formFlow}
         schema={formSchema}
-                style={{ marginTop: 50 }}
+        style={{ marginTop: 50 }}
       />
     </React.Suspense>
   );

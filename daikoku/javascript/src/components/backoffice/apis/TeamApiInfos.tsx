@@ -11,11 +11,9 @@ export const TeamApiInfos = ({
   expertMode,
   injectSubMenu,
   team,
-  tenant,
-  openTestingApiKeyModal,
-  openSubMetadataModal
+  tenant
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   const informationForm = teamApiInfoForm(translateMethod, team, tenant);
   const descriptionForm = teamApiDescriptionForm(translateMethod);
@@ -48,14 +46,14 @@ export const TeamApiInfos = ({
     {
       id: 'testing',
       label: translateMethod('Testing'),
-      component: (p: any) => TeamApiTesting({ ...p, openTestingApiKeyModal, openSubMetadataModal }),
+      component: (p: any) => TeamApiTesting({ ...p }),
       skipTo: 'save',
     },
   ];
 
   if (value.visibility === 'AdminOnly') {
     return (
-            <MultiStepForm
+      <MultiStepForm
         value={value}
         steps={[
           {
@@ -79,7 +77,7 @@ export const TeamApiInfos = ({
     );
   }
   return (
-        <MultiStepForm
+    <MultiStepForm
       value={value}
       steps={steps}
       initial="info"

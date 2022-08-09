@@ -187,7 +187,7 @@ export const NotificationList = () => {
   }
 
   const notifByTeams = groupBy(state.notifications, 'team');
-  const openModal = (p: any) => openSubMetadataModal(p)(dispatch);
+  const openModal = (p: any) => dispatch(openSubMetadataModal(p));
   return <>
     <div className="row">
       <h1>

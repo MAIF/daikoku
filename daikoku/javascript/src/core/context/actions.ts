@@ -16,15 +16,15 @@ export const login =
     tenant,
     language
   }: any) =>
-  (dispatch: any) => {
-    return dispatch({
-      type: LOGIN,
-      user,
-      team,
-      tenant,
-      language,
-    });
-  };
+    (dispatch: any) => {
+      return dispatch({
+        type: LOGIN,
+        user,
+        team,
+        tenant,
+        language,
+      });
+    };
 
 export const logout = () => (dispatch: any) => {
   return dispatch({
@@ -36,12 +36,12 @@ export const impersonate =
   ({
     impersonator
   }: any) =>
-  (dispatch: any) => {
-    return dispatch({
-      type: IMPERSONATE,
-      impersonator,
-    });
-  };
+    (dispatch: any) => {
+      return dispatch({
+        type: IMPERSONATE,
+        impersonator,
+      });
+    };
 
 export const updateTeam = (team: any) => (dispatch: any) => {
   return dispatch({
@@ -80,8 +80,8 @@ export const updateUser = (user: any) => (dispatch: any) => {
   });
 };
 
-export const toggleExpertMode = () => (dispatch: any) => {
-  return dispatch({
+export const toggleExpertMode = () => {
+  return {
     type: TOGGLE_EXPERT_MODE,
-  });
-};
+  };
+}

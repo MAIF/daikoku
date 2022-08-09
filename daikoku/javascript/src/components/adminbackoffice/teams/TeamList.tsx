@@ -12,11 +12,11 @@ import { teamSchema } from '../../backoffice/teams/TeamEdit';
 
 export const TeamList = () => {
   const dispatch = useDispatch();
-    useTenantBackOffice();
+  useTenantBackOffice();
 
-  const [state, setState] = useState({
-    teams: [],
-  });
+  const [teams, setTeams] = useState<Array<any>>([]);
+  const [search, setSearch] = useState<string>();
+
   const navigate = useNavigate();
 
   const createNewTeam = () => {
@@ -33,26 +33,27 @@ export const TeamList = () => {
     updateTeams();
   }, []);
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const deleteTeam = (teamId: any) => {
-    (window
-    .confirm(translateMethod('delete team', 'Are you sure you want to delete this team ?')) as any).then((ok: any) => {
-    if (ok) {
+    //@ts-ignore //FIXME when monkey patch & ts will be compatible
+    (window.confirm(translateMethod('delete team', 'Are you sure you want to delete this team ?'))).then((ok: any) => {
+      if (ok) {
         Services.deleteTeam(teamId).then(() => {
-            updateTeams();
+          updateTeams();
         });
-    }
-});
+      }
+    });
   };
 
   const updateTeams = () => {
-    Services.teams().then((teams) => setState({ ...state, teams }));
+    Services.teams()
+      .then((teams) => setTeams(teams));
   };
 
-  const filteredTeams = (state as any).search
-    ? state.teams.filter(({ name }) => (name as any).toLowerCase().includes((state as any).search))
-    : state.teams;
+  const filteredTeams = search
+    ? teams.filter(({ name }) => name.toLowerCase().includes(search))
+    : teams;
 
   const actions = (team: any) => {
     const basicActions = [
@@ -68,10 +69,10 @@ export const TeamList = () => {
           onSubmit: (data: any) => Services.updateTeam(data)
             .then(r => {
               if (r.error) {
-                toastr.error(r.error)
+                toastr.error(translateMethod('Error'), r.error)
               } else {
                 updateTeams()
-                toastr.success(translateMethod("Team %s updated successfully", false, "", data.name))
+                toastr.success(translateMethod('Success'), translateMethod("Team %s updated successfully", false, "", data.name))
               }
             }),
           value: team
@@ -96,29 +97,30 @@ export const TeamList = () => {
     ];
   };
 
-    return (<Can I={manage} a={tenant} dispatchError>
-            <div className="row">
-                <div className="d-flex justify-content-between align-items-center">
-                    <h1>
-                        <Translation i18nkey="Teams">Teams</Translation>
-                        <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translateMethod('Create a new team')} href="#" onClick={(e) => {
-        e.preventDefault();
-        createNewTeam();
-    }}>
-                            <i className="fas fa-plus-circle"/>
-            </a>
-          </h1>
-                    <div className="col-5">
-                        <input placeholder={translateMethod('Find a team')} className="form-control" onChange={(e) => {
-                setState({ ...state, search: e.target.value });
-    }}/>
-          </div>
+  return (<Can I={manage} a={tenant} dispatchError>
+    <div className="row">
+      <div className="d-flex justify-content-between align-items-center">
+        <h1>
+          <Translation i18nkey="Teams">Teams</Translation>
+          <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translateMethod('Create a new team')} href="#" onClick={(e) => {
+            e.preventDefault();
+            createNewTeam();
+          }}>
+            <i className="fas fa-plus-circle" />
+          </a>
+        </h1>
+        <div className="col-5">
+          <input
+            placeholder={translateMethod('Find a team')}
+            className="form-control"
+            onChange={(e) => setSearch(e.target.value)} />
         </div>
-                <PaginatedComponent items={sortBy(filteredTeams, [(team) => (team as any).name.toLowerCase()])} count={8} formatter={(team) => {
-                return (<AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
-                                        <span className="team__name text-truncate">{team.name}</span>
-                  </>} actions={actions(team)}/>);
-    }}/>
       </div>
-    </Can>);
+      <PaginatedComponent items={sortBy(filteredTeams, [(team) => (team as any).name.toLowerCase()])} count={8} formatter={(team) => {
+        return (<AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
+          <span className="team__name text-truncate">{team.name}</span>
+        </>} actions={actions(team)} />);
+      }} />
+    </div>
+  </Can>);
 };

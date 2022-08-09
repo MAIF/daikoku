@@ -22,15 +22,15 @@ const AdminList = () => {
   const context = useSelector((s) => (s as any).context);
 
   const [search, setSearch] = useState('');
-  const [addableAdmins, setAddableAdmins] = useState([]);
-  const [admins, setAdmins] = useState([]);
+  const [addableAdmins, setAddableAdmins] = useState<Array<any>>([]);
+  const [admins, setAdmins] = useState<Array<any>>([]);
   const [loading, setLoading] = useState(true);
-  const [team, setTeam] = useState(undefined);
-  const [tenant, setTenant] = useState(undefined);
+  const [team, setTeam] = useState<any>(undefined);
+  const [tenant, setTenant] = useState<any>(undefined);
   const [filteredAdmins, setFilteredAdmins] = useState([]);
-  const [selectedAdmin, setSelectedAdmin] = useState(undefined);
+  const [selectedAdmin, setSelectedAdmin] = useState<any>(undefined);
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
   const params = useParams();
 
   useEffect(() => {
@@ -51,39 +51,34 @@ const AdminList = () => {
 
   useEffect(() => {
     const filteredAdmins = Option(search)
-    .map((search: any) => admins.filter(({ name, email }) => [name, email].some((value) => (value as any).toLowerCase().includes(search))))
-    .getOrElse(admins);
+      .map((search: any) => admins.filter(({ name, email }) => [name, email].some((value) => (value as any).toLowerCase().includes(search))))
+      .getOrElse(admins);
 
     setFilteredAdmins(filteredAdmins);
   }, [search, admins]);
 
   useEffect(() => {
     if (selectedAdmin) {
-            Services.addAdminsToTenant(tenant._id, [(selectedAdmin as any)._id]).then((team) => {
-    if (team.error) {
-        toastr.error('Failure', team.error);
-    }
-    else {
-        setTeam(team);
-        setAdmins([...admins, selectedAdmin]);
-                setAddableAdmins(addableAdmins.filter((u) => u._id !== selectedAdmin._id));
-                toastr.success(translateMethod('admin.added.successfully', false, `${selectedAdmin.name} has been added as new admin of the tenant`, selectedAdmin.name));
-                setSelectedAdmin(null);
-    }
-});
-          setAddableAdmins(addableAdmins.filter((u) => (u as any)._id !== (selectedAdmin as any)._id));
-          toastr.success(translateMethod('admin.added.successfully', false, `${(selectedAdmin as any).name} has been added as new admin of the tenant`, (selectedAdmin as any).name));
-                    setSelectedAdmin(null);
+      Services.addAdminsToTenant(tenant._id, [(selectedAdmin as any)._id]).then((team) => {
+        if (team.error) {
+          toastr.error('Failure', team.error);
+        }
+        else {
+          setTeam(team);
+          setAdmins([...admins, selectedAdmin]);
+          setAddableAdmins(addableAdmins.filter((u: any) => u._id !== selectedAdmin._id));
+          toastr.success(translateMethod('Success'), translateMethod('admin.added.successfully', false, `${selectedAdmin.name} has been added as new admin of the tenant`, selectedAdmin.name));
+          setSelectedAdmin(null);
         }
       });
     }
-    }, [selectedAdmin]);
+  }, [selectedAdmin]);
 
   const adminToSelector = (admin: any) => ({
     label: (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {admin.name} ({admin.email}){' '}
-                <img
+        <img
           style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
           src={admin.picture}
           alt="avatar"
@@ -95,9 +90,9 @@ const AdminList = () => {
   });
 
   const removeAdmin = (admin: any) => {
-        if (team.users.length === 1) {
+    if (team.users.length === 1) {
       alert(
-                translateMethod(
+        translateMethod(
           'remove.admin.tenant.alert',
           false,
           "You can't delete this admin, it must remain an admin in a tenant."
@@ -106,37 +101,25 @@ const AdminList = () => {
     } else {
       (window
         .confirm(translateMethod('remove.admin.tenant.confirm', false, 'Are you sure you want to remove this admin from the tenant ?')) as any).then((ok: any) => {
-    if (ok) {
-                Services.removeAdminFromTenant(tenant._id, admin._id).then((team) => {
-            if (team.error) {
-                                toastr.error(translateMethod('Failure'), team.error);
-            }
-            else {
-                                setTeam(team);
-                                setAddableAdmins([...addableAdmins, admin]);
-                                setAdmins(admins.filter((a) => a._id !== admin._id));
-                                toastr.success(translateMethod('remove.admin.tenant.success', false, 'Admin deleted successfully', admin.name));
-            }
-        });
-    }
-});
-                                setAdmins(admins.filter((a) => (a as any)._id !== admin._id));
-                toastr.success(
-                                    translateMethod(
-                    'remove.admin.tenant.success',
-                    false,
-                    'Admin deleted successfully',
-                    admin.name
-                  )
-                );
+          if (ok) {
+            Services.removeAdminFromTenant(tenant._id, admin._id).then((team) => {
+              if (team.error) {
+                toastr.error(translateMethod('Failure'), team.error);
+              }
+              else {
+                setTeam(team);
+                setAddableAdmins([...addableAdmins, admin]);
+                setAdmins(admins.filter((a) => a._id !== admin._id));
+                toastr.success(translateMethod('Success'), translateMethod('remove.admin.tenant.success', false, 'Admin deleted successfully', admin.name));
               }
             });
           }
         });
     }
-  };
+  }
 
-  return (<Can I={manage} a={TENANT} dispatchError={true} whichOne={tenant}>
+  return (
+    <Can I={manage} a={TENANT} dispatchError={true} whichOne={tenant}>
       <div className="row">
         <div className="col">
           <h1>
@@ -148,28 +131,28 @@ const AdminList = () => {
       <div className="row">
         <div className="col-12 mb-3 d-flex justify-content-start">
           <Select placeholder={translateMethod('Add new admin')} className="add-member-select me-2 reactSelect" options={addableAdmins.map(adminToSelector)} onChange={(slug) => setSelectedAdmin(slug.value)} value={selectedAdmin} filterOption={(data, search) => values(data.value)
-        .filter((e) => typeof e === 'string')
-        .some((v) => v.includes(search))} classNamePrefix="reactSelect"/>
-          <input placeholder={translateMethod('Find an admin')} className="form-control" onChange={(e) => setSearch(e.target.value)}/>
+            .filter((e) => typeof e === 'string')
+            .some((v) => v.includes(search))} classNamePrefix="reactSelect" />
+          <input placeholder={translateMethod('Find an admin')} className="form-control" onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
       <PaginatedComponent items={sortBy(filteredAdmins, [(a) => (a as any).name.toLowerCase()])} count={15} formatter={(admin) => {
         return (<AvatarWithAction key={admin._id} avatar={admin.picture} infos={<span className="team-member__name">{admin.name}</span>} actions={[
-                {
-                    action: () => removeAdmin(admin),
-                    iconClass: 'fas fa-trash delete-icon',
-                    tooltip: translateMethod('Remove admin rights'),
-                },
-            ]}/>);
-    }}/>
+          {
+            action: () => removeAdmin(admin),
+            iconClass: 'fas fa-trash delete-icon',
+            tooltip: translateMethod('Remove admin rights'),
+          },
+        ]} />);
+      }} />
     </Can>);
 };
 
 export const TenantAdminList = () => {
-    useTenantBackOffice();
-    return <AdminList />;
+  useTenantBackOffice();
+  return <AdminList />;
 };
 export const DaikokuTenantAdminList = () => {
   useDaikokuBackOffice();
-    return <AdminList />;
+  return <AdminList />;
 };

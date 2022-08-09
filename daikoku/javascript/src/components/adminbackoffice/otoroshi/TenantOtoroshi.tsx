@@ -59,7 +59,7 @@ export const TenantOtoroshi = () => {
           if (result.error) {
             toastr.error('Failure', result.error);
           } else {
-            toastr.success(translateMethod('otoroshi.settings.created.success'));
+            toastr.success(translateMethod('Success'), translateMethod('otoroshi.settings.created.success'));
             navigate('/settings/otoroshis')
           }
         });
@@ -69,7 +69,7 @@ export const TenantOtoroshi = () => {
           if (result.error) {
             toastr.error('Failure', result.error);
           } else {
-            toastr.success(translateMethod('otoroshi.settings.updated.success'));
+            toastr.success(translateMethod('Success'), translateMethod('otoroshi.settings.updated.success'));
             navigate('/settings/otoroshis')
           }
         });

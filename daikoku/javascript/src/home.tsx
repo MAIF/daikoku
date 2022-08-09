@@ -29,16 +29,16 @@ export function initNotLogged(tenant: any) {
   const storeInst = store({ tenant });
 
   ReactDOM.render(
-        <Provider store={storeInst}>
-            <I18nProvider tenant={tenant}>
-                <DaikokuHomeApp tenant={tenant} />
+    <Provider store={storeInst}>
+      <I18nProvider tenant={tenant}>
+        <DaikokuHomeApp tenant={tenant} />
       </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );
 
-    registerAlert(storeInst); // Hell Yeah !!!!
-    registerConfirm(storeInst);
-    registerPrompt(storeInst);
+  registerAlert(storeInst); // Hell Yeah !!!!
+  registerConfirm(storeInst);
+  registerPrompt(storeInst);
   registerContact(storeInst);
 }

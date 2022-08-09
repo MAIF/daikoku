@@ -2,43 +2,43 @@ import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import { useTenantBackOffice } from '../../../contexts';
-import {AuditForm, AuthenticationForm, CustomizationForm, GeneralForm, MailForm} from './forms';
+import { AuditForm, AuthenticationForm, CustomizationForm, GeneralForm, MailForm } from './forms';
 
 
 
 export const NewTenantEdit = () => {
-    const { tenant } = useTenantBackOffice();
+  const { tenant } = useTenantBackOffice();
 
   return (
-        <Routes>
-            <Route
+    <Routes>
+      <Route
         path="/general"
         element={
-                    <GeneralForm tenant={tenant} />
+          <GeneralForm tenant={tenant} />
         }
       />
-            <Route
+      <Route
         path="/customization"
         element={
-                    <CustomizationForm tenant={tenant} />
+          <CustomizationForm tenant={tenant} />
         }
       />
-            <Route
+      <Route
         path="/audit"
         element={
-                    <AuditForm tenant={tenant} />
+          <AuditForm tenant={tenant} />
         }
       />
-            <Route
+      <Route
         path="/mail"
         element={
-                    <MailForm tenant={tenant} />
+          <MailForm tenant={tenant} />
         }
       />
-            <Route
+      <Route
         path="/authentication"
         element={
-                    <AuthenticationForm tenant={tenant} />
+          <AuthenticationForm tenant={tenant} />
         }
       />
     </Routes>

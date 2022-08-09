@@ -25,17 +25,17 @@ const getAllPages = () => ({
 });
 
 export const CMSOffice = () => {
-    useTenantBackOffice();
+  useTenantBackOffice();
 
   const location = useLocation();
 
   const { client } = useContext(getApolloContext());
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
-  const [pages, setPages] = useState([]);
+  const [pages, setPages] = useState<Array<any>>([]);
   const [downloading, setDownloading] = useState(false);
 
-  const importRef = useRef();
+  const importRef = useRef<HTMLInputElement | null>();
 
   useEffect(() => {
     reload();
@@ -48,7 +48,8 @@ export const CMSOffice = () => {
   }, [location]);
 
   const reload = () => {
-        client.query(getAllPages()).then((r) => setPages(r.data.pages));
+    //FIXME handle client setted
+    client && client.query(getAllPages()).then((r) => setPages(r.data.pages));
   };
 
   const loadFiles = (e: any) => {
@@ -57,79 +58,62 @@ export const CMSOffice = () => {
     }
   };
 
-  const Index = ({}) => {
+  const Index = ({ }) => {
     const navigation = useNavigate();
     const location = useLocation();
 
-        return (<div className="pt-2">
-                <div className="d-flex flex-row align-items-center justify-content-between mb-2">
-                    <h1 className="mb-0">Pages</h1>
-                    <div>
-                        <div className="btn-group dropstart">
-                            <button type="button" className="btn btn-sm me-1 btn-secondary" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i className="fas fa-cog"></i>
-              </button>
-                            <ul className="dropdown-menu">
-                                <li className="dropdown-item" onClick={() => importRef.current.click()}>
-                                    <input ref={importRef} type="file" accept=".zip" className="form-control hide" onChange={loadFiles}/>
-                  {translateMethod('cms.import_all')}
-                </li>
-                                <li className="dropdown-item" onClick={() => {
-        if (!downloading) {
-            setDownloading(true);
-            Services.downloadCmsFiles()
-                .then((transfer) => transfer.blob())
-                .then((bytes) => {
-                const elm = document.createElement('a');
-                elm.href = URL.createObjectURL(bytes);
-                elm.setAttribute('download', 'cms.zip');
-                elm.click();
-                setDownloading(false);
-            });
-        }
-    }}>
-                                    {downloading ? (<Spinner heigth={18} width={18}/>) : (translateMethod('cms.export_all'))}
-                </li>
-              </ul>
-            </div>
-                        <button onClick={() => {
-                window
-                        .prompt('Indiquer le nom de la nouvelle page', '', false, "Création d'une nouvelle page", 'Nom de la nouvelle page')
-                        .then((newPageName: any) => {
-            if (newPageName) {
-                Services.createCmsPageWithName(newPageName).then((res) => navigation(`${location.pathname}/edit/${res._id}`));
-            }
-        });
-    }} className="btn btn-sm btn-outline-success">
-              {translateMethod('cms.index.new_page')}
+    return (<div className="pt-2">
+      <div className="d-flex flex-row align-items-center justify-content-between mb-2">
+        <h1 className="mb-0">Pages</h1>
+        <div>
+          <div className="btn-group dropstart">
+            <button type="button" className="btn btn-sm me-1 btn-secondary" data-bs-toggle="dropdown" aria-expanded="false">
+              <i className="fas fa-cog"></i>
             </button>
+            <ul className="dropdown-menu">
+              <li className="dropdown-item" onClick={() => importRef.current?.click()}>
+                <input ref={r => importRef.current = r} type="file" accept=".zip" className="form-control hide" onChange={loadFiles} />
+                {translateMethod('cms.import_all')}
+              </li>
+              <li className="dropdown-item" onClick={() => {
+                if (!downloading) {
+                  setDownloading(true);
+                  Services.downloadCmsFiles()
+                    .then((transfer) => transfer.blob())
+                    .then((bytes) => {
+                      const elm = document.createElement('a');
+                      elm.href = URL.createObjectURL(bytes);
+                      elm.setAttribute('download', 'cms.zip');
+                      elm.click();
+                      setDownloading(false);
+                    });
+                }
+              }}>
+                {downloading ? (<Spinner heigth={18} width={18} />) : (translateMethod('cms.export_all'))}
+              </li>
+            </ul>
           </div>
+          <button onClick={() => { //@ts-ignore
+            window.prompt('Indiquer le nom de la nouvelle page', '', false, "Création d'une nouvelle page", 'Nom de la nouvelle page') //@ts-ignore //FIXME when monkey patch & ts will be compatible
+              .then((newPageName: any) => {
+                if (newPageName) {
+                  Services.createCmsPageWithName(newPageName).then((res) => navigation(`${location.pathname}/edit/${res._id}`));
+                }
+              });
+          }} className="btn btn-sm btn-outline-success">
+            {translateMethod('cms.index.new_page')}
+          </button>
         </div>
-                <Pages pages={pages} removePage={(id: any) => setPages(pages.filter((f) => (f as any).id !== id))}/>
-      </div>);
-                (window
-        .prompt('Indiquer le nom de la nouvelle page', '', false, "Création d'une nouvelle page", 'Nom de la nouvelle page') as any).then((newPageName: any) => {
-    if (newPageName) {
-        Services.createCmsPageWithName(newPageName).then((res) => navigation(`${location.pathname}/edit/${res._id}`));
-    }
-});
-              }}
-                            className="btn btn-sm btn-outline-success"
-            >
-                            {translateMethod('cms.index.new_page')}
-                        </button>
-                    </div>
-                </div>
-                <Pages pages={pages} removePage={(id: any) => setPages(pages.filter((f) => f.id !== id))} />
-            </div>
-    );
+      </div>
+      <Pages pages={pages} removePage={(id: any) => setPages(pages.filter((f) => (f as any).id !== id))} />
+    </div>);
   };
 
   return (
     <Can I={manage} a={tenant} dispatchError>
       <Routes>
         <Route path={`/new`} element={<Create pages={pages} />} />
-        <Route path={`/edit/:id/revisions`} element={<Revisions pages={pages} />} />
+        <Route path={`/edit/:id/revisions`} element={<Revisions />} />
         <Route path={`/edit/:id`} element={<Create pages={pages} />} />
         <Route path="*" element={<Index />} />
       </Routes>

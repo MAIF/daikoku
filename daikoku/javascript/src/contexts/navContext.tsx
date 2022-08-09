@@ -673,7 +673,7 @@ export const useTeamBackOffice = (team: any) => {
   return { addMenu };
 };
 
-export const useTenantBackOffice = (maybeTenant: any) => {
+export const useTenantBackOffice = (maybeTenant?: any) => {
   const { setMode, setOffice, addMenu, setMenu, setTenant } = useContext(NavContext);
   const { translateMethod } = useContext(I18nContext);
 

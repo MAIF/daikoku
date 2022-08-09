@@ -5,7 +5,7 @@ import { toastr } from 'react-redux-toastr';
 import { constraints, format, type } from '@maif/react-forms';
 
 import * as Services from '../../../services';
-import { Table } from '../../inputs';
+import { Table, TableRef } from '../../inputs';
 import { Can, manage, asset, tenant as TENANT } from '../../utils';
 import { openFormModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
@@ -67,7 +67,7 @@ const maybeCreateThumbnail = (id: any, file: any) => {
         img.onload = function () {
           canvas.width = 128; //img.width;
           canvas.height = 128; //img.height;
-                    ctx.drawImage(img, 0, 0, 128, 128);
+          ctx?.drawImage(img, 0, 0, 128, 128);
           const base64 = canvas.toDataURL();
           canvas.toBlob((blob) => {
             Services.storeThumbnail(id, blob).then(() => {
@@ -75,7 +75,7 @@ const maybeCreateThumbnail = (id: any, file: any) => {
             });
           });
         };
-                img.src = event.target.result;
+        img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
     } else {
@@ -85,9 +85,9 @@ const maybeCreateThumbnail = (id: any, file: any) => {
 };
 
 const ReplaceButton = (props: any) => {
-  const [file, setFile] = useState();
-  const [input, setInput] = useState();
-    const { translateMethod } = useContext(I18nContext);
+  const [file, setFile] = useState<File>();
+  const [input, setInput] = useState<HTMLInputElement | null>(null);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (file) {
@@ -109,27 +109,29 @@ const ReplaceButton = (props: any) => {
   }, [file]);
 
   const trigger = () => {
-        input.click();
+    if (input) {
+      input.click();
+    }
   };
 
   return (
-        <>
-            <button type="button" onClick={trigger} className="btn btn-sm btn-outline-primary">
-                <i className="fas fa-retweet" />
+    <>
+      <button type="button" onClick={trigger} className="btn btn-sm btn-outline-primary">
+        <i className="fas fa-retweet" />
       </button>
-            <input
-                ref={(r) => setInput(r)}
+      <input
+        ref={(r) => setInput(r)}
         type="file"
         multiple
         className="form-control hide"
         onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (e.target.files.length > 1) {
+          const file = e.target.files?.[0];
+          if (e.target.files && e.target.files.length > 1) {
             props.displayError(translateMethod('error.replace.files.multi'));
-          } else if (props.asset.contentType !== file.type) {
+          } else if (file && props.asset.contentType !== file.type) {
             props.displayError(translateMethod('error.replace.files.content.type'));
           } else {
-                        setFile(file);
+            setFile(file);
           }
         }}
       />
@@ -140,11 +142,11 @@ const ReplaceButton = (props: any) => {
 export const AssetsList = ({
   tenantMode
 }: any) => {
-  const tableRef = useRef();
+  const tableRef = useRef<TableRef>();
   const dispatch = useDispatch();
   const { currentTeam, tenant } = useSelector((state) => (state as any).context);
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod(
@@ -198,8 +200,8 @@ export const AssetsList = ({
       },
       constraints: [
         constraints.required(translateMethod("constraints.required.file")),
-        constraints.test('test.file.type', 
-          translateMethod("constraints.file.type.forbidden"), 
+        constraints.test('test.file.type',
+          translateMethod("constraints.file.type.forbidden"),
           (v) => acceptableMimeTypes.some(mimeType => mimeType.value === v[0].type))
       ]
     },
@@ -242,7 +244,7 @@ export const AssetsList = ({
           type === 'image/svg+xml'
         ) {
           return (
-                        <img
+            <img
               src={`/asset-thumbnails/${item.meta.asset}?${new Date().getTime()}`}
               width="64"
               height="64"
@@ -273,45 +275,45 @@ export const AssetsList = ({
       }: any) => {
         const item = original;
         return (
-                    <div className="btn-group">
+          <div className="btn-group">
             {item.contentType.startsWith('text') && (
-                            <button
+              <button
                 type="button"
                 onClick={() => readAndUpdate(item)}
                 className="btn btn-sm btn-outline-primary"
               >
-                                <i className="fas fa-pen" />
+                <i className="fas fa-pen" />
               </button>
             )}
-                        <ReplaceButton
+            <ReplaceButton
               asset={item}
               tenantMode={tenantMode}
               teamId={currentTeam ? currentTeam._id : undefined}
-              displayError={(error: any) => toastr.error(error)}
-                            postAction={() => tableRef.current.update()}
+              displayError={(error: any) => toastr.error(translateMethod('Error'), error)}
+              postAction={() => tableRef.current?.update()}
             />
-                        <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
-                            <button
+            <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
+              <button
                 className="btn btn-sm btn-outline-primary"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
               >
-                                <i className="fas fa-eye" />
+                <i className="fas fa-eye" />
               </button>
             </a>
-                        <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
-                            <button
+            <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
+              <button
                 className="btn btn-sm btn-outline-primary me-1"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
               >
-                                <i className="fas fa-download" />
+                <i className="fas fa-download" />
               </button>
             </a>
-                        <button
+            <button
               type="button"
               onClick={() => deleteAsset(item)}
               className="btn btn-sm btn-outline-danger"
             >
-                            <i className="fas fa-trash" />
+              <i className="fas fa-trash" />
             </button>
           </div>
         );
@@ -350,23 +352,23 @@ export const AssetsList = ({
               Services.updateTenantAsset(asset.meta.asset, asset.contentType, file)
                 .then((r) => {
                   if (r.error) {
-                    toastr.error(r.error)
+                    toastr.error(translateMethod('Error'), r.error)
                   } else {
-                    toastr.success(translateMethod('asset.update.successful'))
+                    toastr.success(translateMethod('Success'), translateMethod('asset.update.successful'))
                   }
                 });
             } else {
               Services.updateAsset(currentTeam._id, asset.meta.asset, asset.contentType, file)
                 .then((r) => {
                   if (r.error) {
-                    toastr.error(r.error)
+                    toastr.error(translateMethod('Error'), r.error)
                   } else {
-                    toastr.success(translateMethod('asset.update.successful'))
+                    toastr.success(translateMethod('Success'), translateMethod('asset.update.successful'))
                   }
                 })
             }
           },
-          value: {content},
+          value: { content },
           actionLabel: translateMethod('Update')
         }))
       );
@@ -390,18 +392,18 @@ export const AssetsList = ({
 
   const deleteAsset = (asset: any) => {
     (window
-    .confirm(translateMethod('delete asset', 'Are you sure you want to delete that asset ?')) as any).then((ok: any) => {
-    if (ok) {
-        serviceDelete(asset.meta.asset)
-                        .then(() => tableRef.current.update());
-    }
-});
+      .confirm(translateMethod('delete asset', 'Are you sure you want to delete that asset ?')) as any).then((ok: any) => {
+        if (ok) {
+          serviceDelete(asset.meta.asset)
+            .then(() => tableRef.current?.update());
+        }
+      });
   };
 
   const fetchAssets = () => {
     let getAssets;
     if (tenantMode) {
-            getAssets = Services.listTenantAssets();
+      getAssets = Services.listTenantAssets(currentTeam._id);
     } else {
       getAssets = Services.listAssets(currentTeam._id);
     }
@@ -419,7 +421,7 @@ export const AssetsList = ({
         file
       )
         .then((r) => maybeCreateThumbnail(r.id, file))
-                .then(() => tableRef.current.update())
+        .then(() => tableRef.current?.update())
     } else {
       return Services.storeAsset(
         currentTeam._id,
@@ -430,15 +432,15 @@ export const AssetsList = ({
         file
       )
         .then((asset) => maybeCreateThumbnail(asset.id, file))
-                .then(() => tableRef.current.update())
+        .then(() => tableRef.current?.update())
     }
   }
 
   return (
-        <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
-            <div className="row">
-                <div className="col-12 mb-3 d-flex justify-content-end">
-                    <button
+    <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
+      <div className="row">
+        <div className="col-12 mb-3 d-flex justify-content-end">
+          <button
             className='btn btn-outline-success'
             onClick={() => dispatch(openFormModal({
               title: translateMethod("Add asset"),
@@ -451,19 +453,12 @@ export const AssetsList = ({
           </button>
         </div>
       </div>
-            <div className="row">
-                <div className="col">
-                    <Table
-                        selfUrl="assets"
-            defaultTitle="Team assets"
-            defaultValue={() => ({})}
-            itemName="asset"
+      <div className="row">
+        <div className="col">
+          <Table
             columns={columns}
             fetchItems={() => fetchAssets()}
-            showActions={false}
-            showLink={false}
-            extractKey={(item: any) => item.key}
-            injectTable={(t: any) => tableRef.current = t}
+            injectTable={(t: TableRef) => tableRef.current = t}
           />
         </div>
       </div>

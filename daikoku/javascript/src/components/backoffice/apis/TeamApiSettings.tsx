@@ -12,7 +12,7 @@ export const TeamApiSettings = ({
   api,
   apiGroup
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const { currentTeam } = useSelector((s) => (s as any).context);
   const navigate = useNavigate();
 
@@ -21,11 +21,11 @@ export const TeamApiSettings = ({
   }: any) => {
     Services.transferApiOwnership(team, api.team, api._id).then((r) => {
       if (r.notify) {
-        toastr.info(translateMethod('team.transfer.notified'));
+        toastr.info(translateMethod('Info'), translateMethod('team.transfer.notified'));
       } else if (r.error) {
-        toastr.error(r.error);
+        toastr.error(translateMethod('Error'), r.error);
       } else {
-        toastr.error(translateMethod('issues.on_error'));
+        toastr.error(translateMethod('Error'), translateMethod('issues.on_error'));
       }
     });
   };
@@ -61,38 +61,38 @@ export const TeamApiSettings = ({
 
   const deleteApi = () => {
     (window.confirm(translateMethod('delete.api.confirm')) as any).then((ok: any) => {
-    if (ok) {
+      if (ok) {
         Services.deleteTeamApi(currentTeam._id, api._id)
-            .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
-            .then(() => toastr.success(translateMethod('deletion successful')));
-    }
-});
+          .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
+          .then(() => toastr.success(translateMethod('Success'), translateMethod('deletion successful')));
+      }
+    });
   };
 
   return (
-        <div>
-            <div
+    <div>
+      <div
         className="action mb-3"
         style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
       >
-                <h3>{translateMethod('transfer.api.ownership.title')}</h3>
-                <i>{translateMethod('transfer.api.ownership.description')}</i>
-                <Form
+        <h3>{translateMethod('transfer.api.ownership.title')}</h3>
+        <i>{translateMethod('transfer.api.ownership.description')}</i>
+        <Form
           schema={transferSchema}
           onSubmit={transferOwnership}
           options={{ actions: { submit: { label: translateMethod('Transfer') } } }}
         />
       </div>
-            <div
+      <div
         className="action d-flex flex-row align-items-center"
         style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
       >
-                <div>
-                    <h3>{translateMethod('delete.api.title')}</h3>
-                    <i>{translateMethod('delete.api.description')}</i>
+        <div>
+          <h3>{translateMethod('delete.api.title')}</h3>
+          <i>{translateMethod('delete.api.description')}</i>
         </div>
-                <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
-                    <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
+        <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
+          <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
             {translateMethod('Delete this Api')}
           </button>
         </div>

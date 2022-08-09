@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 import * as Services from '../../../services';
-import { Table } from '../../inputs';
+import { Table, TableRef } from '../../inputs';
 import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
@@ -12,16 +12,16 @@ export const TeamApiKeys = () => {
   const { currentTeam, connectedUser } = useSelector((state) => (state as any).context);
   useTeamBackOffice(currentTeam);
 
-  const tableRef = useRef();
+  const tableRef = useRef<TableRef>();
   const [showApiKey, setShowApiKey] = useState(false);
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     setShowApiKey(
       connectedUser.isDaikokuAdmin ||
-        !currentTeam.showApiKeyOnlyToAdmins ||
-        isUserIsTeamAdmin(connectedUser, currentTeam)
+      !currentTeam.showApiKeyOnlyToAdmins ||
+      isUserIsTeamAdmin(connectedUser, currentTeam)
     );
   }, [connectedUser.isDaikokuAdmin, currentTeam.showApiKeyOnlyToAdmins]);
 
@@ -54,13 +54,13 @@ export const TeamApiKeys = () => {
         const api = original;
         return (
           showApiKey && (
-                        <div style={{ minWidth: 100 }}>
-                            <Link
+            <div style={{ minWidth: 100 }}>
+              <Link
                 to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                 className="btn btn-sm btn-access-negative"
               >
-                                <i className="fas fa-eye me-1" />
-                                <Translation i18nkey="Api keys">Api keys</Translation>
+                <i className="fas fa-eye me-1" />
+                <Translation i18nkey="Api keys">Api keys</Translation>
               </Link>
             </div>
           )
@@ -70,16 +70,14 @@ export const TeamApiKeys = () => {
   ];
 
   const cleanSubs = () => {
-    (window
-    .confirm(translateMethod('clean.archived.sub.confirm', false, 'Are you sure you want to clean archived subscriptions ?')) as any).then((ok: any) => {
-    if (ok) {
-                Services.cleanArchivedSubscriptions(currentTeam._id).then(() => tableRef?.current?.update());
-    }
-});
-          Services.cleanArchivedSubscriptions(currentTeam._id).then(() => (tableRef?.current as any)?.update());
+    window.confirm(translateMethod('clean.archived.sub.confirm', false, 'Are you sure you want to clean archived subscriptions ?'))//@ts-ignore //FIXME when ts & monkey patch will be compatible
+      .then((ok: any) => {
+        if (ok) {
+          Services.cleanArchivedSubscriptions(currentTeam._id)
+            .then(() => tableRef.current?.update());
         }
       });
-  };
+  }
 
   return (
     <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
@@ -97,16 +95,9 @@ export const TeamApiKeys = () => {
           </Link>
           <div className="section p-2">
             <Table
-              selfUrl="apikeys"
-              defaultTitle="Apikeys"
-              defaultValue={() => ({})}
               defaultSort="name"
-              itemName="apikey"
               columns={columns}
               fetchItems={() => Services.subscribedApis(currentTeam._id)}
-              showActions={false}
-              showLink={false}
-              extractKey={(item: any) => item._id}
               ref={tableRef}
             />
             <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>

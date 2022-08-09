@@ -19,7 +19,7 @@ export const Pages = ({
   pages,
   removePage
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
 
   let table;
@@ -41,9 +41,9 @@ export const Pages = ({
         const { contentType } = original;
         const item = CONTENT_TYPES.find((f) => f.value === contentType);
         return (
-                    <img
+          <img
             style={{ width: '24px' }}
-                        src={`/assets/file-icons/${item.value
+            src={`/assets/file-icons/${item?.value
               .replace('text/', '')
               .replace('application/', '')}.svg`}
           />
@@ -68,7 +68,7 @@ export const Pages = ({
         }
       }: any) =>
         original.path || (
-                    <span className="badge bg-dark">{translateMethod('cms.pages.block')}</span>
+          <span className="badge bg-dark">{translateMethod('cms.pages.block')}</span>
         ),
     },
     {
@@ -90,17 +90,17 @@ export const Pages = ({
       }: any) => {
         const value = original;
         return (
-                    <div className="d-flex justify-content-center">
-                        <Link
+          <div className="d-flex justify-content-center">
+            <Link
               to={`/_${value.path}`}
               target="_blank"
               rel="noopener noreferrer"
               className="m-1"
               onClick={(e) => e.stopPropagation()}
             >
-                            <i className="fas fa-eye" style={{ color: '#000' }} />
+              <i className="fas fa-eye" style={{ color: '#000' }} />
             </Link>
-                        <button
+            <button
               className="m-1"
               style={{
                 border: 'none',
@@ -109,18 +109,18 @@ export const Pages = ({
               onClick={(e) => {
                 e.stopPropagation();
                 (window.confirm(translateMethod('cms.pages.remove_confirm')) as any).then((ok: any) => {
-    if (ok) {
-        Services.removeCmsPage(value.id).then((res) => {
-            if (res.error)
-                window.alert(res.error);
-            else
-                removePage(value.id);
-        });
-    }
-});
+                  if (ok) {
+                    Services.removeCmsPage(value.id).then((res) => {
+                      if (res.error)
+                        window.alert(res.error);
+                      else
+                        removePage(value.id);
+                    });
+                  }
+                });
               }}
             >
-                            <i className="fas fa-trash" style={{ color: 'var(--danger-color, #dc3545)' }} />
+              <i className="fas fa-trash" style={{ color: 'var(--danger-color, #dc3545)' }} />
             </button>
           </div>
         );
@@ -129,17 +129,10 @@ export const Pages = ({
   ];
 
   return (
-        <div>
-            <Table
-                selfUrl="pages"
-        defaultTitle="Pages"
-        defaultValue={pages}
+    <div>
+      <Table
         fetchItems={() => pages}
-        itemName="page"
         columns={columns}
-        showActions={false}
-        showLink={false}
-        extractKey={(item: any) => item.id}
         injectTable={(t: any) => table = t}
         defaultSort="path"
         defaultSortDesc={true}

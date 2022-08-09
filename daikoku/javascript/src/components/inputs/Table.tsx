@@ -16,7 +16,7 @@ export function useForceUpdate() {
   }, []);
   return update;
 }
-
+export type TableRef = { update: () => void}
 type Props = {
   columns: any[];
   fetchItems?: (...args: any[]) => any;

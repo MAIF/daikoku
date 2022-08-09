@@ -6,24 +6,17 @@ import 'brace/theme/idle_fingers';
 export default ({
   onChange,
   value,
-  setRef,
-  onLoad,
   className = '',
   readOnly,
   mode = 'javascript',
-  ...props
 }: any) => {
   return (
-        <CodeInput
+    <CodeInput
       className={className}
       readOnly={readOnly}
       mode={mode}
-            theme="idle_fingers"
       onChange={onChange}
       value={value}
-      onLoad={onLoad}
-      height={props.height}
-      width={props.width}
     />
   );
 };

@@ -15,9 +15,9 @@ export const TeamIncome = () => {
   const { currentTeam } = useSelector((state) => (state as any).context);
   useTeamBackOffice(currentTeam);
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
-  const [state, setState] = useState({
+  const [state, setState] = useState<any>({
     consumptions: [],
     consumptionsByApi: [],
     selectedApi: undefined,
@@ -37,6 +37,10 @@ export const TeamIncome = () => {
   const { client } = useContext(getApolloContext());
 
   const getBillingData = (team: any) => {
+    //FIXME: handle case if client is not setted
+    if (!client) {
+      return;
+    }
     setState({ ...state, loading: true });
     Promise.all([
       Services.getTeamIncome(
@@ -44,7 +48,7 @@ export const TeamIncome = () => {
         state.date.startOf('month').valueOf(),
         state.date.endOf('month').valueOf()
       ),
-            client.query({
+      client.query({
         query: Services.graphql.myVisibleApis,
         variables: { teamId: team._id },
       }),
@@ -89,166 +93,99 @@ export const TeamIncome = () => {
     Services.syncTeamIncome(currentTeam._id).then(() => getBillingData(currentTeam));
   };
 
-  const total = state.consumptions.reduce((acc, curr) => acc + (curr as any).billing.total, 0);
+  const total = state.consumptions
+    .reduce((acc: number, curr: any) => acc + curr.billing.total, 0);
   const mostRecentConsumption = maxBy(state.consumptions, (c) => (c as any).to);
   const lastDate = mostRecentConsumption && moment((mostRecentConsumption as any).to).format('DD/MM/YYYY HH:mm');
 
-    return (<Can I={read} a={api} team={currentTeam} dispatchError={true}>
-            <div className="row">
-                <div className="col">
-                    <h1>
-                        <Translation i18nkey="Team Income">Income</Translation>
-          </h1>
-                    {state.loading && <Spinner />}
-                    {!state.loading && (<div className="row">
-                            <div className="col apis">
-                                <div className="row month__and__total">
-                                    <div className="col-12 month__selector d-flex align-items-center">
-                                        <MonthPicker updateDate={(date: any) => {
-            setState({ ...state, date });
-            getBillingData(currentTeam);
-        }} value={state.date}/>
-                                        <button className="btn btn-sm btn-access-negative" onClick={sync}>
-                                            <i className="fas fa-sync-alt"/>
-                    </button>
-                                        {lastDate && (<i className="ms-1">
-                                                <Translation i18nkey="date.update" replacements={[lastDate]}>
-                          upd. {lastDate}
-                        </Translation>
-                      </i>)}
-                  </div>
-                </div>
-                                <div className="row api__billing__card__container section p-2">
-                                    <TheadBillingContainer label={translateMethod('Apis')} total={formatCurrency(total)}/>
-                                    {!state.consumptionsByApi.length && <NoData />}
-                  {state.consumptionsByApi
-            .sort((api1, api2) => (api2 as any).billing.total - (api1 as any).billing.total)
-                        .map(({ api, billing }) => (<ApiTotal key={api} handleClick={() => setState({
-                ...state,
-                selectedPlan: undefined,
-                selectedApi: state.apis.find((a) => (a as any)._id === api),
-            })} api={state.apis.find((a) => (a as any)._id === api)} total={(billing as any).total}/>))}
-                                    <TheadBillingContainer label={translateMethod('Apis')} total={formatCurrency(total)}/>
-                </div>
+  return (<Can I={read} a={api} team={currentTeam} dispatchError={true}>
+    <div className="row">
+      <div className="col">
+        <h1>
+          <Translation i18nkey="Team Income">Income</Translation>
+        </h1>
+        {state.loading && <Spinner />}
+        {!state.loading && (<div className="row">
+          <div className="col apis">
+            <div className="row month__and__total">
+              <div className="col-12 month__selector d-flex align-items-center">
+                <MonthPicker updateDate={(date: any) => {
+                  setState({ ...state, date });
+                  getBillingData(currentTeam);
+                }} value={state.date} />
+                <button className="btn btn-sm btn-access-negative" onClick={sync}>
+                  <i className="fas fa-sync-alt" />
+                </button>
+                {lastDate ? (<i className="ms-1">
+                  <Translation i18nkey="date.update" replacements={[lastDate]}>
+                    upd. {lastDate}
+                  </Translation>
+                </i>) : <></>}
               </div>
-                            <div className="col apikeys">
-                                {state.selectedApi && !state.selectedPlan && (<div className="api-plans-consumptions section p-2">
-                                        <div className="api__plans__consumption__header">
-                                            <h3 className="api__name">{(state.selectedApi as any).name}</h3>
-                                            <i className="far fa-times-circle quit" onClick={() => setState({ ...state, selectedApi: undefined })}/>
-                    </div>
-                    {(state.consumptions
-                                .filter((c) => (c as any).api === state.selectedApi._id)
-                                .reduce((agg, consumption) => {
-                                const maybeAggCons = agg.find((c) => c.plan === consumption.plan);
-                if (maybeAggCons) {
-                    return [
-                                                ...agg.filter((x) => x.plan !== consumption.plan),
-                        {
-                                                        ...maybeAggCons,
-                            billing: {
-                                                                hits: maybeAggCons.billing.hits + consumption.billing.hits,
-                                                                total: maybeAggCons.billing.total + consumption.billing.total,
-                            },
-                        },
-                    ];
-                }
-                else {
-                    return [...agg, consumption];
-                }
-            }, []) as any).sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
-                .map(({ plan, billing }: any, idx: any) => {
-                                const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
-                                return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)} total={billing.total} currency={usagePlan.currency} handleClick={() => setState({ ...state, selectedPlan: usagePlan })}/>);
-            })}
-                  </div>)}
-                                {state.selectedPlan && (<div>
-                                        <div className="api__plans__consumption__header">
-                                            <h3 className="api__name">
-                                                {state.selectedApi.name} -{' '}
-                        {(state.selectedPlan as any).customName ||
-                formatPlanType(state.selectedPlan, translateMethod)}
-                      </h3>
-                                            <i className="far fa-arrow-alt-circle-left quit" onClick={() => setState({ ...state, selectedPlan: undefined })}/>
-                    </div>
-                    {state.consumptions
-                                .filter((c) => (c as any).api === state.selectedApi._id && (c as any).plan === state.selectedPlan._id)
-                .map((c, idx) => {
-                                const team = state.teams.find((t) => t._id === c.team);
-                                return (<PriceCartridge key={idx} label={team.name} total={c.billing.total} currency={state.selectedPlan.currency}/>);
-            })}
-                  </div>)}
-              </div>
-            </div>)}
-        </div>
-      </div>
-    </Can>);
-                                                const maybeAggCons = agg.find((c) => (c as any).plan === (consumption as any).plan);
-                        if (maybeAggCons) {
-                          return [
-        ...agg.filter((x) => (x as any).plan !== (consumption as any).plan),
-    {
-        ...maybeAggCons,
-        billing: {
-                        hits: (maybeAggCons as any).billing.hits + (consumption as any).billing.hits,
-                        total: (maybeAggCons as any).billing.total + (consumption as any).billing.total,
-        },
-    },
-];
-                        } else {
-                                                    return [...agg, consumption];
-                        }
-                      }, [])
-                                            .sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
-                      .map(({
-                      plan,
-                      billing
-                    }: any, idx: any) => {
-                                                const usagePlan = state.selectedApi.possibleUsagePlans.find(
-                          (pp: any) => pp._id === plan
-                        );
-                        return (
-                                                    <PriceCartridge
-                            key={idx}
-                            label={
-                                                            usagePlan.customName || formatPlanType(usagePlan, translateMethod)
-                            }
-                            total={billing.total}
-                            currency={usagePlan.currency}
-                                                        handleClick={() => setState({ ...state, selectedPlan: usagePlan })}
-                          />
-                        );
-                      })}
-                                    </div>
-                )}
-                                {state.selectedPlan && (
-                                    <div>
-                                        <div className="api__plans__consumption__header">
-                                            <h3 className="api__name">
-                                                {state.selectedApi.name} -{' '}
-                                                {state.selectedPlan.customName ||
-                                                    formatPlanType(state.selectedPlan, translateMethod)}
-                      </h3>
-                                            <i
-                        className="far fa-arrow-alt-circle-left quit"
-                                                onClick={() => setState({ ...state, selectedPlan: undefined })}
-                      />
-                    </div>
-                                        {state.consumptions
-                      .filter(
-                                                (c) => c.api === state.selectedApi._id && c.plan === state.selectedPlan._id
-                      )
-                                            .map((c, idx) => {
-                                                const team = state.teams.find((t) => (t as any)._id === (c as any).team);
-                                                return (<PriceCartridge key={idx} label={team.name} total={(c as any).billing.total} currency={state.selectedPlan.currency}/>);
-                      })}
-                  </div>
-                )}
-                            </div>
-                        </div>
-          )}
-                </div>
             </div>
-    </Can>
-  );
+            <div className="row api__billing__card__container section p-2">
+              <TheadBillingContainer label={translateMethod('Apis')} total={formatCurrency(total)} />
+              {!state.consumptionsByApi.length && <NoData />}
+              {state.consumptionsByApi
+                .sort((api1: any, api2: any) => api2.billing.total - api1.billing.total)
+                .map(({ api, billing }: any) => (<ApiTotal key={api} handleClick={() => setState({
+                  ...state,
+                  selectedPlan: undefined,
+                  selectedApi: state.apis.find((a: any) => a._id === api),
+                })} api={state.apis.find((a: any) => a._id === api)} total={billing.total} />))}
+              <TheadBillingContainer label={translateMethod('Apis')} total={formatCurrency(total)} />
+            </div>
+          </div>
+          <div className="col apikeys">
+            {state.selectedApi && !state.selectedPlan && (<div className="api-plans-consumptions section p-2">
+              <div className="api__plans__consumption__header">
+                <h3 className="api__name">{state.selectedApi.name}</h3>
+                <i className="far fa-times-circle quit" onClick={() => setState({ ...state, selectedApi: undefined })} />
+              </div>
+              {(state.consumptions
+                .filter((c: any) => c.api === state.selectedApi._id)
+                .reduce((agg: Array<any>, consumption: any) => {
+                  const maybeAggCons = agg.find((c) => c.plan === consumption.plan);
+                  if (maybeAggCons) {
+                    return [
+                      ...agg.filter((x) => x.plan !== consumption.plan),
+                      {
+                        ...maybeAggCons,
+                        billing: {
+                          hits: maybeAggCons.billing.hits + consumption.billing.hits,
+                          total: maybeAggCons.billing.total + consumption.billing.total,
+                        },
+                      },
+                    ];
+                  }
+                  else {
+                    return [...agg, consumption];
+                  }
+                }, []) as any).sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
+                .map(({ plan, billing }: any, idx: any) => {
+                  const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
+                  return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)} total={billing.total} currency={usagePlan.currency} handleClick={() => setState({ ...state, selectedPlan: usagePlan })} />);
+                })}
+            </div>)}
+            {state.selectedPlan && (<div>
+              <div className="api__plans__consumption__header">
+                <h3 className="api__name">
+                  {state.selectedApi.name} -{' '}
+                  {(state.selectedPlan as any).customName ||
+                    formatPlanType(state.selectedPlan, translateMethod)}
+                </h3>
+                <i className="far fa-arrow-alt-circle-left quit" onClick={() => setState({ ...state, selectedPlan: undefined })} />
+              </div>
+              {state.consumptions
+                .filter((c: any) => c.api === state.selectedApi._id && c.plan === state.selectedPlan._id)
+                .map((c: any, idx: number) => {
+                  const team = state.teams.find((t: any) => t._id === c.team);
+                  return (<PriceCartridge key={idx} label={team.name} total={c.billing.total} currency={state.selectedPlan.currency} />);
+                })}
+            </div>)}
+          </div>
+        </div>)}
+      </div>
+    </div>
+  </Can>);
 };

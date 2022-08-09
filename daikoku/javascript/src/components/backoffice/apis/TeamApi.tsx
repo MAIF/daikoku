@@ -16,17 +16,18 @@ import {
   TeamPlanConsumption,
   TeamApiConsumption,
   TeamApiSubscriptions,
+  TeamApiDocumentationRef
 } from '.';
 import { useApiBackOffice } from '../../../contexts';
 
 import {
   setError,
-  openSubMetadataModal,
-  openTestingApiKeyModal,
   I18nContext,
   toggleExpertMode,
-  openApiSelectModal,
 } from '../../../core';
+import { TOptions } from '../../../types/types';
+import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 const CreateNewVersionButton = ({
@@ -36,57 +37,62 @@ const CreateNewVersionButton = ({
   currentTeam,
   tab
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   const navigate = useNavigate();
 
   const promptVersion = () => {
-    (window
-        .prompt(translateMethod('Version number'), undefined, false, translateMethod('New version'), versionId) as any).then((newVersion: any) => {
-    if (newVersion) {
+    //FIXME:fix ts error with rewriting translate method
+    //@ts-ignore
+    (window.prompt(translateMethod('Version number'), undefined, false, translateMethod('New version'), versionId) as any).then((newVersion: any) => {
+      if (newVersion) {
         if ((newVersion || '').split('').find((c: any) => reservedCharacters.includes(c)))
-            toastr.error("Can't create version with special characters : " + reservedCharacters.join(' | '));
+          toastr.error(translateMethod('Error'), "Can't create version with special characters : " + reservedCharacters.join(' | '));
         else
-            createNewVersion(newVersion);
-    }
-});
+          createNewVersion(newVersion);
+      }
+    });
   };
 
   const createNewVersion = (newVersion: any) => {
     Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
-      if (res.error) toastr.error(res.error);
+      if (res.error) toastr.error(translateMethod('Error'), res.error);
       else {
-        toastr.success('New version of api created');
+        toastr.success(translateMethod('Success'), 'New version of api created');
         navigate(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
       }
     });
   };
 
   return (
-        <button onClick={promptVersion} className="btn btn-sm btn-outline-primary ms-1">
-            <Plus />
+    <button onClick={promptVersion} className="btn btn-sm btn-outline-primary ms-1">
+      <Plus />
     </button>
   );
 };
 
-const TeamApiComponent = (props: any) => {
+export const TeamApi = (props: { creation?: boolean }) => {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId');
 
-  const [api, setApi] = useState();
+  const dispatch = useDispatch();
+  const { currentTeam, tenant, expertMode } = useSelector((s: any) => s.context);
+
+  const [api, setApi] = useState<any>();
   const [apiVersion, setApiVersion] = useState({
     value: params.versionId,
     label: params.versionId,
   });
-  const [versions, setVersions] = useState([params.versionId]);
+  const [versions, setVersions] = useState<TOptions>([{ value: params.versionId as string, label: params.versionId as string }]);
 
   const methods = useApiBackOffice(api, props.creation);
 
-  const teamApiDocumentationRef = useRef();
+  const teamApiDocumentationRef = useRef<TeamApiDocumentationRef>(null);
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
+
 
   useEffect(() => {
     if (location && location.state && (location as any).state.newApi) {
@@ -97,7 +103,7 @@ const TeamApiComponent = (props: any) => {
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${api ? (api as any).name : translateMethod('API')}`;
+    document.title = `${currentTeam.name} - ${api ? (api as any).name : translateMethod('API')}`;
 
     if (!props.creation) {
       methods.addMenu({
@@ -107,15 +113,14 @@ const TeamApiComponent = (props: any) => {
               version: {
                 order: 1,
                 component: (
-                                    <div className="d-flex flex-row mb-3">
-                                        <Select
+                  <div className="d-flex flex-row mb-3">
+                    <Select
                       name="versions-selector"
                       value={{ value: params.versionId, label: params.versionId }}
-                                            options={versions}
+                      options={versions}
                       onChange={(e) =>
                         navigate(
-                          `/${props.currentTeam._humanReadableId}/settings/apis/${                          
-api._humanReadableId}/${e.value}/${tab}`
+                          `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${e?.value}/${tab}`
                         )
                       }
                       classNamePrefix="reactSelect"
@@ -123,7 +128,7 @@ api._humanReadableId}/${e.value}/${tab}`
                       menuPlacement="auto"
                       menuPosition="fixed"
                     />
-                                        <CreateNewVersionButton {...params} currentTeam={props.currentTeam} />
+                    <CreateNewVersionButton {...params} currentTeam={currentTeam} />
                   </div>
                 ),
               },
@@ -136,8 +141,8 @@ api._humanReadableId}/${e.value}/${tab}`
 
   const reloadState = () => {
     Promise.all([
-      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
-      Services.getAllApiVersions(props.currentTeam._id, params.apiId),
+      Services.teamApi(currentTeam._id, params.apiId, params.versionId),
+      Services.getAllApiVersions(currentTeam._id, params.apiId),
     ]).then(([api, v]) => {
       if (!api.error) {
         const versions = (v || []).map((v: any) => ({
@@ -148,23 +153,24 @@ api._humanReadableId}/${e.value}/${tab}`
         setApi(api);
         setVersions(versions);
       } else {
-        toastr.error(api.error);
+        toastr.error(translateMethod('Error'), api.error);
       }
     });
   };
 
   const save = (editedApi: any) => {
     if (params.tab === 'documentation') {
-            teamApiDocumentationRef.current.saveCurrentPage();
+      teamApiDocumentationRef.current?.saveCurrentPage();
     }
 
     if (props.creation) {
-      return Services.createTeamApi(props.currentTeam._id, editedApi).then((createdApi) => {
+      return Services.createTeamApi(currentTeam._id, editedApi).then((createdApi) => {
         if (createdApi.error) {
-          toastr.error(translateMethod(createdApi.error));
+          toastr.error(translateMethod('Error'), translateMethod(createdApi.error));
           return createdApi;
         } else if (createdApi.name) {
           toastr.success(
+            translateMethod('Success'),
             translateMethod(
               'api.created.success',
               false,
@@ -174,27 +180,27 @@ api._humanReadableId}/${e.value}/${tab}`
           );
           methods.setApi(createdApi);
           navigate(
-            `/${props.currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`
+            `/${currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`
           );
         }
       });
     } else {
       return Services.saveTeamApiWithId(
-        props.currentTeam._id,
+        currentTeam._id,
         editedApi,
         apiVersion.value,
         editedApi._humanReadableId
       ).then((res) => {
         if (res.error) {
-          toastr.error(translateMethod(res.error));
+          toastr.error(translateMethod('Error'), translateMethod(res.error));
           return res;
         } else {
-          toastr.success(translateMethod('Api saved'));
+          toastr.success(translateMethod('Success'), translateMethod('Api saved'));
           setApi(editedApi);
 
           if (res._humanReadableId !== editedApi._humanReadableId) {
             navigate(
-              `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
+              `/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
             );
           }
         }
@@ -202,31 +208,30 @@ api._humanReadableId}/${e.value}/${tab}`
     }
   };
 
-  const teamId = props.currentTeam._id;
-  const tab = params.tab || 'infos';
+  const tab: string = params.tab || 'infos';
 
-  if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-    props.setError({ error: { status: 403, message: 'Creation security enabled' } });
+  if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
+    setError({ error: { status: 403, message: 'Creation security enabled' } })(dispatch);
   }
 
   useEffect(() => {
     if (api) {
       const backButton = (
-                <Link
+        <Link
           className="d-flex justify-content-around mt-3 align-items-center"
           style={{
             border: 0,
             background: 'transparent',
             outline: 'none',
           }}
-          to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+          to={`/${currentTeam._humanReadableId}/settings/apis`}
         >
-                    <i className="fas fa-chevron-left me-1" />
+          <i className="fas fa-chevron-left me-1" />
           {translateMethod(
             'back.to.team',
             false,
             `Back to {props.currentTeam._humanReadableId}`,
-            props.currentTeam.name
+            currentTeam.name
           )}
         </Link>
       );
@@ -249,8 +254,8 @@ api._humanReadableId}/${e.value}/${tab}`
               links: {
                 view: {
                   component: (
-                                        <Link
-                      to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/infos`}
+                    <Link
+                      to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/infos`}
                       className="btn btn-sm btn-access-negative mb-2"
                     >
                       {translateMethod('View this Api')}
@@ -268,54 +273,65 @@ api._humanReadableId}/${e.value}/${tab}`
     }
   }, [api]);
 
-    return (<Can I={manage} a={API} team={props.currentTeam} dispatchError>
-            {!api && <Spinner />}
-            {api && (<>
-                    <div className="d-flex flex-row justify-content-between align-items-center">
-                        {props.creation ? (<h2>{(api as any).name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-                                <h2 className="me-2">{(api as any).name}</h2>
-              </div>)}
-                        <button onClick={() => props.toggleExpertMode()} className="btn btn-sm btn-outline-primary">
-              {props.expertMode && translateMethod('Standard mode')}
-              {!props.expertMode && translateMethod('Expert mode')}
-            </button>
-          </div>
-                    <div className="row">
-                        <div className="section col container-api">
-                            <div className="mt-2">
-                                {tab === 'documentation' && (<TeamApiDocumentation creationInProgress={props.creation} team={props.currentTeam} teamId={teamId} value={api} onChange={(api: any) => setApi(api)} save={save} versionId={params.versionId} params={params} reloadState={reloadState} ref={teamApiDocumentationRef}/>)}
-                                {tab === 'plans' && (<TeamApiPricings value={api} team={props.currentTeam} tenant={props.tenant} save={save} creation={props.creation} expertMode={props.expertMode} injectSubMenu={(component: any) => methods.addMenu({
-                blocks: {
+  return (<Can I={manage} a={API} team={currentTeam} dispatchError>
+    {!api && <Spinner />}
+    {api && (<>
+      <div className="d-flex flex-row justify-content-between align-items-center">
+        {props.creation ? (<h2>{(api as any).name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+          <h2 className="me-2">{(api as any).name}</h2>
+        </div>)}
+        <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+          {expertMode && translateMethod('Standard mode')}
+          {!expertMode && translateMethod('Expert mode')}
+        </button>
+      </div>
+      <div className="row">
+        <div className="section col container-api">
+          <div className="mt-2">
+            {tab === 'documentation' && (
+              <TeamApiDocumentation
+                creationInProgress={props.creation}
+                team={currentTeam}
+                value={api}
+                onChange={(api: any) => setApi(api)}
+                save={save}
+                versionId={params.versionId}
+                reloadState={reloadState}
+                ref={teamApiDocumentationRef} />)}
+            {tab === 'plans' && (
+              <TeamApiPricings
+                value={api}
+                team={currentTeam}
+                tenant={tenant}
+                save={save}
+                creation={props.creation}
+                expertMode={expertMode}
+                injectSubMenu={(component: any) => methods.addMenu({
+                  blocks: {
                     links: { links: { plans: { childs: { menu: { component } } } } },
-                },
-            })} openApiSelectModal={props.openApiSelectModal}/>)}
-                                {tab === 'infos' && (<TeamApiInfos value={api} team={props.currentTeam} tenant={props.tenant} save={save} creation={props.creation} expertMode={props.expertMode} injectSubMenu={(component: any) => methods.addMenu({
-                blocks: {
+                  },
+                })} />)}
+            {tab === 'infos' && (
+              <TeamApiInfos
+                value={api}
+                team={currentTeam}
+                tenant={tenant}
+                save={save}
+                creation={props.creation}
+                expertMode={expertMode}
+                injectSubMenu={(component: any) => methods.addMenu({
+                  blocks: {
                     links: { links: { informations: { childs: { menu: { component } } } } },
-                },
-            })} openTestingApiKeyModal={props.openTestingApiKeyModal} openSubMetadataModal={props.openSubMetadataModal}/>)}
-                                {tab === 'news' && (<TeamApiPost value={api} team={props.currentTeam} api={api} params={params}/>)}
-                                {tab === 'settings' && <TeamApiSettings api={api}/>}
-                                {tab === 'stats' && !match && <TeamApiConsumption api={api}/>}
-                                {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={api}/>)}
-                                {tab === 'subscriptions' && <TeamApiSubscriptions api={api}/>}
-              </div>
-            </div>
+                  },
+                })} />)}
+            {tab === 'news' && (<TeamApiPost value={api} team={currentTeam} api={api} params={params} />)}
+            {tab === 'settings' && <TeamApiSettings api={api} />}
+            {tab === 'stats' && !match && <TeamApiConsumption api={api} />}
+            {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={api} />)}
+            {tab === 'subscriptions' && <TeamApiSubscriptions api={api} />}
           </div>
-        </>)}
-    </Can>);
+        </div>
+      </div>
+    </>)}
+  </Can>);
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-const mapDispatchToProps = {
-  setError: (error: any) => setError(error),
-  openSubMetadataModal: (props: any) => openSubMetadataModal(props),
-  openTestingApiKeyModal: (props: any) => openTestingApiKeyModal(props),
-  toggleExpertMode: () => toggleExpertMode(),
-  openApiSelectModal: (props: any) => openApiSelectModal(props),
-};
-
-export const TeamApi = connect(mapStateToProps, mapDispatchToProps)(TeamApiComponent);

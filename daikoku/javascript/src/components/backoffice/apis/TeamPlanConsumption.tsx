@@ -12,7 +12,7 @@ export const TeamPlanConsumption = ({
 }: any) => {
   const { currentTeam } = useSelector((state) => (state as any).context);
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const urlMatching = !!apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
     : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
@@ -43,8 +43,8 @@ export const TeamPlanConsumption = ({
       formatter: (data: any) => data.reduce((acc: any, item: any) => {
         const value = acc.find((a: any) => a.name === item.clientId) || { count: 0 };
 
-        const team = teams.find((t) => (t as any)._id === item.team);
-                const name = team.name;
+        const team: any = teams.find((t: any) => t._id === item.team);
+        const name = team?.name;
 
         return [
           ...acc.filter((a: any) => a.name !== item.clientId),
@@ -61,14 +61,14 @@ export const TeamPlanConsumption = ({
   ];
 
   const getPlanInformation = () => {
-        return Services.teamApi(currentTeam._id, match.params.apiId, match.params.versionId).then(
+    return Services.teamApi(currentTeam._id, match?.params.apiId, match?.params.version).then(
       (api) => {
         if (api.error) {
           return null;
         }
         return {
           api,
-                    plan: api.possibleUsagePlans.find((pp: any) => pp._id === match.params.planId),
+          plan: api.possibleUsagePlans.find((pp: any) => pp._id === match?.params.planId),
         };
       }
     );
@@ -99,19 +99,19 @@ export const TeamPlanConsumption = ({
   }, []);
 
   return (
-        <div>
-            <div className="row">
-                <div className="col">
-                    <h1>Api Consumption</h1>
-                    <PlanInformations fetchData={() => getPlanInformation()} />
+    <div>
+      <div className="row">
+        <div className="col">
+          <h1>Api Consumption</h1>
+          <PlanInformations fetchData={() => getPlanInformation()} />
         </div>
       </div>
-            <OtoroshiStatsVizualization
-                sync={() => Services.syncApiConsumption(params.apiId, currentTeam._id)}
+      <OtoroshiStatsVizualization
+        sync={() => Services.syncApiConsumption(match?.params.apiId, currentTeam._id)}
         fetchData={(from: any, to: any) => {
           return Services.apiConsumption(
-                        match.params.apiId,
-                        match.params.planId,
+            match?.params.apiId,
+            match?.params.planId,
             currentTeam._id,
             from.valueOf(),
             to.valueOf()
@@ -134,13 +134,13 @@ const PlanInformations = (props: any) => {
     });
   }, []);
 
-    if (loading) return <Spinner width="50" height="50" />;
+  if (loading) return <Spinner width="50" height="50" />;
 
   if (!informations) {
     return null;
   }
 
-    return (<h3>
-      {(informations as any).api.name} - {(informations as any).plan.customName || (informations as any).plan.type}
-    </h3>);
+  return (<h3>
+    {(informations as any).api.name} - {(informations as any).plan.customName || (informations as any).plan.type}
+  </h3>);
 };

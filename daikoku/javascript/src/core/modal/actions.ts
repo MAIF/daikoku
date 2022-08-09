@@ -40,30 +40,26 @@ export const openLoginOrRegisterModal = (modalProps: any) => (dispatch: any) => 
   });
 };
 
-export const openSubMetadataModal = (modalProps: any) => (dispatch: any) => {
-  return dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'subscriptionMetadataModal',
-  });
-};
+export const openSubMetadataModal = (modalProps: any) => ({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'subscriptionMetadataModal',
+});
 
 export const openContactModal = (name = undefined, email = undefined, tenant: any, team = undefined, api = undefined) =>
-    (dispatch: any) => {
-      return dispatch({
-        type: OPEN_MODAL,
-        modalProps: { name, email, tenant, team, api },
-        modalType: 'contactModal',
-      });
-    };
+  (dispatch: any) => {
+    return dispatch({
+      type: OPEN_MODAL,
+      modalProps: { name, email, tenant, team, api },
+      modalType: 'contactModal',
+    });
+  };
 
-export const openTestingApiKeyModal = (modalProps: any) => (dispatch: any) => {
-  return dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'testingApiKey',
-  });
-};
+export const openTestingApiKeyModal = (modalProps: any) => ({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'testingApiKey',
+});
 
 export const openInvitationTeamModal = (modalProps: any) => (dispatch: any) => dispatch({
   type: OPEN_MODAL,
@@ -83,13 +79,13 @@ export const openApiKeySelectModal = (modalProps: any) => (dispatch: any) => dis
   modalType: 'apiKeySelectModal',
 });
 
-export const openApiSelectModal = (modalProps: any) => (dispatch: any) => dispatch({
+export const openApiSelectModal = (modalProps: any) => ({
   type: OPEN_MODAL,
   modalProps,
   modalType: 'apiSelectModal',
 });
 
-export const openApiDocumentationSelectModal = (modalProps: any) => (dispatch: any) => dispatch({
+export const openApiDocumentationSelectModal = (modalProps: any) => ({
   type: OPEN_MODAL,
   modalProps,
   modalType: 'apiDocumentationSelectModal',

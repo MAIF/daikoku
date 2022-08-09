@@ -4,7 +4,7 @@ export default ({
   children,
   handleDrop
 }: any) => {
-  const dropRef = useRef();
+  const dropRef = useRef<HTMLDivElement | null>();
 
   const handleDrag = (e: any) => {
     e.stopPropagation();
@@ -22,21 +22,21 @@ export default ({
   };
 
   useEffect(() => {
-        dropRef.current.addEventListener('dragenter', handleDrag);
-        dropRef.current.addEventListener('dragleave', handleDrag);
-        dropRef.current.addEventListener('dragover', handleDrag);
-        dropRef.current.addEventListener('drop', handle);
+        dropRef.current?.addEventListener('dragenter', handleDrag);
+        dropRef.current?.addEventListener('dragleave', handleDrag);
+        dropRef.current?.addEventListener('dragover', handleDrag);
+        dropRef.current?.addEventListener('drop', handle);
 
     return () => {
-      (dropRef.current as any)?.removeEventListener('dragenter', handleDrag);
-      (dropRef.current as any)?.removeEventListener('dragleave', handleDrag);
-      (dropRef.current as any)?.removeEventListener('dragover', handleDrag);
-      (dropRef.current as any)?.removeEventListener('drop', handle);
+      dropRef.current?.removeEventListener('dragenter', handleDrag);
+      dropRef.current?.removeEventListener('dragleave', handleDrag);
+      dropRef.current?.removeEventListener('dragover', handleDrag);
+      dropRef.current?.removeEventListener('drop', handle);
     };
   }, []);
 
   return (
-        <div style={{ position: 'relative' }} ref={dropRef}>
+        <div style={{ position: 'relative' }} ref={r => dropRef.current = r}>
       {children}
     </div>
   );

@@ -18,8 +18,8 @@ import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './compo
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
-export const TeamBilling = (props: any) => {
-  const [state, setState] = useState({
+export const TeamBilling = () => {
+  const [state, setState] = useState<any>({
     consumptions: [],
     consumptionsByApi: [],
     selectedApi: undefined,
@@ -29,7 +29,7 @@ export const TeamBilling = (props: any) => {
 
   const { currentTeam } = useSelector((state) => (state as any).context);
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useTeamBackOffice(currentTeam);
 
@@ -50,7 +50,7 @@ export const TeamBilling = (props: any) => {
       Services.subscribedApis(team._id),
     ]).then(([consumptions, apis]) => {
       const consumptionsByApi = getConsumptionsByApi(consumptions);
-            setState({ ...state, consumptions, consumptionsByApi, apis, loading: false });
+      setState({ ...state, consumptions, consumptionsByApi, apis, loading: false });
     });
   };
 
@@ -103,70 +103,60 @@ export const TeamBilling = (props: any) => {
       );
   };
 
-  const total = state.consumptions.reduce((acc, curr) => acc + (curr as any).billing.total, 0);
+  const total = state.consumptions.reduce((acc: number, curr: any) => acc + (curr as any).billing.total, 0);
   const mostRecentConsumption = maxBy(state.consumptions, (c) => (c as any).to);
   const lastDate = mostRecentConsumption && moment((mostRecentConsumption as any).to).format('DD/MM/YYYY HH:mm');
 
-    return (<Can I={read} a={stat} team={currentTeam} dispatchError={true}>
-            <div className="row">
-                <div className="col">
-                    <h1>
-                        <Translation i18nkey="Billing">Billing</Translation>
-          </h1>
-                    <div className="row">
-                        <div className="col apis">
-                            <div className="row month__and__total">
-                                <div className="col-12 month__selector d-flex align-items-center">
-                                    <MonthPicker updateDate={getBilling} value={state.date}/>
-                                    <button className="btn btn-sm btn-access-negative" onClick={sync}>
-                                        <i className="fas fa-sync-alt ms-1"/>
-                  </button>
-                                    {lastDate && (<i className="ms-1">
-                                            <Translation i18nkey="date.update" replacements={[lastDate]}>
-                        upd. {lastDate}
-                      </Translation>
-                    </i>)}
-                </div>
-              </div>
-                            <div className="row api__billing__card__container section p-2">
-                                <TheadBillingContainer label={translateMethod('Subscribed Apis')} total={formatCurrency(total)}/>
-                                {!state.consumptionsByApi.length && <NoData />}
-                {state.consumptionsByApi
-        .sort((api1, api2) => (api2 as any).billing.total - (api1 as any).billing.total)
-                .map(({ api, billing }) => (<ApiTotal key={api} handleClick={() => setState({
-            ...state,
-            selectedApi: (state as any).apis.find((a: any) => a._id === api),
-        })} api={(state as any).apis.find((a: any) => a._id === api)} total={(billing as any).total}/>))}
-                                <TheadBillingContainer label={translateMethod('Subscribed Apis')} total={formatCurrency(total)}/>
+  return (<Can I={read} a={stat} team={currentTeam} dispatchError={true}>
+    <div className="row">
+      <div className="col">
+        <h1>
+          <Translation i18nkey="Billing">Billing</Translation>
+        </h1>
+        <div className="row">
+          <div className="col apis">
+            <div className="row month__and__total">
+              <div className="col-12 month__selector d-flex align-items-center">
+                <MonthPicker updateDate={getBilling} value={state.date} />
+                <button className="btn btn-sm btn-access-negative" onClick={sync}>
+                  <i className="fas fa-sync-alt ms-1" />
+                </button>
+                {lastDate ? (<i className="ms-1">
+                  <Translation i18nkey="date.update" replacements={[lastDate]}>
+                    upd. {lastDate}
+                  </Translation>
+                </i>) : <></>}
               </div>
             </div>
-                        <div className="col apikeys">
-                            {state.selectedApi && (<div className="api-plans-consumptions section p-2">
-                                    <div className="api__plans__consumption__header">
-                                        <h3 className="api__name">{(state.selectedApi as any).name}</h3>
-                                        <i className="far fa-times-circle quit" onClick={() => setState({ ...state, selectedApi: undefined })}/>
-                  </div>
-                  {state.consumptions
-                        .filter((c) => (c as any).api === state.selectedApi._id)
-            .sort((c1, c2) => (c2 as any).billing.total - (c1 as any).billing.total)
-            .map(({ plan, billing }, idx) => {
-                        const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
-                        return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)} total={billing.total} currency={usagePlan.currency}/>);
-        })}
-                </div>)}
+            <div className="row api__billing__card__container section p-2">
+              <TheadBillingContainer label={translateMethod('Subscribed Apis')} total={formatCurrency(total)} />
+              {!state.consumptionsByApi.length && <NoData />}
+              {state.consumptionsByApi
+                .sort((api1: any, api2: any) => api2.billing.total - api1.billing.total)
+                .map(({ api, billing }: any) => (<ApiTotal key={api} handleClick={() => setState({
+                  ...state,
+                  selectedApi: (state as any).apis.find((a: any) => a._id === api),
+                })} api={(state as any).apis.find((a: any) => a._id === api)} total={(billing as any).total} />))}
+              <TheadBillingContainer label={translateMethod('Subscribed Apis')} total={formatCurrency(total)} />
             </div>
+          </div>
+          <div className="col apikeys">
+            {state.selectedApi && (<div className="api-plans-consumptions section p-2">
+              <div className="api__plans__consumption__header">
+                <h3 className="api__name">{(state.selectedApi as any).name}</h3>
+                <i className="far fa-times-circle quit" onClick={() => setState({ ...state, selectedApi: undefined })} />
+              </div>
+              {state.consumptions
+                .filter((c: any) => c.api === state.selectedApi._id)
+                .sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
+                .map(({ plan, billing }: any, idx: number) => {
+                  const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
+                  return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)} total={billing.total} currency={usagePlan.currency} />);
+                })}
+            </div>)}
           </div>
         </div>
       </div>
-    </Can>);
-                                            return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)} total={(billing as any).total} currency={usagePlan.currency}/>);
-                    })}
-                                </div>
-              )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-    </Can>
-  );
+    </div>
+  </Can>);
 };

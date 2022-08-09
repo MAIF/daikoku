@@ -91,10 +91,10 @@ export const AssetSelectorModal = ({
 
 type AssetChooserProps = {
   teamId?: string,
-  team: any,
-  tenantMode: boolean,
-  typeFilter: any,
-  onlyPreview: any,
+  team?: any,
+  tenantMode?: boolean,
+  typeFilter?: any,
+  onlyPreview?: any,
   label: string,
   classNames?: any,
   openAssetSelectorModal?: (props: any) => void, //FIXME: props not optional in-jected by redux ==> get it from redux hook instead

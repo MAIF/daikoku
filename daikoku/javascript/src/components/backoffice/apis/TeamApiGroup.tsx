@@ -6,7 +6,7 @@ import { toastr } from 'react-redux-toastr';
 
 import { Can, manage, api as API, Spinner } from '../../utils';
 import { useApiGroupBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext, toggleExpertMode } from '../../../core';
 import * as Services from '../../../services';
 import {
   TeamApiPricings,
@@ -15,6 +15,11 @@ import {
   TeamApiSubscriptions,
   TeamApiConsumption,
 } from '.';
+import { useDispatch } from 'react-redux';
+
+type LocationState = {
+  newApiGroup?: any
+}
 
 export const TeamApiGroup = () => {
   const params = useParams();
@@ -22,36 +27,34 @@ export const TeamApiGroup = () => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apigroups/:apiGroupId/stats/plan/:planId');
 
-  const [apiGroup, setApiGroup] = useState();
+  const [apiGroup, setApiGroup] = useState<any>();
 
-  const { currentTeam, expertMode, tenant } = useSelector((s) => (s as any).context);
+  const { currentTeam, expertMode, tenant } = useSelector((s: any) => s.context);
+  const dispatch = useDispatch();
 
-  const creation = (location as any)?.state?.newApiGroup;
+  const state: LocationState = location.state as LocationState
+  const creation = state?.newApiGroup;
 
   const methods = useApiGroupBackOffice(apiGroup, creation);
 
   useEffect(() => {
-        if (location?.state?.newApiGroup) {
-                setApiGroup(location.state.newApiGroup);
+    if (state?.newApiGroup) {
+      setApiGroup(state.newApiGroup);
     }
     else {
-        Services.teamApi(currentTeam._id, params.apiGroupId, '1.0.0').then(setApiGroup);
-    }
-}, [params.apiGroupId, (location as any).state?.newApiGroup]);(location as any)?.state?.newApiGroup) {
-      setApiGroup((location as any).state.newApiGroup);
-    } else {
       Services.teamApi(currentTeam._id, params.apiGroupId, '1.0.0').then(setApiGroup);
     }
-    }, [params.apiGroupId, location.state?.newApiGroup]);
+  }, [params.apiGroupId, state?.newApiGroup]);
 
   const save = (group: any) => {
-    if ((location as any).state?.newApiGroup) {
-            return Services.createTeamApi(currentTeam._id, group).then((createdGroup) => {
+    if (creation) {
+      return Services.createTeamApi(currentTeam._id, group).then((createdGroup) => {
         if (createdGroup.error) {
-          toastr.error(translateMethod(createdGroup.error));
+          toastr.error(translateMethod('Error'), translateMethod(createdGroup.error));
           return createdGroup;
         } else if (createdGroup.name) {
           toastr.success(
+            translateMethod('Success'),
             translateMethod(
               'group.created.success',
               false,
@@ -60,31 +63,29 @@ export const TeamApiGroup = () => {
             )
           );
 
-                    methods.setApiGroup(createdGroup);
-                    navigate(
-            `/${            
-currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`
+          methods.setApiGroup(createdGroup);
+          navigate(
+            `/${currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`
           );
         }
       });
     } else {
       return Services.saveTeamApiWithId(
-                currentTeam._id,
+        currentTeam._id,
         group,
         group.currentVersion,
         group._humanReadableId
       ).then((res) => {
         if (res.error) {
-          toastr.error(translateMethod(res.error));
+          toastr.error(translateMethod('error'), translateMethod(res.error));
           return res;
         } else {
-          toastr.success(translateMethod('Group saved'));
-                    setApiGroup(group);
+          toastr.success(translateMethod('Success'), translateMethod('Group saved'));
+          setApiGroup(group);
 
           if (res._humanReadableId !== group._humanReadableId) {
-                        navigate(
-              `/${              
-currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`
+            navigate(
+              `/${currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`
             );
           }
         }
@@ -92,101 +93,101 @@ currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`
     }
   };
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
-  const schema = {
+  const schema: ({[key: string]: any}) = {
     name: {
-        type: type.string,
-        label: translateMethod('Name'),
-        placeholder: translateMethod('Name'),
-        constraints: [
-            constraints.required(translateMethod('constraints.required.name')),
-            constraints.test('name_already_exist', translateMethod('api.already.exists'), (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then((r) => !r.exists)),
-        ],
+      type: type.string,
+      label: translateMethod('Name'),
+      placeholder: translateMethod('Name'),
+      constraints: [
+        constraints.required(translateMethod('constraints.required.name')),
+        constraints.test('name_already_exist', translateMethod('api.already.exists'), (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then((r) => !r.exists)),
+      ],
     },
     smallDescription: {
-        type: type.string,
-        format: format.text,
-        label: translateMethod('Small desc.'),
+      type: type.string,
+      format: format.text,
+      label: translateMethod('Small desc.'),
     },
     description: {
-        type: type.string,
-        format: format.markdown,
-        label: translateMethod('Description'),
+      type: type.string,
+      format: format.markdown,
+      label: translateMethod('Description'),
     },
     published: {
-        type: type.bool,
-        label: translateMethod('Published'),
+      type: type.bool,
+      label: translateMethod('Published'),
     },
     tags: {
-        type: type.string,
-        array: true,
-        label: translateMethod('Tags'),
-        expert: true,
+      type: type.string,
+      array: true,
+      label: translateMethod('Tags'),
+      expert: true,
     },
     categories: {
-        type: type.string,
-        format: format.select,
-        isMulti: true,
-        createOption: true,
-        label: translateMethod('Categories'),
-        optionsFrom: '/api/categories',
-        transformer: (t: any) => ({
-            label: t,
-            value: t
-        }),
-        expert: true,
+      type: type.string,
+      format: format.select,
+      isMulti: true,
+      createOption: true,
+      label: translateMethod('Categories'),
+      optionsFrom: '/api/categories',
+      transformer: (t: any) => ({
+        label: t,
+        value: t
+      }),
+      expert: true,
     },
     visibility: {
-        type: type.string,
-        format: format.buttonsSelect,
-        label: translateMethod('Visibility'),
-        options: [
-            { label: translateMethod('Public'), value: 'Public' },
-            { label: translateMethod('Private'), value: 'Private' },
-            {
-                label: translateMethod('PublicWithAuthorizations'),
-                value: 'PublicWithAuthorizations',
-            },
-        ],
+      type: type.string,
+      format: format.buttonsSelect,
+      label: translateMethod('Visibility'),
+      options: [
+        { label: translateMethod('Public'), value: 'Public' },
+        { label: translateMethod('Private'), value: 'Private' },
+        {
+          label: translateMethod('PublicWithAuthorizations'),
+          value: 'PublicWithAuthorizations',
+        },
+      ],
     },
     authorizedTeams: {
-        type: type.string,
-        format: format.select,
-        isMulti: true,
-        defaultValue: [],
-        visible: {
-            ref: 'visibility',
-            test: (v: any) => v !== 'Public',
-        },
-        label: translateMethod('Authorized teams'),
-        optionsFrom: '/api/teams',
-        transformer: (t: any) => ({
-            label: t.name,
-            value: t._id
-        }),
+      type: type.string,
+      format: format.select,
+      isMulti: true,
+      defaultValue: [],
+      visible: {
+        ref: 'visibility',
+        test: (v: any) => v !== 'Public',
+      },
+      label: translateMethod('Authorized teams'),
+      optionsFrom: '/api/teams',
+      transformer: (t: any) => ({
+        label: t.name,
+        value: t._id
+      }),
     },
     apis: {
-        type: type.string,
-        label: translateMethod('API', true),
-        format: format.select,
-        isMulti: true,
-                optionsFrom: Services.teamApis(currentTeam._id).then((apis) => apis.filter((api: any) => api._id !== (apiGroup as any)?._id && !api.apis)),
-        transformer: (api: any) => ({
-            label: `${api.name} - ${api.currentVersion}`,
-            value: api._id
-        }),
+      type: type.string,
+      label: translateMethod('API', true),
+      format: format.select,
+      isMulti: true,
+      optionsFrom: Services.teamApis(currentTeam._id).then((apis) => apis.filter((api: any) => api._id !== apiGroup?._id && !api.apis)),
+      transformer: (api: any) => ({
+        label: `${api.name} - ${api.currentVersion}`,
+        value: api._id
+      }),
     },
-};
+  };
 
-  const simpleOrExpertMode = (entry: any, expert: any) => {
-        return !!expert || !schema[entry]?.expert;
+  const simpleOrExpertMode = (entry: string, expert: boolean) => {
+    return !!expert || !schema[entry]?.expert;
   };
   const flow = [
     {
       label: translateMethod('Basic.informations'),
       flow: ['published', 'name', 'smallDescription', 'apis'].filter((entry) =>
-                simpleOrExpertMode(entry, expertMode)
+        simpleOrExpertMode(entry, expertMode)
       ),
       collapsed: false,
     },
@@ -197,13 +198,13 @@ currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`
     },
     {
       label: translateMethod('Tags and categories'),
-            flow: ['tags', 'categories'].filter((entry) => simpleOrExpertMode(entry, expertMode)),
+      flow: ['tags', 'categories'].filter((entry) => simpleOrExpertMode(entry, expertMode)),
       collapsed: true,
     },
     {
       label: translateMethod('Visibility'),
       flow: ['visibility', 'authorizedTeams'].filter((entry) =>
-                simpleOrExpertMode(entry, expertMode)
+        simpleOrExpertMode(entry, expertMode)
       ),
       collapsed: true,
     },
@@ -211,37 +212,41 @@ currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`
 
   const { tab } = params;
   return (<Can I={manage} a={API} team={currentTeam} dispatchError>
-      {!apiGroup && <Spinner />}
-      {apiGroup && (<>
-          <div className="d-flex flex-row justify-content-between align-items-center">
-            {creation ? (<h2>{(apiGroup as any).name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-                <h2 className="me-2">{(apiGroup as any).name}</h2>
-              </div>)}
-            <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-primary">
-              {expertMode && translateMethod('Standard mode')}
-              {!expertMode && translateMethod('Expert mode')}
-            </button>
-          </div>
-          <div className="row">
-            <div className="section col container-api">
-              <div className="mt-2">
-                {params.tab === 'infos' && (<div>
-                    <Form schema={schema} flow={flow} onSubmit={save} value={apiGroup}/>
-                  </div>)}
-                {params.tab === 'plans' && (<div>
-                    <TeamApiPricings value={apiGroup} team={currentTeam} tenant={tenant} save={save} creation={creation} expertMode={expertMode} injectSubMenu={(component: any) => methods.addMenu({
+    {!apiGroup && <Spinner />}
+    {apiGroup && (<>
+      <div className="d-flex flex-row justify-content-between align-items-center">
+        {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+          <h2 className="me-2">{apiGroup.name}</h2>
+        </div>)}
+        <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+          {expertMode && translateMethod('Standard mode')}
+          {!expertMode && translateMethod('Expert mode')}
+        </button>
+      </div>
+      <div className="row">
+        <div className="section col container-api">
+          <div className="mt-2">
+            {params.tab === 'infos' && (<div>
+              <Form
+                schema={schema}
+                flow={flow}
+                onSubmit={save}
+                value={apiGroup} />
+            </div>)}
+            {params.tab === 'plans' && (<div>
+              <TeamApiPricings value={apiGroup} team={currentTeam} tenant={tenant} save={save} creation={creation} expertMode={expertMode} injectSubMenu={(component: any) => methods.addMenu({
                 blocks: {
-                    links: { links: { plans: { childs: { menu: { component } } } } },
+                  links: { links: { plans: { childs: { menu: { component } } } } },
                 },
-            })} openApiSelectModal={() => alert('oops')}/>
-                  </div>)}
-                {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup/>}
-                {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup/>}
-                {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={apiGroup} apiGroup/>)}
-                {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} apiGroup/>}
-              </div>
-            </div>
+              })} openApiSelectModal={() => alert('oops')} />
+            </div>)}
+            {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
+            {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
+            {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={apiGroup} apiGroup />)}
+            {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
           </div>
-        </>)}
-    </Can>);
+        </div>
+      </div>
+    </>)}
+  </Can>);
 };

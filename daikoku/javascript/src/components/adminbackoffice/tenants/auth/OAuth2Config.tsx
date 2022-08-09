@@ -1,5 +1,4 @@
 import React, { Component, useContext, useEffect } from 'react';
-import { SelectInput, TextInput, TextareaInput, ObjectInput, NumberInput } from '../../../inputs';
 import { Spinner } from '../../../utils';
 
 import set from 'set-value';
@@ -8,7 +7,7 @@ import { I18nContext } from '../../../../core';
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function AlgoSettings(props: any) {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   if (!props.rawValue.readProfileFromToken) {
     return null;
@@ -28,9 +27,9 @@ export function AlgoSettings(props: any) {
   };
 
   return (
-        <div>
-            <SelectInput
-                label={props.algoTitle || translateMethod('Algo.')}
+    <div>
+      <SelectInput
+        label={props.algoTitle || translateMethod('Algo.')}
         value={algo.type}
         onChange={(e: any) => {
           switch (e) {
@@ -79,9 +78,9 @@ export function AlgoSettings(props: any) {
         help="What kind of algorithm you want to use to verify/sign your JWT token with"
       />
       {algo.type === 'HSAlgoSettings' && [
-                <SelectInput
+        <SelectInput
           key="sha-size"
-                    label={translateMethod('SHA Size')}
+          label={translateMethod('SHA Size')}
           help={translateMethod('sha.size.help')}
           value={algo.size}
           onChange={(v: any) => changeTheValue(path + '.size', v)}
@@ -91,7 +90,7 @@ export function AlgoSettings(props: any) {
             { label: '512', value: 512 },
           ]}
         />,
-                <TextInput
+        <TextInput
           key="hmac-secret"
           label={translateMethod('Hmac secret')}
           placeholder="secret"
@@ -101,9 +100,9 @@ export function AlgoSettings(props: any) {
         />,
       ]}
       {algo.type === 'RSAlgoSettings' && [
-                <SelectInput
+        <SelectInput
           key="sha-size"
-                    label={translateMethod('SHA Size')}
+          label={translateMethod('SHA Size')}
           help={translateMethod('sha.size.help')}
           value={algo.size}
           onChange={(v: any) => changeTheValue(path + '.size', v)}
@@ -113,14 +112,14 @@ export function AlgoSettings(props: any) {
             { label: '512', value: 512 },
           ]}
         />,
-                <TextareaInput
+        <TextareaInput
           key="public-key"
           label={translateMethod('Public key')}
           value={algo.publicKey}
           help={translateMethod('The RSA public key')}
           onChange={(e: any) => changeTheValue(path + '.publicKey', e)}
         />,
-                <TextareaInput
+        <TextareaInput
           key="private-key"
           label={translateMethod('Private key')}
           value={algo.privateKey}
@@ -129,9 +128,9 @@ export function AlgoSettings(props: any) {
         />,
       ]}
       {algo.type === 'ESAlgoSettings' && [
-                <SelectInput
+        <SelectInput
           key="sha-size"
-                    label={translateMethod('SHA Size')}
+          label={translateMethod('SHA Size')}
           help={translateMethod('sha.size.help')}
           value={algo.size}
           onChange={(v: any) => changeTheValue(path + '.size', v)}
@@ -141,55 +140,55 @@ export function AlgoSettings(props: any) {
             { label: '512', value: 512 },
           ]}
         />,
-                <TextareaInput
+        <TextareaInput
           key="public-key"
           label={translateMethod('Public key')}
           value={algo.publicKey}
           help={translateMethod('The ECDSA public key')}
           onChange={(e: any) => changeTheValue(path + '.publicKey', e)}
         />,
-                <TextareaInput
+        <TextareaInput
           key="private-key"
           label={translateMethod('Private key')}
           value={algo.privateKey}
-                    help={translateMethodt('ecdsa.private.key.help')}
+          help={translateMethod('ecdsa.private.key.help')}
           onChange={(e: any) => changeTheValue(path + '.privateKey', e)}
         />,
       ]}
       {algo.type === 'JWKSAlgoSettings' && [
-                <TextInput
+        <TextInput
           key="url"
           label={translateMethod('URL')}
           value={algo.url}
           help={translateMethod('The JWK Set url')}
           onChange={(e: any) => changeTheValue(path + '.url', e)}
         />,
-                <NumberInput
+        <NumberInput
           key="http-call-timeout"
-                    label={translateMethod('HTTP call timeout')}
+          label={translateMethod('HTTP call timeout')}
           suffix={translateMethod('millis.')}
           value={algo.timeout}
           help={translateMethod('Timeout for fetching the keyset')}
           onChange={(e: any) => changeTheValue(path + '.timeout', e)}
         />,
-                <NumberInput
+        <NumberInput
           key="ttl"
-                    label={translateMethod('TTL')}
+          label={translateMethod('TTL')}
           suffix={translateMethod('millis.')}
           value={algo.ttl}
           help={translateMethod('Cache TTL for the keyset')}
           onChange={(e: any) => changeTheValue(path + '.ttl', e)}
         />,
-                <ObjectInput
+        <ObjectInput
           key="http-header"
-                    label={translateMethod('HTTP Headers')}
+          label={translateMethod('HTTP Headers')}
           value={algo.headers}
           help={translateMethod('The HTTP headers passed')}
           onChange={(e: any) => changeTheValue(path + '.headers', e)}
         />,
-                <SelectInput
+        <SelectInput
           key="key-type"
-                    label={translateMethod('Key type')}
+          label={translateMethod('Key type')}
           help={translateMethod('Type of key')}
           value={algo.kty}
           onChange={(v: any) => changeTheValue(path + '.kty', v)}
@@ -230,31 +229,31 @@ const defaultConfig = {
 };
 
 export function OAuth2Config(props: any) {
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const fetchConfig = () => {
     (window.prompt(translateMethod('URL of the OIDC config')) as any).then((url: any) => {
-    if (url) {
+      if (url) {
         return fetch('/api/oidc/_fetchConfig', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                url,
-                id: props.value.id,
-                name: props.value.name,
-                desc: props.value.desc,
-            }),
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url,
+            id: props.value.id,
+            name: props.value.name,
+            desc: props.value.desc,
+          }),
         })
-            .then((r) => r.json())
-            .then((config) => {
+          .then((r) => r.json())
+          .then((config) => {
             props.onChange(config);
-        });
-    }
-});
+          });
+      }
+    });
   };
 
   const formFlow = [
@@ -289,11 +288,11 @@ export function OAuth2Config(props: any) {
     },
     oidcProvider: {
       type: () => (
-                <div className="mb-3 row">
-                    <label className="col-xs-12 col-sm-2 col-form-label" />
-                    <div className="col-sm-10">
-                        <button type="button" className="btn btn-success" onClick={fetchConfig}>
-                            <Translation i18nkey="Get from OIDC config 2">Get from OIDC config 2</Translation>
+        <div className="mb-3 row">
+          <label className="col-xs-12 col-sm-2 col-form-label" />
+          <div className="col-sm-10">
+            <button type="button" className="btn btn-success" onClick={fetchConfig}>
+              <Translation i18nkey="Get from OIDC config 2">Get from OIDC config 2</Translation>
             </button>
           </div>
         </div>
@@ -407,15 +406,15 @@ export function OAuth2Config(props: any) {
   }, []);
 
   return (
-        <React.Suspense fallback={<Spinner />}>
-            <LazyForm
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
         value={props.value}
         onChange={(e) => {
           props.onChange(e);
         }}
         flow={formFlow}
         schema={formSchema}
-                style={{ marginTop: 50 }}
+        style={{ marginTop: 50 }}
       />
     </React.Suspense>
   );

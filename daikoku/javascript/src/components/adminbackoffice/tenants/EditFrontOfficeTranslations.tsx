@@ -6,17 +6,17 @@ import { type, format, constraints } from '@maif/react-forms';
 
 import { I18nContext, openFormModal } from '../../../core';
 import * as Services from '../../../services';
-import { Table } from '../../inputs';
+import { Table, TableRef } from '../../inputs';
 
 
 export function EditFrontOfficeTranslations(props: any) {
   const dispatch = useDispatch();
-  const table = useRef();
+  const table = useRef<TableRef>();
 
   const {
-        updateTranslation,
-        translations: globalTranslations,
-        translateMethod,
+    updateTranslation,
+    translations: globalTranslations,
+    translateMethod,
   } = useContext(I18nContext);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function EditFrontOfficeTranslations(props: any) {
   const loadTranslations = () => {
     return Services.getTranslations('all').then((store) => {
       const t = Object.entries({ ...globalTranslations })
-                .map(([language, { translations: t }]) =>
+        .map(([language, { translations: t }]) =>
           Object.entries(t)
             .map(([key, value]) => {
               const existingTranslation = store.translations.find(
@@ -49,7 +49,7 @@ export function EditFrontOfficeTranslations(props: any) {
         .reduce(
           (acc, current) => ({
             ...acc,
-                        [current.key]: acc[current.key] ? [...acc[current.key], current] : [current],
+            [current.key]: acc[current.key] ? [...acc[current.key], current] : [current],
           }),
           {}
         )
@@ -71,7 +71,7 @@ export function EditFrontOfficeTranslations(props: any) {
         }
       }: any) => {
         return (
-                    <div>
+          <div>
             {translateMethod(original.message)}
           </div>
         )
@@ -79,7 +79,7 @@ export function EditFrontOfficeTranslations(props: any) {
     },
     {
       id: 'actions',
-      style: { textAlign: 'center', width: '120px'},
+      style: { textAlign: 'center', width: '120px' },
       Header: translateMethod('Translate'),
       disableSortBy: true,
       disableFilters: true,
@@ -89,10 +89,10 @@ export function EditFrontOfficeTranslations(props: any) {
         }
       }: any) => {
         return (
-                    <div className='d-flex flex-row flex-wrap justify-content-end'>
+          <div className='d-flex flex-row flex-wrap justify-content-end'>
             {original.translations.map((translation: any) => {
               return (
-                                <button type='button' key={translation.language}
+                <button type='button' key={translation.language}
                   className='btn btn-outline-success me-2'
                   onClick={() => dispatch(openFormModal({
                     title: `${translateMethod('Translation')} : [${translation.language}]`,
@@ -109,10 +109,10 @@ export function EditFrontOfficeTranslations(props: any) {
                     value: translation,
                     actionLabel: translateMethod('Translate'),
                     onSubmit: (t: any) => updateTranslation(t)
-                    .then(() => {
-                      toastr.success(translateMethod('mailing_internalization.translation_updated'))
-                                            table.current.update()
-                    })
+                      .then(() => {
+                        toastr.success(translateMethod('Success'), translateMethod('mailing_internalization.translation_updated'))
+                        table.current?.update()
+                      })
                   }))}>
                   {translation.language}
                 </button>
@@ -125,18 +125,11 @@ export function EditFrontOfficeTranslations(props: any) {
   ]
 
   return (
-        <div>
-            <Table
-                selfUrl="translations"
-        defaultTitle="Translations"
-        defaultValue={() => ([])}
+    <div>
+      <Table
         defaultSort="message"
-        itemName="translation"
         columns={columns}
         fetchItems={() => loadTranslations()}
-        showActions={false}
-        showLink={false}
-        extractKey={(item: any) => item[0]}
         injectTable={(t: any) => table.current = t}
       />
     </div>

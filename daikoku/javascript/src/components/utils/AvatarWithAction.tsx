@@ -7,6 +7,7 @@ type Props = {
     infos?: string | React.ReactElement;
     actions: {
         action?: ((...args: any[]) => any) | any[];
+        redirect?: () => void,
         link?: string;
         iconClass: string;
         tooltip?: string;

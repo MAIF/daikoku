@@ -1160,5 +1160,7 @@
     "asset.update": "Asset update",
     "Translation": "Translation",
     "Default mail template": "Default mail template",
-    "Translate": "Translate"
+    "Translate": "Translate",
+    "Insert URL": "Insert URL",
+    "custom.metadata.process.change.to.manual": "set up subscriptionProcess to manual due to have a customMetadata"
 }

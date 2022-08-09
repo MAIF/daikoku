@@ -17,9 +17,9 @@ const Currency = ({
 }: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
   return (
-        <span>
+    <span>
       {' '}
-            {cur.name}({cur.symbol})
+      {cur?.name}({cur?.symbol})
     </span>
   );
 };
@@ -50,7 +50,7 @@ export const TeamApiConsumption = ({
   const navigate = useNavigate();
   const params = useParams();
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const mappers = [
     {
@@ -75,10 +75,10 @@ export const TeamApiConsumption = ({
       formatter: (data: any) => data.reduce((acc: any, item: any) => {
         const value = acc.find((a: any) => a.clientId === item.clientId) || { count: 0 };
 
-        const team = teams.find((t) => (t as any)._id === item.team);
+        const team: any = teams.find((t: any) => t._id === item.team);
         const plan = api.possibleUsagePlans.find((p: any) => p._id == item.plan);
 
-                const name = `${team.name}/${plan.customName || plan.type}`;
+        const name = `${team?.name}/${plan.customName || plan.type}`;
 
         return [
           ...acc.filter((a: any) => a.name !== item.clientId),
@@ -94,9 +94,9 @@ export const TeamApiConsumption = ({
     },
     {
       label: translateMethod('Plans', true),
-            formatter: (data: any) => <div className="row">
-                {api.possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-sm-4 col-lg-3">
-                    <PlanLightConsumption
+      formatter: (data: any) => <div className="row">
+        {api.possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-sm-4 col-lg-3">
+          <PlanLightConsumption
             api={api}
             team={currentTeam}
             key={plan._id}
@@ -106,11 +106,11 @@ export const TeamApiConsumption = ({
             handleClick={() =>
               !!apiGroup
                 ? navigate(
-                    `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/stats/plan/${plan._id}`
-                  )
+                  `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/stats/plan/${plan._id}`
+                )
                 : navigate(
-                    `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/stats/plan/${plan._id}`
-                  )
+                  `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/stats/plan/${plan._id}`
+                )
             }
           />
         </div>)}
@@ -125,12 +125,12 @@ export const TeamApiConsumption = ({
   }, []);
 
   return (
-        <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
+    <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
       {!!api && (
-                <div className="d-flex col flex-column pricing-content">
-                    <div className="row">
-                        <div className="col section p-2">
-                            <OtoroshiStatsVizualization
+        <div className="d-flex col flex-column pricing-content">
+          <div className="row">
+            <div className="col section p-2">
+              <OtoroshiStatsVizualization
                 sync={() => Services.syncApiConsumption(api._id, currentTeam._id)}
                 fetchData={(from: any, to: any) =>
                   Services.apiGlobalConsumption(
@@ -151,47 +151,47 @@ export const TeamApiConsumption = ({
 };
 
 const PlanLightConsumption = (props: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
-    const renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
+  const renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
 
   const renderFreeWithQuotas = () => (
-        <span>
+    <span>
       You'll pay nothing but you'll have {props.plan.maxPerMonth} authorized requests per month
     </span>
   );
 
   const renderQuotasWithLimits = () => (
-        <span>
+    <span>
       You'll pay {props.plan.costPerMonth}
-            <Currency plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
+      <Currency plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
       per month
     </span>
   );
 
   const renderQuotasWithoutLimits = () => (
-        <span>
+    <span>
       You'll pay {props.plan.costPerMonth}
-            <Currency plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
+      <Currency plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
       you'll be charged {props.plan.costPerAdditionalRequest}
-            <Currency plan={props.plan} /> per additional request
+      <Currency plan={props.plan} /> per additional request
     </span>
   );
 
   const renderPayPerUse = () => {
     if (props.plan.costPerMonth === 0.0) {
       return (
-                <span>
+        <span>
           You'll pay {props.plan.costPerMonth}
-                    <Currency plan={props.plan} /> per month and you'll be charged {props.plan.costPerRequest}
-                    <Currency plan={props.plan} /> per request
+          <Currency plan={props.plan} /> per month and you'll be charged {props.plan.costPerRequest}
+          <Currency plan={props.plan} /> per request
         </span>
       );
     } else {
       return (
-                <span>
+        <span>
           You'll be charged {props.plan.costPerRequest}
-                    <Currency plan={props.plan} /> per request
+          <Currency plan={props.plan} /> per request
         </span>
       );
     }
@@ -202,18 +202,18 @@ const PlanLightConsumption = (props: any) => {
   const customName = plan.customName;
   const customDescription = plan.customDescription;
   return (
-        <div
+    <div
       className={classNames('card mb-3 shadow-sm consumptions-plan')}
       onClick={props.handleClick}
     >
-            <div className="card-img-top card-data" data-holder-rendered="true">
-                <GlobalDataConsumption data={props.data} />
+      <div className="card-img-top card-data" data-holder-rendered="true">
+        <GlobalDataConsumption data={props.data} />
       </div>
-            <div className="card-body">
-                {customName && <h3>{customName}</h3>}
-                {!customName && <h3>{formatPlanType(plan, translateMethod)}</h3>}
-                <p className="card-text text-justify">
-                    {customDescription && <span>{customDescription}</span>}
+      <div className="card-body">
+        {customName && <h3>{customName}</h3>}
+        {!customName && <h3>{formatPlanType(plan, translateMethod)}</h3>}
+        <p className="card-text text-justify">
+          {customDescription && <span>{customDescription}</span>}
           {!customDescription && type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas()}
           {!customDescription && type === 'FreeWithQuotas' && renderFreeWithQuotas()}
           {!customDescription && type === 'QuotasWithLimits' && renderQuotasWithLimits()}

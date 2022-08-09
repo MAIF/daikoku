@@ -5,7 +5,7 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { Can, read, manage, api as API } from '../../utils';
-import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
+import { SwitchButton, Table, BooleanColumnFilter, TableRef } from '../../inputs';
 import { I18nContext, setError } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
@@ -14,13 +14,13 @@ export const TeamApis = () => {
   const dispatch = useDispatch();
   useTeamBackOffice(currentTeam);
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translateMethod('API', true)}`;
   }, []);
 
-  let table = useRef();
+  let table = useRef<TableRef>();
 
   const columns = [
     {
@@ -37,13 +37,13 @@ export const TeamApis = () => {
         const api = original;
         if (api.apis) {
           return (
-                        <div className="d-flex flex-row justify-content-between">
-                            <span>{api.name}</span>
-                            <div className="iconized">G</div>
+            <div className="d-flex flex-row justify-content-between">
+              <span>{api.name}</span>
+              <div className="iconized">G</div>
             </div>
           );
         }
-                return <div>{`${api.name} - (${api.currentVersion})`}</div>;
+        return <div>{`${api.name} - (${api.currentVersion})`}</div>;
       },
     },
     {
@@ -65,13 +65,11 @@ export const TeamApis = () => {
       }: any) => {
         const api = original;
         return (
-                    <Can I={manage} a={API} team={currentTeam}>
-                        <SwitchButton
+          <Can I={manage} a={API} team={currentTeam}>
+            <SwitchButton
               onSwitch={() => togglePublish(api)}
               checked={api.published}
               disabled={api.visibility === 'AdminOnly'}
-                            large
-              noText
             />
           </Can>
         );
@@ -96,33 +94,33 @@ export const TeamApis = () => {
           ? `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
           : `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
         return (
-                    <div className="btn-group">
-                        <Link
+          <div className="btn-group">
+            <Link
               rel="noopener"
               to={viewUrl}
               className="btn btn-sm btn-access-negative"
               title="View this Api"
             >
-                            <i className="fas fa-eye" />
+              <i className="fas fa-eye" />
             </Link>
-                        <Can I={manage} a={API} team={currentTeam}>
-                            <Link
+            <Can I={manage} a={API} team={currentTeam}>
+              <Link
                 key={`edit-${api._humanReadableId}`}
                 to={editUrl}
                 className="btn btn-sm btn-access-negative"
                 title="Edit this Api"
               >
-                                <i className="fas fa-edit" />
+                <i className="fas fa-edit" />
               </Link>
               {api.visibility !== 'AdminOnly' && (
-                                <button
+                <button
                   key={`delete-${api._humanReadableId}`}
                   type="button"
                   className="btn btn-sm btn-access-negative"
                   title="Delete this Api"
                   onClick={() => deleteApi(api)}
                 >
-                                    <i className="fas fa-trash" />
+                  <i className="fas fa-trash" />
                 </button>
               )}
             </Can>
@@ -140,40 +138,33 @@ export const TeamApis = () => {
         published: !api.published,
       },
       api.currentVersion
-        ).then(() => table.current.update());
+    ).then(() => table.current?.update());
   };
 
   const deleteApi = (api: any) => {
     (window
-    .confirm(translateMethod('delete.api.confirm', false, 'Are you sure you want to delete this api ?')) as any).then((ok: any) => {
-    if (ok) {
-        Services.deleteTeamApi(currentTeam._id, api._id).then(() => {
-            toastr.success(translateMethod('delete.api.success', false, 'API deleted successfully', api.name));
-                        table.current.update();
-        });
-    }
-});
+      .confirm(translateMethod('delete.api.confirm', false, 'Are you sure you want to delete this api ?')) as any).then((ok: any) => {
+        if (ok) {
+          Services.deleteTeamApi(currentTeam._id, api._id).then(() => {
+            toastr.success(translateMethod('Success'), translateMethod('delete.api.success', false, 'API deleted successfully', api.name));
+            table.current?.update();
+          });
+        }
+      });
   };
 
   if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
     setError({ error: { status: 403, message: 'Creation security enabled' } })(dispatch);
   }
   return (
-        <Can I={read} a={API} dispatchError={true} team={currentTeam}>
-            <div className="row">
-                <div className="col">
-                    <div className="p-2">
-                        <Table
-                            selfUrl="apis"
-              defaultTitle="Team Apis"
-              defaultValue={() => ({})}
+    <Can I={read} a={API} dispatchError={true} team={currentTeam}>
+      <div className="row">
+        <div className="col">
+          <div className="p-2">
+            <Table
               defaultSort="name"
-              itemName="api"
               columns={columns}
               fetchItems={() => Services.teamApis(currentTeam._id)}
-              showActions={false}
-              showLink={false}
-              extractKey={(item: any) => item._id}
               injectTable={(t: any) => table.current = t}
             />
           </div>

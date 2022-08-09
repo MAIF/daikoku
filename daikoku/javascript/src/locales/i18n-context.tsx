@@ -6,14 +6,14 @@ import translationFr from '../locales/fr/translation.json';
 
 const initI8nContext: TI18ncontext = {
   language: 'en',
-  setLanguage: () => {},
+  setLanguage: () => { },
   isTranslationMode: false,
-  setTranslationMode: () => {},
+  setTranslationMode: () => { },
   translateMethod: () => "",
   Translation: React.Fragment,
   updateTranslation: () => Promise.resolve(true),
-  languages: [{value: 'en', label: 'English'}],
-  translations: [],
+  languages: [{ value: 'en', label: 'English' }],
+  translations: {},
 }
 export const I18nContext = React.createContext<TI18ncontext>(initI8nContext);
 
@@ -21,7 +21,7 @@ type TranslationConfig = {
   [lang: string]: {
     label: string,
     translations: {
-      [key: string]: string
+      [key: string]: string | { s: string, p: string }
     }
   }
 }
@@ -34,8 +34,8 @@ type TI18ncontext = {
   translateMethod: (...arg: any[]) => string,
   Translation: FunctionComponent<any>,
   updateTranslation: (translation: any) => Promise<any>,
-  languages: Array<{value: string, label: string}>,
-  translations: any,
+  languages: Array<{ value: string, label: string }>,
+  translations: TranslationConfig,
 }
 
 
@@ -65,13 +65,14 @@ export const I18nProvider = ({
   const [translations, setTranslations] = useState<TranslationConfig>(configuration);
 
   useEffect(() => {
-    Services.getTranslations('all').then((store) => {
-      const tmp = translations;
-      store.translations.forEach((translation: any) => {
-        tmp[capitalize(translation.language)].translations[translation.key] = translation.value;
+    Services.getTranslations('all')
+      .then((store) => {
+        const tmp = translations;
+        store.translations.forEach((translation: any) => {
+          tmp[capitalize(translation.language)].translations[translation.key] = translation.value;
+        });
+        setTranslations(tmp);
       });
-      setTranslations(tmp);
-    });
   });
 
   const capitalize = (l: any) => (l || 'En').charAt(0).toUpperCase() + (l || 'En').slice(1);
@@ -161,7 +162,7 @@ export const I18nProvider = ({
               type="text"
               className="form-control"
               value={translatedMessage}
-              onChange={() => {}}
+              onChange={() => { }}
             />
             <button
               className="btn btn-sm btn-outline-success mx-1"

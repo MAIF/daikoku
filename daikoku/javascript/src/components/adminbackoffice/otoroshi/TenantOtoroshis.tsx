@@ -12,10 +12,10 @@ import { useTenantBackOffice } from '../../../contexts';
 
 export const TenantOtoroshis = () => {
   const { tenant, connectedUser } = useSelector((s) => (s as any).context);
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
 
-    useTenantBackOffice();
+  useTenantBackOffice();
 
   const [isTenantAdmin, setIsTenantAdmin] = useState(connectedUser.isDaikokuAdmin);
 
@@ -53,26 +53,26 @@ export const TenantOtoroshis = () => {
       }: any) => {
         const otoroshi = original;
         return (
-                    <div className="btn-group">
+          <div className="btn-group">
             {isTenantAdmin && (
-                            <Link to={`/settings/otoroshis/${otoroshi._id}`}>
-                                <button
+              <Link to={`/settings/otoroshis/${otoroshi._id}`}>
+                <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
                   title={translateMethod('Edit this settings')}
                 >
-                                    <i className="fas fa-edit" />
+                  <i className="fas fa-edit" />
                 </button>
               </Link>
             )}
             {isTenantAdmin && (
-                            <button
+              <button
                 type="button"
                 className="btn btn-sm btn-outline-danger"
                 title={translateMethod('Delete this settings')}
                 onClick={() => onDelete(otoroshi._id)}
               >
-                                <i className="fas fa-trash" />
+                <i className="fas fa-trash" />
               </button>
             )}
           </div>
@@ -83,14 +83,14 @@ export const TenantOtoroshis = () => {
 
   const onDelete = (id: any) => {
     (window.confirm(translateMethod('otoroshi.settings.delete.confirm')) as any).then((ok: any) => {
-    if (ok) {
+      if (ok) {
         Services.deleteOtoroshiSettings(tenant._id, id)
-            .then(() => {
-            toastr.success(translateMethod('otoroshi.settings.deleted.success'));
+          .then(() => {
+            toastr.success(translateMethod('Success'), translateMethod('otoroshi.settings.deleted.success'));
             table.update();
-        });
-    }
-});
+          });
+      }
+    });
   };
 
   const createNewSettings = () => {
@@ -105,9 +105,9 @@ export const TenantOtoroshis = () => {
   };
 
   return (
-        <Can I={manage} a={TENANT} dispatchError>
-            <div>
-                <button
+    <Can I={manage} a={TENANT} dispatchError>
+      <div>
+        <button
           type="button"
           className="btn btn-sm btn-outline-success mb-1 ms-1"
           title={translateMethod('Create new settings')}
@@ -117,18 +117,11 @@ export const TenantOtoroshis = () => {
         >
           Create new setting
         </button>
-                <div className="section p-2">
-                    <Table
-                        selfUrl="otoroshis"
-            defaultTitle="Otoroshi instances"
-            defaultValue={() => ({})}
+        <div className="section p-2">
+          <Table
             defaultSort="Url"
-            itemName="otoroshi"
             columns={columns}
             fetchItems={() => Services.allOtoroshis(tenant._id)}
-            showActions={false}
-            showLink={false}
-            extractKey={(item: any) => item._id}
             injectTable={(t: any) => table = t}
           />
         </div>

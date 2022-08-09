@@ -347,7 +347,7 @@ export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
 export const fetchNewPlan = (planType: any) => customFetch(`/api/entities/plan?planType=${planType}`);
 
-export const checkIfApiNameIsUnique = (name: any, id: any) =>
+export const checkIfApiNameIsUnique = (name: any, id?: any) =>
   customFetch('/api/apis/_names', {
     method: 'POST',
     body: JSON.stringify({ name, id }),
@@ -709,15 +709,10 @@ export const disableMaintenanceMode = () =>
     ...HEADERS,
   });
 
-export const checkConnection = (config: any, user: any) =>
+export const checkConnection = (config: any, user?: any) =>
   customFetch('/api/auth/ldap/_check', {
     method: 'POST',
-    body: user
-      ? JSON.stringify({
-        config,
-        user,
-      })
-      : JSON.stringify(config),
+    body: user ? JSON.stringify({ config, user, }) : JSON.stringify(config),
   });
 
 export const login = (username: any, password: any, action: any) => {
