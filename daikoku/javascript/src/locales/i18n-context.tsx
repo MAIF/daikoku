@@ -3,6 +3,7 @@ import { Option } from '../components/utils/Option';
 import * as Services from '../services';
 import translationEng from '../locales/en/translation.json';
 import translationFr from '../locales/fr/translation.json';
+import { TOptions } from '../types/types';
 
 const initI8nContext: TI18ncontext = {
   language: 'en',
@@ -34,7 +35,7 @@ type TI18ncontext = {
   translateMethod: (...arg: any[]) => string,
   Translation: FunctionComponent<any>,
   updateTranslation: (translation: any) => Promise<any>,
-  languages: Array<{ value: string, label: string }>,
+  languages: TOptions,
   translations: TranslationConfig,
 }
 

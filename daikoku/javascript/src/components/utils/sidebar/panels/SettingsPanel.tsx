@@ -98,7 +98,7 @@ export const SettingsPanel = ({}) => {
                     <div className="mb-3 block">
                         <div className="mb-1 block__category">{translateMethod('settings')}</div>
                         <div className="ms-2 block__entries block__border d-flex flex-column">
-                            <Link to="/settings/settings" className="block__entry__link">
+                            <Link to="/settings/settings/general" className="block__entry__link">
                 {tenant.name} {translateMethod('settings')}
               </Link>
               {connectedUser.isDaikokuAdmin && (

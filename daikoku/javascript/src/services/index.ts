@@ -1,4 +1,5 @@
 import { gql } from '@apollo/client';
+import { ITenantFull } from '../types';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -263,7 +264,7 @@ export const saveDocPage = (teamId: any, apiId: any, page: any) =>
   });
 
 export const allTenants = () => customFetch('/api/tenants');
-export const oneTenant = (tenant: any) => customFetch(`/api/tenants/${tenant}`);
+export const oneTenant = (tenantId: string): Promise<ITenantFull> => customFetch(`/api/tenants/${tenantId}`);
 
 export const createTenant = (tenant: any) => customFetch('/api/tenants', {
   method: 'POST',

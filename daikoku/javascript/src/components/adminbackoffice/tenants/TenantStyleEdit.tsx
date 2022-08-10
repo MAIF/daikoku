@@ -35,7 +35,9 @@ export function TenantStyleEditComponent(props: any) {
   useDaikokuBackOffice();
 
   useEffect(() => {
-    if (props.location && props.location.state && props.location.state.newTenant) {
+    if (!params.tenantId) {
+      //todo: hadle this case
+    } else if (props.location && props.location.state && props.location.state.newTenant) {
       setState({
         ...state,
         tenant: {
@@ -56,7 +58,7 @@ export function TenantStyleEditComponent(props: any) {
           setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
         });
     }
-  }, []);
+  }, [params.tenantId]);
 
   const updateStyleProp = (item: any, color: any) => {
     const style = [...state.style.filter((s) => s.value !== item.value), { ...item, color }];

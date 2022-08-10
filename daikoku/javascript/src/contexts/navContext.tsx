@@ -5,6 +5,7 @@ import { useParams, useNavigate, Link, useMatch } from 'react-router-dom';
 
 import { I18nContext, openContactModal } from '../core';
 import { Can, manage, api as API } from '../components/utils';
+import { IStoreState, ITenant } from '../types';
 
 
 export enum navMode {
@@ -25,10 +26,10 @@ const initNavContext = {
   loginAction: 'action',
   loginProvider: 'provider',
   menu: {},
-  addMenu: () => {},
-  setMenu: () => {},
+  addMenu: () => { },
+  setMenu: () => { },
   mode: navMode.api,
-  setMode: () => {},
+  setMode: () => { },
   office: officeMode.front,
   setOffice: () => { },
   setApi: () => { },
@@ -45,7 +46,7 @@ type TNavContext = {
   setMenu: (m: any) => void,
   mode?: navMode,
   setMode: (m: navMode) => void,
-  office:officeMode,
+  office: officeMode,
   setOffice: (o: officeMode) => void,
   api?: any,
   setApi: (api?: any) => void,
@@ -673,17 +674,17 @@ export const useTeamBackOffice = (team: any) => {
   return { addMenu };
 };
 
-export const useTenantBackOffice = (maybeTenant?: any) => {
+export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   const { setMode, setOffice, addMenu, setMenu, setTenant } = useContext(NavContext);
   const { translateMethod } = useContext(I18nContext);
 
   const navigate = useNavigate();
   const match = useMatch('/settings/:tab/:subtab');
 
-  const currentTenant = useSelector((state) => (state as any).context.tenant);
+  const currentTenant = useSelector<IStoreState, ITenant>((state) => state.context.tenant);
   const tenant = maybeTenant || currentTenant;
 
-  const schema = (currentTab?:string, subTab?:string) => ({
+  const schema = (currentTab?: string, subTab?: string) => ({
     title: tenant.name,
 
     blocks: {

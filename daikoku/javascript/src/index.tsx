@@ -4,6 +4,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
 
 import jQuery from 'jquery';
@@ -40,6 +41,15 @@ const client = new ApolloClient({
   },
 });
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false, // TODO for dev only
+      refetchOnWindowFocus: false, // TODO for dev only
+    },
+  },
+});
+
 (window as any).$ = jQuery;
 (window as any).jQuery = jQuery;
 
@@ -67,15 +77,17 @@ export function init(
   ReactDOM.render(
     <Provider store={storeInst}>
       <ApolloProvider client={client}>
-        <I18nProvider tenant={tenant} user={user}>
-          <DaikokuApp
-            session={session}
-            user={user}
-            tenant={tenant}
-            loginProvider={tenant.authProvider}
-            loginAction={loginCallback}
-          />
-        </I18nProvider>
+        <QueryClientProvider client={queryClient}>
+          <I18nProvider tenant={tenant} user={user}>
+            <DaikokuApp
+              session={session}
+              user={user}
+              tenant={tenant}
+              loginProvider={tenant.authProvider}
+              loginAction={loginCallback}
+            />
+          </I18nProvider>
+        </QueryClientProvider>
       </ApolloProvider>
     </Provider>,
     document.getElementById('app')
