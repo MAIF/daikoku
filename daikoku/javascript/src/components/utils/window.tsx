@@ -167,7 +167,9 @@ function Prompt(props: PromptProps) {
 }
 
 export function registerAlert(store: any) {
-  (window as any).oldAlert = window.alert;
+  //@ts-ignore //FIXME when monkey-patch & ts will be compatible
+
+  window.oldAlert = window.alert;
   if (!document.getElementById('daikoku-alerts-container')) {
     const div = document.createElement('div');
     div.setAttribute('id', 'daikoku-alerts-container');
@@ -196,7 +198,8 @@ export function registerAlert(store: any) {
 }
 
 export function registerConfirm(store: any) {
-  (window as any).oldConfirm = window.confirm;
+  //@ts-ignore //FIXME when monkey-patch & ts will be compatible
+  window.oldConfirm = window.confirm;
   if (!document.getElementById('daikoku-alerts-container')) {
     const div = document.createElement('div');
     div.setAttribute('id', 'daikoku-alerts-container');
@@ -226,7 +229,8 @@ export function registerConfirm(store: any) {
 }
 
 export function registerPrompt(store: any) {
-  (window as any).oldPrompt = window.prompt;
+  //@ts-ignore //FIXME when monkey-patch & ts will be compatible
+  window.oldPrompt = window.prompt;
   if (!document.getElementById('daikoku-alerts-container')) {
     const div = document.createElement('div');
     div.setAttribute('id', 'daikoku-alerts-container');

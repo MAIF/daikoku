@@ -68,16 +68,13 @@ export function init(
     <Provider store={storeInst}>
       <ApolloProvider client={client}>
         <I18nProvider tenant={tenant} user={user}>
-          <>
-            <SessionModal session={session} />
-            <DaikokuApp
-              user={user}
-              tenant={tenant}
-              impersonator={impersonator}
-              loginProvider={tenant.authProvider}
-              loginAction={loginCallback}
-            />
-          </>
+          <DaikokuApp
+            session={session}
+            user={user}
+            tenant={tenant}
+            loginProvider={tenant.authProvider}
+            loginAction={loginCallback}
+          />
         </I18nProvider>
       </ApolloProvider>
     </Provider>,

@@ -158,15 +158,16 @@ export function LDAPConfig(props: any) {
   const { value, onChange } = props;
 
   return (
-    <React.Suspense fallback={<Spinner />}>
-      <LazyForm
-        value={value}
-        onChange={onChange}
-        flow={formFlow}
-        schema={formSchema}
-        style={{ marginTop: 50 }}
-      />
-    </React.Suspense>
+    <div>rewrite form please</div>
+    // <React.Suspense fallback={<Spinner />}>
+    //   <LazyForm
+    //     value={value}
+    //     onChange={onChange}
+    //     flow={formFlow}
+    //     schema={formSchema}
+    //     style={{ marginTop: 50 }}
+    //   />
+    // </React.Suspense>
   );
 }
 
@@ -176,7 +177,7 @@ const CheckingAdminConnection = (props: any) => {
   return (
     <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label">
-        <Help text={props.help} label={props.label} />
+        {/* <Help text={props.help} label={props.label} /> */}
       </label>
       <div className="col-sm-10 ps-3" id="input-Testing buttons">
         <a type="button" className="btn btn-outline-primary me-1" onClick={props.checkConnection}>
@@ -196,7 +197,7 @@ const CheckingUserConnection = (props: any) => {
   return (
     <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label">
-        <Help text={props.help} label={props.label} />
+        {/* <Help text={props.help} label={props.label} /> */}
       </label>
       <div className="col-sm-10 ps-3 d-flex" id="input-Testing buttons">
         <input

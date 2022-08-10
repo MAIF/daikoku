@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import md5 from 'js-md5';
 import { toastr } from 'react-redux-toastr';
-import { Form, constraints, type, format } from '@maif/react-forms';
+import { Form, constraints, type, format, FormRef } from '@maif/react-forms';
 
 import * as Services from '../../../services';
 import { Can, manage, daikoku } from '../../utils';
@@ -57,7 +57,7 @@ const Avatar = ({
   const isOtherOriginThanLocal = rawValues?.origins?.some((o: any) => o.toLowerCase !== 'local');
 
   if (!isOtherOriginThanLocal) {
-    return null;
+    return <></>;
   }
   return (
     <div className="">
@@ -179,7 +179,7 @@ export const UserEdit = () => {
     picture: {
       type: type.string,
       label: translateMethod('Avatar'),
-      render: (v: any) => Avatar({ ...v, tenant: tenant }),
+      render: (v: any): JSX.Element => Avatar({ ...v, tenant: tenant }),
       constraints: [
         constraints.url(
           translateMethod('constraints.format.url', false, '', translateMethod('Avatar'))
@@ -197,7 +197,7 @@ export const UserEdit = () => {
       render: ({
         value,
         onChange
-      }: any) => {
+      }: any): JSX.Element => {
         const reloadToken = () => {
           onChange(nanoid(32));
         };
@@ -278,7 +278,7 @@ export const UserEdit = () => {
     }
   };
 
-  const ref = useRef()
+  const ref = useRef<FormRef>(null)
   if (!user) {
     return null;
   }
@@ -288,7 +288,7 @@ export const UserEdit = () => {
     <Can I={manage} a={daikoku} dispatchError>
       {user && (
         <Form
-          ref={ref} //@ts-ignore //FIXME
+          ref={ref}
           schema={schema}
           value={user}
           onSubmit={save}

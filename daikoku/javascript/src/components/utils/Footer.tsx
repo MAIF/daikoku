@@ -2,11 +2,14 @@ import React from 'react';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 import { converter } from '../../services/showdown';
+import { useSelector } from 'react-redux';
 
-const FooterComponent = ({
-  tenant,
+export const Footer = ({
   isBackOffice
 }: any) => {
+
+  const tenant = useSelector((s: any) => s.context.tenant)
+
   if (!tenant.footer) {
     return null;
   }
@@ -20,9 +23,3 @@ const FooterComponent = ({
     />
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-export const Footer = connect(mapStateToProps, null)(FooterComponent);

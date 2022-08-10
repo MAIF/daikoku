@@ -4,8 +4,6 @@ import { Spinner } from '../../../utils';
 import { MailTemplateButton } from './MailTemplateButton';
 import { I18nContext } from '../../../../locales/i18n-context';
 
-const LazyForm = React.lazy(() => import('../../../inputs/Form'));
-
 export function SmtpClientConfig({
   value,
   onChange,
@@ -46,14 +44,15 @@ export function SmtpClientConfig({
   };
 
   return (
-    <React.Suspense fallback={<Spinner />}>
-      <LazyForm
-        value={value}
-        onChange={onChange}
-        flow={formFlow}
-        schema={formSchema}
-        style={{ marginTop: 50 }}
-      />
-    </React.Suspense>
+    <div>rewrite form please</div>
+    // <React.Suspense fallback={<Spinner />}>
+    //   <LazyForm
+    //     value={value}
+    //     onChange={onChange}
+    //     flow={formFlow}
+    //     schema={formSchema}
+    //     style={{ marginTop: 50 }}
+    //   />
+    // </React.Suspense>
   );
 }

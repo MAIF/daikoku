@@ -1,3 +1,4 @@
+//@ts-nocheck //FIXME: typescript better with react-table ;)
 import React, { useState, useEffect, useMemo, useContext, useImperativeHandle } from 'react';
 import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
 import classNames from 'classnames';

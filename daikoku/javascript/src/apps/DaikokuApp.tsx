@@ -38,7 +38,7 @@ import {
   TenantOtoroshis,
   TenantList,
   TenantEdit,
-    NewTenantEdit,
+  NewTenantEdit,
   TenantEditForAdmin,
   TenantStyleEdit,
   UserList,
@@ -60,13 +60,22 @@ import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp
 import { MessagesEvents } from '../services/messages';
 import { I18nContext } from '../locales/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
+import { SessionModal } from '../components/frontend/modals/SessionModal';
 
+type DaikokuAppProps = {
+  session: any,
+  user?: any,
+  tenant: any,
+  loginProvider: string,
+  loginAction: string
+}
 const DaikokuAppComponent = ({
   user,
   tenant,
   loginProvider,
-  loginAction
-}: any) => {
+  loginAction,
+  session
+}: DaikokuAppProps) => {
   useEffect(() => {
     if (!user.isGuest) {
       MessagesEvents.start();
@@ -76,12 +85,12 @@ const DaikokuAppComponent = ({
     }
   }, []);
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   if (!user) {
     return (
-            <Router>
-                <div
+      <Router>
+        <div
           role="root-container"
           className="container-fluid"
           style={{
@@ -90,332 +99,335 @@ const DaikokuAppComponent = ({
             paddingBottom: '6rem',
           }}
         >
-                    <Routes>
-                        <Route
+          <Routes>
+            <Route
               path="/"
               element={
-                                <>
-                                    <UnauthenticatedTopBar tenant={tenant} />
-                                    <UnauthenticatedHome tenant={tenant} />
-                                    <UnauthenticatedFooter tenant={tenant} />
+                <>
+                  <UnauthenticatedTopBar />
+                  <UnauthenticatedHome />
+                  <UnauthenticatedFooter />
                 </>
               }
             />
           </Routes>
         </div>
+        <SessionModal session={session} />
       </Router>
     );
   }
+  //FIXME: verify that removing history prop didn't break anything
   return (
-        <BrowserRouter history={history}>
-            <MessagesProvider>
-                <NavProvider loginAction={loginAction} loginProvider={loginProvider}>
-                    <div className="d-flex flex-row">
-                        <SideBar />
-                        <div className="wrapper flex-grow-1">
-                            <Routes>
-                                <Route
+    <BrowserRouter>
+      <MessagesProvider>
+        <NavProvider loginAction={loginAction} loginProvider={loginProvider}>
+          <div className="d-flex flex-row">
+            <SideBar />
+            <div className="wrapper flex-grow-1">
+              <Routes>
+                <Route
                   path="/me"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('My profile')}`}>
-                                            <MyProfile />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('My profile')}`}>
+                      <MyProfile />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/2fa"
                   element={
-                                        <UnauthenticatedRoute
-                                            title={`${tenant.title} - ${translateMethod('Verification code')}`}
+                    <UnauthenticatedRoute
+                      title={`${tenant.title} - ${translateMethod('Verification code')}`}
                       tenant={tenant}
                     >
-                                            <TwoFactorAuthentication
+                      <TwoFactorAuthentication
                         title={`${tenant.title} - ${translateMethod('Verification code')}`}
                       />
                     </UnauthenticatedRoute>
                   }
                 />
-                                <Route
+                <Route
                   path="/reset"
                   element={
-                                        <UnauthenticatedRoute
-                                            title={`${tenant.title} - ${translateMethod('Reset password')}`}
+                    <UnauthenticatedRoute
+                      title={`${tenant.title} - ${translateMethod('Reset password')}`}
                       tenant={tenant}
                     >
-                                            <ResetPassword />
+                      <ResetPassword />
                     </UnauthenticatedRoute>
                   }
                 />
-                                <Route
+                <Route
                   path="/signup"
                   element={
-                                        <UnauthenticatedRoute
-                                            title={`${tenant.title} - ${translateMethod('Signup')}`}
+                    <UnauthenticatedRoute
+                      title={`${tenant.title} - ${translateMethod('Signup')}`}
                       tenant={tenant}
                     >
-                                            <Signup />
+                      <Signup />
                     </UnauthenticatedRoute>
                   }
                 />
-                                <Route
+                <Route
                   path="/notifications*"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Notifications')}`}>
-                                            <NotificationList />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Notifications')}`}>
+                      <NotificationList />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/join"
                   element={
-                                        <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Join team')}`}>
-                                            <JoinTeam />
+                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Join team')}`}>
+                      <JoinTeam />
                     </FrontOfficeRoute>
                   }
                 />
-                                <Route
+                <Route
                   path="/apis"
                   element={
-                                        <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Apis')}`}>
-                                            <MyHome />
+                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Apis')}`}>
+                      <MyHome />
                     </FrontOfficeRoute>
                   }
                 />
-                                <Route
+                <Route
                   path="/"
                   element={
-                                        <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Home')}`}>
-                                            <MaybeHomePage tenant={tenant} />
+                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Home')}`}>
+                      <MaybeHomePage tenant={tenant} />
                     </FrontOfficeRoute>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/messages"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Message', true)}`}>
-                                            <AdminMessages />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Message', true)}`}>
+                      <AdminMessages />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/otoroshis/:otoroshiId"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshi')}`}>
-                                            <TenantOtoroshi tenant={tenant} />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshi')}`}>
+                      <TenantOtoroshi />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/otoroshis"
                   element={
-                                        <RouteWithTitle
+                    <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
                     >
-                                            <TenantOtoroshis tenant={tenant} />
+                      <TenantOtoroshis />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/settings*"
                   element={
-                                        <RouteWithTitle
+                    <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
                     >
-                                            <NewTenantEdit tenant={tenant} />
+                      <NewTenantEdit />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/settings/old"
                   element={
-                                        <RouteWithTitle
+                    <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
                     >
-                                            <TenantEdit tenant={tenant} />
+                      <TenantEdit />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/tenants/:tenantId"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenant edit')}`}>
-                                            <TenantEditForAdmin />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenant edit')}`}>
+                      <TenantEditForAdmin />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/tenants/:tenantId/style"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Style')}`}>
-                                            <TenantStyleEdit />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Style')}`}>
+                      <TenantStyleEdit />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/tenants"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenants', true)}`}>
-                                            <TenantList />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenants', true)}`}>
+                      <TenantList />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/tenants/:tenantId/admins"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
-                                            <DaikokuTenantAdminList />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
+                      <DaikokuTenantAdminList />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/users/:userId"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('User')}`}>
-                                            <UserEdit />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('User')}`}>
+                      <UserEdit />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/users"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Users', true)}`}>
-                                            <UserList />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Users', true)}`}>
+                      <UserList />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/audit"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Audit trail')}`}>
-                                            <AuditTrailList />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Audit trail')}`}>
+                      <AuditTrailList />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/sessions"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('User sessions')}`}>
-                                            <SessionList />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('User sessions')}`}>
+                      <SessionList />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/import-export"
                   element={
-                                        <RouteWithTitle
+                    <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('Import / Export')}`}
                     >
-                                            <ImportExport />
+                      <ImportExport />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/teams/:teamSettingId/members"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team members')}`}>
-                                            <TeamMembersForAdmin />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team members')}`}>
+                      <TeamMembersForAdmin />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/teams"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Teams')}`}>
-                                            <TeamList />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                      <TeamList />
                     </RouteWithTitle>
                   }
                 />
-                                <Route path="/settings/assets" element={<TenantAssets />} />
-                                <Route
+                <Route path="/settings/assets" element={<TenantAssets />} />
+                <Route
                   path="/settings/admins"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
-                                            <TenantAdminList tenantMode={true} />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
+                      <TenantAdminList />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/init"
                   element={
-                                        <RouteWithTitle title={`${tenant.title} - ${translateMethod('Init')}`}>
-                                            <InitializeFromOtoroshi />
+                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Init')}`}>
+                      <InitializeFromOtoroshi />
                     </RouteWithTitle>
                   }
                 />
-                                <Route
+                <Route
                   path="/settings/pages*"
                   element={
-                                        <RouteWithTitle
+                    <RouteWithTitle
                       title={`${tenant.title} - ${translateMethod('daikokuapp.pages_title')}`}
                     >
-                                            <CMSOffice />
+                      <CMSOffice />
                     </RouteWithTitle>
                   }
                 />
                 {['/settings/internationalization', '/settings/internationalization/:domain'].map(
                   (r) => (
-                                        <Route
+                    <Route
                       key={r}
                       path={r}
                       element={
-                                                <RouteWithTitle
+                        <RouteWithTitle
                           title={`${tenant.title} - ${translateMethod('Internalization')}`}
                         >
-                                                    <MailingInternalization tenant={tenant} />
+                          <MailingInternalization />
                         </RouteWithTitle>
                       }
                     />
                   )
                 )}
                 {!tenant.hideTeamsPage && (
-                                    <Route
+                  <Route
                     path="/teams"
                     element={
-                                            <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Teams')}`}>
-                                                <TeamChooser />
+                      <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                        <TeamChooser />
                       </FrontOfficeRoute>
                     }
                   />
                 )}
 
-                                <Route
+                <Route
                   path="/:teamId/settings*"
-                                    element={<TeamBackOfficeRouter tenant={tenant} />}
+                  element={<TeamBackOfficeRouter tenant={tenant} />}
                 />
 
-                                <Route
+                <Route
                   path=":teamId/apigroups/:apiGroupId/:tab/*"
                   element={
-                                        <FrontOfficeRoute>
-                                            <ApiGroupHome />
+                    <FrontOfficeRoute>
+                      <ApiGroupHome />
                     </FrontOfficeRoute>
                   }
                 />
 
-                                <Route
+                <Route
                   path="/:teamId/:apiId/:versionId/:tab/*"
                   element={
-                                        <FrontOfficeRoute>
+                    <FrontOfficeRoute>
                       {' '}
-                                            <ApiHome />{' '}
+                      <ApiHome />{' '}
                     </FrontOfficeRoute>
                   }
                 />
 
-                                <Route
+                <Route
                   path="/:teamId"
                   element={
-                                        <FrontOfficeRoute>
-                                            <TeamHome />
+                    <FrontOfficeRoute>
+                      <TeamHome />
                     </FrontOfficeRoute>
                   }
                 />
               </Routes>
-                            <Error />
+              <Error />
             </div>
           </div>
-                    <ModalRoot />
-                    <ReduxToastr
+          <ModalRoot />
+          {/* @ts-ignore */}{/* FIXME */}
+          <ReduxToastr
             timeOut={4000}
             newestOnTop={false}
             position="top-right"
@@ -423,11 +435,11 @@ const DaikokuAppComponent = ({
             transitionOut="fadeOut"
             closeOnToastrClick
           />
-                    <Routes>
+          <Routes>
             {['/settings', '/notifications', '/me', '/:teamId/settings'].map((r) => (
-                            <Route key={r} path={r} element={<></>} />
+              <Route key={r} path={r} element={<></>} />
             ))}
-                        <Route path="/" element={<Footer isBackOffice={false} />} />
+            <Route path="/" element={<Footer isBackOffice={false} />} />
           </Routes>
         </NavProvider>
       </MessagesProvider>
@@ -462,21 +474,26 @@ const TeamBackOfficeRouter = ({
   }, [params.teamId]);
 
   function getMyTeam() {
-    Services.oneOfMyTeam(params.teamId).then((team) => {
-            if (team.error) dispatch(setError(team.error));
-            else dispatch(updateTeamPromise(team));
-      setLoading(false);
-    });
+    Services.oneOfMyTeam(params.teamId)
+      .then((team) => {
+        if (team.error) {
+          setError(team.error)(dispatch);
+        }
+        else {
+          updateTeamPromise(team)(dispatch);
+        }
+        setLoading(false);
+      });
   }
 
-    if (!currentTeam || loading) return <Spinner />;
-    else return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />;
+  if (!currentTeam || loading) return <Spinner />;
+  else return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />;
 };
 
 const FrontOfficeRoute = (props: any) => {
   return (
-        <RouteWithTitle {...props}>
-            <FrontOffice>{props.children}</FrontOffice>
+    <RouteWithTitle {...props}>
+      <FrontOffice>{props.children}</FrontOffice>
     </RouteWithTitle>
   );
 };
@@ -491,16 +508,14 @@ const RouteWithTitle = (props: any) => {
   return props.children;
 };
 
-const UnauthenticatedRouteComponent = ({
+const UnauthenticatedRoute = ({
   connectedUser,
   children,
   title
 }: any) => {
   if (connectedUser._humanReadableId) {
-        return <Navigate to="/" />;
+    return <Navigate to="/" />;
   }
 
-    return <RouteWithTitle title={title}>{children}</RouteWithTitle>;
+  return <RouteWithTitle title={title}>{children}</RouteWithTitle>;
 };
-
-const UnauthenticatedRoute = connect(mapStateToProps)(UnauthenticatedRouteComponent);

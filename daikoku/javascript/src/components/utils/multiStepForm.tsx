@@ -115,7 +115,7 @@ export const MultiStepForm = ({
         on: {
           FAILURE: {
             target: 'failure',
-            actions: assign({
+            actions: assign({ //@ts-ignore //FIXME ts & xstate ??
               error: (_context, { error }) => error,
             }),
           },

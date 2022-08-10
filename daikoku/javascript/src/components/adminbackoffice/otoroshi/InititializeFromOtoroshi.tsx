@@ -21,10 +21,10 @@ import {
 } from './initialization';
 
 export const InitializeFromOtoroshi = () => {
-  const tenant = useSelector((s) => (s as any).context.tenant);
+  const tenant = useSelector((s: any) => s.context.tenant);
   useTenantBackOffice();
 
-  const [state, send] = useMachine(theMachine);
+  const [state, send] = useMachine<any>(theMachine);
 
   const { Translation, translateMethod } = useContext(I18nContext);
 

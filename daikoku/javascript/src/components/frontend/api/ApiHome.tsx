@@ -124,7 +124,7 @@ type ApiHomeProps = {
   connectedUser?: any, //FIXME: get it from useSelector hook instead inject props by redux
   updateUser?: (user: any) => void, //FIXME: get it from useSelector hook instead inject props by redux
   tenant?: any, //FIXME: get it from useSelector hook instead inject props by redux
-  groupView: boolean
+  groupView?: boolean
 }
 const ApiHomeComponent = ({
   setError,

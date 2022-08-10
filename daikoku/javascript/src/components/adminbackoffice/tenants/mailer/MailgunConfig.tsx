@@ -4,14 +4,13 @@ import { Spinner } from '../../../utils';
 import { MailTemplateButton } from './MailTemplateButton';
 import { I18nContext } from '../../../../core';
 
-const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function MailgunConfig({
   value,
   onChange,
   ...props
 }: any) {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['domain', 'eu', 'key', 'fromTitle', 'fromEmail', 'template'];
 
@@ -47,19 +46,20 @@ export function MailgunConfig({
       },
     },
     template: {
-            type: () => <MailTemplateButton {...props} />,
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 
   return (
-        <React.Suspense fallback={<Spinner />}>
-            <LazyForm
-        value={value}
-        onChange={onChange}
-        flow={formFlow}
-        schema={formSchema}
-                style={{ marginTop: 50 }}
-      />
-    </React.Suspense>
+    <div>rewrite form please</div>
+    // <React.Suspense fallback={<Spinner />}>
+    //   <LazyForm
+    //     value={value}
+    //     onChange={onChange}
+    //     flow={formFlow}
+    //     schema={formSchema}
+    //     style={{ marginTop: 50 }}
+    //   />
+    // </React.Suspense>
   );
 }

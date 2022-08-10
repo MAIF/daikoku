@@ -34,7 +34,7 @@ export const SelectOtoStep = (props: any) => {
     }
   }, [otoInstance]);
 
-  const previousState = JSON.parse(localStorage.getItem(`daikoku-initialization-${props.tenant._id}`) || "");
+  const previousState = JSON.parse(localStorage.getItem(`daikoku-initialization-${props.tenant._id}`) || "{}");
 
   useEffect(() => {
     if (props.otoroshis.length === 1)
@@ -122,7 +122,8 @@ export const RecapSubsStep = (props: any) => {
   const { Translation, translateMethod } = useContext(I18nContext);
 
   const reset = () => {
-    (window.confirm(translateMethod('initialize_from_otoroshi.confirm')) as any).then((ok: any) => {
+    //@ts-ignore //FIXME when monkey patch & ts will be compatible
+    window.confirm(translateMethod('initialize_from_otoroshi.confirm')).then((ok: any) => {
       if (ok)
         props.cancel();
     });
@@ -183,7 +184,7 @@ export const ServicesStep = (props: any) => {
   const [selectedTeam, setSelectedTeam] = useState(
     props.maybeCreatedApi.map((api: any) => api.team).getOrNull()
   );
-  const [error, setError] = useState<any>();
+  const [error, setError] = useState<{name: string}>();
   const [inputRef, setInputRef] = useState<HTMLInputElement | null>();
 
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -312,10 +313,10 @@ export const ServicesStep = (props: any) => {
             type="text"
             tabIndex={0}
             ref={(ref) => setInputRef(ref)}
-            className={classNames('form-control', { 'on-error': !!(error as any).name })}
+            className={classNames('form-control', { 'on-error': !!error?.name })}
             value={service.name}
             onChange={(e) => setService({ ...service, name: e.target.value })} />
-          {(error as any).name && <small className="invalid-input-info text-danger">{(error as any).name}</small>}
+          {error && <small className="invalid-input-info text-danger">{error.name}</small>}
         </div>
       </div>
       <div className="d-flex flex-row align-items-center mb-3">
@@ -354,10 +355,10 @@ export const ServicesStep = (props: any) => {
         {props.maybeCreatedApi.isDefined && (<button className="btn btn-outline-success" onClick={reset}>
           <Translation i18nkey="Reset">Reset</Translation>
         </button>)}
-        {props.maybeCreatedApi.isDefined && (<button className="btn btn-outline-success me-2" disabled={!selectedTeam || (error as any).name} onClick={update}>
+        {props.maybeCreatedApi.isDefined && (<button className="btn btn-outline-success me-2" disabled={!selectedTeam || !!error?.name} onClick={update}>
           <Translation i18nkey="Update">Update</Translation>
         </button>)}
-        {!props.maybeCreatedApi.isDefined && (<button className="btn btn-outline-success me-2" disabled={!selectedTeam || (error as any).name} onClick={getIt}>
+        {!props.maybeCreatedApi.isDefined && (<button className="btn btn-outline-success me-2" disabled={!selectedTeam || !!error?.name} onClick={getIt}>
           <Translation i18nkey="Import">Import this service</Translation>
         </button>)}
         <button className="btn btn-access ms-2" onClick={nextStep}>

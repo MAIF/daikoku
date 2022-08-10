@@ -23,9 +23,10 @@ import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 
 const LazyFormInput = (props: any) => {
   return (
-    <React.Suspense fallback={<Spinner />}>
-      <LazyForm {...props} />
-    </React.Suspense>
+    <div>no more lazy form...rewrite using react-form please</div>
+    // <React.Suspense fallback={<Spinner />}>
+    //   <LazyForm {...props} />
+    // </React.Suspense>
   );
 };
 
@@ -199,12 +200,13 @@ const ThemeUpdatorFromUI = (props: any) => {
 
 const HomePageVisibilitySwitch = (props: any) => {
   return (
-    <BooleanInput
-      key="style.homePageVisible"
-      {...props}
-      value={props.rawValue.style.homePageVisible}
-      onChange={(v: any) => props.changeValue('style.homePageVisible', v)}
-    />
+    <div>boolean input ???</div>
+    // <BooleanInput
+    //   key="style.homePageVisible"
+    //   {...props}
+    //   value={props.rawValue.style.homePageVisible}
+    //   onChange={(v: any) => props.changeValue('style.homePageVisible', v)}
+    // />
   );
 };
 
@@ -229,7 +231,8 @@ const TenantEdition = (props: any) => {
   const { client } = useContext(getApolloContext());
 
   useEffect(() => {
-    client
+    //FIXME: handle client is not setted
+    client && client
       .query({
         query: gql`
           query CmsPages {
@@ -629,22 +632,23 @@ const TenantEdition = (props: any) => {
         help: translateMethod('subscription.security.help', false, 'if enabled, personnal teams will not be able to subscribed to an API'),
       },
     },
-    aggregationApiKeysSecurity: {
-      type: () => (<BooleanInput key="aggregationApiKeysSecurity" value={state.tenant.aggregationApiKeysSecurity} label={translateMethod('aggregation api keys security')} help={translateMethod('aggregation_apikeys.security.help')}
-        onChange={(e: any) => {
-          if (e) {
-            //@ts-ignore //FIXME when monkey patch & ts will be compatible
-            window.alert(translateMethod('aggregation.api_key.security.notification'), undefined, undefined, translateMethod('I understood'), language);
-            setState({
-              ...state,
-              tenant: {
-                ...state.tenant,
-                aggregationApiKeysSecurity: e,
-              },
-            });
-          }
-        }} />),
-    },
+    // aggregationApiKeysSecurity: {
+    //   type: () => (
+    //     <BooleanInput key="aggregationApiKeysSecurity" value={state.tenant.aggregationApiKeysSecurity} label={translateMethod('aggregation api keys security')} help={translateMethod('aggregation_apikeys.security.help')}
+    //       onChange={(e: any) => {
+    //         if (e) {
+    //           //@ts-ignore //FIXME when monkey patch & ts will be compatible
+    //           window.alert(translateMethod('aggregation.api_key.security.notification'), undefined, undefined, translateMethod('I understood'), language);
+    //           setState({
+    //             ...state,
+    //             tenant: {
+    //               ...state.tenant,
+    //               aggregationApiKeysSecurity: e,
+    //             },
+    //           });
+    //         }
+    //       }} />),
+    // },
     apiReferenceHideForGuest: {
       type: 'bool',
       props: {
@@ -895,9 +899,15 @@ const TenantEdition = (props: any) => {
         </div>
         <h1 className="h1-rwd-reduce ms-2">{(state.tenant as any).name}</h1>
       </div>
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={state.tenant} onChange={(tenant) => setState({ ...state, tenant, updated: true })} style={{ paddingTop: 20 }} />
-      </React.Suspense>
+      <div>old form here...rewrite it please</div>
+      {/* <React.Suspense fallback={<Spinner />}>
+        <LazyForm
+          flow={flow}
+          schema={schema}
+          value={state.tenant}
+          onChange={(tenant) => setState({ ...state, tenant, updated: true })}
+          style={{ paddingTop: 20 }} />
+      </React.Suspense> */}
       <div className="d-flex justify-content-end my-3">
         <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
           <i className="fas fa-chevron-left me-1" />

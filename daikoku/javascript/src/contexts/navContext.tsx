@@ -59,7 +59,7 @@ type TNavContext = {
 export const NavContext = React.createContext<TNavContext>(initNavContext);
 
 export const NavProvider = ({ children, loginAction, loginProvider }:
-  { children: JSX.Element, loginAction: string, loginProvider: string }) => {
+  { children: JSX.Element | Array<JSX.Element>, loginAction: string, loginProvider: string }) => {
   const [mode, setMode] = useState(navMode.initial);
   const [office, setOffice] = useState(officeMode.front);
 

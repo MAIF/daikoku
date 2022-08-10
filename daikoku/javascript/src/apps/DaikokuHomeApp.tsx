@@ -16,7 +16,7 @@ const AvatarInput = ({
   error,
   onChange
 }: any) => {
-    const { Translation } = useContext(I18nContext);
+  const { Translation } = useContext(I18nContext);
 
   const setGravatarLink = () => {
     const email = (rawValues.email || Date.now().toString()).toLowerCase().trim();
@@ -25,31 +25,31 @@ const AvatarInput = ({
   };
 
   return (
-        <div className="d-flex flex-row align-items-center">
-            <div className="d-flex flex-column flex-grow-1">
-                <input
+    <div className="d-flex flex-row align-items-center">
+      <div className="d-flex flex-column flex-grow-1">
+        <input
           type="text"
           className="form-control"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
-                <button type="button" className="btn btn-access btn-block" onClick={setGravatarLink}>
-                    <i className="fas fa-user-circle me-1" />
-                    <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
+        <button type="button" className="btn btn-access btn-block" onClick={setGravatarLink}>
+          <i className="fas fa-user-circle me-1" />
+          <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
         </button>
       </div>
-            {rawValues.avatar && <img src={value} style={{ height: '70px' }} />}
+      {rawValues.avatar && <img src={value} style={{ height: '70px' }} />}
     </div>
   );
 };
 
 export const SignupComponent = () => {
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const defaultAvatar = `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`;
-  const [user, setUser] = useState(undefined);
-  const [state, setState] = useState('creation');
-  const [error, setError] = useState(undefined);
+  const [user, setUser] = useState<any>(undefined);
+  const [state, setState] = useState<string>('creation');
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     const query = queryString.parse(window.location.search);
@@ -132,13 +132,13 @@ export const SignupComponent = () => {
 
   if (state === 'done') {
     return (
-            <div className="col">
-                <h1 className="h1-rwd-reduce text-center">
-                    <Translation i18nkey="Create account">Create account</Translation>
+      <div className="col">
+        <h1 className="h1-rwd-reduce text-center">
+          <Translation i18nkey="Create account">Create account</Translation>
         </h1>
-                <p style={{ width: '100%', textAlign: 'center' }}>
-                    <Translation i18nkey="create.account.done" replacements={[user.email]}>
-                        You will receive an email at <b>{user.email}</b> to finish your account creation
+        <p style={{ width: '100%', textAlign: 'center' }}>
+          <Translation i18nkey="create.account.done" replacements={[user.email]}>
+            You will receive an email at <b>{user.email}</b> to finish your account creation
             process. You will have 15 minutes from now to finish your account creation process.
           </Translation>
         </p>
@@ -147,28 +147,28 @@ export const SignupComponent = () => {
   }
 
   return (
-        <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
-            <h1 className="h1-rwd-reduce text-center">
-                <Translation i18nkey="Create account">Create account</Translation>
+    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
+      <h1 className="h1-rwd-reduce text-center">
+        <Translation i18nkey="Create account">Create account</Translation>
       </h1>
       {state === 'error' && error && (
-                <div className="alert alert-danger" role="alert">
+        <div className="alert alert-danger" role="alert">
           {error}
         </div>
       )}
-            <Form
+      <Form
         schema={schema}
         flow={flow}
         onSubmit={createAccount}
         value={user}
         footer={({ reset, valid }) => {
           return (
-                        <div className="d-flex justify-content-end">
-                            <button className="btn btn-outline-danger m-3" onClick={reset}>
-                                <Translation i18nkey="Cancel">Cancel</Translation>
+            <div className="d-flex justify-content-end">
+              <button className="btn btn-outline-danger m-3" onClick={reset}>
+                <Translation i18nkey="Cancel">Cancel</Translation>
               </button>
-                            <button className="btn btn-outline-success m-3" onClick={valid}>
-                                <Translation i18nkey="Create account">Create account</Translation>
+              <button className="btn btn-outline-success m-3" onClick={valid}>
+                <Translation i18nkey="Create account">Create account</Translation>
               </button>
             </div>
           );
@@ -179,11 +179,11 @@ export const SignupComponent = () => {
 };
 
 export const ResetPasswordComponent = (props: any) => {
-    const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
-  const [user, setUser] = useState(undefined);
-  const [state, setState] = useState('creation');
-  const [error, setError] = useState(undefined);
+  const [user, setUser] = useState<any>(undefined);
+  const [state, setState] = useState<string>('creation');
+  const [error, setError] = useState<string>();
 
   const schema = {
     email: {
@@ -254,13 +254,13 @@ export const ResetPasswordComponent = (props: any) => {
 
   if (state === 'done') {
     return (
-            <div className="col">
-                <h1 className="h1-rwd-reduce text-center mt-2">
-                    <Translation i18nkey="Reset password">Reset password</Translation>
+      <div className="col">
+        <h1 className="h1-rwd-reduce text-center mt-2">
+          <Translation i18nkey="Reset password">Reset password</Translation>
         </h1>
-                <p className="text-center mt-2">
-                    <Translation i18nkey="password.reset.done" replacements={[user.email]}>
-                        You will receive an email at <b>{user.email}</b> to finish your passsword reset process.
+        <p className="text-center mt-2">
+          <Translation i18nkey="password.reset.done" replacements={[user.email]}>
+            You will receive an email at <b>{user.email}</b> to finish your passsword reset process.
             You will have 15 minutes from now to finish your password reset process.
           </Translation>
         </p>
@@ -268,28 +268,28 @@ export const ResetPasswordComponent = (props: any) => {
     );
   }
   return (
-        <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
-            <h1 className="h1-rwd-reduce text-center mt-2">
-                <Translation i18nkey="Reset password">Reset password</Translation>
+    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
+      <h1 className="h1-rwd-reduce text-center mt-2">
+        <Translation i18nkey="Reset password">Reset password</Translation>
       </h1>
       {state === 'error' && (
-                <div className="alert alert-danger" role="alert">
+        <div className="alert alert-danger" role="alert">
           {error}
         </div>
       )}
-            <Form
+      <Form
         schema={schema}
         flow={flow}
         onSubmit={resetPassword}
         footer={({ reset, valid }) => {
           return (
-                        <div className="d-flex justify-content-end">
-                            <button className="btn btn-outline-danger m-3" onClick={reset}>
+            <div className="d-flex justify-content-end">
+              <button className="btn btn-outline-danger m-3" onClick={reset}>
                 Cancel
               </button>
-                            <button className="btn btn-outline-success m-3" onClick={valid}>
-                                <span>
-                                    <Translation i18nkey="Reset password">Reset password</Translation>
+              <button className="btn btn-outline-success m-3" onClick={valid}>
+                <span>
+                  <Translation i18nkey="Reset password">Reset password</Translation>
                 </span>
               </button>
             </div>
@@ -303,14 +303,14 @@ export const ResetPasswordComponent = (props: any) => {
 export const TwoFactorAuthentication = ({
   title
 }: any) => {
-  const [code, setCode] = useState('');
-  const [token, setToken] = useState('');
-  const [error, setError] = useState();
+  const [code, setCode] = useState<string>('');
+  const [token, setToken] = useState<string>('');
+  const [error, setError] = useState<string>();
 
   const [showBackupCodes, toggleBackupCodesInput] = useState(false);
   const [backupCode, setBackupCode] = useState('');
 
-    const { translateMethod, language } = useContext(I18nContext);
+  const { translateMethod, language } = useContext(I18nContext);
 
   function verify() {
     if (!code || code.length !== 6) {
@@ -328,9 +328,10 @@ export const TwoFactorAuthentication = ({
 
   function reset2faAccess() {
     Services.reset2faAccess(backupCode).then((res) => {
-      if (res.error) toastr.error(res.error);
-      else {
-        toastr.success(translateMethod('2fa.successfully_disabled'));
+      if (res.error) {
+        toastr.error(translateMethod('Error'), res.error);
+      } else {
+        toastr.success(translateMethod('Success'), translateMethod('2fa.successfully_disabled'));
         window.location.replace('/');
       }
     });
@@ -338,8 +339,12 @@ export const TwoFactorAuthentication = ({
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (!params.get('token')) window.location.replace('/');
-        else setToken(params.get('token'));
+    const token = params.get('token')
+    if (!token) {
+      window.location.replace('/');
+    } else {
+      setToken(token);
+    }
   }, []);
 
   useEffect(() => {
@@ -347,49 +352,49 @@ export const TwoFactorAuthentication = ({
   }, [language]);
 
   return (
-        <div className="d-flex flex-column mx-auto my-3" style={{ maxWidth: '350px' }}>
-            <h3>{title}</h3>
+    <div className="d-flex flex-column mx-auto my-3" style={{ maxWidth: '350px' }}>
+      <h3>{title}</h3>
       {showBackupCodes ? (
-                <>
-                    <input
+        <>
+          <input
             type="text"
             value={backupCode}
             placeholder={translateMethod('2fa.insert_backup_codes')}
             onChange={(e) => setBackupCode(e.target.value)}
             className="form-control"
           />
-                    <button className="btn btn-outline-success mt-3" type="button" onClick={reset2faAccess}>
+          <button className="btn btn-outline-success mt-3" type="button" onClick={reset2faAccess}>
             {translateMethod('2fa.reset_access')}
           </button>
-                    <a href="#" onClick={() => toggleBackupCodesInput(false)} className="text-center mt-3">
+          <a href="#" onClick={() => toggleBackupCodesInput(false)} className="text-center mt-3">
             {translateMethod('2fa.using_code')}
           </a>
         </>
       ) : (
-                <>
-                    <span className="mb-3">{translateMethod('2fa.message')}</span>
+        <>
+          <span className="mb-3">{translateMethod('2fa.message')}</span>
           {error && (
-                        <div className="alert alert-danger" role="alert">
+            <div className="alert alert-danger" role="alert">
               {error}
             </div>
           )}
-                    <input
+          <input
             type="number"
             value={code}
             placeholder={translateMethod('2fa.insert_code')}
             onChange={(e) => {
               if (e.target.value.length < 7) {
-                                setError(null);
+                setError(undefined);
                 setCode(e.target.value);
               }
             }}
             className="form-control"
           />
 
-                    <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>
+          <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>
             {translateMethod('2fa.verify_code')}
           </button>
-                    <a href="#" onClick={toggleBackupCodesInput} className="text-center mt-3">
+          <a href="#" onClick={() => toggleBackupCodesInput(!showBackupCodes)} className="text-center mt-3">
             {translateMethod('2fa.lost_device_message')}
           </a>
         </>
@@ -400,31 +405,32 @@ export const TwoFactorAuthentication = ({
 
 export const DaikokuHomeApp = (props: any) => {
   const tenant = props.tenant;
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
+  // FIXME: is there any usage of UnauthenticatedTopBar ?????????????
   return (
-        <Router>
-            <div role="root-container" className="container-fluid">
-                <Routes>
-                    <Route
+    <Router>
+      <div role="root-container" className="container-fluid">
+        <Routes>
+          <Route
             path="*"
             element={
-                            <>
-                                <UnauthenticatedTopBar tenant={tenant} />
+              <> 
+                <UnauthenticatedTopBar /> 
               </>
             }
           />
         </Routes>
-                <Routes>
-                    <Route path="/" element={<UnauthenticatedHome tenant={tenant} />} />
+        <Routes>
+          <Route path="/" element={<UnauthenticatedHome />} />
         </Routes>
-                <Routes>
-                    <Route path="/signup" element={<Signup tenant={tenant} />} />
-                    <Route path="/reset" element={<ResetPassword />} />
-                    <Route
+        <Routes>
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/reset" element={<ResetPassword />} />
+          <Route
             path="/2fa"
             element={
-                            <TwoFactorAuthentication
+              <TwoFactorAuthentication
                 title={`${tenant.name} - ${translateMethod('Verification code')}`}
               />
             }

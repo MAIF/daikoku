@@ -8,7 +8,7 @@ import { Can, manage, tenant } from '../../utils';
 import { useTenantBackOffice } from '../../../contexts';
 
 export const AuditTrailList = () => {
-    useTenantBackOffice();
+  useTenantBackOffice();
 
   const [from, setFrom] = useState(moment().subtract(1, 'hour'));
   const [to, setTo] = useState(moment());
@@ -56,15 +56,15 @@ export const AuditTrailList = () => {
       }: any) => {
         const value = original;
         return (
-                    <button
+          <button
             type="button"
             className="btn btn-sm btn-outline-primary"
             onClick={() => {
               window.alert(
-                                <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
+                <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
                   {JSON.stringify(value, null, 2)}
-                </pre>,
-                                'Event details'
+                </pre>, //@ts-ignore //FIXME when monkey patch & ts will be compat
+                'Event details'
               );
             }}
           >
@@ -91,7 +91,7 @@ export const AuditTrailList = () => {
   };
 
   const topBar = () => {
-        return <OtoDatePicker updateDateRange={updateDateRange} from={from} to={to} />;
+    return <OtoDatePicker updateDateRange={updateDateRange} from={from} to={to} />;
   };
 
   const fetchItems = () => {
@@ -101,22 +101,15 @@ export const AuditTrailList = () => {
   };
 
   return (
-        <Can I={manage} a={tenant} dispatchError>
-            <div className="row">
-                <div className="col">
-                    <h1>Audit trail </h1>
-                    <div className="section">
-                        <div className="p-2">
-                            <Table
-                                selfUrl="audit"
-                defaultTitle="Audit trail"
-                defaultValue={() => ({})}
-                itemName="event"
+    <Can I={manage} a={tenant} dispatchError>
+      <div className="row">
+        <div className="col">
+          <h1>Audit trail </h1>
+          <div className="section">
+            <div className="p-2">
+              <Table
                 columns={columns}
                 fetchItems={fetchItems}
-                showActions={false}
-                showLink={false}
-                extractKey={(item: any) => item._id}
                 injectTable={setTable}
                 defaultSort="date"
                 defaultSortDesc={true}

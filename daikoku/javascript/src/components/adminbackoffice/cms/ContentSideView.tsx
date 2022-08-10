@@ -1,6 +1,8 @@
 import { CodeInput, SelectInput } from '@maif/react-forms';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Select from 'react-select';
+
 import { I18nContext } from '../../../core';
 import Editor from './Editor';
 import Helpers from './helpers.json';
@@ -19,14 +21,14 @@ const LinksView = ({
   editor,
   onChange
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   return (
-        <div>
-            <span>{translateMethod('cms.content_side_view.choose_link')}</span>
-            <Copied>
-                {(setShow: any) => <SelectInput
-          possibleValues={[
+    <div>
+      <span>{translateMethod('cms.content_side_view.choose_link')}</span>
+      <Copied>
+        {(setShow: any) => <Select
+          options={[
             {
               label: translateMethod('cms.content_side_view.notifications'),
               value: 'notifications',
@@ -52,7 +54,7 @@ const LinksView = ({
 const Copied = ({
   children
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -61,14 +63,14 @@ const Copied = ({
 
   if (show)
     return (
-            <div
+      <div
         className="my-2 text-center py-2"
         style={{
           backgroundColor: '#fff',
           borderRadius: '6px',
         }}
       >
-                <span>{translateMethod('cms.inserted')}</span>
+        <span>{translateMethod('cms.inserted')}</span>
       </div>
     );
   else return children(setShow);
@@ -85,11 +87,11 @@ const PagesView = ({
   title,
   onChange
 }: any) => (
-    <div>
-        <span>{title}</span>
-        <Copied>
-            {(setShow: any) => <SelectInput
-        possibleValues={pages.map((page: any) => ({
+  <div>
+    <span>{title}</span>
+    <Copied>
+      {(setShow: any) => <Select
+        options={pages.map((page: any) => ({
           label: page.name,
           value: page.id
         }))}
@@ -108,7 +110,7 @@ const TopActions = ({
   publish,
   setSelector
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const navigate = useNavigate();
   const select = (id: any) => {
     setSelector(undefined);
@@ -116,7 +118,7 @@ const TopActions = ({
   };
 
   return (
-        <div
+    <div
       className="d-flex justify-content-between"
       style={{
         position: 'absolute',
@@ -126,23 +128,23 @@ const TopActions = ({
       }}
       id="content_sideview_parent"
     >
-            <button className="btn btn-sm btn-outline-primary me-1" type="button" onClick={select}>
-                <i className="fas fa-plus pe-1" />
+      <button className="btn btn-sm btn-outline-primary me-1" type="button" onClick={select}>
+        <i className="fas fa-plus pe-1" />
         {translateMethod('cms.content_side.new_action')}
       </button>
-            <div className="d-flex">
-                <button className="btn btn-sm btn-outline-primary" onClick={() => navigate('revisions')}>
+      <div className="d-flex">
+        <button className="btn btn-sm btn-outline-primary" onClick={() => navigate('revisions')}>
           Révisions
         </button>
-                <button
+        <button
           className="btn btn-sm btn-outline-success ms-1"
           type="button"
           onClick={() => {
             (window.confirm(translateMethod('cms.content_side.publish_label')) as any).then((ok: any) => {
-    if (ok) {
-        publish();
-    }
-});
+              if (ok) {
+                publish();
+              }
+            });
           }}
         >
           {translateMethod('cms.content_side.publish_button')}
@@ -158,25 +160,25 @@ const HelperView = ({
   editor
 }: any) => {
   const [value, setValue] = useState(content.example);
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     setValue(content.example);
   }, [content.example]);
 
   return (
-        <div>
-            <h5>{translateMethod(`cms.content_side_view.${content.name}`)}</h5>
+    <div>
+      <h5>{translateMethod(`cms.content_side_view.${content.name}`)}</h5>
       {content.parameters && (
-                <div>
-                    <h6>Parameters</h6>
-                    <ul>
-                        {(content.parameters || []).map((name: any) => <li key={`${name}`}>{name}</li>)}
+        <div>
+          <h6>Parameters</h6>
+          <ul>
+            {(content.parameters || []).map((name: any) => <li key={`${name}`}>{name}</li>)}
           </ul>
         </div>
       )}
       {content.link && (
-                <a
+        <a
           className="btn btn-sm btn-outline-info my-2"
           href={`https://maif.github.io/daikoku/swagger-ui/index.html${content.link}`}
           target="_blank"
@@ -185,8 +187,8 @@ const HelperView = ({
           Link to the model
         </a>
       )}
-            <CodeInput onChange={setValue} value={value} width="-1" height="180px" useWrapMode={true} />
-            <button
+      <CodeInput onChange={setValue} value={value} />
+      <button
         className="btn btn-sm btn-outline-success mt-3"
         onClick={() => {
           onChange();
@@ -206,14 +208,14 @@ export const ContentSideView = ({
   publish,
   contentType
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
   const [sideView, setSideView] = useState(false);
   const [selector, setSelector] = useState('');
   const [search, setSearch] = useState('');
-  const [helpersList, setHelpers] = useState([]);
-  const [ref, setRef] = useState();
+  const [helpersList, setHelpers] = useState<any>([]);
+  const [ref, setRef] = useState<any>();
 
-  const [selectedPage, setSelectedPage] = useState({
+  const [selectedPage, setSelectedPage] = useState<any>({
     top: 0,
     left: 0,
     pageName: undefined,
@@ -224,7 +226,7 @@ export const ContentSideView = ({
   useEffect(() => {
     setHelpers(
       Helpers.reduce(
-                (acc, curr) => ({
+        (acc, curr) => ({
           ...acc,
 
           [curr.important || curr.category]: {
@@ -239,8 +241,7 @@ export const ContentSideView = ({
               },
             ],
           }
-        }),
-        {}
+        }), {}
       )
     );
 
@@ -248,32 +249,32 @@ export const ContentSideView = ({
   }, []);
 
   const searchHeight = () => {
-    if (!document.getElementById('content_sideview_parent')) setTimeout(searchHeight, 250);
-    else
-      setHeight(
-        window.innerHeight -
-                    document.getElementById('content_sideview_parent').getBoundingClientRect().top -
-          75
-      );
+    const elem = document.getElementById('content_sideview_parent')
+    if (!elem) {
+      setTimeout(searchHeight, 250);
+    } else {
+      setHeight(window.innerHeight - elem.getBoundingClientRect().top - 75);
+    }
   };
 
-  (window as any).pages = pages;
+  //@ts-ignore //FIXME???
+  window.pages = pages;
 
   const onMouseDown = () => {
     if (ref) {
       setTimeout(() => {
-        const pos = (ref as any).getCursorPosition();
-        const token = (ref as any).session.getTokenAt(pos.row, pos.column);
+        const pos = ref.getCursorPosition();
+        const token = ref.session.getTokenAt(pos.row, pos.column);
 
         const value = token ? token.value.trim() : '';
         try {
-          const id = value.match(/(?:"[^"]*"|^[^"]*$)/)[0].replace(/"/g, '');
-          const page = (window as any).pages.find((p: any) => p.id === id);
+          const id = value.match(/(?:"[^"]*"|^[^"]*$)/)[0].replace(/"/g, ''); //@ts-ignore //FIXME???
+          const page = window.pages.find((p: any) => p.id === id);
           setSelectedPage({
-    ...(ref as any).renderer.$cursorLayer.getPixelPosition(),
-    pageName: page.name,
-    id,
-});
+            ...(ref as any).renderer.$cursorLayer.getPixelPosition(),
+            pageName: page.name,
+            id,
+          });
         } catch (err) {
           setSelectedPage({ top: 0, left: 0, pageName: undefined });
         }
@@ -289,125 +290,128 @@ export const ContentSideView = ({
     const term = value.toLowerCase().replace(/[\[\]&]+/g, '');
     setSearch(value);
 
-        setHelpers(Object.fromEntries(Object.entries(helpersList).map(([g, { helpers, ...rest }]) => [
-    g,
-    {
+    setHelpers(Object.fromEntries(Object.entries(helpersList).map(([g, { helpers, ...rest }]: any) => [
+      g,
+      {
         ...rest,
         collapsed: term.length > 0 ? false : true,
         helpers: (helpers as any).map((helper: any) => ({
-            ...helper,
-            filtered: term.length === 0 ? false : !helper.term.includes(term)
+          ...helper,
+          filtered: term.length === 0 ? false : !helper.term.includes(term)
         })),
-    },
-])));
+      },
+    ])));
   };
 
   console.log(helpersList);
 
-    return (<div className="d-flex flex-column" style={{
-        position: 'relative',
-        marginTop: '52px',
-        flex: 1,
+  return (<div className="d-flex flex-column" style={{
+    position: 'relative',
+    marginTop: '52px',
+    flex: 1,
+  }}>
+    <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector} />
+    <span style={{
+      fontStyle: 'italic',
+      fontSize: '13px',
     }}>
-            <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector}/>
-            <span style={{
-        fontStyle: 'italic',
-        fontSize: '13px',
+      {translateMethod('cms.body.drag_and_drop_advice')}
+    </span>
+    <div style={{
+      position: 'relative',
+      border: '1px solid rgba(225,225,225,.5)',
+      flex: 1,
     }}>
-        {translateMethod('cms.body.drag_and_drop_advice')}
-      </span>
-            <div style={{
-        position: 'relative',
-        border: '1px solid rgba(225,225,225,.5)',
-        flex: 1,
-    }}>
-                {selectedPage.pageName && (<Link className="btn btn-sm px-1" style={{
-            position: 'absolute',
-            zIndex: 100,
-            top: selectedPage.top - 42,
-            left: selectedPage.left,
-            backgroundColor: '#fff',
-            border: '1px solid #f0f1f6',
-            boxShadow: '0 1px 3px rgb(0 0 0 / 15%)',
-                }} to={`/settings/pages/edit/${(selectedPage as any).id}`} onClick={() => setSelectedPage({ pageName: undefined })}>{`${translateMethod('cms.content_side_view.edit')} ${selectedPage.pageName}`}</Link>)}
-                <Editor value={value} onChange={onChange} onLoad={(editorInstance: any) => {
+      {selectedPage.pageName && (<Link className="btn btn-sm px-1" style={{
+        position: 'absolute',
+        zIndex: 100,
+        top: selectedPage.top - 42,
+        left: selectedPage.left,
+        backgroundColor: '#fff',
+        border: '1px solid #f0f1f6',
+        boxShadow: '0 1px 3px rgb(0 0 0 / 15%)',
+      }} to={`/settings/pages/edit/${(selectedPage as any).id}`} onClick={() => setSelectedPage({ pageName: undefined })}>{`${translateMethod('cms.content_side_view.edit')} ${selectedPage.pageName}`}</Link>)}
+      <Editor value={value} onChange={onChange} onLoad={(editorInstance: any) => {
         setRef(editorInstance);
         editorInstance.container.style.resize = 'both';
         document.addEventListener('mouseup', (e) => editorInstance.resize());
-        }} mode={CONTENT_TYPES_TO_MODE[contentType] || 'html'} height={height} width="-1"/>
-                {sideView && (<div style={{
-            backgroundColor: '#fff',
-            position: 'absolute',
-            inset: 0,
-        }}>
-                        <div className="d-flex" style={{ height: '100%', position: 'relative' }}>
-                            {selector !== 'history' && (<div className="p-3" style={{
-                flex: !selector ? 1 : 0.75,
-                backgroundColor: '#efefef',
-                overflowY: 'scroll',
-            }}>
-                                    <div>
-                                        <input type="text" className="form-control mb-2" placeholder={translateMethod('cms.content_side_view.search_text')} value={search} onChange={(e) => filterHelpers(e.target.value)} style={{ border: 'none' }}/>
-                  </div>
-                                    <div className="d-flex flex-column">
-                                        {Object.entries(helpersList).map(([groupName, { helpers, collapsed }]) => (<div onClick={() => setHelpers(Object.fromEntries(Object.entries(helpersList).map(([g, { collapsed, ...rest }]) => {
-                    if (g === groupName)
+      }} mode={CONTENT_TYPES_TO_MODE[contentType] || 'html'} height={height} width="-1" />
+      {sideView && (<div style={{
+        backgroundColor: '#fff',
+        position: 'absolute',
+        inset: 0,
+      }}>
+        <div className="d-flex" style={{ height: '100%', position: 'relative' }}>
+          {selector !== 'history' && (<div className="p-3" style={{
+            flex: !selector ? 1 : 0.75,
+            backgroundColor: '#efefef',
+            overflowY: 'scroll',
+          }}>
+            <div>
+              <input type="text" className="form-control mb-2" placeholder={translateMethod('cms.content_side_view.search_text')} value={search} onChange={(e) => filterHelpers(e.target.value)} style={{ border: 'none' }} />
+            </div>
+            <div className="d-flex flex-column">
+              {Object.entries(helpersList)
+                .map(([groupName, { helpers, collapsed }]: any) => (
+                  <div
+                    onClick={() => setHelpers(Object.fromEntries(Object.entries(helpersList).map(([g, { collapsed, ...rest }]: any) => {
+                      if (g === groupName)
                         return [
-                            g,
-                            {
-                                ...rest,
-                                collapsed: !collapsed,
-                                helpers: rest.helpers.map((helper: any) => ({
-                                    ...helper,
-                                    filtered: false
-                                })),
-                            },
+                          g,
+                          {
+                            ...rest,
+                            collapsed: !collapsed,
+                            helpers: rest.helpers.map((helper: any) => ({
+                              ...helper,
+                              filtered: false
+                            })),
+                          },
                         ];
-                    return [g, { ...rest, collapsed }];
-                })))}>
-                                                {(helpers as any).filter((helper: any) => !helper.filtered).length > 0 && (<div style={{
-                        background: '#fff',
+                      return [g, { ...rest, collapsed }];
+                    })))}>
+                    {(helpers as any).filter((helper: any) => !helper.filtered).length > 0 && (<div style={{
+                      background: '#fff',
                     }} className="p-2 px-3 mb-1 d-flex justify-content-between align-items-center">
-                                                        <span>{groupName}</span>
-                                                        <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
-                          </div>)}
-                        {!collapsed &&
-                    (helpers as any).filter((helper: any) => !helper.filtered)
-                                                .map((helper: any) => <button id={helper.name} type="button" key={helper.name} className="py-2 ps-3 mb-2" style={{
-                            textAlign: 'left',
-                            flex: 1,
-                            width: '100%',
-                            border: 'none',
-                            backgroundColor: (selector as any)?.name === helper.name ? '#bdc3c7' : '#ddd',
-                            borderRight: `${(selector as any)?.name === helper.name ? 2 : 0}px solid`,
-                            fontSize: '14px',
+                      <span>{groupName}</span>
+                      <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
+                    </div>)}
+                    {!collapsed &&
+                      (helpers as any).filter((helper: any) => !helper.filtered)
+                        .map((helper: any) => <button id={helper.name} type="button" key={helper.name} className="py-2 ps-3 mb-2" style={{
+                          textAlign: 'left',
+                          flex: 1,
+                          width: '100%',
+                          border: 'none',
+                          backgroundColor: (selector as any)?.name === helper.name ? '#bdc3c7' : '#ddd',
+                          borderRight: `${(selector as any)?.name === helper.name ? 2 : 0}px solid`,
+                          fontSize: '14px',
                         }} onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelector(helper);
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelector(helper);
                         }}>
-                            {translateMethod(`cms.content_side_view.${helper.name}`)}
-                          </button>)}
-                      </div>))}
-                  </div>
-                </div>)}
-                            <div style={{ flex: selector ? 1 : 0 }} className="ms-2 p-3">
-                                <i className="fas fa-times" style={{
-            cursor: 'pointer',
-            padding: '6px',
-            position: 'absolute',
-            top: '6px',
-            right: '6px',
-        }} onClick={() => setSideView(false)}/>
-                                {(selector as any)?.name === 'links' && (<LinksView editor={ref} onChange={() => setSideView(false)}/>)}
-                                {(selector as any)?.name === 'pages' && (<PagesView pages={pages} prefix="daikoku-page-url" title={translateMethod('cms.content_side_view.link_to_insert')} editor={ref} onChange={() => setSideView(false)}/>)}
-                                {(selector as any)?.name === 'blocks' && (<PagesView pages={pages} prefix="daikoku-include-block" title={translateMethod('cms.content_side_view.block_to_render')} editor={ref} onChange={() => setSideView(false)}/>)}
-                {((selector as any)?.name.startsWith('daikoku') ||
-            !['links', 'blocks', 'pages'].includes((selector as any)?.name)) &&
-                        selector && (<HelperView editor={ref} onChange={() => setSideView(false)} content={selector}/>)}
-              </div>
+                          {translateMethod(`cms.content_side_view.${helper.name}`)}
+                        </button>)}
+                  </div>))}
             </div>
           </div>)}
-      </div>
-    </div>);
+          <div style={{ flex: selector ? 1 : 0 }} className="ms-2 p-3">
+            <i className="fas fa-times" style={{
+              cursor: 'pointer',
+              padding: '6px',
+              position: 'absolute',
+              top: '6px',
+              right: '6px',
+            }} onClick={() => setSideView(false)} />
+            {(selector as any)?.name === 'links' && (<LinksView editor={ref} onChange={() => setSideView(false)} />)}
+            {(selector as any)?.name === 'pages' && (<PagesView pages={pages} prefix="daikoku-page-url" title={translateMethod('cms.content_side_view.link_to_insert')} editor={ref} onChange={() => setSideView(false)} />)}
+            {(selector as any)?.name === 'blocks' && (<PagesView pages={pages} prefix="daikoku-include-block" title={translateMethod('cms.content_side_view.block_to_render')} editor={ref} onChange={() => setSideView(false)} />)}
+            {((selector as any)?.name.startsWith('daikoku') ||
+              !['links', 'blocks', 'pages'].includes((selector as any)?.name)) &&
+              selector && (<HelperView editor={ref} onChange={() => setSideView(false)} content={selector} />)}
+          </div>
+        </div>
+      </div>)}
+    </div>
+  </div>);
 };

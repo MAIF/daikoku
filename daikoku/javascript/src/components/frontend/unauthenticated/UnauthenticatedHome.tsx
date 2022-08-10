@@ -4,26 +4,29 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { converter } from '../../../services/showdown';
 import hljs from 'highlight.js';
 import { I18nContext } from '../../../core';
+import { useSelector } from 'react-redux';
 
-export function UnauthenticatedHomeComponent(props: any) {
-    const { Translation } = useContext(I18nContext);
+export function UnauthenticatedHome({children}: {children?: JSX.Element}) {
+  const { Translation } = useContext(I18nContext);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const content = props.tenant.unloggedHome || '';
+  const tenant = useSelector((s: any) => s.context.tenant)
+
+  const content = tenant.unloggedHome || '';
   const pathname = location ? location.pathname : '';
   const displayInformation = pathname !== '/2fa' && pathname !== '/signup';
 
   return (
-        <main role="main">
+    <main role="main">
       {displayInformation && (
-                <section className="organisation__header col-12 mb-4 p-3">
-                    <div className="container">
-                        <div className="row text-center">
-                            <div className="col-sm-4">
-                                <div className="avatar__container">
-                                    <img
-                    src={props.tenant ? props.tenant.logo : '/assets/images/daikoku.svg'}
+        <section className="organisation__header col-12 mb-4 p-3">
+          <div className="container">
+            <div className="row text-center">
+              <div className="col-sm-4">
+                <div className="avatar__container">
+                  <img
+                    src={tenant ? tenant.logo : '/assets/images/daikoku.svg'}
                     style={{
                       width: 'auto',
                       height: '100%',
@@ -34,53 +37,53 @@ export function UnauthenticatedHomeComponent(props: any) {
                   />
                 </div>
               </div>
-                            <div className="col-sm-8">
-                                {!props.tenant.title && <h1 className="jumbotron-heading">Your APIs center</h1>}
-                {!!props.tenant.title && (
-                                    <h1 className="jumbotron-heading">{props.tenant.title}</h1>
+              <div className="col-sm-8">
+                {!tenant.title && <h1 className="jumbotron-heading">Your APIs center</h1>}
+                {!!tenant.title && (
+                  <h1 className="jumbotron-heading">{tenant.title}</h1>
                 )}
 
-                {!props.tenant.description && (
-                                    <p className="lead">
-                                        Daikoku is the perfect <a href="https://www.otoroshi.io">Otoroshi</a> companion
+                {!tenant.description && (
+                  <p className="lead">
+                    Daikoku is the perfect <a href="https://www.otoroshi.io">Otoroshi</a> companion
                     to manage, document, and expose your beloved APIs to your developpers community.
                     Publish a new API in a few seconds
                   </p>
                 )}
-                {!!props.tenant.description && (
-                                    <div
+                {!!tenant.description && (
+                  <div
                     dangerouslySetInnerHTML={{
-                      __html: converter.makeHtml(props.tenant.description || ''),
+                      __html: converter.makeHtml(tenant.description || ''),
                     }}
                   ></div>
                 )}
-                                <p>
-                  {props.tenant.authProvider === 'Local' && (
-                                        <a className="btn btn-access-negative my-2 ms-2" href={'/signup'}>
-                                            <i className="fas fa-plus-square me-1" />
-                                            <Translation i18nkey="Create your account">Create your account</Translation>
+                <p>
+                  {tenant.authProvider === 'Local' && (
+                    <a className="btn btn-access-negative my-2 ms-2" href={'/signup'}>
+                      <i className="fas fa-plus-square me-1" />
+                      <Translation i18nkey="Create your account">Create your account</Translation>
                     </a>
                   )}
-                  {false && props.tenant.authProvider === 'Local' && (
-                                        <a className="btn btn-access-negative my-2 ms-2" href={'/reset'}>
-                                            <i className="fas fa-bomb me-1" />
-                                            <Translation i18nkey="Reset your password">Reset your password</Translation>
+                  {false && tenant.authProvider === 'Local' && (
+                    <a className="btn btn-access-negative my-2 ms-2" href={'/reset'}>
+                      <i className="fas fa-bomb me-1" />
+                      <Translation i18nkey="Reset your password">Reset your password</Translation>
                     </a>
                   )}
 
-                                    <a className="btn btn-access-negative my-2 ms-2" href={`/auth/Local/login`}>
-                                        <i className="fas fa-user me-1" />
-                                        <Translation i18nkey="Connect to your account">
+                  <a className="btn btn-access-negative my-2 ms-2" href={`/auth/Local/login`}>
+                    <i className="fas fa-user me-1" />
+                    <Translation i18nkey="Connect to your account">
                       Connect to your account
                     </Translation>
                   </a>
-                  {props.tenant.authProvider !== 'Local' && (
-                                        <a
+                  {tenant.authProvider !== 'Local' && (
+                    <a
                       className="btn btn-access-negative my-2 ms-2"
-                      href={`/auth/${props.tenant.authProvider}/login`}
+                      href={`/auth/${tenant.authProvider}/login`}
                     >
-                                            <i className="fas fa-user me-1" />
-                                            <Translation i18nkey="Connect to your thrid party account">
+                      <i className="fas fa-user me-1" />
+                      <Translation i18nkey="Connect to your thrid party account">
                         Connect to your thrid party account
                       </Translation>
                     </a>
@@ -91,16 +94,16 @@ export function UnauthenticatedHomeComponent(props: any) {
           </div>
         </section>
       )}
-      {!!props.children && (
-                <section className="container">
-                    <div className="row">{props.children}</div>
+      {!!children && (
+        <section className="container">
+          <div className="row">{children}</div>
         </section>
       )}
-      {!props.children && (
-                <section className="container">
-                    <div className="row">
-                        <div style={{ width: '100%' }}>
-                            <TenantDescription content={content} />
+      {!children && (
+        <section className="container">
+          <div className="row">
+            <div style={{ width: '100%' }}>
+              <TenantDescription content={content} />
             </div>
           </div>
         </section>
@@ -112,14 +115,14 @@ export function UnauthenticatedHomeComponent(props: any) {
 function TenantDescription(props: any) {
   useEffect(() => {
     (window as any).$('pre code').each((i: any, block: any) => {
-    hljs.highlightElement(block);
-});
+      hljs.highlightElement(block);
+    });
   }, []);
 
   const content = props.content || '';
   return (
-        <div className="d-flex col flex-column p-3">
-            <div
+    <div className="d-flex col flex-column p-3">
+      <div
         className="api-description"
         dangerouslySetInnerHTML={{ __html: converter.makeHtml(content) }}
       />
@@ -127,8 +130,3 @@ function TenantDescription(props: any) {
   );
 }
 
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-export const UnauthenticatedHome = connect(mapStateToProps)(UnauthenticatedHomeComponent);

@@ -1,14 +1,13 @@
 import React, { useContext } from 'react';
 import { I18nContext } from '../../../../core';
 import { MailTemplateButton } from './MailTemplateButton';
-const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function MailjetConfig({
   value,
   onChange,
   ...props
 }: any) {
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['apiKeyPublic', 'apiKeyPrivate', 'fromTitle', 'fromEmail', 'template'];
 
@@ -38,19 +37,20 @@ export function MailjetConfig({
       },
     },
     template: {
-            type: () => <MailTemplateButton {...props} />,
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 
   return (
-        <React.Suspense>
-            <LazyForm
-        value={value}
-        onChange={onChange}
-        flow={formFlow}
-        schema={formSchema}
-                style={{ marginTop: 50 }}
-      />
-    </React.Suspense>
+    <div>rewrite form please</div>
+    // <React.Suspense>
+    //   <LazyForm
+    //     value={value}
+    //     onChange={onChange}
+    //     flow={formFlow}
+    //     schema={formSchema}
+    //     style={{ marginTop: 50 }}
+    //   />
+    // </React.Suspense>
   );
 }

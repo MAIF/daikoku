@@ -37,7 +37,7 @@ export const MessagesContext = React.createContext<TMessageContext>(initMessageC
 const MessagesProviderComponent = ({
   children,
   connectedUser
-}: { children: JSX.Element, connectedUser: any }) => {
+}: { children: JSX.Element, connectedUser?: any }) => {
   const [messages, setMessages] = useState<Array<any>>([]);
   const [adminTeam, setAdminTeam] = useState<any>(undefined);
   const [receivedMessage, setReceivedMessage] = useState<any>(undefined);

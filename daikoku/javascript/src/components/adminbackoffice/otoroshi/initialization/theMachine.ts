@@ -1,5 +1,5 @@
-import { Machine, assign } from 'xstate';
-import { nanoid } from 'nanoid';
+// @ts-nocheck
+import { assign, createMachine } from 'xstate';
 
 import * as Services from '../../../../services';
 
@@ -19,7 +19,7 @@ const apikeyCustomization = {
   },
 };
 
-export const theMachine = Machine({
+export const theMachine = createMachine({
   id: 'the-machine',
   initial: 'otoroshiSelection',
   context: {
@@ -67,20 +67,20 @@ export const theMachine = Machine({
         DONE_SERVICES: {
           target: 'completeServices',
           actions: assign({
-                        tenant: (_context, { tenant }) => tenant,
-                        otoroshi: (_context, { otoroshi }) => otoroshi,
-                        groups: (_context, { groups = [] }) => groups,
-                        services: (_context, { services = [] }) => services,
+            tenant: (_context, { tenant }) => tenant,
+            otoroshi: (_context, { otoroshi }) => otoroshi,
+            groups: (_context, { groups = [] }) => groups,
+            services: (_context, { services = [] }) => services,
           }),
         },
         DONE_APIKEYS: {
           target: 'completeApikeys',
           actions: assign({
-                        tenant: (_context, { tenant }) => tenant,
-                        otoroshi: (_context, { otoroshi }) => otoroshi,
-                        groups: (_context, { groups = [] }) => groups,
-                        services: (_context, { services = [] }) => services,
-                        apikeys: (_context, { apikeys = [] }) => apikeys,
+            tenant: (_context, { tenant }) => tenant,
+            otoroshi: (_context, { otoroshi }) => otoroshi,
+            groups: (_context, { groups = [] }) => groups,
+            services: (_context, { services = [] }) => services,
+            apikeys: (_context, { apikeys = [] }) => apikeys,
           }),
         },
         DONE: 'otoroshiSelection',
@@ -108,16 +108,16 @@ export const theMachine = Machine({
         DONE_COMPLETE: {
           target: 'stepSelection',
           actions: assign({
-                        tenant: (_context, { tenant }) => tenant,
-                        otoroshi: (_context, { otoroshi }) => otoroshi,
-                        groups: (_context, { groups = [] }) => groups,
-                        services: (_context, { services = [] }) => services,
+            tenant: (_context, { tenant }) => tenant,
+            otoroshi: (_context, { otoroshi }) => otoroshi,
+            groups: (_context, { groups = [] }) => groups,
+            services: (_context, { services = [] }) => services,
           }),
         },
         FAILURE: {
           target: 'failure',
           actions: assign({
-                        error: (_context, { error }) => error,
+            error: (_context, { error }) => error,
           }),
         },
       },
@@ -156,13 +156,13 @@ export const theMachine = Machine({
         DONE_COMPLETE: {
           target: 'completeServices',
           actions: assign({
-                        services: ({ services }, { newServices = [] }) => [...services, ...newServices],
+            services: ({ services }, { newServices = [] }) => [...services, ...newServices],
           }),
         },
         FAILURE: {
           target: 'failure',
           actions: assign({
-                        error: (_context, { error }) => error,
+            error: (_context, { error }) => error,
           }),
         },
       },
@@ -210,7 +210,7 @@ export const theMachine = Machine({
               .then((newApi) =>
                 createdApis.map((api: any) => ({
                   ...newApi,
-                                    _id: nanoi(32),
+                  _id: nanoi(32),
                   name: api.name,
                   team: api.team,
                   published: true,
@@ -239,7 +239,7 @@ export const theMachine = Machine({
         FAILURE: {
           target: 'failure',
           actions: assign({
-                        error: (_context, { error }) => error,
+            error: (_context, { error }) => error,
           }),
         },
       },
@@ -269,13 +269,13 @@ export const theMachine = Machine({
         DONE_COMPLETE: {
           target: 'completeApikeys',
           actions: assign({
-                        apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys],
+            apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys],
           }),
         },
         FAILURE: {
           target: 'failure',
           actions: assign({
-                        error: (_context, { error }) => error,
+            error: (_context, { error }) => error,
           }),
         },
       },
@@ -346,7 +346,7 @@ export const theMachine = Machine({
         FAILURE: {
           target: 'failure',
           actions: assign({
-                        error: (_context, { error }) => error,
+            error: (_context, { error }) => error,
           }),
         },
       },

@@ -2,12 +2,11 @@ import React, { useContext, useEffect } from 'react';
 import { I18nContext } from '../../../../core';
 import { Spinner } from '../../../utils';
 
-const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function LocalConfig(props: any) {
   const formFlow = ['sessionMaxAge'];
 
-    const { translateMethod } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   const formSchema = {
     sessionMaxAge: {
@@ -28,14 +27,15 @@ export function LocalConfig(props: any) {
   }, []);
 
   return (
-        <React.Suspense fallback={<Spinner />}>
-            <LazyForm
-        value={props.value}
-        onChange={props.onChange}
-        flow={formFlow}
-        schema={formSchema}
-                style={{ marginTop: 50 }}
-      />
-    </React.Suspense>
+    <div>no more lazy form </div>
+    // <React.Suspense fallback={<Spinner />}>
+    //   <LazyForm
+    //     value={props.value}
+    //     onChange={props.onChange}
+    //     flow={formFlow}
+    //     schema={formSchema}
+    //     style={{ marginTop: 50 }}
+    //   />
+    // </React.Suspense>
   );
 }

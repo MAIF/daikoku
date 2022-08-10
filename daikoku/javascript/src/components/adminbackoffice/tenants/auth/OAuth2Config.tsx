@@ -4,7 +4,6 @@ import { Spinner } from '../../../utils';
 import set from 'set-value';
 import { I18nContext } from '../../../../core';
 
-const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function AlgoSettings(props: any) {
   const { translateMethod } = useContext(I18nContext);
@@ -20,186 +19,188 @@ export function AlgoSettings(props: any) {
     if (path === '') {
       props.onChange(value);
     } else {
-      const newValue = { ...props.value };
+      const newValue = { ...props.value }; //@ts-ignore //FIXME why name ???
       set(newValue, name, value);
       props.onChange(newValue);
     }
   };
 
-  return (
-    <div>
-      <SelectInput
-        label={props.algoTitle || translateMethod('Algo.')}
-        value={algo.type}
-        onChange={(e: any) => {
-          switch (e) {
-            case 'HSAlgoSettings':
-              changeTheValue(path + '', {
-                type: 'HSAlgoSettings',
-                size: 512,
-                secret: 'secret',
-              });
-              break;
-            case 'RSAlgoSettings':
-              changeTheValue(path + '', {
-                type: 'RSAlgoSettings',
-                size: 512,
-                publicKey: '-----BEGIN PUBLIC KEY-----\nxxxxxxxx\n-----END PUBLIC KEY-----',
-                privateKey: '-----BEGIN PRIVATE KEY-----\nxxxxxxxx\n-----END PRIVATE KEY-----',
-              });
-              break;
-            case 'ESAlgoSettings':
-              changeTheValue(path + '', {
-                type: 'ESAlgoSettings',
-                size: 512,
-                publicKey: '-----BEGIN PUBLIC KEY-----\nxxxxxxxx\n-----END PUBLIC KEY-----',
-                privateKey: '-----BEGIN PRIVATE KEY-----\nxxxxxxxx\n-----END PRIVATE KEY-----',
-              });
-              break;
-            case 'JWKSAlgoSettings':
-              changeTheValue(path + '', {
-                type: 'JWKSAlgoSettings',
-                url: 'https://jwk.foo.bar/.well-known/jwks.json',
-                headers: {},
-                timeout: 2000,
-                ttl: 5 * 60 * 60 * 1000,
-                kty: 'RSA',
-              });
-              break;
-          }
-          // changeTheValue(path + '', e)
-        }}
-        possibleValues={[
-          { label: 'Hmac + SHA', value: 'HSAlgoSettings' },
-          { label: 'RSASSA-PKCS1 + SHA', value: 'RSAlgoSettings' },
-          { label: 'ECDSA + SHA', value: 'ESAlgoSettings' },
-          { label: 'JWK Set', value: 'JWKSAlgoSettings' },
-        ]}
-        help="What kind of algorithm you want to use to verify/sign your JWT token with"
-      />
-      {algo.type === 'HSAlgoSettings' && [
-        <SelectInput
-          key="sha-size"
-          label={translateMethod('SHA Size')}
-          help={translateMethod('sha.size.help')}
-          value={algo.size}
-          onChange={(v: any) => changeTheValue(path + '.size', v)}
-          possibleValues={[
-            { label: '256', value: 256 },
-            { label: '384', value: 384 },
-            { label: '512', value: 512 },
-          ]}
-        />,
-        <TextInput
-          key="hmac-secret"
-          label={translateMethod('Hmac secret')}
-          placeholder="secret"
-          value={algo.secret}
-          help={translateMethod('hmac.secet.help', 'The Hmac secret')}
-          onChange={(e: any) => changeTheValue(path + '.secret', e)}
-        />,
-      ]}
-      {algo.type === 'RSAlgoSettings' && [
-        <SelectInput
-          key="sha-size"
-          label={translateMethod('SHA Size')}
-          help={translateMethod('sha.size.help')}
-          value={algo.size}
-          onChange={(v: any) => changeTheValue(path + '.size', v)}
-          possibleValues={[
-            { label: '256', value: 256 },
-            { label: '384', value: 384 },
-            { label: '512', value: 512 },
-          ]}
-        />,
-        <TextareaInput
-          key="public-key"
-          label={translateMethod('Public key')}
-          value={algo.publicKey}
-          help={translateMethod('The RSA public key')}
-          onChange={(e: any) => changeTheValue(path + '.publicKey', e)}
-        />,
-        <TextareaInput
-          key="private-key"
-          label={translateMethod('Private key')}
-          value={algo.privateKey}
-          help={translateMethod('private.key.help')}
-          onChange={(e: any) => changeTheValue(path + '.privateKey', e)}
-        />,
-      ]}
-      {algo.type === 'ESAlgoSettings' && [
-        <SelectInput
-          key="sha-size"
-          label={translateMethod('SHA Size')}
-          help={translateMethod('sha.size.help')}
-          value={algo.size}
-          onChange={(v: any) => changeTheValue(path + '.size', v)}
-          possibleValues={[
-            { label: '256', value: 256 },
-            { label: '384', value: 384 },
-            { label: '512', value: 512 },
-          ]}
-        />,
-        <TextareaInput
-          key="public-key"
-          label={translateMethod('Public key')}
-          value={algo.publicKey}
-          help={translateMethod('The ECDSA public key')}
-          onChange={(e: any) => changeTheValue(path + '.publicKey', e)}
-        />,
-        <TextareaInput
-          key="private-key"
-          label={translateMethod('Private key')}
-          value={algo.privateKey}
-          help={translateMethod('ecdsa.private.key.help')}
-          onChange={(e: any) => changeTheValue(path + '.privateKey', e)}
-        />,
-      ]}
-      {algo.type === 'JWKSAlgoSettings' && [
-        <TextInput
-          key="url"
-          label={translateMethod('URL')}
-          value={algo.url}
-          help={translateMethod('The JWK Set url')}
-          onChange={(e: any) => changeTheValue(path + '.url', e)}
-        />,
-        <NumberInput
-          key="http-call-timeout"
-          label={translateMethod('HTTP call timeout')}
-          suffix={translateMethod('millis.')}
-          value={algo.timeout}
-          help={translateMethod('Timeout for fetching the keyset')}
-          onChange={(e: any) => changeTheValue(path + '.timeout', e)}
-        />,
-        <NumberInput
-          key="ttl"
-          label={translateMethod('TTL')}
-          suffix={translateMethod('millis.')}
-          value={algo.ttl}
-          help={translateMethod('Cache TTL for the keyset')}
-          onChange={(e: any) => changeTheValue(path + '.ttl', e)}
-        />,
-        <ObjectInput
-          key="http-header"
-          label={translateMethod('HTTP Headers')}
-          value={algo.headers}
-          help={translateMethod('The HTTP headers passed')}
-          onChange={(e: any) => changeTheValue(path + '.headers', e)}
-        />,
-        <SelectInput
-          key="key-type"
-          label={translateMethod('Key type')}
-          help={translateMethod('Type of key')}
-          value={algo.kty}
-          onChange={(v: any) => changeTheValue(path + '.kty', v)}
-          possibleValues={[
-            { label: 'RSA', value: 'RSA' },
-            { label: 'EC', value: 'EC' },
-          ]}
-        />,
-      ]}
-    </div>
-  );
+  return (<></>)
+
+  // return (
+  //   <div>
+  //     <SelectInput
+  //       label={props.algoTitle || translateMethod('Algo.')}
+  //       value={algo.type}
+  //       onChange={(e: any) => {
+  //         switch (e) {
+  //           case 'HSAlgoSettings':
+  //             changeTheValue(path + '', {
+  //               type: 'HSAlgoSettings',
+  //               size: 512,
+  //               secret: 'secret',
+  //             });
+  //             break;
+  //           case 'RSAlgoSettings':
+  //             changeTheValue(path + '', {
+  //               type: 'RSAlgoSettings',
+  //               size: 512,
+  //               publicKey: '-----BEGIN PUBLIC KEY-----\nxxxxxxxx\n-----END PUBLIC KEY-----',
+  //               privateKey: '-----BEGIN PRIVATE KEY-----\nxxxxxxxx\n-----END PRIVATE KEY-----',
+  //             });
+  //             break;
+  //           case 'ESAlgoSettings':
+  //             changeTheValue(path + '', {
+  //               type: 'ESAlgoSettings',
+  //               size: 512,
+  //               publicKey: '-----BEGIN PUBLIC KEY-----\nxxxxxxxx\n-----END PUBLIC KEY-----',
+  //               privateKey: '-----BEGIN PRIVATE KEY-----\nxxxxxxxx\n-----END PRIVATE KEY-----',
+  //             });
+  //             break;
+  //           case 'JWKSAlgoSettings':
+  //             changeTheValue(path + '', {
+  //               type: 'JWKSAlgoSettings',
+  //               url: 'https://jwk.foo.bar/.well-known/jwks.json',
+  //               headers: {},
+  //               timeout: 2000,
+  //               ttl: 5 * 60 * 60 * 1000,
+  //               kty: 'RSA',
+  //             });
+  //             break;
+  //         }
+  //         // changeTheValue(path + '', e)
+  //       }}
+  //       possibleValues={[
+  //         { label: 'Hmac + SHA', value: 'HSAlgoSettings' },
+  //         { label: 'RSASSA-PKCS1 + SHA', value: 'RSAlgoSettings' },
+  //         { label: 'ECDSA + SHA', value: 'ESAlgoSettings' },
+  //         { label: 'JWK Set', value: 'JWKSAlgoSettings' },
+  //       ]}
+  //       help="What kind of algorithm you want to use to verify/sign your JWT token with"
+  //     />
+  //     {algo.type === 'HSAlgoSettings' && [
+  //       <SelectInput
+  //         key="sha-size"
+  //         label={translateMethod('SHA Size')}
+  //         help={translateMethod('sha.size.help')}
+  //         value={algo.size}
+  //         onChange={(v: any) => changeTheValue(path + '.size', v)}
+  //         possibleValues={[
+  //           { label: '256', value: 256 },
+  //           { label: '384', value: 384 },
+  //           { label: '512', value: 512 },
+  //         ]}
+  //       />,
+  //       <TextInput
+  //         key="hmac-secret"
+  //         label={translateMethod('Hmac secret')}
+  //         placeholder="secret"
+  //         value={algo.secret}
+  //         help={translateMethod('hmac.secet.help', 'The Hmac secret')}
+  //         onChange={(e: any) => changeTheValue(path + '.secret', e)}
+  //       />,
+  //     ]}
+  //     {algo.type === 'RSAlgoSettings' && [
+  //       <SelectInput
+  //         key="sha-size"
+  //         label={translateMethod('SHA Size')}
+  //         help={translateMethod('sha.size.help')}
+  //         value={algo.size}
+  //         onChange={(v: any) => changeTheValue(path + '.size', v)}
+  //         possibleValues={[
+  //           { label: '256', value: 256 },
+  //           { label: '384', value: 384 },
+  //           { label: '512', value: 512 },
+  //         ]}
+  //       />,
+  //       <TextareaInput
+  //         key="public-key"
+  //         label={translateMethod('Public key')}
+  //         value={algo.publicKey}
+  //         help={translateMethod('The RSA public key')}
+  //         onChange={(e: any) => changeTheValue(path + '.publicKey', e)}
+  //       />,
+  //       <TextareaInput
+  //         key="private-key"
+  //         label={translateMethod('Private key')}
+  //         value={algo.privateKey}
+  //         help={translateMethod('private.key.help')}
+  //         onChange={(e: any) => changeTheValue(path + '.privateKey', e)}
+  //       />,
+  //     ]}
+  //     {algo.type === 'ESAlgoSettings' && [
+  //       <SelectInput
+  //         key="sha-size"
+  //         label={translateMethod('SHA Size')}
+  //         help={translateMethod('sha.size.help')}
+  //         value={algo.size}
+  //         onChange={(v: any) => changeTheValue(path + '.size', v)}
+  //         possibleValues={[
+  //           { label: '256', value: 256 },
+  //           { label: '384', value: 384 },
+  //           { label: '512', value: 512 },
+  //         ]}
+  //       />,
+  //       <TextareaInput
+  //         key="public-key"
+  //         label={translateMethod('Public key')}
+  //         value={algo.publicKey}
+  //         help={translateMethod('The ECDSA public key')}
+  //         onChange={(e: any) => changeTheValue(path + '.publicKey', e)}
+  //       />,
+  //       <TextareaInput
+  //         key="private-key"
+  //         label={translateMethod('Private key')}
+  //         value={algo.privateKey}
+  //         help={translateMethod('ecdsa.private.key.help')}
+  //         onChange={(e: any) => changeTheValue(path + '.privateKey', e)}
+  //       />,
+  //     ]}
+  //     {algo.type === 'JWKSAlgoSettings' && [
+  //       <TextInput
+  //         key="url"
+  //         label={translateMethod('URL')}
+  //         value={algo.url}
+  //         help={translateMethod('The JWK Set url')}
+  //         onChange={(e: any) => changeTheValue(path + '.url', e)}
+  //       />,
+  //       <NumberInput
+  //         key="http-call-timeout"
+  //         label={translateMethod('HTTP call timeout')}
+  //         suffix={translateMethod('millis.')}
+  //         value={algo.timeout}
+  //         help={translateMethod('Timeout for fetching the keyset')}
+  //         onChange={(e: any) => changeTheValue(path + '.timeout', e)}
+  //       />,
+  //       <NumberInput
+  //         key="ttl"
+  //         label={translateMethod('TTL')}
+  //         suffix={translateMethod('millis.')}
+  //         value={algo.ttl}
+  //         help={translateMethod('Cache TTL for the keyset')}
+  //         onChange={(e: any) => changeTheValue(path + '.ttl', e)}
+  //       />,
+  //       <ObjectInput
+  //         key="http-header"
+  //         label={translateMethod('HTTP Headers')}
+  //         value={algo.headers}
+  //         help={translateMethod('The HTTP headers passed')}
+  //         onChange={(e: any) => changeTheValue(path + '.headers', e)}
+  //       />,
+  //       <SelectInput
+  //         key="key-type"
+  //         label={translateMethod('Key type')}
+  //         help={translateMethod('Type of key')}
+  //         value={algo.kty}
+  //         onChange={(v: any) => changeTheValue(path + '.kty', v)}
+  //         possibleValues={[
+  //           { label: 'RSA', value: 'RSA' },
+  //           { label: 'EC', value: 'EC' },
+  //         ]}
+  //       />,
+  //     ]}
+  //   </div>
+  // );
 }
 
 const defaultConfig = {
@@ -406,16 +407,17 @@ export function OAuth2Config(props: any) {
   }, []);
 
   return (
-    <React.Suspense fallback={<Spinner />}>
-      <LazyForm
-        value={props.value}
-        onChange={(e) => {
-          props.onChange(e);
-        }}
-        flow={formFlow}
-        schema={formSchema}
-        style={{ marginTop: 50 }}
-      />
-    </React.Suspense>
+    <div>rewrite form please</div>
+    // <React.Suspense fallback={<Spinner />}>
+    //   <LazyForm
+    //     value={props.value}
+    //     onChange={(e) => {
+    //       props.onChange(e);
+    //     }}
+    //     flow={formFlow}
+    //     schema={formSchema}
+    //     style={{ marginTop: 50 }}
+    //   />
+    // </React.Suspense>
   );
 }

@@ -141,6 +141,7 @@ module.exports = (env, argv) => {
       })
     ],
     resolve: {
+      extensions: ['.js', '.jsx', '.ts', '.tsx'],
       alias: {
         crypto: 'crypto-browserify',
         path: 'path-browserify',

@@ -150,7 +150,7 @@ const EditMailtemplate = ({
 export const MailingInternalization = () => {
   useTenantBackOffice();
   const table = useRef<TableRef>();
-  const { tenant } = useSelector((s) => (s as any).context);
+  const { tenant } = useSelector((s: any) => s.context);
 
   const { domain } = useParams();
   const dispatch = useDispatch();
