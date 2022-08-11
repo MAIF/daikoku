@@ -1779,10 +1779,9 @@ object json {
       "elasticConfigs" -> o.elasticConfigs.map(_.toJson),
       "auditWebhooks" -> JsArray(o.auditWebhooks.map(_.toJson)),
       "alertsEmails" -> JsArray(o.alertsEmails.map(JsString.apply)),
-      "kafkaConfig" -> o.kafkaConfig,
+      "kafkaConfig" -> o.kafkaConfig.map(KafkaConfig.format.writes),
     )
   }
-
   object DaikokuHeader {
     def jsonHeader(tenantId: TenantId)(implicit env: Env): JsObject = {
       Json.obj(

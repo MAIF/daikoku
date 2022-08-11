@@ -997,6 +997,7 @@
   "constraints.required.otoroshi.settings": "les paramètre Otoroshi sont requis",
   "constraints.required.authorizedEntities": "les entitées autorisées sont requise",
   "constraints.required.value": "la valeure est requise",
+  "constraints.required.domain": "Le nom de domaine is requis",
   "constraints.format.url": "%s doit être une URL valide",
   "constraints.matches.email": "Votre courriel doit être une addresse électronique valide",
   "constraint.matches.password": "Votre mot de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spécial (#$^+=!*()@%&).",
