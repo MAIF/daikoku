@@ -125,7 +125,7 @@ export const TeamApiSwagger = ({
       format: format.code,
       label: 'swagger-content',
       deps: ['useContent'],
-      visible: ({ rawValues }: any) => !rawValues.useContent,
+      visible: ({ rawValues }: any) => rawValues.useContent,
       render: (v: any) => SwaggerEditorInput(v),
     },
   };

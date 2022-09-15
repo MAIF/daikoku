@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { createMachine, assign } from 'xstate';
 import { useMachine } from '@xstate/react';
-import { Form } from '@maif/react-forms';
+import { FlowObject, Form } from '@maif/react-forms';
 import omit from 'lodash/omit';
 import { Steps, Popover } from 'antd';
 
@@ -233,7 +233,7 @@ export const MultiStepForm = ({
               send('NEXT', { value: response });
             }}
             onError={(errors: any, e: any) => console.error(errors, e)}
-            schema={step.schema}
+            schema={typeof step.schema === 'function' ? step.schema(current.context) : step.schema}
             flow={typeof step.flow === 'function' ? step.flow(current.context) : step.flow}
             ref={ref}
             value={current.context}

@@ -50,6 +50,8 @@ interface IMailerSettings {
 
 interface IMailerConsole extends IMailerSettings {
   type: MailerType.console
+  fromTitle: string
+  fromEmail: string
 }
 interface IMailerMailgun extends IMailerSettings {
   type: MailerType.mailgun
