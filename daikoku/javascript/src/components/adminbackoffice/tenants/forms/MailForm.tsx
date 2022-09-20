@@ -47,8 +47,8 @@ export const MailForm = (props: { tenant: ITenant }) => {
       }
     },
   }, {
-    id: 'rest',
-    label: 'params',
+    id: 'params',
+    label: 'config',
     flow: (data) => {
       switch (data.type) {
         case 'console':
@@ -128,11 +128,17 @@ export const MailForm = (props: { tenant: ITenant }) => {
   }
 
   return (
-    <MultiStepForm value={data?.mailerSettings} steps={steps} initial="type" creation={false} save={save} labels={{
-      previous: translateMethod('Previous'),
-      skip: translateMethod('Skip'),
-      next: translateMethod('Next'),
-      save: translateMethod('Save'),
-    }} />
+    <MultiStepForm
+      value={data?.mailerSettings}
+      steps={steps}
+      initial={data?.mailerSettings ? "params" : "type"}
+      creation={false}
+      save={save}
+      labels={{
+        previous: translateMethod('Previous'),
+        skip: translateMethod('Skip'),
+        next: translateMethod('Next'),
+        save: translateMethod('Save'),
+      }} />
   )
 }

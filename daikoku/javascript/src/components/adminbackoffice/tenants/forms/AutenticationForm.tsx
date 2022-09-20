@@ -5,12 +5,25 @@ import { useQuery } from '@tanstack/react-query';
 import * as Services from '../../../../services';
 
 import { I18nContext } from '../../../../core';
-import { ITenant } from '../../../../types';
+import { ITenant, ITenantFull } from '../../../../types';
 import { MultiStepForm, Spinner } from '../../../utils';
 
 export const AuthenticationForm = (props: { tenant: ITenant }) => {
   const { translateMethod } = useContext(I18nContext)
   const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
+
+  const authProviderSettingsShema = (data: ITenantFull, subschema: Schema) => {
+    return {
+      authProviderSettings: {
+        type: type.object,
+        format: format.form,
+        label: data.authProvider,
+        schema: {
+          ...subschema
+        }
+      }
+    }
+  }
 
   const localSchema: Schema = {
     sessionMaxAge: {
@@ -236,16 +249,15 @@ export const AuthenticationForm = (props: { tenant: ITenant }) => {
       id: 'params',
       label: 'config',
       schema: (data) => {
-        console.debug({data})
         switch (data.authProvider) {
           case 'Local':
-            return localSchema;
+            return authProviderSettingsShema(data, localSchema);
           case 'LDAP':
-            return ldapSchema;
+            return authProviderSettingsShema(data, ldapSchema);
           case 'OAuth2':
-            return OAuth2Schema;
+            return authProviderSettingsShema(data, OAuth2Schema);
           case 'Otoroshi':
-            return otoroshiSchema;
+            return authProviderSettingsShema(data, otoroshiSchema);
         }
       }
     }
@@ -261,11 +273,17 @@ export const AuthenticationForm = (props: { tenant: ITenant }) => {
   }
 
   return (
-    <MultiStepForm value={data?.authProviderSettings} steps={steps} initial="authProvider" creation={false} save={save} labels={{
-      previous: translateMethod('Previous'),
-      skip: translateMethod('Skip'),
-      next: translateMethod('Next'),
-      save: translateMethod('Save'),
-    }} />
+    <MultiStepForm
+      value={data}
+      steps={steps}
+      initial={data?.authProvider ? "params" : "authProvider"}
+      creation={false}
+      save={save}
+      labels={{
+        previous: translateMethod('Previous'),
+        skip: translateMethod('Skip'),
+        next: translateMethod('Next'),
+        save: translateMethod('Save'),
+      }} />
   )
 }
