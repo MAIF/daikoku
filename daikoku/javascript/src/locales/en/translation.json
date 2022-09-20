@@ -809,6 +809,7 @@
     "team_api_post.title": "Title of news",
     "team_api_post.content": "Content",
     "New Published Post": "News published on API",
+    "new.published.post.notification": "%s, as admin of %s, has published a new post on %s.",
     "News": "News",
     "deleted": "deleted",
     "Deleted API": "Deleted API",
