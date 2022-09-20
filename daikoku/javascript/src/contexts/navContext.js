@@ -121,7 +121,7 @@ export const useApiFrontOffice = (api, team) => {
           news: {
             label: translateMethod('News'),
             action: () => {
-              if (api?.posts?.length) 'news';
+              if (api?.posts?.length) navigateTo('news');
             },
             className: { active: currentTab === 'news', disabled: !api?.posts?.length },
           },
