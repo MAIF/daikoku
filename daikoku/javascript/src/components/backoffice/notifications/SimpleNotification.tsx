@@ -103,7 +103,7 @@ export function SimpleNotification(props: any) {
       case 'NewPostPublished':
         return (
           <i
-            className="fas fa-newspaper-alt"
+            className="fas fa-newspaper"
             style={{ marginRight: 5 }}
             title={translateMethod('New Published Post')}
           />
@@ -369,10 +369,14 @@ export function SimpleNotification(props: any) {
               </Translation>
             </div>)}
             {notification.action.type === 'NewPostPublished' && (<div>
-              <Translation i18nkey="team.invitation" replacements={[
-                notification.sender.name,
-                props.getTeam(notification.action.teamId).name,
-              ]}>
+              <Translation
+                  i18nkey="new.published.post.notification"
+                  replacements={[
+                    notification.sender.name,
+                    props.getTeam(notification.action.teamId).name,
+                    notification.action.apiName
+                  ]}
+              >
                 {notification.sender.name}, as admin of{' '}
                 {props.getTeam(notification.action.teamId).name}, has published a new post on{' '}
                 {notification.action.apiName}.

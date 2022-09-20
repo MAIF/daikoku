@@ -802,6 +802,7 @@
   "team_api_post.title": "Titre de la publication",
   "team_api_post.content": "Contenu",
   "New Published Post": "Une nouvelle publication a été publiée",
+  "new.published.post.notification": "%s, admin. de l'équipe %s, a posté une nouvelle publication à propos de l'api %s.",
   "News": "Actualités",
   "deleted": "supprimé",
   "Deleted API": "API supprimée",
