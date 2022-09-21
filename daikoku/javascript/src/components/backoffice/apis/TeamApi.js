@@ -36,7 +36,13 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
 
   const promptVersion = () => {
     window
-      .prompt(translateMethod('Version number'), undefined, false, translateMethod('New version'), versionId)
+      .prompt(
+        translateMethod('Version number'),
+        undefined,
+        false,
+        translateMethod('New version'),
+        versionId
+      )
       .then((newVersion) => {
         if (newVersion) {
           if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))

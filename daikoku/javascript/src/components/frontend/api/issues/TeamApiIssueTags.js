@@ -27,45 +27,67 @@ export function TeamApiIssueTags({ value, onChange }) {
     <div style={{ paddingBottom: '250px' }}>
       <div className="mb-3 row">
         <div className="col-sm-10">
-          <button className='btn btn-outline-success'  onClick={() => dispatch(openFormModal({
-            title: translateMethod('issues.create_tag'),
-            schema: {
-              name: {
-                type: type.string,
-                label: translateMethod('Name'),
-                constraints: [
-                  constraints.required(translateMethod('constraints.required.name'))
-                ]
-              },
-              color: {
-                type: type.string,
-                label: translateMethod('Color'),
-                defaultValue: '#fd0643',
-                render: ({ value, onChange }) => {
-                  return (
-                    <div className='d-flex flex-row'>
-                      <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
-                        style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
-                        onClick={() => onChange(randomColor())}>
-                        <RefreshCcw />
-                      </div>
-                      <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
-                    </div>
-                  )
-                },
-                constraints: [
-                  constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translateMethod('color.unavailable'))
-                ]
-              }
-            },
-            onSubmit: (data) => {
-              const updatedApi = { ...api, issuesTags: [...api.issuesTags, data] };
-              onChange(updatedApi);
-              setApi(updatedApi)
-            },
-            value: { color: randomColor() },
-            actionLabel: translateMethod('Create')
-          }))}>{translateMethod('issues.new_tag')}</button>
+          <button
+            className="btn btn-outline-success"
+            onClick={() =>
+              dispatch(
+                openFormModal({
+                  title: translateMethod('issues.create_tag'),
+                  schema: {
+                    name: {
+                      type: type.string,
+                      label: translateMethod('Name'),
+                      constraints: [
+                        constraints.required(translateMethod('constraints.required.name')),
+                      ],
+                    },
+                    color: {
+                      type: type.string,
+                      label: translateMethod('Color'),
+                      defaultValue: '#fd0643',
+                      render: ({ value, onChange }) => {
+                        return (
+                          <div className="d-flex flex-row">
+                            <div
+                              className="cursor-pointer me-2 d-flex align-items-center justify-content-center"
+                              style={{
+                                borderRadius: '4px',
+                                backgroundColor: value,
+                                padding: '0 8px',
+                              }}
+                              onClick={() => onChange(randomColor())}
+                            >
+                              <RefreshCcw />
+                            </div>
+                            <input
+                              className="mrf-input"
+                              value={value}
+                              onChange={(e) => onChange(e.target.value)}
+                            />
+                          </div>
+                        );
+                      },
+                      constraints: [
+                        constraints.matches(
+                          /^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm,
+                          translateMethod('color.unavailable')
+                        ),
+                      ],
+                    },
+                  },
+                  onSubmit: (data) => {
+                    const updatedApi = { ...api, issuesTags: [...api.issuesTags, data] };
+                    onChange(updatedApi);
+                    setApi(updatedApi);
+                  },
+                  value: { color: randomColor() },
+                  actionLabel: translateMethod('Create'),
+                })
+              )
+            }
+          >
+            {translateMethod('issues.new_tag')}
+          </button>
         </div>
       </div>
       <div className="mb-3 row pt-3">
@@ -109,7 +131,7 @@ export function TeamApiIssueTags({ value, onChange }) {
                         if (i === j) issue.color = color;
                         return issue;
                       }),
-                    })
+                    });
                     setUpdated(true);
                   }}
                   presetColors={[]}

@@ -413,15 +413,15 @@ export function SimpleNotification(props) {
                   </Translation>
                 </div>
               )}
-              
-              {notification.action.type === 'NewPostPublished' && ( 
+
+              {notification.action.type === 'NewPostPublished' && (
                 <div>
                   <Translation
                     i18nkey="new.published.post.notification"
                     replacements={[
                       notification.sender.name,
                       props.getTeam(notification.action.teamId).name,
-                      notification.action.apiName
+                      notification.action.apiName,
                     ]}
                   >
                     {notification.sender.name}, as admin of{' '}

@@ -2,13 +2,12 @@ import React, { useContext, useEffect, useState, useRef } from 'react';
 import { toastr } from 'react-redux-toastr';
 import { useDispatch } from 'react-redux';
 import { useLocation, useParams } from 'react-router-dom';
-import { constraints, type, format } from "@maif/react-forms";
+import { constraints, type, format } from '@maif/react-forms';
 import moment from 'moment';
 
 import { Table, DefaultColumnFilter } from '../../inputs';
 import { I18nContext, openFormModal } from '../../../core';
 import * as Services from '../../../services/index';
-
 
 export function TeamApiPost({ team, api }) {
   const location = useLocation();
@@ -21,17 +20,13 @@ export function TeamApiPost({ team, api }) {
     title: {
       type: type.string,
       label: translateMethod('team_api_post.title'),
-      constraints: [
-        constraints.required(translateMethod('constraints.required.title'))
-      ]
+      constraints: [constraints.required(translateMethod('constraints.required.title'))],
     },
     content: {
       type: type.string,
       format: format.markdown,
       label: translateMethod('team_api_post.content'),
-      constraints: [
-        constraints.required(translateMethod('constraints.required.content'))
-      ]
+      constraints: [constraints.required(translateMethod('constraints.required.content'))],
     },
   };
 
@@ -49,36 +44,34 @@ export function TeamApiPost({ team, api }) {
   }, [params.versionId, location.pathname]);
 
   function loadPosts(offset = 0, limit = 1, reset = false) {
-    Services.getAPIPosts(api._humanReadableId, params.versionId, offset, limit)
-      .then((data) => {
-        setState({
-          posts: [
-            ...(reset ? [] : state.posts),
-            ...data.posts
-              .filter((p) => !state.posts.find((o) => o._id === p._id))
-              .map((p) => ({
-                ...p,
-                isOpen: false,
-              })),
-          ],
-          pagination: {
-            ...state.pagination,
-            total: data.total,
-          },
-        });
+    Services.getAPIPosts(api._humanReadableId, params.versionId, offset, limit).then((data) => {
+      setState({
+        posts: [
+          ...(reset ? [] : state.posts),
+          ...data.posts
+            .filter((p) => !state.posts.find((o) => o._id === p._id))
+            .map((p) => ({
+              ...p,
+              isOpen: false,
+            })),
+        ],
+        pagination: {
+          ...state.pagination,
+          total: data.total,
+        },
       });
+    });
   }
 
   function savePost(post) {
-    Services.savePost(api._id, team._id, post._id, post)
-      .then((res) => {
-        if (res.error) {
-          toastr.error(translateMethod('team_api_post.failed'));
-        } else {
-          toastr.success(translateMethod('team_api_post.saved'));
-          table.current.update();
-        }
-      });
+    Services.savePost(api._id, team._id, post._id, post).then((res) => {
+      if (res.error) {
+        toastr.error(translateMethod('team_api_post.failed'));
+      } else {
+        toastr.success(translateMethod('team_api_post.saved'));
+        table.current.update();
+      }
+    });
   }
 
   function publishPost(post) {
@@ -90,24 +83,23 @@ export function TeamApiPost({ team, api }) {
         toastr.error(translateMethod('team_api_post.failed'));
       } else {
         toastr.success(translateMethod('team_api_post.saved'));
-        table.current.update()
+        table.current.update();
       }
     });
   }
 
   function removePost(postId) {
-    return window.confirm(translateMethod('team_api_post.delete.confirm'))
-      .then((ok) => {
-        if (ok)
-          Services.removePost(api._id, team._id, postId).then((res) => {
-            if (res.error) {
-              toastr.error(translateMethod('team_api_post.failed'));
-            } else {
-              toastr.success(translateMethod('team_api_post.saved'));
-              table.current.update()
-            }
-          });
-      });
+    return window.confirm(translateMethod('team_api_post.delete.confirm')).then((ok) => {
+      if (ok)
+        Services.removePost(api._id, team._id, postId).then((res) => {
+          if (res.error) {
+            toastr.error(translateMethod('team_api_post.failed'));
+          } else {
+            toastr.success(translateMethod('team_api_post.saved'));
+            table.current.update();
+          }
+        });
+    });
   }
 
   const columns = [
@@ -115,7 +107,7 @@ export function TeamApiPost({ team, api }) {
       id: 'title',
       Header: translateMethod('Title'),
       style: { textAlign: 'left' },
-      accessor: (post) => post.title
+      accessor: (post) => post.title,
     },
     {
       id: 'lastModificationAt',
@@ -149,27 +141,34 @@ export function TeamApiPost({ team, api }) {
         return (
           <div>
             <button
-              className='btn btn-sm btn-outline-primary me-2'
-              onClick={() => dispatch(openFormModal({
-                title: translateMethod('team_api_post.update'),
-                schema,
-                onSubmit: savePost,
-                value: post,
-                actionLabel: translateMethod('team_api_post.publish')
-              }))}><i className="fas fa-pen" /></button>
+              className="btn btn-sm btn-outline-primary me-2"
+              onClick={() =>
+                dispatch(
+                  openFormModal({
+                    title: translateMethod('team_api_post.update'),
+                    schema,
+                    onSubmit: savePost,
+                    value: post,
+                    actionLabel: translateMethod('team_api_post.publish'),
+                  })
+                )
+              }
+            >
+              <i className="fas fa-pen" />
+            </button>
             <button
               className="btn btn-sm btn-outline-danger me-1"
               onClick={() => {
-                removePost(post._id)
+                removePost(post._id);
               }}
             >
               <i className="fas fa-trash" />
             </button>
           </div>
-        )
-      }
-    }
-  ]
+        );
+      },
+    },
+  ];
 
   return (
     <div>
@@ -177,12 +176,16 @@ export function TeamApiPost({ team, api }) {
         <div className="d-flex align-items-center justify-content-end">
           <button
             className="btn btn-outline-success"
-            onClick={() => dispatch(openFormModal({
-              title: translateMethod('team_api_post.new'),
-              schema,
-              onSubmit: publishPost,
-              actionLabel: translateMethod('team_api_post.publish')
-            }))}
+            onClick={() =>
+              dispatch(
+                openFormModal({
+                  title: translateMethod('team_api_post.new'),
+                  schema,
+                  onSubmit: publishPost,
+                  actionLabel: translateMethod('team_api_post.publish'),
+                })
+              )
+            }
           >
             {translateMethod('team_api_post.new')}
           </button>
@@ -195,11 +198,13 @@ export function TeamApiPost({ team, api }) {
           defaultSortDesc={true}
           itemName="post"
           columns={columns}
-          fetchItems={() => Services.getAllAPIPosts(api._humanReadableId, params.versionId).then(r => r.posts)}
+          fetchItems={() =>
+            Services.getAllAPIPosts(api._humanReadableId, params.versionId).then((r) => r.posts)
+          }
           showActions={false}
           showLink={false}
           extractKey={(item) => item._id}
-          injectTable={t => table.current = t}
+          injectTable={(t) => (table.current = t)}
         />
       </div>
     </div>

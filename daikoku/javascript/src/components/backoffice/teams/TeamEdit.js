@@ -7,9 +7,8 @@ import md5 from 'js-md5';
 
 import { I18nContext, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend'
+import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { useTeamBackOffice } from '../../../contexts';
-
 
 const Avatar = ({ rawValues, value, getValue, onChange, team }) => {
   const { Translation, translateMethod } = useContext(I18nContext);
@@ -20,13 +19,13 @@ const Avatar = ({ rawValues, value, getValue, onChange, team }) => {
     onChange(url);
   };
 
-
   return (
     <div className="d-flex flex-row align-items-center">
       <div className="float-right mb-4 position-relative">
         <img
-          src={`${rawValues?.avatar}${rawValues?.avatar?.startsWith('http') ? '' : `?${Date.now()}`
-            }`}
+          src={`${rawValues?.avatar}${
+            rawValues?.avatar?.startsWith('http') ? '' : `?${Date.now()}`
+          }`}
           style={{
             width: 100,
             borderRadius: '50%',
@@ -43,8 +42,13 @@ const Avatar = ({ rawValues, value, getValue, onChange, team }) => {
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
-        <div className='d-flex justify-content-end'>
-          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.contact ? 'disabled' : null}>
+        <div className="d-flex justify-content-end">
+          <button
+            type="button"
+            className="btn btn-outline-primary me-1"
+            onClick={setGravatarLink}
+            disabled={!rawValues.contact ? 'disabled' : null}
+          >
             <i className="fas fa-user-circle me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
@@ -62,14 +66,12 @@ const Avatar = ({ rawValues, value, getValue, onChange, team }) => {
   );
 };
 
-export const teamSchema = (team, translateMethod) =>  ({
+export const teamSchema = (team, translateMethod) => ({
   name: {
     type: type.string,
     label: translateMethod('Name'),
     disabled: team.type === 'Personal' || team.type === 'Admin',
-    constraints: [
-      constraints.required(translateMethod('constraints.required.name'))
-    ]
+    constraints: [constraints.required(translateMethod('constraints.required.name'))],
   },
   description: {
     type: type.string,
@@ -104,8 +106,6 @@ export const teamSchema = (team, translateMethod) =>  ({
 export const TeamEditForm = ({ team, updateTeam }) => {
   const { translateMethod } = useContext(I18nContext);
 
-  
-
   if (!team) {
     return null;
   }
@@ -129,27 +129,23 @@ const TeamEditComponent = ({ currentTeam }) => {
 
   const { translateMethod } = useContext(I18nContext);
 
-
   const save = (data) => {
-    Services.updateTeam(data)
-      .then((updatedTeam) => {
-        if (data._humanReadableId !== updatedTeam._humanReadableId) {
-          navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
-        }
-        toastr.success(
-          translateMethod(
-            'team.updated.success',
-            false,
-            `team ${updatedTeam.name} successfully updated`,
-            updatedTeam.name
-          )
-        );
-      });
+    Services.updateTeam(data).then((updatedTeam) => {
+      if (data._humanReadableId !== updatedTeam._humanReadableId) {
+        navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
+      }
+      toastr.success(
+        translateMethod(
+          'team.updated.success',
+          false,
+          `team ${updatedTeam.name} successfully updated`,
+          updatedTeam.name
+        )
+      );
+    });
   };
 
-  return (
-    <TeamEditForm team={currentTeam} updateTeam={save} />
-  );
+  return <TeamEditForm team={currentTeam} updateTeam={save} />;
 };
 
 const mapStateToProps = (state) => ({

@@ -48,7 +48,8 @@ const mimeTypes = [
   { label: '.css fichier css', value: 'text/css' },
 ];
 
-const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.';
+const loremIpsum =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.';
 const longLoremIpsum = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
 
 Cras ut ultrices quam. Nulla eu purus sed turpis consequat sodales. Aenean vitae efficitur velit, vel accumsan felis. Curabitur aliquam odio dictum urna convallis faucibus. Vivamus eu dignissim lorem. Donec sed hendrerit massa. Suspendisse volutpat, nisi at fringilla consequat, eros lacus aliquam metus, eu convallis nulla mauris quis lacus. Aliquam ultricies, mi eget feugiat vestibulum, enim nunc eleifend nisi, nec tincidunt turpis elit id diam. Nunc placerat accumsan tincidunt. Nulla ut interdum dui. Praesent venenatis cursus aliquet. Nunc pretium rutrum felis nec pharetra.
@@ -75,7 +76,7 @@ function AssetButton(props) {
           label={translateMethod('Set from asset')}
           onSelect={(asset) => {
             props.onChange(asset.link);
-            props.setValue('contentType', asset.contentType)
+            props.setValue('contentType', asset.contentType);
           }}
         />
       </div>
@@ -108,16 +109,15 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     title: {
       type: type.string,
       label: translateMethod('Page title'),
-      constraints: [
-        constraints.required(translateMethod("constraints.required.name"))
-      ]
+      constraints: [constraints.required(translateMethod('constraints.required.name'))],
     },
     level: {
       type: type.number,
       label: translateMethod('Page level'),
       defaultValue: 0,
       props: {
-        min: 0, step: 1
+        min: 0,
+        step: 1,
       },
     },
     content: {
@@ -149,10 +149,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
               >
                 <i className={`fas fa-feather`} />
               </button>
-              <BeautifulTitle
-                placement="bottom"
-                title={translateMethod('image url from asset')}
-              >
+              <BeautifulTitle placement="bottom" title={translateMethod('image url from asset')}>
                 <AssetChooserByModal
                   typeFilter={MimeTypeFilter.image}
                   onlyPreview
@@ -161,15 +158,13 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                   teamId={team._id}
                   icon="fas fa-file-image"
                   classNames="btn-for-descriptionToolbar"
-                  onSelect={(asset) =>
-                    insert(asset.link)
-                  }
+                  onSelect={(asset) => insert(asset.link)}
                 />
               </BeautifulTitle>
             </>
-          )
-        }
-      }
+          );
+        },
+      },
     },
     remoteContentEnabled: {
       type: type.bool,
@@ -185,16 +180,16 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       type: type.string,
       visible: ({ rawValues }) => !!rawValues.remoteContentEnabled,
       label: translateMethod('Content URL'),
-      render: ({onChange, value, setValue}) => {
+      render: ({ onChange, value, setValue }) => {
         return (
-          <div className='flex-grow-1 ms-3'>
-            <input className='mrf-input mb-3' value={value} onChange={onChange} />
+          <div className="flex-grow-1 ms-3">
+            <input className="mrf-input mb-3" value={value} onChange={onChange} />
             <div className="col-12 d-flex justify-content-end">
               <AssetButton onChange={onChange} team={team} value={value} setValue={setValue} />
             </div>
           </div>
-        )
-      }
+        );
+      },
     },
     remoteContentHeaders: {
       type: type.object,
@@ -248,11 +243,10 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   }
 
   function savePage(page) {
-    return Services.saveDocPage(team._id, value._id, page || selected)
-      .then(() => {
-        updateDetails();
-        toastr.success(translateMethod("doc.page.save.success"))
-      });
+    return Services.saveDocPage(team._id, value._id, page || selected).then(() => {
+      updateDetails();
+      toastr.success(translateMethod('doc.page.save.success'));
+    });
   }
 
   function isSelected(page) {

@@ -134,27 +134,30 @@ const ApiListComponent = (props) => {
     (api) => selectedTag.value === all.value || api.tags.includes(selectedTag.value)
   );
 
-  const filteredApis = Object.values(groupBy((
-    searchedTrim === ''
-      ? taggedApis
-      : taggedApis.filter((api) => {
-        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (teamMatch(api, searchedTrim)) {
-          return true;
-        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-      })), '_humanReadableId'))
-    .map((value) => {
-      if (value.length === 1) return value[0];
+  const filteredApis = Object.values(
+    groupBy(
+      searchedTrim === ''
+        ? taggedApis
+        : taggedApis.filter((api) => {
+            if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+              return true;
+            } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+              return true;
+            } else if (teamMatch(api, searchedTrim)) {
+              return true;
+            } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+          }),
+      '_humanReadableId'
+    )
+  ).map((value) => {
+    if (value.length === 1) return value[0];
 
-      const app = value.find((v) => v.isDefault);
+    const app = value.find((v) => v.isDefault);
 
-      if (!app) return value.find((v) => v.currentVersion === '1.0.0') || value[0];
+    if (!app) return value.find((v) => v.currentVersion === '1.0.0') || value[0];
 
-      return app;
-    })
+    return app;
+  });
 
   const paginateApis = (() => {
     const starredApis = [],

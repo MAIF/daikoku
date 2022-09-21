@@ -9,25 +9,31 @@ import { ApiFilter } from './ApiFilter';
 import { useSelector } from 'react-redux';
 import { getColorByBgColor } from '../../..';
 
-export function ApiIssues({ filter, api, setSelectedVersion, selectedVersion, ownerTeam, setFilter }) {
+export function ApiIssues({
+  filter,
+  api,
+  setSelectedVersion,
+  selectedVersion,
+  ownerTeam,
+  setFilter,
+}) {
   const [issues, setIssues] = useState([]);
   const { versionId } = useParams();
-  const { connectedUser } = useSelector(state => state.context)
+  const { connectedUser } = useSelector((state) => state.context);
 
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    refresh()
+    refresh();
   }, [api._id, selectedVersion.value]);
 
   const refresh = () => {
-    Services.getAPIIssues(api._humanReadableId)
-      .then((res) =>
-        setIssues(
-          res.filter((r) => r.apiVersion === selectedVersion.value || selectedVersion.value === 'all')
-        )
-      );
-  }
+    Services.getAPIIssues(api._humanReadableId).then((res) =>
+      setIssues(
+        res.filter((r) => r.apiVersion === selectedVersion.value || selectedVersion.value === 'all')
+      )
+    );
+  };
 
   const filteredIssues = issues
     .filter(
@@ -78,7 +84,10 @@ export function ApiIssues({ filter, api, setSelectedVersion, selectedVersion, ow
                       .map((tag, i) => (
                         <span
                           className="badge me-1"
-                          style={{ backgroundColor: tag.color, color: getColorByBgColor(tag.color) }}
+                          style={{
+                            backgroundColor: tag.color,
+                            color: getColorByBgColor(tag.color),
+                          }}
                           key={`issue-${seqId}-tag${i}`}
                         >
                           {tag.name}
@@ -97,7 +106,9 @@ export function ApiIssues({ filter, api, setSelectedVersion, selectedVersion, ow
                     <span>
                       #{seqId} {translateMethod('issues.by')} {by.name}{' '}
                       {translateMethod('was closed on')}{' '}
-                      {moment(closedDate).format(translateMethod('moment.date.format.without.hours'))}{' '}
+                      {moment(closedDate).format(
+                        translateMethod('moment.date.format.without.hours')
+                      )}{' '}
                     </span>
                   )}
                 </div>

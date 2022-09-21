@@ -50,13 +50,13 @@ export const openSubMetadataModal = (modalProps) => (dispatch) => {
 
 export const openContactModal =
   (name = undefined, email = undefined, tenant, team = undefined, api = undefined) =>
-    (dispatch) => {
-      return dispatch({
-        type: OPEN_MODAL,
-        modalProps: { name, email, tenant, team, api },
-        modalType: 'contactModal',
-      });
-    };
+  (dispatch) => {
+    return dispatch({
+      type: OPEN_MODAL,
+      modalProps: { name, email, tenant, team, api },
+      modalType: 'contactModal',
+    });
+  };
 
 export const openTestingApiKeyModal = (modalProps) => (dispatch) => {
   return dispatch({
@@ -101,8 +101,7 @@ export const openApiDocumentationSelectModal = (modalProps) => (dispatch) =>
     modalType: 'apiDocumentationSelectModal',
   });
 
-export const openFormModal = (modalProps) =>
-({
+export const openFormModal = (modalProps) => ({
   type: OPEN_MODAL,
   modalProps,
   modalType: 'formModal',

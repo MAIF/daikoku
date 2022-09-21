@@ -129,7 +129,7 @@ const ApiHomeComponent = ({
 
   const { client } = useContext(getApolloContext());
 
-  const { addMenu } = groupView ? { addMenu: () => { } } : useApiFrontOffice(api, ownerTeam);
+  const { addMenu } = groupView ? { addMenu: () => {} } : useApiFrontOffice(api, ownerTeam);
 
   useEffect(() => {
     updateSubscriptions(params.apiId);
@@ -137,15 +137,15 @@ const ApiHomeComponent = ({
 
   useEffect(() => {
     if (api) {
-      Services.team(api.team)
-        .then((ownerTeam) => setOwnerTeam(ownerTeam));
+      Services.team(api.team).then((ownerTeam) => setOwnerTeam(ownerTeam));
     }
   }, [api, params.versionId]);
 
   useEffect(() => {
     if (myTeams && subscriptions && !groupView) {
-      const subscribingTeams = myTeams
-        .filter((team) => subscriptions.some((sub) => sub.team === team._id));
+      const subscribingTeams = myTeams.filter((team) =>
+        subscriptions.some((sub) => sub.team === team._id)
+      );
       const viewApiKeyLink = (
         <Can I={manage} a={apikey} teams={subscribingTeams}>
           <ActionWithTeamSelector
@@ -307,7 +307,7 @@ const ApiHomeComponent = ({
         <h1 style={{ margin: 0 }}>{translateMethod(showAccessModal.error)}</h1>
         {(teams.length === 1 &&
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
-          showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
+        showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
             <h2 className="text-center my-3">{translateMethod('request_already_pending')}</h2>
             <button

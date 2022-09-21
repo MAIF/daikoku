@@ -20,7 +20,7 @@ export function ApiFilter({
   setSelectedVersion,
   refresh,
   ownerTeam,
-  basePath
+  basePath,
 }) {
   const [availableApiVersions, setApiVersions] = useState([]);
   const { translateMethod } = useContext(I18nContext);
@@ -67,22 +67,19 @@ export function ApiFilter({
   };
 
   const createIssue = (issue) => {
-    Services.createNewIssue(api._humanReadableId, team, issue)
-      .then((res) => {
-        if (res.error) {
-          toastr.error(res.error);
-        } else {
-          toastr.success('Issue created');
-          refresh()
-        }
-      });
+    Services.createNewIssue(api._humanReadableId, team, issue).then((res) => {
+      if (res.error) {
+        toastr.error(res.error);
+      } else {
+        toastr.success('Issue created');
+        refresh();
+      }
+    });
   };
 
   useEffect(() => {
-    Services.getAllApiVersions(team, api._humanReadableId)
-      .then(setApiVersions);
+    Services.getAllApiVersions(team, api._humanReadableId).then(setApiVersions);
   }, []);
-
 
   return (
     <div className="d-flex flex-row justify-content-between">
@@ -139,14 +136,19 @@ export function ApiFilter({
           <button
             className="btn btn-outline-success ms-1"
             onClick={() =>
-              Services.fetchNewIssue()
-                .then((newIssue) => dispatch(openFormModal({
-                  title: translateMethod('issues.new_issue'),
-                  schema,
-                  onSubmit: createIssue,
-                  value: newIssue,
-                  actionLabel: translateMethod('Create')
-                })))}>
+              Services.fetchNewIssue().then((newIssue) =>
+                dispatch(
+                  openFormModal({
+                    title: translateMethod('issues.new_issue'),
+                    schema,
+                    onSubmit: createIssue,
+                    value: newIssue,
+                    actionLabel: translateMethod('Create'),
+                  })
+                )
+              )
+            }
+          >
             {translateMethod('issues.new_issue')}
           </button>
         </div>

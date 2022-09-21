@@ -25,8 +25,7 @@ export const UserList = () => {
   const { translateMethod } = useContext(I18nContext);
 
   const updateUsers = () => {
-    Services.fetchAllUsers()
-    .then(setUsers);
+    Services.fetchAllUsers().then(setUsers);
   };
 
   const createNewUser = () => {

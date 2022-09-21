@@ -5,10 +5,8 @@ const HEADERS = {
   'Content-Type': 'application/json',
 };
 
-const customFetch = (
-  url,
-  { headers = HEADERS, method = 'GET', body, ...props } = {}
-) => fetch(url, { headers, method, body, ...props }).then((r) => r.json());
+const customFetch = (url, { headers = HEADERS, method = 'GET', body, ...props } = {}) =>
+  fetch(url, { headers, method, body, ...props }).then((r) => r.json());
 
 export const me = () => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
@@ -624,8 +622,7 @@ export const testingCall = (teamId, apiId, body) =>
 export const getTranslations = (domain) =>
   customFetch(`/api/translations${domain ? `?domain=${domain}` : ''}`);
 
-export const getTranslationLanguages = () => 
-  customFetch('/api/translations/_languages')
+export const getTranslationLanguages = () => customFetch('/api/translations/_languages');
 
 export const saveTranslation = (translation) =>
   customFetch('/api/translations', {

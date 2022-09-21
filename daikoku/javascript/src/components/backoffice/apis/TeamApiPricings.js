@@ -418,7 +418,6 @@ export const TeamApiPricings = (props) => {
   const [creation, setCreation] = useState(false);
   const { translateMethod } = useContext(I18nContext);
 
-
   useEffect(() => {
     return () => {
       props.injectSubMenu(null);

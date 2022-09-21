@@ -82,21 +82,19 @@ export const TenantOtoroshis = () => {
   ];
 
   const onDelete = (id) => {
-    window.confirm(translateMethod('otoroshi.settings.delete.confirm'))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteOtoroshiSettings(tenant._id, id)
-            .then(() => {
-              toastr.success(translateMethod('otoroshi.settings.deleted.success'));
-              table.update();
-            });
-        }
-      });
+    window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteOtoroshiSettings(tenant._id, id).then(() => {
+          toastr.success(translateMethod('otoroshi.settings.deleted.success'));
+          table.update();
+        });
+      }
+    });
   };
 
   const createNewSettings = () => {
     const settings = {
-      _id: nanoid(32)
+      _id: nanoid(32),
     };
     navigate(`/settings/otoroshis/${settings._id}`, {
       state: {

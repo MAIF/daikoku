@@ -30,7 +30,7 @@ export function TenantStyleEditComponent(props) {
     preview: false,
   });
 
-  useDaikokuBackOffice()
+  useDaikokuBackOffice();
 
   useEffect(() => {
     if (props.location && props.location.state && props.location.state.newTenant) {
@@ -42,17 +42,16 @@ export function TenantStyleEditComponent(props) {
         create: true,
       });
     } else {
-      Services.oneTenant(params.tenantId)
-        .then((tenant) => {
-          const style = state.style.map(({ value, defaultColor, group }) => {
-            const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
-              () => defaultColor,
-              (value) => value[1]
-            );
-            return { value, color: color, group };
-          });
-          setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
+      Services.oneTenant(params.tenantId).then((tenant) => {
+        const style = state.style.map(({ value, defaultColor, group }) => {
+          const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
+            () => defaultColor,
+            (value) => value[1]
+          );
+          return { value, color: color, group };
         });
+        setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
+      });
     }
   }, []);
 
@@ -115,38 +114,43 @@ export function TenantStyleEditComponent(props) {
       <div className="flex-row d-flex ">
         {!state.preview && (
           <div className="flex-grow-0">
-            {sortBy(Object.entries(groupBy(state.style, 'group')).map(([group, colors]) => ({ group, colors })), 'group')
-              .map((item, idx) => {
-                const { group, colors } = item;
-                return (
-                  <div key={idx}>
-                    <h3>{group}</h3>
-                    <div>
-                      {sortBy(colors, ['value']).map((item, idx) => {
-                        const property = state.style.find((c) => c.value === item.value);
-                        return (
-                          <div key={idx}>
-                            <label htmlFor={item.value}>
-                              {item.value.replace(/-/gi, ' ').trim()}
-                            </label>
-                            <ColorPicker
-                              presetColors={state.style.map((c) => c.color)}
-                              initialColor={property.color}
-                              handleColorChange={(color) => updateStyleProp(item, color)}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
+            {sortBy(
+              Object.entries(groupBy(state.style, 'group')).map(([group, colors]) => ({
+                group,
+                colors,
+              })),
+              'group'
+            ).map((item, idx) => {
+              const { group, colors } = item;
+              return (
+                <div key={idx}>
+                  <h3>{group}</h3>
+                  <div>
+                    {sortBy(colors, ['value']).map((item, idx) => {
+                      const property = state.style.find((c) => c.value === item.value);
+                      return (
+                        <div key={idx}>
+                          <label htmlFor={item.value}>
+                            {item.value.replace(/-/gi, ' ').trim()}
+                          </label>
+                          <ColorPicker
+                            presetColors={state.style.map((c) => c.color)}
+                            initialColor={property.color}
+                            handleColorChange={(color) => updateStyleProp(item, color)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
           </div>
         )}
         <Preview className="flex-grow-1" variables={state.style} />
       </div>
     </Can>
-  )
+  );
 }
 
 const mapStateToProps = (state) => ({

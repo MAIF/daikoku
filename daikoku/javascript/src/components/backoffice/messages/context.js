@@ -108,7 +108,7 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
     Option(lastClosedDates.find((item) => item.chat === chat))
       .map((item) => item.date)
       .fold(
-        () => { },
+        () => {},
         (date) => {
           setLoading(true);
           Services.myChatMessages(chat, date).then((result) => {

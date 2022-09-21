@@ -30,9 +30,7 @@ export const DefaultColumnFilter = ({ column: { filterValue, setFilter } }) => {
 // This is a custom filter UI that uses a
 // slider to set the filter value between a column's
 // min and max values
-export const BooleanColumnFilter = ({
-  column: { filterValue, setFilter },
-}) => {
+export const BooleanColumnFilter = ({ column: { filterValue, setFilter } }) => {
   return (
     <span className="d-flex justify-content-around">
       <SwitchButton

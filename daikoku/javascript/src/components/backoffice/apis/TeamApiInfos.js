@@ -48,8 +48,7 @@ export const TeamApiInfos = ({
     {
       id: 'testing',
       label: translateMethod('Testing'),
-      component: (p) =>
-        TeamApiTesting({ ...p, openTestingApiKeyModal, openSubMetadataModal }),
+      component: (p) => TeamApiTesting({ ...p, openTestingApiKeyModal, openSubMetadataModal }),
       skipTo: 'save',
     },
   ];

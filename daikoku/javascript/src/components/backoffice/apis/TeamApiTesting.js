@@ -18,13 +18,13 @@ export const TeamApiTesting = (props) => {
       testing.config && testing.config.otoroshiSettings
         ? testing.config
         : {
-          otoroshiSettings: null,
-          authorizedEntities: null,
-          clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
-          api: props.value._id,
-          tag: `daikoku_testing_${random}`,
-          metadata: props.metadata,
-        };
+            otoroshiSettings: null,
+            authorizedEntities: null,
+            clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
+            api: props.value._id,
+            tag: `daikoku_testing_${random}`,
+            metadata: props.metadata,
+          };
 
     props.openSubMetadataModal({
       save: (metadata) =>
@@ -55,27 +55,26 @@ export const TeamApiTesting = (props) => {
   };
 
   const deleteOtoroshiKey = () => {
-    window.confirm(translateMethod('otoroshi.testing.delete.confirm'))
-      .then((ok) => {
-        if (ok)
-          Services.deleteTestingApiKey(currentTeam._id, {
-            otoroshiSettings: testing.config.otoroshiSettings,
-            authorizedEntities: testing.config.authorizedEntities,
-            clientId: testing.username,
-          }).then(() =>
-            props.onChange({
-              ...props.value,
-              testing: {
-                config: {},
-                enabled: false,
-                name: undefined,
-                auth: 'Basic',
-                username: undefined,
-                password: undefined,
-              },
-            })
-          );
-      });
+    window.confirm(translateMethod('otoroshi.testing.delete.confirm')).then((ok) => {
+      if (ok)
+        Services.deleteTestingApiKey(currentTeam._id, {
+          otoroshiSettings: testing.config.otoroshiSettings,
+          authorizedEntities: testing.config.authorizedEntities,
+          clientId: testing.username,
+        }).then(() =>
+          props.onChange({
+            ...props.value,
+            testing: {
+              config: {},
+              enabled: false,
+              name: undefined,
+              auth: 'Basic',
+              username: undefined,
+              password: undefined,
+            },
+          })
+        );
+    });
   };
 
   const otoKeyExists = Option(props.value.testing)

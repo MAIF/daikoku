@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Form, type, constraints } from '@maif/react-forms'
+import { Form, type, constraints } from '@maif/react-forms';
 
 import * as Services from '../../../services';
 import { Can, manage, tenant as TENANT, Spinner } from '../../utils';
@@ -47,32 +47,29 @@ export const TenantOtoroshi = () => {
       setOtoroshi(location.state.newSettings);
       setCreate(true);
     } else {
-      Services.oneOtoroshi(tenant._id, params.otoroshiId)
-        .then((otoroshi) => setOtoroshi(otoroshi));
+      Services.oneOtoroshi(tenant._id, params.otoroshiId).then((otoroshi) => setOtoroshi(otoroshi));
     }
   }, []);
 
   const save = (data) => {
     if (create) {
-      Services.createOtoroshiSettings(tenant._id, data)
-        .then((result) => {
-          if (result.error) {
-            toastr.error('Failure', result.error);
-          } else {
-            toastr.success(translateMethod('otoroshi.settings.created.success'));
-            navigate('/settings/otoroshis')
-          }
-        });
+      Services.createOtoroshiSettings(tenant._id, data).then((result) => {
+        if (result.error) {
+          toastr.error('Failure', result.error);
+        } else {
+          toastr.success(translateMethod('otoroshi.settings.created.success'));
+          navigate('/settings/otoroshis');
+        }
+      });
     } else {
-      Services.saveOtoroshiSettings(tenant._id, data)
-        .then((result) => {
-          if (result.error) {
-            toastr.error('Failure', result.error);
-          } else {
-            toastr.success(translateMethod('otoroshi.settings.updated.success'));
-            navigate('/settings/otoroshis')
-          }
-        });
+      Services.saveOtoroshiSettings(tenant._id, data).then((result) => {
+        if (result.error) {
+          toastr.error('Failure', result.error);
+        } else {
+          toastr.success(translateMethod('otoroshi.settings.updated.success'));
+          navigate('/settings/otoroshis');
+        }
+      });
     }
   };
 
@@ -99,14 +96,14 @@ export const TenantOtoroshi = () => {
             options={{
               actions: {
                 submit: {
-                  label: create ? translateMethod('Create') : translateMethod('Save')
+                  label: create ? translateMethod('Create') : translateMethod('Save'),
                 },
                 cancel: {
                   display: true,
                   label: translateMethod('Back'),
-                  action: () => navigate('/settings/otoroshis')
-                }
-              }
+                  action: () => navigate('/settings/otoroshis'),
+                },
+              },
             }}
           />
         )}

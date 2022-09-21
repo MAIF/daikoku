@@ -2,11 +2,11 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useSelector } from 'react-redux';
 import classNames from 'classnames';
 import { Send, ChevronLeft } from 'react-feather';
-import head from'lodash/head';
-import sortBy from'lodash/sortBy';
-import values from'lodash/values';
-import orderBy from'lodash/orderBy';
-import maxBy from'lodash/maxBy';
+import head from 'lodash/head';
+import sortBy from 'lodash/sortBy';
+import values from 'lodash/values';
+import orderBy from 'lodash/orderBy';
+import maxBy from 'lodash/maxBy';
 import moment from 'moment';
 import Select from 'react-select';
 

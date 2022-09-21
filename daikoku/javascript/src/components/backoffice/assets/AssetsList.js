@@ -10,7 +10,6 @@ import { Can, manage, asset, tenant as TENANT } from '../../utils';
 import { openFormModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
 
-
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
   { label: '.avi	AVI : Audio Video Interleaved', value: 'video/x-msvideo' },
@@ -151,26 +150,21 @@ export const AssetsList = ({ tenantMode }) => {
     )}`;
   }, []);
 
-  const acceptableMimeTypes = mimeTypes
-    .filter((mt) => (tenantMode ? true : !mt.tenantModeOnly))
+  const acceptableMimeTypes = mimeTypes.filter((mt) => (tenantMode ? true : !mt.tenantModeOnly));
   const schema = {
     filename: {
       type: type.string,
       label: translateMethod('Asset filename'),
-      constraints: [
-        constraints.required(translateMethod('constraints.required.name'))
-      ]
+      constraints: [constraints.required(translateMethod('constraints.required.name'))],
     },
     title: {
       type: type.string,
       label: translateMethod('Asset title'),
-      constraints: [
-        constraints.required(translateMethod('constraints.required.title'))
-      ]
+      constraints: [constraints.required(translateMethod('constraints.required.title'))],
     },
     description: {
       type: type.string,
-      label: translateMethod('Description')
+      label: translateMethod('Description'),
     },
     contentType: {
       type: type.string,
@@ -179,24 +173,29 @@ export const AssetsList = ({ tenantMode }) => {
       options: acceptableMimeTypes,
       constraints: [
         constraints.required(translateMethod('constraints.file.type.required')),
-        constraints.oneOf(acceptableMimeTypes.map(m => m.value), translateMethod("constraints.file.type.forbidden"))
-      ]
+        constraints.oneOf(
+          acceptableMimeTypes.map((m) => m.value),
+          translateMethod('constraints.file.type.forbidden')
+        ),
+      ],
     },
     file: {
       type: type.file,
       label: translateMethod('File'),
       onChange: ({ value, setValue }) => {
-        const file = value[0]
-        setValue('filename', file.name)
-        setValue('title', file.name.slice(0, file.name.lastIndexOf('.')))
-        setValue('contentType', file.type)
+        const file = value[0];
+        setValue('filename', file.name);
+        setValue('title', file.name.slice(0, file.name.lastIndexOf('.')));
+        setValue('contentType', file.type);
       },
       constraints: [
-        constraints.required(translateMethod("constraints.required.file")),
-        constraints.test('test.file.type', 
-          translateMethod("constraints.file.type.forbidden"), 
-          (v) => acceptableMimeTypes.some(mimeType => mimeType.value === v[0].type))
-      ]
+        constraints.required(translateMethod('constraints.required.file')),
+        constraints.test(
+          'test.file.type',
+          translateMethod('constraints.file.type.forbidden'),
+          (v) => acceptableMimeTypes.some((mimeType) => mimeType.value === v[0].type)
+        ),
+      ],
     },
   };
 
@@ -329,42 +328,47 @@ export const AssetsList = ({ tenantMode }) => {
     })
       .then((response) => response.text())
       .then((content) =>
-        dispatch(openFormModal({
-          title: translateMethod('asset.update'),
-          schema: {
-            content: {
-              type: type.string,
-              format: format.markdown,
-              label: null,
-            }
-          },
-          onSubmit: (data) => {
-            const textFileAsBlob = new Blob([data.content], { type: 'text/plain' });
-            const file = new File([textFileAsBlob], asset.filename);
+        dispatch(
+          openFormModal({
+            title: translateMethod('asset.update'),
+            schema: {
+              content: {
+                type: type.string,
+                format: format.markdown,
+                label: null,
+              },
+            },
+            onSubmit: (data) => {
+              const textFileAsBlob = new Blob([data.content], { type: 'text/plain' });
+              const file = new File([textFileAsBlob], asset.filename);
 
-            if (tenantMode) {
-              Services.updateTenantAsset(asset.meta.asset, asset.contentType, file)
-                .then((r) => {
+              if (tenantMode) {
+                Services.updateTenantAsset(asset.meta.asset, asset.contentType, file).then((r) => {
                   if (r.error) {
-                    toastr.error(r.error)
+                    toastr.error(r.error);
                   } else {
-                    toastr.success(translateMethod('asset.update.successful'))
+                    toastr.success(translateMethod('asset.update.successful'));
                   }
                 });
-            } else {
-              Services.updateAsset(currentTeam._id, asset.meta.asset, asset.contentType, file)
-                .then((r) => {
+              } else {
+                Services.updateAsset(
+                  currentTeam._id,
+                  asset.meta.asset,
+                  asset.contentType,
+                  file
+                ).then((r) => {
                   if (r.error) {
-                    toastr.error(r.error)
+                    toastr.error(r.error);
                   } else {
-                    toastr.success(translateMethod('asset.update.successful'))
+                    toastr.success(translateMethod('asset.update.successful'));
                   }
-                })
-            }
-          },
-          value: {content},
-          actionLabel: translateMethod('Update')
-        }))
+                });
+              }
+            },
+            value: { content },
+            actionLabel: translateMethod('Update'),
+          })
+        )
       );
   };
 
@@ -389,8 +393,7 @@ export const AssetsList = ({ tenantMode }) => {
       .confirm(translateMethod('delete asset', 'Are you sure you want to delete that asset ?'))
       .then((ok) => {
         if (ok) {
-          serviceDelete(asset.meta.asset)
-            .then(() => tableRef.current.update());
+          serviceDelete(asset.meta.asset).then(() => tableRef.current.update());
         }
       });
   };
@@ -402,7 +405,7 @@ export const AssetsList = ({ tenantMode }) => {
     } else {
       getAssets = Services.listAssets(currentTeam._id);
     }
-    return getAssets
+    return getAssets;
   };
 
   const addAsset = (asset) => {
@@ -416,7 +419,7 @@ export const AssetsList = ({ tenantMode }) => {
         file
       )
         .then((r) => maybeCreateThumbnail(r.id, file))
-        .then(() => tableRef.current.update())
+        .then(() => tableRef.current.update());
     } else {
       return Services.storeAsset(
         currentTeam._id,
@@ -427,24 +430,28 @@ export const AssetsList = ({ tenantMode }) => {
         file
       )
         .then((asset) => maybeCreateThumbnail(asset.id, file))
-        .then(() => tableRef.current.update())
+        .then(() => tableRef.current.update());
     }
-  }
+  };
 
   return (
     <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
       <div className="row">
         <div className="col-12 mb-3 d-flex justify-content-end">
           <button
-            className='btn btn-outline-success'
-            onClick={() => dispatch(openFormModal({
-              title: translateMethod("Add asset"),
-              schema,
-              onSubmit: addAsset,
-              actionLabel: translateMethod('Add asset')
-            }))}>
-
-            {translateMethod("add asset")}
+            className="btn btn-outline-success"
+            onClick={() =>
+              dispatch(
+                openFormModal({
+                  title: translateMethod('Add asset'),
+                  schema,
+                  onSubmit: addAsset,
+                  actionLabel: translateMethod('Add asset'),
+                })
+              )
+            }
+          >
+            {translateMethod('add asset')}
           </button>
         </div>
       </div>
@@ -460,7 +467,7 @@ export const AssetsList = ({ tenantMode }) => {
             showActions={false}
             showLink={false}
             extractKey={(item) => item.key}
-            injectTable={(t) => tableRef.current = t}
+            injectTable={(t) => (tableRef.current = t)}
           />
         </div>
       </div>

@@ -22,7 +22,6 @@ const LazySingleMarkdownInput = React.lazy(() => import('./SingleMarkdownInput.j
 const LazyArrayForm = React.lazy(() => import('./ArrayForm'));
 import { Collapse } from './Collapse';
 
-
 class FormComponent extends Component {
   static propTypes = {
     value: PropTypes.object,

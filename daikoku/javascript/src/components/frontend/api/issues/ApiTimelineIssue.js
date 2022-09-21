@@ -52,33 +52,30 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.getAPIIssue(api._humanReadableId, id)
-      .then((res) => {
-        if (res.error) {
-          navigate(`${basePath}/issues`);
-        } else {
-          const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
-          setIssue({ ...res, tags: entryTags });
-          setTags(entryTags);
-        }
-      });
+    Services.getAPIIssue(api._humanReadableId, id).then((res) => {
+      if (res.error) {
+        navigate(`${basePath}/issues`);
+      } else {
+        const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
+        setIssue({ ...res, tags: entryTags });
+        setTags(entryTags);
+      }
+    });
   }, [id]);
 
   useEffect(() => {
     if (tags.length !== api.tags.length) {
-      updateIssue({ ...issue, tags: tags.map(t => t.value) })
+      updateIssue({ ...issue, tags: tags.map((t) => t.value) });
     }
-  }, [tags])
+  }, [tags]);
 
   function updateIssue(updatedIssue) {
     handleEdition(false);
-    Services.updateIssue(api._id, team._id, id, updatedIssue)
-      .then((res) => {
-        if (res.error) {
-          toastr.error(res.error);
-        } else
-          setIssue(updatedIssue);
-      });
+    Services.updateIssue(api._id, team._id, id, updatedIssue).then((res) => {
+      if (res.error) {
+        toastr.error(res.error);
+      } else setIssue(updatedIssue);
+    });
   }
 
   function updateComment(i, newContent) {
@@ -86,7 +83,7 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
       ...issue,
       comments: issue.comments.map((comment, j) => {
         if (i === j) {
-          return { ...comment, content: newContent, editing: false }
+          return { ...comment, content: newContent, editing: false };
         }
         return comment;
       }),
@@ -129,9 +126,9 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
         {
           by: connectedUser,
           content,
-        }
-      ]
-    }
+        },
+      ],
+    };
     updateIssue(updatedIssue);
   }
 
@@ -141,49 +138,58 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
       open: false,
       tags: issue.tags.map((tag) => tag.value),
     };
-    updateIssue(closedIssue)
+    updateIssue(closedIssue);
   }
 
   const handleTagCreation = (name) => {
-    dispatch(openFormModal({
-      title: translateMethod('issues.create_tag'),
-      schema: {
-        name: {
-          type: type.string,
-          label: translateMethod('Name'),
-          constraints: [
-            constraints.required(translateMethod('constraints.required.name'))
-          ]
-        },
-        color: {
-          type: type.string,
-          label: translateMethod('Color'),
-          defaultValue: '#fd0643',
-          render: ({ value, onChange }) => {
-            return (
-              <div className='d-flex flex-row'>
-                <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
-                  style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
-                  onClick={() => onChange(randomColor())}>
-                  <RefreshCcw />
-                </div>
-                <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
-              </div>
-            )
+    dispatch(
+      openFormModal({
+        title: translateMethod('issues.create_tag'),
+        schema: {
+          name: {
+            type: type.string,
+            label: translateMethod('Name'),
+            constraints: [constraints.required(translateMethod('constraints.required.name'))],
           },
-          constraints: [
-            constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translateMethod('color.unavailable'))
-          ]
-        }
-      },
-      onSubmit: (data) => {
-        const updatedApi = { ...api, issuesTags: [...api.issuesTags, data] };
-        onChange(updatedApi);
-      },
-      value: { name, color: randomColor() },
-      actionLabel: translateMethod('Create')
-    }))
-  }
+          color: {
+            type: type.string,
+            label: translateMethod('Color'),
+            defaultValue: '#fd0643',
+            render: ({ value, onChange }) => {
+              return (
+                <div className="d-flex flex-row">
+                  <div
+                    className="cursor-pointer me-2 d-flex align-items-center justify-content-center"
+                    style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
+                    onClick={() => onChange(randomColor())}
+                  >
+                    <RefreshCcw />
+                  </div>
+                  <input
+                    className="mrf-input"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                  />
+                </div>
+              );
+            },
+            constraints: [
+              constraints.matches(
+                /^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm,
+                translateMethod('color.unavailable')
+              ),
+            ],
+          },
+        },
+        onSubmit: (data) => {
+          const updatedApi = { ...api, issuesTags: [...api.issuesTags, data] };
+          onChange(updatedApi);
+        },
+        value: { name, color: randomColor() },
+        actionLabel: translateMethod('Create'),
+      })
+    );
+  };
 
   return (
     <div className="container">
@@ -209,7 +215,10 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
                   <button className="btn btn-success me-1" onClick={() => updateIssue(issue)}>
                     {translateMethod('Save')}
                   </button>
-                  <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={() => handleEdition(false)}
+                  >
                     {translateMethod('Cancel')}
                   </button>
                 </div>
@@ -272,13 +281,15 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
         <div className="col-md-3">
           <div>
             <div className="d-flex flex-column align-items-start mb-2">
-              <label htmlFor="tags" className='me-1'>{translateMethod('issues.tags')}</label>
+              <label htmlFor="tags" className="me-1">
+                {translateMethod('issues.tags')}
+              </label>
               {connectedUser && !connectedUser.isGuest && (
                 <Select
                   id="tags"
                   onChange={(value) => setTags([...tags, value])}
                   options={api.issuesTags
-                    .filter((tag) => !tags.some(t => tag.id === t.value))
+                    .filter((tag) => !tags.some((t) => tag.id === t.value))
                     .map((tag) => ({ value: tag.id, label: tag.name }))}
                   className="input-select reactSelect w-100"
                   classNamePrefix="reactSelect"
@@ -286,7 +297,7 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
                 />
               )}
             </div>
-            <div id="tags" className='d-flex flex-column flex-wrap'>
+            <div id="tags" className="d-flex flex-column flex-wrap">
               {tags.map((tag) => {
                 const bgColor = api.issuesTags.find((t) => t.id === tag.value).color;
                 return (
@@ -294,14 +305,19 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
                     className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center"
                     style={{
                       backgroundColor: bgColor,
-                      color: getColorByBgColor(bgColor)
+                      color: getColorByBgColor(bgColor),
                     }}
                     key={tag.value}
                   >
-                    <span className='me-2'>{tag.label}</span>
-                    <span className='cursor-pointer' onClick={() => setTags(tags.filter(t => t.value !== tag.value))}><X /></span>
+                    <span className="me-2">{tag.label}</span>
+                    <span
+                      className="cursor-pointer"
+                      onClick={() => setTags(tags.filter((t) => t.value !== tag.value))}
+                    >
+                      <X />
+                    </span>
                   </div>
-                )
+                );
               })}
               {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
             </div>
@@ -375,19 +391,19 @@ function Comment({
                 content: {
                   type: type.string,
                   format: format.markdown,
-                  label: null
-                }
+                  label: null,
+                },
               }}
               value={{ content }}
               options={{
                 actions: {
                   cancel: {
                     display: true,
-                    action: editComment
-                  }
-                }
+                    action: editComment,
+                  },
+                },
               }}
-              onSubmit={data => updateComment(data.content)}
+              onSubmit={(data) => updateComment(data.content)}
             />
           </div>
         ) : (
@@ -402,14 +418,7 @@ function Comment({
   );
 }
 
-function NewComment({
-  picture,
-  createComment,
-  closeIssue,
-  open,
-  openIssue,
-  team,
-}) {
+function NewComment({ picture, createComment, closeIssue, open, openIssue, team }) {
   const { translateMethod } = useContext(I18nContext);
   return (
     <div className="d-flex pb-4">
@@ -442,22 +451,30 @@ function NewComment({
                 format: format.markdown,
                 label: null,
                 constraints: [
-                  constraints.required(translateMethod('constraints.required.content'))
-                ]
-              }
+                  constraints.required(translateMethod('constraints.required.content')),
+                ],
+              },
             }}
             footer={({ valid }) => {
               return (
                 <div className="d-flex mt-3 justify-content-end">
                   <Can I={manage} a={API} team={team}>
                     {open && (
-                      <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger me-1"
+                        onClick={closeIssue}
+                      >
                         <i className="fa fa-exclamation-circle me-2" />
                         {translateMethod('issues.actions.close')}
                       </button>
                     )}
                     {!open && (
-                      <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
+                      <button
+                        type="button"
+                        className="btn btn-outline-success me-1"
+                        onClick={openIssue}
+                      >
                         <i className="fa fa-exclamation-circle me-2" />
                         {translateMethod('issues.actions.reopen')}
                       </button>
@@ -467,9 +484,9 @@ function NewComment({
                     {translateMethod('issues.actions.comment')}
                   </button>
                 </div>
-              )
+              );
             }}
-            onSubmit={data => createComment(data.content)}
+            onSubmit={(data) => createComment(data.content)}
           />
         </div>
       </div>

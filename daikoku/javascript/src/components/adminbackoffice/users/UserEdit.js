@@ -56,8 +56,9 @@ const Avatar = ({ setValue, rawValues, getValue, value, onChange, tenant }) => {
     <div className="">
       <div className="float-right mb-4 position-relative">
         <img
-          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
-            }`}
+          src={`${rawValues?.picture}${
+            rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
+          }`}
           style={{
             width: 100,
             borderRadius: '50%',
@@ -76,7 +77,12 @@ const Avatar = ({ setValue, rawValues, getValue, value, onChange, tenant }) => {
           onChange={(e) => changePicture(e.target.value)}
         />
         <div className="d-flex mt-1 justify-content-end">
-          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.email ? 'disabled' : null}>
+          <button
+            type="button"
+            className="btn btn-outline-primary me-1"
+            onClick={setGravatarLink}
+            disabled={!rawValues.email ? 'disabled' : null}
+          >
             <i className="fas fa-user-circle me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
@@ -215,11 +221,10 @@ export const UserEdit = () => {
       });
       setCreate(true);
     } else {
-      Services.findUserById(params.userId)
-        .then((user) => {
-          setUser(user);
-          setCreate(false);
-        });
+      Services.findUserById(params.userId).then((user) => {
+        setUser(user);
+        setCreate(false);
+      });
     }
   }, []);
 
@@ -243,40 +248,37 @@ export const UserEdit = () => {
 
   const save = (u) => {
     if (create) {
-      Services.createUser(u)
-        .then(() => {
-          toastr.success(
-            translateMethod(
-              'user.created.success',
-              false,
-              `user ${user.name} successfully created`,
-              user.name
-            )
-          );
-          navigate("/settings/users")
-        });
+      Services.createUser(u).then(() => {
+        toastr.success(
+          translateMethod(
+            'user.created.success',
+            false,
+            `user ${user.name} successfully created`,
+            user.name
+          )
+        );
+        navigate('/settings/users');
+      });
     } else {
-      Services.updateUserById(u)
-        .then((updatedUser) => {
-          setUser(updatedUser);
-          toastr.success(
-            translateMethod(
-              'user.updated.success',
-              false,
-              `user ${user.name} successfully updated`,
-              user.name
-            )
-          );
-          navigate("/settings/users")
-        });
+      Services.updateUserById(u).then((updatedUser) => {
+        setUser(updatedUser);
+        toastr.success(
+          translateMethod(
+            'user.updated.success',
+            false,
+            `user ${user.name} successfully updated`,
+            user.name
+          )
+        );
+        navigate('/settings/users');
+      });
     }
   };
 
-  const ref = useRef()
+  const ref = useRef();
   if (!user) {
     return null;
   }
-
 
   return (
     <Can I={manage} a={daikoku} dispatchError>

@@ -71,7 +71,14 @@ export function ApiIssue({ ownerTeam, ...props }) {
         <Route
           path="/"
           element={
-            <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} ownerTeam={ownerTeam} setSelectedVersion={setSelectedVersion} setFilter={setFilter}/>
+            <ApiIssues
+              filter={filter}
+              api={api}
+              selectedVersion={selectedVersion}
+              ownerTeam={ownerTeam}
+              setSelectedVersion={setSelectedVersion}
+              setFilter={setFilter}
+            />
           }
         />
       </Routes>

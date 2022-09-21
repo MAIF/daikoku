@@ -129,11 +129,10 @@ export function AssetChooserComponent(props) {
   });
 
   const getTenantAssets = () =>
-    Services.listTenantAssets(props.teamId)
-      .then((assets) =>
-        assets.error
-          ? []
-          : assets.map((asset) => ({
+    Services.listTenantAssets(props.teamId).then((assets) =>
+      assets.error
+        ? []
+        : assets.map((asset) => ({
             label: asset.meta.filename + ' - ' + asset.meta.title,
             value: asset.meta.asset,
             filename: asset.meta.filename,
@@ -143,22 +142,22 @@ export function AssetChooserComponent(props) {
             meta: asset.meta,
             link: `/tenant-assets/${asset.meta.asset}`,
           }))
-      );
+    );
 
   const getTeamAssets = (team) =>
     Services.listAssets(team._id).then((assets) =>
       assets.error
         ? []
         : assets.map((asset) => ({
-          label: asset.meta.filename + ' - ' + asset.meta.title,
-          value: asset.meta.asset,
-          filename: asset.meta.filename,
-          title: asset.meta.title,
-          desc: asset.meta.desc,
-          contentType: asset.meta['content-type'],
-          meta: asset.meta,
-          link: `/team-assets/${team._id}/${asset.meta.asset}`,
-        }))
+            label: asset.meta.filename + ' - ' + asset.meta.title,
+            value: asset.meta.asset,
+            filename: asset.meta.filename,
+            title: asset.meta.title,
+            desc: asset.meta.desc,
+            contentType: asset.meta['content-type'],
+            meta: asset.meta,
+            link: `/team-assets/${team._id}/${asset.meta.asset}`,
+          }))
     );
 
   let mounted;
@@ -256,9 +255,9 @@ export function AssetChooserComponent(props) {
           props.icon
             ? props.icon
             : classNames('fas me-1', {
-              'fa-user-circle': !!props.onlyPreview,
-              'fa-file': !props.onlyPreview,
-            })
+                'fa-user-circle': !!props.onlyPreview,
+                'fa-file': !props.onlyPreview,
+              })
         }
       />{' '}
       {props.label}

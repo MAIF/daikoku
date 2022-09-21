@@ -63,23 +63,28 @@ export const TeamList = () => {
         tooltip: translateMethod('Delete team'),
       },
       {
-        redirect: () => dispatch(openFormModal({
-          title: translateMethod('Create a new team'),
-          schema: teamSchema(team, translateMethod),
-          onSubmit: (data) => Services.updateTeam(data)
-            .then(r => {
-              if (r.error) {
-                toastr.error(r.error)
-              } else {
-                updateTeams()
-                toastr.success(translateMethod("Team %s updated successfully", false, "", data.name))
-              }
-            }),
-          value: team
-        })),
+        redirect: () =>
+          dispatch(
+            openFormModal({
+              title: translateMethod('Create a new team'),
+              schema: teamSchema(team, translateMethod),
+              onSubmit: (data) =>
+                Services.updateTeam(data).then((r) => {
+                  if (r.error) {
+                    toastr.error(r.error);
+                  } else {
+                    updateTeams();
+                    toastr.success(
+                      translateMethod('Team %s updated successfully', false, '', data.name)
+                    );
+                  }
+                }),
+              value: team,
+            })
+          ),
         iconClass: 'fas fa-pen',
         tooltip: translateMethod('Edit team'),
-        actionLabel: translateMethod('Create')
+        actionLabel: translateMethod('Create'),
       },
     ];
 
