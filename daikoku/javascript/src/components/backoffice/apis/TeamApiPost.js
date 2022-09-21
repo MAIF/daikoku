@@ -195,7 +195,7 @@ export function TeamApiPost({ team, api }) {
           defaultSortDesc={true}
           itemName="post"
           columns={columns}
-          fetchItems={() => Services.getAPIPosts(api._humanReadableId, params.versionId, 0, -1).then(r => r.posts)}
+          fetchItems={() => Services.getAllAPIPosts(api._humanReadableId, params.versionId).then(r => r.posts)}
           showActions={false}
           showLink={false}
           extractKey={(item) => item._id}

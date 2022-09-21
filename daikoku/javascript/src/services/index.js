@@ -789,6 +789,9 @@ export const createUserFromLDAP = (teamId, email) =>
 export const getAPIPosts = (apiId, version, offset = 0, limit = -1) =>
   customFetch(`/api/apis/${apiId}/${version}/posts?offset=${offset}&limit=${limit}`);
 
+export const getAllAPIPosts = (apiId, version) =>
+  customFetch(`/api/apis/${apiId}/${version}/posts`);
+
 export const publishNewPost = (apiId, teamId, post) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/posts`, {
     method: 'POST',
