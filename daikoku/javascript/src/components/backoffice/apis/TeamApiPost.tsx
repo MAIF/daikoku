@@ -194,7 +194,7 @@ export function TeamApiPost({
           defaultSort="lastModificationAt"
           defaultSortDesc={true}
           columns={columns}
-          fetchItems={() => Services.getAPIPosts(api._humanReadableId, params.versionId, 0, -1).then(r => r.posts)}
+          fetchItems={() => Services.getAllAPIPosts(api._humanReadableId, params.versionId).then(r => r.posts)}
           injectTable={(t: any) => table.current = t}
         />
       </div>
