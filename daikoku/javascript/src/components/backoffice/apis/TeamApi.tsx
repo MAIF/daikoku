@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation, useParams, useMatch, Link } from 'react-router-dom';
-import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
 import { Plus } from 'react-feather';
+import { useDispatch, useSelector } from 'react-redux';
 
 import * as Services from '../../../services';
 import { Can, manage, api as API, Spinner } from '../../utils';
@@ -26,8 +26,7 @@ import {
   toggleExpertMode,
 } from '../../../core';
 import { TOptions } from '../../../types/types';
-import { useDispatch } from 'react-redux';
-import { useSelector } from 'react-redux';
+import { IApi } from '../../../types/api';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 const CreateNewVersionButton = ({
@@ -70,6 +69,9 @@ const CreateNewVersionButton = ({
     </button>
   );
 };
+interface LocationState {
+  newApi?: IApi
+}
 
 export const TeamApi = (props: { creation?: boolean }) => {
   const params = useParams();
@@ -80,7 +82,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
   const dispatch = useDispatch();
   const { currentTeam, tenant, expertMode } = useSelector((s: any) => s.context);
 
-  const [api, setApi] = useState<any>();
+  const [api, setApi] = useState<IApi>();
   const [apiVersion, setApiVersion] = useState({
     value: params.versionId,
     label: params.versionId,
@@ -95,8 +97,8 @@ export const TeamApi = (props: { creation?: boolean }) => {
 
 
   useEffect(() => {
-    if (location && location.state && (location as any).state.newApi) {
-      setApi((location as any).state.newApi);
+    if (location && location.state && location.state.newApi) {
+      setApi(location.state.newApi);
     } else {
       reloadState();
     }
@@ -120,7 +122,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
                       options={versions}
                       onChange={(e) =>
                         navigate(
-                          `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${e?.value}/${tab}`
+                          `/${currentTeam._humanReadableId}/settings/apis/${api?._humanReadableId}/${e?.value}/${tab}`
                         )
                       }
                       classNamePrefix="reactSelect"
@@ -158,37 +160,38 @@ export const TeamApi = (props: { creation?: boolean }) => {
     });
   };
 
-  const save = (editedApi: any) => {
+  const save = (editedApi: IApi) => {
     if (params.tab === 'documentation') {
       teamApiDocumentationRef.current?.saveCurrentPage();
     }
 
     if (props.creation) {
-      return Services.createTeamApi(currentTeam._id, editedApi).then((createdApi) => {
-        if (createdApi.error) {
-          toastr.error(translateMethod('Error'), translateMethod(createdApi.error));
-          return createdApi;
-        } else if (createdApi.name) {
-          toastr.success(
-            translateMethod('Success'),
-            translateMethod(
-              'api.created.success',
-              false,
-              `Api "${createdApi.name}" created`,
-              createdApi.name
-            )
-          );
-          methods.setApi(createdApi);
-          navigate(
-            `/${currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`
-          );
-        }
-      });
+      return Services.createTeamApi(currentTeam._id, editedApi)
+        .then((createdApi) => {
+          if (createdApi.error) {
+            toastr.error(translateMethod('Error'), translateMethod(createdApi.error));
+            return createdApi;
+          } else if (createdApi.name) {
+            toastr.success(
+              translateMethod('Success'),
+              translateMethod(
+                'api.created.success',
+                false,
+                `Api "${createdApi.name}" created`,
+                createdApi.name
+              )
+            );
+            methods.setApi(createdApi);
+            navigate(
+              `/${currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`
+            );
+          }
+        });
     } else {
       return Services.saveTeamApiWithId(
         currentTeam._id,
         editedApi,
-        apiVersion.value,
+        apiVersion.value!,
         editedApi._humanReadableId
       ).then((res) => {
         if (res.error) {
@@ -304,7 +307,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
                 team={currentTeam}
                 tenant={tenant}
                 save={save}
-                creation={props.creation}
+                creation={!!props.creation}
                 expertMode={expertMode}
                 injectSubMenu={(component: any) => methods.addMenu({
                   blocks: {

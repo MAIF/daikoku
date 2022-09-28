@@ -95,7 +95,7 @@ export const TeamApiGroup = () => {
 
   const { translateMethod } = useContext(I18nContext);
 
-  const schema: ({[key: string]: any}) = {
+  const schema: ({ [key: string]: any }) = {
     name: {
       type: type.string,
       label: translateMethod('Name'),
@@ -234,11 +234,19 @@ export const TeamApiGroup = () => {
                 value={apiGroup} />
             </div>)}
             {params.tab === 'plans' && (<div>
-              <TeamApiPricings value={apiGroup} team={currentTeam} tenant={tenant} save={save} creation={creation} expertMode={expertMode} injectSubMenu={(component: any) => methods.addMenu({
-                blocks: {
-                  links: { links: { plans: { childs: { menu: { component } } } } },
-                },
-              })} openApiSelectModal={() => alert('oops')} />
+              <TeamApiPricings
+                value={apiGroup}
+                team={currentTeam}
+                tenant={tenant}
+                save={save}
+                creation={creation}
+                expertMode={expertMode}
+                injectSubMenu={(component: any) => methods.addMenu({
+                  blocks: {
+                    links: { links: { plans: { childs: { menu: { component } } } } },
+                  },
+                })}
+                openApiSelectModal={() => alert('oops')} />
             </div>)}
             {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
             {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}

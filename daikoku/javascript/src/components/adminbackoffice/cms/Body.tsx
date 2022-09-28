@@ -10,7 +10,7 @@ export type BodyRef = {
 }
 export default React.forwardRef<BodyRef, any>(({ contentType, setFinalValue, show, pages, inValue, publish, history }, ref) => {
   const { translateMethod } = useContext(I18nContext);
-  const r = useRef<FormRef>(null);
+  const r = useRef<FormRef>();
 
   useEffect(() => {
     setValue({ draft: inValue || '' });

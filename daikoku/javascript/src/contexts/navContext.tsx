@@ -707,19 +707,29 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
                 className: { active: subTab === 'customization' },
               },
               audit: {
-                label: translateMethod('audit'),
+                label: translateMethod('Audit'),
                 action: () => navigateTo('settings/audit'),
                 className: { active: subTab === 'audit' },
               },
               mail: {
-                label: translateMethod('mail'),
+                label: translateMethod('Mail'),
                 action: () => navigateTo('settings/mail'),
                 className: { active: subTab === 'mail' },
               },
               authentication: {
-                label: translateMethod('authentication'),
+                label: translateMethod('Authentication'),
                 action: () => navigateTo('settings/authentication'),
                 className: { active: subTab === 'authentication' },
+              },
+              bucket: {
+                label: translateMethod('Bucket'),
+                action: () => navigateTo('settings/bucket'),
+                className: { active: subTab === 'bucket' },
+              },
+              security: {
+                label: translateMethod('Security'),
+                action: () => navigateTo('settings/security'),
+                className: { active: subTab === 'security' },
               },
             },
           },

@@ -26,7 +26,7 @@ interface IAuditTrailConfig {
   kafkaConfig?: any
 }
 
-interface IBucketSettings {
+export interface IBucketSettings {
   access: string
   bucket: string
   chunkSize: number,
@@ -43,7 +43,7 @@ enum MailerType {
   sendgrid = 'sendgrid',
   smtpClient = 'smtpClient'
 }
-interface IMailerSettings {
+export interface IMailerSettings {
   type: MailerType
   template?: string
 }

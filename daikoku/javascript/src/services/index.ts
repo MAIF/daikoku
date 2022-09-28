@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 import { ITenantFull } from '../types';
+import { IApi } from '../types/api';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -203,16 +204,16 @@ export const deleteTeamApi = (teamId: any, id: any) =>
     method: 'DELETE',
   });
 
-export const saveTeamApiWithId = (teamId: any, api: any, version: any, apiId: any) =>
+export const saveTeamApiWithId = (teamId: string, api: IApi, version: string, apiId: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`, {
     method: 'PUT',
     body: JSON.stringify(api),
   });
 
-export const saveTeamApi = (teamId: any, api: any, version: any) =>
+export const saveTeamApi = (teamId: string, api: IApi, version: string) =>
   saveTeamApiWithId(teamId, api, version, api._humanReadableId);
 
-export const createTeamApi = (teamId: any, api: any) =>
+export const createTeamApi = (teamId: string, api: IApi) =>
   customFetch(`/api/teams/${teamId}/apis`, {
     method: 'POST',
     body: JSON.stringify(api),
@@ -271,7 +272,7 @@ export const createTenant = (tenant: any) => customFetch('/api/tenants', {
   body: JSON.stringify(tenant),
 });
 
-export const saveTenant = (tenant: any) => customFetch(`/api/tenants/${tenant._id}`, {
+export const saveTenant = (tenant: ITenantFull) => customFetch(`/api/tenants/${tenant._id}`, {
   method: 'PUT',
   body: JSON.stringify(tenant),
 });
@@ -505,7 +506,7 @@ export const updateTenantAsset = (assetId: any, contentType: any, formData: any)
     body: formData,
   });
 
-export const listTenantAssets = (teamId: any) => {
+export const listTenantAssets = (teamId?: any) => {
   if (teamId) {
     return customFetch(`/tenant-assets?teamId=${teamId}`, {
       credentials: 'include',

@@ -1,16 +1,16 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { Form, format, type, constraints } from '@maif/react-forms';
+import { useContext } from 'react';
+import { constraints, Form, format, type } from '@maif/react-forms';
+import { UseMutationResult, useQuery } from '@tanstack/react-query';
 
 import * as Services from '../../../../services';
 
-import { ITenant, Language } from '../../../../types';
 import { I18nContext } from '../../../../core';
-import { useQuery } from '@tanstack/react-query';
+import { ITenant, ITenantFull, Language } from '../../../../types';
 import { Spinner } from '../../../utils';
 
 
 
-export const GeneralForm = (props: { tenant: ITenant }) => {
+export const GeneralForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod, languages } = useContext(I18nContext)
 
   const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
@@ -19,7 +19,7 @@ export const GeneralForm = (props: { tenant: ITenant }) => {
     name: {
       type: type.string,
       label: translateMethod('Name'),
-      constraints:[
+      constraints: [
         constraints.required(translateMethod('constraints.required.name'))
       ]
     },
@@ -50,7 +50,12 @@ export const GeneralForm = (props: { tenant: ITenant }) => {
         constraints.email(translateMethod('constraints.matches.email')),
       ]
     },
-  }
+    robotTxt: {
+      type: type.string,
+      format: format.text,
+      label: translateMethod('Robot.txt.label'),
+    }
+  };
 
   if (isLoading) {
     return (
@@ -61,7 +66,7 @@ export const GeneralForm = (props: { tenant: ITenant }) => {
   return (
     <Form
       schema={schema}
-      onSubmit={console.debug}
+      onSubmit={(d) => props.updateTenant.mutateAsync(d)}
       value={data}
     />
   )

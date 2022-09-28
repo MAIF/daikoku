@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { createMachine, assign } from 'xstate';
 import { useMachine } from '@xstate/react';
-import { FlowObject, Form } from '@maif/react-forms';
+import { FlowObject, Form, FormRef } from '@maif/react-forms';
 import omit from 'lodash/omit';
 import { Steps, Popover } from 'antd';
 
@@ -24,17 +24,28 @@ const customDot = (dot: any, {
   </Popover>
 );
 
-export const MultiStepForm = ({
+interface IUser {
+  name: string
+}
+
+export const MultiStepForm = <T extends object>({
   value,
   steps,
   initial,
-  creation,
-  report,
+  creation = false,
   getBreadcrumb,
   save,
   labels
-}: any) => {
-  const ref = useRef<any>();
+}: {
+  value?: T,
+  steps: any,
+  initial: string,
+  creation: boolean,
+  getBreadcrumb?: (value?: T | null, element?: JSX.Element) => any,
+  save: (x: T) => Promise<any>,
+  labels: any
+}) => {
+  const ref = useRef<FormRef>();
 
   useEffect(() => {
     send('RESET', { value });
@@ -104,6 +115,8 @@ export const MultiStepForm = ({
                 .then((response: any) => {
                   if (response?.error) {
                     return callBack({ type: 'FAILURE', error: response.error });
+                  } else {
+                    callBack({ type: 'SUCCESS' })
                   }
                 })
                 .catch((error: any) => {
@@ -113,6 +126,9 @@ export const MultiStepForm = ({
           },
         },
         on: {
+          SUCCESS: {
+            target: initial
+          },
           FAILURE: {
             target: 'failure',
             actions: assign({ //@ts-ignore //FIXME ts & xstate ??
@@ -145,7 +161,7 @@ export const MultiStepForm = ({
     }, {});
   const machine = useMemo(
     () =>
-      createMachine(
+      createMachine<T>(
         {
           id: 'foo',
           context: value,
@@ -172,12 +188,12 @@ export const MultiStepForm = ({
   useEffect(() => {
     if (!!getBreadcrumb) {
       getBreadcrumb(
-        current.value,
+        current.context,
         <Breadcrumb
           context={current.context}
           steps={steps}
-          currentStep={current.value}
-          chooseStep={(s: any) => send(`TO_${s}`, { value: current.context.value })}
+          currentStep={current.value as string}
+          chooseStep={(s: any) => send(`TO_${s}`, current.context)}
           creation={creation}
           direction="vertical"
         />
@@ -195,7 +211,7 @@ export const MultiStepForm = ({
     return <Spinner />;
   }
   if (current.matches('failure')) {
-    return <div>{current.context.error}</div>;
+    // return <div>{current.context.error}</div>;
   }
   const step = steps.find((s: any) => s.id === current.value);
   return (
@@ -205,8 +221,8 @@ export const MultiStepForm = ({
           <Breadcrumb
             context={current.context}
             steps={steps}
-            currentStep={current.value}
-            chooseStep={(s: any) => send(`TO_${s}`, { value: current.context.value })}
+            currentStep={current.value as string}
+            chooseStep={(s: any) => send(`TO_${s}`, current.context)}
             creation={creation}
             direction="horizontal"
           />
@@ -217,7 +233,7 @@ export const MultiStepForm = ({
           <ComponentedForm
             reference={ref}
             value={current.context}
-            valid={(response: any) => send('NEXT', { value: response })}
+            valid={(response: any) => send('NEXT', response)}
             component={step.component}
             steps={steps}
             step={step}
@@ -227,7 +243,7 @@ export const MultiStepForm = ({
           />
         )}
         {step.schema && (
-          <Form
+          <Form<T>
             key={step.id}
             onSubmit={(response) => {
               send('NEXT', { value: response });
@@ -240,13 +256,11 @@ export const MultiStepForm = ({
             footer={() => <></>}
           />
         )}
-        {!!report && report(current.context.value, current.value)}
       </div>
       <div className="d-flex justify-content-between">
-        {steps.findIndex((s: any) => s.id === step.id) !== 0 && (
+        {steps.findIndex((s) => s.id === step.id) !== 0 && (
           <button
             className="btn btn-outline-danger me-1 my-3"
-            disabled={step.id === initial}
             onClick={() => send('PREVIOUS')}
           >
             {labels?.previous || 'Previous'}
@@ -265,13 +279,13 @@ export const MultiStepForm = ({
           {steps.findIndex((s: any) => s.id === step.id) !== steps.length - 1 && (
             <button
               className="btn btn-outline-success me-1"
-              onClick={() => ref.current.handleSubmit()}
+              onClick={() => ref.current?.handleSubmit()}
             >
               {labels?.next || 'Next'}
             </button>
           )}
           {steps.findIndex((s: any) => s.id === step.id) === steps.length - 1 && (
-            <button className="btn btn-outline-success" onClick={() => ref.current.handleSubmit()}>
+            <button className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
               {labels?.save || 'Save'}
             </button>
           )}
@@ -305,10 +319,17 @@ const Breadcrumb = ({
   creation,
   direction,
   context
-}: any) => {
+}: {
+  steps: Array<any>,
+  currentStep: string,
+  chooseStep: (idx: string) => void,
+  creation: boolean,
+  direction?: 'vertical' | 'horizontal',
+  context: any
+}) => {
   const currentIdx = steps.findIndex((s: any) => s.id === currentStep);
 
-  const handleChooseStep = (idx: any) => {
+  const handleChooseStep = (idx: number) => {
     const disabled = Option(steps[idx])
       .map((step: any) => step.disabled)
       .map((d: any) => typeof d === 'function' ? d(context) : d)
@@ -325,7 +346,7 @@ const Breadcrumb = ({
       progressDot={customDot}
       onChange={(idx) => handleChooseStep(idx)}
     >
-      {steps.map((step: any, idx: any) => {
+      {steps.map((step: any, idx: number) => {
         const disabled = Option(step.disabled)
           .map((d: any) => typeof d === 'function' ? d(context) : d)
           .getOrElse(false);

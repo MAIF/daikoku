@@ -278,7 +278,7 @@ export const UserEdit = () => {
     }
   };
 
-  const ref = useRef<FormRef>(null)
+  const ref = useRef<FormRef>()
   if (!user) {
     return null;
   }

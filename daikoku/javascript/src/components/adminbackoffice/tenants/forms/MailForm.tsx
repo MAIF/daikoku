@@ -1,16 +1,17 @@
 import React, { useContext } from 'react';
-import { constraints, Form, format, Schema, type } from '@maif/react-forms';
-import { useQuery } from '@tanstack/react-query';
+import { constraints, format, type } from '@maif/react-forms';
+import { useMutation, UseMutationResult, useQuery } from '@tanstack/react-query';
+import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../../services';
 import { I18nContext } from '../../../../core';
-import { ITenant } from '../../../../types';
+import { IMailerSettings, ITenant, ITenantFull } from '../../../../types';
 import { MultiStepForm, Spinner } from '../../../utils';
+import { update } from 'xstate/lib/actionTypes';
 
-export const MailForm = (props: { tenant: ITenant }) => {
+export const MailForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod } = useContext(I18nContext)
   const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
-
 
   const basicMailSchema = {
     fromTitle: {
@@ -118,7 +119,7 @@ export const MailForm = (props: { tenant: ITenant }) => {
       }
     }
   }]
-  const save = (d) => Promise.resolve(console.debug(d)) //todo: real save
+
 
 
   if (isLoading) {
@@ -128,12 +129,12 @@ export const MailForm = (props: { tenant: ITenant }) => {
   }
 
   return (
-    <MultiStepForm
+    <MultiStepForm<IMailerSettings>
       value={data?.mailerSettings}
       steps={steps}
       initial={data?.mailerSettings ? "params" : "type"}
       creation={false}
-      save={save}
+      save={(d: IMailerSettings) => props.updateTenant.mutateAsync({...data, mailerSettings: d} as ITenantFull)}
       labels={{
         previous: translateMethod('Previous'),
         skip: translateMethod('Skip'),

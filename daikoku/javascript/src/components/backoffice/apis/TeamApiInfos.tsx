@@ -66,7 +66,6 @@ export const TeamApiInfos = ({
         initial="info"
         creation={creation}
         save={save}
-        // getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
         labels={{
           previous: translateMethod('Previous'),
           skip: translateMethod('Skip'),
@@ -83,7 +82,6 @@ export const TeamApiInfos = ({
       initial="info"
       creation={creation}
       save={save}
-      // getBreadcrumb={(_, breadcrumb) => injectSubMenu(breadcrumb)}
       labels={{
         previous: translateMethod('Previous'),
         skip: translateMethod('Skip'),

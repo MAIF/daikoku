@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { constraints, format, Schema, type } from '@maif/react-forms';
-import { useQuery } from '@tanstack/react-query';
+import { UseMutationResult, useQuery } from '@tanstack/react-query';
 
 import * as Services from '../../../../services';
 
@@ -8,7 +8,7 @@ import { I18nContext } from '../../../../core';
 import { ITenant, ITenantFull } from '../../../../types';
 import { MultiStepForm, Spinner } from '../../../utils';
 
-export const AuthenticationForm = (props: { tenant: ITenant }) => {
+export const AuthenticationForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod } = useContext(I18nContext)
   const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
 
@@ -263,9 +263,6 @@ export const AuthenticationForm = (props: { tenant: ITenant }) => {
     }
   ]
 
-  const save = (d) => Promise.resolve(console.debug(d)) //todo: real save
-
-
   if (isLoading) {
     return (
       <Spinner />
@@ -278,7 +275,7 @@ export const AuthenticationForm = (props: { tenant: ITenant }) => {
       steps={steps}
       initial={data?.authProvider ? "params" : "authProvider"}
       creation={false}
-      save={save}
+      save={(d) => props.updateTenant.mutateAsync(d)}
       labels={{
         previous: translateMethod('Previous'),
         skip: translateMethod('Skip'),

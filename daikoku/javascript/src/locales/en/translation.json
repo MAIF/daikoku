@@ -1164,5 +1164,15 @@
     "Default mail template": "Default mail template",
     "Translate": "Translate",
     "Insert URL": "Insert URL",
-    "custom.metadata.process.change.to.manual": "set up subscriptionProcess to manual due to have a customMetadata"
+    "custom.metadata.process.change.to.manual": "set up subscriptionProcess to manual due to have a customMetadata",
+    "subscription security": "subscription security",
+    "subscription.security.help": "if enabled, personnal teams will not be able to subscribed to an API",
+    "API reference visibility": "API reference visibility",
+    "api.reference.visibility.help": "if enabled, guest user can't see api reference on public api",
+    "Hide teams page": "Hide teams page",
+    "hide.teams.page.help": "if enabled, /teams will be inaccessible",
+    "General": "General",
+    "Customization": "Customization",
+    "Mail": "Mail",
+    "alerting.help": "List of emails the will receive daikoku alerts"
 }

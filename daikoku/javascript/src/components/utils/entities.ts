@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
+import { IUsagePlanFreeWithQuotas } from '../../types';
 
-export const newPossibleUsagePlan = (customName: any) => ({
+export const newPossibleUsagePlan = (customName: any): IUsagePlanFreeWithQuotas => ({
   _id: nanoid(32),
   type: 'FreeWithQuotas',
   currency: { code: 'EUR' },
@@ -12,23 +13,23 @@ export const newPossibleUsagePlan = (customName: any) => ({
 
   billingDuration: {
     value: 1,
-    unit: 'month',
+    unit: 'Month',
   },
 
   visibility: 'Public',
   subscriptionProcess: 'Automatic',
   integrationProcess: 'ApiKey',
   rotation: false,
-
+  authorizedTeams: [],
   otoroshiTarget: {
-    otoroshiSettings: null,
+    otoroshiSettings: undefined,
     authorizedEntities: { groups: [], services: [] },
     apikeyCustomization: {
       clientIdOnly: false,
       constrainedServicesOnly: false,
       tags: [],
       metadata: {},
-      customMetadata: [],
+      customMetadata: {},
       restrictions: {
         enabled: false,
         allowLast: true,

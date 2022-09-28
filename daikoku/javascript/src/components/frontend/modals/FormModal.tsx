@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Form} from '@maif/react-forms';
+import { Form, FormRef} from '@maif/react-forms';
 
 export const FormModal = ({
   title,
@@ -11,7 +11,7 @@ export const FormModal = ({
   closeModal,
   actionLabel
 }: any) => {
-  const ref = useRef<any>();
+  const ref = useRef<FormRef>();
   return (
     <div className="modal-content">
       <div className="modal-header">

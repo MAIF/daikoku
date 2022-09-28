@@ -28,7 +28,7 @@ export function ApiIssue({
   }, []);
 
   const onChange = (editedApi: any) => {
-    Services.saveTeamApi(ownerTeam._id, editedApi, versionId)
+    Services.saveTeamApi(ownerTeam._id, editedApi, versionId!)
       .then((res) => setRootApi(res))
       .then(() => toastr.success(translateMethod('Success'), translateMethod('Api saved')));
   };

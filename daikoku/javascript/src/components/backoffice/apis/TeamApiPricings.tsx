@@ -19,6 +19,9 @@ import {
 import { currencies } from '../../../services/currencies';
 import * as Services from '../../../services';
 import { useDispatch } from 'react-redux';
+import { IApi, IUsagePlan } from '../../../types/api';
+import { ITenantFull } from '../../../types/tenant';
+import { ITeamSimple } from '../../../types';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -416,9 +419,19 @@ const Card = ({
 const PUBLIC = 'Public';
 const PRIVATE = 'Private';
 
-export const TeamApiPricings = (props: any) => {
+type Props = {
+  value: IApi
+  team: ITeamSimple
+  tenant: ITenantFull
+  save: (api: IApi) => Promise<any>
+  creation: boolean
+  expertMode: boolean
+  injectSubMenu: (x: any) => void
+  openApiSelectModal?: () => void
+}
+export const TeamApiPricings = (props: Props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION' };
-  const [planForEdition, setPlanForEdition] = useState<any>();
+  const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
   const { translateMethod } = useContext(I18nContext);
@@ -579,16 +592,16 @@ export const TeamApiPricings = (props: any) => {
     }
   };
 
-  const savePlan = (updatedPlan: any) => {
+  const savePlan = (updatedPlan: IUsagePlan) => {
     const api = props.value;
-    const updatedApi = {
+    const updatedApi: IApi = {
       ...api,
       possibleUsagePlans: [
         ...api.possibleUsagePlans.filter((p: any) => p._id !== updatedPlan._id),
         updatedPlan,
       ],
     };
-    props.save(updatedApi);
+    return props.save(updatedApi);
   };
 
   const clonePlanAndEdit = (plan: any) => {
@@ -1089,15 +1102,25 @@ export const TeamApiPricings = (props: any) => {
         </div>
         {planForEdition && mode === possibleMode.creation && (<div className="row">
           <div className="col-md-4">
-            <Card api={props.value} plan={planForEdition} isDefault={(planForEdition as any)._id === props.value.defaultUsagePlan} creation={true} />
+            <Card
+              api={props.value}
+              plan={planForEdition}
+              isDefault={(planForEdition as any)._id === props.value.defaultUsagePlan}
+              creation={true} />
           </div>
           <div className="col-md-8 d-flex">
-            <MultiStepForm value={planForEdition} steps={steps} initial="info" creation={creation} save={savePlan} labels={{
-              previous: translateMethod('Previous'),
-              skip: translateMethod('Skip'),
-              next: translateMethod('Next'),
-              save: translateMethod('Save'),
-            }} />
+            <MultiStepForm<IUsagePlan>
+              value={planForEdition}
+              steps={steps}
+              initial="info"
+              creation={creation}
+              save={savePlan}
+              labels={{
+                previous: translateMethod('Previous'),
+                skip: translateMethod('Skip'),
+                next: translateMethod('Next'),
+                save: translateMethod('Save'),
+              }} />
           </div>
         </div>)}
         {mode === possibleMode.list && (<div className="row">

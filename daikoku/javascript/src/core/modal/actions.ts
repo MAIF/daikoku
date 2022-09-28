@@ -24,12 +24,12 @@ export const openAssetSelectorModal = (modalProps: any) => (dispatch: any) => {
   });
 };
 
-export const openSaveOrCancelModal = (modalProps: any) => (dispatch: any) => {
-  return dispatch({
+export const openSaveOrCancelModal = (modalProps: any) => {
+  return {
     type: OPEN_MODAL,
     modalProps,
     modalType: 'saveOrCancelModal',
-  });
+  };
 };
 
 export const openLoginOrRegisterModal = (modalProps: any) => (dispatch: any) => {

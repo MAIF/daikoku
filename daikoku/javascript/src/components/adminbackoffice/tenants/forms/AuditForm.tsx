@@ -3,12 +3,12 @@ import { Form, format, type, constraints } from '@maif/react-forms';
 
 import * as Services from '../../../../services';
 
-import { ITenant, Language } from '../../../../types';
+import { ITenant, ITenantFull, Language } from '../../../../types';
 import { I18nContext } from '../../../../core';
-import { useQuery } from '@tanstack/react-query';
+import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { Spinner } from '../../../utils';
 
-export const AuditForm = (props: { tenant: ITenant }) => {
+export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod } = useContext(I18nContext)
   const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
 
@@ -115,6 +115,7 @@ export const AuditForm = (props: { tenant: ITenant }) => {
           type: type.string,
           array: true,
           label: translateMethod('Alerting'),
+          help: translateMethod('alerting.help')
           //todo: with a better version of react-form ...
           // item: {
           //   constraints:[

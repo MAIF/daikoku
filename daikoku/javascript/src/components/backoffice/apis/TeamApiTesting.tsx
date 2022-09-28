@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Form, type, format } from '@maif/react-forms';
+import { Form, type, format, FormRef } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import { useSelector } from 'react-redux';
 

@@ -403,7 +403,7 @@ export const AssetsList = ({
   const fetchAssets = () => {
     let getAssets;
     if (tenantMode) {
-      getAssets = Services.listTenantAssets(currentTeam._id);
+      getAssets = Services.listTenantAssets();
     } else {
       getAssets = Services.listAssets(currentTeam._id);
     }

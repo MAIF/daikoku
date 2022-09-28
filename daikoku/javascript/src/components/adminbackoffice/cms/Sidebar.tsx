@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { MutableRefObject, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import moment from 'moment';
 import { constraints, Form, format, type, FormRef } from '@maif/react-forms';
@@ -12,7 +12,7 @@ export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, up
   const { translateMethod } = useContext(I18nContext);
   const params = useParams();
   const navigate = useNavigate();
-  const r = useRef<FormRef>(null);
+  const r: MutableRefObject<any> = useRef<FormRef>();
   useEffect(() => {
     setValue(inValue || {
       name: '',

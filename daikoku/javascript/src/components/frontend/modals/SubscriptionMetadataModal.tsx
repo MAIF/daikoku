@@ -41,7 +41,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  const formRef = useRef<FormRef>(null)
+  const formRef = useRef<FormRef>()
 
   useEffect(() => {
     if (api) {
