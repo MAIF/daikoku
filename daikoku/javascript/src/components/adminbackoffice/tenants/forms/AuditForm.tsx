@@ -54,7 +54,7 @@ export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationRes
               placeholder: translateMethod('Secret'),
               help: translateMethod('kafka.secret.help'),
             },
-            keyStore: {
+            keystore: {
               type: type.string,
               label: translateMethod('Kafka keystore path'),
               placeholder: '/home/bas/client.keystore.jks',
@@ -138,7 +138,12 @@ export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationRes
   return (
     <Form
       schema={schema}
-      onSubmit={console.debug} //todo: clean kafka & elastic before save => null value if empty entries
+      onSubmit={(updatedTenant) => {
+        const kafkaConfig = updatedTenant.auditTrailConfig.kafkaConfig && updatedTenant.auditTrailConfig.kafkaConfig.servers.length ? updatedTenant.auditTrailConfig.kafkaConfig : undefined;
+        const elasticConfigs = updatedTenant.auditTrailConfig.elasticConfigs && updatedTenant.auditTrailConfig.elasticConfigs.clusterUri ? updatedTenant.auditTrailConfig.elasticConfigs : undefined;
+
+        props.updateTenant.mutateAsync({...updatedTenant, auditTrailConfig: {...updatedTenant.auditTrailConfig, kafkaConfig, elasticConfigs}})
+      }}
       value={data}
     />
   )

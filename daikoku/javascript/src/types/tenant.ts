@@ -19,11 +19,33 @@ enum DaikokuMode {
   prod = "Prod"
 }
 
+interface IAuditWebhook {
+  url: string,
+  headers?: {[key: string]: string}
+}
+
+interface IElasticConfig {
+  clusterUri: string
+  index?: string
+  type?: string
+  user?: string
+  password?: string
+  headers?: {[key: string]: string}
+}
+
+interface IKafkaConfig {
+  servers: Array<string>
+  keyPass: string
+  keyStore: string
+  truststore: string
+  auditTopic: string
+  hostValidation?: boolean
+}
 interface IAuditTrailConfig {
   alertEmails: Array<string>,
-  auditWebhooks: Array<any>,
-  elasticConfigs?: any
-  kafkaConfig?: any
+  auditWebhooks: Array<IAuditWebhook>,
+  elasticConfigs?: IElasticConfig
+  kafkaConfig?: IKafkaConfig
 }
 
 export interface IBucketSettings {
