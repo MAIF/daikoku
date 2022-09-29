@@ -9,9 +9,8 @@ import { IMailerSettings, ITenant, ITenantFull } from '../../../../types';
 import { MultiStepForm, Spinner } from '../../../utils';
 import { update } from 'xstate/lib/actionTypes';
 
-export const MailForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod } = useContext(I18nContext)
-  const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
 
   const basicMailSchema = {
     fromTitle: {
@@ -120,21 +119,13 @@ export const MailForm = (props: { tenant: ITenant, updateTenant: UseMutationResu
     }
   }]
 
-
-
-  if (isLoading) {
-    return (
-      <Spinner />
-    )
-  }
-
   return (
     <MultiStepForm<IMailerSettings>
-      value={data?.mailerSettings}
+      value={props.tenant?.mailerSettings}
       steps={steps}
-      initial={data?.mailerSettings ? "params" : "type"}
+      initial={props.tenant?.mailerSettings ? "params" : "type"}
       creation={false}
-      save={(d: IMailerSettings) => props.updateTenant.mutateAsync({...data, mailerSettings: d} as ITenantFull)}
+      save={(d: IMailerSettings) => props.updateTenant.mutateAsync({...props.tenant, mailerSettings: d} as ITenantFull)}
       labels={{
         previous: translateMethod('Previous'),
         skip: translateMethod('Skip'),

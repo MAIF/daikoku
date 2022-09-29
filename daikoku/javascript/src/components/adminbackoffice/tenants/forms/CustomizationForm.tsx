@@ -12,7 +12,7 @@ import { openSaveOrCancelModal } from '../../../../core';
 import { redirect, useNavigate } from 'react-router-dom';
 
 
-export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
 
   const { translateMethod } = useContext(I18nContext)
   const { client } = useContext(getApolloContext());
@@ -22,7 +22,6 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, u
   const dispatch = useDispatch()
   const navigate = useNavigate();
 
-  const queryTenant = useQuery(['tenant'], () => Services.oneTenant(tenant._id))
   const queryCMSPages = useQuery(['CMS pages'], () => client?.query({
     query: gql`
       query CmsPages {
@@ -42,7 +41,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, u
     type: type.string,
     label,
     render: ({ value, onChange, setValue }) => {
-      const domain = queryTenant.data!.domain
+      const domain = tenant!.domain
       const origin =
         window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
       return (
@@ -82,7 +81,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, u
       visible: ({ rawValues }) => rawValues?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
       label: translateMethod('tenant_edit.home_page'),
-      disabled: !queryTenant.data?.style?.homePageVisible,
+      disabled: tenant?.style?.homePageVisible,
 
     },
     notFoundCmsPage: {
@@ -90,7 +89,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, u
       format: format.select,
       visible: ({ rawValues }) => rawValues?.homePageVisible,
       label: translateMethod('tenant_edit.404_page'),
-      disabled: !queryTenant.data?.style?.homePageVisible,
+      disabled: tenant?.style?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
 
     },
@@ -100,22 +99,22 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, u
       visible: ({ rawValues }) => rawValues?.homePageVisible,
       label: translateMethod('tenant_edit.authenticated_cmspage'),
       help: translateMethod('tenant_edit.authenticated_cmspage_help'),
-      disabled: !queryTenant.data?.style?.homePageVisible,
+      disabled: tenant?.style?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
 
     },
     cacheTTL: {
       type: 'number',
-      visible: queryTenant.data?.style?.homePageVisible,
+      visible: tenant?.style?.homePageVisible,
       props: {
         label: translateMethod('tenant_edit.cache'),
         help: translateMethod('tenant_edit.cache_help'),
-        disabled: !queryTenant.data?.style?.homePageVisible,
+        disabled: tenant?.style?.homePageVisible,
       },
     },
     cmsHistoryLength: {
       type: 'number',
-      visible: queryTenant.data?.style?.homePageVisible,
+      visible: tenant?.style?.homePageVisible,
       props: {
         label: translateMethod('tenant_edit.cms_history_length'),
         help: translateMethod('tenant_edit.cms_history_length.help'),
@@ -134,7 +133,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, u
       label: () => <div className='d-flex flex-row align-items-center'>
         <div>{translateMethod('CSS color theme')}</div>
         <button type="button" className="btn btn-access-negative ms-1" onClick={() => {
-          const RedirectToUI = () => navigate(`/settings/tenants/${tenant._id}/style`);
+          const RedirectToUI = () => navigate(`/settings/tenants/${tenant?._id}/style`);
           if (Object.keys(formRef.current?.methods.formState.dirtyFields || {})) {
             dispatch(openSaveOrCancelModal({
               open: true,
@@ -171,7 +170,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, u
     },
   }
 
-  if (queryCMSPages.isLoading || queryTenant.isLoading) {
+  if (queryCMSPages.isLoading) {
     return (
       <div>loading</div>
     )
@@ -195,8 +194,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant: ITenant, u
       schema={schema}
       flow={flow}
       ref={formRef}
-      onSubmit={(style) => updateTenant.mutateAsync({ ...queryTenant.data, style } as ITenantFull)}
-      value={queryTenant.data?.style}
+      onSubmit={(style) => updateTenant.mutateAsync({ ...tenant, style } as ITenantFull)}
+      value={tenant?.style}
       options={{
         actions: {
           submit: { label: translateMethod('Save') }

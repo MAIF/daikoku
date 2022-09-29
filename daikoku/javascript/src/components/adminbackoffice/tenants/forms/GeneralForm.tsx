@@ -10,10 +10,8 @@ import { Spinner } from '../../../utils';
 
 
 
-export const GeneralForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod, languages } = useContext(I18nContext)
-
-  const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
 
   const schema = {
     name: {
@@ -57,17 +55,11 @@ export const GeneralForm = (props: { tenant: ITenant, updateTenant: UseMutationR
     }
   };
 
-  if (isLoading) {
-    return (
-      <Spinner />
-    )
-  }
-
   return (
     <Form
       schema={schema}
       onSubmit={(d) => props.updateTenant.mutateAsync(d)}
-      value={data}
+      value={props.tenant}
     />
   )
 }

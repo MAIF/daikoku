@@ -8,9 +8,8 @@ import { I18nContext } from '../../../../core';
 import { ITenant, ITenantFull } from '../../../../types';
 import { MultiStepForm, Spinner } from '../../../utils';
 
-export const AuthenticationForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod } = useContext(I18nContext)
-  const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
 
   const authProviderSettingsShema = (data: ITenantFull, subschema: Schema) => {
     return {
@@ -249,17 +248,11 @@ export const AuthenticationForm = (props: { tenant: ITenant, updateTenant: UseMu
     }
   ]
 
-  if (isLoading) {
-    return (
-      <Spinner />
-    )
-  }
-
   return (
     <MultiStepForm
-      value={data}
+      value={props.tenant}
       steps={steps}
-      initial={data?.authProvider ? "params" : "authProvider"}
+      initial={props.tenant?.authProvider ? "params" : "authProvider"}
       creation={false}
       save={(d) => props.updateTenant.mutateAsync(d)}
       labels={{

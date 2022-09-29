@@ -9,9 +9,8 @@ import * as Services from '../../../../services';
 import { IBucketSettings, ITenant, ITenantFull } from '../../../../types';
 import { Spinner } from '../../../utils';
 
-export const BucketForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const BucketForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
     const { translateMethod } = useContext(I18nContext)
-    const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
 
     const schema: Schema = {
         bucket: {
@@ -56,17 +55,12 @@ export const BucketForm = (props: { tenant: ITenant, updateTenant: UseMutationRe
         },
     }
 
-    if (isLoading) {
-        return (
-            <Spinner />
-        )
-    }
 
     return (
         <Form<IBucketSettings> 
             schema={schema}
-            onSubmit={(r) => props.updateTenant.mutateAsync({...data, bucketSettings: r} as ITenantFull)}
-            value={data?.bucketSettings}
+            onSubmit={(r) => props.updateTenant.mutateAsync({...props.tenant, bucketSettings: r} as ITenantFull)}
+            value={props.tenant?.bucketSettings}
         />
     )
 

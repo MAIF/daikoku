@@ -38,7 +38,6 @@ import {
   TenantOtoroshis,
   TenantList,
   TenantEdit,
-  NewTenantEdit,
   TenantEditForAdmin,
   TenantStyleEdit,
   UserList,
@@ -230,17 +229,7 @@ const DaikokuAppComponent = ({
                   path="/settings/settings*"
                   element={
                     <RouteWithTitle
-                      title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
-                    >
-                      <NewTenantEdit />
-                    </RouteWithTitle>
-                  }
-                />
-                <Route
-                  path="/settings/settings/old"
-                  element={
-                    <RouteWithTitle
-                      title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
+                      title={`${tenant.title} - ${translateMethod('Tenant edit', true)}`}
                     >
                       <TenantEdit />
                     </RouteWithTitle>

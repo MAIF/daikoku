@@ -8,9 +8,8 @@ import { I18nContext } from '../../../../core';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { Spinner } from '../../../utils';
 
-export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const AuditForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod } = useContext(I18nContext)
-  const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
 
   const ref = useRef<FormRef>()
 
@@ -130,14 +129,6 @@ export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationRes
     }
   }
 
-
-
-  if (isLoading) {
-    return (
-      <Spinner />
-    )
-  }
-
   return (
     <Form
       schema={schema}
@@ -149,7 +140,7 @@ export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationRes
         props.updateTenant.mutateAsync({...updatedTenant, auditTrailConfig: {...updatedTenant.auditTrailConfig, kafkaConfig, elasticConfigs}})
       }}
       ref={ref}
-      value={data}
+      value={props.tenant}
       options={{
         actions: {
           submit: {

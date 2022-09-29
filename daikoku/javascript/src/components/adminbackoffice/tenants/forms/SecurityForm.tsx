@@ -8,9 +8,8 @@ import * as Services from '../../../../services';
 import { ITenant, ITenantFull } from '../../../../types';
 import { Spinner } from '../../../utils';
 
-export const SecurityForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod } = useContext(I18nContext)
-  const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
 
   const schema: Schema = {
     isPrivate: {
@@ -50,17 +49,11 @@ export const SecurityForm = (props: { tenant: ITenant, updateTenant: UseMutation
     },
   }
 
-  if (isLoading) {
-    return (
-      <Spinner />
-    )
-  }
-
   return (
     <Form
       schema={schema}
       onSubmit={(updatedTenant) => props.updateTenant.mutateAsync(updatedTenant)}
-      value={data}
+      value={props.tenant}
     />
   )
 
