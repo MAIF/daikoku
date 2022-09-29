@@ -210,20 +210,6 @@ export const AuthenticationForm = (props: { tenant: ITenant, updateTenant: UseMu
     },
   }
 
-  const schema: Schema = {
-    authProvider: {
-      type: type.string,
-      format: format.buttonsSelect,
-      label: translateMethod('Authentication type'),
-      options: [
-        { label: 'Local', value: 'Local' },
-        { label: 'LDAP', value: 'LDAP' },
-        { label: 'OAuth2', value: 'OAuth2' },
-        { label: 'Otoroshi', value: 'Otoroshi' },
-      ],
-    },
-  }
-
   const steps = [
     {
       id: 'authProvider',

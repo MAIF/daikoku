@@ -1,5 +1,5 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { Form, format, type, constraints } from '@maif/react-forms';
+import React, { useContext, useState, useEffect, useRef } from 'react';
+import { Form, format, type, constraints, FormRef } from '@maif/react-forms';
 
 import * as Services from '../../../../services';
 
@@ -11,6 +11,8 @@ import { Spinner } from '../../../utils';
 export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translateMethod } = useContext(I18nContext)
   const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(props.tenant._id))
+
+  const ref = useRef<FormRef>()
 
 
   const schema = {
@@ -29,6 +31,7 @@ export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationRes
               type: type.string,
               label: translateMethod('Analytics webhook URL'),
               placeholder: translateMethod('URL of the webhook target'),
+              onChange: (v) => console.debug({v})
             },
             headers: {
               type: type.object,
@@ -139,12 +142,21 @@ export const AuditForm = (props: { tenant: ITenant, updateTenant: UseMutationRes
     <Form
       schema={schema}
       onSubmit={(updatedTenant) => {
+        console.debug({t: ref.current?.methods.getValues()})
         const kafkaConfig = updatedTenant.auditTrailConfig.kafkaConfig && updatedTenant.auditTrailConfig.kafkaConfig.servers.length ? updatedTenant.auditTrailConfig.kafkaConfig : undefined;
         const elasticConfigs = updatedTenant.auditTrailConfig.elasticConfigs && updatedTenant.auditTrailConfig.elasticConfigs.clusterUri ? updatedTenant.auditTrailConfig.elasticConfigs : undefined;
 
         props.updateTenant.mutateAsync({...updatedTenant, auditTrailConfig: {...updatedTenant.auditTrailConfig, kafkaConfig, elasticConfigs}})
       }}
+      ref={ref}
       value={data}
+      options={{
+        actions: {
+          submit: {
+            label: translateMethod('Save')
+          }
+        }
+      }}
     />
   )
 }

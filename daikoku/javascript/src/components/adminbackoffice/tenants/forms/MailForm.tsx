@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { constraints, format, type } from '@maif/react-forms';
+import { constraints, Flow, format, type } from '@maif/react-forms';
 import { useMutation, UseMutationResult, useQuery } from '@tanstack/react-query';
 import { toastr } from 'react-redux-toastr';
 
@@ -29,7 +29,7 @@ export const MailForm = (props: { tenant: ITenant, updateTenant: UseMutationResu
 
   const steps = [{
     id: 'type',
-    label: 'Authentication type',
+    label: 'Mail provider',
     schema: {
       type: {
         type: type.string,
