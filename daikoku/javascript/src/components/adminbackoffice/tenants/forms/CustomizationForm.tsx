@@ -121,7 +121,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       },
     },
     logo: urlWithAssetButton(translateMethod('Logo'), translateMethod('Set Logo from asset'), MimeTypeFilter.image),
-    CssUrl: urlWithAssetButton(translateMethod('CSS URL'), translateMethod('Set CSS from asset'), MimeTypeFilter.css),
+    cssUrl: urlWithAssetButton(translateMethod('CSS URL'), translateMethod('Set CSS from asset'), MimeTypeFilter.css),
     css: {
       type: type.string,
       format: format.code,

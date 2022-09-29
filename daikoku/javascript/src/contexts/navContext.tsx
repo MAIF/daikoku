@@ -811,8 +811,9 @@ export const useDaikokuBackOffice = () => {
   const match = useMatch('/settings/:tab/*');
   const matchEdition = useMatch('/settings/tenants/:id/:tabs')
 
-  console.debug(matchEdition)
-  const schema = (currentTab?: string, subTab?: string) => ({
+  const schema = (currentTab?: string, subTab?: string) => {
+    console.debug(currentTab, subTab)
+    return ({
     blocks: {
       links: {
         order: 1,
@@ -877,7 +878,7 @@ export const useDaikokuBackOffice = () => {
         },
       },
     }
-  });
+  })};
 
   const navigateTo = (navTab: any) => {
     navigate(`/settings/${navTab}`);
@@ -886,13 +887,13 @@ export const useDaikokuBackOffice = () => {
   useEffect(() => {
     setMode(navMode.daikoku);
     setOffice(officeMode.back);
-    setMenu(schema(match?.params.tab));
+    setMenu(schema(match?.params.tab, matchEdition?.params.tabs));
 
     return () => {
       setMode(navMode.initial);
       setMenu({});
     };
-  }, []);
+  }, [match, matchEdition]);
 
   return { addMenu };
 };

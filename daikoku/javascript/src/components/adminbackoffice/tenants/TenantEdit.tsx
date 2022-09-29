@@ -9,10 +9,9 @@ import { ITenant, ITenantFull } from '../../../types/tenant';
 import { AuditForm, AuthenticationForm, BucketForm, CustomizationForm, GeneralForm, MailForm } from './forms';
 import { I18nContext } from '../../../locales/i18n-context';
 import { SecurityForm } from './forms/SecurityForm';
-import { use } from 'chai';
 import { Spinner } from '../../utils/Spinner';
 
-export const TenantEditComponent = ({tenantId}: {tenantId: string}) => {
+export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: string, fromDaikokuAdmin?: boolean }) => {
   const { translateMethod } = useContext(I18nContext)
 
   const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(tenantId))
@@ -37,64 +36,85 @@ export const TenantEditComponent = ({tenantId}: {tenantId: string}) => {
       <Route
         path="/general"
         element={
-          <GeneralForm tenant={data} updateTenant={updateTenant} />
+          <>
+            {fromDaikokuAdmin && <h1>{data?.name} - {translateMethod('General')}</h1>}
+            <GeneralForm tenant={data} updateTenant={updateTenant} />
+          </>
         }
       />
       <Route
         path="/customization"
         element={
-          <CustomizationForm tenant={data} updateTenant={updateTenant} />
+          <>
+            {fromDaikokuAdmin && <h1>{data?.name} - {translateMethod('Customization')}</h1>}
+            <CustomizationForm tenant={data} updateTenant={updateTenant} />
+          </>
         }
       />
       <Route
         path="/audit"
         element={
-          <AuditForm tenant={data} updateTenant={updateTenant} />
+          <>
+            {fromDaikokuAdmin && <h1>{data?.name} - {translateMethod('Audit')}</h1>}
+            <AuditForm tenant={data} updateTenant={updateTenant} />
+          </>
         }
       />
       <Route
         path="/mail"
         element={
-          <MailForm tenant={data} updateTenant={updateTenant} />
+          <>
+            {fromDaikokuAdmin && <h1>{data?.name} - {translateMethod('Mail')}</h1>}
+            <MailForm tenant={data} updateTenant={updateTenant} />
+          </>
         }
       />
       <Route
         path="/authentication"
         element={
-          <AuthenticationForm tenant={data} updateTenant={updateTenant} />
+          <>
+            {fromDaikokuAdmin && <h1>{data?.name} - {translateMethod('Authentication')}</h1>}
+            <AuthenticationForm tenant={data} updateTenant={updateTenant} />
+          </>
         }
       />
       <Route
         path="/bucket"
         element={
-          <BucketForm tenant={data} updateTenant={updateTenant} />
+          <>
+            {fromDaikokuAdmin && <h1>{data?.name} - {translateMethod('Bucket')}</h1>}
+            <BucketForm tenant={data} updateTenant={updateTenant} />
+          </>
         }
       />
       <Route
         path="/security"
         element={
-          <SecurityForm tenant={data} updateTenant={updateTenant} />
+          <>
+            {fromDaikokuAdmin && <h1>{data?.name} - {translateMethod('Security')}</h1>}
+            <SecurityForm tenant={data} updateTenant={updateTenant} />
+          </>
         }
       />
     </Routes>
   )
 }
 
-export const TenantEdit = ({}) => {
-  const {tenant} = useTenantBackOffice();
+export const TenantEdit = ({ }) => {
+  const { tenant } = useTenantBackOffice();
 
   return (
     <TenantEditComponent tenantId={tenant._id} />
   )
 }
 
-export const TenantEditForAdmin = ({}) => {
+export const TenantEditForAdmin = ({ }) => {
   useDaikokuBackOffice();
 
-  const {tenantId} = useParams();
+  const { tenantId } = useParams();
 
   return (
-    <TenantEditComponent tenantId={tenantId!} />
+    <TenantEditComponent tenantId={tenantId!} fromDaikokuAdmin={true} />
   )
 }
 

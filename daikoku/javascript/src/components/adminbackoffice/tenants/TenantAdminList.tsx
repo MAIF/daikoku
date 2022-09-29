@@ -17,6 +17,7 @@ import {
 } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
+import { ITeamSimple, ITenantFull } from '../../../types';
 
 const AdminList = () => {
   const context = useSelector((s) => (s as any).context);
@@ -25,8 +26,8 @@ const AdminList = () => {
   const [addableAdmins, setAddableAdmins] = useState<Array<any>>([]);
   const [admins, setAdmins] = useState<Array<any>>([]);
   const [loading, setLoading] = useState(true);
-  const [team, setTeam] = useState<any>(undefined);
-  const [tenant, setTenant] = useState<any>(undefined);
+  const [team, setTeam] = useState<ITeamSimple>();
+  const [tenant, setTenant] = useState<ITenantFull>();
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [selectedAdmin, setSelectedAdmin] = useState<any>(undefined);
 
@@ -59,7 +60,7 @@ const AdminList = () => {
 
   useEffect(() => {
     if (selectedAdmin) {
-      Services.addAdminsToTenant(tenant._id, [(selectedAdmin as any)._id]).then((team) => {
+      Services.addAdminsToTenant(tenant?._id, [(selectedAdmin as any)._id]).then((team) => {
         if (team.error) {
           toastr.error('Failure', team.error);
         }
@@ -90,7 +91,7 @@ const AdminList = () => {
   });
 
   const removeAdmin = (admin: any) => {
-    if (team.users.length === 1) {
+    if (team?.users.length === 1) {
       alert(
         translateMethod(
           'remove.admin.tenant.alert',
@@ -102,7 +103,7 @@ const AdminList = () => {
       (window
         .confirm(translateMethod('remove.admin.tenant.confirm', false, 'Are you sure you want to remove this admin from the tenant ?')) as any).then((ok: any) => {
           if (ok) {
-            Services.removeAdminFromTenant(tenant._id, admin._id).then((team) => {
+            Services.removeAdminFromTenant(tenant?._id, admin._id).then((team) => {
               if (team.error) {
                 toastr.error(translateMethod('Failure'), team.error);
               }
@@ -120,19 +121,22 @@ const AdminList = () => {
 
   return (
     <Can I={manage} a={TENANT} dispatchError={true} whichOne={tenant}>
-      <div className="row">
-        <div className="col">
-          <h1>
-            {tenant && <>{(tenant as any).name} - </>}
-            <Translation i18nkey="Admins">Admins</Translation>
-          </h1>
-        </div>
-      </div>
+      <h1>
+        {tenant && <>{tenant.name} - </>}
+        <Translation i18nkey="Admins">Admins</Translation>
+      </h1>
       <div className="row">
         <div className="col-12 mb-3 d-flex justify-content-start">
-          <Select placeholder={translateMethod('Add new admin')} className="add-member-select me-2 reactSelect" options={addableAdmins.map(adminToSelector)} onChange={(slug) => setSelectedAdmin(slug.value)} value={selectedAdmin} filterOption={(data, search) => values(data.value)
-            .filter((e) => typeof e === 'string')
-            .some((v) => v.includes(search))} classNamePrefix="reactSelect" />
+          <Select
+            placeholder={translateMethod('Add new admin')}
+            className="add-member-select me-2 reactSelect"
+            options={addableAdmins.map(adminToSelector)}
+            onChange={(slug) => setSelectedAdmin(slug.value)}
+            value={selectedAdmin}
+            filterOption={(data, search) => values(data.value)
+              .filter((e) => typeof e === 'string')
+              .some((v) => v.includes(search))}
+            classNamePrefix="reactSelect" />
           <input placeholder={translateMethod('Find an admin')} className="form-control" onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
