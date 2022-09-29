@@ -10,7 +10,7 @@ import { useDaikokuBackOffice } from '../../../contexts';
 export const ImportExport = () => {
   useDaikokuBackOffice();
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+    const { translate, Translation } = useContext(I18nContext);
 
   let input: any;
 
@@ -76,10 +76,10 @@ export const ImportExport = () => {
               className="btn btn-outline-primary"
             >
                             <i className="fas fa-upload me-1" />
-              {uploading ? translateMethod('importing ...') : translateMethod('import state')}
+              {uploading ? translate('importing ...') : translate('import state')}
             </button>
                         <div className="d-flex justify-content-start align-items-center mt-2">
-                            <label className="me-3">{translateMethod('audittrail.export.label')}</label>
+                            <label className="me-3">{translate('audittrail.export.label')}</label>
                             <BooleanInput onChange={setExportAuditTrail} value={exportAuditTrail} />
             </div>
                         <input
@@ -96,8 +96,8 @@ export const ImportExport = () => {
                         <button type="button" onClick={migrate} className="btn btn-outline-primary">
                             <i className="fas fa-database me-1" />
               {processing
-                ? translateMethod('migration in progress ...')
-                : translateMethod('migrate database')}
+                ? translate('migration in progress ...')
+                : translate('migrate database')}
             </button>
             {error.length > 0 && (
                             <div className="alert alert-danger my-0 mt-3" role="alert">

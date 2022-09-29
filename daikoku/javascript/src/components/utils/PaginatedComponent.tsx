@@ -19,7 +19,7 @@ export const PaginatedComponent = (props: Props) => {
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const pageNumber = props.count || 10;
 
@@ -51,7 +51,7 @@ export const PaginatedComponent = (props: Props) => {
         })}
       </div>
       <div className="apis__pagination d-flex justify-content-center" style={{ width: '100%' }}>
-        <Pagination previousLabel={props.previousLabel || translateMethod('Previous')} nextLabel={props.nextLabel || translateMethod('Next')} breakLabel={props.breakLabel || '...'} breakClassName={'break'} pageCount={Math.ceil(props.items.length / pageNumber)} marginPagesDisplayed={1} pageRangeDisplayed={5} onPageChange={(data) => handlePageClick(data)} containerClassName={'pagination'} pageClassName={'page-selector'} forcePage={selectedPage} activeClassName={'active'} />
+        <Pagination previousLabel={props.previousLabel || translate('Previous')} nextLabel={props.nextLabel || translate('Next')} breakLabel={props.breakLabel || '...'} breakClassName={'break'} pageCount={Math.ceil(props.items.length / pageNumber)} marginPagesDisplayed={1} pageRangeDisplayed={5} onPageChange={(data) => handlePageClick(data)} containerClassName={'pagination'} pageClassName={'page-selector'} forcePage={selectedPage} activeClassName={'active'} />
       </div>
     </div>
   </div>);

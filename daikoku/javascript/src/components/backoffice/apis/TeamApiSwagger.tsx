@@ -93,31 +93,31 @@ export const TeamApiSwagger = ({
   onChange,
   reference
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const swagger = value.swagger;
 
   const schema = {
     url: {
       type: type.string,
-      label: translateMethod('URL'),
+      label: translate('URL'),
       deps: ['useContent'],
       visible: ({ rawValues }: any) => !rawValues.useContent,
       constraints: [
         constraints.matches(
           /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
-          translateMethod('constraints.format.url', false, '', translateMethod('Url'))
+          translate({ key: 'constraints.format.url', replacements: [translate('Url')] })
         ),
       ],
     },
     headers: {
       type: type.object,
-      label: translateMethod('Headers'),
-      deps:['useContent'],
-      visible: ({rawValues}: any) => !rawValues.useContent,
+      label: translate('Headers'),
+      deps: ['useContent'],
+      visible: ({ rawValues }: any) => !rawValues.useContent,
     },
     useContent: {
       type: type.bool,
-      label: translateMethod('Use swagger content'),
+      label: translate('Use swagger content'),
       defaultValue: !!swagger.content,
     },
     content: {

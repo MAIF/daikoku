@@ -13,7 +13,7 @@ export const TenantOtoroshi = () => {
   const { tenant } = useSelector((s) => (s as any).context);
     useTenantBackOffice();
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+    const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
@@ -24,21 +24,21 @@ export const TenantOtoroshi = () => {
   const formSchema = {
     url: {
       type: type.string,
-      label: translateMethod('Otoroshi Url'),
+      label: translate('Otoroshi Url'),
       placeholder: 'https://otoroshi-api.foo.bar',
     },
     host: {
       type: type.string,
-      label: translateMethod('Otoroshi Host'),
+      label: translate('Otoroshi Host'),
       placeholder: 'otoroshi-api.foo.bar',
     },
     clientId: {
       type: type.string,
-      label: translateMethod('Otoroshi client id'),
+      label: translate('Otoroshi client id'),
     },
     clientSecret: {
       type: type.string,
-      label: translateMethod('Otoroshi client secret'),
+      label: translate('Otoroshi client secret'),
     },
   };
 
@@ -59,7 +59,7 @@ export const TenantOtoroshi = () => {
           if (result.error) {
             toastr.error('Failure', result.error);
           } else {
-            toastr.success(translateMethod('Success'), translateMethod('otoroshi.settings.created.success'));
+            toastr.success(translate('Success'), translate('otoroshi.settings.created.success'));
             navigate('/settings/otoroshis')
           }
         });
@@ -69,7 +69,7 @@ export const TenantOtoroshi = () => {
           if (result.error) {
             toastr.error('Failure', result.error);
           } else {
-            toastr.success(translateMethod('Success'), translateMethod('otoroshi.settings.updated.success'));
+            toastr.success(translate('Success'), translate('otoroshi.settings.updated.success'));
             navigate('/settings/otoroshis')
           }
         });
@@ -99,11 +99,11 @@ export const TenantOtoroshi = () => {
             options={{
               actions: {
                 submit: {
-                  label: create ? translateMethod('Create') : translateMethod('Save')
+                  label: create ? translate('Create') : translate('Save')
                 },
                 cancel: {
                   display: true,
-                  label: translateMethod('Back'),
+                  label: translate('Back'),
                   action: () => navigate('/settings/otoroshis')
                 }
               }

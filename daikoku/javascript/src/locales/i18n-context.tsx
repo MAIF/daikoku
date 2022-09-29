@@ -4,13 +4,14 @@ import * as Services from '../services';
 import translationEng from '../locales/en/translation.json';
 import translationFr from '../locales/fr/translation.json';
 import { TOptions } from '../types/types';
+import { string } from 'prop-types';
 
 const initI8nContext: TI18ncontext = {
   language: 'en',
   setLanguage: () => { },
   isTranslationMode: false,
   setTranslationMode: () => { },
-  translateMethod: () => "",
+  translate: () => "",
   Translation: React.Fragment,
   updateTranslation: () => Promise.resolve(true),
   languages: [{ value: 'en', label: 'English' }],
@@ -32,11 +33,18 @@ type TI18ncontext = {
   setLanguage: (l: string) => void,
   isTranslationMode: boolean,
   setTranslationMode: (mode: boolean) => void,
-  translateMethod: (...arg: any[]) => string,
+  translate: (params: string | TranslateParams) => string,
   Translation: FunctionComponent<any>,
   updateTranslation: (translation: any) => Promise<any>,
   languages: TOptions,
   translations: TranslationConfig,
+}
+
+type TranslateParams = {
+  key: string, 
+  plural?: boolean, 
+  defaultResponse?: string, 
+  replacements?: Array<string>
 }
 
 
@@ -78,13 +86,13 @@ export const I18nProvider = ({
 
   const capitalize = (l: any) => (l || 'En').charAt(0).toUpperCase() + (l || 'En').slice(1);
 
-  const translate = (
-    i18nkey: any,
-    language: any,
-    plural?: any,
-    defaultTranslation?: any,
+  const translateBase = (
+    i18nkey: string,
+    language: string,
+    plural?: boolean,
+    defaultTranslation?: string,
     extraConf?: any,
-    replacements?: any
+    replacements?: Array<string>
   ) => {
     const maybeTranslationFromConf = Option(translations[capitalize(language)])
       .map((lng: any) => lng.translations)
@@ -96,7 +104,7 @@ export const I18nProvider = ({
     const resultFromConf = maybeTranslationFromConf.getOrElse(defaultTranslation || i18nkey);
     const resultWithExtra = maybeExtraTranslation.getOrElse(resultFromConf);
 
-    const replaceChar = (value: any, replacements = []) => {
+    const replaceChar = (value: any, replacements: Array<string> = []) => {
       if (replacements.length === 0) {
         return value;
       }
@@ -120,13 +128,37 @@ export const I18nProvider = ({
     }
   };
 
-  const translateMethod = (key: any, plural = false, defaultResponse = undefined, ...replacements: any[]) => {
+  // const translate = (params: TranslateParams) => {
+  //   if (!language) {
+  //     return params.defaultResponse || params.key;
+  //   }
+
+  //   return translateBase(params.key, language, params.plural, params.defaultResponse, undefined, params.replacements);
+  // }
+
+
+
+
+  function translate(key:string):string;
+  function translate(params: TranslateParams): string;
+  function translate(x: (string | TranslateParams)): string {
+    const params = typeof x === 'string' ? {key: x} : x
     if (!language) {
-      return defaultResponse || key;
+      return params.defaultResponse || params.key;
     }
 
-    return translate(key, language, plural, defaultResponse, undefined, replacements);
-  };
+    return translateBase(params.key, language, params.plural, params.defaultResponse, undefined, params.replacements);
+  }
+
+
+
+
+
+
+
+
+
+
 
   const Translation = ({
     i18nkey,
@@ -146,7 +178,7 @@ export const I18nProvider = ({
       .map((count: any) => count > 1)
       .getOrElse(!!isPlural);
 
-    const translatedMessage = translate(
+    const translatedMessage = translateBase(
       i18nkey,
       language,
       pluralOption,
@@ -195,7 +227,7 @@ export const I18nProvider = ({
   };
 
   const updateTranslation = (translation: any) => {
-    if (translate(translation.key, translation.language) === translation.value)
+    if (translateBase(translation.key, translation.language) === translation.value)
       return Services.deleteTranslation(translation);
     return Services.saveTranslation(translation);
   };
@@ -206,8 +238,8 @@ export const I18nProvider = ({
         language,
         setLanguage,
         isTranslationMode,
-        setTranslationMode,
-        translateMethod,
+        setTranslationMode, //@ts-ignore
+        translate,
         Translation,
         updateTranslation,
         languages: Object.keys(translations).map((value) => ({

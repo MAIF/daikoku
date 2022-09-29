@@ -10,7 +10,7 @@ import { CanIDoAction, manage, team } from '../../..';
 const DarkModeActivator = ({
   initialDark
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+    const { translate } = useContext(I18nContext);
 
   const DARK = 'DARK';
   const LIGHT = 'LIGHT';
@@ -29,7 +29,7 @@ const DarkModeActivator = ({
 
   return (
         <div className="block__entry__link" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
-      {theme === DARK ? translateMethod('Light mode') : translateMethod('Dark mode')}
+      {theme === DARK ? translate('Light mode') : translate('Dark mode')}
     </div>
   );
 };
@@ -37,7 +37,7 @@ const DarkModeActivator = ({
 export const SettingsPanel = ({}) => {
   const [version, setVersion] = useState();
 
-    const { translateMethod, isTranslationMode } = useContext(I18nContext);
+    const { translate, isTranslationMode } = useContext(I18nContext);
   const { tenant, connectedUser, impersonator, isTenantAdmin } = useSelector((state) => (state as any).context);
 
   const dispatch = useDispatch();
@@ -74,21 +74,21 @@ export const SettingsPanel = ({}) => {
   return (
         <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
             <div className="mb-3 panel__title">
-                <h3>{translateMethod('Settings')}</h3>
+                <h3>{translate('Settings')}</h3>
       </div>
             <div className="blocks">
                 <div className="mb-3 block">
                     <div className="mb-1 block__category">{connectedUser.email}</div>
                     <div className="ms-2 block__entries block__border d-flex flex-column">
                         <Link to="/me" className="block__entry__link">
-              {translateMethod('My profile')}
+              {translate('My profile')}
             </Link>
                         <a href="/logout" className="block__entry__link">
-              {translateMethod('Logout')}
+              {translate('Logout')}
             </a>
             {impersonator && (
                             <a href="/api/me/_deimpersonate" className="block__entry__link">
-                {translateMethod('Quit impersonation')}
+                {translate('Quit impersonation')}
               </a>
             )}
           </div>
@@ -96,14 +96,14 @@ export const SettingsPanel = ({}) => {
         </div>
         {(isTenantAdmin || connectedUser.isDaikokuAdmin) && (
                     <div className="mb-3 block">
-                        <div className="mb-1 block__category">{translateMethod('settings')}</div>
+                        <div className="mb-1 block__category">{translate('settings')}</div>
                         <div className="ms-2 block__entries block__border d-flex flex-column">
                             <Link to="/settings/settings/general" className="block__entry__link">
-                {tenant.name} {translateMethod('settings')}
+                {tenant.name} {translate('settings')}
               </Link>
               {connectedUser.isDaikokuAdmin && (
                                 <Link to="/settings/tenants" className="block__entry__link">
-                  {translateMethod('Daikoku settings')}
+                  {translate('Daikoku settings')}
                 </Link>
               )}
             </div>
@@ -111,27 +111,27 @@ export const SettingsPanel = ({}) => {
           </div>
         )}
                 <div className="mb-3 block">
-                    <div className="mb-1 block__category">{translateMethod('actions')}</div>
+                    <div className="mb-1 block__category">{translate('actions')}</div>
                     <div className="ms-2 block__entries block__border d-flex flex-column">
                         <DarkModeActivator />
             {connectedUser.isDaikokuAdmin && (
                             <span className="block__entry__link" onClick={reset}>
-                {translateMethod('Reset')}
+                {translate('Reset')}
               </span>
             )}
             {isTenantAdmin && (
                             <span className="block__entry__link" onClick={toggleMaintenanceMode}>
-                {translateMethod(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
+                {translate(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
               </span>
             )}
           </div>
                     <div className="dropdown-divider" />
         </div>
                 <div className="mb-3 block">
-                    <div className="mb-1 block__category">{translateMethod('version')}</div>
+                    <div className="mb-1 block__category">{translate('version')}</div>
                     <div className="ms-2 block__entries block__border d-flex flex-column">
                         <span className="pe-none block__entry__link">
-              {translateMethod('Version used')} : {version || '?.??.??'}
+              {translate('Version used')} : {version || '?.??.??'}
             </span>
           </div>
                     <div className="dropdown-divider" />

@@ -21,7 +21,7 @@ export function ApiIssues({
   const { versionId } = useParams();
   const { connectedUser } = useSelector(state => (state as any).context);
 
-    const { translateMethod } = useContext(I18nContext);
+    const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     refresh()
@@ -60,13 +60,13 @@ export function ApiIssues({
                         </span>))}
                   </div>
                                     {open ? (<span>
-                      #{seqId} {translateMethod('issues.opened_on')}{' '}
-                      {moment(createdDate).format(translateMethod('moment.date.format.without.hours'))}{' '}
-                      {translateMethod('issues.by')} {(by as any).name}
+                      #{seqId} {translate('issues.opened_on')}{' '}
+                      {moment(createdDate).format(translate('moment.date.format.without.hours'))}{' '}
+                      {translate('issues.by')} {(by as any).name}
                                         </span>) : (<span>
-                      #{seqId} {translateMethod('issues.by')} {(by as any).name}{' '}
-                      {translateMethod('was closed on')}{' '}
-                      {moment(closedDate).format(translateMethod('moment.date.format.without.hours'))}{' '}
+                      #{seqId} {translate('issues.by')} {(by as any).name}{' '}
+                      {translate('was closed on')}{' '}
+                      {moment(closedDate).format(translate('moment.date.format.without.hours'))}{' '}
                     </span>)}
                 </div>
               </div>
@@ -74,7 +74,7 @@ export function ApiIssues({
                                 <span className="badge bg-info">{apiVersion}</span>
               </div>
             </div>))}
-                {filteredIssues.length <= 0 && <p>{translateMethod('issues.nothing_matching_filter')}</p>}
+                {filteredIssues.length <= 0 && <p>{translate('issues.nothing_matching_filter')}</p>}
       </div>
     </div>);
 }

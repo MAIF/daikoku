@@ -5,7 +5,7 @@ export const LoginOrRegisterModal = (props: any) => {
   const loginProvider = props.tenant.authProvider;
   const { asFlatFormat } = props;
 
-    const { translateMethod } = useContext(I18nContext);
+    const { translate } = useContext(I18nContext);
 
   return asFlatFormat ? (
         <div className="mx-auto" style={{ maxWidth: '448px', color: '#000' }}>
@@ -15,13 +15,13 @@ export const LoginOrRegisterModal = (props: any) => {
           href={`/auth/${loginProvider}/login`}
           className="btn btn-outline-success mx-1 login-button"
         >
-          {translateMethod('Login')}
+          {translate('Login')}
         </a>
                 <a
           href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
           className="btn btn-success register-button"
         >
-          {translateMethod('Register')}
+          {translate('Register')}
         </a>
       </div>
     </div>
@@ -29,7 +29,7 @@ export const LoginOrRegisterModal = (props: any) => {
         <div className="modal-content mx-auto" style={{ maxWidth: '448px' }}>
       {!props.showOnlyMessage && (
                 <div className="modal-header">
-                    <h5 className="modal-title">{translateMethod('consume.apikey')}</h5>
+                    <h5 className="modal-title">{translate('consume.apikey')}</h5>
                     <button
             type="button"
             className="btn-close"
@@ -40,7 +40,7 @@ export const LoginOrRegisterModal = (props: any) => {
       )}
             <div className="modal-body">
                 <div className="modal-description">
-          {props.showOnlyMessage ? props.message : translateMethod('get.apikey.requires.login')}
+          {props.showOnlyMessage ? props.message : translate('get.apikey.requires.login')}
         </div>
       </div>
             <div
@@ -51,13 +51,13 @@ export const LoginOrRegisterModal = (props: any) => {
           href={`/auth/${loginProvider}/login`}
           className="btn btn-outline-success mx-1 login-button"
         >
-          {translateMethod('Login')}
+          {translate('Login')}
         </a>
                 <a
           href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
           className="btn btn-success register-button"
         >
-          {translateMethod('Register')}
+          {translate('Register')}
         </a>
       </div>
     </div>

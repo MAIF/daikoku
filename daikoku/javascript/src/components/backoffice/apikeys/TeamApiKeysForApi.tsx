@@ -36,7 +36,7 @@ export const TeamApiKeysForApi = () => {
   const location = useLocation();
   const params = useParams();
   const { client } = useContext(getApolloContext());
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     Promise.all([
@@ -80,12 +80,12 @@ export const TeamApiKeysForApi = () => {
   };
 
   const makeUniqueApiKey = (subscription: any) => {
-    (window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique')) as any).then((ok: any) => {
+    (window.confirm(translate('team_apikey_for_api.ask_for_make_unique')) as any).then((ok: any) => {
       if (ok)
         Services.makeUniqueApiKey(currentTeam._id, subscription._id)
           .then(() => Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId))
           .then((subs) => {
-            toastr.success(translateMethod('Success'), translateMethod('team_apikey_for_api.ask_for_make_unique.success_message'));
+            toastr.success(translate('Success'), translate('team_apikey_for_api.ask_for_make_unique.success_message'));
             setSubscriptions(subs);
           });
     });
@@ -94,8 +94,8 @@ export const TeamApiKeysForApi = () => {
   const toggleApiKeyRotation = (subscription: any, plan: any, enabled: any, rotationEvery: any, gracePeriod: any) => {
     if (plan.autoRotation) {
       return toastr.error(
-        translateMethod('Error'),
-        translateMethod('rotation.error.message')
+        translate('Error'),
+        translate('rotation.error.message')
       );
     }
 
@@ -112,12 +112,13 @@ export const TeamApiKeysForApi = () => {
 
   const regenerateApiKeySecret = (subscription: any) => {
     return (window
-      .confirm(translateMethod('reset.secret.confirm', false, 'Are you sure you want to reset this secret ?')) as any).then((ok: any) => {
+      .confirm(translate('reset.secret.confirm')))//@ts-ignore
+      .then((ok: any) => {
         if (ok) {
           Services.regenerateApiKeySecret(currentTeam._id, subscription._id)
             .then(() => Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId))
             .then((subs) => setSubscriptions(subs))
-            .then(() => toastr.success(translateMethod('Success'), translateMethod('secret reseted successfully')));
+            .then(() => toastr.success(translate('Success'), translate('secret reseted successfully')));
         }
       });
   };
@@ -140,7 +141,7 @@ export const TeamApiKeysForApi = () => {
         } else if ((subs as any).customName && (subs as any).customName.toLowerCase().includes(search)) {
           return true;
         } else {
-          return formatPlanType(currentPlan(subs), translateMethod)
+          return formatPlanType(currentPlan(subs), translate)
             .toLowerCase()
             .includes(search);
         }
@@ -171,7 +172,7 @@ export const TeamApiKeysForApi = () => {
         </h1>
       </div>
       <div className="col-12 mt-2 mb-4">
-        <input type="text" className="form-control col-5" placeholder={translateMethod('Search your apiKey...')} aria-label="Search your apikey" value={searched} onChange={(e) => setSearched(e.target.value)} />
+        <input type="text" className="form-control col-5" placeholder={translate('Search your apiKey...')} aria-label="Search your apikey" value={searched} onChange={(e) => setSearched(e.target.value)} />
       </div>
 
       <div className="col-12">
@@ -183,7 +184,7 @@ export const TeamApiKeysForApi = () => {
           return (
             <ApiKeyCard
               currentTeam={currentTeam}
-              openInfoNotif={(message: any) => toastr.info(translateMethod('Info'), message)}
+              openInfoNotif={(message: any) => toastr.info(translate('Info'), message)}
               statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
               key={subscription._id}
               subscription={subscription}
@@ -233,7 +234,7 @@ const ApiKeyCard = ({
 
   const { _id, integrationToken } = subscription;
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   let inputRef = React.createRef<HTMLInputElement>();
   let clipboard = React.createRef<HTMLInputElement>();
@@ -247,14 +248,14 @@ const ApiKeyCard = ({
   const settingsSchema = {
     enabled: {
       type: type.bool,
-      label: translateMethod('Enabled'),
-      help: translateMethod('help.apikey.rotation'),
+      label: translate('Enabled'),
+      help: translate('help.apikey.rotation'),
       disabled: plan.autoRotation,
     },
     rotationEvery: {
       type: type.number,
-      label: translateMethod('Rotation period'),
-      help: translateMethod('help.apikey.rotation.period'),
+      label: translate('Rotation period'),
+      help: translate('help.apikey.rotation.period'),
       disabled: ({
         rawValues
       }: any) => !rawValues.enabled,
@@ -263,8 +264,8 @@ const ApiKeyCard = ({
     },
     gracePeriod: {
       type: type.number,
-      label: translateMethod('Grace period'),
-      help: translateMethod('help.apikey.grace.period'),
+      label: translate('Grace period'),
+      help: translate('help.apikey.grace.period'),
       disabled: ({
         rawValues
       }: any) => !rawValues.enabled,
@@ -273,7 +274,7 @@ const ApiKeyCard = ({
         constraints.positive(),
         constraints.lessThan(
           constraints.ref<number>('rotationEvery'),
-          translateMethod('constraint.apikey.grace.period')
+          translate('constraint.apikey.grace.period')
         ),
       ],
     },
@@ -362,7 +363,7 @@ const ApiKeyCard = ({
                 className="badge bg-secondary"
                 style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
               >
-                {Option(plan.customName).getOrElse(formatPlanType(plan, translateMethod))}
+                {Option(plan.customName).getOrElse(formatPlanType(plan, translate))}
               </span>
             )}
           </div>
@@ -373,7 +374,7 @@ const ApiKeyCard = ({
               <div className="d-flex justify-content-end mb-3">
                 <div className="d-flex justify-content-around">
                   {!subscription.parent && (
-                    <BeautifulTitle title={translateMethod('Reset secret')}>
+                    <BeautifulTitle title={translate('Reset secret')}>
                       <button
                         type="button"
                         className="btn btn-sm btn-outline-danger ms-1"
@@ -385,13 +386,13 @@ const ApiKeyCard = ({
                     </BeautifulTitle>
                   )}
                   <Can I={read} a={stat} team={currentTeam}>
-                    <BeautifulTitle title={translateMethod('View usage statistics')}>
+                    <BeautifulTitle title={translate('View usage statistics')}>
                       <Link to={statsLink} className="btn btn-sm btn-access-negative ms-1">
                         <i className="fas fa-chart-bar" />
                       </Link>
                     </BeautifulTitle>
                   </Can>
-                  <BeautifulTitle title={translateMethod('Copy to clipboard')}>
+                  <BeautifulTitle title={translate('Copy to clipboard')}>
                     <button
                       type="button"
                       disabled={!subscription.enabled}
@@ -399,14 +400,14 @@ const ApiKeyCard = ({
                       onClick={() => {
                         (clipboard as any).current.select();
                         document.execCommand('Copy');
-                        openInfoNotif(translateMethod('Credientials copied'));
+                        openInfoNotif(translate('Credientials copied'));
                       }}
                     >
                       <i className="fas fa-copy" />
                     </button>
                   </BeautifulTitle>
                   {!subscription.parent && !disableRotation && (
-                    <BeautifulTitle title={translateMethod('Setup rotation')}>
+                    <BeautifulTitle title={translate('Setup rotation')}>
                       <button
                         type="button"
                         className="btn btn-sm btn-access-negative ms-1"
@@ -417,7 +418,7 @@ const ApiKeyCard = ({
                     </BeautifulTitle>
                   )}
                   {!subscription.parent && (
-                    <BeautifulTitle title={translateMethod('Enable/Disable')}>
+                    <BeautifulTitle title={translate('Enable/Disable')}>
                       <button
                         type="button"
                         disabled={subscription.parent ? !subscription.parentUp : false}
@@ -436,7 +437,7 @@ const ApiKeyCard = ({
                     </BeautifulTitle>
                   )}
                   {subscription.parent && (
-                    <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
+                    <BeautifulTitle title={translate('team_apikey_for_api.make_unique')}>
                       <button
                         type="button"
                         className="btn btn-sm ms-1 btn-outline-danger"
@@ -569,8 +570,8 @@ const ApiKeyCard = ({
                     onClick={() => setAggregatePlan(!showAggregatePlan)}
                   >
                     {showAggregatePlan
-                      ? translateMethod('team_apikey_for_api.hide_aggregate_sub')
-                      : translateMethod('team_apikey_for_api.show_aggregate_sub')}
+                      ? translate('team_apikey_for_api.hide_aggregate_sub')
+                      : translate('team_apikey_for_api.show_aggregate_sub')}
                   </button>
                 </>
               )}

@@ -14,10 +14,10 @@ export const TeamApis = () => {
   const dispatch = useDispatch();
   useTeamBackOffice(currentTeam);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translateMethod('API', true)}`;
+    document.title = `${currentTeam.name} - ${translate({key: 'API', plural: true})}`;
   }, []);
 
   let table = useRef<TableRef>();
@@ -25,7 +25,7 @@ export const TeamApis = () => {
   const columns = [
     {
       id: 'name',
-      Header: translateMethod('Name'),
+      Header: translate('Name'),
       style: { textAlign: 'left' },
       accessor: (api: any) => api.apis ? api.name : `${api.name} - (${api.currentVersion})`,
       sortType: 'basic',
@@ -47,12 +47,12 @@ export const TeamApis = () => {
       },
     },
     {
-      Header: translateMethod('Description'),
+      Header: translate('Description'),
       style: { textAlign: 'left' },
       accessor: (api: any) => api.smallDescription,
     },
     {
-      Header: translateMethod('Published'),
+      Header: translate('Published'),
       style: { textAlign: 'center' },
       accessor: (api: any) => api.published,
       disableSortBy: true,
@@ -76,7 +76,7 @@ export const TeamApis = () => {
       },
     },
     {
-      Header: translateMethod('Actions'),
+      Header: translate('Actions'),
       style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
@@ -143,12 +143,14 @@ export const TeamApis = () => {
 
   const deleteApi = (api: any) => {
     (window
-      .confirm(translateMethod('delete.api.confirm', false, 'Are you sure you want to delete this api ?')) as any).then((ok: any) => {
+      .confirm(translate('delete.api.confirm')))//@ts-ignore
+      .then((ok: any) => {
         if (ok) {
-          Services.deleteTeamApi(currentTeam._id, api._id).then(() => {
-            toastr.success(translateMethod('Success'), translateMethod('delete.api.success', false, 'API deleted successfully', api.name));
-            table.current?.update();
-          });
+          Services.deleteTeamApi(currentTeam._id, api._id)
+            .then(() => {
+              toastr.success(translate('Success'), translate({ key: 'delete.api.success', replacements: [api.name] }));
+              table.current?.update();
+            });
         }
       });
   };

@@ -36,17 +36,17 @@ const CreateNewVersionButton = ({
   currentTeam,
   tab
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();
 
   const promptVersion = () => {
     //FIXME:fix ts error with rewriting translate method
     //@ts-ignore
-    (window.prompt(translateMethod('Version number'), undefined, false, translateMethod('New version'), versionId) as any).then((newVersion: any) => {
+    (window.prompt(translate('Version number'), undefined, false, translate('New version'), versionId) as any).then((newVersion: any) => {
       if (newVersion) {
         if ((newVersion || '').split('').find((c: any) => reservedCharacters.includes(c)))
-          toastr.error(translateMethod('Error'), "Can't create version with special characters : " + reservedCharacters.join(' | '));
+          toastr.error(translate('Error'), "Can't create version with special characters : " + reservedCharacters.join(' | '));
         else
           createNewVersion(newVersion);
       }
@@ -55,9 +55,9 @@ const CreateNewVersionButton = ({
 
   const createNewVersion = (newVersion: any) => {
     Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
-      if (res.error) toastr.error(translateMethod('Error'), res.error);
+      if (res.error) toastr.error(translate('Error'), res.error);
       else {
-        toastr.success(translateMethod('Success'), 'New version of api created');
+        toastr.success(translate('Success'), 'New version of api created');
         navigate(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
       }
     });
@@ -93,7 +93,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
 
   const teamApiDocumentationRef = useRef<TeamApiDocumentationRef>(null);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
 
   useEffect(() => {
@@ -105,7 +105,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${api ? (api as any).name : translateMethod('API')}`;
+    document.title = `${currentTeam.name} - ${api ? (api as any).name : translate('API')}`;
 
     if (!props.creation) {
       methods.addMenu({
@@ -155,7 +155,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
         setApi(api);
         setVersions(versions);
       } else {
-        toastr.error(translateMethod('Error'), api.error);
+        toastr.error(translate('Error'), api.error);
       }
     });
   };
@@ -169,17 +169,12 @@ export const TeamApi = (props: { creation?: boolean }) => {
       return Services.createTeamApi(currentTeam._id, editedApi)
         .then((createdApi) => {
           if (createdApi.error) {
-            toastr.error(translateMethod('Error'), translateMethod(createdApi.error));
+            toastr.error(translate('Error'), translate(createdApi.error));
             return createdApi;
           } else if (createdApi.name) {
             toastr.success(
-              translateMethod('Success'),
-              translateMethod(
-                'api.created.success',
-                false,
-                `Api "${createdApi.name}" created`,
-                createdApi.name
-              )
+              translate('Success'),
+              translate({ key: 'api.created.success', replacements: [createdApi.name] })
             );
             methods.setApi(createdApi);
             navigate(
@@ -195,10 +190,10 @@ export const TeamApi = (props: { creation?: boolean }) => {
         editedApi._humanReadableId
       ).then((res) => {
         if (res.error) {
-          toastr.error(translateMethod('Error'), translateMethod(res.error));
+          toastr.error(translate('Error'), translate(res.error));
           return res;
         } else {
-          toastr.success(translateMethod('Success'), translateMethod('Api saved'));
+          toastr.success(translate('Success'), translate('Api saved'));
           setApi(editedApi);
 
           if (res._humanReadableId !== editedApi._humanReadableId) {
@@ -230,12 +225,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
           to={`/${currentTeam._humanReadableId}/settings/apis`}
         >
           <i className="fas fa-chevron-left me-1" />
-          {translateMethod(
-            'back.to.team',
-            false,
-            `Back to {props.currentTeam._humanReadableId}`,
-            currentTeam.name
-          )}
+          {translate({key: 'back.to.team', replacements: [currentTeam.name]} )}
         </Link>
       );
       if (props.creation) {
@@ -261,7 +251,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
                       to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/infos`}
                       className="btn btn-sm btn-access-negative mb-2"
                     >
-                      {translateMethod('View this Api')}
+                      {translate('View this Api')}
                     </Link>
                   ),
                 },
@@ -284,8 +274,8 @@ export const TeamApi = (props: { creation?: boolean }) => {
           <h2 className="me-2">{(api as any).name}</h2>
         </div>)}
         <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
-          {expertMode && translateMethod('Standard mode')}
-          {!expertMode && translateMethod('Expert mode')}
+          {expertMode && translate('Standard mode')}
+          {!expertMode && translate('Expert mode')}
         </button>
       </div>
       <div className="row">

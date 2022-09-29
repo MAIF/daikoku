@@ -16,7 +16,7 @@ export function EditFrontOfficeTranslations(props: any) {
   const {
     updateTranslation,
     translations: globalTranslations,
-    translateMethod,
+    translate,
   } = useContext(I18nContext);
 
   useEffect(() => {
@@ -61,9 +61,9 @@ export function EditFrontOfficeTranslations(props: any) {
   const columns = [
     {
       id: 'message',
-      Header: translateMethod('mailing_internalization.message_text'),
+      Header: translate('mailing_internalization.message_text'),
       style: { textAlign: 'left' },
-      accessor: (translation: any) => translateMethod(translation.message),
+      accessor: (translation: any) => translate(translation.message),
       sortType: 'basic',
       Cell: ({
         cell: {
@@ -72,7 +72,7 @@ export function EditFrontOfficeTranslations(props: any) {
       }: any) => {
         return (
           <div>
-            {translateMethod(original.message)}
+            {translate(original.message)}
           </div>
         )
       }
@@ -80,7 +80,7 @@ export function EditFrontOfficeTranslations(props: any) {
     {
       id: 'actions',
       style: { textAlign: 'center', width: '120px' },
-      Header: translateMethod('Translate'),
+      Header: translate('Translate'),
       disableSortBy: true,
       disableFilters: true,
       Cell: ({
@@ -95,22 +95,22 @@ export function EditFrontOfficeTranslations(props: any) {
                 <button type='button' key={translation.language}
                   className='btn btn-outline-success me-2'
                   onClick={() => dispatch(openFormModal({
-                    title: `${translateMethod('Translation')} : [${translation.language}]`,
+                    title: `${translate('Translation')} : [${translation.language}]`,
                     schema: {
                       value: {
                         type: type.string,
                         format: format.markdown,
-                        label: translateMethod(original.message),
+                        label: translate(original.message),
                         constraints: [
-                          constraints.required(translateMethod('constraints.required.value')),
+                          constraints.required(translate('constraints.required.value')),
                         ]
                       }
                     },
                     value: translation,
-                    actionLabel: translateMethod('Translate'),
+                    actionLabel: translate('Translate'),
                     onSubmit: (t: any) => updateTranslation(t)
                       .then(() => {
-                        toastr.success(translateMethod('Success'), translateMethod('mailing_internalization.translation_updated'))
+                        toastr.success(translate('Success'), translate('mailing_internalization.translation_updated'))
                         table.current?.update()
                       })
                   }))}>

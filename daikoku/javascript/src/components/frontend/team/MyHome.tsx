@@ -21,7 +21,7 @@ function MyHomeComponent(props: any) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const { client } = useContext(getApolloContext());
 
@@ -77,7 +77,7 @@ function MyHomeComponent(props: any) {
 
   const askForApiAccess = (api: any, teams: any) =>
     Services.askForApiAccess(teams, api._id).then(() => {
-      toastr.info(translateMethod('Info'), translateMethod('ask.api.access.info', false, '', api.name));
+      toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [api.name] }));
       fetchData();
     });
 
@@ -150,7 +150,7 @@ function MyHomeComponent(props: any) {
             </div>
             <div className="col-sm-7 d-flex flex-column justify-content-center">
               <h1 className="jumbotron-heading">
-                {props.tenant.title ? props.tenant.title : translateMethod('Your APIs center')}
+                {props.tenant.title ? props.tenant.title : translate('Your APIs center')}
               </h1>
               <Description description={props.tenant.description} />
             </div>

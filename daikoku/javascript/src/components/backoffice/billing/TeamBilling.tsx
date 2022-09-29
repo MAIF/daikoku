@@ -29,14 +29,14 @@ export const TeamBilling = () => {
 
   const { currentTeam } = useSelector((state) => (state as any).context);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   useTeamBackOffice(currentTeam);
 
   useEffect(() => {
     getTeamBilling(currentTeam);
 
-    document.title = `${currentTeam.name} - ${translateMethod('Billing')}`;
+    document.title = `${currentTeam.name} - ${translate('Billing')}`;
   }, []);
 
   const getTeamBilling = (team: any) => {
@@ -129,7 +129,7 @@ export const TeamBilling = () => {
               </div>
             </div>
             <div className="row api__billing__card__container section p-2">
-              <TheadBillingContainer label={translateMethod('Subscribed Apis')} total={formatCurrency(total)} />
+              <TheadBillingContainer label={translate('Subscribed Apis')} total={formatCurrency(total)} />
               {!state.consumptionsByApi.length && <NoData />}
               {state.consumptionsByApi
                 .sort((api1: any, api2: any) => api2.billing.total - api1.billing.total)
@@ -137,7 +137,7 @@ export const TeamBilling = () => {
                   ...state,
                   selectedApi: (state as any).apis.find((a: any) => a._id === api),
                 })} api={(state as any).apis.find((a: any) => a._id === api)} total={(billing as any).total} />))}
-              <TheadBillingContainer label={translateMethod('Subscribed Apis')} total={formatCurrency(total)} />
+              <TheadBillingContainer label={translate('Subscribed Apis')} total={formatCurrency(total)} />
             </div>
           </div>
           <div className="col apikeys">
@@ -151,7 +151,7 @@ export const TeamBilling = () => {
                 .sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
                 .map(({ plan, billing }: any, idx: number) => {
                   const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
-                  return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)} total={billing.total} currency={usagePlan.currency} />);
+                  return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translate)} total={billing.total} currency={usagePlan.currency} />);
                 })}
             </div>)}
           </div>

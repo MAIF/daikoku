@@ -9,7 +9,7 @@ export type BodyRef = {
   handleSubmit: () => void
 }
 export default React.forwardRef<BodyRef, any>(({ contentType, setFinalValue, show, pages, inValue, publish, history }, ref) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const r = useRef<FormRef>();
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default React.forwardRef<BodyRef, any>(({ contentType, setFinalValue, sho
     draft: {
       type: type.string,
       label: null,
-      help: translateMethod('cms.create.draft_help'),
+      help: translate('cms.create.draft_help'),
       render: (formProps: any) => {
         const [draft, setDraft] = useState('');
 

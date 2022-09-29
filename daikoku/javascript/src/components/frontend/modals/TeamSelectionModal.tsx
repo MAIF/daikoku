@@ -21,7 +21,7 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const finalAction = () => {
     if (selectedTeams.length) {
@@ -130,7 +130,7 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          {translateMethod('Close')}
+          {translate('Close')}
         </button>
         {!!allTeamSelector && (
           <button
@@ -140,7 +140,7 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
             })}
             onClick={() => finalAction()}
           >
-            {translateMethod('Subscribe')}
+            {translate('Subscribe')}
           </button>
         )}
       </div>

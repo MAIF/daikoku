@@ -20,7 +20,7 @@ function Gravatar(props: any) {
 }
 
 function AssetButton(props: any) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   return (
     <AssetChooserByModal
@@ -28,7 +28,7 @@ function AssetButton(props: any) {
       onlyPreview
       tenantMode={false}
       team={props.team()}
-      label={translateMethod('Set avatar from asset')}
+      label={translate('Set avatar from asset')}
       onSelect={(asset: any) => props.onChange(asset.link)}
     />
   );

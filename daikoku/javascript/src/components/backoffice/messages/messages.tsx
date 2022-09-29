@@ -10,7 +10,7 @@ export const MessagesTopBarTools = (_: any) => {
 
   const [opened, setOpened] = useState(false);
 
-    const { translateMethod } = useContext(I18nContext);
+    const { translate } = useContext(I18nContext);
 
   return (
         <div style={{ position: 'relative' }}>
@@ -20,7 +20,7 @@ export const MessagesTopBarTools = (_: any) => {
           'unread-messages': totalUnread > 0,
         })}
         onClick={() => setOpened(!opened)}
-        title={translateMethod('Access to the messages')}
+        title={translate('Access to the messages')}
       >
                 <i className="fas fa-comment-alt" />
       </Link>

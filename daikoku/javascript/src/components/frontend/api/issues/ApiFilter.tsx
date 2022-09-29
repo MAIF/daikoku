@@ -23,27 +23,27 @@ export function ApiFilter({
   basePath
 }: any) {
   const [availableApiVersions, setApiVersions] = useState([]);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const dispatch = useDispatch();
   const { currentTeam } = useSelector((state) => (state as any).context);
 
   const schema = {
     title: {
       type: type.string,
-      label: translateMethod('Title'),
-      placeholder: translateMethod('Title'),
-      constraints: [constraints.required(translateMethod('constraints.required.title'))],
+      label: translate('Title'),
+      placeholder: translate('Title'),
+      constraints: [constraints.required(translate('constraints.required.title'))],
     },
     apiVersion: {
       type: type.string,
       format: format.select,
-      label: translateMethod('issues.apiVersion'),
+      label: translate('issues.apiVersion'),
       options: availableApiVersions.map((x) => ({ label: x, value: x })),
-      constraints: [constraints.required(translateMethod('constraints.required.version'))],
+      constraints: [constraints.required(translate('constraints.required.version'))],
     },
     tags: {
       type: type.string,
-      label: translateMethod('issues.tags'),
+      label: translate('issues.tags'),
       format: format.select,
       options: api.issuesTags,
       transformer: ({
@@ -55,7 +55,7 @@ export function ApiFilter({
     },
     comments: {
       type: type.object,
-      label: translateMethod('issues.new_comment'),
+      label: translate('issues.new_comment'),
       format: format.form,
       array: true,
       schema: {
@@ -73,9 +73,9 @@ export function ApiFilter({
     Services.createNewIssue(api._humanReadableId, team, issue)
       .then((res) => {
         if (res.error) {
-          toastr.error(translateMethod('Error'), res.error);
+          toastr.error(translate('Error'), res.error);
         } else {
-          toastr.success(translateMethod(''), 'Issue created');
+          toastr.success(translate(''), 'Issue created');
           refresh()
         }
       });
@@ -95,21 +95,21 @@ export function ApiFilter({
           style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
           onClick={() => handleFilter('all')}
         >
-          {translateMethod('All')}
+          {translate('All')}
         </button>
         <button
           className={classNames(`btn btn-outline-primary`, { active: filter === 'open' })}
           style={{ borderRadius: 0 }}
           onClick={() => handleFilter('open')}
         >
-          {translateMethod('issues.open')}
+          {translate('issues.open')}
         </button>
         <button
           className={classNames(`btn btn-outline-primary`, { active: filter === 'closed' })}
           style={{ borderLeft: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
           onClick={() => handleFilter('closed')}
         >
-          {translateMethod('issues.closed')}
+          {translate('issues.closed')}
         </button>
         <Select
           id="apiVersion"
@@ -136,7 +136,7 @@ export function ApiFilter({
           <Can I={manage} a={API} team={ownerTeam}>
             <Link to={`${basePath}/labels`} className="btn btn-outline-primary">
               <i className="fa fa-tag me-1" />
-              {translateMethod('issues.tags')}
+              {translate('issues.tags')}
             </Link>
           </Can>
           <button
@@ -144,13 +144,13 @@ export function ApiFilter({
             onClick={() =>
               Services.fetchNewIssue()
                 .then((newIssue) => dispatch(openFormModal({
-                  title: translateMethod('issues.new_issue'),
+                  title: translate('issues.new_issue'),
                   schema,
                   onSubmit: createIssue,
                   value: newIssue,
-                  actionLabel: translateMethod('Create')
+                  actionLabel: translate('Create')
                 })))}>
-            {translateMethod('issues.new_issue')}
+            {translate('issues.new_issue')}
           </button>
         </div>
       )}

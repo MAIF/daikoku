@@ -10,7 +10,7 @@ import { Spinner } from '../..';
 
 export const Create = (props: any) => {
   const { client } = useContext(getApolloContext());
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const params = useParams();
   const navigate = useNavigate();
 
@@ -154,16 +154,16 @@ export const Create = (props: any) => {
     <div className="p-2 d-flex flex-column" style={{ flex: 1, overflow: 'hidden' }}>
       <div className="d-flex align-items-center mt-2">
         {[
-          { title: translateMethod('cms.create.draft'), id: 0, showPreview: () => setTab(0) },
+          { title: translate('cms.create.draft'), id: 0, showPreview: () => setTab(0) },
           {
-            title: translateMethod('cms.create.draft_preview'),
+            title: translate('cms.create.draft_preview'),
             id: 1,
             showPreview: () => {
               setFormAction('update_before_preview');
               [bodyRef, sideRef].map((r) => r.current?.handleSubmit());
             },
           },
-          { title: translateMethod('cms.create.content'), id: 2 },
+          { title: translate('cms.create.content'), id: 2 },
         ].map(({ title, id, showPreview }) => !savePath ? null : (<TabButton title={title} selected={tab === id} key={`tabButton${id}`} onClick={() => {
           if (showPreview)
             showPreview();

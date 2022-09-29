@@ -50,16 +50,16 @@ export const TeamApiConsumption = ({
   const navigate = useNavigate();
   const params = useParams();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const mappers = [
     {
       type: 'LineChart',
       label: (data: any) => {
         const totalHits = data.reduce((acc: any, cons: any) => acc + cons.hits, 0);
-        return translateMethod('data.in.plus.hits', false, `Data In (${totalHits})`, totalHits);
+        return translate({ key: 'data.in.plus.hits', replacements: [totalHits] });
       },
-      title: translateMethod('Data In'),
+      title: translate('Data In'),
       formatter: (data: any) => data.reduce((acc: any, item: any) => {
         const date = moment(item.to).format('DD MMM.');
         const value = acc.find((a: any) => a.date === date) || { count: 0 };
@@ -70,8 +70,8 @@ export const TeamApiConsumption = ({
     },
     {
       type: 'RoundChart',
-      label: translateMethod('Hits by apikey'),
-      title: translateMethod('Hits by apikey'),
+      label: translate('Hits by apikey'),
+      title: translate('Hits by apikey'),
       formatter: (data: any) => data.reduce((acc: any, item: any) => {
         const value = acc.find((a: any) => a.clientId === item.clientId) || { count: 0 };
 
@@ -89,11 +89,11 @@ export const TeamApiConsumption = ({
     },
     {
       type: 'Global',
-      label: translateMethod('Global informations'),
+      label: translate('Global informations'),
       formatter: (data: any) => sumGlobalInformations(data),
     },
     {
-      label: translateMethod('Plans', true),
+      label: translate({key: 'Plan', plural: true}),
       formatter: (data: any) => <div className="row">
         {api.possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-sm-4 col-lg-3">
           <PlanLightConsumption
@@ -121,7 +121,7 @@ export const TeamApiConsumption = ({
   useEffect(() => {
     Services.teams().then(setTeams);
 
-    document.title = `${currentTeam.name} - ${translateMethod('API consumption')}`;
+    document.title = `${currentTeam.name} - ${translate('API consumption')}`;
   }, []);
 
   return (
@@ -151,7 +151,7 @@ export const TeamApiConsumption = ({
 };
 
 const PlanLightConsumption = (props: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
 
@@ -211,7 +211,7 @@ const PlanLightConsumption = (props: any) => {
       </div>
       <div className="card-body">
         {customName && <h3>{customName}</h3>}
-        {!customName && <h3>{formatPlanType(plan, translateMethod)}</h3>}
+        {!customName && <h3>{formatPlanType(plan, translate)}</h3>}
         <p className="card-text text-justify">
           {customDescription && <span>{customDescription}</span>}
           {!customDescription && type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas()}

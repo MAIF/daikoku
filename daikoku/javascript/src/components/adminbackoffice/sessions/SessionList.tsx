@@ -13,33 +13,33 @@ export const SessionList = () => {
   const connectedUser = useSelector((s) => (s as any).context.connectedUser);
   useDaikokuBackOffice();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const tableRef = useRef<TableRef>()
 
   const columns = [
     {
-      Header: translateMethod('User'),
+      Header: translate('User'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.userName + ' - ' + item.userEmail,
     },
     {
-      Header: translateMethod('Impersonator'),
+      Header: translate('Impersonator'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.impersonatorId ? `${item.impersonatorName} - ${item.impersonatorEmail}` : '',
     },
     {
-      Header: translateMethod('Created at'),
+      Header: translate('Created at'),
       style: { textAlign: 'left' },
       accessor: (item: any) => moment(item.created).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
-      Header: translateMethod('Expires'),
+      Header: translate('Expires'),
       style: { textAlign: 'left' },
       accessor: (item: any) => moment(item.expires).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
-      Header: translateMethod('Actions'),
+      Header: translate('Actions'),
       style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
@@ -67,7 +67,7 @@ export const SessionList = () => {
   ];
 
   const deleteSession = (session: any) => {
-    (window.confirm(translateMethod('destroy.session.confirm')) as any).then((ok: any) => {
+    (window.confirm(translate('destroy.session.confirm')) as any).then((ok: any) => {
       if (ok) {
         Services.deleteSession(session._id).then(() => {
           if (tableRef.current) {
@@ -82,7 +82,7 @@ export const SessionList = () => {
   };
 
   const deleteSessions = () => {
-    (window.confirm(translateMethod('destroy.all.sessions.confirm')) as any).then((ok: any) => {
+    (window.confirm(translate('destroy.all.sessions.confirm')) as any).then((ok: any) => {
       if (ok) {
         Services.deleteSessions().then(() => {
           if (tableRef.current) {

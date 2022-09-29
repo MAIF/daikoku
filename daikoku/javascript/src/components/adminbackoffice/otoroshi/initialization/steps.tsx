@@ -44,12 +44,12 @@ export const SelectOtoStep = (props: any) => {
       });
   }, []);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   return (
     <div className="d-flex flex-row">
       <Select
-        placeholder={translateMethod('Select an Otoroshi instance')}
+        placeholder={translate('Select an Otoroshi instance')}
         className="add-member-select me-2 reactSelect"
         isDisabled={!props.otoroshis.length}
         isLoading={!props.otoroshis.length}
@@ -63,7 +63,7 @@ export const SelectOtoStep = (props: any) => {
       />
       {!!previousState && previousState.tenant === props.tenant._id && (
         <div className="d-flex flex-column">
-          <BeautifulTitle placement="bottom" title={translateMethod('Load a work in progress')}>
+          <BeautifulTitle placement="bottom" title={translate('Load a work in progress')}>
             <button className="btn btn-access" onClick={props.loadPreviousState}>
               <i className="fa fa-download" />
             </button>
@@ -119,11 +119,11 @@ export const RecapServiceStep = (props: any) => {
 };
 
 export const RecapSubsStep = (props: any) => {
-  const { Translation, translateMethod } = useContext(I18nContext);
+  const { Translation, translate } = useContext(I18nContext);
 
   const reset = () => {
     //@ts-ignore //FIXME when monkey patch & ts will be compatible
-    window.confirm(translateMethod('initialize_from_otoroshi.confirm')).then((ok: any) => {
+    window.confirm(translate('initialize_from_otoroshi.confirm')).then((ok: any) => {
       if (ok)
         props.cancel();
     });
@@ -187,7 +187,7 @@ export const ServicesStep = (props: any) => {
   const [error, setError] = useState<{name: string}>();
   const [inputRef, setInputRef] = useState<HTMLInputElement | null>();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (newTeam) {
@@ -209,7 +209,7 @@ export const ServicesStep = (props: any) => {
       .then(({ exists }) => {
         if (exists) {
           setError({
-            name: translateMethod('api.unique.name.error', false, 'Api name must be unique'),
+            name: translate('api.unique.name.error'),
           });
         } else {
           setError(undefined);
@@ -284,7 +284,7 @@ export const ServicesStep = (props: any) => {
         <AsyncSelect
           cacheOptions
           defaultOptions
-          placeholder={translateMethod('Jump to specific service')}
+          placeholder={translate('Jump to specific service')}
           className="add-member-select reactSelect"
           loadOptions={props.getFilteredServices} //@ts-ignore //FIXME
           onChange={({ value }) => props.goToStep(value)}
@@ -338,8 +338,8 @@ export const ServicesStep = (props: any) => {
           onCreateOption={setNewTeam}
           options={teams}
           value={teams.find((t: any) => t.value === selectedTeam)}
-          placeholder={translateMethod('Select a team')}
-          formatCreateLabel={(value) => translateMethod('create.team.label', false, `creer l'équipe ${value}`, value)}
+          placeholder={translate('Select a team')}
+          formatCreateLabel={(value) => translate({key: 'create.team.label', replacements: [value]})}
           classNamePrefix="reactSelect" />
       </div>
     </div>
@@ -386,13 +386,13 @@ const SelectApi = ({
   setSelectedApi,
   selectedApi
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   return (
     <Select
       options={orderBy(apis, ['label'])}
       onChange={(slug) => setSelectedApi(slug.value)}
       value={apis.find((a: any) => !!selectedApi && a.value._id === selectedApi._id)}
-      placeholder={translateMethod('Select an API')}
+      placeholder={translate('Select an API')}
       className="reactSelect"
       classNamePrefix="reactSelect"
     />
@@ -407,7 +407,7 @@ const SelectPlan = ({
   selectedPlan,
   setSelectedPlan
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   return possiblePlans.length > 0 ? (
     <Creatable
@@ -418,9 +418,9 @@ const SelectPlan = ({
       onCreateOption={setNewPlan}
       options={orderBy(possiblePlans, ['label'])}
       value={possiblePlans.find((a: any) => !!selectedPlan && a.value._id === selectedPlan._id)}
-      placeholder={translateMethod('Select a plan')}
+      placeholder={translate('Select a plan')}
       formatCreateLabel={(value) =>
-        translateMethod('create.plan.label', false, `Create plan ${value}`, value)
+        translate({key: 'create.plan.label', replacements: [value]})
       }
       classNamePrefix="reactSelect"
     />
@@ -435,7 +435,7 @@ const SelectTeam = ({
   setSelectedTeam,
   selectedApi
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   return selectedApi ? (
     <Creatable
@@ -446,9 +446,9 @@ const SelectTeam = ({
       onCreateOption={setNewTeam}
       options={orderBy(teams, ['label'])}
       value={teams.find((t: any) => t.value === selectedTeam)}
-      placeholder={translateMethod('Select a team')}
+      placeholder={translate('Select a team')}
       formatCreateLabel={(value) =>
-        translateMethod('create.team.label', false, `creer l'équipe ${value}`, value)
+        translate({key: 'create.team.label', replacements: [value]})
       }
       classNamePrefix="reactSelect"
     />
@@ -458,7 +458,7 @@ const SelectTeam = ({
 export const ApiKeyStep = (props: any) => {
   const [selectedEntity, setSelectedEntity] = useState<any>();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const groups = props.groups.map((g: any) => ({
     value: g.id,
@@ -474,14 +474,14 @@ export const ApiKeyStep = (props: any) => {
   const columns = [
     {
       id: 'oto.api.key',
-      Header: translateMethod('initialize_from_otoroshi.otoroshi_api_key'),
+      Header: translate('initialize_from_otoroshi.otoroshi_api_key'),
       style: { textAlign: 'left', width: '20%' },
       accessor: (apikey: any) => apikey.clientName,
       sortType: 'basic',
     },
     {
       id: 'apikey.actions',
-      Header: translateMethod('API.s'),
+      Header: translate('API.s'),
       style: { textAlign: 'left' },
       disableSortBy: true,
       Cell: ({
@@ -499,7 +499,7 @@ export const ApiKeyStep = (props: any) => {
     <div className="d-flex flex-column">
       <div className="d-flex align-items-center mx-3">
         <span style={{ fontWeight: 'bold' }} className="me-2">
-          {translateMethod('initialize_from_otoroshi.api_keys_of')}
+          {translate('initialize_from_otoroshi.api_keys_of')}
         </span>
         <Select
           className="w-50" //@ts-ignore //FIXME
@@ -510,7 +510,7 @@ export const ApiKeyStep = (props: any) => {
           ]}
           onChange={setSelectedEntity}
           value={selectedEntity}
-          placeholder={translateMethod('initialize_from_otoroshi.select_group')}
+          placeholder={translate('initialize_from_otoroshi.select_group')}
           classNamePrefix="reactSelect"
         />
       </div>
@@ -536,7 +536,7 @@ export const ApiKeyStep = (props: any) => {
 };
 
 const ApiKey = (props: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const [selectedApi, setSelectedApi] = useState(
     props
       .maybeCreatedSub(props.apikey)
@@ -658,7 +658,7 @@ const ApiKey = (props: any) => {
     .map((a: any) => a.possibleUsagePlans)
     .getOrElse([])
     .map((pp: any) => ({
-      label: pp.customName || formatPlanType(pp, translateMethod),
+      label: pp.customName || formatPlanType(pp, translate),
       value: pp
     }));
 
@@ -690,8 +690,8 @@ const ApiKey = (props: any) => {
       disabled={!selectedTeam || !selectedPlan}
       onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
       {props.maybeCreatedSub(props.apikey).isDefined
-        ? translateMethod('initialize_from_otoroshi.remove')
-        : translateMethod('initialize_from_otoroshi.add')}
+        ? translate('initialize_from_otoroshi.remove')
+        : translate('initialize_from_otoroshi.add')}
     </button>
   </div>);
 };

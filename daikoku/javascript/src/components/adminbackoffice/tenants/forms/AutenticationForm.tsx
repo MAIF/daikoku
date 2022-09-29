@@ -9,7 +9,7 @@ import { ITenant, ITenantFull } from '../../../../types';
 import { MultiStepForm, Spinner } from '../../../utils';
 
 export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-  const { translateMethod } = useContext(I18nContext)
+  const { translate } = useContext(I18nContext)
 
   const authProviderSettingsShema = (data: ITenantFull, subschema: Schema) => {
     return {
@@ -27,7 +27,7 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
   const localSchema: Schema = {
     sessionMaxAge: {
       type: type.number,
-      label: translateMethod('Session max. age (s)'),
+      label: translate('Session max. age (s)'),
       defaultValue: 86400
     },
   }
@@ -35,84 +35,84 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
   const otoroshiSchema: Schema = {
     sessionMaxAge: {
       type: type.number,
-      label: translateMethod('Session max. age (s)'),
+      label: translate('Session max. age (s)'),
       defaultValue: 86400
     },
     claimHeaderName: {
       type: type.string,
-      label: translateMethod('Claim header name'),
+      label: translate('Claim header name'),
 
     },
     claimSecret: {
       type: type.string,
-      label: translateMethod('Claim Secret'),
+      label: translate('Claim Secret'),
     },
 
   }
   const ldapSchema: Schema = {
     sessionMaxAge: {
       type: type.number,
-      label: translateMethod('Session max. age (s)'),
+      label: translate('Session max. age (s)'),
       defaultValue: 86400
     },
     serverUrls: {
       type: type.string,
       array: true,
-      label: translateMethod('LDAP Server URLs', true),
+      label: translate('LDAP Server URLs'),
     },
     connectTimeout: {
       type: type.number,
-      label: translateMethod('Connect timeout (s)'),
+      label: translate('Connect timeout (s)'),
     },
     searchBase: {
       type: type.string,
-      label: translateMethod('Search Base'),
+      label: translate('Search Base'),
     },
     userBase: {
       type: type.string,
-      label: translateMethod('Users search base'),
+      label: translate('Users search base'),
     },
     groupFilter: {
       type: type.string,
-      label: translateMethod('Simple user filter'),
+      label: translate('Simple user filter'),
     },
     adminGroupFilter: {
       type: type.string,
-      label: translateMethod('Tenants admin filter'),
+      label: translate('Tenants admin filter'),
     },
     searchFilter: {
       type: type.string,
-      label: translateMethod('Search filter'),
+      label: translate('Search filter'),
     },
     adminUsername: {
       type: type.string,
-      label: translateMethod('Admin username (bind DN)'),
+      label: translate('Admin username (bind DN)'),
     },
     adminPassword: {
       type: type.string,
-      label: translateMethod('Admin password'),
+      label: translate('Admin password'),
     },
     nameFields: {
       type: type.string,
       array: true,
-      label: translateMethod('Name field name'),
-      help: translateMethod('ldap.namefields.help'),
+      label: translate('Name field name'),
+      help: translate('ldap.namefields.help'),
     },
     emailField: {
       type: type.string,
-      label: translateMethod('Email field name'),
+      label: translate('Email field name'),
     },
     // testing: {
     //   type: CheckingAdminConnection,
     //   props: {
-    //     label: translateMethod('Testing connection'),
+    //     label: translate('Testing connection'),
     //     checkConnection: () => checkConnection(),
     //   },
     // },
     // testingWithUser: {
     //   type: CheckingUserConnection,
     //   props: {
-    //     label: translateMethod('Testing user'),
+    //     label: translate('Testing user'),
     //     checkConnection: (username, password) => checkConnection({ username, password }),
     //   },
     // },
@@ -121,7 +121,7 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
   const OAuth2Schema: Schema = {
     sessionMaxAge: {
       type: type.number,
-      label: translateMethod('Session max. age (s)'),
+      label: translate('Session max. age (s)'),
       defaultValue: 86400
     },
     // oidcProvider: {
@@ -138,70 +138,70 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
     // },
     useJson: {
       type: type.bool,
-      label: translateMethod('Use JSON payloads'),
+      label: translate('Use JSON payloads'),
     },
     readProfileFromToken: {
       type: type.bool,
-      label: translateMethod('Read profile from JWT token'),
+      label: translate('Read profile from JWT token'),
     },
     scope: {
       type: type.string,
-      label: translateMethod('Token scope'),
+      label: translate('Token scope'),
     },
     clientId: {
       type: type.string,
-      label: translateMethod('Client Id'),
+      label: translate('Client Id'),
     },
     clientSecret: {
       type: type.string,
-      label: translateMethod('Client secret'),
+      label: translate('Client secret'),
     },
     authorizeUrl: {
       type: type.string,
-      label: translateMethod('Authorize URL'),
+      label: translate('Authorize URL'),
     },
     tokenUrl: {
       type: type.string,
-      label: translateMethod('Token URL'),
+      label: translate('Token URL'),
     },
     userInfoUrl: {
       type: type.string,
-      label: translateMethod('Userinfo URL'),
+      label: translate('Userinfo URL'),
     },
     loginUrl: {
       type: type.string,
       props: {
-        label: translateMethod('Login URL'),
+        label: translate('Login URL'),
       },
     },
     logoutUrl: {
       type: type.string,
-      label: translateMethod('Logout URL'),
+      label: translate('Logout URL'),
     },
     callbackUrl: {
       type: type.string,
-      label: translateMethod('Callback URL'),
+      label: translate('Callback URL'),
     },
     accessTokenField: {
       type: type.string,
-      label: translateMethod('Access token field name'),
+      label: translate('Access token field name'),
     },
     nameField: {
       type: type.string,
-      label: translateMethod('Name field name'),
+      label: translate('Name field name'),
     },
     emailField: {
       type: type.string,
-      label: translateMethod('Email field name'),
+      label: translate('Email field name'),
     },
     pictureField: {
       type: type.string,
-      label: translateMethod('Picture field name'),
+      label: translate('Picture field name'),
     },
     daikokuAdmins: {
       type: type.string,
       array: true,
-      label: translateMethod('Email of Daikoku Admins'),
+      label: translate('Email of Daikoku Admins'),
     },
     jwtVerifier: {
       type: type.object,
@@ -212,12 +212,12 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
   const steps = [
     {
       id: 'authProvider',
-      label: translateMethod('Authentication type'),
+      label: translate('Authentication type'),
       schema: {
         authProvider: {
           type: type.string,
           format: format.buttonsSelect,
-          label: translateMethod('Authentication type'),
+          label: translate('Authentication type'),
           options: [
             { label: 'Local', value: 'Local' },
             { label: 'LDAP', value: 'LDAP' },
@@ -256,10 +256,10 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
       creation={false}
       save={(d) => props.updateTenant.mutateAsync(d)}
       labels={{
-        previous: translateMethod('Previous'),
-        skip: translateMethod('Skip'),
-        next: translateMethod('Next'),
-        save: translateMethod('Save'),
+        previous: translate('Previous'),
+        skip: translate('Skip'),
+        next: translate('Next'),
+        save: translate('Save'),
       }} />
   )
 }

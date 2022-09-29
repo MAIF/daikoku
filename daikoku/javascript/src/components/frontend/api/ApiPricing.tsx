@@ -44,7 +44,7 @@ type ApiPricingProps = {
   askForApikeys: (team: any, plan: any, apiKey?: any) => void,
   openApiKeySelectModal?: (props: any) => void, //FIXME: not an optional props ==> use useSelector to get it from hook instead
   myTeams: any,
-  tenant:any,
+  tenant: any,
   ownerTeam: any,
   subscriptions: any,
   pendingSubscriptions: any,
@@ -216,11 +216,11 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
 
   const isAccepted = !allPossibleTeams.length;
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
-  let pricing = translateMethod('Free');
-  const req = translateMethod('req.');
-  const month = translateMethod('month');
+  let pricing = translate('Free');
+  const req = translate('req.');
+  const month = translate('month');
   if (plan.costPerMonth && plan.costPerAdditionalRequest) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
       plan.currency.code
@@ -240,7 +240,7 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
   return (
     <div className="card mb-4 shadow-sm">
       <div className="card-img-top card-link card-skin" data-holder-rendered="true">
-        <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
+        <span>{plan.customName || formatPlanType(plan, translate)}</span>
       </div>
       <div className="card-body plan-body d-flex flex-column">
         <p className="card-text text-justify">
@@ -253,7 +253,7 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
         </p>
         <div className="d-flex flex-column mb-2">
           <span className="plan-quotas">
-            {!plan.maxPerSecond && !plan.maxPerMonth && translateMethod('plan.limits.unlimited')}
+            {!plan.maxPerSecond && !plan.maxPerMonth && translate('plan.limits.unlimited')}
             {!!plan.maxPerSecond && !!plan.maxPerMonth && (
               <div>
                 <div>
@@ -301,14 +301,11 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
               {(props.api.visibility === 'AdminOnly' ||
                 (plan.otoroshiTarget && !isAccepted && !isPending)) && (
                   <ActionWithTeamSelector
-                    title={translateMethod('team.selection.title', 'Select teams')}
-                    description={translateMethod(
+                    title={translate('team.selection.title')}
+                    description={translate(
                       plan.subscriptionProcess === 'Automatic'
                         ? 'team.selection.desc.get'
-                        : 'team.selection.desc.request',
-                      false,
-                      'You are going to get or request API keys. On which team do you want them for?'
-                    )}
+                        : 'team.selection.desc.request')}
                     teams={authorizedTeams
                       .filter((t: any) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
                       .filter(

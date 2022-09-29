@@ -18,7 +18,7 @@ const Avatar = ({
   onChange,
   team
 }: any) => {
-  const { Translation, translateMethod } = useContext(I18nContext);
+  const { Translation, translate } = useContext(I18nContext);
 
   const setGravatarLink = () => {
     const email = getValue('contact').toLowerCase().trim();
@@ -59,7 +59,7 @@ const Avatar = ({
             onlyPreview
             tenantMode={false}
             team={team}
-            label={translateMethod('Set avatar from asset')}
+            label={translate('Set avatar from asset')}
             onSelect={(asset: any) => onChange(asset.link)}
           />
         </div>
@@ -68,31 +68,31 @@ const Avatar = ({
   );
 };
 
-export const teamSchema = (team: any, translateMethod: (props: any) => string) => ({
+export const teamSchema = (team: any, translate: (props: any) => string) => ({
   name: {
     type: type.string,
-    label: translateMethod('Name'),
+    label: translate('Name'),
     disabled: team.type === 'Personal' || team.type === 'Admin',
     constraints: [
-      constraints.required(translateMethod('constraints.required.name'))
+      constraints.required(translate('constraints.required.name'))
     ]
   },
 
   description: {
     type: type.string,
-    label: translateMethod('Description'),
+    label: translate('Description'),
     disabled: team.type === 'Personal' || team.type === 'Admin',
   },
 
   contact: {
     type: type.string,
-    label: translateMethod('Team contact'),
+    label: translate('Team contact'),
     disabled: team.type === 'Personal' || team.type === 'Admin',
   },
 
   avatar: {
     type: type.string,
-    label: translateMethod('Team avatar'),
+    label: translate('Team avatar'),
     render: (v: any) => Avatar({ ...v, team: team }),
     disabled: team.type === 'Personal' || team.type === 'Admin',
   },
@@ -100,13 +100,13 @@ export const teamSchema = (team: any, translateMethod: (props: any) => string) =
   apiKeyVisibility: {
     type: type.string,
     format: format.buttonsSelect,
-    label: translateMethod('apikey visibility'),
+    label: translate('apikey visibility'),
     disabled: team.type === 'Personal' || team.type === 'Admin',
     defaultValue: 'User',
     options: [
-      { label: translateMethod('Administrator'), value: 'Administrator' },
-      { label: translateMethod('ApiEditor'), value: 'ApiEditor' },
-      { label: translateMethod('User'), value: 'User' },
+      { label: translate('Administrator'), value: 'Administrator' },
+      { label: translate('ApiEditor'), value: 'ApiEditor' },
+      { label: translate('User'), value: 'User' },
     ],
   }
 });
@@ -115,7 +115,7 @@ export const TeamEditForm = ({
   team,
   updateTeam
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
 
 
@@ -124,12 +124,12 @@ export const TeamEditForm = ({
   }
 
   useEffect(() => {
-    document.title = `${team.name} - ${translateMethod('Edition')}`;
+    document.title = `${team.name} - ${translate('Edition')}`;
   }, []);
 
   return (
     <Form
-      schema={teamSchema(team, translateMethod)}
+      schema={teamSchema(team, translate)}
       value={team}
       onSubmit={(team) => updateTeam(team)}
     />
@@ -142,7 +142,7 @@ const TeamEditComponent = ({
   const navigate = useNavigate();
   useTeamBackOffice(currentTeam);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
 
   const save = (data: any) => {
@@ -152,13 +152,8 @@ const TeamEditComponent = ({
           navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
         }
         toastr.success(
-          translateMethod('Success'),
-          translateMethod(
-            'team.updated.success',
-            false,
-            `team ${updatedTeam.name} successfully updated`,
-            updatedTeam.name
-          )
+          translate('Success'),
+          translate({ key: 'team.updated.success', replacements: [updatedTeam.name] })
         );
       });
   };

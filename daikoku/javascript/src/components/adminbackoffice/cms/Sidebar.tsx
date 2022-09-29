@@ -9,7 +9,7 @@ export type SideBarRef = {
 }
 
 export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, updatePage, setContentType, pages, inValue, savePath }, ref) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const params = useParams();
   const navigate = useNavigate();
   const r: MutableRefObject<any> = useRef<FormRef>();
@@ -36,39 +36,39 @@ export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, up
     },
     name: {
       type: type.string,
-      placeholder: translateMethod('cms.create.name_placeholder'),
-      label: translateMethod('Name'),
+      placeholder: translate('cms.create.name_placeholder'),
+      label: translate('Name'),
       constraints: [constraints.required()],
     },
     isBlockPage: {
       type: type.bool,
-      label: translateMethod('cms.sidebar.is_block_page'),
+      label: translate('cms.sidebar.is_block_page'),
     },
     path: {
       type: type.string,
       placeholder: '/index',
       deps: ['isBlockPage'],
       visible: ({ rawValues }) => !rawValues.isBlockPage,
-      help: translateMethod('cms.create.path_placeholder'),
-      label: translateMethod('cms.create.path'),
+      help: translate('cms.create.path_placeholder'),
+      label: translate('cms.create.path'),
       constraints: [
         constraints.when('isBlockPage', (v) => !!v, [
-          constraints.matches(/^\//, translateMethod('cms.create.path_slash_constraints')),
-          constraints.test('path', translateMethod('cms.create.path_paths_constraints'), (value) => (value === savePath ? true : !pages.find((p: any) => p.path === value))),
+          constraints.matches(/^\//, translate('cms.create.path_slash_constraints')),
+          constraints.test('path', translate('cms.create.path_paths_constraints'), (value) => (value === savePath ? true : !pages.find((p: any) => p.path === value))),
         ]),
       ],
     },
     exact: {
       type: type.bool,
-      label: translateMethod('cms.create.exact'),
-      help: translateMethod('cms.create.exact'),
+      label: translate('cms.create.exact'),
+      help: translate('cms.create.exact'),
       deps: ['isBlockPage'],
       visible: ({ rawValues }) => !rawValues.isBlockPage,
     },
     contentType: {
       type: type.string,
       format: format.select,
-      label: translateMethod('Content type'),
+      label: translate('Content type'),
       options: [
         { label: 'HTML document', value: 'text/html' },
         { label: 'CSS stylesheet', value: 'text/css' },
@@ -82,18 +82,18 @@ export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, up
     },
     visible: {
       type: type.bool,
-      label: translateMethod('Visible'),
-      help: translateMethod('cms.create.visible_label'),
+      label: translate('Visible'),
+      help: translate('cms.create.visible_label'),
     },
     authenticated: {
       type: type.bool,
-      label: translateMethod('cms.create.authenticated'),
-      help: translateMethod('cms.create.authenticated_help'),
+      label: translate('cms.create.authenticated'),
+      help: translate('cms.create.authenticated_help'),
     },
     metadata: {
       type: type.object,
       label: 'Metadata',
-      help: translateMethod('cms.create.metadata_help'),
+      help: translate('cms.create.metadata_help'),
     },
     tags: {
       type: type.string,
@@ -101,7 +101,7 @@ export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, up
       createOption: true,
       isMulti: true,
       label: 'Tags',
-      help: translateMethod('cms.create.tags_help'),
+      help: translate('cms.create.tags_help'),
     },
   };
   const flow = [
@@ -113,7 +113,7 @@ export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, up
     'visible',
     'authenticated',
     {
-      label: translateMethod('cms.create.advanced'),
+      label: translate('cms.create.advanced'),
       flow: ['tags', 'metadata'],
       collapsed: true,
     },
@@ -145,19 +145,19 @@ export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, up
         </ul>
         <div className="px-2 mb-4 mt-auto">
           {value.lastPublishedDate && (<div>
-            <span>{translateMethod('cms.create.last_update')} </span>
+            <span>{translate('cms.create.last_update')} </span>
             <span>
               {value.lastPublishedDate && moment(value.lastPublishedDate).format('DD/MM/yy kk:mm')}
             </span>
           </div>)}
           <div className="d-flex mt-3">
             <button className="btn btn-sm btn-outline-primary me-1" style={{ flex: 1 }} type="button" onClick={() => navigate('/settings/pages', { state: { reload: true } })}>
-              {translateMethod('cms.create.back_to_pages')}
+              {translate('cms.create.back_to_pages')}
             </button>
             <button className="btn btn-sm btn-outline-success" style={{ flex: 1 }} type="button" onClick={updatePage}>
               {params.id
-                ? translateMethod('cms.create.save_modifications')
-                : translateMethod('cms.create.create_page')}
+                ? translate('cms.create.save_modifications')
+                : translate('cms.create.create_page')}
             </button>
           </div>
         </div>

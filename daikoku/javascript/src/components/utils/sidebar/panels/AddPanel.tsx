@@ -12,7 +12,7 @@ import { toastr } from 'react-redux-toastr';
 export const AddPanel = ({
   teams
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => (state as any).context);
   const dispatch = useDispatch();
@@ -26,17 +26,17 @@ export const AddPanel = ({
   const createTeam = () => {
     Services.fetchNewTeam()
       .then((team) => dispatch(openFormModal({
-        title: translateMethod('Create a new team'),
-        schema: teamSchema(team, translateMethod),
+        title: translate('Create a new team'),
+        schema: teamSchema(team, translate),
         onSubmit: (data: any) => Services.createTeam(data)
           .then(r => {
             if (r.error) {
-              toastr.error(translateMethod('Error'), r.error)
+              toastr.error(translate('Error'), r.error)
             } else {
-              toastr.success(translateMethod('Success'), translateMethod("Team %s created successfully", false, "", data.name))
+              toastr.success(translate('Success'), translate({ key: "Team %s created successfully", replacements: [data.name] }))
             }
           }),
-        actionLabel: translateMethod('Create'),
+        actionLabel: translate('Create'),
         value: team
       })));
   };
@@ -46,12 +46,12 @@ export const AddPanel = ({
       if (!teamId) {
         return openTeamSelectorModal({
           allTeamSelector: false,
-          title: translateMethod('api.creation.title.modal'),
-          description: translateMethod('api.creation.description.modal'),
+          title: translate('api.creation.title.modal'),
+          description: translate('api.creation.description.modal'),
           teams: myTeams
             .filter((t: any) => t.type !== 'Admin')
             .filter((t: any) => !tenant.creationSecurity || t.apisCreationPermission)
-                        .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+            .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
           action: (teams: any) => createApi(teams[0]),
         })(dispatch);
       } else {
@@ -75,12 +75,12 @@ export const AddPanel = ({
       if (!teamId) {
         return openTeamSelectorModal({
           allTeamSelector: false,
-          title: translateMethod('apigroup.creation.title.modal'),
-          description: translateMethod('apigroup.creation.description.modal'),
+          title: translate('apigroup.creation.title.modal'),
+          description: translate('apigroup.creation.description.modal'),
           teams: myTeams
             .filter((t: any) => t.type !== 'Admin')
             .filter((t: any) => !tenant.creationSecurity || t.apisCreationPermission)
-                        .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+            .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
           action: (teams: any) => createApiGroup(teams[0]),
         })(dispatch);
       } else {
@@ -103,52 +103,52 @@ export const AddPanel = ({
     .map((m: any) => m.params)
     .map((p: any) => p.teamId)
     .map((id: any) => myTeams.find((t: any) => t._humanReadableId === id))
-        .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
+    .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
     .map((t: any) => t._id)
     .getOrNull();
 
   return (
-        <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
       {/* todo: add a title if API page or tenant or Team */}
-            <div>
-                <h3>{translateMethod('Create')}</h3>
+      <div>
+        <h3>{translate('Create')}</h3>
       </div>
-            <div className="blocks">
-                <div className="mb-3 block">
-                    <div className="block__entries d-flex flex-column">
+      <div className="blocks">
+        <div className="mb-3 block">
+          <div className="block__entries d-flex flex-column">
             {connectedUser.isDaikokuAdmin && (
-                            <span className="block__entry__link d-flex align-items-center justify-content-between">
-                                <span>{translateMethod('Tenant')}</span>
-                                <button className="btn btn-sm btn-access-negative me-1">
-                                    <i className="fas fa-plus-circle" />
+              <span className="block__entry__link d-flex align-items-center justify-content-between">
+                <span>{translate('Tenant')}</span>
+                <button className="btn btn-sm btn-access-negative me-1">
+                  <i className="fas fa-plus-circle" />
                 </button>
               </span>
             )}
-                        <span
+            <span
               className="block__entry__link d-flex align-items-center justify-content-between"
               onClick={createTeam}
             >
-                            <span>{translateMethod('Team')}</span>
-                            <button className="btn btn-sm btn-access-negative me-1">
-                                <i className="fas fa-plus-circle" />
+              <span>{translate('Team')}</span>
+              <button className="btn btn-sm btn-access-negative me-1">
+                <i className="fas fa-plus-circle" />
               </button>
             </span>
-                        <span
+            <span
               className="block__entry__link d-flex align-items-center justify-content-between"
               onClick={() => createApi(maybeTeam)}
             >
-                            <span>{translateMethod('API')}</span>
-                            <button className="btn btn-sm btn-access-negative me-1">
-                                <i className="fas fa-plus-circle" />
+              <span>{translate('API')}</span>
+              <button className="btn btn-sm btn-access-negative me-1">
+                <i className="fas fa-plus-circle" />
               </button>
             </span>
-                        <span
+            <span
               className="block__entry__link d-flex align-items-center justify-content-between"
               onClick={() => createApiGroup(maybeTeam)}
             >
-                            <span>{translateMethod('API group')}</span>
-                            <button className="btn btn-sm btn-access-negative me-1">
-                                <i className="fas fa-plus-circle" />
+              <span>{translate('API group')}</span>
+              <button className="btn btn-sm btn-access-negative me-1">
+                <i className="fas fa-plus-circle" />
               </button>
             </span>
           </div>

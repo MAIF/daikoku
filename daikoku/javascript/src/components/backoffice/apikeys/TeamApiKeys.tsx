@@ -15,7 +15,7 @@ export const TeamApiKeys = () => {
   const tableRef = useRef<TableRef>();
   const [showApiKey, setShowApiKey] = useState(false);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     setShowApiKey(
@@ -26,22 +26,22 @@ export const TeamApiKeys = () => {
   }, [connectedUser.isDaikokuAdmin, currentTeam.showApiKeyOnlyToAdmins]);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translateMethod('API key')}`;
+    document.title = `${currentTeam.name} - ${translate('API key')}`;
   }, []);
 
   const columns = [
     {
-      Header: translateMethod('Api Name'),
+      Header: translate('Api Name'),
       style: { textAlign: 'left' },
       accessor: (api: any) => api.name,
     },
     {
-      Header: translateMethod('Version'),
+      Header: translate('Version'),
       style: { textAlign: 'left' },
       accessor: (api: any) => api.currentVersion,
     },
     {
-      Header: translateMethod('Actions'),
+      Header: translate('Actions'),
       style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
@@ -70,7 +70,7 @@ export const TeamApiKeys = () => {
   ];
 
   const cleanSubs = () => {
-    window.confirm(translateMethod('clean.archived.sub.confirm', false, 'Are you sure you want to clean archived subscriptions ?'))//@ts-ignore //FIXME when ts & monkey patch will be compatible
+    window.confirm(translate('clean.archived.sub.confirm'))//@ts-ignore //FIXME when ts & monkey patch will be compatible
       .then((ok: any) => {
         if (ok) {
           Services.cleanArchivedSubscriptions(currentTeam._id)

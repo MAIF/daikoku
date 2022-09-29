@@ -50,17 +50,12 @@ export const TeamApiGroup = () => {
     if (creation) {
       return Services.createTeamApi(currentTeam._id, group).then((createdGroup) => {
         if (createdGroup.error) {
-          toastr.error(translateMethod('Error'), translateMethod(createdGroup.error));
+          toastr.error(translate('Error'), translate(createdGroup.error));
           return createdGroup;
         } else if (createdGroup.name) {
           toastr.success(
-            translateMethod('Success'),
-            translateMethod(
-              'group.created.success',
-              false,
-              `API group "${createdGroup.name}" created`,
-              createdGroup.name
-            )
+            translate('Success'),
+            translate({ key: 'group.created.success', replacements: [createdGroup.name] })
           );
 
           methods.setApiGroup(createdGroup);
@@ -77,10 +72,10 @@ export const TeamApiGroup = () => {
         group._humanReadableId
       ).then((res) => {
         if (res.error) {
-          toastr.error(translateMethod('error'), translateMethod(res.error));
+          toastr.error(translate('error'), translate(res.error));
           return res;
         } else {
-          toastr.success(translateMethod('Success'), translateMethod('Group saved'));
+          toastr.success(translate('Success'), translate('Group saved'));
           setApiGroup(group);
 
           if (res._humanReadableId !== group._humanReadableId) {
@@ -93,36 +88,36 @@ export const TeamApiGroup = () => {
     }
   };
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const schema: ({ [key: string]: any }) = {
     name: {
       type: type.string,
-      label: translateMethod('Name'),
-      placeholder: translateMethod('Name'),
+      label: translate('Name'),
+      placeholder: translate('Name'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.name')),
-        constraints.test('name_already_exist', translateMethod('api.already.exists'), (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then((r) => !r.exists)),
+        constraints.required(translate('constraints.required.name')),
+        constraints.test('name_already_exist', translate('api.already.exists'), (name, context) => Services.checkIfApiNameIsUnique(name, context.parent._id).then((r) => !r.exists)),
       ],
     },
     smallDescription: {
       type: type.string,
       format: format.text,
-      label: translateMethod('Small desc.'),
+      label: translate('Small desc.'),
     },
     description: {
       type: type.string,
       format: format.markdown,
-      label: translateMethod('Description'),
+      label: translate('Description'),
     },
     published: {
       type: type.bool,
-      label: translateMethod('Published'),
+      label: translate('Published'),
     },
     tags: {
       type: type.string,
       array: true,
-      label: translateMethod('Tags'),
+      label: translate('Tags'),
       expert: true,
     },
     categories: {
@@ -130,7 +125,7 @@ export const TeamApiGroup = () => {
       format: format.select,
       isMulti: true,
       createOption: true,
-      label: translateMethod('Categories'),
+      label: translate('Categories'),
       optionsFrom: '/api/categories',
       transformer: (t: any) => ({
         label: t,
@@ -141,12 +136,12 @@ export const TeamApiGroup = () => {
     visibility: {
       type: type.string,
       format: format.buttonsSelect,
-      label: translateMethod('Visibility'),
+      label: translate('Visibility'),
       options: [
-        { label: translateMethod('Public'), value: 'Public' },
-        { label: translateMethod('Private'), value: 'Private' },
+        { label: translate('Public'), value: 'Public' },
+        { label: translate('Private'), value: 'Private' },
         {
-          label: translateMethod('PublicWithAuthorizations'),
+          label: translate('PublicWithAuthorizations'),
           value: 'PublicWithAuthorizations',
         },
       ],
@@ -160,7 +155,7 @@ export const TeamApiGroup = () => {
         ref: 'visibility',
         test: (v: any) => v !== 'Public',
       },
-      label: translateMethod('Authorized teams'),
+      label: translate('Authorized teams'),
       optionsFrom: '/api/teams',
       transformer: (t: any) => ({
         label: t.name,
@@ -169,7 +164,7 @@ export const TeamApiGroup = () => {
     },
     apis: {
       type: type.string,
-      label: translateMethod('API', true),
+      label: translate({ key: 'API', plural: true }),
       format: format.select,
       isMulti: true,
       optionsFrom: Services.teamApis(currentTeam._id).then((apis) => apis.filter((api: any) => api._id !== apiGroup?._id && !api.apis)),
@@ -185,24 +180,24 @@ export const TeamApiGroup = () => {
   };
   const flow = [
     {
-      label: translateMethod('Basic.informations'),
+      label: translate('Basic.informations'),
       flow: ['published', 'name', 'smallDescription', 'apis'].filter((entry) =>
         simpleOrExpertMode(entry, expertMode)
       ),
       collapsed: false,
     },
     {
-      label: translateMethod('Description'),
+      label: translate('Description'),
       flow: ['description'],
       collapsed: true,
     },
     {
-      label: translateMethod('Tags and categories'),
+      label: translate('Tags and categories'),
       flow: ['tags', 'categories'].filter((entry) => simpleOrExpertMode(entry, expertMode)),
       collapsed: true,
     },
     {
-      label: translateMethod('Visibility'),
+      label: translate('Visibility'),
       flow: ['visibility', 'authorizedTeams'].filter((entry) =>
         simpleOrExpertMode(entry, expertMode)
       ),
@@ -219,8 +214,8 @@ export const TeamApiGroup = () => {
           <h2 className="me-2">{apiGroup.name}</h2>
         </div>)}
         <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
-          {expertMode && translateMethod('Standard mode')}
-          {!expertMode && translateMethod('Expert mode')}
+          {expertMode && translate('Standard mode')}
+          {!expertMode && translate('Expert mode')}
         </button>
       </div>
       <div className="row">

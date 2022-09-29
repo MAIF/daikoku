@@ -15,7 +15,7 @@ export const ApiCard = (props: any) => {
   const api = props.api;
   const team = props.team || { name: '--', avatar: '#', _id: api.team };
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const accessButton = () => {
     if (
@@ -27,12 +27,7 @@ export const ApiCard = (props: any) => {
       return (
         <ActionWithTeamSelector
           title="Api access"
-          description={translateMethod(
-            'api.access.request',
-            false,
-            `You will send an access request to the API "${api.name}". For which team do you want to send the request ?`,
-            [api.name]
-          )}
+          description={translate({key: 'api.access.request', replacements: [api.name]})}
           pendingTeams={api.authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
           authorizedTeams={api.authorizations
             .filter((auth: any) => auth.authorized)

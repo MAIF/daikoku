@@ -19,7 +19,7 @@ export function ApiIssue({
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getRootApi(props.api._humanReadableId).then((rootApi) => {
@@ -30,7 +30,7 @@ export function ApiIssue({
   const onChange = (editedApi: any) => {
     Services.saveTeamApi(ownerTeam._id, editedApi, versionId!)
       .then((res) => setRootApi(res))
-      .then(() => toastr.success(translateMethod('Success'), translateMethod('Api saved')));
+      .then(() => toastr.success(translate('Success'), translate('Api saved')));
   };
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? (api as any)._humanReadableId : ''}/${versionId}`;

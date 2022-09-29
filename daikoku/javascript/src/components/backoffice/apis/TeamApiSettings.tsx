@@ -12,7 +12,7 @@ export const TeamApiSettings = ({
   api,
   apiGroup
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const { currentTeam } = useSelector((s) => (s as any).context);
   const navigate = useNavigate();
 
@@ -21,11 +21,11 @@ export const TeamApiSettings = ({
   }: any) => {
     Services.transferApiOwnership(team, api.team, api._id).then((r) => {
       if (r.notify) {
-        toastr.info(translateMethod('Info'), translateMethod('team.transfer.notified'));
+        toastr.info(translate('Info'), translate('team.transfer.notified'));
       } else if (r.error) {
-        toastr.error(translateMethod('Error'), r.error);
+        toastr.error(translate('Error'), r.error);
       } else {
-        toastr.error(translateMethod('Error'), translateMethod('issues.on_error'));
+        toastr.error(translate('Error'), translate('issues.on_error'));
       }
     });
   };
@@ -33,7 +33,7 @@ export const TeamApiSettings = ({
   const transferSchema = {
     team: {
       type: type.string,
-      label: translateMethod('new.owner'),
+      label: translate('new.owner'),
       format: format.select,
       optionsFrom: Services.teams().then((teams) =>
         sortBy(
@@ -45,26 +45,26 @@ export const TeamApiSettings = ({
         label: team.name,
         value: team._id
       }),
-      constraints: [constraints.required(translateMethod('constraints.required.team'))],
+      constraints: [constraints.required(translate('constraints.required.team'))],
     },
     comfirm: {
       type: type.string,
-      label: translateMethod('type.api.name.confirmation', false, undefined, api.name),
+      label: translate({ key: 'type.api.name.confirmation', replacements: [api.name] }),
       constraints: [
         constraints.oneOf(
           [api.name],
-          translateMethod('constraints.type.api.name', false, undefined, api.name)
+          translate({ key: 'constraints.type.api.name', replacements: [api.name] })
         ),
       ],
     },
   };
 
   const deleteApi = () => {
-    (window.confirm(translateMethod('delete.api.confirm')) as any).then((ok: any) => {
+    (window.confirm(translate('delete.api.confirm')) as any).then((ok: any) => {
       if (ok) {
         Services.deleteTeamApi(currentTeam._id, api._id)
           .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
-          .then(() => toastr.success(translateMethod('Success'), translateMethod('deletion successful')));
+          .then(() => toastr.success(translate('Success'), translate('deletion successful')));
       }
     });
   };
@@ -75,12 +75,12 @@ export const TeamApiSettings = ({
         className="action mb-3"
         style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
       >
-        <h3>{translateMethod('transfer.api.ownership.title')}</h3>
-        <i>{translateMethod('transfer.api.ownership.description')}</i>
+        <h3>{translate('transfer.api.ownership.title')}</h3>
+        <i>{translate('transfer.api.ownership.description')}</i>
         <Form
           schema={transferSchema}
           onSubmit={transferOwnership}
-          options={{ actions: { submit: { label: translateMethod('Transfer') } } }}
+          options={{ actions: { submit: { label: translate('Transfer') } } }}
         />
       </div>
       <div
@@ -88,12 +88,12 @@ export const TeamApiSettings = ({
         style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
       >
         <div>
-          <h3>{translateMethod('delete.api.title')}</h3>
-          <i>{translateMethod('delete.api.description')}</i>
+          <h3>{translate('delete.api.title')}</h3>
+          <i>{translate('delete.api.description')}</i>
         </div>
         <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
           <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
-            {translateMethod('Delete this Api')}
+            {translate('Delete this Api')}
           </button>
         </div>
       </div>

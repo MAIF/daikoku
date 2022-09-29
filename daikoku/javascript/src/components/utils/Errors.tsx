@@ -32,12 +32,12 @@ const ErrorComponent = ({
 
   const [label, setLabel] = useState();
 
-    const { translateMethod } = useContext(I18nContext);
+    const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     setLabel(getErrorLabel(error.status, error));
     if (error?.status) {
-      document.title = `${tenant.title} - ${translateMethod('Error')}`;
+      document.title = `${tenant.title} - ${translate('Error')}`;
     }
   }, [error, label]);
 
@@ -61,7 +61,7 @@ const ErrorComponent = ({
                 unsetError();
               }}
             >
-                            <i className="fas fa-home" /> {translateMethod('Go home')}
+                            <i className="fas fa-home" /> {translate('Go home')}
             </Link>
                         <button
               className="btn btn-access-negative"
@@ -70,7 +70,7 @@ const ErrorComponent = ({
                 setTimeout(unsetError, 300);
               }}
             >
-                            <i className="fas fa-angle-double-left" /> {translateMethod('go_back')}
+                            <i className="fas fa-angle-double-left" /> {translate('go_back')}
             </button>
           </div>
         </div>

@@ -27,7 +27,7 @@ export const SideBar = () => {
   const location = useLocation();
 
   const { totalUnread } = useContext(MessagesContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     setPanelState(state.closed);
@@ -117,7 +117,7 @@ export const SideBar = () => {
                   'unread-notifications': totalUnread > 0,
                 }
               )}
-              title={translateMethod('Access to the messages')}
+              title={translate('Access to the messages')}
             >
               <MessageSquare />
             </Link>
@@ -148,7 +148,7 @@ export const SideBar = () => {
                     'unread-notifications': !!unreadNotificationsCount,
                   })}
                   to="/notifications"
-                  title={translateMethod('Access to the notifications')}
+                  title={translate('Access to the notifications')}
                 >
                   <Bell />
                 </Link>
@@ -171,7 +171,7 @@ export const SideBar = () => {
               }}
               title={
                 impersonator
-                  ? `${connectedUser.name} (${connectedUser.email}) ${translateMethod(
+                  ? `${connectedUser.name} (${connectedUser.email}) ${translate(
                     'Impersonated by'
                   )} ${impersonator.name} (${impersonator.email})`
                   : connectedUser.name

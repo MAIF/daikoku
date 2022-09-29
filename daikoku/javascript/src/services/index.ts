@@ -629,7 +629,7 @@ export const resetTranslation = (translation: any) => customFetch(`/api/translat
   ...HEADERS,
 });
 
-export const sendEmails = (name: any, email: any, subject: any, body: any, tenantId: any, teamId: any, apiId: any, language: any) =>
+export const sendEmails = (name: string, email: string, subject: string, body: string, tenantId: string, teamId?: string, apiId?: string, language?: string) =>
   customFetch(`/api/tenants/${tenantId}/_contact`, {
     method: 'POST',
     credentials: 'include',

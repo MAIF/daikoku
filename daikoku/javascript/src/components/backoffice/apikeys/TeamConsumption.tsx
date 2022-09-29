@@ -8,20 +8,20 @@ import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamConsumption = () => {
-    const { translateMethod } = useContext(I18nContext);
+    const { translate } = useContext(I18nContext);
 
   const { currentTeam } = useSelector((state) => (state as any).context);
   useTeamBackOffice(currentTeam);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translateMethod('Consumption')}`;
+    document.title = `${currentTeam.name} - ${translate('Consumption')}`;
   }, []);
 
   const mappers = [
     {
       type: 'DoubleRoundChart',
-      label: translateMethod('Hits by api/plan'),
-      title: translateMethod('Hits by api/plan'),
+      label: translate('Hits by api/plan'),
+      title: translate('Hits by api/plan'),
       formatter: (data: any) => sortBy(
         data.reduce((acc: any, item: any) => {
           const value = acc.find((a: any) => a.name === item.apiName) || { count: 0 };

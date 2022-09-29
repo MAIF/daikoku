@@ -33,11 +33,11 @@ export const TeamList = () => {
     updateTeams();
   }, []);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const deleteTeam = (teamId: any) => {
     //@ts-ignore //FIXME when monkey patch & ts will be compatible
-    (window.confirm(translateMethod('delete team', 'Are you sure you want to delete this team ?'))).then((ok: any) => {
+    (window.confirm(translate('delete team', 'Are you sure you want to delete this team ?'))).then((ok: any) => {
       if (ok) {
         Services.deleteTeam(teamId).then(() => {
           updateTeams();
@@ -60,26 +60,26 @@ export const TeamList = () => {
       {
         action: () => deleteTeam(team._id),
         iconClass: 'fas fa-trash delete-icon',
-        tooltip: translateMethod('Delete team'),
+        tooltip: translate('Delete team'),
       },
       {
         redirect: () => dispatch(openFormModal({
-          title: translateMethod('Create a new team'),
-          schema: teamSchema(team, translateMethod),
+          title: translate('Create a new team'),
+          schema: teamSchema(team, translate),
           onSubmit: (data: any) => Services.updateTeam(data)
             .then(r => {
               if (r.error) {
-                toastr.error(translateMethod('Error'), r.error)
+                toastr.error(translate('Error'), r.error)
               } else {
                 updateTeams()
-                toastr.success(translateMethod('Success'), translateMethod("Team %s updated successfully", false, "", data.name))
+                toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [data.name] }))
               }
             }),
           value: team
         })),
         iconClass: 'fas fa-pen',
-        tooltip: translateMethod('Edit team'),
-        actionLabel: translateMethod('Create')
+        tooltip: translate('Edit team'),
+        actionLabel: translate('Create')
       },
     ];
 
@@ -92,7 +92,7 @@ export const TeamList = () => {
       {
         redirect: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
         iconClass: 'fas fa-users',
-        tooltip: translateMethod('Team members'),
+        tooltip: translate('Team members'),
       },
     ];
   };
@@ -102,7 +102,7 @@ export const TeamList = () => {
       <div className="d-flex justify-content-between align-items-center">
         <h1>
           <Translation i18nkey="Teams">Teams</Translation>
-          <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translateMethod('Create a new team')} href="#" onClick={(e) => {
+          <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translate('Create a new team')} href="#" onClick={(e) => {
             e.preventDefault();
             createNewTeam();
           }}>
@@ -111,7 +111,7 @@ export const TeamList = () => {
         </h1>
         <div className="col-5">
           <input
-            placeholder={translateMethod('Find a team')}
+            placeholder={translate('Find a team')}
             className="form-control"
             onChange={(e) => setSearch(e.target.value)} />
         </div>

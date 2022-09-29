@@ -73,7 +73,7 @@ export const AdminMessages = () => {
     maybeReadMessage();
   }, [selectedChat]);
 
-  const { translateMethod, language, Translation } = useContext(I18nContext);
+  const { translate, language, Translation } = useContext(I18nContext);
 
   const maybeReadMessage = () => {
     if (selectedChat) {
@@ -132,20 +132,20 @@ export const AdminMessages = () => {
   moment.locale(language);
   moment.updateLocale('fr', {
     relativeTime: {
-      s: translateMethod('moment.duration.seconds', false, 'few sec'),
-      m: translateMethod('moment.duration.minutes', false, '1 min', '1'),
-      mm: translateMethod('moment.duration.minutes', false, '%d min', '%d'),
-      h: translateMethod('moment.duration.hours', false, '1 h', '1'),
-      hh: translateMethod('moment.duration.jours', false, '%d h', '%d'),
-      d: translateMethod('moment.duration.days', false, '1 d', '1'),
-      dd: translateMethod('moment.duration.days', false, '%d d', '%d'),
+      s: translate({ key: 'moment.duration.seconds', defaultResponse: 'few sec' }),
+      m: translate({ key: 'moment.duration.minutes', defaultResponse: '1 min', replacements: ['1'] }),
+      mm: translate({ key: 'moment.duration.minutes', defaultResponse: '%d min', replacements: ['%d'] }),
+      h: translate({ key: 'moment.duration.hours', defaultResponse: '1 h', replacements: ['1'] }),
+      hh: translate({ key: 'moment.duration.jours', defaultResponse: '%d h', replacements: ['%d'] }),
+      d: translate({ key: 'moment.duration.days', defaultResponse: '1 d', replacements: ['1'] }),
+      dd: translate({ key: 'moment.duration.days', defaultResponse: '%d d', replacements: ['%d'] }),
     },
   });
 
   return (<div className="d-flex flex-row messages-container">
     <div className="d-flex flex-column col-12 col-md-3 messages-sender">
       <Select
-        placeholder={translateMethod('Start new conversation')}
+        placeholder={translate('Start new conversation')}
         className="mx-2 mb-2 reactSelect"
         options={possibleNewUsers.map((u) => ({
           label: (<div style={{
@@ -223,7 +223,7 @@ export const AdminMessages = () => {
             {group.map((m: any, idx: any) => {
               const sender = Option(users.find((u) => u._id === m.sender))
                 .map((u: any) => u.name)
-                .getOrElse(translateMethod('Unknown user'));
+                .getOrElse(translate('Unknown user'));
               return (<div key={`discussion-message-${idx}`} className="discussion-message d-flex flex-column">
                 <span className="sender">{sender}</span>
                 <span className="message">{m.message}</span>
@@ -240,7 +240,7 @@ export const AdminMessages = () => {
           </button>
         </div>)}
         {selectedChat && (<div className="discussion-form discussion-form__message">
-          <input disabled={loading} type="text" value={loading ? '...' : newMessage} onKeyDown={handleKeyDown} onChange={(e) => setNewMessage(e.target.value)} placeholder={translateMethod('Your message')} />
+          <input disabled={loading} type="text" value={loading ? '...' : newMessage} onKeyDown={handleKeyDown} onChange={(e) => setNewMessage(e.target.value)} placeholder={translate('Your message')} />
           <button disabled={loading} className="send-button" onClick={sendMessage}>
             <Send />
           </button>

@@ -6,18 +6,18 @@ export const TeamInvitationModal = (props: any) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | undefined>(undefined);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   function invitUser() {
     const { members, pendingUsers } = props;
 
-    // const validator = ValidateEmail(email, translateMethod);
+    // const validator = ValidateEmail(email, translate);
     const validator = true; //FIXME: use constraints instead of validation function
     if (validator) {
       if (members.find((f: any) => f.email === email)) {
-        setError(translateMethod('User already in team'));
+        setError(translate('User already in team'));
       } else if (pendingUsers.find((f: any) => f.email === email)) {
-        setError(translateMethod('User already invited'));
+        setError(translate('User already invited'));
       } else if (props.tenant && props.tenant.authProvider == 'LDAP') {
         props.searchLdapMember(email).then((res: any) => {
           if (res.error) setError(res.error);
@@ -42,21 +42,21 @@ export const TeamInvitationModal = (props: any) => {
         <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
         <i className="fas fa-users fa-2x mb-3" />
         <h5 className="modal-title text-center">
-          {translateMethod('team_member.invite_user_to')}
+          {translate('team_member.invite_user_to')}
           <span style={{ fontWeight: 'bold', display: 'block' }}>{props.team.name}</span>
         </h5>
       </div>
       <div className="modal-body">
         {error && (
           <div className="alert alert-danger" role="alert">
-            {translateMethod(error)}
+            {translate(error)}
           </div>
         )}
         <input
           type="text"
           className="form-control"
           value={email}
-          placeholder={translateMethod('Email')}
+          placeholder={translate('Email')}
           onChange={(e) => {
             setError('');
             setEmail(e.target.value);
@@ -69,7 +69,7 @@ export const TeamInvitationModal = (props: any) => {
             className="btn btn-success mt-3 btn-block btn-lg"
             type="button"
           >
-            {translateMethod('Search')}
+            {translate('Search')}
           </button>
         ) : (
           <button
@@ -77,7 +77,7 @@ export const TeamInvitationModal = (props: any) => {
             type="button"
             onClick={invitUser}
           >
-            {translateMethod('team_member.send_email')}
+            {translate('team_member.send_email')}
           </button>
         )}
       </div>

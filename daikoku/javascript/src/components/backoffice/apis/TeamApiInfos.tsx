@@ -13,10 +13,10 @@ export const TeamApiInfos = ({
   team,
   tenant
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
-  const informationForm = teamApiInfoForm(translateMethod, team, tenant);
-  const descriptionForm = teamApiDescriptionForm(translateMethod);
+  const informationForm = teamApiInfoForm(translate, team, tenant);
+  const descriptionForm = teamApiDescriptionForm(translate);
 
   useEffect(() => {
     return () => {
@@ -27,25 +27,25 @@ export const TeamApiInfos = ({
   const steps = [
     {
       id: 'info',
-      label: translateMethod('Informations'),
+      label: translate('Informations'),
       schema: informationForm.schema,
       flow: informationForm.flow(expertMode),
     },
     {
       id: 'description',
-      label: translateMethod('Description'),
+      label: translate('Description'),
       schema: descriptionForm.schema,
       flow: descriptionForm.flow,
     },
     {
       id: 'swagger',
-      label: translateMethod('Swagger'),
+      label: translate('Swagger'),
       component: TeamApiSwagger,
       skipTo: 'save',
     },
     {
       id: 'testing',
-      label: translateMethod('Testing'),
+      label: translate('Testing'),
       component: (p: any) => TeamApiTesting({ ...p }),
       skipTo: 'save',
     },
@@ -58,7 +58,7 @@ export const TeamApiInfos = ({
         steps={[
           {
             id: 'info',
-            label: translateMethod('Informations'),
+            label: translate('Informations'),
             schema: informationForm.adminSchema,
             flow: informationForm.adminFlow,
           },
@@ -67,10 +67,10 @@ export const TeamApiInfos = ({
         creation={creation}
         save={save}
         labels={{
-          previous: translateMethod('Previous'),
-          skip: translateMethod('Skip'),
-          next: translateMethod('Next'),
-          save: translateMethod('Save'),
+          previous: translate('Previous'),
+          skip: translate('Skip'),
+          next: translate('Next'),
+          save: translate('Save'),
         }}
       />
     );
@@ -83,10 +83,10 @@ export const TeamApiInfos = ({
       creation={creation}
       save={save}
       labels={{
-        previous: translateMethod('Previous'),
-        skip: translateMethod('Skip'),
-        next: translateMethod('Next'),
-        save: translateMethod('Save'),
+        previous: translate('Previous'),
+        skip: translate('Skip'),
+        next: translate('Next'),
+        save: translate('Save'),
       }}
     />
   );

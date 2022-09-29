@@ -37,13 +37,13 @@ export function ApiDocumentationCartidge({
 }
 
 export function ApiDocumentation(props: any) {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const params = useParams();
 
   const [state, setState] = useState<any>({
     details: null,
-    content: translateMethod('Loading page ...'),
+    content: translate('Loading page ...'),
   });
 
   useEffect(() => {

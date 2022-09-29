@@ -46,7 +46,7 @@ const SUBSCRIPTION_PLAN_TYPES = {
 const OtoroshiServicesAndGroupSelector = ({
   rawValues,
   onChange,
-  translateMethod
+  translate
 }: any) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [groups, setGroups] = useState<Array<any>>([]);
@@ -148,7 +148,7 @@ const OtoroshiServicesAndGroupSelector = ({
       name={`search-label`}
       isLoading={loading}
       isDisabled={disabled && !loading}
-      placeholder={translateMethod('Authorized.entities.placeholder')} //@ts-ignore //FIXME
+      placeholder={translate('Authorized.entities.placeholder')} //@ts-ignore //FIXME
       components={(props: any) => <components.Group {...props} />}
       options={[
         { label: 'Service groups', options: groups },
@@ -183,7 +183,7 @@ const CustomMetadataInput = ({
   value,
   onChange,
   setValue,
-  translateMethod
+  translate
 }: any) => {
   const changeValue = (possibleValues: any, key: any) => {
     const oldValue = Option(value.find((x: any) => x.key === key)).getOrElse({ '': '' });
@@ -207,7 +207,7 @@ const CustomMetadataInput = ({
     if (!value || value.length === 0) {
       onChange([{ key: '', possibleValues: [] }]);
       setValue('subscriptionProcess', 'Manual');
-      toastr.info(translateMethod('Info'), translateMethod('custom.metadata.process.change.to.manual'));
+      toastr.info(translate('Info'), translate('custom.metadata.process.change.to.manual'));
     }
   };
 
@@ -294,11 +294,11 @@ const Card = ({
   duplicatePlan,
   creation
 }: any) => {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
-  let pricing = translateMethod('Free');
-  const req = translateMethod('req.');
-  const month = translateMethod('month');
+  let pricing = translate('Free');
+  const req = translate('req.');
+  const month = translate('month');
   if (plan.costPerMonth && plan.costPerAdditionalRequest) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
       plan.currency.code
@@ -316,7 +316,7 @@ const Card = ({
   }
 
   const deleteWithConfirm = () => {
-    (window.confirm(translateMethod('delete.plan.confirm')) as any).then((ok: any) => {
+    (window.confirm(translate('delete.plan.confirm')) as any).then((ok: any) => {
       if (ok) {
         deletePlan();
       }
@@ -383,7 +383,7 @@ const Card = ({
         </div>
       )}
       <div className="card-img-top card-link card-skin" data-holder-rendered="true">
-        <span>{plan.customName || formatPlanType(plan, translateMethod)}</span>
+        <span>{plan.customName || formatPlanType(plan, translate)}</span>
       </div>
       <div className="card-body plan-body d-flex flex-column">
         <p className="card-text text-justify">
@@ -391,7 +391,7 @@ const Card = ({
         </p>
         <div className="d-flex flex-column mb-2">
           <span className="plan-quotas">
-            {!plan.maxPerSecond && !plan.maxPerMonth && translateMethod('plan.limits.unlimited')}
+            {!plan.maxPerSecond && !plan.maxPerMonth && translate('plan.limits.unlimited')}
             {!!plan.maxPerSecond && !!plan.maxPerMonth && (
               <div>
                 <div>
@@ -434,7 +434,7 @@ export const TeamApiPricings = (props: Props) => {
   const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const dispatch = useDispatch();
 
@@ -453,7 +453,7 @@ export const TeamApiPricings = (props: Props) => {
       method: {
         type: type.string,
         format: format.select,
-        label: translateMethod('http.method'),
+        label: translate('http.method'),
         options: [
           '*',
           'GET',
@@ -469,10 +469,10 @@ export const TeamApiPricings = (props: Props) => {
       },
       path: {
         type: type.string,
-        label: translateMethod('http.path'),
+        label: translate('http.path'),
         defaultValue: '/',
         constraints: [
-          constraints.matches(/^\/([^\s]\w*)*$/, translateMethod('constraint.match.path')),
+          constraints.matches(/^\/([^\s]\w*)*$/, translate('constraint.match.path')),
         ],
       },
     },
@@ -481,7 +481,7 @@ export const TeamApiPricings = (props: Props) => {
 
   const freeWithQuotasFlow = [
     {
-      label: translateMethod('Quotas'),
+      label: translate('Quotas'),
       collapsed: false,
       flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
     },
@@ -489,12 +489,12 @@ export const TeamApiPricings = (props: Props) => {
 
   const quotasWithLimitsFlow = [
     {
-      label: translateMethod('Quotas'),
+      label: translate('Quotas'),
       collapsed: false,
       flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
     },
     {
-      label: translateMethod('Billing'),
+      label: translate('Billing'),
       collapsed: false,
       flow: ['trialPeriod', 'billingDuration', 'costPerMonth', 'currency'],
     },
@@ -502,12 +502,12 @@ export const TeamApiPricings = (props: Props) => {
 
   const quotasWithoutLimitsFlow = [
     {
-      label: translateMethod('Quotas'),
+      label: translate('Quotas'),
       collapsed: false,
       flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
     },
     {
-      label: translateMethod('Billing'),
+      label: translate('Billing'),
       collapsed: false,
       flow: [
         'trialPeriod',
@@ -521,7 +521,7 @@ export const TeamApiPricings = (props: Props) => {
 
   const payPerUseFlow = [
     {
-      label: translateMethod('Billing'),
+      label: translate('Billing'),
       collapsed: false,
       flow: [
         'trialPeriod',
@@ -654,7 +654,7 @@ export const TeamApiPricings = (props: Props) => {
         type: {
           type: type.string,
           format: format.select,
-          label: translateMethod('Type'),
+          label: translate('Type'),
           onChange: ({ rawValues, setValue, value }: { rawValues: any, setValue: (key: string, value: any) => void, value: string }) => {
             const isDescIsDefault = Object.values(SUBSCRIPTION_PLAN_TYPES)
               .map(({ defaultDescription }) => defaultDescription)
@@ -667,42 +667,42 @@ export const TeamApiPricings = (props: Props) => {
           },
           options: planTypes,
           transformer: (value: any) => ({
-            label: translateMethod(value),
+            label: translate(value),
             value
           }),
           constraints: [
-            constraints.required(translateMethod('constraints.required.type')),
-            constraints.oneOf(planTypes, translateMethod('constraints.oneof.plan.type')),
+            constraints.required(translate('constraints.required.type')),
+            constraints.oneOf(planTypes, translate('constraints.oneof.plan.type')),
           ],
         },
         customName: {
           type: type.string,
-          label: translateMethod('Name'),
-          placeholder: translateMethod('Plan name'),
+          label: translate('Name'),
+          placeholder: translate('Plan name'),
         },
         customDescription: {
           type: type.string,
           format: format.text,
-          label: translateMethod('Description'),
-          placeholder: translateMethod('Plan description'),
+          label: translate('Description'),
+          placeholder: translate('Plan description'),
         },
       },
       flow: ['type', 'customName', 'customDescription'],
     },
     {
       id: 'oto',
-      label: translateMethod('Otoroshi Settings'),
+      label: translate('Otoroshi Settings'),
       schema: {
         otoroshiTarget: {
           type: type.object,
           format: format.form,
-          label: translateMethod('Otoroshi target'),
+          label: translate('Otoroshi target'),
           schema: {
             otoroshiSettings: {
               type: type.string,
               format: format.select,
               disabled: !creation && !!(planForEdition as any)?.otoroshiTarget?.otoroshiSettings,
-              label: translateMethod('Otoroshi instances'),
+              label: translate('Otoroshi instances'),
               optionsFrom: Services.allSimpleOtoroshis(props.tenant._id),
               transformer: (s: any) => ({
                 label: s.url,
@@ -715,10 +715,10 @@ export const TeamApiPricings = (props: Props) => {
                 ref: 'otoroshiTarget.otoroshiSettings',
                 test: (v: any) => !!v,
               },
-              render: (props: any) => OtoroshiServicesAndGroupSelector({ ...props, translateMethod }),
-              label: translateMethod('Authorized entities'),
-              placeholder: translateMethod('Authorized.entities.placeholder'),
-              help: translateMethod('authorized.entities.help'),
+              render: (props: any) => OtoroshiServicesAndGroupSelector({ ...props, translate }),
+              label: translate('Authorized entities'),
+              placeholder: translate('Authorized.entities.placeholder'),
+              help: translate('authorized.entities.help'),
             },
           },
         },
@@ -727,7 +727,7 @@ export const TeamApiPricings = (props: Props) => {
     },
     {
       id: 'customization',
-      label: translateMethod('Otoroshi Customization'),
+      label: translate('Otoroshi Customization'),
       schema: {
         otoroshiTarget: {
           type: type.object,
@@ -751,10 +751,10 @@ export const TeamApiPricings = (props: Props) => {
                   type: type.bool,
                   label: ({ rawValues }: any) => {
                     if (rawValues.aggregationApiKeysSecurity) {
-                      return `${translateMethod('Read only apikey')} (${translateMethod('disabled.due.to.aggregation.security')})`;
+                      return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
                     }
                     else {
-                      return translateMethod('Apikey with clientId only');
+                      return translate('Apikey with clientId only');
                     }
                   },
                   disabled: ({ rawValues }: any) => !!rawValues.aggregationApiKeysSecurity,
@@ -768,10 +768,10 @@ export const TeamApiPricings = (props: Props) => {
                   type: type.bool,
                   label: ({ rawValues }: any) => {
                     if (rawValues.aggregationApiKeysSecurity) {
-                      return `${translateMethod('Read only apikey')} (${translateMethod('disabled.due.to.aggregation.security')})`;
+                      return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
                     }
                     else {
-                      return translateMethod('Read only apikey');
+                      return translate('Read only apikey');
                     }
                   },
                   disabled: ({ rawValues }: any) => !!rawValues.aggregationApiKeysSecurity,
@@ -783,24 +783,24 @@ export const TeamApiPricings = (props: Props) => {
                 },
                 constrainedServicesOnly: {
                   type: type.bool,
-                  label: translateMethod('Constrained services only'),
+                  label: translate('Constrained services only'),
                 },
                 metadata: {
                   type: type.object,
-                  label: translateMethod('Automatic API key metadata'),
-                  help: translateMethod('automatic.metadata.help', false, 'Automatic metadata will be calculated on subscription acceptation'),
+                  label: translate('Automatic API key metadata'),
+                  help: translate('automatic.metadata.help'),
                 },
                 customMetadata: {
                   type: type.object,
                   array: true,
-                  label: translateMethod('Custom Apikey metadata'),
-                  render: (props: any) => CustomMetadataInput({ ...props, translateMethod }),
-                  help: translateMethod('custom.metadata.help', false, 'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'),
+                  label: translate('Custom Apikey metadata'),
+                  render: (props: any) => CustomMetadataInput({ ...props, translate }),
+                  help: translate('custom.metadata.help'),
                 },
                 tags: {
                   type: type.string,
                   array: true,
-                  label: translateMethod('Apikey tags'),
+                  label: translate('Apikey tags'),
                 },
                 restrictions: {
                   type: type.object,
@@ -808,7 +808,7 @@ export const TeamApiPricings = (props: Props) => {
                   schema: {
                     enabled: {
                       type: type.bool,
-                      label: translateMethod('Enable restrictions'),
+                      label: translate('Enable restrictions'),
                     },
                     allowLast: {
                       type: type.bool,
@@ -816,11 +816,11 @@ export const TeamApiPricings = (props: Props) => {
                         ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
                         test: (v: any) => !!v,
                       },
-                      label: translateMethod('Allow at last'),
-                      help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
+                      label: translate('Allow at last'),
+                      help: translate('allow.least.help'),
                     },
                     allowed: {
-                      label: translateMethod('Allowed pathes'),
+                      label: translate('Allowed pathes'),
                       visible: {
                         ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
                         test: (v: any) => !!v,
@@ -828,7 +828,7 @@ export const TeamApiPricings = (props: Props) => {
                       ...pathes,
                     },
                     forbidden: {
-                      label: translateMethod('Forbidden pathes'),
+                      label: translate('Forbidden pathes'),
                       visible: {
                         ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
                         test: (v: any) => !!v,
@@ -836,7 +836,7 @@ export const TeamApiPricings = (props: Props) => {
                       ...pathes,
                     },
                     notFound: {
-                      label: translateMethod('Not found pathes'),
+                      label: translate('Not found pathes'),
                       visible: {
                         ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
                         test: (v: any) => !!v,
@@ -853,14 +853,14 @@ export const TeamApiPricings = (props: Props) => {
     },
     {
       id: 'quotasAndBilling',
-      label: translateMethod('Quotas & Billing'),
+      label: translate('Quotas & Billing'),
       disabled: (plan: any) => plan.type === 'FreeWithoutQuotas',
       flow: getRightBillingFlow,
       schema: {
         maxPerSecond: {
           type: type.number,
-          label: translateMethod('Max. per second'),
-          placeholder: translateMethod('Max. requests per second'),
+          label: translate('Max. per second'),
+          placeholder: translate('Max. requests per second'),
           props: {
             step: 1,
             min: 0,
@@ -872,8 +872,8 @@ export const TeamApiPricings = (props: Props) => {
         },
         maxPerDay: {
           type: type.number,
-          label: translateMethod('Max. per day'),
-          placeholder: translateMethod('Max. requests per day'),
+          label: translate('Max. per day'),
+          placeholder: translate('Max. requests per day'),
           props: {
             step: 1,
             min: 0,
@@ -885,8 +885,8 @@ export const TeamApiPricings = (props: Props) => {
         },
         maxPerMonth: {
           type: type.number,
-          label: translateMethod('Max. per month'),
-          placeholder: translateMethod('Max. requests per month'),
+          label: translate('Max. per month'),
+          placeholder: translate('Max. requests per month'),
           props: {
             step: 1,
             min: 0,
@@ -898,8 +898,8 @@ export const TeamApiPricings = (props: Props) => {
         },
         costPerMonth: {
           type: type.number,
-          label: ({ rawValues }: any) => translateMethod(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
-          placeholder: translateMethod('Cost per billing period'),
+          label: ({ rawValues }: any) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
+          placeholder: translate('Cost per billing period'),
           props: {
             step: 1,
             min: 0,
@@ -908,8 +908,8 @@ export const TeamApiPricings = (props: Props) => {
         },
         costPerAdditionalRequest: {
           type: type.number,
-          label: translateMethod('Cost per add. req.'),
-          placeholder: translateMethod('Cost per additionnal request'),
+          label: translate('Cost per add. req.'),
+          placeholder: translate('Cost per additionnal request'),
           props: {
             step: 1,
             min: 0,
@@ -924,7 +924,7 @@ export const TeamApiPricings = (props: Props) => {
             code: {
               type: type.string,
               format: format.select,
-              label: translateMethod('Currency'),
+              label: translate('Currency'),
               defaultValue: 'EUR',
               options: currencies.map((c) => ({
                 label: `${c.name} (${c.symbol})`,
@@ -936,12 +936,12 @@ export const TeamApiPricings = (props: Props) => {
         billingDuration: {
           type: type.object,
           format: format.form,
-          label: translateMethod('Billing every'),
+          label: translate('Billing every'),
           schema: {
             value: {
               type: type.number,
-              label: translateMethod('Billing period'),
-              placeholder: translateMethod('The Billing period'),
+              label: translate('Billing period'),
+              placeholder: translate('The Billing period'),
               props: {
                 step: 1,
                 min: 0,
@@ -955,16 +955,16 @@ export const TeamApiPricings = (props: Props) => {
             unit: {
               type: type.string,
               format: format.buttonsSelect,
-              label: translateMethod('Billing period unit'),
+              label: translate('Billing period unit'),
               options: [
-                { label: translateMethod('Hours'), value: 'Hour' },
-                { label: translateMethod('Days'), value: 'Day' },
-                { label: translateMethod('Months'), value: 'Month' },
-                { label: translateMethod('Years'), value: 'Year' },
+                { label: translate('Hours'), value: 'Hour' },
+                { label: translate('Days'), value: 'Day' },
+                { label: translate('Months'), value: 'Month' },
+                { label: translate('Years'), value: 'Year' },
               ],
               constraints: [
                 constraints.required('constraints.required.billing.period'),
-                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translateMethod('constraints.oneof.period')),
+                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
               ],
             },
           },
@@ -972,34 +972,34 @@ export const TeamApiPricings = (props: Props) => {
         trialPeriod: {
           type: type.object,
           format: format.form,
-          label: translateMethod('Trial'),
+          label: translate('Trial'),
           schema: {
             value: {
               type: type.number,
-              label: translateMethod('Trial period'),
-              placeholder: translateMethod('The trial period'),
+              label: translate('Trial period'),
+              placeholder: translate('The trial period'),
               props: {
                 step: 1,
                 min: 0,
               },
               constraints: [
-                constraints.integer(translateMethod('constraints.integer')),
-                constraints.test('positive', translateMethod('constraints.positive'), (v) => v >= 0),
+                constraints.integer(translate('constraints.integer')),
+                constraints.test('positive', translate('constraints.positive'), (v) => v >= 0),
               ],
             },
             unit: {
               type: type.string,
               format: format.buttonsSelect,
-              label: translateMethod('Trial period unit'),
+              label: translate('Trial period unit'),
               options: [
-                { label: translateMethod('Hours'), value: 'Hour' },
-                { label: translateMethod('Days'), value: 'Day' },
-                { label: translateMethod('Months'), value: 'Month' },
-                { label: translateMethod('Years'), value: 'Year' },
+                { label: translate('Hours'), value: 'Hour' },
+                { label: translate('Days'), value: 'Day' },
+                { label: translate('Months'), value: 'Month' },
+                { label: translate('Years'), value: 'Year' },
               ],
               constraints: [
-                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translateMethod('constraints.oneof.period')),
-                // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translateMethod('constraints.oneof.period'))]) //FIXME
+                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
+                // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period'))]) //FIXME
               ],
             },
           },
@@ -1008,7 +1008,7 @@ export const TeamApiPricings = (props: Props) => {
     },
     {
       id: 'security',
-      label: translateMethod('Settings'),
+      label: translate('Settings'),
       schema: {
         otoroshiTarget: {
           type: type.object,
@@ -1016,17 +1016,17 @@ export const TeamApiPricings = (props: Props) => {
         },
         autoRotation: {
           type: type.bool,
-          label: translateMethod('Force apikey auto-rotation'),
+          label: translate('Force apikey auto-rotation'),
         },
         aggregationApiKeysSecurity: {
           type: type.bool,
           visible: !!props.tenant.aggregationApiKeysSecurity,
-          label: translateMethod('aggregation api keys security'),
-          help: translateMethod('aggregation_apikeys.security.help'),
+          label: translate('aggregation api keys security'),
+          help: translate('aggregation_apikeys.security.help'),
           onChange: ({ value, setValue }: any) => {
             if (value)
               window
-                .confirm(translateMethod('aggregation.api_key.security.notification')) //@ts-ignore //FIXME when type & monkey patch compatibility will be ok
+                .confirm(translate('aggregation.api_key.security.notification')) //@ts-ignore //FIXME when type & monkey patch compatibility will be ok
                 .then((ok: any) => {
                   if (ok) {
                     setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
@@ -1037,44 +1037,44 @@ export const TeamApiPricings = (props: Props) => {
         },
         allowMutlipleApiKeys: {
           type: type.bool,
-          label: translateMethod('Allow multiple apiKey demands'),
+          label: translate('Allow multiple apiKey demands'),
         },
         subscriptionProcess: {
           type: type.string,
           format: format.buttonsSelect,
           disabled: ({ rawValues }: any) => !!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length,
-          label: ({ rawValues }: any) => translateMethod('Subscription') +
+          label: ({ rawValues }: any) => translate('Subscription') +
             (rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length
-              ? ` (${translateMethod('Subscription.manual.help')})`
+              ? ` (${translate('Subscription.manual.help')})`
               : ''),
           options: [
             {
-              label: translateMethod('Automatic'),
+              label: translate('Automatic'),
               value: 'Automatic',
             },
-            { label: translateMethod('Manual'), value: 'Manual' },
+            { label: translate('Manual'), value: 'Manual' },
           ],
           constraints: [
-            constraints.oneOf(['Automatic', 'Manual'], translateMethod('constraints.oneof.sub.process')),
+            constraints.oneOf(['Automatic', 'Manual'], translate('constraints.oneof.sub.process')),
           ],
         },
         integrationProcess: {
           type: type.string,
           format: format.buttonsSelect,
-          label: () => translateMethod('Integration'),
+          label: () => translate('Integration'),
           options: [
             {
-              label: translateMethod('Automatic'),
+              label: translate('Automatic'),
               value: 'Automatic',
             },
-            { label: translateMethod('ApiKey'), value: 'ApiKey' },
+            { label: translate('ApiKey'), value: 'ApiKey' },
           ],
           expert: true,
         },
       },
       flow: [
         {
-          label: translateMethod('Security'),
+          label: translate('Security'),
           flow: ['autoRotation', 'allowMutlipleApiKeys', 'aggregationApiKeysSecurity'],
           inline: true,
         },
@@ -1089,14 +1089,14 @@ export const TeamApiPricings = (props: Props) => {
       <div className="container">
         <div className="d-flex mb-3">
           <button onClick={createNewPlan} type="button" className="btn btn-outline-primary me-1">
-            {translateMethod('add a new plan')}
+            {translate('add a new plan')}
           </button>
           {!!props.value.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
-            {translateMethod('import a plan')}
+            {translate('import a plan')}
           </button>)}
           {planForEdition && mode === possibleMode.creation && (<div className="flex-grow-1 d-flex justify-content-end">
             <button onClick={cancelEdition} type="button" className="btn btn-outline-danger me-1" style={{ marginTop: 0 }}>
-              {translateMethod('Cancel')}
+              {translate('Cancel')}
             </button>
           </div>)}
         </div>
@@ -1116,10 +1116,10 @@ export const TeamApiPricings = (props: Props) => {
               creation={creation}
               save={savePlan}
               labels={{
-                previous: translateMethod('Previous'),
-                skip: translateMethod('Skip'),
-                next: translateMethod('Next'),
-                save: translateMethod('Save'),
+                previous: translate('Previous'),
+                skip: translate('Skip'),
+                next: translate('Next'),
+                save: translate('Save'),
               }} />
           </div>
         </div>)}

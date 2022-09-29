@@ -8,7 +8,7 @@ import { I18nContext } from '../../../core';
 const Separator = () => <hr className="hr-apidescription" />;
 
 export function ApiCartidge(props: any) {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const { api, ownerTeam } = props;
   const defaultPlan = api.possibleUsagePlans.filter((p: any) => p._id === api.defaultUsagePlan)[0];
@@ -59,7 +59,7 @@ export function ApiCartidge(props: any) {
       <span>
         <Translation i18nkey="Visibility">Visibility</Translation>
         <span className={`badge ms-1 ${api.visibility === 'Public' ? 'bg-success' : 'bg-danger'}`}>
-          {translateMethod(api.visibility)}
+          {translate(api.visibility)}
         </span>
       </span>
       <Separator />
@@ -68,7 +68,7 @@ export function ApiCartidge(props: any) {
           <span>
             <Translation i18nkey="Default plan">Default plan</Translation>
             <span className="badge bg-primary word-break ms-1" style={{ whiteSpace: 'normal' }}>
-              {defaultPlan.customName || translateMethod(pricing)}
+              {defaultPlan.customName || translate(pricing)}
             </span>
           </span>
           <Separator />
@@ -77,16 +77,12 @@ export function ApiCartidge(props: any) {
       <span>
         <Translation i18nkey="Last modification">Last modification</Translation>
       </span>
-      <small>{moment(api.lastUpdate).format(translateMethod('moment.date.format.short'))}</small>
+      <small>{moment(api.lastUpdate).format(translate('moment.date.format.short'))}</small>
 
       {!!subscribingTeams.length && (
         <Can I={manage} a={apikey} teams={subscribingTeams}>
           <ActionWithTeamSelector
-            title={translateMethod(
-              'teamapi.select.title',
-              false,
-              'Select the team to view your api key'
-            )}
+            title={translate('teamapi.select.title')}
             teams={subscribingTeams.filter((t: any) => CanIDoAction(props.connectedUser, manage, apikey, t)
             )}
             action={(teams) => {

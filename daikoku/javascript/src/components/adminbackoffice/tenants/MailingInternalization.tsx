@@ -22,7 +22,7 @@ const EditMailtemplate = ({
   const [tenant, setTenant] = useState<any>(undefined);
   const [mailTemplateTranslations, setMailTemplateTranslations] = useState<Array<any>>([]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     Services.oneTenant(tenantId)
@@ -79,9 +79,9 @@ const EditMailtemplate = ({
 
   const manageError = (res: any) => {
     if (res.error) {
-      toastr.error(translateMethod('Error'), res.error);
+      toastr.error(translate('Error'), res.error);
     } else {
-      toastr.success(translateMethod('Success'), translateMethod('mailing_internalization.translation_updated'));
+      toastr.success(translate('Success'), translate('mailing_internalization.translation_updated'));
     }
   };
 
@@ -98,7 +98,7 @@ const EditMailtemplate = ({
           return (
             <BeautifulTitle
               placement="bottom"
-              title={translateMethod('image url from asset')}
+              title={translate('image url from asset')}
             >
               <AssetChooserByModal
                 typeFilter={MimeTypeFilter.image}
@@ -106,7 +106,7 @@ const EditMailtemplate = ({
                 tenantMode={true}
                 icon="fas fa-file-image"
                 classNames="btn-for-descriptionToolbar"
-                label={translateMethod('Select')}
+                label={translate('Select')}
                 onSelect={(asset: any) => insert(asset.link)
                 }
               />
@@ -119,7 +119,7 @@ const EditMailtemplate = ({
 
   return (<div className="col-12 pb-3">
     <div className="my-3">
-      <span className="h5">{translateMethod('Default mail template')}</span>
+      <span className="h5">{translate('Default mail template')}</span>
       <div className="mt-3">
         <Form
           value={tenant?.mailerSettings?.template}
@@ -138,7 +138,7 @@ const EditMailtemplate = ({
     {mailTemplateTranslations
       .map((translation) => {
         return (<div className="my-3" key={`${translation.key}-${translation.language}`}>
-          <span className="h5">{translateMethod('Translation')} : {translation.language}</span>
+          <span className="h5">{translate('Translation')} : {translation.language}</span>
           <div className="mt-3">
             <Form value={translation} schema={translationSchema} onSubmit={saveTranslation} />
           </div>
@@ -155,15 +155,15 @@ export const MailingInternalization = () => {
   const { domain } = useParams();
   const dispatch = useDispatch();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   function saveTranslation(translation: any) {
     Services.saveTranslation(translation)
       .then((res) => {
         if (res.error)
-          toastr.error(translateMethod('Error'), translateMethod('mailing_internalization.failed_translation_update'));
+          toastr.error(translate('Error'), translate('mailing_internalization.failed_translation_update'));
         else {
-          toastr.success(translateMethod('Error'), translateMethod('mailing_internalization.translation_updated'));
+          toastr.success(translate('Error'), translate('mailing_internalization.translation_updated'));
           table.current?.update();
         }
       });
@@ -189,9 +189,9 @@ export const MailingInternalization = () => {
   const columns = [
     {
       id: 'message',
-      Header: translateMethod('mailing_internalization.message_text'),
+      Header: translate('mailing_internalization.message_text'),
       style: { textAlign: 'left' },
-      accessor: (translation: any) => translateMethod(translation[0]),
+      accessor: (translation: any) => translate(translation[0]),
       sortType: 'basic',
       Cell: ({
         cell: {
@@ -200,14 +200,14 @@ export const MailingInternalization = () => {
       }: any) => {
         return (
           <div>
-            {translateMethod(original[0])}
+            {translate(original[0])}
           </div>
         )
       }
     },
     {
       id: 'variables',
-      Header: translateMethod('mailing_internalization.required_variables'),
+      Header: translate('mailing_internalization.required_variables'),
       style: { textAlign: 'left' },
       disableSortBy: true,
       disableFilters: true,
@@ -234,7 +234,7 @@ export const MailingInternalization = () => {
     {
       id: 'actions',
       style: { textAlign: 'center' },
-      Header: translateMethod('Translate'),
+      Header: translate('Translate'),
       disableSortBy: true,
       disableFilters: true,
       Cell: ({
@@ -255,14 +255,14 @@ export const MailingInternalization = () => {
                 <button type='button' key={value.language}
                   className='btn btn-outline-success'
                   onClick={() => dispatch(openFormModal({
-                    title: `${translateMethod('Translation')} : [${value.language}]`,
+                    title: `${translate('Translation')} : [${value.language}]`,
                     schema: {
                       value: {
                         type: type.string,
                         format: format.markdown,
-                        label: translateMethod(original[0]),
+                        label: translate(original[0]),
                         constraints: [
-                          constraints.required(translateMethod('constraints.required.value')),
+                          constraints.required(translate('constraints.required.value')),
                           constraints.test('variables', 'constraint.test.required.variables', (value) => {
                             return !!value && requiredVariables.every(v => value.includes(v))
                           })
@@ -270,7 +270,7 @@ export const MailingInternalization = () => {
                       }
                     },
                     value,
-                    actionLabel: translateMethod('Translate'),
+                    actionLabel: translate('Translate'),
                     onSubmit: saveTranslation
                   }))}>
                   {value.language}
@@ -295,7 +295,7 @@ export const MailingInternalization = () => {
             to={`/settings/internationalization/mail`}
           >
             <i className="fas fa-envelope me-1" />
-            {translateMethod('mailing_internalization.mail_tab')}
+            {translate('mailing_internalization.mail_tab')}
           </Link>
         </li>
         <li className="nav-item">
@@ -304,7 +304,7 @@ export const MailingInternalization = () => {
             to={`/settings/internationalization/mail-template`}
           >
             <i className="fas fa-envelope me-1" />
-            {translateMethod('mailing_internalization.mail_template_tab')}
+            {translate('mailing_internalization.mail_template_tab')}
           </Link>
         </li>
         <li className="nav-item">
@@ -313,7 +313,7 @@ export const MailingInternalization = () => {
             to={`/settings/internationalization/front`}
           >
             <i className="fas fa-globe me-1" />
-            {translateMethod('mailing_internalization.front_office_tab')}
+            {translate('mailing_internalization.front_office_tab')}
           </Link>
         </li>
       </ul>
@@ -322,10 +322,10 @@ export const MailingInternalization = () => {
         <div className="col-12 pb-3">
           <div className="d-flex justify-space-between py-3">
             <span style={{ flex: 1 }} className="lead">
-              {translateMethod('mailing_internalization.message_text')}
+              {translate('mailing_internalization.message_text')}
             </span>
             <span style={{ flex: 1 }} className="lead text-center">
-              {translateMethod('mailing_internalization.required_variables')}
+              {translate('mailing_internalization.required_variables')}
             </span>
           </div>
           <Table

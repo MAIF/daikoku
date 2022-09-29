@@ -7,7 +7,7 @@ export function ApiRedoc(props: any) {
   const [error, setError] = useState<string | undefined>();
   const params = useParams();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     const { tenant, connectedUser } = props;
@@ -18,7 +18,7 @@ export function ApiRedoc(props: any) {
 
       fetch(url).then((res) => {
         if (res.status > 300) {
-          setError(translateMethod('api_redoc.failed_to_retrieve_doc'));
+          setError(translate('api_redoc.failed_to_retrieve_doc'));
         } else {
           //@ts-ignore
           // eslint-disable-next-line no-undef
@@ -34,7 +34,7 @@ export function ApiRedoc(props: any) {
         }
       });
     } else {
-      setError(translateMethod('api_redoc.guest_user'));
+      setError(translate('api_redoc.guest_user'));
     }
   }, []);
 
@@ -46,7 +46,7 @@ export function ApiRedoc(props: any) {
         {...props}
         showOnlyMessage={true}
         asFlatFormat
-        message={translateMethod('api_redoc.guest_user')}
+        message={translate('api_redoc.guest_user')}
       />
     );
 
@@ -59,7 +59,7 @@ export function ApiRedoc(props: any) {
 
   const api = props.api;
   if (!api || !api.swagger)
-    return <div>{translateMethod('api_data.missing', false, undefined, ['Api reference'])}</div>;
+    return <div>{translate({key: 'api_data.missing', replacements: ['Api reference']})}</div>;
 
   return <div id="redoc-container" />;
 }

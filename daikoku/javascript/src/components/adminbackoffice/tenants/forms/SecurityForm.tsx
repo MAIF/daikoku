@@ -9,43 +9,43 @@ import { ITenant, ITenantFull } from '../../../../types';
 import { Spinner } from '../../../utils';
 
 export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-  const { translateMethod } = useContext(I18nContext)
+  const { translate } = useContext(I18nContext)
 
   const schema: Schema = {
     isPrivate: {
       type: type.bool,
-      label: translateMethod('Private tenant')
+      label: translate('Private tenant')
     },
     creationSecurity: {
       type: type.bool,
-      label: translateMethod('API creation security'),
-      help: translateMethod('creation.security.help'),
+      label: translate('API creation security'),
+      help: translate('creation.security.help'),
     },
     subscriptionSecurity: {
       type: type.bool,
-      label: translateMethod('subscription security'),
-      help: translateMethod('subscription.security.help'),
+      label: translate('subscription security'),
+      help: translate('subscription.security.help'),
     },
     aggregationApiKeysSecurity: {
       type: type.bool,
-      label: translateMethod('aggregation api keys security'),
+      label: translate('aggregation api keys security'),
       onChange: (value) => {
         const security = (value as {value: any}).value
         console.debug({value})
         if (security) {
-          window.alert(translateMethod('aggregation.api_key.security.notification'));
+          window.alert(translate('aggregation.api_key.security.notification'));
         }
       }
     },
     apiReferenceHideForGuest: {
       type: type.bool,
-      label: translateMethod('API reference visibility'),
-      help: translateMethod('api.reference.visibility.help'),
+      label: translate('API reference visibility'),
+      help: translate('api.reference.visibility.help'),
     },
     hideTeamsPage: {
       type: type.bool,
-      label: translateMethod('Hide teams page'),
-      help: translateMethod('hide.teams.page.help'),
+      label: translate('Hide teams page'),
+      help: translate('hide.teams.page.help'),
     },
   }
 

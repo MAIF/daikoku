@@ -35,7 +35,7 @@ export const ApiGroupHome = ({ }) => {
   const { addMenu } = useApiGroupFrontOffice(apiGroup, ownerTeam);
 
   const { client } = useContext(getApolloContext());
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     if (!!apiGroup && !!match) {
@@ -50,12 +50,12 @@ export const ApiGroupHome = ({ }) => {
               apis: {
                 childs: {
                   description: {
-                    label: translateMethod('Description'),
+                    label: translate('Description'),
                     action: () => navigateTo('description'),
                     className: { active: match.params.tab === 'description' },
                   },
                   documentation: {
-                    label: translateMethod('Documentation'),
+                    label: translate('Documentation'),
                     action: () => {
                       if (api?.documentation?.pages?.length) navigateTo('documentation');
                     },
@@ -65,7 +65,7 @@ export const ApiGroupHome = ({ }) => {
                     },
                   },
                   swagger: {
-                    label: translateMethod('Swagger'),
+                    label: translate('Swagger'),
                     action: () => {
                       if (api.swagger.content) navigateTo('swagger');
                     },
@@ -75,7 +75,7 @@ export const ApiGroupHome = ({ }) => {
                     },
                   },
                   testing: {
-                    label: translateMethod('Testing'),
+                    label: translate('Testing'),
                     action: () => {
                       if (api.testing.enabled) navigateTo('testing');
                     },
@@ -85,14 +85,14 @@ export const ApiGroupHome = ({ }) => {
                     },
                   },
                   news: {
-                    label: translateMethod('News'),
+                    label: translate('News'),
                     action: () => {
                       if (api.posts.length) navigateTo('news');
                     },
                     className: { active: match.params.tab === 'news', disabled: !api.posts.length },
                   },
                   issues: {
-                    label: translateMethod('Issues'),
+                    label: translate('Issues'),
                     action: () => {
                       if (api.issues.length) navigateTo('issues');
                     },
@@ -165,38 +165,39 @@ export const ApiGroupHome = ({ }) => {
   };
 
   const askForApikeys = (teams: any, plan: any) => {
-    const planName = formatPlanType(plan, translateMethod);
+    const planName = formatPlanType(plan, translate);
 
     return Services.askForApiKey(apiGroup._id, teams, plan._id)
       .then((results) => {
         if (results.error) {
-          return toastr.error(translateMethod('Error'), results.error);
+          return toastr.error(translate('Error'), results.error);
         }
         return results.forEach((result: any) => {
           if (result.error) {
-            return toastr.error(translateMethod('Error'), result.error);
+            return toastr.error(translate('Error'), result.error);
           } else if (result.creation === 'done') {
             const team: any = myTeams.find((t) => (t as any)._id === result.subscription.team);
             return toastr.success(
-              translateMethod('Done'),
-              translateMethod(
-                'subscription.plan.accepted',
-                false,
-                `API key for ${planName} plan and the team ${team.name} is available`,
-                planName,
-                team.name
+              translate('Done'),
+              translate(
+                {
+                  key: 'subscription.plan.accepted',
+                  replacements: [
+                    planName,
+                    team.name
+                  ]
+                }
               )
             );
           } else if (result.creation === 'waiting') {
             const team: any = myTeams.find((t) => (t as any)._id === result.subscription.team);
             return toastr.info(
-              translateMethod('Pending request'),
-              translateMethod(
-                'subscription.plan.waiting',
-                false,
-                `The API key request for ${planName} plan and the team ${team.name} is pending acceptance`,
-                planName,
-                team.name
+              translate('Pending request'),
+              translate(
+                {
+                  key: 'subscription.plan.waiting',
+                  replacements: [planName, team.name]
+                }
               )
             );
           }

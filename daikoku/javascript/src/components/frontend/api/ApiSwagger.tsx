@@ -7,7 +7,7 @@ import { LoginOrRegisterModal } from '../..';
 import { I18nContext } from '../../../core';
 
 export function ApiSwagger(props: any) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const [state, setState] = useState<{ error?: string, info?: string }>({});
 
@@ -21,7 +21,7 @@ export function ApiSwagger(props: any) {
         if (res.status > 300) {
           setState({
             ...state,
-            error: translateMethod('api_swagger.failed_to_retrieve_swagger'),
+            error: translate('api_swagger.failed_to_retrieve_swagger'),
           });
         } else {
           drawSwaggerUi();
@@ -32,7 +32,7 @@ export function ApiSwagger(props: any) {
           handleAuthorize(false);
         }, 500);
       });
-    else setState({ ...state, info: translateMethod('api_swagger.try_it_error') });
+    else setState({ ...state, info: translate('api_swagger.try_it_error') });
   }, []);
 
   const drawSwaggerUi = () => {
@@ -104,12 +104,12 @@ export function ApiSwagger(props: any) {
         {...props}
         showOnlyMessage={true}
         asFlatFormat
-        message={translateMethod('api_swagger.guest_user')}
+        message={translate('api_swagger.guest_user')}
       />
     );
 
   const api = props.api;
-  if (!api) return <div>{translateMethod('api_data.missing', false, undefined, ['Swagger'])}</div>;
+  if (!api) return <div>{translate({ key: 'api_data.missing', replacements: ['Swagger'] })}</div>;
 
   if (state.error || state.info)
     return (

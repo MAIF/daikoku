@@ -5,12 +5,12 @@ import { I18nContext } from '../../../locales/i18n-context';
 export const SessionModal = ({
   session
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const sessionExpires = translateMethod('session.expire.info');
-    const extendMySession = translateMethod('session.extend');
+    const sessionExpires = translate('session.expire.info');
+    const extendMySession = translate('session.extend');
 
     if (session) {
       let reloadTimeout: any = null;

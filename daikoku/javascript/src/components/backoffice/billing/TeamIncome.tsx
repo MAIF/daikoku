@@ -15,7 +15,7 @@ export const TeamIncome = () => {
   const { currentTeam } = useSelector((state) => (state as any).context);
   useTeamBackOffice(currentTeam);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState<any>({
     consumptions: [],
@@ -31,7 +31,7 @@ export const TeamIncome = () => {
   useEffect(() => {
     getBillingData(currentTeam);
 
-    document.title = `${currentTeam.name} - ${translateMethod('Income')}`;
+    document.title = `${currentTeam.name} - ${translate('Income')}`;
   }, []);
 
   const { client } = useContext(getApolloContext());
@@ -124,7 +124,7 @@ export const TeamIncome = () => {
               </div>
             </div>
             <div className="row api__billing__card__container section p-2">
-              <TheadBillingContainer label={translateMethod('Apis')} total={formatCurrency(total)} />
+              <TheadBillingContainer label={translate('Apis')} total={formatCurrency(total)} />
               {!state.consumptionsByApi.length && <NoData />}
               {state.consumptionsByApi
                 .sort((api1: any, api2: any) => api2.billing.total - api1.billing.total)
@@ -133,7 +133,7 @@ export const TeamIncome = () => {
                   selectedPlan: undefined,
                   selectedApi: state.apis.find((a: any) => a._id === api),
                 })} api={state.apis.find((a: any) => a._id === api)} total={billing.total} />))}
-              <TheadBillingContainer label={translateMethod('Apis')} total={formatCurrency(total)} />
+              <TheadBillingContainer label={translate('Apis')} total={formatCurrency(total)} />
             </div>
           </div>
           <div className="col apikeys">
@@ -164,7 +164,7 @@ export const TeamIncome = () => {
                 }, []) as any).sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
                 .map(({ plan, billing }: any, idx: any) => {
                   const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
-                  return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)} total={billing.total} currency={usagePlan.currency} handleClick={() => setState({ ...state, selectedPlan: usagePlan })} />);
+                  return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translate)} total={billing.total} currency={usagePlan.currency} handleClick={() => setState({ ...state, selectedPlan: usagePlan })} />);
                 })}
             </div>)}
             {state.selectedPlan && (<div>
@@ -172,7 +172,7 @@ export const TeamIncome = () => {
                 <h3 className="api__name">
                   {state.selectedApi.name} -{' '}
                   {(state.selectedPlan as any).customName ||
-                    formatPlanType(state.selectedPlan, translateMethod)}
+                    formatPlanType(state.selectedPlan, translate)}
                 </h3>
                 <i className="far fa-arrow-alt-circle-left quit" onClick={() => setState({ ...state, selectedPlan: undefined })} />
               </div>

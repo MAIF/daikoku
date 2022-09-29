@@ -12,7 +12,7 @@ import { useTenantBackOffice } from '../../../contexts';
 
 export const TenantOtoroshis = () => {
   const { tenant, connectedUser } = useSelector((s) => (s as any).context);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
 
   useTenantBackOffice();
@@ -31,17 +31,17 @@ export const TenantOtoroshis = () => {
 
   const columns = [
     {
-      Header: translateMethod('Url'),
+      Header: translate('Url'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.url,
     },
     {
-      Header: translateMethod('Host'),
+      Header: translate('Host'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.host,
     },
     {
-      Header: translateMethod('Actions'),
+      Header: translate('Actions'),
       style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
@@ -59,7 +59,7 @@ export const TenantOtoroshis = () => {
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
-                  title={translateMethod('Edit this settings')}
+                  title={translate('Edit this settings')}
                 >
                   <i className="fas fa-edit" />
                 </button>
@@ -69,7 +69,7 @@ export const TenantOtoroshis = () => {
               <button
                 type="button"
                 className="btn btn-sm btn-outline-danger"
-                title={translateMethod('Delete this settings')}
+                title={translate('Delete this settings')}
                 onClick={() => onDelete(otoroshi._id)}
               >
                 <i className="fas fa-trash" />
@@ -82,11 +82,11 @@ export const TenantOtoroshis = () => {
   ];
 
   const onDelete = (id: any) => {
-    (window.confirm(translateMethod('otoroshi.settings.delete.confirm')) as any).then((ok: any) => {
+    (window.confirm(translate('otoroshi.settings.delete.confirm')) as any).then((ok: any) => {
       if (ok) {
         Services.deleteOtoroshiSettings(tenant._id, id)
           .then(() => {
-            toastr.success(translateMethod('Success'), translateMethod('otoroshi.settings.deleted.success'));
+            toastr.success(translate('Success'), translate('otoroshi.settings.deleted.success'));
             table.update();
           });
       }
@@ -110,7 +110,7 @@ export const TenantOtoroshis = () => {
         <button
           type="button"
           className="btn btn-sm btn-outline-success mb-1 ms-1"
-          title={translateMethod('Create new settings')}
+          title={translate('Create new settings')}
           onClick={(e) => {
             createNewSettings();
           }}

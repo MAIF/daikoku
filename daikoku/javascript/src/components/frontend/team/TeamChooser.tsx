@@ -9,7 +9,7 @@ import { updateTeamPromise } from '../../../core';
 import { I18nContext } from '../../../locales/i18n-context';
 
 function TeamChooserComponent(props: any) {
-    const { translateMethod, Translation } = useContext(I18nContext);
+    const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
   const [state, setState] = useState({
@@ -68,14 +68,14 @@ function TeamChooserComponent(props: any) {
             <section className="container">
                 <div className="row mb-2">
                     <div className="col-12 col-sm mb-2">
-                        <input type="text" className="form-control" placeholder={translateMethod('Search a team')} aria-label="Search a team" value={state.searched} onChange={(e) => setState({ ...state, searched: e.target.value })}/>
+                        <input type="text" className="form-control" placeholder={translate('Search a team')} aria-label="Search a team" value={state.searched} onChange={(e) => setState({ ...state, searched: e.target.value })}/>
           </div>
         </div>
                 <div className="row">
                     <div className="d-flex col flex-column p-3">
                         {paginateTeams.map((team) => (<TeamCard key={(team as any)._id} user={props.connectedUser} team={team} askToJoin={(e) => askToJoin(e, team)} redirectToTeamPage={() => navigate(`/${(team as any)._humanReadableId}`)} redirectToTeamSettings={() => redirectToTeamSettings(team)}/>))}
                         <div className="apis__pagination">
-                            <Pagination previousLabel={translateMethod('Previous')} nextLabel={translateMethod('Next')} breakLabel="..." breakClassName={'break'} pageCount={Math.ceil(filteredTeams.length / state.pageNumber)} marginPagesDisplayed={1} pageRangeDisplayed={5} onPageChange={handlePageClick} containerClassName={'pagination'} pageClassName={'page-selector'} forcePage={state.selectedPage} activeClassName={'active'}/>
+                            <Pagination previousLabel={translate('Previous')} nextLabel={translate('Next')} breakLabel="..." breakClassName={'break'} pageCount={Math.ceil(filteredTeams.length / state.pageNumber)} marginPagesDisplayed={1} pageRangeDisplayed={5} onPageChange={handlePageClick} containerClassName={'pagination'} pageClassName={'page-selector'} forcePage={state.selectedPage} activeClassName={'active'}/>
             </div>
           </div>
         </div>

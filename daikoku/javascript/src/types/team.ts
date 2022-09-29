@@ -11,3 +11,22 @@ export interface ITeamSimple {
   apiKeyVisibility: 'Administrator' | 'ApiEditor' | 'User'
   apisCreationPermission?: boolean
 }
+
+export interface IUserSimple {
+  _id: string
+  _humanReadableId: string
+  email: string
+  picture: string
+  isDaikokuAdmin: boolean
+  defaultLanguage?: string
+  isGuest: boolean
+  starredApis: Array<string>
+  twoFactorAuthentication: I2FA | null
+}
+
+interface I2FA {
+  enabled: boolean,
+  secret: string
+  token: string
+  backupCodes: string
+}

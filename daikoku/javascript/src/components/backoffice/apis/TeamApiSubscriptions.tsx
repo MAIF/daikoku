@@ -29,7 +29,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const [loading, setLoading] = useState(true);
   const tableRef = useRef<TableRef>()
 
-  const { translateMethod, language } = useContext(I18nContext);
+  const { translate, language } = useContext(I18nContext);
 
   useEffect(() => {
     Services.teams().then((teams) => {
@@ -37,7 +37,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       setLoading(false);
     });
 
-    document.title = `${currentTeam.name} - ${translateMethod('Subscriptions')}`;
+    document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
   }, []);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       setColumns([
         {
           id: 'name',
-          Header: translateMethod('Name'),
+          Header: translate('Name'),
           style: { textAlign: 'left' },
           accessor: (sub: any) => sub.team === currentTeam._id
             ? sub.customName || sub.apiKey.clientName
@@ -53,21 +53,21 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
           sortType: 'basic',
         },
         {
-          Header: translateMethod('Plan'),
+          Header: translate('Plan'),
           style: { textAlign: 'left' },
           accessor: (sub: any) => Option(api.possibleUsagePlans.find((pp: any) => pp._id === sub.plan))
-            .map((p: any) => p.customName || formatPlanType(p, translateMethod))
+            .map((p: any) => p.customName || formatPlanType(p, translate))
             .getOrNull(),
         },
         {
-          Header: translateMethod('Team'),
+          Header: translate('Team'),
           style: { textAlign: 'left' },
           accessor: (sub: any) => Option(teams.find((t) => t._id === sub.team))
             .map((t: any) => t.name)
             .getOrElse('unknown team'),
         },
         {
-          Header: translateMethod('Enabled'),
+          Header: translate('Enabled'),
           style: { textAlign: 'center' },
           accessor: (api: any) => api.enabled,
           disableSortBy: true,
@@ -84,12 +84,12 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
           },
         },
         {
-          Header: translateMethod('Created at'),
+          Header: translate('Created at'),
           style: { textAlign: 'left' },
           accessor: (sub: any) => formatDate(sub.createdAt, language),
         },
         {
-          Header: translateMethod('Actions'),
+          Header: translate('Actions'),
           style: { textAlign: 'center' },
           disableSortBy: true,
           disableFilters: true,
@@ -98,12 +98,12 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
           Cell: ({ cell: { row: { original }, } }: any) => {
             const sub = original;
             return (<div className="btn-group">
-              <BeautifulTitle title={translateMethod('Update metadata')}>
+              <BeautifulTitle title={translate('Update metadata')}>
                 <button key={`edit-meta-${sub._humanReadableId}`} type="button" className="btn btn-sm btn-access-negative" onClick={() => updateMeta(sub)}>
                   <i className="fas fa-edit" />
                 </button>
               </BeautifulTitle>
-              <BeautifulTitle title={translateMethod('Refresh secret')}>
+              <BeautifulTitle title={translate('Refresh secret')}>
                 <button key={`edit-meta-${sub._humanReadableId}`} type="button" className="btn btn-sm btn-access-negative btn-danger" onClick={() => regenerateSecret(sub)}>
                   <i className="fas fa-sync" />
                 </button>
@@ -127,10 +127,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
 
   const regenerateSecret = (sub: any) => {
     //@ts-ignore //FIXME when ts & monkey patch will be compatible ;)
-    (window.confirm(translateMethod('secret.refresh.confirm', false, 'Are you sure you want to refresh secret for this subscription ?'))).then((ok: any) => {
+    (window.confirm(translate('secret.refresh.confirm', false, 'Are you sure you want to refresh secret for this subscription ?'))).then((ok: any) => {
         if (ok) {
           Services.regenerateApiKeySecret(currentTeam._id, sub._id).then(() => {
-            toastr.success(translateMethod('Success'), translateMethod('secret.refresh.success', false, 'Secret is successfuly refreshed'));
+            toastr.success(translate('Success'), translate('secret.refresh.success'));
             tableRef.current?.update();
           });
         }

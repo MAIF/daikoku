@@ -62,7 +62,7 @@ Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit 
 Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`;
 
 function AssetButton(props: any) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   return (
     <div className="mb-3 row">
@@ -74,7 +74,7 @@ function AssetButton(props: any) {
         <AssetChooserByModal
           team={props.team}
           teamId={props.team._id}
-          label={translateMethod('Set from asset')}
+          label={translate('Set from asset')}
           onSelect={(asset: any) => {
             props.onChange(asset.link);
             props.setValue('contentType', asset.contentType)
@@ -106,7 +106,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
 
   const [deletedPage, setDeletedPage] = useState(false);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const dispatch = useDispatch();
 
@@ -123,14 +123,14 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
   const schema = {
     title: {
       type: type.string,
-      label: translateMethod('Page title'),
+      label: translate('Page title'),
       constraints: [
-        constraints.required(translateMethod("constraints.required.name"))
+        constraints.required(translate("constraints.required.name"))
       ]
     },
     level: {
       type: type.number,
-      label: translateMethod('Page level'),
+      label: translate('Page level'),
       defaultValue: 0,
       props: {
         min: 0, step: 1
@@ -142,7 +142,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
       visible: ({
         rawValues
       }: any) => !rawValues.remoteContentEnabled,
-      label: translateMethod('Page content'),
+      label: translate('Page content'),
       props: {
         height: '800px',
         team: team,
@@ -151,8 +151,8 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
             <button
               type="button"
               className="btn-for-descriptionToolbar"
-              aria-label={translateMethod('Lorem Ipsum')}
-              title={translateMethod('Lorem Ipsum')}
+              aria-label={translate('Lorem Ipsum')}
+              title={translate('Lorem Ipsum')}
               onClick={() => insert(loremIpsum)}
             >
               <i className={`fas fa-feather-alt`} />
@@ -160,15 +160,15 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
             <button
               type="button"
               className="btn-for-descriptionToolbar"
-              aria-label={translateMethod('Long Lorem Ipsum')}
-              title={translateMethod('Long Lorem Ipsum')}
+              aria-label={translate('Long Lorem Ipsum')}
+              title={translate('Long Lorem Ipsum')}
               onClick={() => insert(longLoremIpsum)}
             >
               <i className={`fas fa-feather`} />
             </button>
             <BeautifulTitle
               placement="bottom"
-              title={translateMethod('image url from asset')}
+              title={translate('image url from asset')}
             >
               <AssetChooserByModal
                 typeFilter={MimeTypeFilter.image}
@@ -179,7 +179,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
                 icon="fas fa-file-image"
                 classNames="btn-for-descriptionToolbar"
                 onSelect={(asset: any) => insert(asset.link)}
-                label={translateMethod("Insert URL")}
+                label={translate("Insert URL")}
               />
             </BeautifulTitle>
           </>;
@@ -188,12 +188,12 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
     },
     remoteContentEnabled: {
       type: type.bool,
-      label: translateMethod('Remote content'),
+      label: translate('Remote content'),
     },
     contentType: {
       type: type.string,
       format: format.select,
-      label: translateMethod('Content type'),
+      label: translate('Content type'),
       options: mimeTypes,
     },
     remoteContentUrl: {
@@ -201,7 +201,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
       visible: ({
         rawValues
       }: any) => !!rawValues.remoteContentEnabled,
-      label: translateMethod('Content URL'),
+      label: translate('Content URL'),
       render: ({
         onChange,
         value,
@@ -222,7 +222,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
       visible: ({
         rawValues
       }: any) => !!rawValues.remoteContentEnabled,
-      label: translateMethod('Content headers'),
+      label: translate('Content headers'),
     },
   };
 
@@ -257,13 +257,13 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
         .then(updateDetails)
         .then(() => {
           Services.getDocPage(value._id, selectedPage._id).then((page) => {
-            if (page.error) toastr.error(translateMethod('Error'), page.error);
+            if (page.error) toastr.error(translate('Error'), page.error);
             else setSelected(page);
           });
         });
     } else {
       Services.getDocPage(value._id, selectedPage._id).then((page) => {
-        if (page.error) toastr.error(translateMethod('Error'), page.error);
+        if (page.error) toastr.error(translate('Error'), page.error);
         else setSelected(page);
       });
     }
@@ -273,7 +273,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
     return Services.saveDocPage(team._id, value._id, page || selected)
       .then(() => {
         updateDetails();
-        toastr.success(translateMethod('Succes'), translateMethod("doc.page.save.success"))
+        toastr.success(translate('Succes'), translate("doc.page.save.success"))
       });
   }
 
@@ -340,7 +340,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
 
   function deletePage() {
     (window
-      .confirm(translateMethod('delete.documentation.page.confirm', false, 'Are you sure you want to delete this page ?'))) //@ts-ignore //FIXME: remove ts-ognor after fix typing monkey patch of window.confirm
+      .confirm(translate('delete.documentation.page.confirm'))) //@ts-ignore //FIXME: remove ts-ognor after fix typing monkey patch of window.confirm
       .then((ok: boolean) => {
         if (ok) {
           Services.deleteDocPage(team._id, value._id, selected?._id)

@@ -11,47 +11,47 @@ import { Spinner } from '../../../utils';
 
 
 export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-  const { translateMethod, languages } = useContext(I18nContext)
+  const { translate, languages } = useContext(I18nContext)
 
   const schema = {
     name: {
       type: type.string,
-      label: translateMethod('Name'),
+      label: translate('Name'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.name'))
+        constraints.required(translate('constraints.required.name'))
       ]
     },
     enabled: {
       type: type.bool,
-      label: translateMethod('Enabled'),
+      label: translate('Enabled'),
     },
     domain: {
       type: type.string,
-      label: translateMethod('Domain name'),
+      label: translate('Domain name'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.domain'))
+        constraints.required(translate('constraints.required.domain'))
       ]
     },
     defaultLanguage: {
       type: type.string,
       format: format.buttonsSelect,
-      label: translateMethod('Default language'),
+      label: translate('Default language'),
       defaultValue: Language.fr,
       options: languages,
     },
     contact: {
       type: type.string,
       format: format.email,
-      label: translateMethod('Contact'),
+      label: translate('Contact'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.email')),
-        constraints.email(translateMethod('constraints.matches.email')),
+        constraints.required(translate('constraints.required.email')),
+        constraints.email(translate('constraints.matches.email')),
       ]
     },
     robotTxt: {
       type: type.string,
       format: format.text,
-      label: translateMethod('Robot.txt.label'),
+      label: translate('Robot.txt.label'),
     }
   };
 

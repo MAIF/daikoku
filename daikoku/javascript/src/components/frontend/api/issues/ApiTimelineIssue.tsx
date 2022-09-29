@@ -65,7 +65,7 @@ export function ApiTimelineIssue({
 
   const dispatch = useDispatch();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAPIIssue(api._humanReadableId, id)
@@ -94,7 +94,7 @@ export function ApiTimelineIssue({
     Services.updateIssue(api._id, team._id, id, updatedIssue)
       .then((res) => {
         if (res.error) {
-          toastr.error(translateMethod('Error'), res.error);
+          toastr.error(translate('Error'), res.error);
         } else
           setIssue(updatedIssue);
       });
@@ -125,7 +125,7 @@ export function ApiTimelineIssue({
   }
 
   function removeComment(i: any) {
-    (window.confirm(translateMethod('issues.comments.confirm_delete')) as any).then((ok: any) => {
+    (window.confirm(translate('issues.comments.confirm_delete')) as any).then((ok: any) => {
       if (ok) {
         const updatedIssue = {
           ...issue,
@@ -134,9 +134,9 @@ export function ApiTimelineIssue({
         setIssue(updatedIssue);
         Services.updateIssue(api._humanReadableId, team._id, id, updatedIssue).then((res) => {
           if (res.error)
-            toastr.error(translateMethod('Error'), res.error);
+            toastr.error(translate('Error'), res.error);
           else
-            toastr.success(translateMethod('Success'), translateMethod('Api saved'));
+            toastr.success(translate('Success'), translate('Api saved'));
         });
       }
     });
@@ -167,18 +167,18 @@ export function ApiTimelineIssue({
 
   const handleTagCreation = (name: any) => {
     dispatch(openFormModal({
-      title: translateMethod('issues.create_tag'),
+      title: translate('issues.create_tag'),
       schema: {
         name: {
           type: type.string,
-          label: translateMethod('Name'),
+          label: translate('Name'),
           constraints: [
-            constraints.required(translateMethod('constraints.required.name'))
+            constraints.required(translate('constraints.required.name'))
           ]
         },
         color: {
           type: type.string,
-          label: translateMethod('Color'),
+          label: translate('Color'),
           defaultValue: '#fd0643',
           render: ({
             value,
@@ -196,7 +196,7 @@ export function ApiTimelineIssue({
             )
           },
           constraints: [
-            constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translateMethod('color.unavailable'))
+            constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translate('color.unavailable'))
           ]
         }
       },
@@ -205,7 +205,7 @@ export function ApiTimelineIssue({
         onChange(updatedApi);
       },
       value: { name, color: randomColor() },
-      actionLabel: translateMethod('Create')
+      actionLabel: translate('Create')
     }))
   }
 
@@ -218,14 +218,14 @@ export function ApiTimelineIssue({
         <div className="d-flex">
           {editionMode ? (<div className="d-flex ms-3">
             <button className="btn btn-success me-1" onClick={() => updateIssue(issue)}>
-              {translateMethod('Save')}
+              {translate('Save')}
             </button>
             <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
-              {translateMethod('Cancel')}
+              {translate('Cancel')}
             </button>
           </div>) : (<>
             <button className="btn btn-outline-secondary me-1" onClick={() => handleEdition(true)}>
-              {translateMethod('Edit')}
+              {translate('Edit')}
             </button>
           </>)}
         </div>
@@ -234,15 +234,15 @@ export function ApiTimelineIssue({
     <div className="d-flex align-items-center pb-3 mb-3">
       <div style={styles.getStatus((issue as any).open)} className="d-flex justify-content-center align-items-center me-3">
         <i className="fa fa-exclamation-circle me-2" style={{ color: '#fff' }} />
-        {(issue as any).open ? translateMethod('issues.open') : translateMethod('issues.closed')}
+        {(issue as any).open ? translate('issues.open') : translate('issues.closed')}
       </div>
       <div>
         <span className="pe-1" style={styles.bold}>
           {(issue as any).by ? (issue as any).by._humanReadableId : ''}
         </span>
-        {translateMethod('issues.opened_message')}{' '}
-        {moment((issue as any).createdDate).format(translateMethod('moment.date.format.without.hours'))} ·{' '}
-        {issue.comments ? issue.comments.length : 0} {translateMethod('issues.comments')}
+        {translate('issues.opened_message')}{' '}
+        {moment((issue as any).createdDate).format(translate('moment.date.format.without.hours'))} ·{' '}
+        {issue.comments ? issue.comments.length : 0} {translate('issues.comments')}
       </div>
     </div>
 
@@ -254,7 +254,7 @@ export function ApiTimelineIssue({
       <div className="col-md-3">
         <div>
           <div className="d-flex flex-column align-items-start mb-2">
-            <label htmlFor="tags" className='me-1'>{translateMethod('issues.tags')}</label>
+            <label htmlFor="tags" className='me-1'>{translate('issues.tags')}</label>
             {connectedUser && !connectedUser.isGuest && (
               <Select
                 id="tags"
@@ -280,7 +280,7 @@ export function ApiTimelineIssue({
                 <span className='cursor-pointer' onClick={() => setTags(tags.filter(t => t.value !== tag.value))}><X /></span>
               </div>);
             })}
-            {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
+            {tags && tags.length <= 0 && <p>{translate('issues.no_tags')}</p>}
           </div>
         </div>
       </div>
@@ -301,7 +301,7 @@ function Comment({
 }: any) {
   const [showActions, toggleActions] = useState(false);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   return (
     <div className="d-flex pb-4">
@@ -319,8 +319,8 @@ function Comment({
           <span className="pe-1" style={styles.bold}>
             {by._humanReadableId}
           </span>
-          <span className="pe-1">{translateMethod('issues.commented_on')}</span>
-          {moment(createdDate).format(translateMethod('moment.date.format.without.hours'))}
+          <span className="pe-1">{translate('issues.commented_on')}</span>
+          {moment(createdDate).format(translate('moment.date.format.without.hours'))}
           {by._id === connectedUser._id && editing !== true && (
             <>
               {showActions ? (
@@ -386,7 +386,7 @@ function NewComment({
   openIssue,
   team
 }: any) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   return (
     <div className="d-flex pb-4">
       <div className="dropdown pe-2">
@@ -400,7 +400,7 @@ function NewComment({
       </div>
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>
-          {translateMethod('issues.new_comment')}
+          {translate('issues.new_comment')}
         </div>
         <div
           className="p-3"
@@ -418,7 +418,7 @@ function NewComment({
                 format: format.markdown,
                 label: null,
                 constraints: [
-                  constraints.required(translateMethod('constraints.required.content'))
+                  constraints.required(translate('constraints.required.content'))
                 ]
               }
             }}
@@ -429,18 +429,18 @@ function NewComment({
                     {open && (
                       <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
                         <i className="fa fa-exclamation-circle me-2" />
-                        {translateMethod('issues.actions.close')}
+                        {translate('issues.actions.close')}
                       </button>
                     )}
                     {!open && (
                       <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
                         <i className="fa fa-exclamation-circle me-2" />
-                        {translateMethod('issues.actions.reopen')}
+                        {translate('issues.actions.reopen')}
                       </button>
                     )}
                   </Can>
                   <button type="button" className="btn btn-success" onClick={valid}>
-                    {translateMethod('issues.actions.comment')}
+                    {translate('issues.actions.comment')}
                   </button>
                 </div>
               )

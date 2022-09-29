@@ -12,7 +12,7 @@ export const SearchPanel = ({
 }: any) => {
   const [results, setResults] = useState<Array<any>>([]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const { tenant, connectedUser } = useSelector((state) => (state as any).context);
 
@@ -24,7 +24,7 @@ export const SearchPanel = ({
     const options = [
       {
         value: 'me',
-        label: translateMethod('My profile'),
+        label: translate('My profile'),
         type: 'link',
         url: '/me',
       },
@@ -32,7 +32,7 @@ export const SearchPanel = ({
     if (connectedUser?.isDaikokuAdmin)
       options.push({
         value: 'daikoku',
-        label: translateMethod('Daikoku settings'),
+        label: translate('Daikoku settings'),
         type: 'link',
         url: `/settings/tenants/${tenant._humanReadableId}`,
       });
@@ -48,7 +48,7 @@ export const SearchPanel = ({
           utils,
           ...result.map((item: any) => ({
             ...item,
-            label: translateMethod(item.label)
+            label: translate(item.label)
           })),
         ])
       );
@@ -59,7 +59,7 @@ export const SearchPanel = ({
   return (
     <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
       <input
-        placeholder={translateMethod('search.placeholder')}
+        placeholder={translate('search.placeholder')}
         className="mb-3 form-control"
         onChange={(e) => debouncedSearch(e.target.value)}
       />

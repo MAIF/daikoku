@@ -104,7 +104,7 @@ export const NavProvider = ({ children, loginAction, loginProvider }:
 
 export const useApiFrontOffice = (api: any, team: any) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const { connectedUser, tenant } = useSelector((state) => (state as any).context);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -118,17 +118,17 @@ export const useApiFrontOffice = (api: any, team: any) => {
         order: 1,
         links: {
           description: {
-            label: translateMethod('Description'),
+            label: translate('Description'),
             action: () => navigateTo('description'),
             className: { active: currentTab === 'description' },
           },
           pricings: {
-            label: translateMethod('Plan', true),
+            label: translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
           documentation: {
-            label: translateMethod('Documentation'),
+            label: translate('Documentation'),
             action: () => {
               if (api?.documentation?.pages?.length) navigateTo('documentation');
             },
@@ -138,7 +138,7 @@ export const useApiFrontOffice = (api: any, team: any) => {
             },
           },
           swagger: {
-            label: translateMethod('Swagger'),
+            label: translate('Swagger'),
             action: () => {
               if (api?.swagger?.content || api?.swagger?.url) navigateTo('swagger');
             },
@@ -148,21 +148,21 @@ export const useApiFrontOffice = (api: any, team: any) => {
             },
           },
           testing: {
-            label: translateMethod('Testing'),
+            label: translate('Testing'),
             action: () => {
               if (api?.testing?.enabled) navigateTo('testing');
             },
             className: { active: currentTab === 'testing', disabled: !api?.testing?.enabled },
           },
           news: {
-            label: translateMethod('News'),
+            label: translate('News'),
             action: () => {
               if (api?.posts?.length) navigateTo('news');
             },
             className: { active: currentTab === 'news', disabled: !api?.posts?.length },
           },
           issues: {
-            label: translateMethod('Issues'),
+            label: translate('Issues'),
             action: () => navigateTo('issues'),
             className: {
               active: currentTab === 'issues' || currentTab === 'labels',
@@ -174,14 +174,14 @@ export const useApiFrontOffice = (api: any, team: any) => {
         order: 2,
         links: {
           edit: {
-            label: translateMethod('edit'),
+            label: translate('edit'),
             component: (
               <Can I={manage} a={API} team={team}>
                 <Link
                   to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/${currentTab}`}
                   className="btn btn-sm btn-access-negative mb-2"
                 >
-                  {translateMethod('Edit API')}
+                  {translate('Edit API')}
                 </Link>
               </Can>
             ),
@@ -200,7 +200,7 @@ export const useApiFrontOffice = (api: any, team: any) => {
                   )(dispatch)
                 }
               >
-                {translateMethod(`contact.team`, false, undefined, team?.name)}
+                {translate({ key: `contact.team`, replacements: [team?.name] })}
               </button>
             ),
           },
@@ -239,7 +239,7 @@ export const useApiFrontOffice = (api: any, team: any) => {
 };
 export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const { connectedUser, tenant } = useSelector((state) => (state as any).context);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -253,22 +253,22 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
         order: 1,
         links: {
           apis: {
-            label: translateMethod('APIs'),
+            label: translate('APIs'),
             action: () => navigateTo('apis'),
             className: { active: currentTab === 'apis' },
           },
           description: {
-            label: translateMethod('Description'),
+            label: translate('Description'),
             action: () => navigateTo('description'),
             className: { active: currentTab === 'description' },
           },
           pricings: {
-            label: translateMethod('Plan', true),
+            label: translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
           documentation: {
-            label: translateMethod('Documentation'),
+            label: translate('Documentation'),
             action: () => {
               if (apigroup?.documentation?.pages?.length) navigateTo('documentation');
             },
@@ -278,14 +278,14 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
             },
           },
           news: {
-            label: translateMethod('News'),
+            label: translate('News'),
             action: () => {
               if (apigroup?.posts?.length) 'news';
             },
             className: { active: currentTab === 'news', disabled: !apigroup?.posts?.length },
           },
           issues: {
-            label: translateMethod('Issues'),
+            label: translate('Issues'),
             action: () => navigateTo('issues'),
             className: {
               active: currentTab === 'issues' || currentTab === 'labels',
@@ -297,20 +297,20 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
         order: 2,
         links: {
           edit: {
-            label: translateMethod('edit'),
+            label: translate('edit'),
             component: (
               <Can I={manage} a={API} team={team}>
                 <Link
                   to={`/${team?._humanReadableId}/settings/apigroups/${apigroup?._humanReadableId}/infos`}
                   className="btn btn-sm btn-access-negative mb-2"
                 >
-                  {translateMethod('Edit APIs group')}
+                  {translate('Edit APIs group')}
                 </Link>
               </Can>
             ),
           },
           contact: {
-            label: translateMethod('contact'),
+            label: translate('contact'),
             component: (
               <button
                 className="btn btn-sm btn-access-negative mb-2"
@@ -324,7 +324,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
                   )(dispatch)
                 }
               >
-                {translateMethod(`contact.team`, false, undefined, team?.name)}
+                {translate({ key: `contact.team`, replacements: [team?.name] })}
               </button>
             ),
           },
@@ -364,7 +364,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
 
 export const useApiBackOffice = (api: any, creation: any) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const { currentTeam } = useSelector((state) => (state as any).context);
 
@@ -380,49 +380,49 @@ export const useApiBackOffice = (api: any, creation: any) => {
         links: {
           informations: {
             order: 2,
-            label: translateMethod('Informations'),
+            label: translate('Informations'),
             action: () => navigateTo('infos'),
             className: { active: currentTab === 'infos' },
           },
           plans: {
             order: 3,
             visible: !creation,
-            label: translateMethod('Plans'),
+            label: translate('Plans'),
             action: () => navigateTo('plans'),
             className: { active: currentTab === 'plans' },
           },
           documentation: {
             order: 4,
             visible: !creation,
-            label: translateMethod('Documentation'),
+            label: translate('Documentation'),
             action: () => navigateTo('documentation'),
             className: { active: currentTab === 'documentation' },
           },
           news: {
             order: 5,
             visible: !creation,
-            label: translateMethod('News'),
+            label: translate('News'),
             action: () => navigateTo('news'),
             className: { active: currentTab === 'news' },
           },
           subscriptions: {
             order: 5,
             visible: !creation,
-            label: translateMethod('Subscriptions'),
+            label: translate('Subscriptions'),
             action: () => navigateTo('subscriptions'),
             className: { active: currentTab === 'subscriptions' },
           },
           consumptions: {
             order: 5,
             visible: !creation,
-            label: translateMethod('Consumptions'),
+            label: translate('Consumptions'),
             action: () => navigateTo('stats'),
             className: { active: currentTab === 'stats' },
           },
           settings: {
             order: 5,
             visible: !creation,
-            label: translateMethod('Settings'),
+            label: translate('Settings'),
             action: () => navigateTo('settings'),
             className: { active: currentTab === 'settings' },
           },
@@ -460,7 +460,7 @@ export const useApiBackOffice = (api: any, creation: any) => {
 
 export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const { currentTeam } = useSelector((state) => (state as any).context);
 
@@ -476,35 +476,35 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
         links: {
           informations: {
             order: 2,
-            label: translateMethod('Informations'),
+            label: translate('Informations'),
             action: () => navigateTo('infos'),
             className: { active: currentTab === 'infos' },
           },
           plans: {
             order: 3,
             visible: !creation,
-            label: translateMethod('Plans'),
+            label: translate('Plans'),
             action: () => navigateTo('plans'),
             className: { active: currentTab === 'plans' },
           },
           subscriptions: {
             order: 5,
             visible: !creation,
-            label: translateMethod('Subscriptions'),
+            label: translate('Subscriptions'),
             action: () => navigateTo('subscriptions'),
             className: { active: currentTab === 'subscriptions' },
           },
           consumptions: {
             order: 5,
             visible: !creation,
-            label: translateMethod('Consumptions'),
+            label: translate('Consumptions'),
             action: () => navigateTo('stats'),
             className: { active: currentTab === 'stats' },
           },
           settings: {
             order: 5,
             visible: !creation,
-            label: translateMethod('Settings'),
+            label: translate('Settings'),
             action: () => navigateTo('settings'),
             className: { active: currentTab === 'settings' },
           },
@@ -518,7 +518,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
                 to={`/${currentTeam._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
                 className="btn btn-sm btn-access-negative mb-2"
               >
-                {translateMethod('View this APIs Group')}
+                {translate('View this APIs Group')}
               </Link>
             ),
           },
@@ -534,12 +534,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
                 to={`/${currentTeam._humanReadableId}/settings/apis`}
               >
                 <i className="fas fa-chevron-left" />
-                {translateMethod(
-                  'back.to.team',
-                  false,
-                  `Back to {props.currentTeam._humanReadableId}`,
-                  currentTeam.name
-                )}
+                {translate({key: 'back.to.team', replacements: [currentTeam.name]})}
               </Link>
             ),
           },
@@ -577,7 +572,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
 
 export const useTeamBackOffice = (team: any) => {
   const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const { currentTeam } = useSelector((state) => (state as any).context);
 
@@ -592,24 +587,24 @@ export const useTeamBackOffice = (team: any) => {
         order: 1,
         links: {
           settings: {
-            label: translateMethod('Settings'),
+            label: translate('Settings'),
             action: () => navigateTo(''),
             className: {
               active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab),
             },
             childs: {
               informations: {
-                label: translateMethod('Informations'),
+                label: translate('Informations'),
                 action: () => navigateTo('edition'),
                 className: { active: currentTab === 'edition' },
               },
               assets: {
-                label: translateMethod('Assets'),
+                label: translate('Assets'),
                 action: () => navigateTo('assets'),
                 className: { active: currentTab === 'assets' },
               },
               members: {
-                label: translateMethod('Members'),
+                label: translate('Members'),
                 action: () => navigateTo('members'),
                 visible: team.type !== 'Personal',
                 className: { active: currentTab === 'members' },
@@ -617,29 +612,29 @@ export const useTeamBackOffice = (team: any) => {
             },
           },
           apis: {
-            label: translateMethod('Apis'),
+            label: translate('Apis'),
             action: () => navigateTo('apis'),
             className: { active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab) },
           },
           apikeys: {
-            label: translateMethod('API keys'),
+            label: translate('API keys'),
             action: () => navigateTo('apikeys'),
             className: { active: ['apikeys', 'consumption'].includes(currentTab) },
             childs: {
               stats: {
-                label: translateMethod('Global stats'),
+                label: translate('Global stats'),
                 action: () => navigateTo('consumption'),
                 className: { active: currentTab === 'consumption' },
               },
             },
           },
           billing: {
-            label: translateMethod('Billing'),
+            label: translate('Billing'),
             action: () => navigateTo('billing'),
             className: { active: ['billing', 'income'].includes(currentTab) },
             childs: {
               income: {
-                label: translateMethod('Income'),
+                label: translate('Income'),
                 action: () => navigateTo('income'),
                 className: { active: currentTab === 'income' },
               },
@@ -676,7 +671,7 @@ export const useTeamBackOffice = (team: any) => {
 
 export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   const { setMode, setOffice, addMenu, setMenu, setTenant } = useContext(NavContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();
   const match = useMatch('/settings/:tab/:subtab');
@@ -692,89 +687,89 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
         order: 1,
         links: {
           settings: {
-            label: translateMethod('Settings'),
+            label: translate('Settings'),
             action: () => navigateTo('settings/general'),
             className: { active: currentTab === 'settings' },
             childs: {
               general: {
-                label: translateMethod('General'),
+                label: translate('General'),
                 action: () => navigateTo('settings/general'),
                 className: { active: subTab === 'general' },
               },
               custom: {
-                label: translateMethod('Customization'),
+                label: translate('Customization'),
                 action: () => navigateTo('settings/customization'),
                 className: { active: subTab === 'customization' },
               },
               audit: {
-                label: translateMethod('Audit'),
+                label: translate('Audit'),
                 action: () => navigateTo('settings/audit'),
                 className: { active: subTab === 'audit' },
               },
               mail: {
-                label: translateMethod('Mail'),
+                label: translate('Mail'),
                 action: () => navigateTo('settings/mail'),
                 className: { active: subTab === 'mail' },
               },
               authentication: {
-                label: translateMethod('Authentication'),
+                label: translate('Authentication'),
                 action: () => navigateTo('settings/authentication'),
                 className: { active: subTab === 'authentication' },
               },
               bucket: {
-                label: translateMethod('Bucket'),
+                label: translate('Bucket'),
                 action: () => navigateTo('settings/bucket'),
                 className: { active: subTab === 'bucket' },
               },
               security: {
-                label: translateMethod('Security'),
+                label: translate('Security'),
                 action: () => navigateTo('settings/security'),
                 className: { active: subTab === 'security' },
               },
             },
           },
           message: {
-            label: translateMethod('Message', true),
+            label: translate({key: 'Message', plural: true}),
             action: () => navigateTo('messages'),
             className: { active: currentTab === 'messages' },
           },
           otoroshi: {
-            label: translateMethod('Otoroshi instance', true),
+            label: translate({key: 'Otoroshi instance', plural: true}),
             action: () => navigateTo('otoroshis'),
             className: { active: currentTab === 'otoroshis' },
           },
           admins: {
-            label: translateMethod('Admins'),
+            label: translate('Admins'),
             action: () => navigateTo('admins'),
             className: { active: currentTab === 'admins' },
           },
           audit: {
-            label: translateMethod('Audit trail'),
+            label: translate('Audit trail'),
             action: () => navigateTo('audit'),
             className: { active: currentTab === 'audit' },
           },
           teams: {
-            label: translateMethod('Teams'),
+            label: translate('Teams'),
             action: () => navigateTo('teams'),
             className: { active: currentTab === 'teams' },
           },
           assets: {
-            label: translateMethod('Tenant assets'),
+            label: translate('Tenant assets'),
             action: () => navigateTo('assets'),
             className: { active: currentTab === 'assets' },
           },
           init: {
-            label: translateMethod('Initialization'),
+            label: translate('Initialization'),
             action: () => navigateTo('init'),
             className: { active: currentTab === 'init' },
           },
           internationalization: {
-            label: translateMethod('Internationalization'),
+            label: translate('Internationalization'),
             action: () => navigateTo('internationalization/mail'),
             className: { active: currentTab === 'internationalization' },
           },
           pages: {
-            label: translateMethod('Pages'),
+            label: translate('Pages'),
             action: () => navigateTo('pages'),
             className: { active: currentTab === 'pages' },
           },
@@ -805,7 +800,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
 
 export const useDaikokuBackOffice = () => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();
   const match = useMatch('/settings/:tab/*');
@@ -814,71 +809,72 @@ export const useDaikokuBackOffice = () => {
   const schema = (currentTab?: string, subTab?: string) => {
     console.debug(currentTab, subTab)
     return ({
-    blocks: {
-      links: {
-        order: 1,
+      blocks: {
         links: {
-          tenants: {
-            label: translateMethod('Tenants'),
-            action: () => navigateTo('tenants'),
-            className: { active: currentTab === 'tenants' },
-            childs: matchEdition ? {
-              general: {
-                label: translateMethod('General'),
-                action: () => navigateTo(`tenants/${matchEdition.params.id}/general`),
-                className: { active: subTab === 'general' },
-              },
-              custom: {
-                label: translateMethod('Customization'),
-                action: () => navigateTo(`tenants/${matchEdition.params.id}/customization`),
-                className: { active: subTab === 'customization' },
-              },
-              audit: {
-                label: translateMethod('Audit'),
-                action: () => navigateTo(`tenants/${matchEdition.params.id}/audit`),
-                className: { active: subTab === 'audit' },
-              },
-              mail: {
-                label: translateMethod('Mail'),
-                action: () => navigateTo(`tenants/${matchEdition.params.id}/mail`),
-                className: { active: subTab === 'mail' },
-              },
-              authentication: {
-                label: translateMethod('Authentication'),
-                action: () => navigateTo(`tenants/${matchEdition.params.id}/authentication`),
-                className: { active: subTab === 'authentication' },
-              },
-              bucket: {
-                label: translateMethod('Bucket'),
-                action: () => navigateTo(`tenants/${matchEdition.params.id}/bucket`),
-                className: { active: subTab === 'bucket' },
-              },
-              security: {
-                label: translateMethod('Security'),
-                action: () => navigateTo(`tenants/${matchEdition.params.id}/security`),
-                className: { active: subTab === 'security' },
-              },
-            } : {},
-          },
-          users: {
-            label: translateMethod('Users'),
-            action: () => navigateTo('users'),
-            className: { active: currentTab === 'users' },
-          },
-          sessions: {
-            label: translateMethod('User sessions'),
-            action: () => navigateTo('sessions'),
-            className: { active: currentTab === 'sessions' },
-          },
-          importexport: {
-            label: translateMethod('Import / Export'),
-            action: () => navigateTo('import-export'),
-            className: { active: currentTab === 'import-export' },
+          order: 1,
+          links: {
+            tenants: {
+              label: translate('Tenants'),
+              action: () => navigateTo('tenants'),
+              className: { active: currentTab === 'tenants' },
+              childs: matchEdition ? {
+                general: {
+                  label: translate('General'),
+                  action: () => navigateTo(`tenants/${matchEdition.params.id}/general`),
+                  className: { active: subTab === 'general' },
+                },
+                custom: {
+                  label: translate('Customization'),
+                  action: () => navigateTo(`tenants/${matchEdition.params.id}/customization`),
+                  className: { active: subTab === 'customization' },
+                },
+                audit: {
+                  label: translate('Audit'),
+                  action: () => navigateTo(`tenants/${matchEdition.params.id}/audit`),
+                  className: { active: subTab === 'audit' },
+                },
+                mail: {
+                  label: translate('Mail'),
+                  action: () => navigateTo(`tenants/${matchEdition.params.id}/mail`),
+                  className: { active: subTab === 'mail' },
+                },
+                authentication: {
+                  label: translate('Authentication'),
+                  action: () => navigateTo(`tenants/${matchEdition.params.id}/authentication`),
+                  className: { active: subTab === 'authentication' },
+                },
+                bucket: {
+                  label: translate('Bucket'),
+                  action: () => navigateTo(`tenants/${matchEdition.params.id}/bucket`),
+                  className: { active: subTab === 'bucket' },
+                },
+                security: {
+                  label: translate('Security'),
+                  action: () => navigateTo(`tenants/${matchEdition.params.id}/security`),
+                  className: { active: subTab === 'security' },
+                },
+              } : {},
+            },
+            users: {
+              label: translate('Users'),
+              action: () => navigateTo('users'),
+              className: { active: currentTab === 'users' },
+            },
+            sessions: {
+              label: translate('User sessions'),
+              action: () => navigateTo('sessions'),
+              className: { active: currentTab === 'sessions' },
+            },
+            importexport: {
+              label: translate('Import / Export'),
+              action: () => navigateTo('import-export'),
+              className: { active: currentTab === 'import-export' },
+            },
           },
         },
-      },
-    }
-  })};
+      }
+    })
+  };
 
   const navigateTo = (navTab: any) => {
     navigate(`/settings/${navTab}`);
@@ -900,7 +896,7 @@ export const useDaikokuBackOffice = () => {
 
 export const useUserBackOffice = () => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const { connectedUser } = useSelector((state) => (state as any).context);
 
@@ -915,12 +911,12 @@ export const useUserBackOffice = () => {
         order: 1,
         links: {
           profile: {
-            label: translateMethod('My profile'),
+            label: translate('My profile'),
             action: () => navigateTo('me'),
             className: { active: currentTab === 'me' },
           },
           notification: {
-            label: translateMethod('Notifications'),
+            label: translate('Notifications'),
             action: () => navigateTo('notifications'),
             className: { active: currentTab === 'notifications' },
           },

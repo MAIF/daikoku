@@ -87,7 +87,7 @@ const maybeCreateThumbnail = (id: any, file: any) => {
 const ReplaceButton = (props: any) => {
   const [file, setFile] = useState<File>();
   const [input, setInput] = useState<HTMLInputElement | null>(null);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     if (file) {
@@ -127,9 +127,9 @@ const ReplaceButton = (props: any) => {
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (e.target.files && e.target.files.length > 1) {
-            props.displayError(translateMethod('error.replace.files.multi'));
+            props.displayError(translate('error.replace.files.multi'));
           } else if (file && props.asset.contentType !== file.type) {
-            props.displayError(translateMethod('error.replace.files.content.type'));
+            props.displayError(translate('error.replace.files.content.type'));
           } else {
             setFile(file);
           }
@@ -146,13 +146,10 @@ export const AssetsList = ({
   const dispatch = useDispatch();
   const { currentTeam, tenant } = useSelector((state) => (state as any).context);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod(
-      'Asset',
-      true
-    )}`;
+    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translate({key: 'Asset', plural: true})}`;
   }, []);
 
   const acceptableMimeTypes = mimeTypes
@@ -160,35 +157,35 @@ export const AssetsList = ({
   const schema = {
     filename: {
       type: type.string,
-      label: translateMethod('Asset filename'),
+      label: translate('Asset filename'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.name'))
+        constraints.required(translate('constraints.required.name'))
       ]
     },
     title: {
       type: type.string,
-      label: translateMethod('Asset title'),
+      label: translate('Asset title'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.title'))
+        constraints.required(translate('constraints.required.title'))
       ]
     },
     description: {
       type: type.string,
-      label: translateMethod('Description')
+      label: translate('Description')
     },
     contentType: {
       type: type.string,
       format: format.select,
-      label: translateMethod('Content-Type'),
+      label: translate('Content-Type'),
       options: acceptableMimeTypes,
       constraints: [
-        constraints.required(translateMethod('constraints.file.type.required')),
-        constraints.oneOf(acceptableMimeTypes.map(m => m.value), translateMethod("constraints.file.type.forbidden"))
+        constraints.required(translate('constraints.file.type.required')),
+        constraints.oneOf(acceptableMimeTypes.map(m => m.value), translate("constraints.file.type.forbidden"))
       ]
     },
     file: {
       type: type.file,
-      label: translateMethod('File'),
+      label: translate('File'),
       onChange: ({
         value,
         setValue
@@ -199,9 +196,9 @@ export const AssetsList = ({
         setValue('contentType', file.type)
       },
       constraints: [
-        constraints.required(translateMethod("constraints.required.file")),
+        constraints.required(translate("constraints.required.file")),
         constraints.test('test.file.type',
-          translateMethod("constraints.file.type.forbidden"),
+          translate("constraints.file.type.forbidden"),
           (v) => acceptableMimeTypes.some(mimeType => mimeType.value === v[0].type))
       ]
     },
@@ -209,22 +206,22 @@ export const AssetsList = ({
 
   const columns = [
     {
-      Header: translateMethod('Filename'),
+      Header: translate('Filename'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.meta && item.meta.filename ? item.meta.filename : '--',
     },
     {
-      Header: translateMethod('Title'),
+      Header: translate('Title'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.meta && item.meta.title ? item.meta.title : '--',
     },
     {
-      Header: translateMethod('Description'),
+      Header: translate('Description'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.meta && item.meta.desc ? item.meta.desc : '--',
     },
     {
-      Header: translateMethod('Thumbnail'),
+      Header: translate('Thumbnail'),
       style: { textAlign: 'left' },
       disableSortBy: true,
       disableFilters: true,
@@ -258,12 +255,12 @@ export const AssetsList = ({
       },
     },
     {
-      Header: translateMethod('Content-Type'),
+      Header: translate('Content-Type'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.meta && item.meta['content-type'] ? item.meta['content-type'] : '--',
     },
     {
-      Header: translateMethod('Actions'),
+      Header: translate('Actions'),
       disableSortBy: true,
       disableFilters: true,
       style: { textAlign: 'right' },
@@ -289,7 +286,7 @@ export const AssetsList = ({
               asset={item}
               tenantMode={tenantMode}
               teamId={currentTeam ? currentTeam._id : undefined}
-              displayError={(error: any) => toastr.error(translateMethod('Error'), error)}
+              displayError={(error: any) => toastr.error(translate('Error'), error)}
               postAction={() => tableRef.current?.update()}
             />
             <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
@@ -336,7 +333,7 @@ export const AssetsList = ({
       .then((response) => response.text())
       .then((content) =>
         dispatch(openFormModal({
-          title: translateMethod('asset.update'),
+          title: translate('asset.update'),
           schema: {
             content: {
               type: type.string,
@@ -352,24 +349,24 @@ export const AssetsList = ({
               Services.updateTenantAsset(asset.meta.asset, asset.contentType, file)
                 .then((r) => {
                   if (r.error) {
-                    toastr.error(translateMethod('Error'), r.error)
+                    toastr.error(translate('Error'), r.error)
                   } else {
-                    toastr.success(translateMethod('Success'), translateMethod('asset.update.successful'))
+                    toastr.success(translate('Success'), translate('asset.update.successful'))
                   }
                 });
             } else {
               Services.updateAsset(currentTeam._id, asset.meta.asset, asset.contentType, file)
                 .then((r) => {
                   if (r.error) {
-                    toastr.error(translateMethod('Error'), r.error)
+                    toastr.error(translate('Error'), r.error)
                   } else {
-                    toastr.success(translateMethod('Success'), translateMethod('asset.update.successful'))
+                    toastr.success(translate('Success'), translate('asset.update.successful'))
                   }
                 })
             }
           },
           value: { content },
-          actionLabel: translateMethod('Update')
+          actionLabel: translate('Update')
         }))
       );
   };
@@ -392,7 +389,7 @@ export const AssetsList = ({
 
   const deleteAsset = (asset: any) => {
     (window
-      .confirm(translateMethod('delete asset', 'Are you sure you want to delete that asset ?')) as any).then((ok: any) => {
+      .confirm(translate('delete asset')) as any).then((ok: any) => {
         if (ok) {
           serviceDelete(asset.meta.asset)
             .then(() => tableRef.current?.update());
@@ -443,13 +440,13 @@ export const AssetsList = ({
           <button
             className='btn btn-outline-success'
             onClick={() => dispatch(openFormModal({
-              title: translateMethod("Add asset"),
+              title: translate("Add asset"),
               schema,
               onSubmit: addAsset,
-              actionLabel: translateMethod('Add asset')
+              actionLabel: translate('Add asset')
             }))}>
 
-            {translateMethod("add asset")}
+            {translate("add asset")}
           </button>
         </div>
       </div>

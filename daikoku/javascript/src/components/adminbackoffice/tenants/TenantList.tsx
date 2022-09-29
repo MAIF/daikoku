@@ -18,7 +18,7 @@ export const TenantList = () => {
     getTenants();
   }, []);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const getTenants = () => Services.allTenants().then(setTenants);
 
@@ -33,7 +33,7 @@ export const TenantList = () => {
   };
 
   const removeTenant = (tenantId: any) => {
-    (window.confirm(translateMethod('delete.tenant.confirm')) as any).then((ok: any) => {
+    (window.confirm(translate('delete.tenant.confirm')) as any).then((ok: any) => {
       if (ok) {
         Services.deleteTenant(tenantId).then(() => getTenants());
       }
@@ -51,7 +51,7 @@ export const TenantList = () => {
             <Translation i18nkey="Tenant" isPlural>
               Tenants
             </Translation>
-            <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translateMethod('Create a new tenant')} href="#" onClick={(e) => {
+            <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translate('Create a new tenant')} href="#" onClick={(e) => {
               e.preventDefault();
               createNewTenant();
             }}>
@@ -59,7 +59,7 @@ export const TenantList = () => {
             </a>
           </h1>
           <div className="col-5">
-            <input placeholder={translateMethod('Find a tenant')} className="form-control" onChange={(e) => {
+            <input placeholder={translate('Find a tenant')} className="form-control" onChange={(e) => {
               setSearch(e.target.value);
             }} />
           </div>
@@ -71,22 +71,22 @@ export const TenantList = () => {
             {
               action: () => removeTenant(tenant._id),
               iconClass: 'fas fa-trash delete-icon',
-              tooltip: translateMethod('Remove tenant'),
+              tooltip: translate('Remove tenant'),
             },
             {
               redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}/general`),
               iconClass: 'fas fa-pen',
-              tooltip: translateMethod('Edit tenant'),
+              tooltip: translate('Edit tenant'),
             },
             {
               link: `/api/tenants/${tenant._id}/_redirect`,
               iconClass: 'fas fa-link',
-              tooltip: translateMethod('Go to tenant'),
+              tooltip: translate('Go to tenant'),
             },
             {
               redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}/admins`),
               iconClass: 'fas fa-user-shield',
-              tooltip: translateMethod('Admins'),
+              tooltip: translate('Admins'),
             },
           ]} />);
         }} />

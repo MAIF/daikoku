@@ -13,14 +13,14 @@ import { useTeamBackOffice } from '../../../contexts';
 export const TeamApiKeyConsumption = () => {
   const { currentTeam } = useSelector((state) => (state as any).context);
   useTeamBackOffice(currentTeam);
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
 
   const mappers = [
     {
       type: 'LineChart',
       label: (data: any, max: any) => getLabelForDataIn(data, max),
-      title: translateMethod('Data In'),
+      title: translate('Data In'),
       formatter: (data: any) => data.map((item: any) => ({
         date: moment(item.from).format('DD MMM.'),
         count: item.hits
@@ -30,13 +30,13 @@ export const TeamApiKeyConsumption = () => {
     },
     {
       type: 'Global',
-      label: translateMethod('Global informations'),
+      label: translate('Global informations'),
       formatter: (data: any) => data.length ? data[data.length - 1].globalInformations : [],
     },
   ];
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translateMethod('API key consumption')}`;
+    document.title = `${currentTeam.name} - ${translate('API key consumption')}`;
   }, []);
 
   const getLabelForDataIn = (datas: any, max: any) => {

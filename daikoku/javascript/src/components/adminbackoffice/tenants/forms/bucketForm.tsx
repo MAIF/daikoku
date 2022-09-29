@@ -10,47 +10,47 @@ import { IBucketSettings, ITenant, ITenantFull } from '../../../../types';
 import { Spinner } from '../../../utils';
 
 export const BucketForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-    const { translateMethod } = useContext(I18nContext)
+    const { translate } = useContext(I18nContext)
 
     const schema: Schema = {
         bucket: {
             type: type.string,
-            label: translateMethod('Bucket name'),
+            label: translate('Bucket name'),
             placeholder: 'daikoku-tenant-1',
-            help: translateMethod('The name of the S3 bucket'),
+            help: translate('The name of the S3 bucket'),
 
         },
         endpoint: {
             type: type.string,
-            label: translateMethod('Bucket url'),
-            help: translateMethod('The url of the bucket'),
+            label: translate('Bucket url'),
+            help: translate('The url of the bucket'),
 
         },
         region: {
             type: type.string,
-            label: translateMethod('S3 region'),
+            label: translate('S3 region'),
             placeholder: 'us-west-2',
-            help: translateMethod('The region of the bucket'),
+            help: translate('The region of the bucket'),
         },
         access: {
             type: type.string,
-            label: translateMethod('Bucket access key'),
-            help: translateMethod('The access key to access bucket'),
+            label: translate('Bucket access key'),
+            help: translate('The access key to access bucket'),
         },
         secret: {
             type: type.string,
-            label: translateMethod('Bucket secret'),
-            help: translateMethod('The secret to access the bucket'),
+            label: translate('Bucket secret'),
+            help: translate('The secret to access the bucket'),
         },
         chunkSize: {
             type: type.number,
-            label: translateMethod('Chunk size'),
+            label: translate('Chunk size'),
             defaultValue: 1024 * 1024 * 8,
-            help: translateMethod('The size of each chunk sent'),
+            help: translate('The size of each chunk sent'),
         },
         v4auth: {
             type: type.bool,
-            label: translateMethod('Use V4 auth.'),
+            label: translate('Use V4 auth.'),
             defaultValue: true
         },
     }

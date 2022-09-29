@@ -35,7 +35,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
     tab: TABS.members,
   });
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     updateMembers(props.currentTeam);
@@ -85,22 +85,17 @@ export const TeamMembersSimpleComponent = (props: any) => {
       isAdmin(member) &&
       props.currentTeam.users.filter((u: any) => u.teamPermission === administrator).length === 1
     ) {
-      alert(
-        translateMethod(
-          'remove.member.alert',
-          false,
-          "You can't delete this user, it must remain an admin in a team."
-        )
-      );
+      alert(translate('remove.member.alert'));
     } else {
       (window
-        .confirm(translateMethod('remove.member.confirm', false, 'Are you sure you want to remove this member from the team ?')) as any).then((ok: any) => {
+        .confirm(translate('remove.member.confirm')))//@ts-ignore
+        .then((ok: any) => {
           if (ok) {
             const teamId = props.currentTeam._id;
             Services.removeMemberFromTeam(teamId, member._id).then(({ done, team }) => {
               done
-                ? toastr.success(translateMethod('Success'), translateMethod('remove.member.success', false, `${member.name} is no longer member of your team`, member.name))
-                : toastr.error(translateMethod('Error'), translateMethod('Failure'));
+                ? toastr.success(translate('Success'), translate({ key: 'remove.member.success', replacements: [member.name] }))
+                : toastr.error(translate('Error'), translate('Failure'));
               props.updateTeam(team).then(() => updateMembers(props.currentTeam));
             });
           }
@@ -115,15 +110,10 @@ export const TeamMembersSimpleComponent = (props: any) => {
         setState({ ...state, selectedMember: null });
         done
           ? toastr.success(
-            'Success',
-            translateMethod(
-              'member.now.invited',
-              false,
-              `${member.name} has been invited as new member of your team`,
-              member.name
-            )
+            translate('Success'),
+            translate({ key: 'member.now.invited', replacements: [member.name] })
           )
-          : toastr.error(translateMethod('error'), translateMethod('Failure'));
+          : toastr.error(translate('error'), translate('Failure'));
       })
       .then(() => updateMembers(props.currentTeam));
   };
@@ -148,41 +138,23 @@ export const TeamMembersSimpleComponent = (props: any) => {
         userHavePemission(member, administrator) &&
         props.currentTeam.users.filter((u: any) => u.teamPermission === administrator).length === 1
       ) {
-        alert(
-          translateMethod(
-            'remove.admin.alert',
-            false,
-            "You can't remove this admin status, it must remain an admin in a team."
-          )
-        );
+        alert(translate('remove.admin.alert'));
       } else {
         const newPermission = userHavePemission(member, permission) ? user : permission;
         Services.updateTeamMemberPermission(teamId, [member._id], newPermission).then(
           ({ done, team }) => {
             done
               ? toastr.success(
-                'Success',
-                translateMethod(
-                  'member.new.permission.success',
-                  false,
-                  `${member.name} is now ${newPermission}`,
-                  member.name,
-                  newPermission
-                )
+                translate('Success'),
+                translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] })
               )
-              : toastr.error(translateMethod('Error'), translateMethod('Failure'));
+              : toastr.error(translate('Error'), translate('Failure'));
             props.updateTeam(team).then(() => updateMembers(props.currentTeam));
           }
         );
       }
     } else {
-      window.alert(
-        translateMethod(
-          'not.admin.alert',
-          false,
-          "Your are not an administrator. You can't do that."
-        )
-      );
+      window.alert(translate('not.admin.alert'));
     }
   };
 
@@ -237,7 +209,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
           pendingUsers: filteredPending,
         });
       }}>
-        {translateMethod('team_member.invit_user')}
+        {translate('team_member.invit_user')}
       </button>
       <div className="row">
         <div className="col mt-3 onglets">
@@ -267,18 +239,18 @@ export const TeamMembersSimpleComponent = (props: any) => {
       alert(<div className="d-flex flex-column">
         <div>
           <i className="fas fa-shield-alt me-1" />
-          {translateMethod('permission.caption.administrator')}
+          {translate('permission.caption.administrator')}
         </div>
         <div>
           <i className="fas fa-pencil-alt me-1" />
-          {translateMethod('permission.caption.apiEditor')}
+          {translate('permission.caption.apiEditor')}
         </div>
         <div>
           <i className="fas fa-user-alt me-1" />
-          {translateMethod('permission.caption.user')}
+          {translate('permission.caption.user')}
         </div>
         {/* @ts-ignore */}
-      </div>, translateMethod('Permission', true));
+      </div>, translate('Permission', true));
     }} items={sortBy(filteredMembers, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
       const isAdmin = userHavePemission(member, administrator);
       const isApiEditor = userHavePemission(member, apiEditor);
@@ -296,7 +268,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
         {
           action: () => removeMember(member),
           iconClass: 'fas fa-trash delete-icon',
-          tooltip: translateMethod('Remove member'),
+          tooltip: translate('Remove member'),
         },
         {
           action: [
@@ -304,19 +276,19 @@ export const TeamMembersSimpleComponent = (props: any) => {
               action: () => togglePermission(member, administrator),
               iconClass: `fas fa-shield-alt ${isAdmin ? 'admin-active' : 'admin-inactive'}`,
               tooltip: `${isAdmin
-                ? translateMethod('Remove administrator status')
-                : translateMethod('Add administrator status')}`,
+                ? translate('Remove administrator status')
+                : translate('Add administrator status')}`,
             },
             {
               action: () => togglePermission(member, apiEditor),
               iconClass: `fas fa-pencil-alt ${isApiEditor ? 'admin-active' : 'admin-inactive'}`,
               tooltip: `${isApiEditor
-                ? translateMethod('Remove api editor status')
-                : translateMethod('Add api editor status')}`,
+                ? translate('Remove api editor status')
+                : translate('Add api editor status')}`,
             },
           ],
           iconClass: 'fas fa-user-cog',
-          tooltip: translateMethod('Manage permissions'),
+          tooltip: translate('Manage permissions'),
         },
       ]} />);
     }} />)}
@@ -330,7 +302,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
             {
               action: () => {
                 window
-                  .confirm(translateMethod('team_member.confirm_remove_invitation'))
+                  .confirm(translate('team_member.confirm_remove_invitation'))
                   //@ts-ignore
                   .then((ok: any) => {
                     if (ok)
@@ -338,7 +310,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
                   });
               },
               iconClass: 'fas fa-trash delete-icon',
-              tooltip: translateMethod('Remove invitation'),
+              tooltip: translate('Remove invitation'),
             },
           ]
           : []} />);
@@ -350,10 +322,10 @@ export const TeamMembersSimpleComponent = (props: any) => {
 
 const TeamMembersComponent = (props: any) => {
   useTeamBackOffice(props.currentTeam);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translateMethod('Member', true)}`;
+    document.title = `${props.currentTeam.name} - ${translate({key: 'Member', plural: true})}`;
   }, []);
 
   return (

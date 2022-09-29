@@ -15,7 +15,7 @@ export function ApiPost({
 }: any) {
   const [posts, setPosts] = useState([]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const [pagination, setPagination] = useState<Pagination>({
     limit: 1,
@@ -60,7 +60,7 @@ export function ApiPost({
         total:pagination.total
       });
     }}>
-      {translateMethod('Load older posts')}
+      {translate('Load older posts')}
     </button>)}
   </div>);
 }

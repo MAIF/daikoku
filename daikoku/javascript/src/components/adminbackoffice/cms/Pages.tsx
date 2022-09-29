@@ -19,7 +19,7 @@ export const Pages = ({
   pages,
   removePage
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
 
   let table;
@@ -51,12 +51,12 @@ export const Pages = ({
       },
     },
     {
-      Header: translateMethod('cms.pages.name'),
+      Header: translate('cms.pages.name'),
       style: { textAlign: 'left' },
       accessor: (item: any) => item.name,
     },
     {
-      Header: translateMethod('cms.pages.path'),
+      Header: translate('cms.pages.path'),
       style: {
         textAlign: 'left',
         fontStyle: 'italic',
@@ -68,11 +68,11 @@ export const Pages = ({
         }
       }: any) =>
         original.path || (
-          <span className="badge bg-dark">{translateMethod('cms.pages.block')}</span>
+          <span className="badge bg-dark">{translate('cms.pages.block')}</span>
         ),
     },
     {
-      Header: translateMethod('cms.pages.publish_date'),
+      Header: translate('cms.pages.publish_date'),
       style: { textAlign: 'left', maxWidth: 220 },
       disableFilters: true,
       accessor: (item: any) => item.lastPublishedDate ? moment(item.lastPublishedDate).format('DD MMM (HH:mm)') : '-',
@@ -108,7 +108,7 @@ export const Pages = ({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                (window.confirm(translateMethod('cms.pages.remove_confirm')) as any).then((ok: any) => {
+                (window.confirm(translate('cms.pages.remove_confirm')) as any).then((ok: any) => {
                   if (ok) {
                     Services.removeCmsPage(value.id).then((res) => {
                       if (res.error)

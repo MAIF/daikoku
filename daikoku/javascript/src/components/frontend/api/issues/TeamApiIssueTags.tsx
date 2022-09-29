@@ -16,7 +16,7 @@ export function TeamApiIssueTags({
   const [api, setApi] = useState(value);
   const [updated, setUpdated] = useState(false);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const dispatch = useDispatch();
 
@@ -32,18 +32,18 @@ export function TeamApiIssueTags({
       <div className="mb-3 row">
         <div className="col-sm-10">
           <button className='btn btn-outline-success' onClick={() => dispatch(openFormModal({
-            title: translateMethod('issues.create_tag'),
+            title: translate('issues.create_tag'),
             schema: {
               name: {
                 type: type.string,
-                label: translateMethod('Name'),
+                label: translate('Name'),
                 constraints: [
-                  constraints.required(translateMethod('constraints.required.name'))
+                  constraints.required(translate('constraints.required.name'))
                 ]
               },
               color: {
                 type: type.string,
-                label: translateMethod('Color'),
+                label: translate('Color'),
                 defaultValue: '#fd0643',
                 render: ({
                   value,
@@ -61,7 +61,7 @@ export function TeamApiIssueTags({
                   )
                 },
                 constraints: [
-                  constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translateMethod('color.unavailable'))
+                  constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translate('color.unavailable'))
                 ]
               }
             },
@@ -71,12 +71,12 @@ export function TeamApiIssueTags({
               setApi(updatedApi)
             },
             value: { color: randomColor() },
-            actionLabel: translateMethod('Create')
-          }))}>{translateMethod('issues.new_tag')}</button>
+            actionLabel: translate('Create')
+          }))}>{translate('issues.new_tag')}</button>
         </div>
       </div>
       <div className="mb-3 row pt-3">
-        <label className="col-xs-12 col-sm-2">{translateMethod('issues.tags')}</label>
+        <label className="col-xs-12 col-sm-2">{translate('issues.tags')}</label>
         <div className="col-sm-10">
           {api.issuesTags
             .sort((a: any, b: any) => a.name.localeCompare(b.name))
@@ -127,12 +127,12 @@ export function TeamApiIssueTags({
                     type="button"
                     onClick={() => deleteTag(issueTag.id)}
                   >
-                    {translateMethod('Delete')}
+                    {translate('Delete')}
                   </button>
                 </div>
               </div>
             ))}
-          {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
+          {api.issuesTags.length === 0 && <p>{translate('issues.no_tags')}</p>}
         </div>
       </div>
       {updated && (
@@ -144,7 +144,7 @@ export function TeamApiIssueTags({
               setUpdated(false);
             }}
           >
-            {translateMethod('Save')}
+            {translate('Save')}
           </button>
         </div>
       )}

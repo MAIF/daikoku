@@ -16,7 +16,7 @@ export const TeamCreationModal = (props: Props) => {
   const [error, setError] = useState(undefined);
   const navigate = useNavigate();
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+    const { translate, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (created) {
@@ -36,7 +36,7 @@ export const TeamCreationModal = (props: Props) => {
             <div className="modal-body">
         {!!error && (
                     <div className="alert alert-danger" role="alert">
-            {translateMethod(error)}
+            {translate(error)}
           </div>
         )}
                 <TeamEditForm team={team} updateTeam={setTeam} />

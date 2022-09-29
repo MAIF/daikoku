@@ -14,7 +14,7 @@ export const MessagePanel = () => {
 
   const [newMessage, setNewMessage] = useState('');
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
   const {
     messages,
     totalUnread,
@@ -60,14 +60,14 @@ export const MessagePanel = () => {
   return (
     <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
       <div className="mb-3 panel__title">
-        <h3>{translateMethod('Discuss with an admin')}</h3>
+        <h3>{translate('Discuss with an admin')}</h3>
       </div>
       <div className="d-flex mb-3">
         <input
           className="form-control"
           disabled={loading ? true : undefined}
           type="text"
-          placeholder={translateMethod('Your message')}
+          placeholder={translate('Your message')}
           value={loading ? '...' : newMessage}
           onKeyDown={handleKeyDown}
           onChange={(e) => setNewMessage(e.target.value)}

@@ -44,7 +44,7 @@ const AvatarInput = ({
 };
 
 export const SignupComponent = () => {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const defaultAvatar = `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`;
   const [user, setUser] = useState<any>(undefined);
@@ -55,52 +55,52 @@ export const SignupComponent = () => {
     const query = queryString.parse(window.location.search);
     if (query.error) {
       setState('error');
-      setError(translateMethod(`account.creation.error.${query.error}`));
+      setError(translate(`account.creation.error.${query.error}`));
     }
   }, []);
 
   const schema = {
     name: {
       type: type.string,
-      label: translateMethod('Name'),
-      constraints: [constraints.required(translateMethod('constraints.required.name'))],
+      label: translate('Name'),
+      constraints: [constraints.required(translate('constraints.required.name'))],
     },
     email: {
       type: type.string,
       format: format.email,
-      label: translateMethod('Email address'),
+      label: translate('Email address'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.email')),
-        constraints.email(translateMethod('constraints.matches.email')),
+        constraints.required(translate('constraints.required.email')),
+        constraints.email(translate('constraints.matches.email')),
       ],
     },
     avatar: {
       type: type.string,
-      label: translateMethod('Avatar'),
+      label: translate('Avatar'),
       defaultValue: defaultAvatar,
       render: AvatarInput,
     },
     password: {
       type: type.string,
       format: format.password,
-      label: translateMethod('Password'),
+      label: translate('Password'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.password')),
+        constraints.required(translate('constraints.required.password')),
         constraints.matches(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/,
-          translateMethod('constraint.matches.password')
+          translate('constraint.matches.password')
         ),
       ],
     },
     confirmPassword: {
       type: type.string,
       format: format.password,
-      label: translateMethod('Confirm password'),
+      label: translate('Confirm password'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.confirmPassword')),
+        constraints.required(translate('constraints.required.confirmPassword')),
         constraints.oneOf(
           [constraints.ref('password')],
-          translateMethod('constraint.oneof.confirm.password')
+          translate('constraint.oneof.confirm.password')
         ),
       ],
     },
@@ -179,7 +179,7 @@ export const SignupComponent = () => {
 };
 
 export const ResetPasswordComponent = (props: any) => {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const [user, setUser] = useState<any>(undefined);
   const [state, setState] = useState<string>('creation');
@@ -189,33 +189,33 @@ export const ResetPasswordComponent = (props: any) => {
     email: {
       type: type.string,
       format: format.email,
-      label: translateMethod('Email address'),
+      label: translate('Email address'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.email')),
-        constraints.email(translateMethod('constraints.matches.email')),
+        constraints.required(translate('constraints.required.email')),
+        constraints.email(translate('constraints.matches.email')),
       ],
     },
     password: {
       type: type.string,
       format: format.password,
-      label: translateMethod('Password'),
+      label: translate('Password'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.password')),
+        constraints.required(translate('constraints.required.password')),
         constraints.matches(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/,
-          translateMethod('constraints.matches.password')
+          translate('constraints.matches.password')
         ),
       ],
     },
     confirmPassword: {
       type: type.string,
       format: format.password,
-      label: translateMethod('Confirm password'),
+      label: translate('Confirm password'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.confirmPassword')),
+        constraints.required(translate('constraints.required.confirmPassword')),
         constraints.oneOf(
           [constraints.ref('password')],
-          translateMethod('constraint.oneof.confirm.password')
+          translate('constraint.oneof.confirm.password')
         ),
       ],
     },
@@ -248,7 +248,7 @@ export const ResetPasswordComponent = (props: any) => {
     const query = queryString.parse(window.location.search);
     if (query.error) {
       setState('error');
-      setError(translateMethod(`account.reset.error.${query.error}`));
+      setError(translate(`account.reset.error.${query.error}`));
     }
   }, []);
 
@@ -310,16 +310,16 @@ export const TwoFactorAuthentication = ({
   const [showBackupCodes, toggleBackupCodesInput] = useState(false);
   const [backupCode, setBackupCode] = useState('');
 
-  const { translateMethod, language } = useContext(I18nContext);
+  const { translate, language } = useContext(I18nContext);
 
   function verify() {
     if (!code || code.length !== 6) {
-      setError(translateMethod('2fa.code_error'));
+      setError(translate('2fa.code_error'));
       setCode('');
     } else {
       Services.verify2faCode(token, code).then((res) => {
         if (res.status >= 400) {
-          setError(translateMethod('2fa.wrong_code'));
+          setError(translate('2fa.wrong_code'));
           setCode('');
         } else if (res.redirected) window.location.href = res.url;
       });
@@ -329,9 +329,9 @@ export const TwoFactorAuthentication = ({
   function reset2faAccess() {
     Services.reset2faAccess(backupCode).then((res) => {
       if (res.error) {
-        toastr.error(translateMethod('Error'), res.error);
+        toastr.error(translate('Error'), res.error);
       } else {
-        toastr.success(translateMethod('Success'), translateMethod('2fa.successfully_disabled'));
+        toastr.success(translate('Success'), translate('2fa.successfully_disabled'));
         window.location.replace('/');
       }
     });
@@ -348,7 +348,7 @@ export const TwoFactorAuthentication = ({
   }, []);
 
   useEffect(() => {
-    if (error) setError(translateMethod('2fa.code_error'));
+    if (error) setError(translate('2fa.code_error'));
   }, [language]);
 
   return (
@@ -359,20 +359,20 @@ export const TwoFactorAuthentication = ({
           <input
             type="text"
             value={backupCode}
-            placeholder={translateMethod('2fa.insert_backup_codes')}
+            placeholder={translate('2fa.insert_backup_codes')}
             onChange={(e) => setBackupCode(e.target.value)}
             className="form-control"
           />
           <button className="btn btn-outline-success mt-3" type="button" onClick={reset2faAccess}>
-            {translateMethod('2fa.reset_access')}
+            {translate('2fa.reset_access')}
           </button>
           <a href="#" onClick={() => toggleBackupCodesInput(false)} className="text-center mt-3">
-            {translateMethod('2fa.using_code')}
+            {translate('2fa.using_code')}
           </a>
         </>
       ) : (
         <>
-          <span className="mb-3">{translateMethod('2fa.message')}</span>
+          <span className="mb-3">{translate('2fa.message')}</span>
           {error && (
             <div className="alert alert-danger" role="alert">
               {error}
@@ -381,7 +381,7 @@ export const TwoFactorAuthentication = ({
           <input
             type="number"
             value={code}
-            placeholder={translateMethod('2fa.insert_code')}
+            placeholder={translate('2fa.insert_code')}
             onChange={(e) => {
               if (e.target.value.length < 7) {
                 setError(undefined);
@@ -392,10 +392,10 @@ export const TwoFactorAuthentication = ({
           />
 
           <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>
-            {translateMethod('2fa.verify_code')}
+            {translate('2fa.verify_code')}
           </button>
           <a href="#" onClick={() => toggleBackupCodesInput(!showBackupCodes)} className="text-center mt-3">
-            {translateMethod('2fa.lost_device_message')}
+            {translate('2fa.lost_device_message')}
           </a>
         </>
       )}
@@ -405,7 +405,7 @@ export const TwoFactorAuthentication = ({
 
 export const DaikokuHomeApp = (props: any) => {
   const tenant = props.tenant;
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   // FIXME: is there any usage of UnauthenticatedTopBar ?????????????
   return (
@@ -431,7 +431,7 @@ export const DaikokuHomeApp = (props: any) => {
             path="/2fa"
             element={
               <TwoFactorAuthentication
-                title={`${tenant.name} - ${translateMethod('Verification code')}`}
+                title={`${tenant.name} - ${translate('Verification code')}`}
               />
             }
           />

@@ -11,7 +11,7 @@ export const ApiKeySelectModal = ({
   const [showApiKeys, toggleApiKeysView] = useState(false);
   const [showSelectOrCreateApiKey, toggleSelectOrCreateApiKey] = useState(true);
 
-    const { translateMethod } = useContext(I18nContext);
+    const { translate } = useContext(I18nContext);
 
   const finalAction = () => {
     closeModal();
@@ -26,7 +26,7 @@ export const ApiKeySelectModal = ({
   return (
         <div className="modal-content">
             <div className="modal-header">
-                <h5 className="modal-title">{translateMethod('apikey_select_modal.title')}</h5>
+                <h5 className="modal-title">{translate('apikey_select_modal.title')}</h5>
                 <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
             <div className="modal-body">
@@ -47,7 +47,7 @@ export const ApiKeySelectModal = ({
       </div>
             <div className="modal-footer">
                 <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          {translateMethod('Close', 'Close')}
+          {translate('Close')}
         </button>
       </div>
     </div>
@@ -58,10 +58,10 @@ const ApiKeysView = ({
   apiKeys,
   extendApiKey
 }: any) => {
-    const { translateMethod } = useContext(I18nContext);
+    const { translate } = useContext(I18nContext);
   return (
         <div>
-            <h5 className="modal-title">{translateMethod('apikey_select_modal.select_your_api_key')}</h5>
+            <h5 className="modal-title">{translate('apikey_select_modal.select_your_api_key')}</h5>
             <div className="team-selection__container">
                 {apiKeys.map((apiKey: any) => <div
           key={apiKey._id}

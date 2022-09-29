@@ -12,7 +12,7 @@ export const ApiDocumentationSelectModal = ({
   const [apis, setApis] = useState<Array<any>>([]);
   const [pages, setPages] = useState<Array<any>>([]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAllApiDocumentation(teamId, api._humanReadableId, api.currentVersion).then(
@@ -48,13 +48,13 @@ export const ApiDocumentationSelectModal = ({
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{translateMethod('api_select_modal.title')}</h5>
+        <h5 className="modal-title">{translate('api_select_modal.title')}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
       <div className="modal-body">
         <Select
           isMulti
-          placeholder={translateMethod('Select all pages')}
+          placeholder={translate('Select all pages')}
           options={apis}
           //@ts-ignore
           onChange={setPages}
@@ -63,10 +63,10 @@ export const ApiDocumentationSelectModal = ({
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={closeModal}>
-          {translateMethod('Close', 'Close')}
+          {translate('Close')}
         </button>
         <button type="button" className="btn btn-outline-success" onClick={importPages}>
-          {translateMethod('Choose', 'Close')}
+          {translate('Choose')}
         </button>
       </div>
     </div>

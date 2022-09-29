@@ -18,7 +18,7 @@ import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 
 export function TenantStyleEditComponent(props: any) {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
   const navigate = useNavigate();
 
@@ -86,7 +86,7 @@ export function TenantStyleEditComponent(props: any) {
       .then(() => {
         document.location.href = `/settings/tenants/${state.tenant._id}`;
       })
-      .then(() => toastr.success(translateMethod('Success'), translateMethod('Tenant updated successfully')));
+      .then(() => toastr.success(translate('Success'), translate('Tenant updated successfully')));
   };
 
   if (!state.tenant) {

@@ -84,7 +84,7 @@ const DaikokuAppComponent = ({
     }
   }, []);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   if (!user) {
     return (
@@ -127,7 +127,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/me"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('My profile')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('My profile')}`}>
                       <MyProfile />
                     </RouteWithTitle>
                   }
@@ -136,11 +136,11 @@ const DaikokuAppComponent = ({
                   path="/2fa"
                   element={
                     <UnauthenticatedRoute
-                      title={`${tenant.title} - ${translateMethod('Verification code')}`}
+                      title={`${tenant.title} - ${translate('Verification code')}`}
                       tenant={tenant}
                     >
                       <TwoFactorAuthentication
-                        title={`${tenant.title} - ${translateMethod('Verification code')}`}
+                        title={`${tenant.title} - ${translate('Verification code')}`}
                       />
                     </UnauthenticatedRoute>
                   }
@@ -149,7 +149,7 @@ const DaikokuAppComponent = ({
                   path="/reset"
                   element={
                     <UnauthenticatedRoute
-                      title={`${tenant.title} - ${translateMethod('Reset password')}`}
+                      title={`${tenant.title} - ${translate('Reset password')}`}
                       tenant={tenant}
                     >
                       <ResetPassword />
@@ -160,7 +160,7 @@ const DaikokuAppComponent = ({
                   path="/signup"
                   element={
                     <UnauthenticatedRoute
-                      title={`${tenant.title} - ${translateMethod('Signup')}`}
+                      title={`${tenant.title} - ${translate('Signup')}`}
                       tenant={tenant}
                     >
                       <Signup />
@@ -170,7 +170,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/notifications*"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Notifications')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
                       <NotificationList />
                     </RouteWithTitle>
                   }
@@ -178,7 +178,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/join"
                   element={
-                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Join team')}`}>
+                    <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
                       <JoinTeam />
                     </FrontOfficeRoute>
                   }
@@ -186,7 +186,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/apis"
                   element={
-                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Apis')}`}>
+                    <FrontOfficeRoute title={`${tenant.title} - ${translate('Apis')}`}>
                       <MyHome />
                     </FrontOfficeRoute>
                   }
@@ -194,7 +194,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/"
                   element={
-                    <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Home')}`}>
+                    <FrontOfficeRoute title={`${tenant.title} - ${translate('Home')}`}>
                       <MaybeHomePage tenant={tenant} />
                     </FrontOfficeRoute>
                   }
@@ -202,7 +202,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/messages"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Message', true)}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate({key: 'Message', plural: true})}`}>
                       <AdminMessages />
                     </RouteWithTitle>
                   }
@@ -210,7 +210,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/otoroshis/:otoroshiId"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshi')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Otoroshi')}`}>
                       <TenantOtoroshi />
                     </RouteWithTitle>
                   }
@@ -219,7 +219,7 @@ const DaikokuAppComponent = ({
                   path="/settings/otoroshis"
                   element={
                     <RouteWithTitle
-                      title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}
+                      title={`${tenant.title} - ${translate({key: 'Otoroshis', plural: true})}`}
                     >
                       <TenantOtoroshis />
                     </RouteWithTitle>
@@ -229,7 +229,7 @@ const DaikokuAppComponent = ({
                   path="/settings/settings*"
                   element={
                     <RouteWithTitle
-                      title={`${tenant.title} - ${translateMethod('Tenant edit', true)}`}
+                      title={`${tenant.title} - ${translate({key: 'Tenant edit', plural: true})}`}
                     >
                       <TenantEdit />
                     </RouteWithTitle>
@@ -238,7 +238,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/tenants/:tenantId*"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenant edit')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Tenant edit')}`}>
                       <TenantEditForAdmin />
                     </RouteWithTitle>
                   }
@@ -246,7 +246,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/tenants/:tenantId/style"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Style')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Style')}`}>
                       <TenantStyleEdit />
                     </RouteWithTitle>
                   }
@@ -254,7 +254,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/tenants"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenants', true)}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate({key: 'Tenants', plural: true})}`}>
                       <TenantList />
                     </RouteWithTitle>
                   }
@@ -262,7 +262,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/tenants/:tenantId/admins"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
                       <DaikokuTenantAdminList />
                     </RouteWithTitle>
                   }
@@ -270,7 +270,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/users/:userId"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('User')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('User')}`}>
                       <UserEdit />
                     </RouteWithTitle>
                   }
@@ -278,7 +278,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/users"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Users', true)}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate({key: 'Users', plural: true})}`}>
                       <UserList />
                     </RouteWithTitle>
                   }
@@ -286,7 +286,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/audit"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Audit trail')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Audit trail')}`}>
                       <AuditTrailList />
                     </RouteWithTitle>
                   }
@@ -294,7 +294,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/sessions"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('User sessions')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('User sessions')}`}>
                       <SessionList />
                     </RouteWithTitle>
                   }
@@ -303,7 +303,7 @@ const DaikokuAppComponent = ({
                   path="/settings/import-export"
                   element={
                     <RouteWithTitle
-                      title={`${tenant.title} - ${translateMethod('Import / Export')}`}
+                      title={`${tenant.title} - ${translate('Import / Export')}`}
                     >
                       <ImportExport />
                     </RouteWithTitle>
@@ -312,7 +312,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/teams/:teamSettingId/members"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team members')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Team members')}`}>
                       <TeamMembersForAdmin />
                     </RouteWithTitle>
                   }
@@ -320,7 +320,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/teams"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Teams')}`}>
                       <TeamList />
                     </RouteWithTitle>
                   }
@@ -329,7 +329,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/admins"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
                       <TenantAdminList />
                     </RouteWithTitle>
                   }
@@ -337,7 +337,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/settings/init"
                   element={
-                    <RouteWithTitle title={`${tenant.title} - ${translateMethod('Init')}`}>
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Init')}`}>
                       <InitializeFromOtoroshi />
                     </RouteWithTitle>
                   }
@@ -346,7 +346,7 @@ const DaikokuAppComponent = ({
                   path="/settings/pages*"
                   element={
                     <RouteWithTitle
-                      title={`${tenant.title} - ${translateMethod('daikokuapp.pages_title')}`}
+                      title={`${tenant.title} - ${translate('daikokuapp.pages_title')}`}
                     >
                       <CMSOffice />
                     </RouteWithTitle>
@@ -359,7 +359,7 @@ const DaikokuAppComponent = ({
                       path={r}
                       element={
                         <RouteWithTitle
-                          title={`${tenant.title} - ${translateMethod('Internalization')}`}
+                          title={`${tenant.title} - ${translate('Internalization')}`}
                         >
                           <MailingInternalization />
                         </RouteWithTitle>
@@ -371,7 +371,7 @@ const DaikokuAppComponent = ({
                   <Route
                     path="/teams"
                     element={
-                      <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                      <FrontOfficeRoute title={`${tenant.title} - ${translate('Teams')}`}>
                         <TeamChooser />
                       </FrontOfficeRoute>
                     }

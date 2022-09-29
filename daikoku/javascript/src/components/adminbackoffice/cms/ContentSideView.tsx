@@ -21,24 +21,24 @@ const LinksView = ({
   editor,
   onChange
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   return (
     <div>
-      <span>{translateMethod('cms.content_side_view.choose_link')}</span>
+      <span>{translate('cms.content_side_view.choose_link')}</span>
       <Copied>
         {(setShow: any) => <Select
           options={[
             {
-              label: translateMethod('cms.content_side_view.notifications'),
+              label: translate('cms.content_side_view.notifications'),
               value: 'notifications',
             },
-            { label: translateMethod('cms.content_side_view.sign_in'), value: 'login' },
-            { label: translateMethod('cms.content_side_view.logout'), value: 'logout' },
-            { label: translateMethod('cms.content_side_view.language'), value: 'language' },
-            { label: translateMethod('cms.content_side_view.back_office'), value: 'backoffice' },
-            { label: translateMethod('cms.content_side_view.sign_up'), value: 'signup' },
-            { label: translateMethod('cms.content_side_view.home'), value: 'home' },
+            { label: translate('cms.content_side_view.sign_in'), value: 'login' },
+            { label: translate('cms.content_side_view.logout'), value: 'logout' },
+            { label: translate('cms.content_side_view.language'), value: 'language' },
+            { label: translate('cms.content_side_view.back_office'), value: 'backoffice' },
+            { label: translate('cms.content_side_view.sign_up'), value: 'signup' },
+            { label: translate('cms.content_side_view.home'), value: 'home' },
           ]}
           onChange={(link) => {
             setShow(true);
@@ -54,7 +54,7 @@ const LinksView = ({
 const Copied = ({
   children
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ const Copied = ({
           borderRadius: '6px',
         }}
       >
-        <span>{translateMethod('cms.inserted')}</span>
+        <span>{translate('cms.inserted')}</span>
       </div>
     );
   else return children(setShow);
@@ -110,7 +110,7 @@ const TopActions = ({
   publish,
   setSelector
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
   const select = (id: any) => {
     setSelector(undefined);
@@ -130,7 +130,7 @@ const TopActions = ({
     >
       <button className="btn btn-sm btn-outline-primary me-1" type="button" onClick={select}>
         <i className="fas fa-plus pe-1" />
-        {translateMethod('cms.content_side.new_action')}
+        {translate('cms.content_side.new_action')}
       </button>
       <div className="d-flex">
         <button className="btn btn-sm btn-outline-primary" onClick={() => navigate('revisions')}>
@@ -140,14 +140,14 @@ const TopActions = ({
           className="btn btn-sm btn-outline-success ms-1"
           type="button"
           onClick={() => {
-            (window.confirm(translateMethod('cms.content_side.publish_label')) as any).then((ok: any) => {
+            (window.confirm(translate('cms.content_side.publish_label')) as any).then((ok: any) => {
               if (ok) {
                 publish();
               }
             });
           }}
         >
-          {translateMethod('cms.content_side.publish_button')}
+          {translate('cms.content_side.publish_button')}
         </button>
       </div>
     </div>
@@ -160,7 +160,7 @@ const HelperView = ({
   editor
 }: any) => {
   const [value, setValue] = useState(content.example);
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     setValue(content.example);
@@ -168,7 +168,7 @@ const HelperView = ({
 
   return (
     <div>
-      <h5>{translateMethod(`cms.content_side_view.${content.name}`)}</h5>
+      <h5>{translate(`cms.content_side_view.${content.name}`)}</h5>
       {content.parameters && (
         <div>
           <h6>Parameters</h6>
@@ -208,7 +208,7 @@ export const ContentSideView = ({
   publish,
   contentType
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const [sideView, setSideView] = useState(false);
   const [selector, setSelector] = useState('');
   const [search, setSearch] = useState('');
@@ -235,7 +235,7 @@ export const ContentSideView = ({
               ...((acc[curr.important || curr.category] || {}).helpers || []),
               {
                 ...curr,
-                term: translateMethod(`cms.content_side_view.${curr.name}`)
+                term: translate(`cms.content_side_view.${curr.name}`)
                   .toLowerCase()
                   .replace(/[\[\]&]+/g, ''),
               },
@@ -315,7 +315,7 @@ export const ContentSideView = ({
       fontStyle: 'italic',
       fontSize: '13px',
     }}>
-      {translateMethod('cms.body.drag_and_drop_advice')}
+      {translate('cms.body.drag_and_drop_advice')}
     </span>
     <div style={{
       position: 'relative',
@@ -330,7 +330,7 @@ export const ContentSideView = ({
         backgroundColor: '#fff',
         border: '1px solid #f0f1f6',
         boxShadow: '0 1px 3px rgb(0 0 0 / 15%)',
-      }} to={`/settings/pages/edit/${(selectedPage as any).id}`} onClick={() => setSelectedPage({ pageName: undefined })}>{`${translateMethod('cms.content_side_view.edit')} ${selectedPage.pageName}`}</Link>)}
+      }} to={`/settings/pages/edit/${(selectedPage as any).id}`} onClick={() => setSelectedPage({ pageName: undefined })}>{`${translate('cms.content_side_view.edit')} ${selectedPage.pageName}`}</Link>)}
       <Editor value={value} onChange={onChange} onLoad={(editorInstance: any) => {
         setRef(editorInstance);
         editorInstance.container.style.resize = 'both';
@@ -348,7 +348,7 @@ export const ContentSideView = ({
             overflowY: 'scroll',
           }}>
             <div>
-              <input type="text" className="form-control mb-2" placeholder={translateMethod('cms.content_side_view.search_text')} value={search} onChange={(e) => filterHelpers(e.target.value)} style={{ border: 'none' }} />
+              <input type="text" className="form-control mb-2" placeholder={translate('cms.content_side_view.search_text')} value={search} onChange={(e) => filterHelpers(e.target.value)} style={{ border: 'none' }} />
             </div>
             <div className="d-flex flex-column">
               {Object.entries(helpersList)
@@ -390,7 +390,7 @@ export const ContentSideView = ({
                           e.stopPropagation();
                           setSelector(helper);
                         }}>
-                          {translateMethod(`cms.content_side_view.${helper.name}`)}
+                          {translate(`cms.content_side_view.${helper.name}`)}
                         </button>)}
                   </div>))}
             </div>
@@ -404,8 +404,8 @@ export const ContentSideView = ({
               right: '6px',
             }} onClick={() => setSideView(false)} />
             {(selector as any)?.name === 'links' && (<LinksView editor={ref} onChange={() => setSideView(false)} />)}
-            {(selector as any)?.name === 'pages' && (<PagesView pages={pages} prefix="daikoku-page-url" title={translateMethod('cms.content_side_view.link_to_insert')} editor={ref} onChange={() => setSideView(false)} />)}
-            {(selector as any)?.name === 'blocks' && (<PagesView pages={pages} prefix="daikoku-include-block" title={translateMethod('cms.content_side_view.block_to_render')} editor={ref} onChange={() => setSideView(false)} />)}
+            {(selector as any)?.name === 'pages' && (<PagesView pages={pages} prefix="daikoku-page-url" title={translate('cms.content_side_view.link_to_insert')} editor={ref} onChange={() => setSideView(false)} />)}
+            {(selector as any)?.name === 'blocks' && (<PagesView pages={pages} prefix="daikoku-include-block" title={translate('cms.content_side_view.block_to_render')} editor={ref} onChange={() => setSideView(false)} />)}
             {((selector as any)?.name.startsWith('daikoku') ||
               !['links', 'blocks', 'pages'].includes((selector as any)?.name)) &&
               selector && (<HelperView editor={ref} onChange={() => setSideView(false)} content={selector} />)}

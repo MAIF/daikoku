@@ -6,7 +6,7 @@ import { I18nContext } from '../../../../locales/i18n-context';
 import { NavContext } from '../../../../contexts';
 
 export const GuestPanel = () => {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
   const { loginAction, loginProvider } = useContext(NavContext);
 
   const [loginError, setLoginError] = useState(false);
@@ -14,19 +14,19 @@ export const GuestPanel = () => {
   const schema = {
     username: {
       type: type.string,
-      label: translateMethod('Email address'),
-      placeholder: translateMethod('Email address'),
+      label: translate('Email address'),
+      placeholder: translate('Email address'),
       format: format.email,
       constraints: [
-        constraints.required(translateMethod('constraints.required.email')),
-        constraints.email(translateMethod('constraints.matches.email')),
+        constraints.required(translate('constraints.required.email')),
+        constraints.email(translate('constraints.matches.email')),
       ],
     },
     password: {
       type: type.string,
-      label: translateMethod('Password'),
+      label: translate('Password'),
       format: format.password,
-      constraints: [constraints.required(translateMethod('constraints.required.password'))],
+      constraints: [constraints.required(translate('constraints.required.password'))],
     },
   };
 
@@ -53,7 +53,7 @@ export const GuestPanel = () => {
             <div className="ms-2 block__entries d-flex flex-column">
               {loginError && (
                 <span className="badge bg-danger">
-                  {translateMethod('incorrect.email.or.password')}
+                  {translate('incorrect.email.or.password')}
                 </span>
               )}
               <Form
@@ -67,7 +67,7 @@ export const GuestPanel = () => {
                         className="btn btn-outline-success ms-2"
                         onClick={valid}
                       >
-                        <span>{translateMethod('Login')}</span>
+                        <span>{translate('Login')}</span>
                       </button>
                     </div>
                   );
@@ -88,13 +88,13 @@ export const GuestPanel = () => {
           {loginProvider !== 'Local' && (
             <div className="ms-2 block__entries d-flex flex-column">
               <a href={`/auth/${loginProvider}/login`} className="block__entry__link">
-                {translateMethod('Login')}
+                {translate('Login')}
               </a>
               <a
                 href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
                 className="block__entry__link"
               >
-                {translateMethod('Register')}
+                {translate('Register')}
               </a>
             </div>
           )}

@@ -39,7 +39,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
   const [isValid, setIsValid] = useState(false);
   const [value, setValue] = useState<FormData>();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const formRef = useRef<FormRef>()
 
@@ -107,7 +107,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
     } else {
       Services.getVisibleApiWithId(props.api).then((api) => {
         if (api.error) {
-          toastr.error(translateMethod('Error'), api.error);
+          toastr.error(translate('Error'), api.error);
           props.closeModal();
         }
         else {
@@ -145,7 +145,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
       type: type.object,
       format: format.form,
       visible: !!plan,
-      label: translateMethod('mandatory.metadata.label', false, `Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.customMetadata.length})`, plan.otoroshiTarget.apikeyCustomization.customMetadata.length),
+      label: translate({key: 'mandatory.metadata.label', replacements: [plan.otoroshiTarget.apikeyCustomization.customMetadata.length]}),
       schema: sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key'])
         .map((meta: { key: string, possibleValues: Array<string> }) => {
           return {
@@ -156,7 +156,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
               createOption: true,
               options: meta.possibleValues,
               constraints: [
-                constraints.required(translateMethod('constraints.required.value'))
+                constraints.required(translate('constraints.required.value'))
               ]
             }
           }
@@ -167,39 +167,39 @@ export const SubscriptionMetadataModal = (props: Props) => {
     },
     customMedata: {
       type: type.object,
-      label: translateMethod('Additional metadata'),
+      label: translate('Additional metadata'),
     },
     customQuotas: {
       type: type.object,
       format: format.form,
-      label: translateMethod('Custom quotas'),
+      label: translate('Custom quotas'),
       schema: {
         customMaxPerSecond: {
           type: type.number,
-          label: translateMethod('Max. requests per second'),
+          label: translate('Max. requests per second'),
           constraints: [
-            constraints.min(0, translateMethod('constraints.min.0')) //todo: translate
+            constraints.min(0, translate('constraints.min.0')) //todo: translate
           ]
         },
         customMaxPerDay: {
           type: type.number,
-          label: translateMethod('Max. requests per day'),
+          label: translate('Max. requests per day'),
           constraints: [
-            constraints.min(0, translateMethod('constraints.min.0')) //todo: translate
+            constraints.min(0, translate('constraints.min.0')) //todo: translate
           ]
         },
         customMaxPerMonth: {
           type: type.number,
-          label: translateMethod('Max. requests per month'),
+          label: translate('Max. requests per month'),
           constraints: [
-            constraints.min(0, translateMethod('constraints.min.0')) //todo: translate
+            constraints.min(0, translate('constraints.min.0')) //todo: translate
           ]
         },
       }
     },
     customReadOnly: {
       type: type.bool,
-      label: translateMethod('Read only apikey')
+      label: translate('Read only apikey')
     }
   }
 
@@ -222,19 +222,19 @@ export const SubscriptionMetadataModal = (props: Props) => {
           {!props.description && props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[
               props.team.name,
-              plan.customName || formatPlanType(plan, translateMethod),
+              plan.customName || formatPlanType(plan, translate),
             ]}>
               {props.team.name} ask you an apikey for plan{' '}
-              {plan.customName || formatPlanType(plan, translateMethod)}
+              {plan.customName || formatPlanType(plan, translate)}
             </Translation>
           </div>)}
           {!props.description && !props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.update.description" replacements={[
               props.team.name,
-              plan.customName || formatPlanType(plan, translateMethod),
+              plan.customName || formatPlanType(plan, translate),
             ]}>
               Team: {props.team.name} - Plan:{' '}
-              {plan.customName || formatPlanType(plan, translateMethod)}
+              {plan.customName || formatPlanType(plan, translate)}
             </Translation>
           </div>)}
           {props.description && <div className="modal-description">{props.description}</div>}
@@ -258,7 +258,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
           className="btn btn-outline-success"
           disabled={isValid ? undefined : true}
           onClick={() => formRef.current?.handleSubmit()}>
-          {props.creationMode ? translateMethod('Accept') : translateMethod('Update')}
+          {props.creationMode ? translate('Accept') : translate('Update')}
         </button>
       </div>
     </div>

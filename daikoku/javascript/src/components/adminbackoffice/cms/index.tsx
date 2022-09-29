@@ -30,7 +30,7 @@ export const CMSOffice = () => {
   const location = useLocation();
 
   const { client } = useContext(getApolloContext());
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const [pages, setPages] = useState<Array<any>>([]);
   const [downloading, setDownloading] = useState(false);
@@ -73,7 +73,7 @@ export const CMSOffice = () => {
             <ul className="dropdown-menu">
               <li className="dropdown-item" onClick={() => importRef.current?.click()}>
                 <input ref={r => importRef.current = r} type="file" accept=".zip" className="form-control hide" onChange={loadFiles} />
-                {translateMethod('cms.import_all')}
+                {translate('cms.import_all')}
               </li>
               <li className="dropdown-item" onClick={() => {
                 if (!downloading) {
@@ -89,7 +89,7 @@ export const CMSOffice = () => {
                     });
                 }
               }}>
-                {downloading ? (<Spinner heigth={18} width={18} />) : (translateMethod('cms.export_all'))}
+                {downloading ? (<Spinner heigth={18} width={18} />) : (translate('cms.export_all'))}
               </li>
             </ul>
           </div>
@@ -101,7 +101,7 @@ export const CMSOffice = () => {
                 }
               });
           }} className="btn btn-sm btn-outline-success">
-            {translateMethod('cms.index.new_page')}
+            {translate('cms.index.new_page')}
           </button>
         </div>
       </div>

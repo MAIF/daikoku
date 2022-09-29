@@ -12,7 +12,7 @@ export const TeamPlanConsumption = ({
 }: any) => {
   const { currentTeam } = useSelector((state) => (state as any).context);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const urlMatching = !!apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
     : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
@@ -25,9 +25,9 @@ export const TeamPlanConsumption = ({
       type: 'LineChart',
       label: (data: any) => {
         const totalHits = data.reduce((acc: any, cons: any) => acc + cons.hits, 0);
-        return translateMethod('data.in.plus.hits', false, `Data In (${totalHits})`, totalHits);
+        return translate({ key: 'data.in.plus.hits', replacements: [totalHits] });
       },
-      title: translateMethod('Data In'),
+      title: translate('Data In'),
       formatter: (data: any) => data.reduce((acc: any, item: any) => {
         const date = moment(item.to).format('DD MMM.');
         const value = acc.find((a: any) => a.date === date) || { count: 0 };
@@ -38,8 +38,8 @@ export const TeamPlanConsumption = ({
     },
     {
       type: 'RoundChart',
-      label: translateMethod('Hits by apikey'),
-      title: translateMethod('Hits by apikey'),
+      label: translate('Hits by apikey'),
+      title: translate('Hits by apikey'),
       formatter: (data: any) => data.reduce((acc: any, item: any) => {
         const value = acc.find((a: any) => a.name === item.clientId) || { count: 0 };
 
@@ -55,7 +55,7 @@ export const TeamPlanConsumption = ({
     },
     {
       type: 'Global',
-      label: translateMethod('Global informations'),
+      label: translate('Global informations'),
       formatter: (data: any) => sumGlobalInformations(data),
     },
   ];
@@ -95,7 +95,7 @@ export const TeamPlanConsumption = ({
   useEffect(() => {
     Services.teams().then(setTeams);
 
-    document.title = `${currentTeam.name} - ${translateMethod('Plan consumption')}`;
+    document.title = `${currentTeam.name} - ${translate('Plan consumption')}`;
   }, []);
 
   return (

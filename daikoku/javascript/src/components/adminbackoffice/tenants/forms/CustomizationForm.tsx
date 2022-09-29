@@ -14,7 +14,7 @@ import { redirect, useNavigate } from 'react-router-dom';
 
 export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translate } = useContext(I18nContext)
   const { client } = useContext(getApolloContext());
 
   const formRef = useRef<FormRef>()
@@ -64,23 +64,23 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
   const schema: Schema = {
     title: {
       type: type.string,
-      label: translateMethod('Title')
+      label: translate('Title')
     },
     description: {
       type: type.string,
       format: format.markdown,
-      label: translateMethod('Description'),
+      label: translate('Description'),
     },
     homePageVisible: {
       type: type.bool,
-      label: translateMethod('home page visible Enabled'), //todo translation
+      label: translate('home page visible Enabled'), //todo translation
     },
     homeCmsPage: {
       type: type.string,
       format: format.select,
       visible: ({ rawValues }) => rawValues?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
-      label: translateMethod('tenant_edit.home_page'),
+      label: translate('tenant_edit.home_page'),
       disabled: tenant?.style?.homePageVisible,
 
     },
@@ -88,7 +88,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       type: type.string,
       format: format.select,
       visible: ({ rawValues }) => rawValues?.homePageVisible,
-      label: translateMethod('tenant_edit.404_page'),
+      label: translate('tenant_edit.404_page'),
       disabled: tenant?.style?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
 
@@ -97,8 +97,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       type: type.string,
       format: format.select,
       visible: ({ rawValues }) => rawValues?.homePageVisible,
-      label: translateMethod('tenant_edit.authenticated_cmspage'),
-      help: translateMethod('tenant_edit.authenticated_cmspage_help'),
+      label: translate('tenant_edit.authenticated_cmspage'),
+      help: translate('tenant_edit.authenticated_cmspage_help'),
       disabled: tenant?.style?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
 
@@ -107,8 +107,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       type: 'number',
       visible: tenant?.style?.homePageVisible,
       props: {
-        label: translateMethod('tenant_edit.cache'),
-        help: translateMethod('tenant_edit.cache_help'),
+        label: translate('tenant_edit.cache'),
+        help: translate('tenant_edit.cache_help'),
         disabled: tenant?.style?.homePageVisible,
       },
     },
@@ -116,22 +116,22 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       type: 'number',
       visible: tenant?.style?.homePageVisible,
       props: {
-        label: translateMethod('tenant_edit.cms_history_length'),
-        help: translateMethod('tenant_edit.cms_history_length.help'),
+        label: translate('tenant_edit.cms_history_length'),
+        help: translate('tenant_edit.cms_history_length.help'),
       },
     },
-    logo: urlWithAssetButton(translateMethod('Logo'), translateMethod('Set Logo from asset'), MimeTypeFilter.image),
-    cssUrl: urlWithAssetButton(translateMethod('CSS URL'), translateMethod('Set CSS from asset'), MimeTypeFilter.css),
+    logo: urlWithAssetButton(translate('Logo'), translate('Set Logo from asset'), MimeTypeFilter.image), //todo: translation
+    cssUrl: urlWithAssetButton(translate('CSS URL'), translate('Set CSS from asset'), MimeTypeFilter.css), //todo: trabslation
     css: {
       type: type.string,
       format: format.code,
-      label: translateMethod('CSS'),
+      label: translate('CSS'),
     },
     colorTheme: {
       type: type.string,
       format: format.code,
       label: () => <div className='d-flex flex-row align-items-center'>
-        <div>{translateMethod('CSS color theme')}</div>
+        <div>{translate('CSS color theme')}</div>
         <button type="button" className="btn btn-access-negative ms-1" onClick={() => {
           const RedirectToUI = () => navigate(`/settings/tenants/${tenant?._id}/style`);
           if (Object.keys(formRef.current?.methods.formState.dirtyFields || {})) {
@@ -142,12 +142,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
                 formRef.current?.handleSubmit();
                 RedirectToUI();
               },
-              title: translateMethod('unsaved.modifications.title', false, 'Unsaved modifications'),
-              message: translateMethod(
-                'unsaved.modifications.message',
-                false,
-                'Your have unsaved modifications, do you want to save it before continue ?'
-              ),
+              title: translate('unsaved.modifications.title'),
+              message: translate('unsaved.modifications.message'),
             }));
           } else {
             RedirectToUI();
@@ -155,18 +151,18 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
         }}>set them from UI</button>
       </div>,
     },
-    jsUrl: urlWithAssetButton(translateMethod('Js URL'), translateMethod('Set JS from asset'), MimeTypeFilter.javascript), //todo: translate
+    jsUrl: urlWithAssetButton(translate('Js URL'), translate('Set JS from asset'), MimeTypeFilter.javascript), //todo: translate
     js: {
       type: type.string,
       format: format.code,
-      label: translateMethod('Javascript')
+      label: translate('Javascript')
     },
-    faviconUrl: urlWithAssetButton(translateMethod('Favicon URL'), translateMethod('Set Favicon from asset'), MimeTypeFilter.image),
-    fontFamilyUrl: urlWithAssetButton(translateMethod('Font family'), translateMethod('Set Font Family from asset'), MimeTypeFilter.font),
+    faviconUrl: urlWithAssetButton(translate('Favicon URL'), translate('Set Favicon from asset'), MimeTypeFilter.image),//todo: translate
+    fontFamilyUrl: urlWithAssetButton(translate('Font family'), translate('Set Font Family from asset'), MimeTypeFilter.font),//todo: translate
     footer: {
       type: type.string,
       format: format.markdown,
-      label: translateMethod('Footer'),
+      label: translate('Footer'),
     },
   }
 
@@ -178,12 +174,12 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
 
   const flow: Flow = [
     {
-      label: translateMethod('General'),
+      label: translate('General'),
       flow: ['title', 'description', 'logo', 'cssUrl', 'css', 'colorTheme', 'jsUrl', 'js', 'faviconUrl', 'fontFamilyUrl'],
       collapsed: false
     },
     {
-      label: translateMethod('Pages'),
+      label: translate('Pages'),
       flow: ['homePageVisible', 'homeCmsPage', 'notFoundCmsPage', 'authenticatedCmsPage', 'cacheTTL', 'cmsHistoryLength', 'footer'],
       collapsed: true
     }
@@ -198,7 +194,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       value={tenant?.style}
       options={{
         actions: {
-          submit: { label: translateMethod('Save') }
+          submit: { label: translate('Save') }
         }
       }}
     />

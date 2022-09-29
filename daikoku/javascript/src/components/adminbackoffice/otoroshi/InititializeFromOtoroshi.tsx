@@ -26,7 +26,7 @@ export const InitializeFromOtoroshi = () => {
 
   const [state, send] = useMachine<any>(theMachine);
 
-  const { Translation, translateMethod } = useContext(I18nContext);
+  const { Translation, translate } = useContext(I18nContext);
 
   const [otoroshis, setOtoroshis] = useState<Array<any>>([]);
   const [teams, setTeams] = useState<Array<any>>([]);
@@ -144,14 +144,14 @@ export const InitializeFromOtoroshi = () => {
       setStep(1);
       // setApis(apis);
       setCreatedApis([]);
-      toastr.success(translateMethod('Success'), translateMethod('Apis successfully created'));
+      toastr.success(translate('Success'), translate('Apis successfully created'));
     });
   };
 
   const afterSubCreation = () => {
     setStep(1);
     setCreatedSubs([]);
-    toastr.success(translateMethod('Success'), translateMethod('Subscriptions successfully created'));
+    toastr.success(translate('Success'), translate('Subscriptions successfully created'));
   };
 
   const loadPreviousState = () => {
@@ -167,7 +167,7 @@ export const InitializeFromOtoroshi = () => {
       setCreatedSubs(prevState.createdSubs);
       send('LOAD_PREVIOUS_STATE', { otoroshi: prevState.otoroshi, tenant: prevState.tenant, goto: 'apikeys' });
     } else {
-      toastr.warning(translateMethod('Warning'), translateMethod('Seems to have no saved state...please continue'));
+      toastr.warning(translate('Warning'), translate('Seems to have no saved state...please continue'));
     }
   };
 

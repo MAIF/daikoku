@@ -31,7 +31,7 @@ const AdminList = () => {
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [selectedAdmin, setSelectedAdmin] = useState<any>(undefined);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
 
   useEffect(() => {
@@ -68,7 +68,7 @@ const AdminList = () => {
           setTeam(team);
           setAdmins([...admins, selectedAdmin]);
           setAddableAdmins(addableAdmins.filter((u: any) => u._id !== selectedAdmin._id));
-          toastr.success(translateMethod('Success'), translateMethod('admin.added.successfully', false, `${selectedAdmin.name} has been added as new admin of the tenant`, selectedAdmin.name));
+          toastr.success(translate('Success'), translate({ key: 'admin.added.successfully', replacements: [selectedAdmin.name] }));
           setSelectedAdmin(null);
         }
       });
@@ -92,26 +92,20 @@ const AdminList = () => {
 
   const removeAdmin = (admin: any) => {
     if (team?.users.length === 1) {
-      alert(
-        translateMethod(
-          'remove.admin.tenant.alert',
-          false,
-          "You can't delete this admin, it must remain an admin in a tenant."
-        )
-      );
+      alert(translate('remove.admin.tenant.alert'));
     } else {
-      (window
-        .confirm(translateMethod('remove.admin.tenant.confirm', false, 'Are you sure you want to remove this admin from the tenant ?')) as any).then((ok: any) => {
+      (window.confirm(translate('remove.admin.tenant.confirm'))) //@ts-ignore
+        .then((ok: any) => {
           if (ok) {
             Services.removeAdminFromTenant(tenant?._id, admin._id).then((team) => {
               if (team.error) {
-                toastr.error(translateMethod('Failure'), team.error);
+                toastr.error(translate('Failure'), team.error);
               }
               else {
                 setTeam(team);
                 setAddableAdmins([...addableAdmins, admin]);
                 setAdmins(admins.filter((a) => a._id !== admin._id));
-                toastr.success(translateMethod('Success'), translateMethod('remove.admin.tenant.success', false, 'Admin deleted successfully', admin.name));
+                toastr.success(translate('Success'), translate({key: 'remove.admin.tenant.success', replacements: [admin.name]}));
               }
             });
           }
@@ -128,7 +122,7 @@ const AdminList = () => {
       <div className="row">
         <div className="col-12 mb-3 d-flex justify-content-start">
           <Select
-            placeholder={translateMethod('Add new admin')}
+            placeholder={translate('Add new admin')}
             className="add-member-select me-2 reactSelect"
             options={addableAdmins.map(adminToSelector)}
             onChange={(slug) => setSelectedAdmin(slug.value)}
@@ -137,7 +131,7 @@ const AdminList = () => {
               .filter((e) => typeof e === 'string')
               .some((v) => v.includes(search))}
             classNamePrefix="reactSelect" />
-          <input placeholder={translateMethod('Find an admin')} className="form-control" onChange={(e) => setSearch(e.target.value)} />
+          <input placeholder={translate('Find an admin')} className="form-control" onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
       <PaginatedComponent items={sortBy(filteredAdmins, [(a) => (a as any).name.toLowerCase()])} count={15} formatter={(admin) => {
@@ -145,7 +139,7 @@ const AdminList = () => {
           {
             action: () => removeAdmin(admin),
             iconClass: 'fas fa-trash delete-icon',
-            tooltip: translateMethod('Remove admin rights'),
+            tooltip: translate('Remove admin rights'),
           },
         ]} />);
       }} />

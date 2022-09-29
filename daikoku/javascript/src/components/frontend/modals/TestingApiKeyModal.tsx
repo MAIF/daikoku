@@ -11,20 +11,20 @@ export const TestingApiKeyModal = (props: any) => {
 
   const tenant = useSelector(s => (s as any).context.tenant);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const schema = {
     otoroshiSettings: {
       type: type.string,
       format: format.select,
-      label: translateMethod('Otoroshi instance'),
+      label: translate('Otoroshi instance'),
       optionsFrom: Services.allSimpleOtoroshis(tenant._id),
       transformer: (o: any) => ({
         label: o.url,
         value: o._id
       }),
       constraints: [
-        constraints.required(translateMethod('constraints.required.otoroshi.settings'))
+        constraints.required(translate('constraints.required.otoroshi.settings'))
       ]
     },
     authorizedEntities: {
@@ -36,8 +36,8 @@ export const TestingApiKeyModal = (props: any) => {
       }: any) => {
         return !rawValues.otoroshiSettings
       },
-      label: translateMethod('Authorized entities'),
-      help: translateMethod('authorized.entities.help'),
+      label: translate('Authorized entities'),
+      help: translate('authorized.entities.help'),
       schema: {
         groups: {
           type: type.string,
@@ -82,8 +82,8 @@ export const TestingApiKeyModal = (props: any) => {
         }
       },
       constraints: [
-        constraints.required(translateMethod('constraints.required.authorizedEntities')),
-        constraints.test('test', translateMethod('constraint.min.authorizedEntities'), v => v.services.length || v.groups.length)
+        constraints.required(translate('constraints.required.authorizedEntities')),
+        constraints.test('test', translate('constraint.min.authorizedEntities'), v => v.services.length || v.groups.length)
       ]
     },
   };

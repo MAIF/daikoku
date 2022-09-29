@@ -13,7 +13,7 @@ export const TeamApiTesting = (props: any) => {
    
   const testing = props.value.testing;
   const currentTeam = useSelector((s) => (s as any).context.currentTeam);
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
     const random = nanoid(16);
@@ -35,7 +35,7 @@ export const TeamApiTesting = (props: any) => {
         teamId: currentTeam._id,
         config: newConfig,
         update: testing.config && testing.config.otoroshiSettings,
-        title: translateMethod('Otoroshi settings'),
+        title: translate('Otoroshi settings'),
         onChange: (apiKey: any, config: any) => {
           props.onChange({
             ...props.value,
@@ -57,7 +57,7 @@ export const TeamApiTesting = (props: any) => {
   };
 
   const deleteOtoroshiKey = () => {
-    (window.confirm(translateMethod('otoroshi.testing.delete.confirm')) as any).then((ok: any) => {
+    (window.confirm(translate('otoroshi.testing.delete.confirm')) as any).then((ok: any) => {
       if (ok)
         Services.deleteTestingApiKey(currentTeam._id, {
           otoroshiSettings: testing.config.otoroshiSettings,
@@ -84,13 +84,13 @@ export const TeamApiTesting = (props: any) => {
   const schema = {
     enabled: {
       type: type.bool,
-      label: translateMethod('Enabled'),
+      label: translate('Enabled'),
       defaultValue: false,
     },
     auth: {
       type: type.string,
       format: format.buttonsSelect,
-      label: translateMethod('Auth. type'),
+      label: translate('Auth. type'),
       options: [
         { label: 'ApiKey', value: 'ApiKey' },
         { label: 'Basic', value: 'Basic' },
@@ -98,18 +98,18 @@ export const TeamApiTesting = (props: any) => {
     },
     name: {
       type: type.string,
-      label: translateMethod('Auth. name'),
+      label: translate('Auth. name'),
       constraints: [],
     },
     username: {
       type: type.string,
-      label: translateMethod('Client Id'),
+      label: translate('Client Id'),
       constraints: [],
     },
     password: {
       type: type.string,
       format: format.password,
-      label: translateMethod('Client secret'),
+      label: translate('Client secret'),
       constraints: [],
     },
   };

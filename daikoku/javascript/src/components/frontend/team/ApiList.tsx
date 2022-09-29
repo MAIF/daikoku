@@ -10,8 +10,10 @@ import classNames from 'classnames';
 import { useNavigate } from 'react-router-dom';
 
 import { ApiCard } from '../api';
-import { Can, manage, api } from '../../utils';
-import { updateTeamPromise, openCreationTeamModal, I18nContext } from '../../../core';
+import { I18nContext } from '../../../core';
+import { IApi, ITeamSimple, IUserSimple} from '../../../types';
+import { useSelector } from 'react-redux';
+import { IState, IStateContext } from '../../../types/context';
 
 const all = { value: 'All', label: 'All' };
 const GRID = 'GRID';
@@ -34,28 +36,28 @@ const computeTop = (arrayOfArray: any) => {
 };
 
 type TApiList = {
-  apis: Array<any>,
-  teams: Array<any>,
-  connectedUser?: any, //todo: props from redux => not optional
-  team?: any,
-  tenant?: any, //todo: props from redux => not optional
-  groupView?: any,
-  myTeams: any,
-  showTeam: any,
-  teamVisible: any,
-  askForApiAccess: (api: any, teams: any) => void,
-  redirectToTeamPage: (api: any) => void,
-  redirectToApiPage: (api: any) => void,
-  redirectToEditPage: (api: any) => void,
-  toggleStar: (api: any) => void
+  apis: Array<IApi>,
+  teams: Array<ITeamSimple>,
+  team?: ITeamSimple,
+  groupView?: boolean,
+  myTeams: Array<ITeamSimple>,
+  showTeam: boolean,
+  teamVisible: boolean,
+  askForApiAccess: (api: IApi, teams: ITeamSimple) => void,
+  redirectToTeamPage: (api: IApi) => void,
+  redirectToApiPage: (api: IApi) => void,
+  redirectToEditPage: (api: IApi) => void,
+  toggleStar: (api: IApi) => void
 }
 
-const ApiListComponent = (props: TApiList) => {
-  const { translateMethod, Translation } = useContext(I18nContext);
+export const ApiList = (props: TApiList) => {
+  const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
-  const allCategories = () => ({ value: 'All', label: translateMethod('All categories') });
-  const allTags = () => ({ value: 'All', label: translateMethod('All tags') });
+  const allCategories = () => ({ value: 'All', label: translate('All categories') });
+  const allTags = () => ({ value: 'All', label: translate('All tags') });
+
+  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
 
   const [searched, setSearched] = useState('');
   const [selectedPage, setSelectedPage] = useState(0);
@@ -107,22 +109,22 @@ const ApiListComponent = (props: TApiList) => {
     return (
       <div className="d-flex justify-content-between">
         <div className="preview">
-          <strong>{count}</strong> {`${translateMethod('result')}${count > 1 ? 's' : ''}`}
+          <strong>{count}</strong> {`${translate('result')}${count > 1 ? 's' : ''}`}
           &nbsp;
           {!!searched && (
             <span>
-              {translateMethod('matching')} <strong>{searched}</strong>&nbsp;
+              {translate('matching')} <strong>{searched}</strong>&nbsp;
             </span>
           )}
           {selectedCategory.value !== all.value && (
             <span>
-              {translateMethod('categorised in')} <strong>{selectedCategory.value}</strong>
+              {translate('categorised in')} <strong>{selectedCategory.value}</strong>
               &nbsp;
             </span>
           )}
           {selectedTag.value !== all.value && (
             <span>
-              {translateMethod('tagged')} <strong>{selectedTag.value}</strong>
+              {translate('tagged')} <strong>{selectedTag.value}</strong>
             </span>
           )}
         </div>
@@ -139,7 +141,7 @@ const ApiListComponent = (props: TApiList) => {
     setSelectedPage(data.selected);
   };
 
-  const user = props.connectedUser;
+  const user = connectedUser;
   const apis = props.apis;
   const searchedTrim = searched.trim().toLowerCase();
 
@@ -177,7 +179,7 @@ const ApiListComponent = (props: TApiList) => {
     const starredApis: any = [],
       unstarredApis: any = [];
     filteredApis.forEach((a) => {
-      if (props.connectedUser.starredApis.includes(a._id)) starredApis.push(a);
+      if (connectedUser.starredApis.includes(a._id)) starredApis.push(a);
       else unstarredApis.push(a);
     });
 
@@ -198,7 +200,7 @@ const ApiListComponent = (props: TApiList) => {
           <input
             type="text"
             className="form-control"
-            placeholder={translateMethod('Search your API...')}
+            placeholder={translate('Search your API...')}
             aria-label="Search your API"
             value={searched}
             onChange={(e) => {
@@ -283,14 +285,14 @@ const ApiListComponent = (props: TApiList) => {
                 toggleStar={() => props.toggleStar(api)}
                 handleCategorySelect={(category: any) => setSelectedCategory(categories.find((c) => (c as any).value === category))}
                 view={view}
-                connectedUser={props.connectedUser}
+                connectedUser={connectedUser}
                 groupView={props.groupView} />);
             })}
           </div>
           <div className="apis__pagination">
             <Pagination
-              previousLabel={translateMethod('Previous')}
-              nextLabel={translateMethod('Next')}
+              previousLabel={translate('Previous')}
+              nextLabel={translate('Next')}
               breakLabel="..."
               breakClassName={'break'}
               pageCount={Math.ceil(filteredApis.length / pageNumber)}
@@ -306,7 +308,7 @@ const ApiListComponent = (props: TApiList) => {
         </div>
         {!props.groupView && (
           <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
-            {!props.team && !props.connectedUser.isGuest && (
+            {!props.team && !connectedUser.isGuest && (
               <YourTeams teams={props.myTeams} redirectToTeam={redirectToTeam} />
             )}
             {!!tags.length && (
@@ -335,17 +337,6 @@ const ApiListComponent = (props: TApiList) => {
     </section>
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-const mapDispatchToProps = {
-  updateTeam: (team: any) => updateTeamPromise(team),
-  openCreationTeamModal: (modalProps: any) => openCreationTeamModal(modalProps),
-};
-
-export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
 
 const Top = (props: any) => {
   return (
@@ -376,23 +367,22 @@ const YourTeams = ({
   redirectToTeam,
   ...props
 }: any) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const [searchedTeam, setSearchedTeam] = useState();
   const maybeTeams = searchedTeam
     ? teams.filter((team: any) => team.name.toLowerCase().includes(searchedTeam))
     : teams;
-  const language = props.currentlanguage;
   return (
     <div className={'top__container p-3 rounded additionalContent mb-2'}>
       <div>
         <h5>
           <i className="fas fa-users me-2" />
-          {translateMethod('your teams', language)}
+          {translate('your teams')}
         </h5>
       </div>
       <input
-        placeholder={translateMethod('find team', language)}
+        placeholder={translate('find team')}
         className="form-control"
         onChange={(e: any) => setSearchedTeam(e.target.value)}
       />

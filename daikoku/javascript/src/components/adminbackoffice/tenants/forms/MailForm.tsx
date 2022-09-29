@@ -10,18 +10,18 @@ import { MultiStepForm, Spinner } from '../../../utils';
 import { update } from 'xstate/lib/actionTypes';
 
 export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-  const { translateMethod } = useContext(I18nContext)
+  const { translate } = useContext(I18nContext)
 
   const basicMailSchema = {
     fromTitle: {
       type: type.string,
-      label: translateMethod('Email title'),
+      label: translate('Email title'),
     },
     fromEmail: {
       type: type.string,
-      label: translateMethod('Email from'),
+      label: translate('Email from'),
       constraints: [
-        constraints.email(translateMethod('constraints.matches.email'))
+        constraints.email(translate('constraints.matches.email'))
       ]
     },
   }
@@ -33,7 +33,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
       type: {
         type: type.string,
         format: format.buttonsSelect,
-        label: translateMethod('Mailer type'),
+        label: translate('Mailer type'),
         options: [
           { label: 'Console', value: 'console' },
           { label: 'SMTP Client', value: 'smtpClient' },
@@ -71,11 +71,11 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
           return {
             host: {
               type: type.string,
-              label: translateMethod('smtp_client.host'),
+              label: translate('smtp_client.host'),
             },
             port: {
               type: type.number,
-              label: translateMethod('smtp_client.port'),
+              label: translate('smtp_client.port'),
             },
             ...basicMailSchema,
           };
@@ -83,15 +83,15 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
           return {
             domain: {
               type: type.string,
-              label: translateMethod('Mailgun domain'),
+              label: translate('Mailgun domain'),
             },
             eu: {
               type: type.bool,
-              label: translateMethod('European server'),
+              label: translate('European server'),
             },
             key: {
               type: type.string,
-              label: translateMethod('Mailgun key'),
+              label: translate('Mailgun key'),
             },
             ...basicMailSchema
           }
@@ -99,11 +99,11 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
           return {
             apiKeyPublic: {
               type: type.string,
-              label: translateMethod('Mailjet apikey public'),
+              label: translate('Mailjet apikey public'),
             },
             apiKeyPrivate: {
               type: type.string,
-              label: translateMethod('Mailjet apikey private'),
+              label: translate('Mailjet apikey private'),
             },
             ...basicMailSchema
           }
@@ -111,7 +111,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
           return {
             apiKey: {
               type: type.string,
-              label: translateMethod('send_grid.api_key'),
+              label: translate('send_grid.api_key'),
             },
             ...basicMailSchema
           }
@@ -127,10 +127,10 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
       creation={false}
       save={(d: IMailerSettings) => props.updateTenant.mutateAsync({...props.tenant, mailerSettings: d} as ITenantFull)}
       labels={{
-        previous: translateMethod('Previous'),
-        skip: translateMethod('Skip'),
-        next: translateMethod('Next'),
-        save: translateMethod('Save'),
+        previous: translate('Previous'),
+        skip: translate('Skip'),
+        next: translate('Next'),
+        save: translate('Save'),
       }} />
   )
 }

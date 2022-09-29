@@ -6,7 +6,7 @@ import { formatPlanType, Option } from '../../utils';
 import { I18nContext } from '../../../core';
 
 export function SimpleNotification(props: any) {
-  const { translateMethod, language, Translation } = useContext(I18nContext);
+  const { translate, language, Translation } = useContext(I18nContext);
 
   const navigate = useNavigate();
 
@@ -17,7 +17,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-key"
             style={{ marginRight: 5 }}
-            title={translateMethod('Ask access to API')}
+            title={translate('Ask access to API')}
           />
         );
       case 'TeamAccess':
@@ -25,7 +25,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-users"
             style={{ marginRight: 5 }}
-            title={translateMethod('Ask to join a team')}
+            title={translate('Ask to join a team')}
           />
         );
       case 'TransferApiOwnership':
@@ -33,7 +33,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fa-solid fa-arrow-down-from-dotted-line"
             style={{ marginRight: 5 }}
-            title={translateMethod('transfer.api.ownership')}
+            title={translate('transfer.api.ownership')}
           />
         );
       case 'ApiSubscription':
@@ -41,7 +41,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-file-signature"
             style={{ marginRight: 5 }}
-            title={translateMethod('Subscription to an API')}
+            title={translate('Subscription to an API')}
           />
         );
       case 'OtoroshiSyncSubscriptionError':
@@ -49,7 +49,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-pastafarianism"
             style={{ marginRight: 5 }}
-            title={translateMethod('Otoroshi sync error')}
+            title={translate('Otoroshi sync error')}
           />
         );
       case 'OtoroshiSyncApiError':
@@ -57,7 +57,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-pastafarianism"
             style={{ marginRight: 5 }}
-            title={translateMethod('Otoroshi sync error')}
+            title={translate('Otoroshi sync error')}
           />
         );
       case 'ApiKeyDeletionInformation':
@@ -65,7 +65,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-trash"
             style={{ marginRight: 5 }}
-            title={translateMethod('ApiKey deletion information')}
+            title={translate('ApiKey deletion information')}
           />
         );
       case 'ApiKeyRotationInProgress':
@@ -73,7 +73,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
-            title={translateMethod('ApiKey rotation in progress')}
+            title={translate('ApiKey rotation in progress')}
           />
         );
       case 'ApiKeyRotationEnded':
@@ -81,7 +81,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
-            title={translateMethod('ApiKey rotation ended')}
+            title={translate('ApiKey rotation ended')}
           />
         );
       case 'TeamInvitation':
@@ -89,7 +89,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-envelope-alt"
             style={{ marginRight: 5 }}
-            title={translateMethod('Team invitation')}
+            title={translate('Team invitation')}
           />
         );
       case 'ApiKeyRefresh':
@@ -97,7 +97,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-sync-alt"
             style={{ marginRight: 5 }}
-            title={translateMethod('Apikey refresh')}
+            title={translate('Apikey refresh')}
           />
         );
       case 'NewPostPublished':
@@ -105,7 +105,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-newspaper"
             style={{ marginRight: 5 }}
-            title={translateMethod('New Published Post')}
+            title={translate('New Published Post')}
           />
         );
       case 'NewIssueOpen':
@@ -113,7 +113,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-exclamation-circle"
             style={{ marginRight: 5 }}
-            title={translateMethod('New issues open')}
+            title={translate('New issues open')}
           />
         );
       case 'NewCommentOnIssue':
@@ -121,7 +121,7 @@ export function SimpleNotification(props: any) {
           <i
             className="fas fa-comment-circle"
             style={{ marginRight: 5 }}
-            title={translateMethod('New comment on issue')}
+            title={translate('New comment on issue')}
           />
         );
     }
@@ -167,7 +167,7 @@ export function SimpleNotification(props: any) {
                   <a
                     className="btn btn-outline-success btn-sm me-1"
                     href="#"
-                    title={translateMethod('Accept')}
+                    title={translate('Accept')}
                     onClick={() =>
                       props.openSubMetadataModal({
                         save: props.accept,
@@ -184,7 +184,7 @@ export function SimpleNotification(props: any) {
                   <a
                     className="btn btn-outline-danger btn-sm"
                     href="#"
-                    title={translateMethod('Reject')}
+                    title={translate('Reject')}
                     onClick={() => props.reject()}
                   >
                     <i className="fas fa-times" />
@@ -197,7 +197,7 @@ export function SimpleNotification(props: any) {
                   <a
                     className="btn btn-outline-success btn-sm me-1"
                     href="#"
-                    title={translateMethod('Accept')}
+                    title={translate('Accept')}
                     onClick={() => props.accept()}
                   >
                     <i className="fas fa-check" />
@@ -206,7 +206,7 @@ export function SimpleNotification(props: any) {
                     <a
                       className="btn btn-outline-danger btn-sm"
                       href="#"
-                      title={translateMethod('Reject')}
+                      title={translate('Reject')}
                       onClick={() => props.reject()}
                     >
                       <i className="fas fa-times" />
@@ -220,7 +220,7 @@ export function SimpleNotification(props: any) {
             <a
               className="btn disabled"
               title={moment(date).format(
-                translateMethod('moment.date.format', 'DD MMM. YYYY à HH:mm z')
+                translate({key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z'})
               )}
             >
               <i className="fas fa-check" />
@@ -231,7 +231,7 @@ export function SimpleNotification(props: any) {
             <a
               className="btn disabled"
               title={moment(date).format(
-                translateMethod('moment.date.format', 'DD MMM. YYYY à HH:mm z')
+                translate({key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z'})
               )}
             >
               <i className="fas fa-times" />
@@ -280,9 +280,9 @@ export function SimpleNotification(props: any) {
   if (['ApiAccess', 'ApiSubscription', 'TransferApiOwnership'].includes(notification.action.type)) {
     const api = getApi(notification.action.api);
     const plan = !api
-      ? { customName: translateMethod('deleted') }
+      ? { customName: translate('deleted') }
       : api.possibleUsagePlans.find((p: any) => p._id === notification.action.plan);
-    infos = { api: api || { name: translateMethod('Deleted API') }, plan };
+    infos = { api: api || { name: translate('Deleted API') }, plan };
   }
 
   let style = {};
@@ -315,7 +315,7 @@ export function SimpleNotification(props: any) {
             {notification.action.type === 'ApiSubscription' && (<div>
               <Translation i18nkey="notif.api.subscription" replacements={[
                 (infos as any).api.name,
-                Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translateMethod)),
+                Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate)),
               ]}>
                 Request subscription to {(infos as any).api.name} for plan {(infos as any).plan.type}
               </Translation>

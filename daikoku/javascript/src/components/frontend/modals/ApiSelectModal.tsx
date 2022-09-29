@@ -13,7 +13,7 @@ export const ApiSelectModal = ({
   const [plans, setPlans] = useState([]);
   const [plan, setPlan] = useState<any>();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAllPlanOfApi(teamId, api._humanReadableId, api.currentVersion)
@@ -54,12 +54,12 @@ export const ApiSelectModal = ({
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{translateMethod('api_select_modal.title')}</h5>
+        <h5 className="modal-title">{translate('api_select_modal.title')}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
       </div>
       <div className="modal-body">
         <Select
-          placeholder={translateMethod('Search')}
+          placeholder={translate('Search')}
           options={plans}
           onChange={setPlan}
           classNamePrefix="reactSelect"
@@ -67,10 +67,10 @@ export const ApiSelectModal = ({
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={closeModal}>
-          {translateMethod('Close', 'Close')}
+          {translate('Close')}
         </button>
         <button type="button" className="btn btn-outline-success" onClick={clonePlan}>
-          {translateMethod('Choose', 'Close')}
+          {translate('Choose')}
         </button>
       </div>
     </div>

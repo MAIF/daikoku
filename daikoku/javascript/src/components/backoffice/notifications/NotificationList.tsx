@@ -13,7 +13,7 @@ export const NotificationList = () => {
   useUserBackOffice();
   const dispatch = useDispatch();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
   const [state, setState] = useState<any>({
@@ -95,7 +95,7 @@ export const NotificationList = () => {
       .then((res) => {
         if (res.error) {
           //@ts-ignore
-          window.alert(res.error, translateMethod('notification.accept.on_error.title'));
+          window.alert(res.error, translate('notification.accept.on_error.title'));
         } else {
           return Promise.resolve();
         }
@@ -210,7 +210,7 @@ export const NotificationList = () => {
               const notifs = notifByTeams[key];
               const team = state.teams.find((t: any) => t._id === key);
               return (<div key={key}>
-                <h2>{team ? team.name : translateMethod('Personal')}</h2>
+                <h2>{team ? team.name : translate('Personal')}</h2>
                 {notifs
                   .sort((a, b) => {
                     return b.date - a.date;

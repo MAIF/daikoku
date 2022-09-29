@@ -23,7 +23,7 @@ export const AssetSelectorModal = ({
   const [selectedAsset, setSelectedAsset] = useState<any>({});
   const [search, setSearch] = useState<any>();
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const selectAssetAndCloseModal = () => {
     onSelect(selectedAsset);
@@ -43,7 +43,7 @@ export const AssetSelectorModal = ({
     </div>
     <div className="modal-body">
       <div className="asset-selection-body">
-        <input placeholder={translateMethod('Find an assets')} className="form-control" onChange={(e) => setSearch(e.target.value)} />
+        <input placeholder={translate('Find an assets')} className="form-control" onChange={(e) => setSearch(e.target.value)} />
         <div className={classNames({
           'asset-selection__container--column': !onlyPreview,
           'asset-selection__container--row': onlyPreview,
@@ -59,7 +59,7 @@ export const AssetSelectorModal = ({
                   selectAssetAndCloseModal();
                 }} src={asset.contentType.includes('svg')
                   ? asset.link
-                  : `/asset-thumbnails/${asset.value}`} alt={translateMethod('Thumbnail')} />
+                  : `/asset-thumbnails/${asset.value}`} alt={translate('Thumbnail')} />
               </div>);
             }
             return (<div key={idx} className={classNames('asset-selection', {
@@ -103,7 +103,7 @@ type AssetChooserProps = {
 }
 
 export function AssetChooserComponent(props: AssetChooserProps) {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState<any>({
     loading: true,
@@ -201,7 +201,7 @@ export function AssetChooserComponent(props: AssetChooserProps) {
 
   if (!state.assets.length) {
     return (
-      <BeautifulTitle title={translateMethod('No assets found')}>
+      <BeautifulTitle title={translate('No assets found')}>
         <button type="button" className="btn btn-access-negative ms-1 cursor-help" disabled>
           <i
             className={classNames('fas me-1', {

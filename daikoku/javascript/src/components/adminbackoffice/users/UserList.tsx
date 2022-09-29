@@ -22,7 +22,7 @@ export const UserList = () => {
     updateUsers();
   }, []);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const updateUsers = () => {
     Services.fetchAllUsers()
@@ -47,12 +47,13 @@ export const UserList = () => {
 
   const removeUser = (user: any) => {
     (window
-      .confirm(translateMethod('remove.user.confirm', false, 'Are you sure you want to delete this user ?')) as any).then((ok: any) => {
+      .confirm(translate('remove.user.confirm')))//@ts-ignore
+      .then((ok: any) => {
         if (ok) {
           Services.deleteUserById(user._id).then(() => {
             toastr.info(
-              translateMethod('Info'),
-              translateMethod('remove.user.success', false, `user ${user.name} is successfully deleted`, user.name));
+              translate('Info'),
+              translate({ key: 'remove.user.success', replacements: [user.name] }));
             updateUsers();
           });
         }
@@ -61,7 +62,7 @@ export const UserList = () => {
 
   const toggleAdmin = (member: any) => {
     if (member._id === connectedUser._id) {
-      alert(translateMethod('toggle.admin.alert'));
+      alert(translate('toggle.admin.alert'));
     } else {
       Services.setAdminStatus(member, !member.isDaikokuAdmin).then(() => updateUsers());
     }
@@ -75,8 +76,8 @@ export const UserList = () => {
       <div className="col">
         <div className="d-flex justify-content-between align-items-center">
           <h1>
-            {translateMethod('Users')}
-            <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translateMethod('Create a new user')} href="#" onClick={(e) => {
+            {translate('Users')}
+            <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translate('Create a new user')} href="#" onClick={(e) => {
               e.preventDefault();
               createNewUser();
             }}>
@@ -84,7 +85,7 @@ export const UserList = () => {
             </a>
           </h1>
           <div className="col-5">
-            <input placeholder={translateMethod('Find a user')} className="form-control" onChange={(e) => {
+            <input placeholder={translate('Find a user')} className="form-control" onChange={(e) => {
               setSearch(e.target.value);
             }} />
           </div>
@@ -97,22 +98,22 @@ export const UserList = () => {
             {
               action: () => removeUser(user),
               iconClass: 'fas fa-trash delete-icon',
-              tooltip: translateMethod('Remove user'),
+              tooltip: translate('Remove user'),
             },
             {
               redirect: () => navigate(`/settings/users/${user._humanReadableId}`),
               iconClass: 'fas fa-pen',
-              tooltip: translateMethod('Edit user'),
+              tooltip: translate('Edit user'),
             },
             {
               link: `/api/admin/users/${user._id}/_impersonate`,
               iconClass: 'fas fa-user-ninja',
-              tooltip: translateMethod('Impersonate this user'),
+              tooltip: translate('Impersonate this user'),
             },
             {
               action: () => toggleAdmin(user),
               iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'}`,
-              tooltip: translateMethod('toggle admin status'),
+              tooltip: translate('toggle admin status'),
             },
           ]} />);
         }} />

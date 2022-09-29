@@ -53,12 +53,12 @@ class Period {
   };
 }
 
-const periods = (translateMethod: any) => ({
+const periods = (translate: any) => ({
   today: new Period({
     from: moment().startOf('day'),
     to: () => moment().add(1, 'day').startOf('day'),
     unitTime: 'day',
-    label: translateMethod('Today'),
+    label: translate('Today'),
     value: 'TODAY',
   }),
 
@@ -66,7 +66,7 @@ const periods = (translateMethod: any) => ({
     from: moment().subtract(1, 'day').startOf('day'),
     to: () => moment().startOf('day'),
     unitTime: 'day',
-    label: translateMethod('Yesterday'),
+    label: translate('Yesterday'),
     value: 'YESTERDAY',
   }),
 
@@ -74,7 +74,7 @@ const periods = (translateMethod: any) => ({
     from: moment().subtract(7, 'days').startOf('day'),
     to: () => moment(),
     unitTime: 'day',
-    label: translateMethod('Last 7 days'),
+    label: translate('Last 7 days'),
     value: 'LAST7',
   }),
 
@@ -82,7 +82,7 @@ const periods = (translateMethod: any) => ({
     from: moment().subtract(30, 'days').startOf('day'),
     to: () => moment(),
     unitTime: 'day',
-    label: translateMethod('Last 30 days'),
+    label: translate('Last 30 days'),
     value: 'LAST30',
   }),
 
@@ -90,17 +90,17 @@ const periods = (translateMethod: any) => ({
     from: moment().startOf('month'),
     to: () => moment().endOf('month'),
     unitTime: 'month',
-    label: translateMethod('Billing period'),
+    label: translate('Billing period'),
     value: 'BILLING',
   })
 });
 
 export function OtoroshiStatsVizualization(props: any) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const [state, setState] = useState<any>({
     tab: 0,
     consumptions: null,
-    period: { ...periods(translateMethod).today },
+    period: { ...periods(translate).today },
     loading: true,
     error: false,
   });
@@ -247,7 +247,7 @@ export function OtoroshiStatsVizualization(props: any) {
           className="col col-sm-3 reactSelect period-select"
           value={{ value: state.period.value, label: state.period.label }}
           isClearable={false}
-          options={Object.values(periods(translateMethod))}
+          options={Object.values(periods(translate))}
           onChange={(period) => setState({ ...state, period })}
           classNamePrefix="reactSelect"
         />
@@ -281,7 +281,7 @@ export function OtoroshiStatsVizualization(props: any) {
 }
 
 export function GlobalDataConsumption(props: any) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const computeValue = (value: any) => {
     let unit = 'Mb';
@@ -322,10 +322,10 @@ export function GlobalDataConsumption(props: any) {
   const avgOverhead = data.avgOverhead ? data.avgOverhead.toFixed(3) : 0;
 
   return <>
-    {row(hits, ' ' + translateMethod('Hit', data.hits > 1))}
-    {row(totalDataIn, ' ' + translateMethod('in'))}
-    {row(totalDataOut, ' ' + translateMethod('out'))}
-    {row(avgDuration, ' ' + translateMethod('ms. average duration'))}
-    {row(avgOverhead, ' ' + translateMethod('ms. average overhead'))}
+    {row(hits, ' ' + translate({key: 'Hit', plural: data.hits > 1}))}
+    {row(totalDataIn, ' ' + translate('in'))}
+    {row(totalDataOut, ' ' + translate('out'))}
+    {row(avgDuration, ' ' + translate('ms. average duration'))}
+    {row(avgOverhead, ' ' + translate('ms. average overhead'))}
   </>
 }

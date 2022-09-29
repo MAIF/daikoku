@@ -19,7 +19,7 @@ export default ({ }) => {
   const { client } = useContext(getApolloContext());
   const params = useParams();
   const navigate = useNavigate();
-  const { translateMethod } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const [reloading, setReloading] = useState(false);
 
@@ -115,7 +115,7 @@ export default ({ }) => {
           }} className="p-3 me-2 d-flex align-items-center" onClick={() => navigate(-1)}>
             <i className="fas fa-arrow-left" />
           </div>
-          <h5 className="m-0">{translateMethod('cms.revisions.version_history')}</h5>
+          <h5 className="m-0">{translate('cms.revisions.version_history')}</h5>
         </div>
         <div>
           {Object.entries(value)
@@ -148,14 +148,14 @@ export default ({ }) => {
                       <span>{item.value.user.name}</span>
                     </div>)}
                     {!isCurrentVersion && isSelected && (<button className="btn btn-sm btn-outline-info mt-2" onClick={() => {
-                      window.confirm(translateMethod('cms.revisions.delete_sentence')) //@ts-ignore //FIXME when monkey-patch & ts will be compat
+                      window.confirm(translate('cms.revisions.delete_sentence')) //@ts-ignore //FIXME when monkey-patch & ts will be compat
                         .then((ok: any) => {
                           if (ok) {
                             Services.restoreCmsDiff(params.id, item.value.id).then(() => setReloading(true));
                           }
                         });
                     }}>
-                      {translateMethod('cms.revisions.restore')}
+                      {translate('cms.revisions.restore')}
                     </button>)}
                   </div>);
                 })}

@@ -19,7 +19,7 @@ const Avatar = ({
   onChange,
   tenant
 }: any) => {
-  const { Translation, translateMethod } = useContext(I18nContext);
+  const { Translation, translate } = useContext(I18nContext);
 
   const setFiles = (files: any) => {
     const file = files[0];
@@ -27,7 +27,7 @@ const Avatar = ({
     const contentType = file.type;
     return Services.storeUserAvatar(filename, contentType, file).then((res) => {
       if (res.error) {
-        toastr.error(translateMethod('Error'), res.error);
+        toastr.error(translate('Error'), res.error);
       } else {
         setValue('pictureFromProvider', false);
         onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
@@ -153,7 +153,7 @@ const PictureUpload = (props: any) => {
 export const UserEdit = () => {
   const tenant = useSelector((s) => (s as any).context.tenant);
   useDaikokuBackOffice();
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
@@ -164,36 +164,36 @@ export const UserEdit = () => {
   const schema = {
     name: {
       type: type.string,
-      label: translateMethod('Name'),
-      constraints: [constraints.required(translateMethod('constraints.required.name'))],
+      label: translate('Name'),
+      constraints: [constraints.required(translate('constraints.required.name'))],
     },
     email: {
       type: type.string,
       format: format.email,
-      label: translateMethod('Email address'),
+      label: translate('Email address'),
       constraints: [
-        constraints.required(translateMethod('constraints.required.email')),
-        constraints.email(translateMethod('constraints.matches.email')),
+        constraints.required(translate('constraints.required.email')),
+        constraints.email(translate('constraints.matches.email')),
       ],
     },
     picture: {
       type: type.string,
-      label: translateMethod('Avatar'),
+      label: translate('Avatar'),
       render: (v: any): JSX.Element => Avatar({ ...v, tenant: tenant }),
       constraints: [
         constraints.url(
-          translateMethod('constraints.format.url', false, '', translateMethod('Avatar'))
+          translate({key: 'constraints.format.url', replacements: [translate('Avatar')]})
         ),
       ],
     },
     isDaikokuAdmin: {
       type: type.bool,
-      label: translateMethod('Daikoku admin.'),
+      label: translate('Daikoku admin.'),
     },
 
     personalToken: {
       type: type.string,
-      label: translateMethod('Personal Token'),
+      label: translate('Personal Token'),
       render: ({
         value,
         onChange
@@ -205,7 +205,7 @@ export const UserEdit = () => {
           <div className="d-flex flex-row">
             <input className="form-control" disabled={true} value={value} />
             <button type="button" className="btn btn-outline-success ms-2" onClick={reloadToken}>
-              {translateMethod('Reload')}
+              {translate('Reload')}
             </button>
           </div>
         );
@@ -213,7 +213,7 @@ export const UserEdit = () => {
     },
     metadata: {
       type: type.object,
-      label: translateMethod('Metadata'),
+      label: translate('Metadata'),
     },
   };
 
@@ -234,11 +234,11 @@ export const UserEdit = () => {
   }, []);
 
   const removeUser = () => {
-    (window.confirm(translateMethod('remove.user.confirm')) as any).then((ok: any) => {
+    (window.confirm(translate('remove.user.confirm')) as any).then((ok: any) => {
       if (ok) {
         Services.deleteUserById(user._id)
           .then(() => {
-            toastr.success(translateMethod('Success'), translateMethod('remove.user.success', false, `user ${user.name} is successfully deleted`, user.name));
+            toastr.success(translate('Success'), translate({key: 'remove.user.success', replacements: [user.name]}));
             navigate('/settings/users');
           });
       }
@@ -250,13 +250,8 @@ export const UserEdit = () => {
       Services.createUser(u)
         .then(() => {
           toastr.success(
-            translateMethod('Success'),
-            translateMethod(
-              'user.created.success',
-              false,
-              `user ${user.name} successfully created`,
-              user.name
-            )
+            translate('Success'),
+            translate({key: 'user.created.success', replacements: [user.name]})
           );
           navigate("/settings/users")
         });
@@ -265,13 +260,8 @@ export const UserEdit = () => {
         .then((updatedUser) => {
           setUser(updatedUser);
           toastr.success(
-            translateMethod('Success'),
-            translateMethod(
-              'user.updated.success',
-              false,
-              `user ${user.name} successfully updated`,
-              user.name
-            )
+            translate('Success'),
+            translate({key: 'user.updated.success', replacements: [user.name]} )
           );
           navigate("/settings/users")
         });
