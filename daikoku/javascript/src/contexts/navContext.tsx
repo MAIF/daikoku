@@ -809,8 +809,10 @@ export const useDaikokuBackOffice = () => {
 
   const navigate = useNavigate();
   const match = useMatch('/settings/:tab/*');
+  const matchEdition = useMatch('/settings/tenants/:id/:tabs')
 
-  const schema = (currentTab: any) => ({
+  console.debug(matchEdition)
+  const schema = (currentTab?: string, subTab?: string) => ({
     blocks: {
       links: {
         order: 1,
@@ -819,6 +821,43 @@ export const useDaikokuBackOffice = () => {
             label: translateMethod('Tenants'),
             action: () => navigateTo('tenants'),
             className: { active: currentTab === 'tenants' },
+            childs: matchEdition ? {
+              general: {
+                label: translateMethod('General'),
+                action: () => navigateTo(`tenants/${matchEdition.params.id}/general`),
+                className: { active: subTab === 'general' },
+              },
+              custom: {
+                label: translateMethod('Customization'),
+                action: () => navigateTo(`tenants/${matchEdition.params.id}/customization`),
+                className: { active: subTab === 'customization' },
+              },
+              audit: {
+                label: translateMethod('Audit'),
+                action: () => navigateTo(`tenants/${matchEdition.params.id}/audit`),
+                className: { active: subTab === 'audit' },
+              },
+              mail: {
+                label: translateMethod('Mail'),
+                action: () => navigateTo(`tenants/${matchEdition.params.id}/mail`),
+                className: { active: subTab === 'mail' },
+              },
+              authentication: {
+                label: translateMethod('Authentication'),
+                action: () => navigateTo(`tenants/${matchEdition.params.id}/authentication`),
+                className: { active: subTab === 'authentication' },
+              },
+              bucket: {
+                label: translateMethod('Bucket'),
+                action: () => navigateTo(`tenants/${matchEdition.params.id}/bucket`),
+                className: { active: subTab === 'bucket' },
+              },
+              security: {
+                label: translateMethod('Security'),
+                action: () => navigateTo(`tenants/${matchEdition.params.id}/security`),
+                className: { active: subTab === 'security' },
+              },
+            } : {},
           },
           users: {
             label: translateMethod('Users'),

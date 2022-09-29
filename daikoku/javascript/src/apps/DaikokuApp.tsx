@@ -236,7 +236,7 @@ const DaikokuAppComponent = ({
                   }
                 />
                 <Route
-                  path="/settings/tenants/:tenantId"
+                  path="/settings/tenants/:tenantId*"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenant edit')}`}>
                       <TenantEditForAdmin />
