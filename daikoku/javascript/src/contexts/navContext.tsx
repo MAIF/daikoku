@@ -798,7 +798,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   return { addMenu, tenant };
 };
 
-export const useDaikokuBackOffice = () => {
+export const useDaikokuBackOffice = (props?: {creation?: boolean}) => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
@@ -807,7 +807,6 @@ export const useDaikokuBackOffice = () => {
   const matchEdition = useMatch('/settings/tenants/:id/:tabs')
 
   const schema = (currentTab?: string, subTab?: string) => {
-    console.debug(currentTab, subTab)
     return ({
       blocks: {
         links: {
@@ -827,31 +826,37 @@ export const useDaikokuBackOffice = () => {
                   label: translate('Customization'),
                   action: () => navigateTo(`tenants/${matchEdition.params.id}/customization`),
                   className: { active: subTab === 'customization' },
+                  visible: !props?.creation
                 },
                 audit: {
                   label: translate('Audit'),
                   action: () => navigateTo(`tenants/${matchEdition.params.id}/audit`),
                   className: { active: subTab === 'audit' },
+                  visible: !props?.creation
                 },
                 mail: {
                   label: translate('Mail'),
                   action: () => navigateTo(`tenants/${matchEdition.params.id}/mail`),
                   className: { active: subTab === 'mail' },
+                  visible: !props?.creation
                 },
                 authentication: {
                   label: translate('Authentication'),
                   action: () => navigateTo(`tenants/${matchEdition.params.id}/authentication`),
                   className: { active: subTab === 'authentication' },
+                  visible: !props?.creation
                 },
                 bucket: {
                   label: translate('Bucket'),
                   action: () => navigateTo(`tenants/${matchEdition.params.id}/bucket`),
                   className: { active: subTab === 'bucket' },
+                  visible: !props?.creation
                 },
                 security: {
                   label: translate('Security'),
                   action: () => navigateTo(`tenants/${matchEdition.params.id}/security`),
                   className: { active: subTab === 'security' },
+                  visible: !props?.creation
                 },
               } : {},
             },

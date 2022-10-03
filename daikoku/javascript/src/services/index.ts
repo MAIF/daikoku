@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import { ITenantFull } from '../types';
+import { ITenant, ITenantFull } from '../types';
 import { IApi } from '../types/api';
 
 const HEADERS = {
@@ -267,7 +267,7 @@ export const saveDocPage = (teamId: any, apiId: any, page: any) =>
 export const allTenants = () => customFetch('/api/tenants');
 export const oneTenant = (tenantId: string): Promise<ITenantFull> => customFetch(`/api/tenants/${tenantId}`);
 
-export const createTenant = (tenant: any) => customFetch('/api/tenants', {
+export const createTenant = (tenant: ITenant) => customFetch('/api/tenants', {
   method: 'POST',
   body: JSON.stringify(tenant),
 });

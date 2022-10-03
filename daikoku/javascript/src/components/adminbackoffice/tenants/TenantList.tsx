@@ -23,13 +23,14 @@ export const TenantList = () => {
   const getTenants = () => Services.allTenants().then(setTenants);
 
   const createNewTenant = () => {
-    Services.fetchNewTenant().then((newTenant) => {
-      navigate(`/settings/tenants/${newTenant._id}`, {
-        state: {
-          newTenant,
-        },
+    Services.fetchNewTenant()
+      .then((newTenant) => {
+        navigate(`/settings/tenants/${newTenant._id}/general`, {
+          state: {
+            newTenant,
+          },
+        });
       });
-    });
   };
 
   const removeTenant = (tenantId: any) => {

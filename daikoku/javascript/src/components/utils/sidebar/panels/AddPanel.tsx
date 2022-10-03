@@ -99,6 +99,17 @@ export const AddPanel = ({
     }
   };
 
+  const createTenant = () => {
+    Services.fetchNewTenant()
+      .then((newTenant) => {
+        navigate(`/settings/tenants/${newTenant._id}/general`, {
+          state: {
+            newTenant,
+          },
+        });
+      });
+  }
+
   const maybeTeam = Option(match)
     .map((m: any) => m.params)
     .map((p: any) => p.teamId)
@@ -117,7 +128,9 @@ export const AddPanel = ({
         <div className="mb-3 block">
           <div className="block__entries d-flex flex-column">
             {connectedUser.isDaikokuAdmin && (
-              <span className="block__entry__link d-flex align-items-center justify-content-between">
+              <span
+                className="block__entry__link d-flex align-items-center justify-content-between"
+                onClick={createTenant}>
                 <span>{translate('Tenant')}</span>
                 <button className="btn btn-sm btn-access-negative me-1">
                   <i className="fas fa-plus-circle" />

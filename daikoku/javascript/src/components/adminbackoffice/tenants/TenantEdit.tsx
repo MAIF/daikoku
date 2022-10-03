@@ -1,28 +1,35 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import React, { useContext } from 'react';
-import { Route, Routes, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useContext } from 'react';
 import { toastr } from 'react-redux-toastr';
+import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { useTenantBackOffice, useDaikokuBackOffice } from '../../../contexts';
-import { ITenant, ITenantFull } from '../../../types/tenant';
-import { AuditForm, AuthenticationForm, BucketForm, CustomizationForm, GeneralForm, MailForm } from './forms';
+import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../locales/i18n-context';
-import { SecurityForm } from './forms/SecurityForm';
+import * as Services from '../../../services';
+import { ITenantFull } from '../../../types/tenant';
 import { Spinner } from '../../utils/Spinner';
+import { AuditForm, AuthenticationForm, BucketForm, CustomizationForm, GeneralForm, MailForm } from './forms';
+import { SecurityForm } from './forms/SecurityForm';
 
 export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: string, fromDaikokuAdmin?: boolean }) => {
   const { translate } = useContext(I18nContext)
 
+  const navigate = useNavigate();
+  const { state } = useLocation();
+
+  const queryClient = useQueryClient()
   const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(tenantId))
   const updateTenant = useMutation((tenant: ITenantFull) => Services.saveTenant(tenant), {
-    onSuccess: data => {
-      console.debug(data);
-      toastr.success(translate('Success'), translate('Tenant updated successfully'))
+    onSuccess: () => { toastr.success(translate('Success'), translate('Tenant updated successfully')) },
+    onError: () => { toastr.error(translate('Error'), translate('Error')) }
+  });
+  const createTenant = useMutation((tenant: ITenantFull) => Services.createTenant(tenant), {
+    onSuccess: (createdTenant) => {
+      navigate(`/settings/tenants/${createdTenant._humanReadableId}/general`)
+      queryClient.invalidateQueries(['tenant'])
+      toastr.success(translate('Success'), translate('Tenant created successfully'))
     },
-    onError: () => {
-      toastr.error(translate('Error'), translate('Error'))
-    }
+    onError: () => { toastr.error(translate('Error'), translate('Error')) }
   });
 
   if (isLoading) {
@@ -38,7 +45,7 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
         element={
           <>
             {fromDaikokuAdmin && <h1>{data?.name} - {translate('General')}</h1>}
-            <GeneralForm tenant={data} updateTenant={updateTenant} />
+            <GeneralForm tenant={state?.newTenant || data} creation={!!state?.newTenant} updateTenant={updateTenant} createTenant={createTenant} />
           </>
         }
       />
@@ -109,9 +116,10 @@ export const TenantEdit = ({ }) => {
 }
 
 export const TenantEditForAdmin = ({ }) => {
-  useDaikokuBackOffice();
-
   const { tenantId } = useParams();
+  const { state } = useLocation();
+
+  useDaikokuBackOffice({ creation: state?.newTenant });
 
   return (
     <TenantEditComponent tenantId={tenantId!} fromDaikokuAdmin={true} />

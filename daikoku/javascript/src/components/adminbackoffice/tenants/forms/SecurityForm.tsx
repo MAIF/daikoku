@@ -1,12 +1,10 @@
-import { Form, Schema, type } from '@maif/react-forms';
-import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
+import { Form, Schema, type } from '@maif/react-forms';
+import { UseMutationResult } from '@tanstack/react-query';
 
 
 import { I18nContext } from '../../../../core';
-import * as Services from '../../../../services';
-import { ITenant, ITenantFull } from '../../../../types';
-import { Spinner } from '../../../utils';
+import { ITenantFull } from '../../../../types';
 
 export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)

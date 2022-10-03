@@ -1,16 +1,14 @@
-import { useContext } from 'react';
 import { constraints, Form, format, type } from '@maif/react-forms';
-import { UseMutationResult, useQuery } from '@tanstack/react-query';
+import { UseMutationResult } from '@tanstack/react-query';
+import { useContext } from 'react';
 
-import * as Services from '../../../../services';
 
 import { I18nContext } from '../../../../core';
-import { ITenant, ITenantFull, Language } from '../../../../types';
-import { Spinner } from '../../../utils';
+import { ITenantFull, Language } from '../../../../types';
 
 
 
-export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>, createTenant: UseMutationResult<any, unknown, ITenantFull, unknown>, creation: boolean }) => {
   const { translate, languages } = useContext(I18nContext)
 
   const schema = {
@@ -58,8 +56,15 @@ export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMuta
   return (
     <Form
       schema={schema}
-      onSubmit={(d) => props.updateTenant.mutateAsync(d)}
+      onSubmit={(d) => props.creation ? props.createTenant.mutateAsync(d) : props.updateTenant.mutateAsync(d)}
       value={props.tenant}
+      options={{
+        actions: {
+          submit: {
+            label: props.creation ? translate('Create') : translate('Save')
+          }
+        }
+      }}
     />
   )
 }
