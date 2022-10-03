@@ -56,7 +56,7 @@ export const Table = React.forwardRef<any, Props>(
       },
     }));
 
-    const { translateMethod, Translation } = useContext(I18nContext);
+    const { translate, Translation } = useContext(I18nContext);
 
     const filterTypes = React.useMemo(
       () => ({
@@ -235,7 +235,7 @@ export const Table = React.forwardRef<any, Props>(
         <Select
           className="reactSelect reactSelect-pagination col-3 ms-3 me-3"
           value={{
-            label: translateMethod('Show.results', false, `Show ${pageSize}`, pageSize),
+            label: translate({key: 'Show.results', replacements: [pageSize]}),
             value: pageSize,
           }}
           options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
@@ -245,8 +245,8 @@ export const Table = React.forwardRef<any, Props>(
         />
         <Pagination
           containerClassName="pagination"
-          previousLabel={translateMethod('<')}
-          nextLabel={translateMethod('>')}
+          previousLabel={translate('<')}
+          nextLabel={translate('>')}
           breakLabel={'...'}
           breakClassName={'break'}
           pageCount={pageOptions.length}
@@ -259,7 +259,7 @@ export const Table = React.forwardRef<any, Props>(
         <button
           type="button"
           className="ms-3 btn btn-sm btn-access-negative float-right"
-          title={translateMethod('Reload the table content')}
+          title={translate('Reload the table content')}
           onClick={update}
         >
           <span className="fas fa-sync-alt" />

@@ -14,18 +14,18 @@ export const getCurrencySymbol = (code: any) => {
   return currency ? currency.symbol : undefined;
 };
 
-export const formatPlanType = (plan: any, translateMethod: any) => {
+export const formatPlanType = (plan: any, translate: any) => {
   switch (plan.type) {
     case 'FreeWithoutQuotas':
-      return translateMethod('FreeWithoutQuotas');
+      return translate('FreeWithoutQuotas');
     case 'FreeWithQuotas':
-      return translateMethod('FreeWithQuotas');
+      return translate('FreeWithQuotas');
     case 'QuotasWithLimits':
-      return translateMethod('QuotasWithLimits');
+      return translate('QuotasWithLimits');
     case 'QuotasWithoutLimits':
-      return translateMethod('Quotas / pay per use');
+      return translate('Quotas / pay per use');
     case 'PayPerUse':
-      return translateMethod('Pay per use');
+      return translate('Pay per use');
   }
 };
 

@@ -1,12 +1,12 @@
 import React, { Suspense } from 'react';
 import { type, format } from '@maif/react-forms';
 
-export const teamApiDescriptionForm = (translateMethod: any) => {
+export const teamApiDescriptionForm = (translate: any) => {
   const schema = {
     description: {
       type: type.string,
       format: format.markdown,
-      label: translateMethod('Description'),
+      label: translate('Description'),
     },
   };
   const flow = ['description'];

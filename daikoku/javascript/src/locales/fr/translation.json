@@ -1176,5 +1176,6 @@
   "General": "General",
   "Customization": "Personnalisation",
   "Mail": "Courriel",
-  "alerting.help": "Liste des courriels qui recevront les alertes Daikoku"
+  "alerting.help": "Liste des courriels qui recevront les alertes Daikoku",
+  "poumon": "poumon"
 }

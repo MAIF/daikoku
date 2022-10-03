@@ -172,3 +172,13 @@ export interface ITenantFull extends ITenant {
   style: ITenantStyle
   translation: any
 }
+
+export interface ITranslation {
+  _id: string
+  _tenant: string
+  default: string
+  key: string
+  language: string
+  lastModificationAt?: number
+  value: string
+}

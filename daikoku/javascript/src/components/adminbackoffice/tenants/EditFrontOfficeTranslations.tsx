@@ -7,6 +7,7 @@ import { type, format, constraints } from '@maif/react-forms';
 import { I18nContext, openFormModal } from '../../../core';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
+import { ITranslation } from '../../../types/tenant';
 
 
 export function EditFrontOfficeTranslations(props: any) {
@@ -108,11 +109,17 @@ export function EditFrontOfficeTranslations(props: any) {
                     },
                     value: translation,
                     actionLabel: translate('Translate'),
-                    onSubmit: (t: any) => updateTranslation(t)
-                      .then(() => {
-                        toastr.success(translate('Success'), translate('mailing_internalization.translation_updated'))
-                        table.current?.update()
-                      })
+                    onSubmit: (t: ITranslation) => {
+                      if(t.key === 'poumon' ) {
+                        window.alert('poumon n\'a pas de traduction..') //🤣 cc mozinor
+                      } else {
+                        updateTranslation(t)
+                          .then(() => {
+                            toastr.success(translate('Success'), translate('mailing_internalization.translation_updated'))
+                            table.current?.update()
+                          })
+                      }
+                    }
                   }))}>
                   {translation.language}
                 </button>
