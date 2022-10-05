@@ -46,7 +46,7 @@ export const TeamApiInfos = ({
     {
       id: 'testing',
       label: translate('Testing'),
-      component: (p: any) => TeamApiTesting({ ...p }),
+      component: TeamApiTesting,
       skipTo: 'save',
     },
   ];

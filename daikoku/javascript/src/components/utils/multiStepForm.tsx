@@ -1,18 +1,18 @@
-import React, { useMemo, useEffect, useRef } from 'react';
-import { createMachine, assign } from 'xstate';
+import { Form, FormRef } from '@maif/react-forms';
 import { useMachine } from '@xstate/react';
-import { Flow, FlowObject, Form, FormRef, Schema } from '@maif/react-forms';
+import { Popover, Steps } from 'antd';
 import omit from 'lodash/omit';
-import { Steps, Popover } from 'antd';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { assign, createMachine } from 'xstate';
 
 const { Step } = Steps;
 
-import { Spinner, Option } from '../utils';
+import { Option, Spinner } from '../utils';
 
-const customDot = (dot: any, {
+const customDot = (dot, {
   status,
   index
-}: any) => (
+}) => (
   <Popover
     content={
       <span>
@@ -47,7 +47,7 @@ export const MultiStepForm = <T extends object>({
   steps: Array<IMultistepsformStep<T>>,
   initial: string,
   creation: boolean,
-  getBreadcrumb?: (value?: T | null, element?: JSX.Element) => any,
+  getBreadcrumb?: (value?: T, element?: JSX.Element) => any,
   save: (x: T) => Promise<any>,
   labels: any
 }) => {
@@ -118,7 +118,7 @@ export const MultiStepForm = <T extends object>({
           src: (context: any) => {
             return (callBack: any, _onEvent: any) => {
               return save(context)
-                .then((response: any) => {
+                .then((response) => {
                   if (response?.error) {
                     return callBack({ type: 'FAILURE', error: response.error });
                   } else {
@@ -153,10 +153,10 @@ export const MultiStepForm = <T extends object>({
 
   const guards = steps
     .filter((s) => !!s.disabled)
-    .reduce((acc: any, step) => {
+    .reduce((acc, step) => {
       return {
         ...acc,
-        [`guard_${step.id}`]: (context: any, event: any) => {
+        [`guard_${step.id}`]: (context) => {
           if (typeof step.disabled === 'function') {
             return step.disabled(context);
           } else {
@@ -167,10 +167,10 @@ export const MultiStepForm = <T extends object>({
     }, {});
   const machine = useMemo(
     () =>
-      createMachine<T>(
+      createMachine<{value?: T}>(
         {
           id: 'foo',
-          context: value,
+          context: {value},
           initial,
           states,
         },
@@ -178,10 +178,10 @@ export const MultiStepForm = <T extends object>({
           guards,
           actions: {
             setValue: assign((context, response) => {
-              return { ...context, ...(response as any).value };
+              return { ...context, ...response.value };
             }),
             reset: assign((_, response) => {
-              return { ...(response as any).value };
+              return { ...response.value };
             }),
           },
         }
@@ -194,9 +194,9 @@ export const MultiStepForm = <T extends object>({
   useEffect(() => {
     if (!!getBreadcrumb) {
       getBreadcrumb(
-        current.context,
+        current.context.value,
         <Breadcrumb
-          context={current.context}
+          context={current.context.value}
           steps={steps}
           currentStep={current.value as string}
           chooseStep={(s) => send(`TO_${s}`, current.context)}
@@ -208,7 +208,7 @@ export const MultiStepForm = <T extends object>({
 
     return () => {
       if (!!getBreadcrumb) {
-        getBreadcrumb(null);
+        getBreadcrumb();
       }
     };
   }, [current.value]);
@@ -228,10 +228,10 @@ export const MultiStepForm = <T extends object>({
       {!getBreadcrumb && (
         <div className="my-3">
           <Breadcrumb
-            context={current.context}
+            context={current.context.value}
             steps={steps}
             currentStep={current.value as string}
-            chooseStep={(s) => send(`TO_${s}`, current.context)}
+            chooseStep={(s) => send(`TO_${s}`, {value: current.context.value})}
             creation={creation}
             direction="horizontal"
           />
@@ -242,13 +242,9 @@ export const MultiStepForm = <T extends object>({
           <ComponentedForm
             reference={ref}
             value={current.context}
-            valid={(response) => send('NEXT', response)}
+            valid={(response) => {
+              send('NEXT', {value: response})}}
             component={step.component}
-            steps={steps}
-            step={step}
-            initial={initial}
-            send={send}
-            creation={creation}
           />
         )}
         {step.schema && (
@@ -261,7 +257,7 @@ export const MultiStepForm = <T extends object>({
             schema={typeof step.schema === 'function' ? step.schema(current.context) : step.schema}
             flow={typeof step.flow === 'function' ? step.flow(current.context) : step.flow}
             ref={ref}
-            value={current.context}
+            value={current.context.value}
             footer={() => <></>}
           />
         )}
@@ -309,12 +305,12 @@ const ComponentedForm = ({
   valid,
   component,
   reference
-}: any) => {
+}) => {
   return (
     <div className="d-flex flex-column flex-grow-1">
       {React.createElement(component, {
         value,
-        onChange: (x: any) => valid(x),
+        onChange: (x) => valid(x),
         reference,
       })}
     </div>
@@ -334,7 +330,7 @@ const Breadcrumb = <T,>({
   chooseStep: (idx: string) => void,
   creation: boolean,
   direction?: 'vertical' | 'horizontal',
-  context: T
+  context?: T
 }) => {
   const currentIdx = steps.findIndex((s) => s.id === currentStep);
 

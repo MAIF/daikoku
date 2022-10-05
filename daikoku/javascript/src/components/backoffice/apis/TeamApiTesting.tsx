@@ -7,12 +7,13 @@ import { Option } from '../../utils';
 import * as Services from '../../../services';
 import { I18nContext, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
 import { useDispatch } from 'react-redux';
+import { IState, ITeamSimple } from '../../../types';
 
-export const TeamApiTesting = (props: any) => {
+export const TeamApiTesting = (props) => {
   const dispatch = useDispatch();
    
   const testing = props.value.testing;
-  const currentTeam = useSelector((s) => (s as any).context.currentTeam);
+  const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const { translate, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {

@@ -200,6 +200,8 @@ export const TeamApi = (props: { creation?: boolean }) => {
             navigate(
               `/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
             );
+          } else {
+            reloadState()
           }
         }
       });
