@@ -29,7 +29,7 @@ export const newPossibleUsagePlan = (customName: any): IUsagePlanFreeWithQuotas 
       constrainedServicesOnly: false,
       tags: [],
       metadata: {},
-      customMetadata: {},
+      customMetadata: [],
       restrictions: {
         enabled: false,
         allowLast: true,

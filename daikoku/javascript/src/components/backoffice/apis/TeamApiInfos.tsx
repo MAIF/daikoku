@@ -1,8 +1,9 @@
 import React, { useContext, useEffect } from 'react';
 import { I18nContext } from '../../../core';
-import { MultiStepForm } from '../../utils';
+import { IMultistepsformStep, MultiStepForm } from '../../utils';
 
 import { teamApiInfoForm, teamApiDescriptionForm, TeamApiSwagger, TeamApiTesting } from '.';
+import { IApi, ITeamFull, ITeamSimple, ITenant } from '../../../types';
 
 export const TeamApiInfos = ({
   value,
@@ -12,7 +13,15 @@ export const TeamApiInfos = ({
   injectSubMenu,
   team,
   tenant
-}: any) => {
+}: {
+  value: IApi,
+  save: (t: IApi) => Promise<void>,
+  creation: boolean,
+  expertMode: boolean,
+  injectSubMenu: (e: JSX.Element) => void,
+  team: ITeamSimple,
+  tenant: ITenant
+}) => {
   const { translate } = useContext(I18nContext);
 
   const informationForm = teamApiInfoForm(translate, team, tenant);
@@ -20,11 +29,11 @@ export const TeamApiInfos = ({
 
   useEffect(() => {
     return () => {
-      injectSubMenu(null);
+      injectSubMenu(<></>);
     };
   }, []);
 
-  const steps = [
+  const steps: Array<IMultistepsformStep<IApi>> = [
     {
       id: 'info',
       label: translate('Informations'),

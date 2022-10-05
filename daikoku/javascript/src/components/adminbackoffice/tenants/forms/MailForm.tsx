@@ -4,7 +4,7 @@ import { UseMutationResult } from 'react-query';
 
 import { I18nContext } from '../../../../core';
 import { IMailerSettings, ITenantFull } from '../../../../types';
-import { MultiStepForm } from '../../../utils';
+import { IMultistepsformStep, MultiStepForm } from '../../../utils';
 
 export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
@@ -23,7 +23,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
     },
   }
 
-  const steps = [{
+  const steps: Array<IMultistepsformStep<IMailerSettings>> = [{
     id: 'type',
     label: 'Mail provider',
     schema: {
@@ -61,9 +61,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
       }
     },
     schema: (data) => {
-      switch (data.type) {
-        case 'console':
-          return basicMailSchema;
+      switch (data?.type) {
         case 'smtpClient':
           return {
             host: {
@@ -112,6 +110,8 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
             },
             ...basicMailSchema
           }
+        default:
+          return basicMailSchema;
       }
     }
   }]
@@ -122,7 +122,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
       steps={steps}
       initial={props.tenant?.mailerSettings ? "params" : "type"}
       creation={false}
-      save={(d: IMailerSettings) => props.updateTenant.mutateAsync({...props.tenant, mailerSettings: d} as ITenantFull)}
+      save={(d: IMailerSettings) => props.updateTenant.mutateAsync({ ...props.tenant, mailerSettings: d } as ITenantFull)}
       labels={{
         previous: translate('Previous'),
         skip: translate('Skip'),

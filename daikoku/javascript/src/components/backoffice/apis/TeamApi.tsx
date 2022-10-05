@@ -73,7 +73,7 @@ interface LocationState {
   newApi?: IApi
 }
 
-export const TeamApi = (props: { creation?: boolean }) => {
+export const TeamApi = (props: { creation: boolean }) => {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();

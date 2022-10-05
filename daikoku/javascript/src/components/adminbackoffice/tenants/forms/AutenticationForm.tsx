@@ -5,17 +5,17 @@ import { UseMutationResult } from 'react-query';
 
 import { I18nContext } from '../../../../core';
 import { ITenantFull } from '../../../../types';
-import { MultiStepForm } from '../../../utils';
+import { IMultistepsformStep, MultiStepForm } from '../../../utils';
 
 export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
 
-  const authProviderSettingsShema = (data: ITenantFull, subschema: Schema) => {
+  const authProviderSettingsShema = (subschema: Schema, data?: ITenantFull, ) => {
     return {
       authProviderSettings: {
         type: type.object,
         format: format.form,
-        label: data.authProvider,
+        label: data?.authProvider,
         schema: {
           ...subschema
         }
@@ -208,7 +208,7 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
     },
   }
 
-  const steps = [
+  const steps: Array<IMultistepsformStep<ITenantFull>> = [
     {
       id: 'authProvider',
       label: translate('Authentication type'),
@@ -233,15 +233,17 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
       id: 'params',
       label: 'config',
       schema: (data) => {
-        switch (data.authProvider) {
-          case 'Local':
-            return authProviderSettingsShema(data, localSchema);
+        switch (data?.authProvider) {
           case 'LDAP':
-            return authProviderSettingsShema(data, ldapSchema);
+            return authProviderSettingsShema(ldapSchema, data);
           case 'OAuth2':
-            return authProviderSettingsShema(data, OAuth2Schema);
+            return authProviderSettingsShema(OAuth2Schema, data);
           case 'Otoroshi':
-            return authProviderSettingsShema(data, otoroshiSchema);
+            return authProviderSettingsShema(otoroshiSchema, data);
+          case 'Local':
+            return authProviderSettingsShema(localSchema, data);
+          default:
+            return authProviderSettingsShema(localSchema);
         }
       }
     }

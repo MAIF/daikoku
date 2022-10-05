@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { nanoid } from 'nanoid';
-import { constraints, type, format } from '@maif/react-forms';
+import { constraints, type, format, Informations } from '@maif/react-forms';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toastr } from 'react-redux-toastr';
@@ -15,6 +15,7 @@ import {
   formatPlanType,
   MultiStepForm,
   Option,
+  IMultistepsformStep,
 } from '../../utils';
 import { currencies } from '../../../services/currencies';
 import * as Services from '../../../services';
@@ -179,64 +180,68 @@ const OtoroshiServicesAndGroupSelector = ({
   </div>);
 };
 
-const CustomMetadataInput = ({
-  value,
-  onChange,
-  setValue,
-  translate
-}: any) => {
+const CustomMetadataInput = (props: {
+  value?: Array<{key: string, possibleValues: Array<string>}>;
+  onChange?: (param: any) => void;
+  setValue?: (key: string, data: any) => void;
+  translate: (key: string) => string
+}) => {
+
+  console.debug({props})
+
   const changeValue = (possibleValues: any, key: any) => {
-    const oldValue = Option(value.find((x: any) => x.key === key)).getOrElse({ '': '' });
-    const newValues = [...value.filter((x: any) => x.key !== key), { ...oldValue, key, possibleValues }];
-    onChange(newValues);
+    const oldValue = Option(props.value?.find((x: any) => x.key === key)).getOrElse({ '': '' });
+    const newValues = [...(props.value || []).filter((x: any) => x.key !== key), { ...oldValue, key, possibleValues }];
+    props.onChange && props.onChange(newValues);
   };
 
   const changeKey = (e: any, oldName: any) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    const oldValue = Option(value.find((x: any) => x.key === oldName)).getOrElse({ '': '' });
+    const oldValue = Option(props.value?.find((x: any) => x.key === oldName)).getOrElse({ '': '' });
     const newValues = [
-      ...value.filter((x: any) => x.key !== oldName),
+      ...(props.value || []).filter((x: any) => x.key !== oldName),
       { ...oldValue, key: e.target.value },
     ];
-    onChange(newValues);
+    props.onChange && props.onChange(newValues);
   };
 
   const addFirst = (e: any) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!value || value.length === 0) {
-      onChange([{ key: '', possibleValues: [] }]);
-      setValue('subscriptionProcess', 'Manual');
-      toastr.info(translate('Info'), translate('custom.metadata.process.change.to.manual'));
+    if (!props.value || props.value.length === 0) {
+      props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
+      props.setValue && props.setValue('subscriptionProcess', 'Manual');
+      toastr.info(props.translate('Info'), props.translate('custom.metadata.process.change.to.manual'));
     }
   };
 
   const addNext = (e: any) => {
     if (e && e.preventDefault) e.preventDefault();
     const newItem = { key: '', possibleValues: [] };
-    const newValues = [...value, newItem];
-    onChange(newValues);
+    const newValues = [...(props.value || []), newItem];
+    props.onChange && props.onChange(newValues);
   };
 
   const remove = (e: any, key: any) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    onChange(value.filter((x: any) => x.key !== key));
+    props.onChange && props.onChange((props.value || []).filter((x: any) => x.key !== key));
   };
 
   return (
     <div>
-      {!value?.length && (
+      {!props.value?.length && (
         <div className="col-sm-10">
           <button type="button" className="btn btn-outline-primary" onClick={addFirst}>
             <i className="fas fa-plus" />{' '}
           </button>
         </div>
       )}
-      {(value || []).map(({
+
+      {(props.value || []).map(({
         key,
         possibleValues
-      }: any, idx: any) => (
+      }, idx) => (
         <div key={idx} className="col-sm-10">
           <div className="input-group">
             <input
@@ -268,7 +273,7 @@ const CustomMetadataInput = ({
             >
               <i className="fas fa-trash" />
             </button>
-            {idx === value.length - 1 && (
+            {idx === (props.value?.length || 0) - 1 && (
               <button
                 type="button"
                 className="input-group-text btn btn-outline-primary"
@@ -646,7 +651,7 @@ export const TeamApiPricings = (props: Props) => {
     'QuotasWithoutLimits',
     'PayPerUse',
   ];
-  const steps = [
+  const steps: Array<IMultistepsformStep<IUsagePlan>> = [
     {
       id: 'info',
       label: 'Informations',
@@ -711,10 +716,8 @@ export const TeamApiPricings = (props: Props) => {
             },
             authorizedEntities: {
               type: type.object,
-              visible: {
-                ref: 'otoroshiTarget.otoroshiSettings',
-                test: (v: any) => !!v,
-              },
+              visible: ({ rawValues }) => !!rawValues.otoroshiTarget.otoroshiSettings,
+              deps: ['otoroshiTarget.otoroshiSettings'],
               render: (props: any) => OtoroshiServicesAndGroupSelector({ ...props, translate }),
               label: translate('Authorized entities'),
               placeholder: translate('Authorized.entities.placeholder'),
@@ -749,7 +752,7 @@ export const TeamApiPricings = (props: Props) => {
               schema: {
                 clientIdOnly: {
                   type: type.bool,
-                  label: ({ rawValues }: any) => {
+                  label: ({ rawValues }) => {
                     if (rawValues.aggregationApiKeysSecurity) {
                       return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
                     }
@@ -757,8 +760,8 @@ export const TeamApiPricings = (props: Props) => {
                       return translate('Apikey with clientId only');
                     }
                   },
-                  disabled: ({ rawValues }: any) => !!rawValues.aggregationApiKeysSecurity,
-                  onChange: ({ setValue, value }: any) => {
+                  disabled: ({ rawValues }) => !!rawValues.aggregationApiKeysSecurity,
+                  onChange: ({ setValue, value }) => {
                     if (value) {
                       setValue('aggregationApiKeysSecurity', false);
                     }
@@ -766,7 +769,7 @@ export const TeamApiPricings = (props: Props) => {
                 },
                 readOnly: {
                   type: type.bool,
-                  label: ({ rawValues }: any) => {
+                  label: ({ rawValues }) => {
                     if (rawValues.aggregationApiKeysSecurity) {
                       return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
                     }
@@ -774,8 +777,8 @@ export const TeamApiPricings = (props: Props) => {
                       return translate('Read only apikey');
                     }
                   },
-                  disabled: ({ rawValues }: any) => !!rawValues.aggregationApiKeysSecurity,
-                  onChange: ({ setValue, value }: any) => {
+                  disabled: ({ rawValues }) => !!rawValues.aggregationApiKeysSecurity,
+                  onChange: ({ setValue, value }) => {
                     if (value) {
                       setValue('aggregationApiKeysSecurity', false);
                     }
@@ -794,7 +797,8 @@ export const TeamApiPricings = (props: Props) => {
                   type: type.object,
                   array: true,
                   label: translate('Custom Apikey metadata'),
-                  render: (props: any) => CustomMetadataInput({ ...props, translate }),
+                  defaultValue: [],
+                  render: (props) => <CustomMetadataInput {...props} translate={translate}/>,
                   help: translate('custom.metadata.help'),
                 },
                 tags: {
@@ -812,35 +816,27 @@ export const TeamApiPricings = (props: Props) => {
                     },
                     allowLast: {
                       type: type.bool,
-                      visible: {
-                        ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                        test: (v: any) => !!v,
-                      },
+                      visible: ({ rawValues }) => !!rawValues.otoroshiTarget.apikeyCustomization.restrictions.enabled,
+                      deps: ['otoroshiTarget.apikeyCustomization.restrictions.enabled'],
                       label: translate('Allow at last'),
                       help: translate('allow.least.help'),
                     },
                     allowed: {
                       label: translate('Allowed pathes'),
-                      visible: {
-                        ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                        test: (v: any) => !!v,
-                      },
+                      visible: ({ rawValues }) => rawValues.otoroshiTarget.apikeyCustomization.restrictions.enabled,
+                      deps: ['otoroshiTarget.apikeyCustomization.restrictions.enabled'],
                       ...pathes,
                     },
                     forbidden: {
                       label: translate('Forbidden pathes'),
-                      visible: {
-                        ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                        test: (v: any) => !!v,
-                      },
+                      visible: ({ rawValues }) => rawValues.otoroshiTarget.apikeyCustomization.restrictions.enabled,
+                      deps: ['otoroshiTarget.apikeyCustomization.restrictions.enabled'],
                       ...pathes,
                     },
                     notFound: {
                       label: translate('Not found pathes'),
-                      visible: {
-                        ref: 'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                        test: (v: any) => !!v,
-                      },
+                      visible: ({ rawValues }) => rawValues.otoroshiTarget.apikeyCustomization.restrictions.enabled,
+                      deps: ['otoroshiTarget.apikeyCustomization.restrictions.enabled'],
                       ...pathes,
                     },
                   },
@@ -1068,7 +1064,7 @@ export const TeamApiPricings = (props: Props) => {
               value: 'Automatic',
             },
             { label: translate('ApiKey'), value: 'ApiKey' },
-          ],
+          ], //@ts-ignore //FIXME
           expert: true,
         },
       },
@@ -1125,7 +1121,15 @@ export const TeamApiPricings = (props: Props) => {
         </div>)}
         {mode === possibleMode.list && (<div className="row">
           {props.value.possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-md-4">
-            <Card api={props.value} plan={plan} isDefault={plan._id === props.value.defaultUsagePlan} makeItDefault={() => makePlanDefault(plan)} toggleVisibility={() => toggleVisibility(plan)} deletePlan={() => deletePlan(plan)} editPlan={() => editPlan(plan)} duplicatePlan={() => clonePlanAndEdit(plan)} />
+            <Card
+              api={props.value}
+              plan={plan}
+              isDefault={plan._id === props.value.defaultUsagePlan}
+              makeItDefault={() => makePlanDefault(plan)}
+              toggleVisibility={() => toggleVisibility(plan)}
+              deletePlan={() => deletePlan(plan)}
+              editPlan={() => editPlan(plan)}
+              duplicatePlan={() => clonePlanAndEdit(plan)} />
           </div>)}
         </div>)}
       </div>

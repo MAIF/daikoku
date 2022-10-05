@@ -149,7 +149,7 @@ interface IOtoroshiTarget {
         constrainedServicesOnly: boolean,
         tags: Array<string>,
         metadata: {[key: string]: string},
-        customMetadata: {[key: string]: string},
+        customMetadata: Array<{key: string, possibleValues: Array<string>}>,
         restrictions: {
           enabled: boolean,
           allowLast: boolean,

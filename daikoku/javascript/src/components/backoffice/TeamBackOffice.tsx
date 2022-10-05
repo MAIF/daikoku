@@ -144,8 +144,8 @@ export const TeamBackOffice = ({
             <Route path={`/apikeys/:apiId/:versionId`} element={<TeamApiKeysForApi />} />
             <Route path={`/apikeys`} element={<TeamApiKeys />} />
             <Route path={`/members`} element={<TeamMembers />} />
-            <Route path={`/apis/:apiId/:versionId/:tab/*`} element={<TeamApi />} />
-            <Route path={`/apis/:apiId/:tab`} element={<TeamApi creation />} />
+            <Route path={`/apis/:apiId/:versionId/:tab/*`} element={<TeamApi creation={false}/>} />
+            <Route path={`/apis/:apiId/:tab`} element={<TeamApi creation={true} />} />
             <Route path={`/apigroups/:apiGroupId/:tab/*`} element={<TeamApiGroup />} />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />

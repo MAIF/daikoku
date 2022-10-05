@@ -1,4 +1,4 @@
-import { Form, FormRef } from '@maif/react-forms';
+import { Form, FormRef, Schema } from '@maif/react-forms';
 import { useMachine } from '@xstate/react';
 import { Popover, Steps } from 'antd';
 import omit from 'lodash/omit';
@@ -24,11 +24,11 @@ const customDot = (dot, {
   </Popover>
 );
 
-interface IMultistepsformStep<T> {
+export interface IMultistepsformStep<T> {
   id: string
   label: string
   flow?: any | ((data: T) => any)
-  schema?: any | ((data: T) => any)
+  schema?: Schema | ((data?: T) => Schema)
   component?: JSX.Element | ((p: T) => JSX.Element)
   skipTo?: string
   disabled?: boolean | ((p: T) => boolean)
@@ -115,8 +115,9 @@ export const MultiStepForm = <T extends object>({
       save: {
         invoke: {
           id: 'save_step',
-          src: (context: any) => {
-            return (callBack: any, _onEvent: any) => {
+          src: (context: T) => {
+            return (callBack, _onEvent) => {
+              console.debug({ context })
               return save(context)
                 .then((response) => {
                   if (response?.error) {
@@ -125,7 +126,7 @@ export const MultiStepForm = <T extends object>({
                     callBack({ type: 'SUCCESS' })
                   }
                 })
-                .catch((error: any) => {
+                .catch((error) => {
                   return callBack({ type: 'FAILURE', error });
                 });
             };
@@ -167,10 +168,10 @@ export const MultiStepForm = <T extends object>({
     }, {});
   const machine = useMemo(
     () =>
-      createMachine<{value?: T}>(
+      createMachine<T>(
         {
           id: 'foo',
-          context: {value},
+          context: value,
           initial,
           states,
         },
@@ -178,6 +179,7 @@ export const MultiStepForm = <T extends object>({
           guards,
           actions: {
             setValue: assign((context, response) => {
+              console.debug({response, context})
               return { ...context, ...response.value };
             }),
             reset: assign((_, response) => {
@@ -194,9 +196,9 @@ export const MultiStepForm = <T extends object>({
   useEffect(() => {
     if (!!getBreadcrumb) {
       getBreadcrumb(
-        current.context.value,
+        current.context,
         <Breadcrumb
-          context={current.context.value}
+          context={current.context}
           steps={steps}
           currentStep={current.value as string}
           chooseStep={(s) => send(`TO_${s}`, current.context)}
@@ -223,15 +225,16 @@ export const MultiStepForm = <T extends object>({
   if (!step) {
     return null; //todo ???
   }
+  console.debug({current})
   return (
     <div className="d-flex flex-column">
       {!getBreadcrumb && (
         <div className="my-3">
           <Breadcrumb
-            context={current.context.value}
+            context={current.context}
             steps={steps}
             currentStep={current.value as string}
-            chooseStep={(s) => send(`TO_${s}`, {value: current.context.value})}
+            chooseStep={(s) => send(`TO_${s}`, { value: current.context })}
             creation={creation}
             direction="horizontal"
           />
@@ -242,22 +245,23 @@ export const MultiStepForm = <T extends object>({
           <ComponentedForm
             reference={ref}
             value={current.context}
-            valid={(response) => {
-              send('NEXT', {value: response})}}
+            valid={(value) => {
+              send('NEXT', { value })
+            }}
             component={step.component}
           />
         )}
         {step.schema && (
           <Form<T>
             key={step.id}
-            onSubmit={(response) => {
-              send('NEXT', { value: response });
+            onSubmit={(value) => {
+              send('NEXT', { value });
             }}
             onError={(errors, e) => console.error(errors, e)}
             schema={typeof step.schema === 'function' ? step.schema(current.context) : step.schema}
             flow={typeof step.flow === 'function' ? step.flow(current.context) : step.flow}
             ref={ref}
-            value={current.context.value}
+            value={current.context}
             footer={() => <></>}
           />
         )}
@@ -355,7 +359,7 @@ const Breadcrumb = <T,>({
         const disabled = Option(step.disabled)
           .map((d: boolean | ((p: any) => boolean)) => typeof d === 'function' ? d(context) : d)
           .getOrElse(false);
-        return <Step title={step.label} disabled={disabled || (creation && idx > currentIdx)} />;
+        return <Step key={idx} title={step.label} disabled={disabled || (creation && idx > currentIdx)} />;
       })}
     </Steps>
   );

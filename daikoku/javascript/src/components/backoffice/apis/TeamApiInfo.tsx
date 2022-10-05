@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { type, constraints, format } from '@maif/react-forms';
+import { type, constraints, format, Schema } from '@maif/react-forms';
 import * as Services from '../../../services';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { I18nContext } from '../../../core';
@@ -44,10 +44,10 @@ const Image = ({
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
-  const schema = {
+  const schema: Schema = {
     isDefault: {
       type: type.bool,
-      label: translate('team_api_info.isDefault'),
+      label: translate('team_api_info.isDefault'), //@ts-ignore //FIXME
       expert: true,
     },
     name: {
@@ -81,7 +81,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       ),
       props: {
         theme: 'monokai',
-      },
+      }, //@ts-ignore //FIXME
       expert: true,
     },
     image: {
@@ -94,7 +94,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
         //   /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
         //   translate('constraints.format.url', false, '', translate('Image'))
         // ),
-      ],
+      ], //@ts-ignore //FIXME
       expert: true,
     },
     currentVersion: {
@@ -116,7 +116,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
     supportedVersions: {
       type: type.string,
       array: true,
-      label: translate('Supported versions'),
+      label: translate('Supported versions'), //@ts-ignore //FIXME
       expert: true,
     },
     published: {
@@ -125,13 +125,13 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
     },
     testable: {
       type: type.bool,
-      label: translate('Testable'),
+      label: translate('Testable'), //@ts-ignore //FIXME
       expert: true,
     },
     tags: {
       type: type.string,
       array: true,
-      label: translate('Tags'),
+      label: translate('Tags'), //@ts-ignore //FIXME
       expert: true,
     },
     categories: {
@@ -144,7 +144,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       transformer: (t: any) => ({
         label: t,
         value: t
-      }),
+      }), //@ts-ignore //FIXME
       expert: true,
     },
     visibility: {
@@ -165,10 +165,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       format: format.select,
       isMulti: true,
       defaultValue: [],
-      visible: {
-        ref: 'visibility',
-        test: (v: any) => v !== 'Public',
-      },
+      visible: ({rawValues}) => rawValues['visibility'] !== 'Public' ,
       label: translate('Authorized teams'),
       optionsFrom: '/api/teams',
       transformer: (t: any) => ({
@@ -178,7 +175,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
     },
   };
 
-  const simpleOrExpertMode = (entry: any, expert: any) => {
+  const simpleOrExpertMode = (entry: any, expert: any) => {//@ts-ignore
         return !!expert || !schema[entry]?.expert;
   };
 
