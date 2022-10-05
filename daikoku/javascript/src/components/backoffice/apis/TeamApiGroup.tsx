@@ -42,7 +42,7 @@ export const TeamApiGroup = () => {
       setApiGroup(state.newApiGroup);
     }
     else {
-      Services.teamApi(currentTeam._id, params.apiGroupId, '1.0.0').then(setApiGroup);
+      Services.teamApi(currentTeam._id, params.apiGroupId!, '1.0.0').then(setApiGroup);
     }
   }, [params.apiGroupId, state?.newApiGroup]);
 

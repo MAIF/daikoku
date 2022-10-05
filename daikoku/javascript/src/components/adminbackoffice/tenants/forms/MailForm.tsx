@@ -1,13 +1,10 @@
-import React, { useContext } from 'react';
-import { constraints, Flow, format, type } from '@maif/react-forms';
-import { useMutation, UseMutationResult, useQuery } from '@tanstack/react-query';
-import { toastr } from 'react-redux-toastr';
+import { constraints, format, type } from '@maif/react-forms';
+import { useContext } from 'react';
+import { UseMutationResult } from 'react-query';
 
-import * as Services from '../../../../services';
 import { I18nContext } from '../../../../core';
-import { IMailerSettings, ITenant, ITenantFull } from '../../../../types';
-import { MultiStepForm, Spinner } from '../../../utils';
-import { update } from 'xstate/lib/actionTypes';
+import { IMailerSettings, ITenantFull } from '../../../../types';
+import { MultiStepForm } from '../../../utils';
 
 export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)

@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext } from 'react';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { toastr } from 'react-redux-toastr';
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 

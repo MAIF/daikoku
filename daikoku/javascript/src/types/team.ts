@@ -1,3 +1,6 @@
+type TeamPermission = 'Administrator' | 'ApiEditor' | 'User'
+
+export type TeamUser = {user: string, teamPermission: TeamPermission}
 export interface ITeamSimple {
   _id: string
   _humanReadableId: string
@@ -7,9 +10,13 @@ export interface ITeamSimple {
   description: string
   avatar: string
   contact: string
-  users: Array<string>
-  apiKeyVisibility: 'Administrator' | 'ApiEditor' | 'User'
+  users: Array<TeamUser>
+  apiKeyVisibility: TeamPermission
   apisCreationPermission?: boolean
+}
+
+export interface ITeamFull extends ITeamSimple {
+  
 }
 
 export interface IUserSimple {

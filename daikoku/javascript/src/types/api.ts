@@ -31,6 +31,14 @@ export interface IApi {
     apis: Array<string>
 }
 
+export interface IApiWithAuthorization extends IApi {
+    authorizations:  Array<{
+        team: string
+        authorized: boolean
+        pending: boolean
+      }>
+}
+
 export interface ITesting {
     enabled: boolean,
     auth: {

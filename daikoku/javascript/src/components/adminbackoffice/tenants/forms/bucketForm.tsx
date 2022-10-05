@@ -1,13 +1,10 @@
 import { Form, Schema, type } from '@maif/react-forms';
-import { useMutation, UseMutationResult, useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
-import { toastr } from 'react-redux-toastr';
+import { UseMutationResult } from 'react-query';
 
 
 import { I18nContext } from '../../../../core';
-import * as Services from '../../../../services';
-import { IBucketSettings, ITenant, ITenantFull } from '../../../../types';
-import { Spinner } from '../../../utils';
+import { IBucketSettings, ITenantFull } from '../../../../types';
 
 export const BucketForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
     const { translate } = useContext(I18nContext)

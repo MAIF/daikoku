@@ -1,12 +1,10 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
-import { Form, format, type, constraints, FormRef } from '@maif/react-forms';
+import { Form, format, FormRef, type } from '@maif/react-forms';
+import { useContext, useRef } from 'react';
+import { UseMutationResult } from 'react-query';
 
-import * as Services from '../../../../services';
 
-import { ITenant, ITenantFull, Language } from '../../../../types';
 import { I18nContext } from '../../../../core';
-import { UseMutationResult, useQuery } from '@tanstack/react-query';
-import { Spinner } from '../../../utils';
+import { ITenantFull } from '../../../../types';
 
 export const AuditForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)

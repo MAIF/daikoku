@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { ApiCard } from '../api';
 import { I18nContext } from '../../../core';
-import { IApi, ITeamSimple, IUserSimple} from '../../../types';
+import { IApi, ITeamSimple, IUserSimple } from '../../../types';
 import { useSelector } from 'react-redux';
 import { IState, IStateContext } from '../../../types/context';
 
@@ -40,13 +40,13 @@ type TApiList = {
   teams: Array<ITeamSimple>,
   team?: ITeamSimple,
   groupView?: boolean,
-  myTeams: Array<ITeamSimple>,
+  myTeams?: Array<ITeamSimple>,
   showTeam: boolean,
   teamVisible: boolean,
-  askForApiAccess: (api: IApi, teams: ITeamSimple) => void,
-  redirectToTeamPage: (api: IApi) => void,
+  askForApiAccess: (api: IApi, teams: Array<string>) => Promise<any>,
+  redirectToTeamPage: (team: ITeamSimple) => void,
   redirectToApiPage: (api: IApi) => void,
-  redirectToEditPage: (api: IApi) => void,
+  redirectToEditPage: (api: IApi, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => void,
   toggleStar: (api: IApi) => void
 }
 
@@ -66,7 +66,7 @@ export const ApiList = (props: TApiList) => {
   const [selectedCategory, setSelectedCategory] = useState<any>(allCategories());
   const [tags, setTags] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [view, setView] = useState(LIST);
+  const [view, setView] = useState<'LIST' | 'GRID'>(LIST);
   const pageNumber = view === GRID ? 12 : 10;
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export const ApiList = (props: TApiList) => {
     return !!find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
   };
   const teamMatch = (api: any, searched: any) => {
-    const ownerTeam = props.teams.find((t: any) => t._id === api.team._id);
+    const ownerTeam = props.teams?.find((t: any) => t._id === api.team._id);
     return ownerTeam && ownerTeam.name.trim().toLowerCase().indexOf(searched) > -1;
   };
   const clearFilter = () => {
@@ -179,8 +179,11 @@ export const ApiList = (props: TApiList) => {
     const starredApis: any = [],
       unstarredApis: any = [];
     filteredApis.forEach((a) => {
-      if (connectedUser.starredApis.includes(a._id)) starredApis.push(a);
-      else unstarredApis.push(a);
+      if (connectedUser.starredApis.includes(a._id)) {
+        starredApis.push(a);
+      } else {
+        unstarredApis.push(a);
+      }
     });
 
     return [
@@ -275,12 +278,12 @@ export const ApiList = (props: TApiList) => {
                 api={api}
                 showTeam={props.showTeam}
                 teamVisible={props.teamVisible}
-                team={props.teams.find((t: any) => t._id === api.team._id)}
-                myTeams={props.myTeams}
-                askForApiAccess={(teams: any) => props.askForApiAccess(api, teams)}
+                team={props.teams.find((t) => t._id === api.team._id)}
+                myTeams={props.myTeams || []}
+                askForApiAccess={(teams: Array<string>) => props.askForApiAccess(api, teams)}
                 redirectToTeamPage={(team: any) => props.redirectToTeamPage(team)}
                 redirectToApiPage={() => props.redirectToApiPage(api)}
-                redirectToEditPage={() => props.redirectToEditPage(api)}
+                redirectToEditPage={() => props.redirectToEditPage(api, props.teams, props.myTeams || [])}
                 handleTagSelect={(tag: any) => setSelectedTag(tags.find((t) => (t as any).value === tag))}
                 toggleStar={() => props.toggleStar(api)}
                 handleCategorySelect={(category: any) => setSelectedCategory(categories.find((c) => (c as any).value === category))}
@@ -309,7 +312,7 @@ export const ApiList = (props: TApiList) => {
         {!props.groupView && (
           <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
             {!props.team && !connectedUser.isGuest && (
-              <YourTeams teams={props.myTeams} redirectToTeam={redirectToTeam} />
+              <YourTeams teams={props.myTeams || []} redirectToTeam={redirectToTeam} />
             )}
             {!!tags.length && (
               <Top
@@ -365,13 +368,15 @@ const Top = (props: any) => {
 const YourTeams = ({
   teams,
   redirectToTeam,
-  ...props
-}: any) => {
+}: {
+  teams: Array<ITeamSimple>,
+  redirectToTeam: (team: ITeamSimple) => void
+}) => {
   const { translate } = useContext(I18nContext);
 
-  const [searchedTeam, setSearchedTeam] = useState();
+  const [searchedTeam, setSearchedTeam] = useState<string>();
   const maybeTeams = searchedTeam
-    ? teams.filter((team: any) => team.name.toLowerCase().includes(searchedTeam))
+    ? teams.filter((team) => team.name.toLowerCase().includes(searchedTeam))
     : teams;
   return (
     <div className={'top__container p-3 rounded additionalContent mb-2'}>
@@ -384,7 +389,7 @@ const YourTeams = ({
       <input
         placeholder={translate('find team')}
         className="form-control"
-        onChange={(e: any) => setSearchedTeam(e.target.value)}
+        onChange={(e) => setSearchedTeam(e.target.value)}
       />
       <div className="d-flex flex-column">
         {sortBy(maybeTeams, (team) => team.name.toLowerCase())

@@ -1,13 +1,14 @@
 import React from 'react';
 import { openTeamSelectorModal } from '../../core/modal';
 import { connect } from 'react-redux';
+import { ITeamSimple } from '../../types';
 
 type TActionWithTeamSelectorComponentProps = {
   title?: string;
   description?: string;
-  teams: any[];
-  pendingTeams: any[];
-  authorizedTeams: any[];
+  teams: ITeamSimple[];
+  pendingTeams: string[];
+  authorizedTeams: string[];
   action: (...args: any[]) => any;
   withAllTeamSelector?: boolean;
   closeOnSelect?: boolean;

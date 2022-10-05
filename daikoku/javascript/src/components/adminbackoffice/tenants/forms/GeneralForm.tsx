@@ -1,5 +1,5 @@
 import { constraints, Form, format, type } from '@maif/react-forms';
-import { UseMutationResult } from '@tanstack/react-query';
+import { UseMutationResult } from 'react-query';
 import { useContext } from 'react';
 
 

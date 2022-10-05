@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import { ITenant, ITenantFull } from '../types';
+import { ITeamFull, ITeamSimple, ITenant, ITenantFull } from '../types';
 import { IApi } from '../types/api';
 
 const HEADERS = {
@@ -101,70 +101,70 @@ export const subscriptionsInit = (subscriptions: any) => customFetch('/api/subsc
   body: JSON.stringify(subscriptions),
 });
 
-export const archiveApiKey = (teamId: any, subscriptionId: any, enable: any) =>
+export const archiveApiKey = (teamId: string, subscriptionId: string, enable: boolean) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_archive?enabled=${enable}`, {
     method: 'PUT',
   });
 
-export const makeUniqueApiKey = (teamId: any, subscriptionId: any) =>
+export const makeUniqueApiKey = (teamId: string, subscriptionId: string) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_makeUnique`, {
     method: 'POST',
   });
 
-export const toggleApiKeyRotation = (teamId: any, subscriptionId: any, enabled: any, rotationEvery: any, gracePeriod: any) =>
+export const toggleApiKeyRotation = (teamId: string, subscriptionId: string, enabled: boolean, rotationEvery: number, gracePeriod: number) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
     method: 'POST',
     body: JSON.stringify({ enabled, rotationEvery, gracePeriod }),
   });
 
-export const regenerateApiKeySecret = (teamId: any, subscriptionId: any) =>
+export const regenerateApiKeySecret = (teamId: string, subscriptionId: string) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
     method: 'POST',
   });
 
-export const cleanArchivedSubscriptions = (teamId: any) => customFetch(`/api/teams/${teamId}/subscriptions/_clean`, {
+export const cleanArchivedSubscriptions = (teamId: string) => customFetch(`/api/teams/${teamId}/subscriptions/_clean`, {
   method: 'DELETE',
 });
 
-export const member = (teamId: any, userId: any) => customFetch(`/api/teams/${teamId}/members/${userId}`, {});
+export const member = (teamId: string, userId: string) => customFetch(`/api/teams/${teamId}/members/${userId}`, {});
 
-export const members = (teamId: any) => customFetch(`/api/teams/${teamId}/members`);
-export const teamHome = (teamId: any) => customFetch(`/api/teams/${teamId}/home`);
+export const members = (teamId: string) => customFetch(`/api/teams/${teamId}/members`);
+export const teamHome = (teamId: string) => customFetch(`/api/teams/${teamId}/home`);
 
-export const teamApi = (teamId: any, apiId: any, version: any) =>
+export const teamApi = (teamId: string, apiId: string, version: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
 
-export const teamApiGroup = (teamId: any, apiGroupId: any) =>
+export const teamApiGroup = (teamId: string, apiGroupId: string) =>
   customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`);
 
-export const teamApis = (teamId: any) => customFetch(`/api/teams/${teamId}/apis`);
-export const team = (teamId: any) => customFetch(`/api/teams/${teamId}`);
-export const teamFull = (teamId: any) => customFetch(`/api/teams/${teamId}/_full`);
+export const teamApis = (teamId: string) => customFetch(`/api/teams/${teamId}/apis`);
+export const team = (teamId: string) => customFetch(`/api/teams/${teamId}`);
+export const teamFull = (teamId: string): Promise<ITeamFull> => customFetch(`/api/teams/${teamId}/_full`);
 
-export const teams = () => customFetch('/api/teams');
+export const teams = (): Promise<Array<ITeamSimple>> => customFetch('/api/teams');
 export const isMaintenanceMode = () => customFetch('/api/state/lock');
 
-export const createTeam = (team: any) => customFetch('/api/teams', {
+export const createTeam = (team: ITeamSimple) => customFetch('/api/teams', {
   method: 'POST',
   body: JSON.stringify(team),
 });
 
-export const updateTeam = (team: any) => customFetch(`/api/teams/${team._id}`, {
+export const updateTeam = (team: ITeamSimple) => customFetch(`/api/teams/${team._id}`, {
   method: 'PUT',
   body: JSON.stringify(team),
 });
 
-export const deleteTeam = (teamId: any) => customFetch(`/api/teams/${teamId}`, {
+export const deleteTeam = (teamId: string) => customFetch(`/api/teams/${teamId}`, {
   method: 'DELETE',
 });
 
-export const pendingMembers = (teamId: any) => customFetch(`/api/teams/${teamId}/pending-members`);
+export const pendingMembers = (teamId: string) => customFetch(`/api/teams/${teamId}/pending-members`);
 
-export const allOtoroshis = (tenantId: any) => customFetch(`/api/tenants/${tenantId}/otoroshis`);
+export const allOtoroshis = (tenantId: string) => customFetch(`/api/tenants/${tenantId}/otoroshis`);
 
 export const allSimpleOtoroshis = (tenantId: any) => customFetch(`/api/tenants/${tenantId}/otoroshis/simplified`);
 
-export const oneOtoroshi = (tenantId: any, id: any) =>
+export const oneOtoroshi = (tenantId: string, id: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${id}`);
 
 export const deleteOtoroshiSettings = (tenantId: any, id: any) =>
@@ -285,8 +285,8 @@ export const askToJoinTeam = (team: any) => customFetch(`/api/teams/${team}/join
   method: 'POST',
 });
 
-export const askForApiAccess = (teams: any, api: any) =>
-  customFetch(`/api/apis/${api}/access`, {
+export const askForApiAccess = (teams: string[], apiId: string) =>
+  customFetch(`/api/apis/${apiId}/access`, {
     method: 'POST',
     body: JSON.stringify({ teams }),
   });
@@ -341,7 +341,7 @@ export const getTenantNames = (ids: any) => customFetch('/api/tenants/_names', {
 });
 
 export const fetchNewTenant = () => customFetch('/api/entities/tenant');
-export const fetchNewTeam = () => customFetch('/api/entities/team');
+export const fetchNewTeam = (): Promise<ITeamSimple> => customFetch('/api/entities/team');
 export const fetchNewApi = () => customFetch('/api/entities/api');
 export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');

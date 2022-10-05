@@ -11,6 +11,7 @@ import { OtoroshiStatsVizualization } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
+import { ITeamSimple } from '../../../types';
 
 const Currency = ({
   plan
@@ -35,7 +36,7 @@ export const TeamApiConsumption = ({
   api,
   apiGroup
 }: any) => {
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
   const [state, setState] = useState({
     consumptions: null,
     period: {
@@ -93,7 +94,7 @@ export const TeamApiConsumption = ({
       formatter: (data: any) => sumGlobalInformations(data),
     },
     {
-      label: translate({key: 'Plan', plural: true}),
+      label: translate({ key: 'Plan', plural: true }),
       formatter: (data: any) => <div className="row">
         {api.possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-sm-4 col-lg-3">
           <PlanLightConsumption
@@ -119,7 +120,8 @@ export const TeamApiConsumption = ({
   ];
 
   useEffect(() => {
-    Services.teams().then(setTeams);
+    Services.teams()
+      .then(setTeams);
 
     document.title = `${currentTeam.name} - ${translate('API consumption')}`;
   }, []);

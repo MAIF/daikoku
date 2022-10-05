@@ -4,7 +4,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider, QueryClient } from "react-query";
 import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
 
 import jQuery from 'jquery';
@@ -16,7 +16,7 @@ import './style/main.scss';
 import 'bootstrap';
 
 import { store } from './core';
-import { LoginPage } from './components';
+import { LoginPage, queryClient } from './components';
 import {
   registerAlert,
   registerConfirm,
@@ -37,15 +37,6 @@ const client = new ApolloClient({
   defaultOptions: {
     query: {
       fetchPolicy: 'network-only',
-    },
-  },
-});
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false, // TODO for dev only
-      refetchOnWindowFocus: false, // TODO for dev only
     },
   },
 });

@@ -1,29 +1,43 @@
 import { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useLocation, useNavigate } from 'react-router-dom';
-
+import { useQuery } from 'react-query';
 import { getApolloContext } from '@apollo/client';
+import { useSelector, useDispatch } from 'react-redux';
+
+
 import { I18nContext, updateTeamPromise, updateUser } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { ApiList } from '../../frontend';
-import { api as API, CanIDoAction, manage } from '../../utils';
+import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
+import { IApi, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
 
-function MyHomeComponent(props: any) {
+export const MyHome = () => {
   const [state, setState] = useState({
     apis: [],
-    teams: [],
-    myTeams: [],
     loading: false
   });
+
+
+  const dispatch = useDispatch();
+  const connectedUser = useSelector<IState, IUserSimple>(s => s.context.connectedUser)
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
+  const apiCreationPermitted = useSelector<IState, boolean>(s => s.context.apiCreationPermitted)
+
+  const { client } = useContext(getApolloContext());
+
+  const myTeamRequest = useQuery(['myTeams'], () => client?.query<{myTeams: Array<ITeamSimple>}>({
+    query: Services.graphql.myTeams
+  }))
+
+  const teamsRequest = useQuery(['teams'], () => Services.teams())
 
   const location = useLocation();
   const navigate = useNavigate();
 
   const { translate } = useContext(I18nContext);
 
-  const { client } = useContext(getApolloContext());
 
   const fetchData = () => {
     if (!client) {
@@ -33,19 +47,11 @@ function MyHomeComponent(props: any) {
     Promise.all([
       client.query({
         query: Services.graphql.myVisibleApis,
-      }),
-      Services.teams(),
-      client.query({
-        query: Services.graphql.myTeams,
-      }),
+      })
     ]).then(
       ([
         {
           data: { visibleApis },
-        },
-        teams,
-        {
-          data: { myTeams },
         },
       ]) => {
         setState({
@@ -54,17 +60,6 @@ function MyHomeComponent(props: any) {
             api,
             authorizations
           }: any) => ({ ...api, authorizations })),
-          teams,
-          myTeams: myTeams.map(({
-            users,
-            ...data
-          }: any) => ({
-            ...data,
-            users: users.map(({
-              teamPermission,
-              user
-            }: any) => ({ ...user, teamPermission })),
-          })),
           loading: false,
         });
       }
@@ -73,7 +68,7 @@ function MyHomeComponent(props: any) {
 
   useEffect(() => {
     fetchData();
-  }, [props.connectedUser._id, location.pathname]);
+  }, [connectedUser._id, location.pathname]);
 
   const askForApiAccess = (api: any, teams: any) =>
     Services.askForApiAccess(teams, api._id).then(() => {
@@ -84,7 +79,7 @@ function MyHomeComponent(props: any) {
   const toggleStar = (api: any) => {
     Services.toggleStar(api._id).then((res) => {
       if (!res.error) {
-        const alreadyStarred = props.connectedUser.starredApis.includes(api._id);
+        const alreadyStarred = connectedUser.starredApis.includes(api._id);
 
         setState({
           ...state,
@@ -94,12 +89,12 @@ function MyHomeComponent(props: any) {
           }),
         });
 
-        props.updateUser({
-          ...props.connectedUser,
+        updateUser({
+          ...connectedUser,
           starredApis: alreadyStarred
-            ? props.connectedUser.starredApis.filter((id: any) => id !== api._id)
-            : [...props.connectedUser.starredApis, api._id],
-        });
+            ? connectedUser.starredApis.filter((id: any) => id !== api._id)
+            : [...connectedUser.starredApis, api._id],
+        })(dispatch);
       }
     });
   };
@@ -109,7 +104,7 @@ function MyHomeComponent(props: any) {
   };
 
   const redirectToApiPage = (api: any) => {
-    const apiOwner = state.teams.find((t) => (t as any)._id === api.team._id);
+    const apiOwner = teamsRequest.data?.find((t) => (t as any)._id === api.team._id);
 
     const route = (version: any) => api.apis
       ? `/${apiOwner ? (apiOwner as any)._humanReadableId : api.team._id}/apigroups/${api._humanReadableId}/apis`
@@ -122,55 +117,68 @@ function MyHomeComponent(props: any) {
       );
   };
 
-  const redirectToEditPage = (api: any) => {
-    const adminTeam: any = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams)
-      .find((team) => api.team._id === (team as any)._id);
+  const redirectToEditPage = (api: IApi, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => {
+    const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams) //@ts-ignore //FIXME: y'a vraiment team._id ???
+      .find((team) => api.team._id === team._id);
 
-    if (adminTeam && CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
-      props.updateTeam(adminTeam).then(() => {
-        const url = api.apis
-          ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-          : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
-        navigate(url);
-      });
+    if (adminTeam && CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
+      updateTeamPromise(adminTeam)(dispatch)
+        .then(() => {
+          const url = api.apis
+            ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+            : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+          navigate(url);
+        });
     }
   };
 
-  return (
-    <main role="main">
-      <section className="organisation__header col-12 mb-4 p-3">
-        <div className="container">
-          <div className="row text-center">
-            <div className="col-sm-4">
-              <img
-                className="organisation__avatar"
-                src={props.tenant ? props.tenant.logo : '/assets/images/daikoku.svg'}
-                alt="avatar"
-              />
-            </div>
-            <div className="col-sm-7 d-flex flex-column justify-content-center">
-              <h1 className="jumbotron-heading">
-                {props.tenant.title ? props.tenant.title : translate('Your APIs center')}
-              </h1>
-              <Description description={props.tenant.description} />
+  if (myTeamRequest.isLoading || teamsRequest.isLoading) {
+    return (
+      <Spinner />
+    )
+  } else if (myTeamRequest.data && teamsRequest.isSuccess) {
+    return (
+      <main role="main">
+        <section className="organisation__header col-12 mb-4 p-3">
+          <div className="container">
+            <div className="row text-center">
+              <div className="col-sm-4">
+                <img
+                  className="organisation__avatar"
+                  src={tenant.logo ? tenant.logo : '/assets/images/daikoku.svg'}
+                  alt="avatar"
+                />
+              </div>
+              <div className="col-sm-7 d-flex flex-column justify-content-center">
+                <h1 className="jumbotron-heading">
+                  {tenant.title ? tenant.title : translate('Your APIs center')}
+                </h1>
+                <Description description={tenant.description} />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-      <ApiList
-        apis={state.apis}
-        teams={state.teams}
-        myTeams={state.myTeams}
-        teamVisible={true}
-        askForApiAccess={askForApiAccess}
-        toggleStar={toggleStar}
-        redirectToApiPage={redirectToApiPage}
-        redirectToEditPage={redirectToEditPage}
-        redirectToTeamPage={redirectToTeamPage}
-        showTeam={true}
-      />
-    </main>
-  );
+        </section>
+        <ApiList
+          apis={state.apis}
+          teams={teamsRequest.data}
+          myTeams={myTeamRequest.data.data.myTeams}
+          teamVisible={true}
+          askForApiAccess={askForApiAccess}
+          toggleStar={toggleStar}
+          redirectToApiPage={redirectToApiPage}
+          redirectToEditPage={redirectToEditPage}
+          redirectToTeamPage={redirectToTeamPage}
+          showTeam={true}
+        />
+      </main>
+    );
+  } else {
+    //FIXME: better display of error
+    return (
+      <div>Error while fetching tenants</div>
+    )
+  }
+
 }
 
 const Description = (props: any) => {
@@ -193,14 +201,3 @@ const Description = (props: any) => {
     <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(props.description || '') }}></div>
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-const mapDispatchToProps = {
-  updateTeam: (team: any) => updateTeamPromise(team),
-  updateUser: (u: any) => updateUser(u),
-};
-
-export const MyHome = connect(mapStateToProps, mapDispatchToProps)(MyHomeComponent);

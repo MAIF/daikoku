@@ -5,15 +5,34 @@ import { Can, manage, api as API } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import StarsButton from './StarsButton';
 import { I18nContext } from '../../../core';
+import { IApi, IApiWithAuthorization, ITeamSimple, IUserSimple } from '../../../types';
 
-export const ApiCard = (props: any) => {
+export const ApiCard = (props: {
+  key: string
+  user: IUserSimple
+  api: IApiWithAuthorization
+  showTeam: boolean
+  teamVisible: boolean
+  team?: ITeamSimple
+  myTeams: Array<ITeamSimple>
+  askForApiAccess: (teams: Array<string>) => Promise<any>
+  redirectToTeamPage: (team: ITeamSimple) => void
+  redirectToApiPage: () => void
+  redirectToEditPage: () => void
+  handleTagSelect: (tag: string) => void
+  toggleStar: () => void
+  handleCategorySelect: (category: string) => void
+  view: 'LIST' | 'GRID'
+  connectedUser: IUserSimple
+  groupView?: boolean
+}) => {
   const allTeamsAreAuthorized =
     props.api.visibility === 'Public' || props.api.authorizations.every((a: any) => a.authorized);
 
   const isPending =
     props.api.authorizations && props.api.authorizations.every((a: any) => a.pending && !a.authorized);
   const api = props.api;
-  const team = props.team || { name: '--', avatar: '#', _id: api.team };
+  const team = props.team;
 
   const { translate, Translation } = useContext(I18nContext);
 
@@ -27,12 +46,12 @@ export const ApiCard = (props: any) => {
       return (
         <ActionWithTeamSelector
           title="Api access"
-          description={translate({key: 'api.access.request', replacements: [api.name]})}
+          description={translate({ key: 'api.access.request', replacements: [api.name] })}
           pendingTeams={api.authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
           authorizedTeams={api.authorizations
-            .filter((auth: any) => auth.authorized)
-            .map((auth: any) => auth.team)}
-          teams={props.myTeams.filter((t: any) => t.type !== 'Admin')}
+            .filter((auth) => auth.authorized)
+            .map((auth) => auth.team)}
+          teams={props.myTeams?.filter((t: any) => t.type !== 'Admin')}
           action={(teams) => props.askForApiAccess(teams)}
           withAllTeamSelector={true}
         >
@@ -82,7 +101,7 @@ export const ApiCard = (props: any) => {
               {api.name}
             </h4>
             <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
-            {props.teamVisible && (
+            {props.teamVisible && team && (
               <small
                 className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline justify-content-end"
                 onClick={() => props.redirectToTeamPage(team)}
@@ -127,7 +146,7 @@ export const ApiCard = (props: any) => {
         </div>
       </div>
       <div className="col-12 lead">
-        <Translation i18nkey={`${api._humanReadableId}.description`} extraConf={api.translation}>
+        <Translation i18nkey={`${api._humanReadableId}.description`}>
           {api.smallDescription}
         </Translation>
       </div>
@@ -160,7 +179,7 @@ export const ApiCard = (props: any) => {
         )}
       </div>
       <div className="col-12 d-flex mt-2">
-        {props.teamVisible && (
+        {props.teamVisible && team && (
           <small
             className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline"
             onClick={() => props.redirectToTeamPage(team)}

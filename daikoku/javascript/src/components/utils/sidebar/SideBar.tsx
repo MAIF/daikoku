@@ -11,6 +11,7 @@ import { MessagesContext } from '../../backoffice';
 
 import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';
 import { Companion } from './companions';
+import { ITeamSimple } from '../../../types';
 
 export const state = {
   opened: 'OPENED',
@@ -18,7 +19,7 @@ export const state = {
 };
 
 export const SideBar = () => {
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
   const [panelState, setPanelState] = useState(state.closed);
   const [panelContent, setPanelContent] = useState<JSX.Element>();
 
@@ -34,12 +35,13 @@ export const SideBar = () => {
   }, [location]);
 
   useEffect(() => {
-    Promise.all([Services.myUnreadNotificationsCount(), Services.teams()]).then(
-      ([notifCount, teams]) => {
-        updateNotifications(notifCount.count)(dispatch);
-        setTeams(teams);
-      }
-    );
+    Promise.all([Services.myUnreadNotificationsCount(), Services.teams()])
+      .then(
+        ([notifCount, teams]) => {
+          updateNotifications(notifCount.count)(dispatch);
+          setTeams(teams);
+        }
+      );
   }, []);
 
   const closeOnEsc = (e: any) => {

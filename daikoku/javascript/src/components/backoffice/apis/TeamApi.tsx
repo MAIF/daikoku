@@ -143,7 +143,7 @@ export const TeamApi = (props: { creation?: boolean }) => {
 
   const reloadState = () => {
     Promise.all([
-      Services.teamApi(currentTeam._id, params.apiId, params.versionId),
+      Services.teamApi(currentTeam._id, params.apiId!, params.versionId!),
       Services.getAllApiVersions(currentTeam._id, params.apiId),
     ]).then(([api, v]) => {
       if (!api.error) {

@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
+import { ITeamSimple } from '../../../types';
 
 export const TeamPlanConsumption = ({
   apiGroup
@@ -18,7 +19,7 @@ export const TeamPlanConsumption = ({
     : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
   const match = useMatch(urlMatching);
 
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
 
   const mappers = [
     {
@@ -61,7 +62,7 @@ export const TeamPlanConsumption = ({
   ];
 
   const getPlanInformation = () => {
-    return Services.teamApi(currentTeam._id, match?.params.apiId, match?.params.version).then(
+    return Services.teamApi(currentTeam._id, match?.params.apiId!, match?.params.version!).then(
       (api) => {
         if (api.error) {
           return null;

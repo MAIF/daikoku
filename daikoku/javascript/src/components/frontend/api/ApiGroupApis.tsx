@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
+import { ITeamSimple } from '../../../types';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage } from '../../utils';
 
@@ -18,8 +19,8 @@ export const ApiGroupApis = ({
   const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
-  const [teams, setTeams] = useState([]);
-  const [myTeams, setMyTeams] = useState([]);
+  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
+  const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
 
   const { client } = useContext(getApolloContext());
 
@@ -30,7 +31,7 @@ export const ApiGroupApis = ({
     setLoading(true);
     Promise.all([
       Services.teams(),
-      client.query({
+      client.query<{myTeams: Array<ITeamSimple>}>({
         query: Services.graphql.myTeams,
       }),
     ]).then(([t, { data }]) => {
@@ -98,8 +99,8 @@ export const ApiGroupApis = ({
         redirectToTeamPage={redirectToTeamPage}
         showTeam={true}
         groupView={true}
-        toggleStar={(api) => {}} //FIXME: get real method
-        askForApiAccess={(api, teams) => { }} //FIXME: get real method
+        toggleStar={(api) => Services.toggleStar(api._id)}
+        askForApiAccess={(api, teams) => Services.askForApiAccess(teams, api._id)}
       />
     </main>
   );

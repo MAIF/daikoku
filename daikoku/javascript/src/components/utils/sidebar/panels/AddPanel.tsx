@@ -8,20 +8,21 @@ import { manage, CanIDoAction, api as API, Option } from '../..';
 import { I18nContext } from '../../../../locales/i18n-context';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit'
 import { toastr } from 'react-redux-toastr';
+import { useQueryClient } from 'react-query';
+import { ITeamSimple } from '../../../../types';
 
 export const AddPanel = ({
   teams
-}: any) => {
+}: {teams: Array<ITeamSimple>}) => {
   const { translate } = useContext(I18nContext);
 
   const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => (state as any).context);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/*');
+  const queryClient = useQueryClient();
 
-  const myTeams = teams.filter(
-    (t: any) => connectedUser.isDaikokuAdmin || t.users.some((u: any) => u.userId === connectedUser._id)
-  );
+  const myTeams = teams.filter((t) => connectedUser.isDaikokuAdmin || t.users.some((u: any) => u.userId === connectedUser._id));
 
   const createTeam = () => {
     Services.fetchNewTeam()
@@ -33,6 +34,8 @@ export const AddPanel = ({
             if (r.error) {
               toastr.error(translate('Error'), r.error)
             } else {
+              queryClient.invalidateQueries('teams')
+              queryClient.invalidateQueries('myTeams')
               toastr.success(translate('Success'), translate({ key: "Team %s created successfully", replacements: [data.name] }))
             }
           }),
@@ -55,14 +58,14 @@ export const AddPanel = ({
           action: (teams: any) => createApi(teams[0]),
         })(dispatch);
       } else {
-        const team = myTeams.find((t: any) => teamId === t._id);
+        const team = myTeams.find((t) => teamId === t._id);
 
         return Services.fetchNewApi()
           .then((e) => {
-            return { ...e, team: team._id };
+            return { ...e, team: team?._id };
           })
           .then((newApi) =>
-            navigate(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
+            navigate(`/${team?._humanReadableId}/settings/apis/${newApi._id}/infos`, {
               state: { newApi },
             })
           );
@@ -88,10 +91,10 @@ export const AddPanel = ({
 
         return Services.fetchNewApiGroup()
           .then((e) => {
-            return { ...e, team: team._id };
+            return { ...e, team: team?._id };
           })
           .then((newApiGroup) =>
-            navigate(`/${team._humanReadableId}/settings/apigroups/${newApiGroup._id}/infos`, {
+            navigate(`/${team?._humanReadableId}/settings/apigroups/${newApiGroup._id}/infos`, {
               state: { newApiGroup },
             })
           );
@@ -113,7 +116,7 @@ export const AddPanel = ({
   const maybeTeam = Option(match)
     .map((m: any) => m.params)
     .map((p: any) => p.teamId)
-    .map((id: any) => myTeams.find((t: any) => t._humanReadableId === id))
+    .map((id: any) => myTeams.find((t) => t._humanReadableId === id))
     .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
     .map((t: any) => t._id)
     .getOrNull();

@@ -47,7 +47,7 @@ export const TenantOtoroshi = () => {
       setOtoroshi((location as any).state.newSettings);
       setCreate(true);
     } else {
-      Services.oneOtoroshi(tenant._id, params.otoroshiId)
+      Services.oneOtoroshi(tenant._id, params.otoroshiId!)
         .then((otoroshi) => setOtoroshi(otoroshi));
     }
   }, []);

@@ -1,12 +1,11 @@
-import { useContext } from 'react';
 import { constraints, format, Schema, type } from '@maif/react-forms';
-import { UseMutationResult, useQuery } from '@tanstack/react-query';
+import { useContext } from 'react';
+import { UseMutationResult } from 'react-query';
 
-import * as Services from '../../../../services';
 
 import { I18nContext } from '../../../../core';
-import { ITenant, ITenantFull } from '../../../../types';
-import { MultiStepForm, Spinner } from '../../../utils';
+import { ITenantFull } from '../../../../types';
+import { MultiStepForm } from '../../../utils';
 
 export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)

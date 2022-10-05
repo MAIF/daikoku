@@ -16,6 +16,7 @@ export interface IStateContext {
   unreadNotificationsCount: number,
   tenant: ITenant,
   isTenantAdmin: boolean,
+  apiCreationPermitted: boolean,
   expertMode: boolean,
 }
 

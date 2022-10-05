@@ -1,15 +1,14 @@
-import React, { useContext, useRef } from 'react';
-import { Flow, Form, format, FormRef, Schema, SchemaEntry, type } from '@maif/react-forms';
-import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { getApolloContext, gql } from '@apollo/client';
+import { Flow, Form, format, FormRef, Schema, SchemaEntry, type } from '@maif/react-forms';
+import { useContext, useRef } from 'react';
+import { UseMutationResult, useQuery } from 'react-query';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
-import { ITenant, ITenantFull } from '../../../../types';
-import { I18nContext } from '../../../../locales/i18n-context';
-import * as Services from '../../../../services';
-import { AssetChooserByModal, MimeTypeFilter } from '../../../frontend/modals/AssetsChooserModal';
 import { openSaveOrCancelModal } from '../../../../core';
-import { redirect, useNavigate } from 'react-router-dom';
+import { I18nContext } from '../../../../locales/i18n-context';
+import { ITenantFull } from '../../../../types';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../frontend/modals/AssetsChooserModal';
 
 
 export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
