@@ -1,10 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
-import { I18nContext } from '../../../core';
+import { closeModal, I18nContext } from '../../../core';
+import { useDispatch } from 'react-redux';
 
-type Props = {
-  closeModal: (...args: any[]) => any;
+export type TeamSelectorModalProps = {
   title: string;
   description?: string;
   teams: any[];
@@ -13,10 +13,15 @@ type Props = {
   action: (...args: any[]) => any;
   allTeamSelector?: boolean;
   allowMultipleDemand?: boolean;
+  actionLabel: string
 };
 
-export const TeamSelectorModal = ({ closeModal, title, description, teams, pendingTeams = [], acceptedTeams = [], action, allTeamSelector, allowMultipleDemand, }: Props) => {
+export const TeamSelectorModal = ({ title, description, teams, pendingTeams = [], acceptedTeams = [], action, allTeamSelector, allowMultipleDemand, actionLabel }: TeamSelectorModalProps) => {
   const [selectedTeams, setSelectedTeams] = useState<Array<any>>([]);
+
+
+  const dispatch = useDispatch();
+
   const allTeams = teams.filter(
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );
@@ -78,9 +83,10 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
 
   const actionAndClose = (teams: any) => {
     if (action instanceof Promise) {
-      action(teams).then(() => closeModal());
+      action(teams)
+        .then(() => dispatch(closeModal()));
     } else {
-      closeModal();
+      dispatch(closeModal());
       action(teams);
     }
   };
@@ -89,7 +95,7 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
+        <button type="button" className="btn-close" aria-label="Close" onClick={() => dispatch(closeModal())} />
       </div>
       <div className="modal-body">
         <div className="modal-description">{description}</div>
@@ -129,7 +135,7 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
+        <button type="button" className="btn btn-outline-danger" onClick={() => dispatch(closeModal())}>
           {translate('Close')}
         </button>
         {!!allTeamSelector && (
@@ -140,7 +146,7 @@ export const TeamSelectorModal = ({ closeModal, title, description, teams, pendi
             })}
             onClick={() => finalAction()}
           >
-            {translate('Subscribe')}
+            {actionLabel}
           </button>
         )}
       </div>

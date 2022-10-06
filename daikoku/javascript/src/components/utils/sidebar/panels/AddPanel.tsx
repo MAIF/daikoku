@@ -47,16 +47,17 @@ export const AddPanel = ({
   const createApi = (teamId: any) => {
     if (apiCreationPermitted) {
       if (!teamId) {
-        return openTeamSelectorModal({
+        return dispatch(openTeamSelectorModal({
           allTeamSelector: false,
           title: translate('api.creation.title.modal'),
           description: translate('api.creation.description.modal'),
           teams: myTeams
-            .filter((t: any) => t.type !== 'Admin')
-            .filter((t: any) => !tenant.creationSecurity || t.apisCreationPermission)
-            .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
-          action: (teams: any) => createApi(teams[0]),
-        })(dispatch);
+            .filter((t) => t.type !== 'Admin')
+            .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
+            .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+          action: (teams) => createApi(teams[0]),
+          actionLabel: translate('Create')
+        }));
       } else {
         const team = myTeams.find((t) => teamId === t._id);
 
@@ -73,19 +74,20 @@ export const AddPanel = ({
     }
   };
 
-  const createApiGroup = (teamId: any) => {
+  const createApiGroup = (teamId) => {
     if (apiCreationPermitted) {
       if (!teamId) {
-        return openTeamSelectorModal({
+        return dispatch(openTeamSelectorModal({
           allTeamSelector: false,
           title: translate('apigroup.creation.title.modal'),
           description: translate('apigroup.creation.description.modal'),
           teams: myTeams
-            .filter((t: any) => t.type !== 'Admin')
-            .filter((t: any) => !tenant.creationSecurity || t.apisCreationPermission)
-            .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
-          action: (teams: any) => createApiGroup(teams[0]),
-        })(dispatch);
+            .filter((t) => t.type !== 'Admin')
+            .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
+            .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+          action: (teams) => createApiGroup(teams[0]),
+          actionLabel: translate('Create')
+        }));
       } else {
         const team = myTeams.find((t: any) => teamId === t._id);
 

@@ -187,8 +187,6 @@ const CustomMetadataInput = (props: {
   translate: (key: string) => string
 }) => {
 
-  console.debug({props})
-
   const changeValue = (possibleValues: any, key: any) => {
     const oldValue = Option(props.value?.find((x: any) => x.key === key)).getOrElse({ '': '' });
     const newValues = [...(props.value || []).filter((x: any) => x.key !== key), { ...oldValue, key, possibleValues }];
@@ -577,6 +575,7 @@ export const TeamApiPricings = (props: Props) => {
     setCreation(true);
   };
   const editPlan = (plan: any) => {
+    setCreation(false);
     setPlanForEdition(plan);
     setMode(possibleMode.creation);
   };

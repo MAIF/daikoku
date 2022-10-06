@@ -53,6 +53,7 @@ export const ApiCard = (props: {
             .map((auth) => auth.team)}
           teams={props.myTeams?.filter((t: any) => t.type !== 'Admin')}
           action={(teams) => props.askForApiAccess(teams)}
+          actionLabel={translate("Ask access to API")}
           withAllTeamSelector={true}
         >
           {isPending ? (

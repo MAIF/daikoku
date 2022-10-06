@@ -5,13 +5,11 @@ import ClasseNames from 'classnames';
 
 import * as Modals from './';
 import { closeModal } from '../../../core/modal/actions';
+import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { IState, IStateModal } from '../../../types';
 
-const ModalContainer = ({
-  modalType,
-  modalProps,
-  open,
-  closeModal
-}: any) => {
+export const ModalRoot = () => {
   const MODAL_TYPES = {
     teamSelector: Modals.TeamSelectorModal,
     assetSelector: Modals.AssetSelectorModal,
@@ -29,8 +27,11 @@ const ModalContainer = ({
     formModal: Modals.FormModal
   };
 
+  const dispatch = useDispatch();
+  const {modalType, modalProps, open} = useSelector<IState, IStateModal>(s => s.modal)
+
   const [modalIsOpen, setModalIsOpen] = useState(open);
-    const SpecifiedModal = MODAL_TYPES[modalType];
+  const SpecifiedModal = MODAL_TYPES[modalType];
 
   useEffect(() => {
     setModalIsOpen(open);
@@ -41,28 +42,18 @@ const ModalContainer = ({
   }
 
   return (
-        <div>
-            <ReactModal
+    <div>
+      <ReactModal
         isOpen={modalIsOpen}
-        onRequestClose={closeModal}
+        onRequestClose={() => dispatch(closeModal())}
         contentLabel="Example Modal"
         ariaHideApp={false}
         overlayClassName={ClasseNames('modal fade in show', { right: modalProps.panelView })}
         bodyOpenClassName="modal-open"
         className="modal-dialog modal-lg"
       >
-                {SpecifiedModal ? <SpecifiedModal closeModal={closeModal} {...modalProps} /> : null}
+        {SpecifiedModal ? <SpecifiedModal closeModal={() => dispatch(closeModal())} {...modalProps} /> : null}
       </ReactModal>
     </div>
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.modal
-});
-
-const mapDispatchToProps = {
-  closeModal: () => closeModal(),
-};
-
-export const ModalRoot = connect(mapStateToProps, mapDispatchToProps)(ModalContainer);

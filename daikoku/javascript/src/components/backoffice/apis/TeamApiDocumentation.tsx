@@ -3,14 +3,14 @@ import { useParams } from 'react-router-dom';
 import { Form, constraints, format, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import cloneDeep from 'lodash/cloneDeep';
-import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
-import { Spinner, BeautifulTitle } from '../../utils';
+import { BeautifulTitle } from '../../utils';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
 import { toastr } from 'react-redux-toastr';
 import { useDispatch } from 'react-redux';
+import { IApi, ITeamSimple } from '../../../types';
 
 //@ts-ignore //FIXME: is monkey patch is compatible with ts ???
 Array.prototype.move = function (from: any, to: any) {
@@ -89,13 +89,13 @@ export type TeamApiDocumentationRef = {
   saveCurrentPage: () => void
 }
 type TeamApiDocumentationProps = {
-  team: any,
-  value: any,
+  team: ITeamSimple,
+  value: IApi,
   versionId?: string,
   creationInProgress?: boolean,
-  onChange: (value: any) => void,
+  onChange: (value: IApi) => void,
   reloadState: () => void,
-  save: (value: any) => Promise<any>
+  save: (value: IApi) => Promise<any>
 }
 export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, TeamApiDocumentationProps>((props, ref) => {
   const { team, value, versionId, creationInProgress } = props;
@@ -269,7 +269,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
     }
   }
 
-  function savePage(page?: any) {
+  const savePage = (page?: any) => {
     return Services.saveDocPage(team._id, value._id, page || selected)
       .then(() => {
         updateDetails();
@@ -285,7 +285,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
     let pages = cloneDeep(value.documentation.pages);
     if (selected) {
       const oldIndex = pages.indexOf(selected._id);
-      if (oldIndex >= 0) {
+      if (oldIndex >= 0) {//@ts-ignore //fixme with monkey patch
         pages = pages.move(oldIndex, oldIndex - 1);
         const newValue = cloneDeep(value);
         newValue.documentation.pages = pages;
@@ -300,26 +300,26 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
   function onDown() {
     let pages = cloneDeep(value.documentation.pages);
     if (selected) {
-      const oldIndex = pages.indexOf((selected as any)._id);
-      if (oldIndex < pages.length) {
+      const oldIndex = pages.indexOf(selected._id);
+      if (oldIndex < pages.length) { //@ts-ignore //fixme with monkey patch
         pages = pages.move(oldIndex, oldIndex + 1);
         const newValue = cloneDeep(value);
         newValue.documentation.pages = pages;
-        (props as any).onChange(newValue);
-        (props as any).save(newValue).then(() => {
+        props.onChange(newValue);
+        props.save(newValue).then(() => {
           updateDetails();
         });
       }
     }
   }
 
-  function addNewPage() {
+  const addNewPage = () => {
     let index = value.documentation.pages.length;
     if (selected) {
-      index = value.documentation.pages.indexOf((selected as any)._id) + 1;
+      index = value.documentation.pages.indexOf(selected._id) + 1;
     }
 
-    Services.createDocPage(team._id, value._id, {
+    Services.createDocPage(team._id, {
       _id: nanoid(32),
       _tenant: value._tenant,
       api: value._id,
@@ -334,13 +334,13 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
       const newValue = cloneDeep(value);
       newValue.documentation.pages = pages;
       setSelected(page);
-      (props as any).onChange(newValue);
+      props.onChange(newValue);
     });
   }
 
   function deletePage() {
     (window
-      .confirm(translate('delete.documentation.page.confirm'))) //@ts-ignore //FIXME: remove ts-ognor after fix typing monkey patch of window.confirm
+      .confirm(translate('delete.documentation.page.confirm'))) //@ts-ignore //FIXME: remove after fix typing monkey patch of window.confirm
       .then((ok: boolean) => {
         if (ok) {
           Services.deleteDocPage(team._id, value._id, selected?._id)
@@ -417,9 +417,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
             <Translation i18nkey="Delete page">Delete page</Translation>
           </button>
         </div>
-        <React.Suspense fallback={<Spinner />}>
-          <Form flow={flow} schema={schema} value={selected} onSubmit={savePage} />
-        </React.Suspense>
+        <Form flow={flow} schema={schema} value={selected} onSubmit={d => {savePage(d)}} />
       </div>)}
     </div>
   </div>);

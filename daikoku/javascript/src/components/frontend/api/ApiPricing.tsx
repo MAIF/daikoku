@@ -319,6 +319,7 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
                     allowMultipleDemand={plan.allowMultipleKeys}
                     withAllTeamSelector={false}
                     action={(teams) => showApiKeySelectModal(teams)}
+                    actionLabel={translate(plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key')}
                   >
                     <button type="button" className="btn btn-sm btn-access-negative col-12">
                       <Translation

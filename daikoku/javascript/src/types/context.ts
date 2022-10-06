@@ -7,7 +7,11 @@ export interface IState {
   error: IStateError,
 }
 
-interface IStateModal {}
+export interface IStateModal {
+  modalType: string
+  modalProps: any
+  open: boolean
+}
 
 export interface IStateContext {
   impersonator: any,

@@ -117,7 +117,6 @@ export const MultiStepForm = <T extends object>({
           id: 'save_step',
           src: (context: T) => {
             return (callBack, _onEvent) => {
-              console.debug({ context })
               return save(context)
                 .then((response) => {
                   if (response?.error) {
@@ -179,7 +178,6 @@ export const MultiStepForm = <T extends object>({
           guards,
           actions: {
             setValue: assign((context, response) => {
-              console.debug({response, context})
               return { ...context, ...response.value };
             }),
             reset: assign((_, response) => {
@@ -225,7 +223,6 @@ export const MultiStepForm = <T extends object>({
   if (!step) {
     return null; //todo ???
   }
-  console.debug({current})
   return (
     <div className="d-flex flex-column">
       {!getBreadcrumb && (

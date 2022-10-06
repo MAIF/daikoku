@@ -88,6 +88,7 @@ export function ApiCartidge(props: any) {
             action={(teams) => {
               props.redirectToApiKeysPage(props.myTeams.find((t: any) => teams.includes(t._id)));
             }}
+            actionLabel={translate('View your api keys')}
             withAllTeamSelector={false}
           >
             <button className="btn btn-sm btn-access-negative mt-2">

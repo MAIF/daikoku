@@ -1,3 +1,4 @@
+import { TeamSelectorModalProps } from '../../components';
 import { CLOSE_MODAL, OPEN_MODAL } from './';
 
 export const openCreationTeamModal = (modalProps: any) => (dispatch: any) => {
@@ -8,12 +9,12 @@ export const openCreationTeamModal = (modalProps: any) => (dispatch: any) => {
   });
 };
 
-export const openTeamSelectorModal = (modalProps: any) => (dispatch: any) => {
-  return dispatch({
+export const openTeamSelectorModal = (modalProps: TeamSelectorModalProps) => {
+  return {
     type: OPEN_MODAL,
     modalProps,
     modalType: 'teamSelector',
-  });
+  };
 };
 
 export const openAssetSelectorModal = (modalProps: any) => (dispatch: any) => {
@@ -97,8 +98,6 @@ export const openFormModal = (modalProps: any) => ({
   modalType: 'formModal'
 });
 
-export const closeModal = () => (dispatch: any) => {
-  return dispatch({
+export const closeModal = () => ({
     type: CLOSE_MODAL,
-  });
-};
+});

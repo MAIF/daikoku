@@ -183,6 +183,7 @@ const ApiHomeComponent = ({
                 `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`
               );
             }}
+            actionLabel={translate('View your api keys')}
             withAllTeamSelector={false}
           >
             <span className="block__entry__link">
@@ -337,12 +338,19 @@ const ApiHomeComponent = ({
           </button>
         </>) : (<>
           <span className="text-center my-3">{translate('request_api_access')}</span>
-          <ActionWithTeamSelector title="Api access" description={translate({ key: 'api.access.request', replacements: [params.apIid] })} pendingTeams={pendingTeams} authorizedTeams={authorizedTeams} teams={teams} action={(teams) => {
-            Services.askForApiAccess(teams, showAccessModal.api._id).then((_) => {
-              toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: showAccessModal.api.name }));
-              updateSubscriptions(showAccessModal.api._id);
-            });
-          }}>
+          <ActionWithTeamSelector
+            title="Api access"
+            description={translate({ key: 'api.access.request', replacements: [params.apIid] })}
+            pendingTeams={pendingTeams}
+            authorizedTeams={authorizedTeams}
+            teams={teams}
+            actionLabel={translate('Ask access to API')}
+            action={(teams) => {
+              Services.askForApiAccess(teams, showAccessModal.api._id).then((_) => {
+                toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: showAccessModal.api.name }));
+                updateSubscriptions(showAccessModal.api._id);
+              });
+            }}>
             <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
               {translate({ key: 'notif.api.access', replacements: [params.apiId] })}
             </button>

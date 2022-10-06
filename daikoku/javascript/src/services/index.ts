@@ -247,7 +247,7 @@ export const updateTeamMemberPermission = (teamId: any, members: any, permission
     body: JSON.stringify({ members, permission }),
   });
 
-export const createDocPage = (teamId: any, apiId: any, page: any) =>
+export const createDocPage = (teamId: string, page: any) =>
   customFetch(`/api/teams/${teamId}/pages`, {
     method: 'POST',
     body: JSON.stringify(page),

@@ -194,8 +194,8 @@ export const TeamApi = (props: { creation: boolean }) => {
           return res;
         } else {
           toastr.success(translate('Success'), translate('Api saved'));
-          setApi(editedApi);
-
+          setApi(res);
+          methods.setApi(res)
           if (res._humanReadableId !== editedApi._humanReadableId) {
             navigate(
               `/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
@@ -288,7 +288,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                 creationInProgress={props.creation}
                 team={currentTeam}
                 value={api}
-                onChange={(api: any) => setApi(api)}
+                onChange={(api: IApi) => setApi(api)}
                 save={save}
                 versionId={params.versionId}
                 reloadState={reloadState}
