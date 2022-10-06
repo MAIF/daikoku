@@ -155,7 +155,7 @@ dockerExposedPorts := Seq(
 )
 packageName in Docker := "daikoku"
 maintainer in Docker := "MAIF OSS Team <oss@maif.fr>"
-dockerBaseImage := "openjdk:11-jre-slim"
+dockerBaseImage := "eclipse-temurin:11-alpine"
 dockerUsername := Some("maif")
 dockerUpdateLatest := true
 dockerCommands := dockerCommands.value.filterNot {
