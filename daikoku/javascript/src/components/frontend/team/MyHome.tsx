@@ -175,7 +175,7 @@ export const MyHome = () => {
   } else {
     //FIXME: better display of error
     return (
-      <div>Error while fetching tenants</div>
+      <div>Error while fetching teams</div>
     )
   }
 
