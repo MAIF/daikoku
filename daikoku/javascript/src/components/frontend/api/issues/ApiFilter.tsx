@@ -47,9 +47,9 @@ export function ApiFilter({
       format: format.select,
       options: api.issuesTags,
       transformer: ({
-        value,
+        id,
         name
-      }: any) => ({ value, label: name }),
+      }: any) => ({ value: id, label: name }),
       isMulti: true,
       visible: CanIDoAction(connectedUser, manage, API, currentTeam),
     },
@@ -70,6 +70,7 @@ export function ApiFilter({
   };
 
   const createIssue = (issue: any) => {
+    console.debug({issue})
     Services.createNewIssue(api._humanReadableId, team, issue)
       .then((res) => {
         if (res.error) {

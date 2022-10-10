@@ -31,6 +31,7 @@ export interface IUserSimple {
   isGuest: boolean
   starredApis: Array<string>
   twoFactorAuthentication: I2FA | null
+  name: string
 }
 
 interface I2FA {

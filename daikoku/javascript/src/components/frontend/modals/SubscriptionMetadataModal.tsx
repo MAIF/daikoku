@@ -1,24 +1,12 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Form, type, format, constraints, FormRef } from '@maif/react-forms';
-import Creatable from 'react-select/creatable';
-import { toastr } from 'react-redux-toastr';
+import { constraints, Form, format, FormRef, type } from '@maif/react-forms';
 import sortBy from 'lodash/sortBy';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { toastr } from 'react-redux-toastr';
 
-import { Spinner, formatPlanType, Option } from '../../utils';
-import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
-
-type Props = {
-  closeModal: (...args: any[]) => any;
-  save: (...args: any[]) => any;
-  config: any,
-  subscription: any,
-  plan: any,
-  api: any,
-  creationMode: any,
-  team: any,
-  description: any
-};
+import * as Services from '../../../services';
+import { SubscriptionMetadataModalProps } from '../../../types/modal';
+import { formatPlanType, Option, Spinner } from '../../utils';
 
 type FormData = {
   metadata: { [key: string]: string },
@@ -31,12 +19,10 @@ type FormData = {
   customReadOnly: boolean
 }
 
-//FIXME: test if works like before react-forms usage ;)
-export const SubscriptionMetadataModal = (props: Props) => {
+export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps) => {
   const [loading, setLoading] = useState(true);
   const [api, setApi] = useState<any>(undefined);
   const [plan, setPlan] = useState<any>(undefined);
-  const [isValid, setIsValid] = useState(false);
   const [value, setValue] = useState<FormData>();
 
   const { translate, Translation } = useContext(I18nContext);
@@ -129,23 +115,22 @@ export const SubscriptionMetadataModal = (props: Props) => {
       customMaxPerMonth: formData.customMaxPerMonth,
       customReadOnly: formData.customReadOnly,
     };
-    if (isValid) {
-      if (props.save instanceof Promise) {
-        props.save(subProps)
-          .then(() => props.closeModal());
-      } else {
-        props.closeModal();
-        props.save(subProps);
-      }
+    console.debug({props, subProps})
+    if (props.save instanceof Promise) {
+      props.save(subProps)
+        .then(() => props.closeModal());
+    } else {
+      props.closeModal();
+      props.save(subProps);
     }
   };
 
-  const schema = {
+  const schema = () => ({
     metadata: {
       type: type.object,
       format: format.form,
       visible: !!plan,
-      label: translate({key: 'mandatory.metadata.label', replacements: [plan.otoroshiTarget.apikeyCustomization.customMetadata.length]}),
+      label: translate({ key: 'mandatory.metadata.label', replacements: [plan.otoroshiTarget.apikeyCustomization.customMetadata.length] }),
       schema: sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key'])
         .map((meta: { key: string, possibleValues: Array<string> }) => {
           return {
@@ -201,7 +186,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
       type: type.bool,
       label: translate('Read only apikey')
     }
-  }
+  })
 
   return (<div className="modal-content">
     <div className="modal-header">
@@ -240,7 +225,7 @@ export const SubscriptionMetadataModal = (props: Props) => {
           {props.description && <div className="modal-description">{props.description}</div>}
 
           <Form
-            schema={schema}
+            schema={schema()}
             onSubmit={actionAndClose}
             ref={formRef}
             value={value}
@@ -256,7 +241,6 @@ export const SubscriptionMetadataModal = (props: Props) => {
         <button
           type="button"
           className="btn btn-outline-success"
-          disabled={isValid ? undefined : true}
           onClick={() => formRef.current?.handleSubmit()}>
           {props.creationMode ? translate('Accept') : translate('Update')}
         </button>

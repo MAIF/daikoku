@@ -87,7 +87,7 @@ export const NotificationList = () => {
     setState({
       ...state,
       notifications: state.notifications.map((n: any) => {
-        (n as any).fade = (n as any)._id === notificationId;
+        n.fade = n._id === notificationId;
         return n;
       }),
     });
@@ -187,7 +187,7 @@ export const NotificationList = () => {
   }
 
   const notifByTeams = groupBy(state.notifications, 'team');
-  const openModal = (p: any) => dispatch(openSubMetadataModal(p));
+  const openModal = (p) => dispatch(openSubMetadataModal(p));
   return <>
     <div className="row">
       <h1>

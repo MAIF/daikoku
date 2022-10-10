@@ -16,6 +16,7 @@ import * as Services from '../../../services';
 import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
 import { I18nContext } from '../../../locales/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
+import { IUserSimple } from '../../../types';
 
 export const AdminMessages = () => {
   useTenantBackOffice();
@@ -37,7 +38,7 @@ export const AdminMessages = () => {
   const [users, setUsers] = useState<Array<any>>([]);
   const [selectedChat, setSelectedChat] = useState<any>(undefined);
 
-  const [possibleNewUsers, setPossibleNewUsers] = useState<Array<any>>([]);
+  const [possibleNewUsers, setPossibleNewUsers] = useState<Array<IUserSimple>>([]);
 
   const connectedUser = useSelector((s: any) => s.context.connectedUser);
 
@@ -153,7 +154,7 @@ export const AdminMessages = () => {
             justifyContent: 'space-between',
             alignItems: 'center',
           }}>
-            {(u as any).name} ({(u as any).email}){' '}
+            {u.name} ({u.email}){' '}
             <img style={{
               borderRadius: '50%',
               backgroundColor: 'white',
@@ -210,10 +211,6 @@ export const AdminMessages = () => {
           <ChevronLeft />
         </button>
       </div>
-      <div className="p-3 d-flex justify-content-around align-items-center messages-sender__active">
-        <img className="user-avatar" src="https://www.gravatar.com/avatar/53fc466c35867413e3b4c906ebf370cb?size=128&amp;d=robohash" alt="user-avatar" />
-        <h4 className="message__user--name">A remplir avec le bon user</h4>
-      </div>
       <div className="d-flex flex-column-reverse ms-2 messages-content">
         {dialog.reverse().map((group: any, idx: any) => {
           return (<div key={`discussion-messages-${idx}`} className={classNames('discussion-messages', {
@@ -234,11 +231,11 @@ export const AdminMessages = () => {
             })}
           </div>);
         })}
-        {selectedChat && lastClosedDates.find((x: any) => x.chat === selectedChat).date && (<div className="d-flex flex-row justify-content-center my-1">
+        {selectedChat && lastClosedDates.find((x) => x.chat === selectedChat).date ? (<div className="d-flex flex-row justify-content-center my-1">
           <button className="btn btn-sm btn-outline-primary" disabled={loading} onClick={() => getPreviousMessages(selectedChat)}>
             <Translation i18nkey="Load previous messages">Load previous messages</Translation>
           </button>
-        </div>)}
+        </div>) : <></>}
         {selectedChat && (<div className="discussion-form discussion-form__message">
           <input disabled={loading} type="text" value={loading ? '...' : newMessage} onKeyDown={handleKeyDown} onChange={(e) => setNewMessage(e.target.value)} placeholder={translate('Your message')} />
           <button disabled={loading} className="send-button" onClick={sendMessage}>
