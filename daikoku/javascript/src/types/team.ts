@@ -1,3 +1,5 @@
+import { Language } from "./types"
+
 type TeamPermission = 'Administrator' | 'ApiEditor' | 'User'
 
 export type TeamUser = {user: string, teamPermission: TeamPermission}
@@ -32,6 +34,11 @@ export interface IUserSimple {
   starredApis: Array<string>
   twoFactorAuthentication: I2FA | null
   name: string
+}
+
+export interface IUser extends IUserSimple {
+  pictureFromProvider: boolean
+  origins: Array<'Local' | 'Otoroshi' | 'LDAP' | 'OAuth2'>
 }
 
 interface I2FA {

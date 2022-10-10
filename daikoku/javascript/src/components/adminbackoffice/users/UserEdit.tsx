@@ -1,15 +1,17 @@
-import React, { useContext, useEffect, useState, useRef } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { nanoid } from 'nanoid';
+import { constraints, Form, format, FormRef, Schema, SchemaRenderType, type } from '@maif/react-forms';
 import md5 from 'js-md5';
-import { toastr } from 'react-redux-toastr';
-import { Form, constraints, type, format, FormRef } from '@maif/react-forms';
-
-import * as Services from '../../../services';
-import { Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../core';
-import { useDaikokuBackOffice } from '../../../contexts';
+import { nanoid } from 'nanoid';
+import React, { useContext, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from 'react-query';
 import { useSelector } from 'react-redux';
+import { toastr } from 'react-redux-toastr';
+import { useNavigate, useParams } from 'react-router-dom';
+
+import { useDaikokuBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../core';
+import * as Services from '../../../services';
+import { IState, ITenant, IUser } from '../../../types';
+import { Can, daikoku, manage, Spinner } from '../../utils';
 
 const Avatar = ({
   setValue,
@@ -18,33 +20,48 @@ const Avatar = ({
   value,
   onChange,
   tenant
-}: any) => {
+}: {
+  rawValues?: IUser;
+  value?: any;
+  onChange?: (param: any) => void;
+  error?: boolean;
+  getValue: (entry: string) => any;
+  setValue?: (key: string, data: any) => void;
+  defaultValue?: any;
+  tenant: ITenant
+}) => {
   const { Translation, translate } = useContext(I18nContext);
 
-  const setFiles = (files: any) => {
-    const file = files[0];
-    const filename = file.name;
-    const contentType = file.type;
-    return Services.storeUserAvatar(filename, contentType, file).then((res) => {
-      if (res.error) {
-        toastr.error(translate('Error'), res.error);
-      } else {
-        setValue('pictureFromProvider', false);
-        onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
-      }
-    });
+  const setFiles = (files: FileList | null) => {
+    const file = files && files[0];
+
+    if (file) {
+      const filename = file.name;
+      const contentType = file.type;
+
+      return Services.storeUserAvatar(filename, contentType, file)
+        .then((res) => {
+          if (res.error) {
+            toastr.error(translate('Error'), res.error);
+          } else {
+            setValue!('pictureFromProvider', false);
+            onChange!(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
+          }
+        });
+    }
+
   };
 
   const setPictureFromProvider = () => {
-    setValue('pictureFromProvider', true);
+    setValue!('pictureFromProvider', true);
   };
 
-  const changePicture = (picture: any) => {
-    if (rawValues.pictureFromProvider) {
-      setValue('pictureFromProvider', false);
-      onChange(picture);
+  const changePicture = (picture: string) => {
+    if (rawValues?.pictureFromProvider) {
+      setValue!('pictureFromProvider', false);
+      onChange!(picture);
     } else {
-      onChange(picture);
+      onChange!(picture);
     }
   };
 
@@ -54,7 +71,7 @@ const Avatar = ({
     changePicture(url);
   };
 
-  const isOtherOriginThanLocal = rawValues?.origins?.some((o: any) => o.toLowerCase !== 'local');
+  const isOtherOriginThanLocal = rawValues?.origins?.some((o) => o.toLowerCase() !== 'local');
 
   if (!isOtherOriginThanLocal) {
     return <></>;
@@ -63,7 +80,7 @@ const Avatar = ({
     <div className="">
       <div className="float-right mb-4 position-relative">
         <img
-          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
+          src={`${rawValues?.picture}${rawValues?.picture.startsWith('http') ? '' : `?${Date.now()}`
             }`}
           style={{
             width: 100,
@@ -83,7 +100,7 @@ const Avatar = ({
           onChange={(e) => changePicture(e.target.value)}
         />
         <div className="d-flex mt-1 justify-content-end">
-          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.email}>
+          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues?.email}>
             <i className="fas fa-user-circle me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
@@ -92,7 +109,7 @@ const Avatar = ({
               type="button"
               className="btn btn-outline-primary"
               onClick={setPictureFromProvider}
-              disabled={!!rawValues.pictureFromProvider}
+              disabled={!!rawValues?.pictureFromProvider}
             >
               <i className="fas fa-user-circle me-1" />
               <Translation i18nkey="Set avatar from auth. provider">
@@ -106,12 +123,12 @@ const Avatar = ({
   );
 };
 
-const PictureUpload = (props: any) => {
+const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
   const [uploading, setUploading] = useState(false);
 
   const { Translation } = useContext(I18nContext);
 
-  const setFiles = (e: any) => {
+  const setFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     setUploading(true);
     props.setFiles(files);
@@ -122,7 +139,7 @@ const PictureUpload = (props: any) => {
     input.click();
   };
 
-  let input: any;
+  let input;
 
   return (
     <div className="changePicture mx-3">
@@ -130,7 +147,7 @@ const PictureUpload = (props: any) => {
         ref={(r) => (input = r)}
         type="file"
         className="form-control hide"
-        onChange={setFiles}
+        onChange={e => setFiles(e)}
       />
       <button
         type="button"
@@ -151,17 +168,16 @@ const PictureUpload = (props: any) => {
 };
 
 export const UserEdit = () => {
-  const tenant = useSelector((s) => (s as any).context.tenant);
+  const tenant = useSelector<IState, ITenant>((s) => s.context.tenant);
   useDaikokuBackOffice();
   const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
-  const location = useLocation();
   const params = useParams();
 
-  const [user, setUser] = useState<any>();
-  const [create, setCreate] = useState(false);
+  const queryClient = useQueryClient();
+  const queryUser = useQuery(['user-infos'], () => Services.findUserById(params.userId!));
 
-  const schema = {
+  const schema: Schema = {
     name: {
       type: type.string,
       label: translate('Name'),
@@ -179,10 +195,10 @@ export const UserEdit = () => {
     picture: {
       type: type.string,
       label: translate('Avatar'),
-      render: (v: any): JSX.Element => Avatar({ ...v, tenant: tenant }),
+      render: (v): JSX.Element => Avatar({ ...v, tenant: tenant }),
       constraints: [
         constraints.url(
-          translate({key: 'constraints.format.url', replacements: [translate('Avatar')]})
+          translate({ key: 'constraints.format.url', replacements: [translate('Avatar')] })
         ),
       ],
     },
@@ -197,9 +213,9 @@ export const UserEdit = () => {
       render: ({
         value,
         onChange
-      }: any): JSX.Element => {
+      }): JSX.Element => {
         const reloadToken = () => {
-          onChange(nanoid(32));
+          onChange!(nanoid(32));
         };
         return (
           <div className="d-flex flex-row">
@@ -217,70 +233,42 @@ export const UserEdit = () => {
     },
   };
 
-  useEffect(() => {
-    if (location && location.state && (location as any).state.newUser) {
-      setUser({
-        ...(location as any).state.newUser,
-        personalToken: nanoid(32),
+  const removeUser = (user: IUser) => {
+    (window.confirm(translate('remove.user.confirm'))) //@ts-ignore //FIXME
+      .then((ok: boolean) => {
+        if (ok) {
+          Services.deleteUserById(user._id)
+            .then(() => {
+              toastr.success(translate('Success'), translate({ key: 'remove.user.success', replacements: [user.name] }));
+              navigate('/settings/users');
+            });
+        }
       });
-      setCreate(true);
-    } else {
-      Services.findUserById(params.userId)
-        .then((user) => {
-          setUser(user);
-          setCreate(false);
-        });
-    }
-  }, []);
-
-  const removeUser = () => {
-    (window.confirm(translate('remove.user.confirm')) as any).then((ok: any) => {
-      if (ok) {
-        Services.deleteUserById(user._id)
-          .then(() => {
-            toastr.success(translate('Success'), translate({key: 'remove.user.success', replacements: [user.name]}));
-            navigate('/settings/users');
-          });
-      }
-    });
   };
 
-  const save = (u: any) => {
-    if (create) {
-      Services.createUser(u)
-        .then(() => {
-          toastr.success(
-            translate('Success'),
-            translate({key: 'user.created.success', replacements: [user.name]})
-          );
-          navigate("/settings/users")
-        });
-    } else {
-      Services.updateUserById(u)
-        .then((updatedUser) => {
-          setUser(updatedUser);
-          toastr.success(
-            translate('Success'),
-            translate({key: 'user.updated.success', replacements: [user.name]} )
-          );
-          navigate("/settings/users")
-        });
-    }
+  const save = (u: IUser) => {
+    Services.updateUserById(u)
+      .then((updatedUser) => {
+        toastr.success(translate('Success'), translate({ key: 'user.updated.success', replacements: [u.name] }));
+        if (u.email !== queryUser.data?.email) {
+          navigate(`/settings/users/${updatedUser._humanReadableId}`)
+        } else {
+          queryClient.invalidateQueries('user-infos')
+
+        }
+      });
   };
 
   const ref = useRef<FormRef>()
-  if (!user) {
-    return null;
-  }
-
-
-  return (
-    <Can I={manage} a={daikoku} dispatchError>
-      {user && (
+  if (queryUser.isLoading) {
+    return <Spinner />;
+  } else if (queryUser.data) {
+    return (
+      <Can I={manage} a={daikoku} dispatchError>
         <Form
           ref={ref}
           schema={schema}
-          value={user}
+          value={queryUser.data}
           onSubmit={save}
           footer={({ reset, valid }) => {
             return (
@@ -288,25 +276,29 @@ export const UserEdit = () => {
                 <button className="btn btn-outline-danger" onClick={reset}>
                   <Translation i18nkey="Cancel">Cancel</Translation>
                 </button>
-                {!create && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-danger ms-2"
-                    onClick={removeUser}
-                  >
-                    <i className="fas fa-trash me-1" />
-                    <Translation i18nkey="Delete">Delete</Translation>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn btn-outline-danger ms-2"
+                  onClick={() => removeUser(queryUser.data)}
+                >
+                  <i className="fas fa-trash me-1" />
+                  <Translation i18nkey="Delete">Delete</Translation>
+                </button>
                 <button className="btn btn-outline-success ms-2" onClick={valid}>
-                  {create && <Translation i18nkey="Save">Create</Translation>}
-                  {!create && <Translation i18nkey="Save">Save</Translation>}
+                  <Translation i18nkey="Save">Save</Translation>
                 </button>
               </div>
             );
           }}
         />
-      )}
-    </Can>
-  );
+      </Can>
+    );
+  } else {
+    return (
+      <div>Error while fetching user</div>
+    )
+  }
+
+
+
 };

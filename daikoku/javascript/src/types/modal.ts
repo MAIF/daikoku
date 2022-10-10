@@ -1,5 +1,4 @@
-import { ITeamSimple } from "./team"
-import { IUser } from "./types"
+import { ITeamSimple, IUser } from "./team"
 
 export interface INotification {
   _deleted: boolean

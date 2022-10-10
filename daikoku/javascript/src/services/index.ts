@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import { ITeamFull, ITeamSimple, ITenant, ITenantFull } from '../types';
+import { ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser } from '../types';
 import { IApi } from '../types/api';
 
 const HEADERS = {
@@ -295,7 +295,7 @@ export const fetchAuditTrail = (from: any, to: any, page: any, size: any) =>
   customFetch(`/api/admin/auditTrail?from=${from}&to=${to}&page=${page}&size=${size}`);
 
 export const fetchAllUsers = () => customFetch('/api/admin/users');
-export const findUserById = (id: any) => customFetch(`/api/admin/users/${id}`);
+export const findUserById = (id: string): Promise<IUser> => customFetch(`/api/admin/users/${id}`);
 
 export const deleteUserById = (id: any) => customFetch(`/api/admin/users/${id}`, {
   method: 'DELETE',
@@ -538,7 +538,7 @@ export const storeTenantAsset = (filename: any, title: any, desc: any, contentTy
     body: formData,
   });
 
-export const storeUserAvatar = (filename: any, contentType: any, file: any) =>
+export const storeUserAvatar = (filename: string, contentType: string, file: File) =>
   customFetch(`/user-avatar?filename=${filename}`, {
     method: 'POST',
     credentials: 'include',

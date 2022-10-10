@@ -10,24 +10,6 @@ export enum Language {
   fr = "fr"
 }
 
-export interface IUser {
-  _id: string
-  _humanReadableId: string
-  name: string
-  email: string
-  picture: string
-  isDaikokuAdmin: boolean
-  defaultLanguage?: Language
-  isGuest: boolean
-  starredApis: Array<string>
-  twoFactorAuthentication?: {
-    enabled: boolean
-    secret: string
-    token: string
-    backupCodes: string
-  }
-}
-
 export interface IStoreStateContext {
   connectedUser: any,
   tenant: ITenant,
