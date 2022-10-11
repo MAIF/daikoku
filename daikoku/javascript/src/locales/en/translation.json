@@ -1175,5 +1175,6 @@
     "Customization": "Customization",
     "Mail": "Mail",
     "alerting.help": "List of emails the will receive daikoku alerts",
-    "poumon": "poumon"
+    "poumon": "poumon",
+    "user.validated.success": "Your account has been successfully validated. You can now login."
 }

@@ -452,7 +452,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         .findByIdNotDeleted(session.userId)
                         .flatMap {
                           case None =>
-                            AppLogger.info("No user found")
+                            AppLogger.info("" +
+                              "No user found")
                             FastFuture.successful(
                               Results
                                 .Redirect(fr.maif.otoroshi.daikoku.ctrls.routes.LoginController

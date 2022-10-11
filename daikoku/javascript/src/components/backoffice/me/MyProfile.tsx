@@ -397,9 +397,7 @@ export const MyProfile = () => {
       .confirm(translate('delete account')))//@ts-ignore
       .then((ok: any) => {
         if (ok) {
-          Services.deleteSelfUserById().then(() => {
-            navigate('/logout');
-          });
+          Services.deleteSelfUserById()
         }
       });
   };

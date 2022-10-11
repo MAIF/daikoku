@@ -524,8 +524,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                         .deleteByIdLogically(accountCreation.id.value)
                     } yield ()
                     userCreation.map { user =>
-                      Status(302)(Json.obj("Location" -> "/"))
-                        .withHeaders("Location" -> "/")
+                      Status(302)(Json.obj("Location" -> "/?userCreated=true"))
+                        .withHeaders("Location" -> "/?userCreated=true")
                     }
                 }
             }

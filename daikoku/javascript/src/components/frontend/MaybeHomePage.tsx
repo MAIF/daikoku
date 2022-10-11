@@ -1,15 +1,28 @@
-import React, { useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { toastr } from 'react-redux-toastr';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { I18nContext } from '../../locales/i18n-context';
+
+import { IState, ITenant, IUserSimple } from '../../types';
 
 export const MaybeHomePage = ({
   tenant
-}: any) => {
-  const connectedUser = useSelector((state) => (state as any).connectedUser);
+}: {tenant: ITenant}) => {
+  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();
+  const { search } = useLocation();
 
   useEffect(() => {
+    const params = new URLSearchParams(search);
+    const created = params.get("userCreated")
+    console.debug({created})
+    if (params.get("userCreated") === "true") {
+      toastr.success(translate('Success'), translate('user.validated.success'))
+    }
+
     if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
       navigate('/apis');
     } else window.location.replace('/_/');

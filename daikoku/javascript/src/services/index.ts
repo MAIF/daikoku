@@ -304,6 +304,7 @@ export const deleteUserById = (id: any) => customFetch(`/api/admin/users/${id}`,
 export const deleteSelfUserById = () =>
   customFetch('/api/me', {
     method: 'DELETE',
+    redirect: 'follow'
   });
 
 export const setAdminStatus = (user: any, isDaikokuAdmin: any) =>

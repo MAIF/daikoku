@@ -61,6 +61,7 @@ import { I18nContext } from '../locales/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { SessionModal } from '../components/frontend/modals/SessionModal';
 import { QueryClientProvider } from 'react-query';
+import { IState, IUserSimple } from '../types';
 
 type DaikokuAppProps = {
   session: any,
@@ -116,6 +117,7 @@ const DaikokuAppComponent = ({
       </Router>
     );
   }
+
   //FIXME: verify that removing history prop didn't break anything
   return (
     <BrowserRouter>
@@ -136,10 +138,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/2fa"
                   element={
-                    <UnauthenticatedRoute
-                      title={`${tenant.title} - ${translate('Verification code')}`}
-                      tenant={tenant}
-                    >
+                    <UnauthenticatedRoute title={`${tenant.title} - ${translate('Verification code')}`} >
                       <TwoFactorAuthentication
                         title={`${tenant.title} - ${translate('Verification code')}`}
                       />
@@ -149,10 +148,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/reset"
                   element={
-                    <UnauthenticatedRoute
-                      title={`${tenant.title} - ${translate('Reset password')}`}
-                      tenant={tenant}
-                    >
+                    <UnauthenticatedRoute title={`${tenant.title} - ${translate('Reset password')}`}>
                       <ResetPassword />
                     </UnauthenticatedRoute>
                   }
@@ -160,10 +156,7 @@ const DaikokuAppComponent = ({
                 <Route
                   path="/signup"
                   element={
-                    <UnauthenticatedRoute
-                      title={`${tenant.title} - ${translate('Signup')}`}
-                      tenant={tenant}
-                    >
+                    <UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
                       <Signup />
                     </UnauthenticatedRoute>
                   }
@@ -488,7 +481,7 @@ const FrontOfficeRoute = (props: any) => {
   );
 };
 
-const RouteWithTitle = (props: any) => {
+const RouteWithTitle = (props: { title: string, children: JSX.Element }) => {
   useEffect(() => {
     if (props.title) {
       document.title = props.title;
@@ -498,14 +491,11 @@ const RouteWithTitle = (props: any) => {
   return props.children;
 };
 
-const UnauthenticatedRoute = ({
-  connectedUser,
-  children,
-  title
-}: any) => {
+const UnauthenticatedRoute = (props: { children: JSX.Element, title: string }) => {
+  const connectedUser = useSelector<IState, IUserSimple>(s => s.context.connectedUser)
   if (connectedUser._humanReadableId) {
     return <Navigate to="/" />;
   }
 
-  return <RouteWithTitle title={title}>{children}</RouteWithTitle>;
+  return <RouteWithTitle title={props.title}>{props.children}</RouteWithTitle>;
 };

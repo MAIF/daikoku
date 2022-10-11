@@ -1177,5 +1177,6 @@
   "Customization": "Personnalisation",
   "Mail": "Courriel",
   "alerting.help": "Liste des courriels qui recevront les alertes Daikoku",
-  "poumon": "poumon"
+  "poumon": "poumon",
+  "user.validated.success": "Votre compte a été correctement validé. Vous pouvez maintenant vous connecter."
 }
