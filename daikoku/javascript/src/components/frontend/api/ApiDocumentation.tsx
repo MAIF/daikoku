@@ -10,6 +10,7 @@ import { converter } from '../../../services/showdown';
 import { I18nContext } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
+import { isError } from '../../../types';
 
 const asciidoctorConverter = asciidoctor();
 
@@ -61,26 +62,29 @@ export function ApiDocumentation(props: any) {
     Services.getDocDetails(props.api._humanReadableId, props.api.currentVersion).then((details) => {
       const pageId = params.pageId || details.pages[0];
       if (pageId) {
-        Services.getDocPage(props.api._id, pageId).then((page) => {
-          if (page.remoteContentEnabled) {
-            setState({
-              ...state,
-              details,
-              content: null,
-              contentType: page.contentType,
-              remoteContent: {
-                url: page.contentUrl,
-              },
-            });
-          } else
-            setState({
-              ...state,
-              details,
-              content: page.content,
-              contentType: page.contentType,
-              remoteContent: null,
-            });
-        });
+        Services.getDocPage(props.api._id, pageId)
+          .then((page) => {
+            if (isError(page)) {
+
+            } else if (page.remoteContentEnabled) {
+              setState({
+                ...state,
+                details,
+                content: null,
+                contentType: page.contentType,
+                remoteContent: {
+                  url: page.remoteContentUrl,
+                },
+              });
+            } else
+              setState({
+                ...state,
+                details,
+                content: page.content,
+                contentType: page.contentType,
+                remoteContent: null,
+              });
+          });
       } else {
         setState({ ...state, details });
       }

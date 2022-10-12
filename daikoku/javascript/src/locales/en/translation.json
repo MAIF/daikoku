@@ -1176,5 +1176,13 @@
     "Mail": "Mail",
     "alerting.help": "List of emails the will receive daikoku alerts",
     "poumon": "poumon",
-    "user.validated.success": "Your account has been successfully validated. You can now login."
+    "user.validated.success": "Your account has been successfully validated. You can now login.",
+    "doc.page.update.modal.title": "Update documentation page",
+    "doc.page.create.modal.title": "Create new documentation page",
+    "doc.page.save.successfull": "Page saved successfully",
+    "doc.page.import.successfull": "Page imported successfully",
+    "doc.page.move.successfull": "Page moved successfully",
+    "doc.page.deletion.successfull": "page deleted successfully",
+    "doc.page.move.error": "You can't move this documentation",
+    "doc.page.error.unknown": "unknown error"
 }

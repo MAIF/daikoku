@@ -1,22 +1,19 @@
-import React, { useEffect, useState, useImperativeHandle, useContext } from 'react';
-import { useParams } from 'react-router-dom';
-import { Form, constraints, format, type } from '@maif/react-forms';
+import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
-import cloneDeep from 'lodash/cloneDeep';
-
-import * as Services from '../../../services';
-import { BeautifulTitle } from '../../utils';
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
-import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
-import { toastr } from 'react-redux-toastr';
+import { useContext, useState } from 'react';
+import { useQuery, useQueryClient } from 'react-query';
+import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import { IApi, ITeamSimple } from '../../../types';
+import { toastr } from 'react-redux-toastr';
+import { useParams } from 'react-router-dom';
+import classNames from 'classnames';
 
-//@ts-ignore //FIXME: is monkey patch is compatible with ts ???
-Array.prototype.move = function (from: any, to: any) {
-  this.splice(to, 0, this.splice(from, 1)[0]);
-  return this;
-};
+import { I18nContext, openApiDocumentationSelectModal, openFormModal } from '../../../core';
+import * as Services from '../../../services';
+import { IApi, IDocPage, IDocTitle, isError, IState, ITeamSimple } from '../../../types';
+import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
+import { BeautifulTitle, Spinner } from '../../utils';
+import { removeArrayIndex, moveArrayIndex } from '../../utils/array';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -85,32 +82,30 @@ function AssetButton(props: any) {
   );
 }
 
-export type TeamApiDocumentationRef = {
-  saveCurrentPage: () => void
-}
 type TeamApiDocumentationProps = {
   team: ITeamSimple,
-  value: IApi,
+  api: IApi,
   versionId?: string,
   creationInProgress?: boolean,
   onChange: (value: IApi) => void,
   reloadState: () => void,
-  save: (value: IApi) => Promise<any>
+  saveApi: (value: IApi) => Promise<any>
 }
-export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, TeamApiDocumentationProps>((props, ref) => {
-  const { team, value, versionId, creationInProgress } = props;
+
+
+export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
+  const { team, api, versionId } = props;
+
   const params = useParams();
-
-  const [selected, setSelected] = useState<any>(null);
-  const [details, setDetails] = useState(undefined);
-
-  const [deletedPage, setDeletedPage] = useState(false);
-
-  const { translate, Translation } = useContext(I18nContext);
-
+  const { translate } = useContext(I18nContext);
   const dispatch = useDispatch();
 
-  const flow = [
+  const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
+
+  const queryClient = useQueryClient();
+  const detailsQuery = useQuery(['details'], () => Services.getDocDetails(params.apiId!, versionId!));
+
+  const flow: Flow = [
     'title',
     'level',
     'contentType',
@@ -120,7 +115,7 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
     'content',
   ];
 
-  const schema = {
+  const schema: Schema = {
     title: {
       type: type.string,
       label: translate('Page title'),
@@ -226,199 +221,369 @@ export const TeamApiDocumentation = React.forwardRef<TeamApiDocumentationRef, Te
     },
   };
 
-  function updateDetails() {
-    Services.getDocDetails(params.apiId, versionId).then(setDetails);
-  }
 
-  useImperativeHandle(ref, () => ({
-    saveCurrentPage() {
-      savePage();
-    },
-  }));
+  // useEffect(() => {
+  //   if (!creationInProgress) {
+  //     updateDetails();
+  //     setSelected(null);
+  //   }
+  // }, [versionId]);
 
-  useEffect(() => {
-    if (!creationInProgress) {
-      updateDetails();
-      setSelected(null);
-    }
-  }, [versionId]);
+  // useEffect(() => {
+  //   if (selected || deletedPage) {
+  //     setDeletedPage(false);
+  //     props.saveApi(api)
+  //       .then(() => updateDetails());
+  //   }
+  // }, [api]);
 
-  useEffect(() => {
-    if (selected || deletedPage) {
-      setDeletedPage(false);
-      props.save(value)
-        .then(() => updateDetails());
-    }
-  }, [value]);
 
-  function select(selectedPage: any) {
-    if (selected) {
-      savePage(selected)
-        .then(updateDetails)
-        .then(() => {
-          Services.getDocPage(value._id, selectedPage._id).then((page) => {
-            if (page.error) toastr.error(translate('Error'), page.error);
-            else setSelected(page);
-          });
-        });
-    } else {
-      Services.getDocPage(value._id, selectedPage._id).then((page) => {
-        if (page.error) toastr.error(translate('Error'), page.error);
-        else setSelected(page);
-      });
-    }
-  }
-
-  const savePage = (page?: any) => {
-    return Services.saveDocPage(team._id, value._id, page || selected)
-      .then(() => {
-        updateDetails();
-        toastr.success(translate('Succes'), translate("doc.page.save.success"))
-      });
-  }
-
-  function isSelected(page: any) {
-    return selected && page._id === selected._id;
-  }
-
-  function onUp() {
-    let pages = cloneDeep(value.documentation.pages);
-    if (selected) {
-      const oldIndex = pages.indexOf(selected._id);
-      if (oldIndex >= 0) {//@ts-ignore //fixme with monkey patch
-        pages = pages.move(oldIndex, oldIndex - 1);
-        const newValue = cloneDeep(value);
-        newValue.documentation.pages = pages;
-        props.onChange(newValue);
-        props.save(newValue).then(() => {
-          updateDetails();
-        });
-      }
-    }
-  }
-
-  function onDown() {
-    let pages = cloneDeep(value.documentation.pages);
-    if (selected) {
-      const oldIndex = pages.indexOf(selected._id);
-      if (oldIndex < pages.length) { //@ts-ignore //fixme with monkey patch
-        pages = pages.move(oldIndex, oldIndex + 1);
-        const newValue = cloneDeep(value);
-        newValue.documentation.pages = pages;
-        props.onChange(newValue);
-        props.save(newValue).then(() => {
-          updateDetails();
-        });
-      }
-    }
-  }
-
-  const addNewPage = () => {
-    let index = value.documentation.pages.length;
-    if (selected) {
-      index = value.documentation.pages.indexOf(selected._id) + 1;
-    }
-
-    Services.createDocPage(team._id, {
-      _id: nanoid(32),
-      _tenant: value._tenant,
-      api: value._id,
-      title: 'New page',
-      index: index,
-      level: 0,
-      lastModificationAt: Date.now(),
-      content: '# New page\n\nA new page',
-    }).then((page) => {
-      let pages = cloneDeep(value.documentation.pages);
-      pages.splice(index, 0, page._id);
-      const newValue = cloneDeep(value);
-      newValue.documentation.pages = pages;
-      setSelected(page);
-      props.onChange(newValue);
-    });
-  }
-
-  function deletePage() {
-    (window
-      .confirm(translate('delete.documentation.page.confirm'))) //@ts-ignore //FIXME: remove after fix typing monkey patch of window.confirm
-      .then((ok: boolean) => {
-        if (ok) {
-          Services.deleteDocPage(team._id, value._id, selected?._id)
-            .then(() => {
-              let pages = cloneDeep(value.documentation.pages).filter((p: any) => p !== selected._id);
-              const newValue = cloneDeep(value);
-              newValue.documentation.pages = pages;
-              setDeletedPage(true);
-              setSelected(null);
-              props.onChange(newValue);
-            });
+  const updatePage = (selectedPage: IDocTitle) => {
+    Services.getDocPage(api._id, selectedPage._id)
+      .then((page) => {
+        if (isError(page)) {
+          toastr.error(translate('Error'), page.error);
+        } else {
+          dispatch(openFormModal({
+            title: translate('doc.page.update.modal.title'),
+            flow: flow,
+            schema: schema,
+            value: page,
+            onSubmit: savePage,
+            actionLabel: translate('Save')
+          }))
         }
       });
   }
 
-  function importPage() {
+  const savePage = (page?: IDocPage) => {
+    if (page) {
+      return Services.saveDocPage(team._id, page)
+        .then(() => {
+          queryClient.invalidateQueries('details')
+          toastr.success(translate('Success'), translate("doc.page.save.successfull"))
+        });
+    }
+  }
+
+  // function isSelected(page: any) {
+  //   return selected && page._id === selected._id;
+  // }
+
+  // function onUp() {
+  //   let pages = cloneDeep(api.documentation.pages);
+  //   if (selected) {
+  //     const oldIndex = pages.indexOf(selected._id);
+  //     if (oldIndex >= 0) {//@ts-ignore //fixme with monkey patch
+  //       pages = pages.move(oldIndex, oldIndex - 1);
+  //       const newValue = cloneDeep(api);
+  //       newValue.documentation.pages = pages;
+  //       props.onChange(newValue);
+  //       props.saveApi(newValue).then(() => {
+  //         updateDetails();
+  //       });
+  //     }
+  //   }
+  // }
+
+  // function onDown() {
+  //   let pages = cloneDeep(api.documentation.pages);
+  //   if (selected) {
+  //     const oldIndex = pages.indexOf(selected._id);
+  //     if (oldIndex < pages.length) { //@ts-ignore //fixme with monkey patch
+  //       pages = pages.move(oldIndex, oldIndex + 1);
+  //       const newValue = cloneDeep(api);
+  //       newValue.documentation.pages = pages;
+  //       props.onChange(newValue);
+  //       props.saveApi(newValue).then(() => {
+  //         updateDetails();
+  //       });
+  //     }
+  //   }
+  // }
+
+  const movePage = (page: IDocTitle, move: number) => {
+    if (detailsQuery.data) {
+      const index = detailsQuery.data.pages.findIndex(id => id === page._id)
+      if (index === 0 && move < 0) {
+        toastr.error(translate('Error'), translate('doc.page.move.error'))
+      } else if (index === detailsQuery.data.pages.length - 1 && move > 0) {
+        toastr.error(translate('Error'), translate('doc.page.move.error'))
+      } else {
+        const pages = moveArrayIndex(detailsQuery.data.pages, index, index + move)
+
+        const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
+        Services.saveTeamApi(
+          currentTeam._id,
+          updatedApi,
+          updatedApi.currentVersion
+        ).then(() => {
+          toastr.success(translate('Success'), translate('doc.page.move.successfull'))
+          queryClient.invalidateQueries('details')
+        })
+      }
+
+    }
+  }
+
+  const moveLevel = (page: IDocTitle, move: number) => {
+    if (detailsQuery.data) {
+      const level = parseInt(page.level)
+
+      if (level === 0 && move < 0) {
+        toastr.error(translate('Error'), translate('doc.page.move.error'))
+      } else {
+
+        Services.getDocPage(props.api._id, page._id)
+          .then((res) => {
+            if (!isError(res)) {
+              savePage({ ...res, level: res.level + move })
+            }
+          })
+      }
+
+    }
+  }
+
+  const moveUp = (page: IDocTitle) => {
+    movePage(page, -1)
+  }
+
+  const moveDown = (page: IDocTitle) => {
+    movePage(page, 1)
+  }
+
+  const moveRight = (page: IDocTitle) => {
+    moveLevel(page, 1)
+  }
+
+  const moveLeft = (page: IDocTitle) => {
+    moveLevel(page, -1)
+  }
+
+  const addNewPage = () => {
+    Services.createDocPage(team._id, {
+      _id: nanoid(32),
+      _tenant: api._tenant,
+      title: 'New page',
+      level: 0,
+      lastModificationAt: Date.now(),
+      content: '# New page\n\nA new page',
+    }).then((page) => {
+      dispatch(openFormModal({
+        title: translate('doc.page.create.modal.title'),
+        flow: flow,
+        schema: schema,
+        value: page,
+        onSubmit: saveNewPage,
+        actionLabel: translate('Save')
+      }))
+    })
+  };
+
+  const saveNewPage = (page: IDocPage) => {
+    if (detailsQuery.data) {
+      const index = detailsQuery.data.pages.length
+      const pages = [...detailsQuery.data.pages];
+      pages.splice(index, 0, page._id);
+
+      return Services.saveDocPage(team._id, page)
+        .then(() => {
+          const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
+          return Services.saveTeamApi(
+            currentTeam._id,
+            updatedApi,
+            updatedApi.currentVersion
+          )
+        })
+        .then(() => {
+          toastr.success(translate('Success'), translate('doc.page.creation.successfull'))
+          queryClient.invalidateQueries('details')
+        })
+    } else {
+      toastr.error(translate('Error'), translate('doc.page.error.unknown'))
+    }
+  }
+
+  const deletePage = (page: IDocTitle) => {
+    if (detailsQuery.data) {
+      (window
+        .confirm(translate('delete.documentation.page.confirm'))) //@ts-ignore //FIXME: remove after fix typing monkey patch of window.confirm
+        .then((ok: boolean) => {
+          if (ok) {
+            Services.deleteDocPage(team._id, page._id)
+              .then(() => {
+                const index = detailsQuery.data.pages.findIndex(id => id === page._id)
+                const pages = removeArrayIndex(detailsQuery.data.pages, index)
+
+                const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
+                return Services.saveTeamApi(
+                  currentTeam._id,
+                  updatedApi,
+                  updatedApi.currentVersion
+                )
+              })
+              .then(() => {
+                toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
+                queryClient.invalidateQueries('details')
+              })
+          }
+        });
+    } else {
+      toastr.error(translate('Error'), translate('doc.page.error.unknown'))
+    }
+
+  }
+
+  const importPage = () => {
     dispatch(openApiDocumentationSelectModal({
-      api: value,
-      teamId: (props as any).teamId,
+      api,
+      teamId: team._id,
       onClose: () => {
-        props.reloadState();
-        updateDetails();
+        toastr.success(translate('Success'), translate('doc.page.import.successfull'))
+        queryClient.invalidateQueries('details')
       },
     }));
   }
 
-  if (value === null) return null;
-
-  return (<div className="row">
-    <div className="col-12 col-sm-6 col-lg-3 p-1">
-      <table className="table table-striped table-hover table-sm table-plan-name section">
-        <thead className="thead-light">
-          <tr>
-            <th scope="col" className="d-flex justify-content-between align-items-center">
-              Plan title{' '}
-              <div className="btn-group">
-                <button onClick={onUp} type="button" className="btn btn-sm btn-outline-success">
-                  <i className="fas fa-arrow-up" />
-                </button>
-                <button onClick={onDown} type="button" className="btn btn-sm btn-outline-success">
-                  <i className="fas fa-arrow-down" />
-                </button>
-                <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
-                  <i className="fas fa-plus" />
-                </button>
-                <button onClick={importPage} type="button" className="btn btn-sm btn-outline-primary">
-                  <i className="fas fa-download" />
-                </button>
-              </div>
-            </th>
-          </tr>
-        </thead>
-        {details && (<tbody>
-          {(details as any).titles.map((page: any, index: any) => {
-            return (<tr key={page._id}>
-              <td className={isSelected(page) ? 'planSelected' : ''} onClick={() => select(page)}>
-                <div className="d-flex justify-content-between">
-                  {index + 1} - {page.title}
-                  <button type="button" className="btn btn-sm btn-outline-primary float-right">
-                    <i className="fas fa-edit" />
+  if (api === null) {
+    return null;
+  } else if (detailsQuery.isLoading) {
+    return <Spinner />
+  } else if (detailsQuery.data) {
+    return (
+      <div className="row">
+        <div className="col-12 col-sm-6 col-lg-3 p-1">
+          <div className="d-flex flex-column">
+            <div className="">
+              <div className="d-flex justify-content-between align-items-center">
+                <div className="btn-group">
+                  {/* <button onClick={onUp} type="button" className="btn btn-sm btn-outline-success">
+                    <i className="fas fa-arrow-up" />
+                  </button>
+                  <button onClick={onDown} type="button" className="btn btn-sm btn-outline-success">
+                    <i className="fas fa-arrow-down" />
+                  </button> */}
+                  <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
+                    <i className="fas fa-plus" />
+                  </button>
+                  <button onClick={importPage} type="button" className="btn btn-sm btn-outline-primary">
+                    <i className="fas fa-download" />
                   </button>
                 </div>
-              </td>
-            </tr>);
-          })}
-        </tbody>)}
-      </table>
-    </div>
-    <div className="col-12 col-sm-6 col-lg-9">
-      {!!selected && (<div>
-        <div className="d-flex justify-content-end">
-          <button onClick={deletePage} type="button" className="btn btn-sm btn-outline-danger mb-2">
-            <i className="fas fa-trash me-1" />
-            <Translation i18nkey="Delete page">Delete page</Translation>
-          </button>
+              </div>
+            </div>
+            <div className='d-flex flex-column'>
+              {detailsQuery.data.titles.map((page, idx) => {
+                return (
+                  <div
+                    style={{ marginLeft: `${5 * parseInt(page.level)}px` }}
+                    className='d-flex flex-row justify-content-between'
+                    key={page._id} >
+                    <div> {idx + 1}.{page.level === '0' ? '' : page.level} - {page.title}</div>
+                    <div>
+                      <button
+                        onClick={() => moveLeft(page)}
+                        type="button"
+                        disabled={page.level === "0"}
+                        className="btn btn-sm btn-outline-danger float-right">
+                        <i className="fas fa-arrow-left" />
+                      </button>
+                      <button
+                        onClick={() => moveRight(page)}
+                        type="button"
+                        className="btn btn-sm btn-outline-danger float-right">
+                        <i className="fas fa-arrow-right" />
+                      </button>
+                      <button
+                        onClick={() => moveUp(page)}
+                        disabled={idx === 0}
+                        type="button"
+                        className="btn btn-sm btn-outline-danger float-right">
+                        <i className="fas fa-arrow-up" />
+                      </button>
+                      <button
+                        onClick={() => moveDown(page)}
+                        disabled={idx === detailsQuery.data.titles.length -1}
+                        type="button"
+                        className="btn btn-sm btn-outline-danger float-right">
+                        <i className="fas fa-arrow-down" />
+                      </button>
+                      <button
+                        onClick={() => deletePage(page)}
+                        type="button"
+                        className="btn btn-sm btn-outline-danger">
+                        <i className="fas fa-trash" />
+                      </button>
+                      <button
+                        onClick={() => updatePage(page)}
+                        type="button"
+                        className="btn btn-sm btn-outline-primary float-right">
+                        <i className="fas fa-edit" />
+                      </button>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
-        <Form flow={flow} schema={schema} value={selected} onSubmit={d => {savePage(d)}} />
-      </div>)}
+      </div>
+    );
+  } else {
+    return <div>Error while fetching doc details</div>
+  }
+};
+
+
+const MultiButtons = (props: {
+  handleUp: () => void,
+  handleRight: () => void,
+  handleDown: () => void,
+  handleLeft: () => void,
+}) => {
+  const [display, setDisplay] = useState(false);
+
+  return (
+    <div className='multi-button-container d-flex align-items-center justify-content-center'>
+      <button
+        className='btn btn-sm btn-outline-primary multi-btn-center'
+        onClick={() => setDisplay(!display)}>
+        move
+      </button>
+      <button
+        onClick={() => props.handleUp()}
+        type="button"
+        className={classNames("btn btn-sm btn-outline-primary multi-button multi-button-up", {
+          hidden: !display
+        })}>
+        <i className="fas fa-arrow-up" />
+      </button>
+      <button
+        onClick={() => props.handleDown()}
+        type="button"
+        className={classNames("btn btn-sm btn-outline-primary multi-button multi-button-down", {
+          hidden: !display
+        })}>
+        <i className="fas fa-arrow-down" />
+      </button>
+      <button
+        onClick={() => props.handleRight()}
+        type="button"
+        className={classNames("btn btn-sm btn-outline-primary multi-button multi-button-right", {
+          hidden: !display
+        })}>
+        <i className="fas fa-arrow-right" />
+      </button>
+      <button
+        onClick={() => props.handleLeft()}
+        type="button"
+        className={classNames("multi-button  btn btn-sm btn-outline-primary multi-button-left", {
+          hidden: !display
+        })}>
+        <i className="fas fa-arrow-left" />
+      </button>
     </div>
-  </div>);
-});
+  )
+}

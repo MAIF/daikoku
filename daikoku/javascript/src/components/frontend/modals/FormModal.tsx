@@ -1,22 +1,35 @@
 import React, { useRef } from 'react';
-import { Form, FormRef} from '@maif/react-forms';
+import { Flow, Form, FormRef, Schema, Option, TBaseObject } from '@maif/react-forms';
+import { useDispatch } from 'react-redux';
 
-export const FormModal = ({
+import {closeModal} from '../../../core';
+
+export interface IFormModalProps<T> {
+  title: string,
+  value?: T,
+  schema: Schema,
+  flow?: Flow,
+  onSubmit: (x: T) => void,
+  options?: Option,
+  actionLabel: string
+}
+
+export const FormModal = <T extends TBaseObject>({
   title,
   value,
   schema,
   flow,
   onSubmit,
   options,
-  closeModal,
   actionLabel
-}: any) => {
+}: IFormModalProps<T>) => {
+  const dispatch = useDispatch();
   const ref = useRef<FormRef>();
   return (
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
+        <button type="button" className="btn-close" aria-label="Close" onClick={() => dispatch(closeModal())} />
       </div>
       <div className="modal-body">
         <Form
@@ -26,13 +39,12 @@ export const FormModal = ({
           value={value}
           onSubmit={(data) => {
             onSubmit(data)
-            closeModal()
+            dispatch(closeModal())
           }}
           options={{
-            ...options, actions: {
+            ...(options || {}),
+            actions: {
               submit: { display: false },
-              cancel: { display: false },
-              reset: { display: false },
             }
           }}
         />

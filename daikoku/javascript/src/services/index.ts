@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
 import { ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser } from '../types';
-import { IApi } from '../types/api';
+import { ErrorStr, IApi, IDocDetail, IDocPage } from '../types/api';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -60,8 +60,8 @@ export const rejectNotificationOfTeam = (notificationId: any) => customFetch(`/a
 });
 
 export const subscribedApis = (team: any) => customFetch(`/api/teams/${team}/subscribed-apis`);
-export const getDocPage = (api: any, id: any) => customFetch(`/api/apis/${api}/pages/${id}`);
-export const getDocDetails = (api: any, version: any) => customFetch(`/api/apis/${api}/${version}/doc`);
+export const getDocPage = (api: string, id: string): Promise<IDocPage | ErrorStr> => customFetch(`/api/apis/${api}/pages/${id}`);
+export const getDocDetails = (api: string, version: string): Promise<IDocDetail> => customFetch(`/api/apis/${api}/${version}/doc`);
 
 export const getTeamSubscriptions = (api: any, team: any, version: any) =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
@@ -247,18 +247,18 @@ export const updateTeamMemberPermission = (teamId: any, members: any, permission
     body: JSON.stringify({ members, permission }),
   });
 
-export const createDocPage = (teamId: string, page: any) =>
+export const createDocPage = (teamId: string, page: object): Promise<IDocPage> =>
   customFetch(`/api/teams/${teamId}/pages`, {
     method: 'POST',
     body: JSON.stringify(page),
   });
 
-export const deleteDocPage = (teamId: any, apiId: any, pageId: any) =>
+export const deleteDocPage = (teamId: string, pageId: string): Promise<any> =>
   customFetch(`/api/teams/${teamId}/pages/${pageId}`, {
     method: 'DELETE',
   });
 
-export const saveDocPage = (teamId: any, apiId: any, page: any) =>
+export const saveDocPage = (teamId: string, page: IDocPage) =>
   customFetch(`/api/teams/${teamId}/pages/${page._id}`, {
     method: 'PUT',
     body: JSON.stringify(page),

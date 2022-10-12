@@ -108,3 +108,41 @@ button {
   margin-right: 5px;
   margin-left: 5px;
 }
+
+
+.multi-button-container {
+  position: relative;
+  width: 40px;
+  height: 40px;
+
+  .multi-btn-center {
+  }
+
+  .multi-button {
+    transition: all .2s ease-in-out;
+    position: absolute;
+    
+    &.hidden {
+      z-index: -1;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: 0;
+
+    }
+  }
+
+  .multi-button-right {
+    right: -30px
+  }
+  .multi-button-left {
+    left: -30px
+  }
+  .multi-button-down {
+    bottom: -30px;
+  }
+  .multi-button-up {
+    top: -30px
+  }
+
+}

@@ -15,8 +15,7 @@ import {
   TeamApiSettings,
   TeamPlanConsumption,
   TeamApiConsumption,
-  TeamApiSubscriptions,
-  TeamApiDocumentationRef
+  TeamApiSubscriptions
 } from '.';
 import { useApiBackOffice } from '../../../contexts';
 
@@ -90,9 +89,6 @@ export const TeamApi = (props: { creation: boolean }) => {
   const [versions, setVersions] = useState<TOptions>([{ value: params.versionId as string, label: params.versionId as string }]);
 
   const methods = useApiBackOffice(api, props.creation);
-
-  const teamApiDocumentationRef = useRef<TeamApiDocumentationRef>(null);
-
   const { translate } = useContext(I18nContext);
 
 
@@ -161,10 +157,6 @@ export const TeamApi = (props: { creation: boolean }) => {
   };
 
   const save = (editedApi: IApi) => {
-    if (params.tab === 'documentation') {
-      teamApiDocumentationRef.current?.saveCurrentPage();
-    }
-
     if (props.creation) {
       return Services.createTeamApi(currentTeam._id, editedApi)
         .then((createdApi) => {
@@ -177,9 +169,7 @@ export const TeamApi = (props: { creation: boolean }) => {
               translate({ key: 'api.created.success', replacements: [createdApi.name] })
             );
             methods.setApi(createdApi);
-            navigate(
-              `/${currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`
-            );
+            navigate(`/${currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`);
           }
         });
     } else {
@@ -191,15 +181,12 @@ export const TeamApi = (props: { creation: boolean }) => {
       ).then((res) => {
         if (res.error) {
           toastr.error(translate('Error'), translate(res.error));
-          return res;
         } else {
           toastr.success(translate('Success'), translate('Api saved'));
           setApi(res);
           methods.setApi(res)
           if (res._humanReadableId !== editedApi._humanReadableId) {
-            navigate(
-              `/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
-            );
+            navigate(`/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`);
           } else {
             reloadState()
           }
@@ -287,12 +274,11 @@ export const TeamApi = (props: { creation: boolean }) => {
               <TeamApiDocumentation
                 creationInProgress={props.creation}
                 team={currentTeam}
-                value={api}
+                api={api}
                 onChange={(api: IApi) => setApi(api)}
-                save={save}
+                saveApi={save}
                 versionId={params.versionId}
-                reloadState={reloadState}
-                ref={teamApiDocumentationRef} />)}
+                reloadState={reloadState} />)}
             {tab === 'plans' && (
               <TeamApiPricings
                 value={api}

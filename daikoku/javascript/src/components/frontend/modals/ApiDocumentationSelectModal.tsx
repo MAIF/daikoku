@@ -1,28 +1,40 @@
 import Select from 'react-select';
 import React, { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
+import { closeModal, I18nContext } from '../../../core';
+import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import { IApi } from '../../../types/api';
+
+export interface IApiDocumentationSelectModalProps {
+  teamId: string
+  api: IApi,
+  onClose: () => void
+}
+
+type TPage = {label: string, value: Array<{apiId: string, pageId: string, version: string}>}
 
 export const ApiDocumentationSelectModal = ({
-  closeModal,
   teamId,
   api,
   onClose
-}: any) => {
-  const [apis, setApis] = useState<Array<any>>([]);
-  const [pages, setPages] = useState<Array<any>>([]);
+}: IApiDocumentationSelectModalProps) => {
+  const [apis, setApis] = useState<Array<{label: string, options: TPage}>>([]);
+  const [pages, setPages] = useState<Array<TPage>>([]);
 
   const { translate } = useContext(I18nContext);
 
+  const dispatch = useDispatch();
+
   useEffect(() => {
-    Services.getAllApiDocumentation(teamId, api._humanReadableId, api.currentVersion).then(
-      (apis) => {
+    Services.getAllApiDocumentation(teamId, api._humanReadableId, api.currentVersion)
+      .then((apis) => {
         setApis(
           apis.map(({
             apiId,
             currentVersion,
             pages
-          }: any) => ({
+          }) => ({
             label: `From version : ${currentVersion}`,
             options: pages.map((page: any) => ({
               label: page.title,
@@ -36,20 +48,20 @@ export const ApiDocumentationSelectModal = ({
           }))
         );
       }
-    );
+      );
   }, []);
 
-  function importPages() {
-    Services.importApiPages(teamId, api._id, pages.map((p) => (p as any).value), api.currentVersion)
+  const importPages = () => {
+    Services.importApiPages(teamId, api._id, pages.map((p) => p.value), api.currentVersion)
       .then(() => onClose())
-      .then(() => closeModal());
+      .then(() => dispatch(closeModal()));
   }
 
   return (
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{translate('api_select_modal.title')}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
+        <button type="button" className="btn-close" aria-label="Close" onClick={() => dispatch(closeModal())} />
       </div>
       <div className="modal-body">
         <Select
@@ -62,11 +74,11 @@ export const ApiDocumentationSelectModal = ({
         />
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={closeModal}>
-          {translate('Close')}
+        <button type="button" className="btn btn-outline-danger" onClick={() => dispatch(closeModal())}>
+          {translate('Cancel')}
         </button>
         <button type="button" className="btn btn-outline-success" onClick={importPages}>
-          {translate('Choose')}
+          {translate('Select')}
         </button>
       </div>
     </div>

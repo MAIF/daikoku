@@ -18,7 +18,6 @@ export const MaybeHomePage = ({
   useEffect(() => {
     const params = new URLSearchParams(search);
     const created = params.get("userCreated")
-    console.debug({created})
     if (params.get("userCreated") === "true") {
       toastr.success(translate('Success'), translate('user.validated.success'))
     }

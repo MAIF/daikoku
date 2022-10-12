@@ -32,11 +32,11 @@ export interface IApi {
 }
 
 export interface IApiWithAuthorization extends IApi {
-    authorizations:  Array<{
+    authorizations: Array<{
         team: string
         authorized: boolean
         pending: boolean
-      }>
+    }>
 }
 
 export interface ITesting {
@@ -107,16 +107,16 @@ export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
 export interface IUsagePlanQuotasWithLimits extends IUsagePlanFreeWithQuotas {
     costPerMonth: number
     trialPeriod: IBillingDuration
- }
+}
 export interface IUsagePlanQuotasWitoutLimit extends IUsagePlanQuotasWithLimits {
     costPerAdditionalRequest: number
- }
+}
 export interface IUsagePlanPayPerUse extends IUsagePlan {
     costPerMonth: number
     costPerRequest: number
     trialPeriod: IBillingDuration
-    
-    
+
+
     currency: ICurrency
     billingDuration: IBillingDuration
     visibility: 'Public' | 'Private'
@@ -125,7 +125,7 @@ export interface IUsagePlanPayPerUse extends IUsagePlan {
     subscriptionProcess: 'Automatic' | 'manual'
     integrationProcess: 'Automatic' | 'ApiKey'
     rotation: boolean
- }
+}
 
 interface IAuthorizedEntities {
     groups: Array<string>
@@ -148,19 +148,51 @@ interface IOtoroshiTarget {
         clientIdOnly: boolean,
         constrainedServicesOnly: boolean,
         tags: Array<string>,
-        metadata: {[key: string]: string},
-        customMetadata: Array<{key: string, possibleValues: Array<string>}>,
+        metadata: { [key: string]: string },
+        customMetadata: Array<{ key: string, possibleValues: Array<string> }>,
         restrictions: {
-          enabled: boolean,
-          allowLast: boolean,
-          allowed: Array<IPath>,
-          forbidden: Array<IPath>,
-          notFound: Array<IPath>,
+            enabled: boolean,
+            allowLast: boolean,
+            allowed: Array<IPath>,
+            forbidden: Array<IPath>,
+            notFound: Array<IPath>,
         },
-      }
+    }
 }
 
 interface IPath {
     method: 'GET' | 'POST' | 'DELETE' | 'PUT' | 'OPTIONS' | 'HEAD' | 'PATCH'
     path: string
 }
+export interface IDocTitle {
+    _id: string
+    title: string
+    level: string
+}
+export interface IDocDetail {
+    pages: Array<string>
+    titles: Array<IDocTitle>
+}
+
+export interface IDocPage {
+    _id: string
+    _humanReadableId: string
+    _tenant: string
+    _deleted: boolean
+    title: string
+    level: number
+    lastModificationAt: string
+    content: string
+    contentType: string
+    remoteContentEnabled: boolean
+    remoteContentUrl: string | null
+    remoteContentHeaders: object
+}
+
+export type ErrorStr = {
+    error: string
+  }
+
+export function isError(obj: any): obj is ErrorStr {
+    return (<ErrorStr>obj).error !== undefined;
+ }

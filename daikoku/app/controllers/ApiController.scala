@@ -428,7 +428,6 @@ class ApiController(DaikokuAction: DaikokuAction,
               "_id" -> true,
               "_humanReadableId" -> true,
               "title" -> true,
-              // "index" -> true,
               "level" -> true,
               "lastModificationAt" -> true
             )

@@ -1178,5 +1178,13 @@
   "Mail": "Courriel",
   "alerting.help": "Liste des courriels qui recevront les alertes Daikoku",
   "poumon": "poumon",
-  "user.validated.success": "Votre compte a été correctement validé. Vous pouvez maintenant vous connecter."
+  "user.validated.success": "Votre compte a été correctement validé. Vous pouvez maintenant vous connecter.",
+  "doc.page.update.modal.title": "Modification d'une page de documentation",
+  "doc.page.create.modal.title": "Création d'une page de documentation",
+  "doc.page.save.successfull": "La page a été sauvegardée avec succès",
+  "doc.page.import.successfull": "La page a été iportée avec succès",
+  "doc.page.move.successfull": "La page a été déplacée avec succès",
+  "doc.page.deletion.successfull": "La page a été supprimée avec succès",
+  "doc.page.move.error": "Cette page ne peut être déplacée",
+  "doc.page.error.unknown": "Erreur inconnue"
 }

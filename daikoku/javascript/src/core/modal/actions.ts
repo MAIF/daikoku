@@ -1,4 +1,4 @@
-import { TeamSelectorModalProps } from '../../components';
+import { IApiDocumentationSelectModalProps, IFormModalProps, TeamSelectorModalProps } from '../../components';
 import { CLOSE_MODAL, OPEN_MODAL } from './';
 
 export const openCreationTeamModal = (modalProps: any) => (dispatch: any) => {
@@ -86,13 +86,13 @@ export const openApiSelectModal = (modalProps: any) => ({
   modalType: 'apiSelectModal',
 });
 
-export const openApiDocumentationSelectModal = (modalProps: any) => ({
+export const openApiDocumentationSelectModal = (modalProps: IApiDocumentationSelectModalProps) => ({
   type: OPEN_MODAL,
   modalProps,
   modalType: 'apiDocumentationSelectModal',
 });
 
-export const openFormModal = (modalProps: any) => ({
+export const openFormModal = <T>(modalProps: IFormModalProps<T>) => ({
   type: OPEN_MODAL,
   modalProps,
   modalType: 'formModal'
