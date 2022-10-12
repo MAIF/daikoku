@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import findIndex from 'lodash/findIndex';
 import hljs from 'highlight.js';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useMatch, useParams } from 'react-router-dom';
 import asciidoctor from 'asciidoctor';
 
 import * as Services from '../../../services';
@@ -10,7 +10,7 @@ import { converter } from '../../../services/showdown';
 import { I18nContext } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
-import { isError } from '../../../types';
+import { IDocDetail, IDocPage, isError } from '../../../types';
 
 const asciidoctorConverter = asciidoctor();
 
@@ -41,73 +41,55 @@ export function ApiDocumentation(props: any) {
   const { translate, Translation } = useContext(I18nContext);
 
   const params = useParams();
+  const match = useMatch('/:teamId/:apiId/:version/documentation/:pageId')
 
-  const [state, setState] = useState<any>({
-    details: null,
-    content: translate('Loading page ...'),
-  });
+  const [details, setDetails] = useState<IDocDetail>();
+  const [state, setState] = useState<IDocPage>();
 
   useEffect(() => {
-    if (state.content)
+    if (state?.content)
       (window as any).$('pre code').each((i: any, block: any) => {
         hljs.highlightElement(block);
       });
-  }, [state.content]);
+  }, [state?.content]);
 
   useEffect(() => {
     fetchPage();
-  }, [props.api, params.pageId]);
+  }, [props.api, match?.params.pageId]);
 
   const fetchPage = () => {
-    Services.getDocDetails(props.api._humanReadableId, props.api.currentVersion).then((details) => {
-      const pageId = params.pageId || details.pages[0];
-      if (pageId) {
-        Services.getDocPage(props.api._id, pageId)
-          .then((page) => {
-            if (isError(page)) {
+    Services.getDocDetails(props.api._humanReadableId, props.api.currentVersion)
+      .then((d) => {
+        const pageId = match?.params.pageId;
+        if (pageId) {
+          Services.getDocPage(props.api._id, pageId)
+            .then((page) => {
+              if (isError(page)) {
 
-            } else if (page.remoteContentEnabled) {
-              setState({
-                ...state,
-                details,
-                content: null,
-                contentType: page.contentType,
-                remoteContent: {
-                  url: page.remoteContentUrl,
-                },
-              });
-            } else
-              setState({
-                ...state,
-                details,
-                content: page.content,
-                contentType: page.contentType,
-                remoteContent: null,
-              });
-          });
-      } else {
-        setState({ ...state, details });
-      }
-    });
+              } else {
+                setDetails(d)
+                setState(page);
+              }
+            });
+        }
+      });
   };
 
   const api = props.api;
-
-  if (!api || !state.details) {
+  if (!api || !details) {
     return null;
   }
 
-  const details = state.details;
   const apiId = params.apiId;
-  const pageId = params.pageId;
+  const pageId = match?.params.pageId;
   const versionId = params.versionId;
-  const idx = findIndex((details as any).pages, (p) => p === pageId);
+  const idx = findIndex(details.pages, (p) => p === pageId);
 
-  let prevId = null;
-  let nextId = null;
+  let prevId;
+  let nextId;
 
-  const next = (details as any).pages[idx + (pageId ? 1 : 2)];
-  const prev = (details as any).pages[idx - 1];
+  const next = details.pages[idx + (pageId ? 1 : 2)];
+  const prev = details.pages[idx - 1];
   if (next) nextId = next;
   if (prev) prevId = prev;
 
@@ -124,8 +106,8 @@ export function ApiDocumentation(props: any) {
           <i className="fas fa-chevron-right ms-1" />
         </Link>)}
       </div>
-      {!(state as any).remoteContent && (<AwesomeContentViewer contentType={(state as any).contentType} content={state.content} />)}
-      {(state as any).remoteContent && (<AwesomeContentViewer contentType={(state as any).contentType} remoteContent={(state as any).remoteContent} />)}
+      {!state?.remoteContentEnabled && (<AwesomeContentViewer contentType={state?.contentType} content={state?.content} />)}
+      {state?.remoteContentEnabled && (<AwesomeContentViewer contentType={state.contentType} remoteContent={{url: state?.remoteContentUrl}} />)}
       <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
         {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
           <i className="fas fa-chevron-left me-1" />

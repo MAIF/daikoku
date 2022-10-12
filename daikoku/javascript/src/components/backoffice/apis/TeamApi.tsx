@@ -237,7 +237,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                 view: {
                   component: (
                     <Link
-                      to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/infos`}
+                      to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
                       className="btn btn-sm btn-access-negative mb-2"
                     >
                       {translate('View this Api')}
