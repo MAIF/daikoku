@@ -4,7 +4,7 @@ import md5 from 'js-md5';
 import queryString from 'query-string';
 import { Form, type, format, constraints } from '@maif/react-forms';
 import { toastr } from 'react-redux-toastr';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 import * as Services from '../services';
@@ -45,6 +45,8 @@ const AvatarInput = ({
 
 export const SignupComponent = () => {
   const { translate, Translation } = useContext(I18nContext);
+
+  const navigate = useNavigate();
 
   const defaultAvatar = `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`;
   const [user, setUser] = useState<any>(undefined);
@@ -161,17 +163,16 @@ export const SignupComponent = () => {
         flow={flow}
         onSubmit={createAccount}
         value={user}
-        footer={({ reset, valid }) => {
-          return (
-            <div className="d-flex justify-content-end">
-              <button className="btn btn-outline-danger m-3" onClick={reset}>
-                <Translation i18nkey="Cancel">Cancel</Translation>
-              </button>
-              <button className="btn btn-outline-success m-3" onClick={valid}>
-                <Translation i18nkey="Create account">Create account</Translation>
-              </button>
-            </div>
-          );
+        options={{
+          actions: {
+            cancel: {
+              label: translate('Cancel'),
+              action: () => navigate('/')
+            },
+            submit: {
+              label: translate('Create account')
+            }
+          }
         }}
       />
     </div>
