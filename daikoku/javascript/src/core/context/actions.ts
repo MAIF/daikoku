@@ -26,8 +26,8 @@ export const login =
       });
     };
 
-export const logout = () => (dispatch: any) => {
-  return dispatch({
+export const logout = () => {
+  return ({
     type: LOGOUT,
   });
 };

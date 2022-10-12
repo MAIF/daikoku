@@ -6,7 +6,7 @@ import { Form, type, format, constraints } from '@maif/react-forms';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import { I18nContext, updateUser } from '../../../core';
+import { I18nContext, logout, updateUser } from '../../../core';
 import { useUserBackOffice } from '../../../contexts';
 
 const TwoFactorAuthentication = ({
