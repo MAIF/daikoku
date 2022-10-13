@@ -1,34 +1,25 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.login.LocalLoginConfig
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsArray, JsError, JsNull, JsSuccess, Json}
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
 import java.time.Instant
 import java.util.Base64
+import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.duration.FiniteDuration
@@ -199,16 +190,22 @@ class UsersController(DaikokuAction: DaikokuAction,
   def deleteSelfUser() = DaikokuAction.async { ctx =>
     PublicUserAccess(
       AuditTrailEvent("@{user.name} has deleted his own profile)"))(ctx) {
-      env.dataStore.userRepo.save(ctx.user.copy(deleted = true)).flatMap { _ =>
-        env.dataStore.userSessionRepo
-          .delete(
-            Json.obj(
-              "userId" -> ctx.user.id.value
-            ))
-          .map { _ =>
-            Ok(ctx.user.asJson)
-          }
-      }
+      env.dataStore.userRepo.save(ctx.user.copy(deleted = true))
+        .flatMap { _ =>
+          env.dataStore.userSessionRepo
+            .delete(
+              Json.obj(
+                "userId" -> ctx.user.id.value
+              ))
+            .flatMap(_ => env.dataStore.teamRepo.forTenant(ctx.tenant)
+              .deleteLogically(Json.obj(
+                "_deleted" -> false,
+                "type" -> TeamType.Personal.name,
+                "users.userId" -> ctx.user.id.asJson)))
+            .map { _ =>
+              Ok(ctx.user.asJson)
+            }
+        }
     }
   }
 

@@ -13,10 +13,19 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mongodb:
-        image: mongo
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: daikoku
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
         ports:
-        - 27017:27017
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - name: Checkout
@@ -71,6 +80,8 @@ jobs:
         NODE_OPTIONS: --max_old_space_size=4096
     - name: Cypress run and publish report
       uses: cypress-io/github-action@v2
+      env: 
+        CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
       with:
         browser: chrome
         headless: true   
@@ -78,5 +89,3 @@ jobs:
         wait-on: 'http://localhost:9000'
         command: yarn test:cypress
         working-directory: daikoku/javascript
-      env: 
-        CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}

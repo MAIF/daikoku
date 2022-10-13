@@ -18,15 +18,20 @@ module.exports = (env, argv) => {
       }
     },
     entry: {
-      'daikoku.login': path.resolve(__dirname, 'src/login.js'),
-      'daikoku.home': path.resolve(__dirname, 'src/home.js'),
-      daikoku: path.resolve(__dirname, 'src/index.js'),
+      'daikoku.login': path.resolve(__dirname, 'src/login.tsx'),
+      'daikoku.home': path.resolve(__dirname, 'src/home.tsx'),
+      daikoku: path.resolve(__dirname, 'src/index.tsx'),
     },
     module: {
       rules: [{
         test: /\.js$/,
         exclude: /node_modules/,
         loader: 'babel-loader'
+      },
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        loader: 'ts-loader'
       },
       {
         test: /\.css$/,
@@ -136,6 +141,7 @@ module.exports = (env, argv) => {
       })
     ],
     resolve: {
+      extensions: ['.js', '.jsx', '.ts', '.tsx'],
       alias: {
         crypto: 'crypto-browserify',
         path: 'path-browserify',

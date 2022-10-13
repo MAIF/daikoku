@@ -111,7 +111,8 @@ class ApiControllerSpec()
 
       //no api created ==> resp = []
       result.forall(tuple =>
-        !apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
+        !apis.exists(api => api.name == tuple._1 && tuple._2)
+      ) mustBe true
     }
 
     "initialize tenant apis" in {
@@ -143,14 +144,16 @@ class ApiControllerSpec()
         .map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
 
       result.forall(tuple =>
-        apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
+        apis.exists(api => api.name == tuple._1 && tuple._2)
+      ) mustBe true
     }
 
     "not initialize subscriptions for a tenant for which he's not admin" in {
       setupEnvBlocking(
         tenants = Seq(tenant, tenant2),
         users = Seq(tenantAdmin),
-        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer, tenant2AdminTeam),
+        teams =
+          Seq(defaultAdminTeam, teamOwner, teamConsumer, tenant2AdminTeam),
         apis = Seq.empty
       )
 
@@ -292,13 +295,13 @@ class ApiControllerSpec()
       resp.status mustBe 201
       val result = resp.json.as[JsArray].value.map(_.as[String])
 
-      result.forall(
-        res =>
-          apikeys.exists(
-            apikey =>
-              (apikey \ "apikey")
-                .as(json.OtoroshiApiKeyFormat)
-                .clientName == res)) mustBe true
+      result.forall(res =>
+        apikeys.exists(apikey =>
+          (apikey \ "apikey")
+            .as(json.OtoroshiApiKeyFormat)
+            .clientName == res
+        )
+      ) mustBe true
 
       val sessionTest = loginWithBlocking(userAdmin, tenant)
       val respTestApis = httpJsonCallBlocking(
@@ -322,7 +325,9 @@ class ApiControllerSpec()
       resultTestSubscriptions.get.length mustBe 5
       Seq("1", "2", "3", "4", "5")
         .map(UsagePlanId)
-        .forall(id => resultTestSubscriptions.get.exists(sub => sub.plan == id)) mustBe true
+        .forall(id =>
+          resultTestSubscriptions.get.exists(sub => sub.plan == id)
+        ) mustBe true
 
       val respTestMySubscriptions = httpJsonCallBlocking(
         s"/api/me/subscriptions/${defaultApi.humanReadableId}/${defaultApi.currentVersion.value}"
@@ -642,9 +647,8 @@ class ApiControllerSpec()
 
       val respGet =
         httpJsonCallBlocking(path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
-          tenant,
-          session)
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
+        )(tenant, session)
 
       respGet.status mustBe 200
       val resultAsApi =
@@ -918,7 +922,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     )
                   )
                 ),
@@ -927,7 +932,8 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            ))
+            )
+          )
         ),
         subscriptions = Seq(sub)
       )
@@ -987,7 +993,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     )
                   )
                 ),
@@ -996,7 +1003,8 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            ))
+            )
+          )
         ),
         subscriptions = Seq(sub)
       )
@@ -1120,7 +1128,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     )
                   )
                 ),
@@ -1129,7 +1138,8 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            ))
+            )
+          )
         ),
         subscriptions = Seq(sub)
       )
@@ -1230,7 +1240,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     ),
                     ApikeyCustomization(
                       customMetadata = Seq(
@@ -1244,7 +1255,8 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            ))
+            )
+          )
         ),
         notifications = Seq(
           untreatedNotification.copy(
@@ -1515,9 +1527,8 @@ class ApiControllerSpec()
 
       val respGet =
         httpJsonCallBlocking(path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
-          tenant,
-          session)
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
+        )(tenant, session)
 
       respGet.status mustBe 200
       val resultAsApi =
@@ -1639,9 +1650,8 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userApiEditor, tenant)
       var resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
-        tenant,
-        session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
+      )(tenant, session)
 
       resp.status mustBe Status.OK
       ApiFormat.reads(resp.json).get.possibleUsagePlans.size mustBe 0
@@ -1660,9 +1670,8 @@ class ApiControllerSpec()
       resp.status mustBe Status.OK
 
       resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
-        tenant,
-        session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
+      )(tenant, session)
       resp.status mustBe Status.OK
 
       ApiFormat.reads(resp.json).get.possibleUsagePlans.size mustBe 1
@@ -1701,9 +1710,8 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userApiEditor, tenant)
       var resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
-        tenant,
-        session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
+      )(tenant, session)
 
       resp.status mustBe Status.OK
       ApiFormat.reads(resp.json).get.documentation.pages.size mustBe 0
@@ -1735,9 +1743,11 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(
           teamOwner.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))
+          ),
           teamConsumer.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator)))
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))
+          )
         ),
         apis = Seq(defaultApi)
       )
@@ -1756,7 +1766,8 @@ class ApiControllerSpec()
       resp.status mustBe 200
       (resp.json \ "count").as[Long] mustBe 1
       val eventualNotifications = json.SeqNotificationFormat.reads(
-        (resp.json \ "notifications").as[JsArray])
+        (resp.json \ "notifications").as[JsArray]
+      )
       eventualNotifications.isSuccess mustBe true
       val notification: Notification = eventualNotifications.get.head
 
@@ -1770,10 +1781,9 @@ class ApiControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
-          tenant,
-          session)
-      respVerif.status mustBe 200
+          path = s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
+        )(tenant, session)
+      respVerif.status mustBe 200 //FIXME 404
       val eventualApi = json.ApiFormat.reads(respVerif.json)
       eventualApi.isSuccess mustBe true
       eventualApi.get.team mustBe teamConsumerId
@@ -1781,16 +1791,20 @@ class ApiControllerSpec()
 
     "transfer API ownership to another team (with all versions)" in {
       val defaultApiV2 =
-        defaultApi.copy(id = ApiId(BSONObjectID.generate().stringify),
-                        currentVersion = Version("2.0.0"))
+        defaultApi.copy(
+          id = ApiId(BSONObjectID.generate().stringify),
+          currentVersion = Version("2.0.0")
+        )
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(
           teamOwner.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))
+          ),
           teamConsumer.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator)))
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))
+          )
         ),
         apis = Seq(defaultApi, defaultApiV2)
       )
@@ -1809,7 +1823,8 @@ class ApiControllerSpec()
       resp.status mustBe 200
       (resp.json \ "count").as[Long] mustBe 1
       val eventualNotifications = json.SeqNotificationFormat.reads(
-        (resp.json \ "notifications").as[JsArray])
+        (resp.json \ "notifications").as[JsArray]
+      )
       eventualNotifications.isSuccess mustBe true
       val notification: Notification = eventualNotifications.get.head
 
@@ -1823,18 +1838,16 @@ class ApiControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
-          tenant,
-          session)
-      respVerif.status mustBe 200
+          s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
+        )(tenant, session)
+      respVerif.status mustBe 200 //FIXME 404
       val eventualApi = json.ApiFormat.reads(respVerif.json)
       eventualApi.isSuccess mustBe true
       eventualApi.get.team mustBe teamConsumerId
       val respVerif2 =
         httpJsonCallBlocking(
-          s"/api/teams/${teamConsumerId.value}/apis/${defaultApiV2.id.value}/${defaultApiV2.currentVersion.value}")(
-          tenant,
-          session)
+          s"/api/teams/${teamConsumerId.value}/apis/${defaultApiV2.id.value}/${defaultApiV2.currentVersion.value}"
+        )(tenant, session)
       respVerif2.status mustBe 200
       val eventualApi2 = json.ApiFormat.reads(respVerif.json)
       eventualApi2.isSuccess mustBe true
@@ -2282,7 +2295,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     )
                   )
                 ),
@@ -2291,7 +2305,8 @@ class ApiControllerSpec()
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
-            ))
+            )
+          )
         )
       )
 
@@ -2704,7 +2719,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     )
                   )
                 ),
@@ -2714,7 +2730,8 @@ class ApiControllerSpec()
                 subscriptionProcess = SubscriptionProcess.Automatic,
                 integrationProcess = IntegrationProcess.ApiKey
               )
-            ))
+            )
+          )
         )
       )
 
@@ -2764,7 +2781,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     )
                   )
                 ),
@@ -2774,7 +2792,8 @@ class ApiControllerSpec()
                 subscriptionProcess = SubscriptionProcess.Automatic,
                 integrationProcess = IntegrationProcess.ApiKey
               )
-            ))
+            )
+          )
         )
       )
 
@@ -2910,7 +2929,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     )
                   )
                 ),
@@ -2921,16 +2941,16 @@ class ApiControllerSpec()
                 subscriptionProcess = SubscriptionProcess.Automatic,
                 integrationProcess = IntegrationProcess.ApiKey
               )
-            ))
+            )
+          )
         ),
         subscriptions = Seq(payperUseSub)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
       val respGetSubsStart = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
-        tenant,
-        session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+      )(tenant, session)
       respGetSubsStart.status mustBe 200
       val resultStart =
         fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
@@ -2948,9 +2968,8 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respGetSubs = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
-        tenant,
-        session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+      )(tenant, session)
       respGetSubs.status mustBe 200
       val result = fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
         .reads(respGetSubs.json)
@@ -2998,7 +3017,8 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345")))
+                        Set(OtoroshiServiceGroupId("12345"))
+                      )
                     )
                   )
                 ),
@@ -3009,16 +3029,16 @@ class ApiControllerSpec()
                 subscriptionProcess = SubscriptionProcess.Automatic,
                 integrationProcess = IntegrationProcess.ApiKey
               )
-            ))
+            )
+          )
         ),
         subscriptions = Seq(payperUseSub)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
       val respGetSubsStart = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
-        tenant,
-        session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+      )(tenant, session)
       respGetSubsStart.status mustBe 200
       val resultStart =
         fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
@@ -3033,9 +3053,8 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respGetSubs = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
-        tenant,
-        session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+      )(tenant, session)
       respGetSubs.status mustBe 404
 
       val respGetTeam = httpJsonCallBlocking(
@@ -4487,7 +4506,9 @@ class ApiControllerSpec()
       logger.warn(Json.prettyPrint(resp.json))
 
       (resp.json.as[JsArray].head \ "error")
-        .as[String] mustBe "The subscribed plan has another otoroshi of the parent plan"
+        .as[
+          String
+        ] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
   }
 }

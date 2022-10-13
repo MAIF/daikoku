@@ -4,23 +4,19 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.ctrls._
+import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.getSchema
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
-import fr.maif.otoroshi.daikoku.utils.{
-  ApiService,
-  Errors,
-  OtoroshiClient,
-  Translator
-}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, OtoroshiClient, Translator}
+import io.vertx.core.Vertx
+import io.vertx.core.buffer.Buffer
+import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
+import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
+import io.vertx.sqlclient.PoolOptions
 import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, OtoroshiVerifierJob}
 import play.api.ApplicationLoader.Context
 import play.api._
@@ -34,6 +30,7 @@ import router.Routes
 import java.security.SecureRandom
 import java.util.regex.Pattern
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsJava}
 
 class DaikokuLoader extends ApplicationLoader {
   def load(context: Context): Application = {
@@ -132,6 +129,89 @@ package object modules {
       wire[Routes]
     }
 
+    private lazy val poolOptions: PoolOptions = new PoolOptions()
+      .setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
+
+    private lazy val options: PgConnectOptions = {
+      val options = new PgConnectOptions()
+        .setPort(configuration.get[Int]("daikoku.postgres.port"))
+        .setHost(configuration.get[String]("daikoku.postgres.host"))
+        .setDatabase(configuration.get[String]("daikoku.postgres.database"))
+        .setUser(configuration.get[String]("daikoku.postgres.username"))
+        .setPassword(configuration.get[String]("daikoku.postgres.password"))
+        .setProperties(Map(
+          "search_path" -> configuration.get[String]("daikoku.postgres.schema")
+        ).asJava)
+
+      val ssl = configuration
+        .getOptional[Configuration]("daikoku.postgres.ssl")
+        .getOrElse(Configuration.empty)
+      val sslEnabled = ssl.getOptional[Boolean]("enabled").getOrElse(false)
+
+      if (sslEnabled) {
+        val pemTrustOptions = new PemTrustOptions()
+        val pemKeyCertOptions = new PemKeyCertOptions()
+
+        options.setSslMode(
+          SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca")))
+        ssl
+          .getOptional[Int]("ssl-handshake-timeout")
+          .map(options.setSslHandshakeTimeout(_))
+
+        ssl.getOptional[Seq[String]]("trusted-certs-path").map { pathes =>
+          pathes.map(p => pemTrustOptions.addCertPath(p))
+          options.setPemTrustOptions(pemTrustOptions)
+        }
+        ssl.getOptional[String]("trusted-cert-path").map { path =>
+          pemTrustOptions.addCertPath(path)
+          options.setPemTrustOptions(pemTrustOptions)
+        }
+        ssl.getOptional[Seq[String]]("trusted-certs").map { certs =>
+          certs.map(p => pemTrustOptions.addCertValue(Buffer.buffer(p)))
+          options.setPemTrustOptions(pemTrustOptions)
+        }
+        ssl.getOptional[String]("trusted-cert").map { path =>
+          pemTrustOptions.addCertValue(Buffer.buffer(path))
+          options.setPemTrustOptions(pemTrustOptions)
+        }
+        ssl.getOptional[Seq[String]]("client-certs-path").map { paths =>
+          paths.map(p => pemKeyCertOptions.addCertPath(p))
+          options.setPemKeyCertOptions(pemKeyCertOptions)
+        }
+        ssl.getOptional[Seq[String]]("client-certs").map { certs =>
+          certs.map(p => pemKeyCertOptions.addCertValue(Buffer.buffer(p)))
+          options.setPemKeyCertOptions(pemKeyCertOptions)
+        }
+        ssl.getOptional[String]("client-cert-path").map { path =>
+          pemKeyCertOptions.addCertPath(path)
+          options.setPemKeyCertOptions(pemKeyCertOptions)
+        }
+        ssl.getOptional[String]("client-cert").map { path =>
+          pemKeyCertOptions.addCertValue(Buffer.buffer(path))
+          options.setPemKeyCertOptions(pemKeyCertOptions)
+        }
+        ssl.getOptional[Seq[String]]("client-keys-path").map { pathes =>
+          pathes.map(p => pemKeyCertOptions.addKeyPath(p))
+          options.setPemKeyCertOptions(pemKeyCertOptions)
+        }
+        ssl.getOptional[Seq[String]]("client-keys").map { certs =>
+          certs.map(p => pemKeyCertOptions.addKeyValue(Buffer.buffer(p)))
+          options.setPemKeyCertOptions(pemKeyCertOptions)
+        }
+        ssl.getOptional[String]("client-key-path").map { path =>
+          pemKeyCertOptions.addKeyPath(path)
+          options.setPemKeyCertOptions(pemKeyCertOptions)
+        }
+        ssl.getOptional[String]("client-key").map { path =>
+          pemKeyCertOptions.addKeyValue(Buffer.buffer(path))
+          options.setPemKeyCertOptions(pemKeyCertOptions)
+        }
+        ssl.getOptional[Boolean]("trust-all").map(options.setTrustAll)
+      }
+      options
+    }
+    lazy val pgPool = PgPool.pool(Vertx.vertx, options, poolOptions)
+
 //    statsJob.start()
     verifier.start()
     auditTrailPurgeJob.start()
@@ -143,6 +223,7 @@ package object modules {
       statsJob.stop()
       auditTrailPurgeJob.stop()
       env.onShutdown()
+      pgPool.close()
       FastFuture.successful(())
     }
   }

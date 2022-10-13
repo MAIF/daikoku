@@ -1,4 +1,4 @@
-module.exports = (api) => {
+module.exports = (api: any) => {
   api.cache.using(() => process.env.NODE_ENV);
   return {
     presets: [
