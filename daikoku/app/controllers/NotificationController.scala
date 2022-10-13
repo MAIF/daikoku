@@ -756,8 +756,7 @@ class NotificationController(
         env.dataStore.apiRepo
           .forTenant(tenant)
           .updateManyByQuery(
-            Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson)))),
+            Json.obj("_id" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson)))),
             Json.obj("$set" -> Json.obj("team" -> newTeam.id.asJson))))
     } yield ()
 

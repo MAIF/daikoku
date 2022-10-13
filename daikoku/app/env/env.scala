@@ -8,17 +8,13 @@ import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
-import fr.maif.otoroshi.daikoku.domain.{
-  DatastoreId,
-  Evolution,
-  TeamApiKeyVisibility,
-  Tenant
-}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Evolution, TeamApiKeyVisibility, Tenant}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
+import io.vertx.pgclient.PgPool
 import org.joda.time.DateTime
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
@@ -276,7 +272,8 @@ class DaikokuEnv(ws: WSClient,
                  configuration: Configuration,
                  context: Context,
                  messagesApi: MessagesApi,
-                 interpreter: Translator)
+                 interpreter: Translator,
+                 pgPool: PgPool)
     extends Env {
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
@@ -295,7 +292,7 @@ class DaikokuEnv(ws: WSClient,
   private var _dataStore: DataStore =
     configuration.getOptional[String]("daikoku.storage") match {
       case Some("mongo")    => new MongoDataStore(context, this)
-      case Some("postgres") => new PostgresDataStore(configuration, this)
+      case Some("postgres") => new PostgresDataStore(configuration, this, pgPool)
       case Some(e) =>
         throw new RuntimeException(s"Bad storage value from conf: $e")
       case None => throw new RuntimeException("No storage found from conf")

@@ -23,7 +23,6 @@ import storage._
 import storage.drivers.postgres.Helper._
 import storage.drivers.postgres.pgimplicits.EnhancedRow
 
-import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsJava}
@@ -283,7 +282,7 @@ case class PostgresTenantCapableConsumptionRepo(
   ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
-class PostgresDataStore(configuration: Configuration, env: Env)
+class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     extends DataStore {
 
   private implicit lazy val logger: Logger = Logger("PostgresDataStore")
@@ -393,11 +392,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     options
   }
 
-  logger.info(s"used : ${options.getDatabase}")
+//  logger.info(s"used : ${options.getDatabase}")
 
   private lazy val reactivePg =
-    new ReactivePg(PgPool.pool(Vertx.vertx, options, poolOptions),
-                   configuration)(ec)
+    new ReactivePg(pgPool, configuration)(ec)
 
   def getSchema: String = configuration.get[String]("daikoku.postgres.schema")
 

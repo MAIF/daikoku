@@ -11,6 +11,7 @@ import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import fr.maif.otoroshi.daikoku.utils.admin._
+import io.vertx.pgclient.PgPool
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.streams.Accumulator
@@ -21,7 +22,8 @@ import storage.{DataStore, Repo}
 class StateController(DaikokuAction: DaikokuAction,
                       env: Env,
                       otoroshiClient: OtoroshiClient,
-                      cc: ControllerComponents)
+                      cc: ControllerComponents,
+                      pgPool: PgPool)
     extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
@@ -80,7 +82,7 @@ class StateController(DaikokuAction: DaikokuAction,
                   "message" -> "You're already on postgres"
                 )))
           case _ =>
-            val postgresStore = new PostgresDataStore(env.rawConfiguration, env)
+            val postgresStore = new PostgresDataStore(env.rawConfiguration, env, pgPool)
             (for {
               _ <- postgresStore.checkIfTenantsTableExists()
               _ <- env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
