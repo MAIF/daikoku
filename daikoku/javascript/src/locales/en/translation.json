@@ -64,8 +64,8 @@
         "p": "APIs subscriptions"
     },
     "member": {
-        "s": "member",
-        "p": "members"
+        "s": "Member",
+        "p": "Members"
     },
     "unread notifications": {
         "s": "unread notification",
@@ -1184,5 +1184,7 @@
     "doc.page.move.successfull": "Page moved successfully",
     "doc.page.deletion.successfull": "page deleted successfully",
     "doc.page.move.error": "You can't move this documentation",
-    "doc.page.error.unknown": "unknown error"
+    "doc.page.error.unknown": "unknown error",
+    "otoroshi.list.add.label": "Add an Otoroshi instance",
+    "Global stats": "Global stats"
 }

@@ -604,7 +604,7 @@ export const useTeamBackOffice = (team: any) => {
                 className: { active: currentTab === 'assets' },
               },
               members: {
-                label: translate('Members'),
+                label: translate({key: 'Member', plural: true}),
                 action: () => navigateTo('members'),
                 visible: team.type !== 'Personal',
                 className: { active: currentTab === 'members' },
@@ -617,7 +617,7 @@ export const useTeamBackOffice = (team: any) => {
             className: { active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab) },
           },
           apikeys: {
-            label: translate('API keys'),
+            label: translate({key: 'API key', plural: true}),
             action: () => navigateTo('apikeys'),
             className: { active: ['apikeys', 'consumption'].includes(currentTab) },
             childs: {

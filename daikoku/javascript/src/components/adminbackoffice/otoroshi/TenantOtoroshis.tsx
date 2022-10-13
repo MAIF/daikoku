@@ -110,12 +110,12 @@ export const TenantOtoroshis = () => {
         <button
           type="button"
           className="btn btn-sm btn-outline-success mb-1 ms-1"
-          title={translate('Create new settings')}
+          title={translate('otoroshi.list.add.label')}
           onClick={(e) => {
             createNewSettings();
           }}
         >
-          Create new setting
+          {translate('otoroshi.list.add.label')}
         </button>
         <div className="section p-2">
           <Table
