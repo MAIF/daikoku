@@ -21,29 +21,47 @@ import {
 } from '../../utils';
 
 import 'antd/lib/tooltip/style/index.css';
+import { useSelector } from 'react-redux';
+import { IState, IStateContext, ITeamSimple, IUser, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
+import { useDispatch } from 'react-redux';
 
-const TABS = {
+type Tabs = 'MEMBERS' | 'PENDING'
+const TABS: { [key: string]: Tabs } = {
   members: 'MEMBERS',
   pending: 'PENDING',
 };
 
-export const TeamMembersSimpleComponent = (props: any) => {
-  const [state, setState] = useState<any>({
+type TState = {
+  pendingUsers: Array<IUserSimple>,
+  selectedMember?: IUserSimple,
+  loading: boolean,
+  tab: Tabs,
+  members?: Array<IUserSimple>
+  search?: string
+}
+export const TeamMembersSimpleComponent = () => {
+
+  const dispatch = useDispatch();
+  const { currentTeam, tenant, connectedUser } = useSelector<IState, IStateContext>(s => s.context);
+
+  const [state, setState] = useState<TState>({
     pendingUsers: [],
-    selectedMember: null,
+    selectedMember: undefined,
     loading: true,
-    tab: TABS.members,
+    tab: TABS.members
   });
 
   const { translate, Translation } = useContext(I18nContext);
 
   useEffect(() => {
-    updateMembers(props.currentTeam);
+    updateMembers(currentTeam);
   }, []);
 
-  const updateMembers = (team: any) => {
-    Promise.all([Services.members(team._id), Services.pendingMembers(team._id)]).then(
-      ([members, res]) => {
+  const updateMembers = (team: ITeamSimple) => {
+    return Promise.all([
+      Services.members(team._id),
+      Services.pendingMembers(team._id)])
+      .then(([members, res]) => {
         setState({
           ...state,
           members,
@@ -51,11 +69,11 @@ export const TeamMembersSimpleComponent = (props: any) => {
           loading: false,
         });
       }
-    );
+      );
   };
 
-  const isAdmin = (user: any) => {
-    if (!props.currentTeam) {
+  const isAdmin = (user: IUserSimple) => {
+    if (!currentTeam) {
       return false;
     }
 
@@ -63,51 +81,53 @@ export const TeamMembersSimpleComponent = (props: any) => {
       return true;
     }
 
-    return Option(props.currentTeam.users.find((u: any) => u.userId === user._id))
-      .map((user: any) => user.teamPermission)
+    return Option(currentTeam.users.find((u) => u.userId === user._id))
+      .map((user: TeamUser) => user.teamPermission)
       .fold(
         () => false,
-        (perm: any) => perm === administrator
+        (perm: TeamPermission) => perm === administrator
       );
   };
 
-  const userHavePemission = (user: any, permission: any) => {
-    return Option(props.currentTeam.users.find((u: any) => u.userId === user._id))
-      .map((user: any) => user.teamPermission)
+  const userHavePemission = (user: IUserSimple, permission: TeamPermission) => {
+    return Option(currentTeam.users.find((u) => u.userId === user._id))
+      .map((user: TeamUser) => user.teamPermission)
       .fold(
         () => false,
-        (perm: any) => perm === permission
+        (perm: TeamPermission) => perm === permission
       );
   };
 
-  const removeMember = (member: any) => {
+  const removeMember = (member: IUserSimple) => {
     if (
       isAdmin(member) &&
-      props.currentTeam.users.filter((u: any) => u.teamPermission === administrator).length === 1
+      currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
     ) {
       alert(translate('remove.member.alert'));
     } else {
       (window
         .confirm(translate('remove.member.confirm')))//@ts-ignore
-        .then((ok: any) => {
+        .then((ok: boolean) => {
           if (ok) {
-            const teamId = props.currentTeam._id;
-            Services.removeMemberFromTeam(teamId, member._id).then(({ done, team }) => {
-              done
-                ? toastr.success(translate('Success'), translate({ key: 'remove.member.success', replacements: [member.name] }))
-                : toastr.error(translate('Error'), translate('Failure'));
-              props.updateTeam(team).then(() => updateMembers(props.currentTeam));
-            });
+            const teamId = currentTeam._id;
+            Services.removeMemberFromTeam(teamId, member._id)
+              .then(({ done, team }) => {
+                done
+                  ? toastr.success(translate('Success'), translate({ key: 'remove.member.success', replacements: [member.name] }))
+                  : toastr.error(translate('Error'), translate('Failure'));
+                updateTeamPromise(team)(dispatch)
+                  .then(() => updateMembers(currentTeam));
+              });
           }
         });
     }
   };
 
-  const _addMember = (member: any) => {
-    const teamId = props.currentTeam._id;
-    Services.addMembersToTeam(teamId, [member._id])
+  const _addMember = (member: ITeamSimple) => {
+    const teamId = currentTeam._id;
+    return Services.addMembersToTeam(teamId, [member._id])
       .then(({ done }) => {
-        setState({ ...state, selectedMember: null });
+        setState({ ...state, selectedMember: undefined });
         done
           ? toastr.success(
             translate('Success'),
@@ -115,28 +135,28 @@ export const TeamMembersSimpleComponent = (props: any) => {
           )
           : toastr.error(translate('error'), translate('Failure'));
       })
-      .then(() => updateMembers(props.currentTeam));
+      .then(() => updateMembers(currentTeam));
   };
 
-  const addLdapUserToTeam = (email: any) => {
-    Services.findUserByEmail(props.currentTeam._id, email).then((optUser) => {
-      if (optUser.error) {
-        Services.createUserFromLDAP(props.currentTeam._id, email).then((createdUser) =>
-          _addMember(createdUser)
-        );
-      } else {
-        const user = optUser;
-        _addMember(user);
-      }
-    });
+  const addLdapUserToTeam = (email: string): Promise<any> => {
+    return Services.findUserByEmail(currentTeam._id, email)
+      .then((optUser) => {
+        if (optUser.error) {
+          return Services.createUserFromLDAP(currentTeam._id, email)
+            .then((createdUser) => _addMember(createdUser));
+        } else {
+          const user = optUser;
+          return _addMember(user);
+        }
+      });
   };
 
-  const togglePermission = (member: any, permission: any) => {
-    if (isAdmin(props.connectedUser)) {
-      const teamId = props.currentTeam._id;
+  const togglePermission = (member: IUserSimple, permission: TeamPermission) => {
+    if (isAdmin(connectedUser)) {
+      const teamId = currentTeam._id;
       if (
         userHavePemission(member, administrator) &&
-        props.currentTeam.users.filter((u: any) => u.teamPermission === administrator).length === 1
+        currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
       ) {
         alert(translate('remove.admin.alert'));
       } else {
@@ -149,7 +169,8 @@ export const TeamMembersSimpleComponent = (props: any) => {
                 translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] })
               )
               : toastr.error(translate('Error'), translate('Failure'));
-            props.updateTeam(team).then(() => updateMembers(props.currentTeam));
+            updateTeamPromise(team)(dispatch)
+              .then(() => updateMembers(currentTeam));
           }
         );
       }
@@ -158,29 +179,30 @@ export const TeamMembersSimpleComponent = (props: any) => {
     }
   };
 
-  const searchLdapMember = (email: any) => {
+  const searchLdapMember = (email: string): Promise<ResponseError | any> => {
     return new Promise((resolve) => {
-      Services.searchLdapMember(props.currentTeam._id, email)
+      Services.searchLdapMember(currentTeam._id, email)
         .then((hasMember) => {
-          if (hasMember.error) resolve({ error: hasMember.error });
-          else resolve({ done: true });
+          if (hasMember.error) {
+            resolve({ error: hasMember.error });
+          } else {
+            resolve({ done: true });
+          }
         })
         .catch((error) => resolve(error));
     });
   };
 
-  const invitUser = (email: any) => {
-    if (props.tenant && props.tenant.authProvider === 'LDAP') {
-      addLdapUserToTeam(email);
+  const invitUser = (email: string): Promise<any> => {
+    if (tenant && tenant.authProvider === 'LDAP') {
+      return addLdapUserToTeam(email);
     } else {
-      Services.addUncheckedMembersToTeam(props.currentTeam._id, email)
-        .then(() =>
-          updateMembers(props.currentTeam)
-        );
+      return Services.addUncheckedMembersToTeam(currentTeam._id, email)
+        .then(() => updateMembers(currentTeam) );
     }
   };
 
-  if (props.currentTeam.type === 'Personal') {
+  if (currentTeam.type === 'Personal') {
     return <Navigate to="/settings/me" />;
   }
 
@@ -189,25 +211,22 @@ export const TeamMembersSimpleComponent = (props: any) => {
   }
 
   const filteredMembers = state.search
-    ? state.members.filter(({ name, email }: any) => [name, email].some((value) => value.toLowerCase().includes(state.search)))
+    ? state.members.filter(({ name, email }: { name: string, email: string }) => [name, email].some((value) => value.toLowerCase().includes(state.search || '')))
     : state.members;
 
   const filteredPending = state.search
-    ? state.pendingUsers.filter(({ name, email }: { name: string, email: string }) => [name, email].some((value) => value.toLowerCase().includes(state.search)))
+    ? state.pendingUsers.filter(({ name, email }: { name: string, email: string }) => [name, email].some((value) => value.toLowerCase().includes(state.search || '')))
     : state.pendingUsers;
   return <>
     <div className="container-fluid" style={{ position: 'relative' }}>
       <button className="btn btn-success" type="button" onClick={() => {
-        const { history, currentTeam, tenant, openInvitationModal } = props;
-        openInvitationModal({
-          history,
+        dispatch(openInvitationTeamModal({
           team: currentTeam,
-          tenant,
           searchLdapMember: searchLdapMember,
           members: filteredMembers,
           invitUser: invitUser,
           pendingUsers: filteredPending,
-        });
+        }));
       }}>
         {translate('team_member.invit_user')}
       </button>
@@ -216,7 +235,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
           <ul className="nav nav-tabs flex-column flex-sm-row">
             <li className="nav-item">
               <span className={`nav-link cursor-pointer ${state.tab === TABS.members ? 'active' : ''}`} onClick={() => setState({ ...state, tab: TABS.members })}>
-                <Translation i18nkey="Member" isPlural={(state as any).members.length > 1}>
+                <Translation i18nkey="Member" isPlural={state.members.length > 1}>
                   Member
                 </Translation>
               </span>
@@ -293,7 +312,7 @@ export const TeamMembersSimpleComponent = (props: any) => {
       ]} />);
     }} />)}
     {state.tab === TABS.pending &&
-      (filteredPending.length > 0 ? (<PaginatedComponent items={sortBy(filteredPending, [(member) => (member as any).name.toLowerCase()])} count={15} formatter={(member) => {
+      (filteredPending.length > 0 ? (<PaginatedComponent items={sortBy(filteredPending, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
         const invitedUser = member.name === 'invited user';
         return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<span className="team-member__name">
           {invitedUser ? member.email : member.name}
@@ -304,9 +323,10 @@ export const TeamMembersSimpleComponent = (props: any) => {
                 window
                   .confirm(translate('team_member.confirm_remove_invitation'))
                   //@ts-ignore
-                  .then((ok: any) => {
+                  .then((ok: boolean) => {
                     if (ok)
-                      Services.removeInvitation(props.currentTeam._id, member._id).then(() => updateMembers(props.currentTeam));
+                      Services.removeInvitation(currentTeam._id, member._id)
+                        .then(() => updateMembers(currentTeam));
                   });
               },
               iconClass: 'fas fa-trash delete-icon',
@@ -320,28 +340,20 @@ export const TeamMembersSimpleComponent = (props: any) => {
   </>;
 };
 
-const TeamMembersComponent = (props: any) => {
-  useTeamBackOffice(props.currentTeam);
+
+export const TeamMembers = () => {
+  const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
+
+  useTeamBackOffice(currentTeam);
   const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translate({key: 'Member', plural: true})}`;
+    document.title = `${currentTeam.name} - ${translate({ key: 'Member', plural: true })}`;
   }, []);
 
   return (
-    <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
-      <TeamMembersSimpleComponent {...props} />
+    <Can I={manage} a={team} team={currentTeam} dispatchError={true}>
+      <TeamMembersSimpleComponent />
     </Can>
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-const mapDispatchToProps = {
-  updateTeam: (team: any) => updateTeamPromise(team),
-  openInvitationModal: (modalProps: any) => openInvitationTeamModal(modalProps),
-};
-
-export const TeamMembers = connect(mapStateToProps, mapDispatchToProps)(TeamMembersComponent);

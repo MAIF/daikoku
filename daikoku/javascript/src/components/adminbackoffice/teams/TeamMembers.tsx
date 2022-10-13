@@ -12,9 +12,6 @@ import { Can, manage, tenant } from '../../utils';
 export const TeamMembersForAdmin = () => {
   useTenantBackOffice();
 
-  const connectedUser = useSelector((s) => (s as any).context.connectedUser);
-  const dispatch = useDispatch();
-
   const [team, setTeam] = useState<ITeamFull>();
   const params = useParams();
 
@@ -29,12 +26,7 @@ export const TeamMembersForAdmin = () => {
 
   return (
     <Can I={manage} a={tenant} dispatchError>
-      <TeamMembersSimpleComponent
-        currentTeam={team}
-        connectedUser={connectedUser}
-        updateTeam={(team: any) => Promise.resolve(setTeam(team))}
-        openInvitationModal={(p: any) => openInvitationTeamModal(p)(dispatch)}
-      />
+      <TeamMembersSimpleComponent />
     </Can>
   );
 };

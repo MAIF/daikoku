@@ -30,3 +30,7 @@ export interface IStoreState {
   context: IStoreStateContext,
   error: IStoreStateError
 }
+
+export interface ResponseError {
+  error: string
+}

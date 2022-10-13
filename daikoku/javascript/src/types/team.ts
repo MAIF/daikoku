@@ -1,8 +1,8 @@
 import { Language } from "./types"
 
-type TeamPermission = 'Administrator' | 'ApiEditor' | 'User'
+export type TeamPermission = 'Administrator' | 'ApiEditor' | 'User'
 
-export type TeamUser = {user: string, teamPermission: TeamPermission}
+export type TeamUser = {userId: string, teamPermission: TeamPermission}
 export interface ITeamSimple {
   _id: string
   _humanReadableId: string

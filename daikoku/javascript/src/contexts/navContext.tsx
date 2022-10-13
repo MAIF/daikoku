@@ -5,7 +5,7 @@ import { useParams, useNavigate, Link, useMatch } from 'react-router-dom';
 
 import { I18nContext, openContactModal } from '../core';
 import { Can, manage, api as API } from '../components/utils';
-import { IStoreState, ITenant } from '../types';
+import { IState, IStoreState, ITeamSimple, ITenant } from '../types';
 
 
 export enum navMode {
@@ -570,16 +570,16 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
   return { addMenu, setApiGroup };
 };
 
-export const useTeamBackOffice = (team: any) => {
+export const useTeamBackOffice = (team: ITeamSimple) => {
   const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/:tab/*'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
 
-  const schema = (currentTab: any) => ({
+  const schema = (currentTab?: string) => ({
     title: team.name,
 
     blocks: {
@@ -614,12 +614,13 @@ export const useTeamBackOffice = (team: any) => {
           apis: {
             label: translate('Apis'),
             action: () => navigateTo('apis'),
-            className: { active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab) },
+            className: { 
+              active: !currentTab || ['apis', 'subscriptions', 'consumptions'].includes(currentTab) },
           },
           apikeys: {
             label: translate({key: 'API key', plural: true}),
             action: () => navigateTo('apikeys'),
-            className: { active: ['apikeys', 'consumption'].includes(currentTab) },
+            className: { active: !currentTab || ['apikeys', 'consumption'].includes(currentTab) },
             childs: {
               stats: {
                 label: translate('Global stats'),
@@ -631,7 +632,7 @@ export const useTeamBackOffice = (team: any) => {
           billing: {
             label: translate('Billing'),
             action: () => navigateTo('billing'),
-            className: { active: ['billing', 'income'].includes(currentTab) },
+            className: { active: !currentTab || ['billing', 'income'].includes(currentTab) },
             childs: {
               income: {
                 label: translate('Income'),
@@ -645,7 +646,7 @@ export const useTeamBackOffice = (team: any) => {
     }
   });
 
-  const navigateTo = (navTab: any) => {
+  const navigateTo = (navTab: string) => {
     navigate(`/${currentTeam._humanReadableId}/settings/${navTab}`);
   };
 

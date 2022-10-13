@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import { ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser } from '../types';
+import { ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser, IUserSimple } from '../types';
 import { ErrorStr, IApi, IDocDetail, IDocPage } from '../types/api';
 
 const HEADERS = {
@@ -128,7 +128,7 @@ export const cleanArchivedSubscriptions = (teamId: string) => customFetch(`/api/
 
 export const member = (teamId: string, userId: string) => customFetch(`/api/teams/${teamId}/members/${userId}`, {});
 
-export const members = (teamId: string) => customFetch(`/api/teams/${teamId}/members`);
+export const members = (teamId: string): Promise<Array<IUserSimple>> => customFetch(`/api/teams/${teamId}/members`);
 export const teamHome = (teamId: string) => customFetch(`/api/teams/${teamId}/home`);
 
 export const teamApi = (teamId: string, apiId: string, version: string) =>
