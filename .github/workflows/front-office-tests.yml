@@ -80,6 +80,7 @@ jobs:
         NODE_OPTIONS: --max_old_space_size=4096
     - name: Cypress run and publish report
       uses: cypress-io/github-action@v2
+      env: 
         CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
       with:
         browser: chrome
