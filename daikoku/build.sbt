@@ -62,7 +62,7 @@ libraryDependencies ++= Seq(
   "javax.xml.bind" % "jaxb-api" % "2.3.1",
   "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
   "com.sun.xml.bind" % "jaxb-impl" % "2.3.0.1",
-  "io.vertx" % "vertx-pg-client" % "4.0.0",
+  "io.vertx" % "vertx-pg-client" % "4.3.4",
   "com.ongres.scram" % "common" % "2.1",
   "com.ongres.scram" % "client" % "2.1",
   "io.nayuki" % "qrcodegen" % "1.6.0",
