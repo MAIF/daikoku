@@ -24,7 +24,7 @@ export const ModalRoot = () => {
     apiKeySelectModal: Modals.ApiKeySelectModal,
     apiSelectModal: Modals.ApiSelectModal,
     apiDocumentationSelectModal: Modals.ApiDocumentationSelectModal,
-    formModal: Modals.FormModal
+    formModal: Modals.FormModal,
   };
 
   const dispatch = useDispatch();

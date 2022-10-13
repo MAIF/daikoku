@@ -36,14 +36,14 @@ function AssetButton(props: any) {
 
 export const AvatarChooser = (props: any) => {
   return (
-    <div className='d-flex align-items-center'>
+    <div className="d-flex align-items-center">
       <div className="d-flex justify-content-start align-items-center mb-2">
         <div className="ms-1 avatar__container">
           <img src={props.rawValues.avatar} className="img-fluid" alt="avatar" />
         </div>
       </div>
-      <div className='flex-grow-1 ms-3'>
-        <input className='mrf-input mb-3' value={props.value} onChange={props.onChange} />
+      <div className="flex-grow-1 ms-3">
+        <input className="mrf-input mb-3" value={props.value} onChange={props.onChange} />
         <div className="col-12 d-flex justify-content-end">
           <Gravatar {...props} />
           <AssetButton {...props} />

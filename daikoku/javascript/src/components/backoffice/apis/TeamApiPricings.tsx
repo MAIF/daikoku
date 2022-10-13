@@ -441,7 +441,6 @@ export const TeamApiPricings = (props: Props) => {
 
   const dispatch = useDispatch();
 
-
   useEffect(() => {
     return () => {
       props.injectSubMenu(null);

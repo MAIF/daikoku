@@ -27,11 +27,7 @@ import {
   JoinTeam,
 } from '../components/frontend';
 
-import {
-  NotificationList,
-  MyProfile,
-  MessagesProvider,
-} from '../components/backoffice';
+import { NotificationList, MyProfile, MessagesProvider } from '../components/backoffice';
 
 import {
   TenantOtoroshi,
