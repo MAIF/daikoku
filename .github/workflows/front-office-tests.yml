@@ -83,6 +83,7 @@ jobs:
       env: 
         DAIKOKU_POSTGRES_DATABASE: daikoku
         DAIKOKU_POSTGRES_USERNAME: daikoku
+        CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
       with:
         browser: chrome
         headless: true   
@@ -90,5 +91,3 @@ jobs:
         wait-on: 'http://localhost:9000'
         command: yarn test:cypress
         working-directory: daikoku/javascript
-      env: 
-        CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
