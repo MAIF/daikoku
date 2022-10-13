@@ -11,10 +11,19 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mongodb:
-        image: mongo
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: daikoku_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
         ports:
-        - 27017:27017
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - uses: actions/checkout@v2.2.0

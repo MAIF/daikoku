@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mongodb:
+      postgres:
         image: postgres
         env:
           POSTGRES_DB: daikoku
           POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: daikoku
+          POSTGRES_USER: postgres
         ports:
           - 5432:5432
         options: >-
@@ -80,9 +80,6 @@ jobs:
         NODE_OPTIONS: --max_old_space_size=4096
     - name: Cypress run and publish report
       uses: cypress-io/github-action@v2
-      env: 
-        DAIKOKU_POSTGRES_DATABASE: daikoku
-        DAIKOKU_POSTGRES_USERNAME: daikoku
         CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
       with:
         browser: chrome
