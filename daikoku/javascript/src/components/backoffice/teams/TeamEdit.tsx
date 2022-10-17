@@ -100,7 +100,7 @@ export const teamSchema = (team: any, translate: (props: any) => string) => ({
   apiKeyVisibility: {
     type: type.string,
     format: format.buttonsSelect,
-    label: translate('apikey visibility'),
+    label: translate('apikeys visibility'),
     disabled: team.type === 'Personal' || team.type === 'Admin',
     defaultValue: 'User',
     options: [

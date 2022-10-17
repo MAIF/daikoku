@@ -1188,5 +1188,6 @@
   "doc.page.move.error": "Cette page ne peut être déplacée",
   "doc.page.error.unknown": "Erreur inconnue",
   "otoroshi.list.add.label": "Ajouter une instance Otoroshi",
-  "Global stats": "Statistiques"
+  "Global stats": "Statistiques",
+  "apikeys visibility": "Visibilité des clés d'API"
 }
