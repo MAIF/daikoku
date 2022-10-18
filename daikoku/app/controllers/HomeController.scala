@@ -684,6 +684,7 @@ class HomeController(
                       .save(
                         page.copy(draft = content,
                                   body = content,
+                                  tenant = ctx.tenant.id,
                                   history =
                                     if (d.diff.nonEmpty) Seq(d) else Seq.empty))
                   })
