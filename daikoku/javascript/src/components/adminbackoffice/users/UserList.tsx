@@ -73,31 +73,34 @@ export const UserList = () => {
           items={sortBy(filteredUsers, [(user) => user.name.toLowerCase()])}
           count={15}
           formatter={(user: IUserSimple) => {
-            return (<AvatarWithAction key={user._id} avatar={user.picture} infos={<>
-              {user.isDaikokuAdmin && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
-              <span className="team__name text-truncate">{user.name}</span>
-            </>} actions={[
-              {
-                action: () => removeUser(user),
-                iconClass: 'fas fa-trash delete-icon',
-                tooltip: translate('Remove user'),
-              },
-              {
-                redirect: () => navigate(`/settings/users/${user._humanReadableId}`),
-                iconClass: 'fas fa-pen',
-                tooltip: translate('Edit user'),
-              },
-              {
-                link: `/api/admin/users/${user._id}/_impersonate`,
-                iconClass: 'fas fa-user-ninja',
-                tooltip: translate('Impersonate this user'),
-              },
-              {
-                action: () => toggleAdmin(user),
-                iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'}`,
-                tooltip: translate('toggle admin status'),
-              },
-            ]} />);
+            return (<AvatarWithAction
+              key={user._id}
+              avatar={user.picture}
+              infos={<>
+                {user.isDaikokuAdmin && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
+                <span className="team__name text-truncate">{user.name}</span>
+              </>} actions={[
+                {
+                  action: () => removeUser(user),
+                  iconClass: 'fas fa-trash delete-icon',
+                  tooltip: translate('Remove user'),
+                },
+                {
+                  redirect: () => navigate(`/settings/users/${user._humanReadableId}`),
+                  iconClass: 'fas fa-pen',
+                  tooltip: translate('Edit user'),
+                },
+                {
+                  link: `/api/admin/users/${user._id}/_impersonate`,
+                  iconClass: 'fas fa-user-ninja',
+                  tooltip: translate('Impersonate this user'),
+                },
+                {
+                  action: () => toggleAdmin(user),
+                  iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'}`,
+                  tooltip: translate('toggle admin status'),
+                },
+              ]} />);
           }} />
       </div>
     </div>

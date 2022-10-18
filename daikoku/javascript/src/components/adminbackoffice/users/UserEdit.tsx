@@ -270,10 +270,10 @@ export const UserEdit = () => {
           schema={schema}
           value={queryUser.data}
           onSubmit={save}
-          footer={({ reset, valid }) => {
+          footer={({ valid }) => {
             return (
               <div className="d-flex justify-content-end">
-                <button className="btn btn-outline-danger" onClick={reset}>
+                <button className="btn btn-outline-danger" onClick={() => navigate('/settings/users')}>
                   <Translation i18nkey="Cancel">Cancel</Translation>
                 </button>
                 <button
