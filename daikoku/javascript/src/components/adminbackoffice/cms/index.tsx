@@ -10,6 +10,14 @@ import { Spinner } from '../..';
 import Revisions from './Revisions';
 import { useTenantBackOffice } from '../../../contexts';
 
+interface IPage {
+  id: string
+  name: string
+  path: string
+  contentType: string
+  lastPublishedDate: string
+}
+
 const getAllPages = () => ({
   query: gql`
     query CmsPages {
@@ -32,7 +40,7 @@ export const CMSOffice = () => {
   const { client } = useContext(getApolloContext());
   const { translate } = useContext(I18nContext);
 
-  const [pages, setPages] = useState<Array<any>>([]);
+  const [pages, setPages] = useState<Array<IPage>>([]);
   const [downloading, setDownloading] = useState(false);
 
   const importRef = useRef<HTMLInputElement | null>();
@@ -42,19 +50,19 @@ export const CMSOffice = () => {
   }, []);
 
   useEffect(() => {
-    if (location.state && (location as any).state.reload) {
       reload();
-    }
   }, [location]);
 
   const reload = () => {
     //FIXME handle client setted
-    client && client.query(getAllPages()).then((r) => setPages(r.data.pages));
+    client && client.query(getAllPages())
+      .then((r) => setPages(r.data.pages));
   };
 
-  const loadFiles = (e: any) => {
+  const loadFiles = (e) => {
     if (e.target.files.length === 1) {
-      Services.uploadZip(e.target.files[0]).then(reload);
+      Services.uploadZip(e.target.files[0])
+        .then(reload);
     }
   };
 
@@ -95,9 +103,10 @@ export const CMSOffice = () => {
           </div>
           <button onClick={() => { //@ts-ignore
             window.prompt('Indiquer le nom de la nouvelle page', '', false, "Création d'une nouvelle page", 'Nom de la nouvelle page') //@ts-ignore //FIXME when monkey patch & ts will be compatible
-              .then((newPageName: any) => {
+              .then((newPageName: string) => {
                 if (newPageName) {
-                  Services.createCmsPageWithName(newPageName).then((res) => navigation(`${location.pathname}/edit/${res._id}`));
+                  Services.createCmsPageWithName(newPageName)
+                    .then((res) => navigation(`${location.pathname}/edit/${res._id}`));
                 }
               });
           }} className="btn btn-sm btn-outline-success">
@@ -105,7 +114,7 @@ export const CMSOffice = () => {
           </button>
         </div>
       </div>
-      <Pages pages={pages} removePage={(id: any) => setPages(pages.filter((f) => (f as any).id !== id))} />
+      <Pages pages={pages} removePage={(id: string) => setPages(pages.filter((f) => f.id !== id))} />
     </div>);
   };
 

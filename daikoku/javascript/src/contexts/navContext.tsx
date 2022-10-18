@@ -577,9 +577,9 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
   const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const navigate = useNavigate();
-  const match = useMatch('/:teamId/settings/:tab/*'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
+  const match = useMatch('/:teamId/settings/:tab'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
 
-  const schema = (currentTab?: string) => ({
+  const schema = (currentTab: string) => ({
     title: team.name,
 
     blocks: {
@@ -615,12 +615,12 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
             label: translate('Apis'),
             action: () => navigateTo('apis'),
             className: { 
-              active: !currentTab || ['apis', 'subscriptions', 'consumptions'].includes(currentTab) },
+              active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab) },
           },
           apikeys: {
             label: translate({key: 'API key', plural: true}),
             action: () => navigateTo('apikeys'),
-            className: { active: !currentTab || ['apikeys', 'consumption'].includes(currentTab) },
+            className: { active: ['apikeys', 'consumption'].includes(currentTab) },
             childs: {
               stats: {
                 label: translate('Global stats'),
@@ -632,7 +632,7 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
           billing: {
             label: translate('Billing'),
             action: () => navigateTo('billing'),
-            className: { active: !currentTab || ['billing', 'income'].includes(currentTab) },
+            className: { active:  ['billing', 'income'].includes(currentTab) },
             childs: {
               income: {
                 label: translate('Income'),
@@ -655,7 +655,7 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
       setMode(navMode.team);
       setOffice(officeMode.back);
       setTeam(team);
-      setMenu(schema(match?.params?.tab));
+      setMenu(schema(match?.params?.tab || ''));
     }
   }, [team]);
 
