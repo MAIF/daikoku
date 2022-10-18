@@ -1041,6 +1041,7 @@
     "cms.create.draft_preview": "Viewed draft page",
     "cms.inserted": "The text has been added",
     "cms.create.exact": "Exact path",
+    "cms.create.exact.help": "this page will be visible only if path is exactly equal to the exposed path",
     "cms.pages.remove_confirm": "Are your sure to delete this page?",
     "cms.content_side_view.choose_link": "A link to a back office page",
     "cms.content_side_view.link_to_insert": "A link to your own other pages",

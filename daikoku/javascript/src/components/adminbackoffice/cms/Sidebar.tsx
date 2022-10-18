@@ -61,7 +61,7 @@ export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, up
     exact: {
       type: type.bool,
       label: translate('cms.create.exact'),
-      help: translate('cms.create.exact'),
+      help: translate('cms.create.exact.help'),
       deps: ['isBlockPage'],
       visible: ({ rawValues }) => !rawValues.isBlockPage,
     },

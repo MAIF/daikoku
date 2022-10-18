@@ -1066,6 +1066,7 @@
   "cms.create.draft_preview": "Voir la page en cours",
   "cms.pages.remove_confirm": "Êtes-vous sûr de vouloir supprimer cette page ?",
   "cms.create.exact": "Chemin exact",
+  "cms.create.exact.help": "cette page ne sera visible que si le chemin est exactement égal au chemin exposé",
   "cms.content_side_view.choose_link": "Un lien vers une page du back office",
   "cms.content_side_view.link_to_insert": "Un lien vers l'une de vos autres pages",
   "cms.content_side_view.block_to_render": "Une page/bloc à rendre dans cette page",
