@@ -115,7 +115,6 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       customMaxPerMonth: formData.customMaxPerMonth,
       customReadOnly: formData.customReadOnly,
     };
-    console.debug({props, subProps})
     if (props.save instanceof Promise) {
       props.save(subProps)
         .then(() => props.closeModal());

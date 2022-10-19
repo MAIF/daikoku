@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
 import { ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser, IUserSimple } from '../types';
-import { ErrorStr, IApi, IDocDetail, IDocPage, ISubscription } from '../types/api';
+import { ResponseError, IApi, IDocDetail, IDocPage, ISubscription, ResponseDone } from '../types/api';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -49,18 +49,20 @@ export const myUnreadNotificationsCount = () =>
       () => ({ count: 0 })
     );
 
-export const acceptNotificationOfTeam = (NotificationId: any, values = {}) =>
+export const acceptNotificationOfTeam = (NotificationId: string, values: object = {}): Promise<ResponseError | ResponseDone> =>
   customFetch(`/api/notifications/${NotificationId}/accept`, {
     method: 'PUT',
     body: JSON.stringify(values),
   });
 
-export const rejectNotificationOfTeam = (notificationId: any) => customFetch(`/api/notifications/${notificationId}/reject`, {
-  method: 'PUT',
-});
+export const rejectNotificationOfTeam = (notificationId: string, message?: string): Promise<ResponseError | ResponseDone> =>
+  customFetch(`/api/notifications/${notificationId}/reject`, {
+    method: 'PUT',
+    body: JSON.stringify({message})
+  });
 
 export const subscribedApis = (team: any) => customFetch(`/api/teams/${team}/subscribed-apis`);
-export const getDocPage = (api: string, id: string): Promise<IDocPage | ErrorStr> => customFetch(`/api/apis/${api}/pages/${id}`);
+export const getDocPage = (api: string, id: string): Promise<IDocPage | ResponseError> => customFetch(`/api/apis/${api}/pages/${id}`);
 export const getDocDetails = (api: string, version: string): Promise<IDocDetail> => customFetch(`/api/apis/${api}/${version}/doc`);
 
 export const getTeamSubscriptions = (api: any, team: any, version: any) =>
@@ -70,7 +72,6 @@ export const getMySubscriptions = (apiId: any, version: any) =>
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
 export const askForApiKey = (api: string, teams: Array<string>, plan: string, motivation?: string): Promise<any> => {
-  console.debug({api, teams, plan, motivation})
   return customFetch(`/api/apis/${api}/subscriptions`, {
     method: 'POST',
     body: JSON.stringify({ plan, teams, motivation }),

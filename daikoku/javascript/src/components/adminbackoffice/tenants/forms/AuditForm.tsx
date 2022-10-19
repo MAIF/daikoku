@@ -28,7 +28,7 @@ export const AuditForm = (props: { tenant?: ITenantFull, updateTenant: UseMutati
               type: type.string,
               label: translate('Analytics webhook URL'),
               placeholder: translate('URL of the webhook target'),
-              onChange: (v) => console.debug({v})
+              onChange: (v) => console.debug({v}) //FIXME
             },
             headers: {
               type: type.object,
@@ -131,7 +131,6 @@ export const AuditForm = (props: { tenant?: ITenantFull, updateTenant: UseMutati
     <Form
       schema={schema}
       onSubmit={(updatedTenant) => {
-        console.debug({t: ref.current?.methods.getValues()})
         const kafkaConfig = updatedTenant.auditTrailConfig.kafkaConfig && updatedTenant.auditTrailConfig.kafkaConfig.servers.length ? updatedTenant.auditTrailConfig.kafkaConfig : undefined;
         const elasticConfigs = updatedTenant.auditTrailConfig.elasticConfigs && updatedTenant.auditTrailConfig.elasticConfigs.clusterUri ? updatedTenant.auditTrailConfig.elasticConfigs : undefined;
 

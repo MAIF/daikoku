@@ -29,7 +29,6 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       label: translate('aggregation api keys security'),
       onChange: (value) => {
         const security = (value as {value: any}).value
-        console.debug({value})
         if (security) {
           window.alert(translate('aggregation.api_key.security.notification'));
         }

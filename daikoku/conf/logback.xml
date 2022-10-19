@@ -29,7 +29,7 @@
   <logger name="MongoDataStore" level="INFO" />
   <logger name="MongoTenantAwareRepo" level="INFO" />
   <logger name="CommonMongoRepo" level="INFO" />
-  <logger name="daikoku-spec-helper" level="DEBUG" /><!---->
+  <logger name="daikoku-spec-helper" level="INFO" /><!---->
   <logger name="daikoku-action-maybe-without-user" level="INFO" />
   <logger name="audit-actor" level="INFO" />
   <logger name="AuditTrailPurgeJob" level="INFO" />

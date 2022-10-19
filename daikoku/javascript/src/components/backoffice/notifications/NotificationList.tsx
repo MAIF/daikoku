@@ -8,6 +8,7 @@ import { SimpleNotification } from './SimpleNotification';
 import { updateNotifications, openSubMetadataModal, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
 import { useUserBackOffice } from '../../../contexts';
+import { isError } from '../../../types';
 
 export const NotificationList = () => {
   useUserBackOffice();
@@ -83,7 +84,7 @@ export const NotificationList = () => {
       updateNotifications(state.untreatedNotifications.length)(dispatch);
   }, [state.untreatedNotifications]);
 
-  const acceptNotification = (notificationId: any, values: any) => {
+  const acceptNotification = (notificationId: string, values?: object): void => {
     setState({
       ...state,
       notifications: state.notifications.map((n: any) => {
@@ -93,7 +94,7 @@ export const NotificationList = () => {
     });
     Services.acceptNotificationOfTeam(notificationId, values)
       .then((res) => {
-        if (res.error) {
+        if (isError(res)) {
           //@ts-ignore
           window.alert(res.error, translate('notification.accept.on_error.title'));
         } else {
@@ -112,7 +113,7 @@ export const NotificationList = () => {
       );
   };
 
-  const rejectNotification = (notificationId: any) => {
+  const rejectNotification = (notificationId: string, message?: string) => {
     setState({
       ...state,
       notifications: state.notifications.map((n: any) => {
@@ -120,7 +121,7 @@ export const NotificationList = () => {
         return n;
       }),
     });
-    Services.rejectNotificationOfTeam(notificationId)
+    Services.rejectNotificationOfTeam(notificationId, message)
       .then(() => Services.myNotifications(0, state.notifications.length))
       .then(({ notifications, count }) => {
         setState({
@@ -136,16 +137,18 @@ export const NotificationList = () => {
   useEffect(() => {
     if (state.loading)
       if (state.tab === 'all') {
-        Services.myAllNotifications(state.page, state.pageSize).then(({ notifications, count }) => setState({ ...state, notifications, count, loading: false }));
+        Services.myAllNotifications(state.page, state.pageSize)
+          .then(({ notifications, count }) => setState({ ...state, notifications, count, loading: false }));
       }
       else {
-        Services.myNotifications(state.page, state.pageSize).then(({ notifications, count }) => setState({
-          ...state,
-          notifications,
-          count,
-          untreatedCount: count,
-          loading: false,
-        }));
+        Services.myNotifications(state.page, state.pageSize)
+          .then(({ notifications, count }) => setState({
+            ...state,
+            notifications,
+            count,
+            untreatedCount: count,
+            loading: false,
+          }));
       }
   }, [state.tab, state.page, state.loading])
 
@@ -187,7 +190,6 @@ export const NotificationList = () => {
   }
 
   const notifByTeams = groupBy(state.notifications, 'team');
-  const openModal = (p) => dispatch(openSubMetadataModal(p));
   return <>
     <div className="row">
       <h1>
@@ -219,12 +221,10 @@ export const NotificationList = () => {
                     <SimpleNotification
                       key={notification._id}
                       notification={notification}
-                      fade={notification.fade}
-                      accept={(values: any) => acceptNotification(notification._id, values)}
-                      reject={() => rejectNotification(notification._id)}
+                      accept={(values?: object) => acceptNotification(notification._id, values)}
+                      reject={(message?: string) => rejectNotification(notification._id, message)}
                       getTeam={(id: any) => state.teams.find((team: any) => team._id === id)}
-                      getApi={(id: any) => state.apis.find((a: any) => a._id === id)}
-                      openSubMetadataModal={openModal} />))}
+                      getApi={(id: any) => state.apis.find((a: any) => a._id === id)} />))}
               </div>);
             })}
           </div>

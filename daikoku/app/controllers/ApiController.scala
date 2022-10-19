@@ -772,9 +772,9 @@ class ApiController(DaikokuAction: DaikokuAction,
     val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
     val notificationUrl = env.getDaikokuUrl(tenant, "/notifications")
     for {
-      _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
-      maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
-      maybeAdmins <- maybeApiTeam.traverse(
+      _             <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
+      maybeApiTeam  <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
+      maybeAdmins   <- maybeApiTeam.traverse(
         apiTeam =>
           env.dataStore.userRepo
             .find(
@@ -784,7 +784,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               )
             )
       )
-      _ <- maybeAdmins.traverse(
+      _             <- maybeAdmins.traverse(
         admins => Future.sequence(admins.map(admin => {
           implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
           (for {

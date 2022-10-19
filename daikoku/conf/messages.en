@@ -44,7 +44,8 @@ mail.rejection.title=Your Daikoku request has been rejected.
 mail.acceptation.title=Your Daikoku request has been accepted.
 mail.api.access.rejection.body=Your request to access to api [apiName] has been rejected.
 mail.api.access.acceptation.body=The request to access to api [apiName] by [user] has been accepted.
-mail.api.subscription.rejection.body=Your request for an apikey for [apiName] has been rejected.
+mail.api.subscription.rejection.body=Your request for an apikey for [apiName] has been rejected. \
+reason: [message]
 mail.api.subscription.acceptation.body=The request of [user] for an apikey for [apiName] has been accepted.
 mail.team.access.rejection.body=Your request to join the team [teamName] has been rejected.
 mail.team.access.acceptation.body=Your request to access to team [teamName] has been accepted.

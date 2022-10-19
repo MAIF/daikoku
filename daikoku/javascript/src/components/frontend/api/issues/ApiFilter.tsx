@@ -70,7 +70,6 @@ export function ApiFilter({
   };
 
   const createIssue = (issue: any) => {
-    console.debug({issue})
     Services.createNewIssue(api._humanReadableId, team, issue)
       .then((res) => {
         if (res.error) {

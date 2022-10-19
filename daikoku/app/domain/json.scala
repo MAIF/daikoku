@@ -2325,6 +2325,7 @@ object json {
         case "ApiAccess"       => ApiAccessFormat.reads(json)
         case "TeamAccess"      => TeamAccessFormat.reads(json)
         case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
+        case "ApiSubscriptionReject" => ApiSubscriptionRejectFormat.reads(json)
         case "OtoroshiSyncSubscriptionError" =>
           OtoroshiSyncSubscriptionErrorFormat.reads(json)
         case "OtoroshiSyncApiError" => OtoroshiSyncApiErrorFormat.reads(json)
@@ -2352,6 +2353,9 @@ object json {
         case p: ApiSubscriptionDemand =>
           ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "ApiSubscription")
+        case p: ApiSubscriptionReject =>
+          ApiSubscriptionRejectFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "ApiSubscriptionReject")
         case p: OtoroshiSyncSubscriptionError =>
           OtoroshiSyncSubscriptionErrorFormat.writes(p).as[JsObject] ++ Json
             .obj("type" -> "OtoroshiSyncSubscriptionError")
@@ -2534,6 +2538,31 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "motivation" -> o.motivation
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
+  }
+  val ApiSubscriptionRejectFormat = new Format[ApiSubscriptionReject] {
+    override def reads(json: JsValue): JsResult[ApiSubscriptionReject] =
+      Try {
+        JsSuccess(
+          ApiSubscriptionReject(
+            api = (json \ "api").as(ApiIdFormat),
+            plan = (json \ "plan").as(UsagePlanIdFormat),
+            team = (json \ "team").as(TeamIdFormat),
+            message = (json \ "message").asOpt[String]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiSubscriptionReject): JsValue = Json.obj(
+      "api" -> ApiIdFormat.writes(o.api),
+      "plan" -> UsagePlanIdFormat.writes(o.plan),
+      "team" -> TeamIdFormat.writes(o.team),
+      "message" -> o.message
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue]

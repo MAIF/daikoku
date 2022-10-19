@@ -241,10 +241,14 @@ export const isMiniFreeWithQuotas = (obj: IUsagePlan): obj is IUsagePlanFreeWith
 }
 
 
-export type ErrorStr = {
+export type ResponseError = {
     error: string
 }
 
-export function isError(obj: any): obj is ErrorStr {
-    return (<ErrorStr>obj).error !== undefined;
+export type ResponseDone = {
+    done: boolean
+}
+
+export function isError(obj: any): obj is ResponseError {
+    return (<ResponseError>obj).error !== undefined;
 }

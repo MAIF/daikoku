@@ -1,16 +1,28 @@
 import React, { useContext } from 'react';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
+import { constraints, format, type } from '@maif/react-forms';
+import { useDispatch } from 'react-redux';
 
 import { formatPlanType, Option } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext, openFormModal, openSubMetadataModal } from '../../../core';
+import { IApi, INotification, ITeamSimple } from '../../../types';
 
-export function SimpleNotification(props: any) {
+
+interface ISimpleNotificationProps {
+  notification: INotification
+  accept: (values?: object) => void
+  reject: (message?: string) => void
+  getApi: (id: string) => IApi
+  getTeam: (id: string) => ITeamSimple
+}
+export function SimpleNotification(props: ISimpleNotificationProps) {
   const { translate, language, Translation } = useContext(I18nContext);
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const typeFormatter = (type: any) => {
+  const typeFormatter = (type: string) => {
     switch (type) {
       case 'ApiAccess':
         return (
@@ -42,6 +54,14 @@ export function SimpleNotification(props: any) {
             className="fas fa-file-signature"
             style={{ marginRight: 5 }}
             title={translate('Subscription to an API')}
+          />
+        );
+      case 'ApiSubscriptionReject':
+        return (
+          <i
+            className="fas fa-skull-crossbones"
+            style={{ marginRight: 5 }}
+            title={translate('Subscription to an API is refused')}
           />
         );
       case 'OtoroshiSyncSubscriptionError':
@@ -127,7 +147,7 @@ export function SimpleNotification(props: any) {
     }
   };
 
-  const actionFormatter = (notification: any) => {
+  const actionFormatter = (notification: INotification) => {
     const { status, date } = notification.status;
     const { notificationType } = notification;
 
@@ -168,39 +188,75 @@ export function SimpleNotification(props: any) {
                     {props.notification.action.motivation}
                   </div>
                   <div className='d-flex flex-row flex-nowrap'>
-                    
-                      <a
-                        className="btn btn-outline-success btn-sm me-1"
-                         // todo: @baudelotphilippe, don't sure it's the best solution
-                        style={{height: '30px'}}
-                        href="#"
-                        title={translate('Accept')}
-                        onClick={() =>
-                          props.openSubMetadataModal({
-                            save: props.accept,
-                            api: props.notification.action.api,
-                            plan: props.notification.action.plan,
-                            team: props.getTeam(props.notification.action.team),
-                            notification: props.notification,
-                            creationMode: true,
-                          })
-                        }
-                      >
-                        <i className="fas fa-check" />
-                      </a>
-                      <a
-                        className="btn btn-outline-danger btn-sm"
-                        style={{height: '30px'}}
-                        href="#"
-                        title={translate('Reject')}
-                        onClick={() => props.reject()}
-                      >
-                        <i className="fas fa-times" />
-                      </a>
-                    </div>
-
+                    <a
+                      className="btn btn-outline-success btn-sm me-1"
+                      // todo: @baudelotphilippe, don't sure it's the best solution
+                      style={{ height: '30px' }}
+                      href="#"
+                      title={translate('Accept')}
+                      onClick={() =>
+                        dispatch(openSubMetadataModal({
+                          save: props.accept,
+                          api: props.notification.action.api,
+                          plan: props.notification.action.plan,
+                          team: props.getTeam(props.notification.action.team),
+                          notification: props.notification,
+                          creationMode: true,
+                        }))
+                      }
+                    >
+                      <i className="fas fa-check" />
+                    </a>
+                    <a
+                      className="btn btn-outline-danger btn-sm"
+                      style={{ height: '30px' }}
+                      href="#"
+                      title={translate('Reject')}
+                      onClick={() => {
+                        dispatch(openFormModal<{ message: string }>({
+                          title: translate('Message'),
+                          schema: {
+                            message: {
+                              type: type.string,
+                              format: format.text,
+                              label: null,
+                              constraints: [
+                                constraints.required()
+                              ]
+                            }
+                          },
+                          onSubmit: ({ message }) => props.reject(message),
+                          actionLabel: translate('Send')
+                        }))
+                      }}
+                    >
+                      <i className="fas fa-times" />
+                    </a>
                   </div>
+
+                </div>
               );
+            case 'ApiSubscriptionReject':
+              return (
+                <div className='d-flex flex-row flex-grow-1'>
+                  <div className='d-flex flex-wrap flex-grow-1'>
+                    {props.notification.action.message}
+                  </div>
+                  <div className='d-flex flex-row flex-nowrap'>
+                    <a
+                      className="btn btn-outline-success btn-sm me-1"
+                      // todo: @baudelotphilippe, don't sure it's the best solution
+                      style={{ height: '30px' }}
+                      href="#"
+                      title={translate('Accept')}
+                      onClick={() => props.accept()}
+                    >
+                      <i className="fas fa-check" />
+                    </a>
+                  </div>
+
+                </div>
+              )
             default:
               return (
                 <div>
@@ -264,6 +320,7 @@ export function SimpleNotification(props: any) {
         return sender.name;
       case 'TransferApiOwnership':
         return `${sender.name}`;
+      case 'ApiSubscriptionReject':
       case 'TeamInvitation':
         return props.getTeam(action.team).name;
       case 'ApiSubscription':
@@ -287,7 +344,7 @@ export function SimpleNotification(props: any) {
 
   const { notification, getApi } = props;
   let infos = {};
-  if (['ApiAccess', 'ApiSubscription', 'TransferApiOwnership'].includes(notification.action.type)) {
+  if (['ApiAccess', 'ApiSubscription', 'TransferApiOwnership', 'ApiSubscriptionReject'].includes(notification.action.type)) {
     const api = getApi(notification.action.api);
     const plan = !api
       ? { customName: translate('deleted') }
@@ -295,14 +352,9 @@ export function SimpleNotification(props: any) {
     infos = { api: api || { name: translate('Deleted API') }, plan };
   }
 
-  let style = {};
-  if (props.fade) {
-    style = { opacity: 0.3 };
-  }
-
   moment.locale(language);
 
-  return (<div style={style}>
+  return (<div>
     <div className="alert section" role="alert">
       <div className="d-flex flex-column">
         <div className="d-flex align-items-center">
@@ -330,6 +382,9 @@ export function SimpleNotification(props: any) {
                 Request subscription to {(infos as any).api.name} for plan {(infos as any).plan.type}
               </Translation>
             </div>)}
+            {notification.action.type === 'ApiSubscriptionReject' && translate({
+              key: 'notif.api.demand.reject', 
+              replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]})}
             {notification.action.type === 'ApiKeyDeletionInformation' && (<div>
               <Translation i18nkey="notif.apikey.deletion" replacements={[notification.action.clientId, notification.action.api]}>
                 Your apiKey with clientId {notification.action.clientId} for api{' '}

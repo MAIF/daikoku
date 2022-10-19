@@ -30,19 +30,21 @@ export const JoinTeamInvitationModal = (props: any) => {
   }, []);
 
   function accept() {
-    Services.acceptNotificationOfTeam(notificationId).then(() => {
-      Services.removeTeamInvitation().then(() => {
-        toastr.success(translate('Success'), translate('team_member.has_joined'));
-        goToHome();
+    Services.acceptNotificationOfTeam(notificationId)
+      .then(() => {
+        Services.removeTeamInvitation().then(() => {
+          toastr.success(translate('Success'), translate('team_member.has_joined'));
+          goToHome();
+        });
       });
-    });
   }
 
   function refuse() {
-    Services.rejectNotificationOfTeam(notificationId).then(() => {
-      Services.removeTeamInvitation();
-      goToHome();
-    });
+    Services.rejectNotificationOfTeam(notificationId)
+      .then(() => {
+        Services.removeTeamInvitation();
+        goToHome();
+      });
   }
 
   function goToHome() {

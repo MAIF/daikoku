@@ -44,7 +44,8 @@ mail.rejection.title=Votre demande a été rejetée.
 mail.acceptation.title=Votre demande a été acceptée.
 mail.api.access.rejection.body=Votre demande d'accès à l'API [apiName] a été rejetée.
 mail.api.access.acceptation.body=La demande d'accès à l'API [apiName] par [user] a été acceptée.
-mail.api.subscription.rejection.body=Votre demande de clé d'API pour [apiName] a été rejetée.
+mail.api.subscription.rejection.body=Votre demande de clé d'API pour [apiName] a été rejetée. \
+raison: [message]
 mail.api.subscription.acceptation.body=La demande de [user] de souscription à l'API [apiName] a été acceptée.
 mail.team.access.rejection.body=Votre demande d'accès à l'équipe [teamName] a été rejetée.
 mail.team.access.acceptation.body=Votre demande d'accès à l'équipe [teamName] a été acceptée.

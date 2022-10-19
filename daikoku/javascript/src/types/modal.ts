@@ -8,7 +8,7 @@ export interface INotification {
   date: string
   notificationType: string
   sender: IUser
-  status: { status: string }
+  status: { status: string, date: string }
   team: string
 }
 
