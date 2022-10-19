@@ -633,6 +633,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has asked for an apikey for @{api.name} - @{api.id}"))(ctx) {
       val teams: Seq[String] = (ctx.request.body \ "teams").as[Seq[String]]
       val planId: String = (ctx.request.body \ "plan").as[String]
+      val motivation: Option[String] = (ctx.request.body \ "motivation").asOpt[String]
 
       val results: EitherT[Future, Result, Result] = for {
         api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId),
@@ -681,7 +682,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                                       api,
                                       plan.id.value,
                                       team,
-                                      parentSubscriptionId).leftMap(AppError.toJson).merge
+                                      parentSubscriptionId,
+                                    motivation).leftMap(AppError.toJson).merge
 
                                   parentSubscriptionId match {
                                     case Some(apiKey) => env.dataStore.apiSubscriptionRepo
@@ -729,7 +731,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                                      api: Api,
                                      planId: String,
                                      team: Team,
-                                     apiKeyId: Option[ApiSubscriptionId])(implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
+                                     apiKeyId: Option[ApiSubscriptionId],
+                                     motivation: Option[String])(implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
     import cats.implicits._
 
     api.possibleUsagePlans.find(_.id.value == planId) match {
@@ -739,7 +742,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       case Some(_) if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
-        case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team, apiKeyId))
+        case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team, apiKeyId, motivation))
         case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team, apiKeyId))
       }
     }
@@ -750,7 +753,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                             api: Api,
                             planId: String,
                             team: Team,
-                            apiKeyId: Option[ApiSubscriptionId])(implicit ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
+                            apiKeyId: Option[ApiSubscriptionId],
+                            motivation: Option[String])(implicit ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     val defaultPlanOpt = api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
@@ -762,7 +766,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       tenant = tenant.id,
       team = Some(api.team),
       sender = user,
-      action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id, apiKeyId)
+      action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id, apiKeyId, motivation)
     )
 
     val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")

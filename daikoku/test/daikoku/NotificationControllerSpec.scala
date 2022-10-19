@@ -148,8 +148,8 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications/unread-count")(tenant,
-                                                                       session)
+        s"/api/teams/${teamOwnerId.value}/notifications/unread-count")(tenant,session)
+      println(Json.prettyPrint(resp.json))
       resp.status mustBe 200
       (resp.json \ "count").as[Long] mustBe 1
 
@@ -381,7 +381,8 @@ class NotificationControllerSpec()
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
                                            UsagePlanId("3"),
-                                           teamConsumerId))
+                                           teamConsumerId,
+                                           motivation = Some("motivation")))
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
@@ -435,7 +436,8 @@ class NotificationControllerSpec()
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
                                            UsagePlanId("3"),
-                                           teamConsumerId))
+                                           teamConsumerId,
+                                           motivation = Some("motivation")))
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
@@ -657,7 +659,8 @@ class NotificationControllerSpec()
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
                                            UsagePlanId("3"),
-                                           teamConsumerId))
+                                           teamConsumerId,
+                                           motivation = Some("motivation")))
         )
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
@@ -711,7 +714,8 @@ class NotificationControllerSpec()
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
                                            UsagePlanId("3"),
-                                           teamConsumerId))
+                                           teamConsumerId,
+                                           motivation = Some("motivation")))
         )
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)

@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import { IUsagePlanFreeWithQuotas } from '../../types';
 
-export const newPossibleUsagePlan = (customName: any): IUsagePlanFreeWithQuotas => ({
+export const newPossibleUsagePlan = (customName: string): IUsagePlanFreeWithQuotas => ({
   _id: nanoid(32),
   type: 'FreeWithQuotas',
   currency: { code: 'EUR' },

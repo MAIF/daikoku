@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
 import { ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser, IUserSimple } from '../types';
-import { ErrorStr, IApi, IDocDetail, IDocPage } from '../types/api';
+import { ErrorStr, IApi, IDocDetail, IDocPage, ISubscription } from '../types/api';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -69,13 +69,15 @@ export const getTeamSubscriptions = (api: any, team: any, version: any) =>
 export const getMySubscriptions = (apiId: any, version: any) =>
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
-export const askForApiKey = (api: any, teams: any, plan: any) =>
-  customFetch(`/api/apis/${api}/subscriptions`, {
+export const askForApiKey = (api: string, teams: Array<string>, plan: string, motivation?: string): Promise<any> => {
+  console.debug({api, teams, plan, motivation})
+  return customFetch(`/api/apis/${api}/subscriptions`, {
     method: 'POST',
-    body: JSON.stringify({ plan, teams }),
+    body: JSON.stringify({ plan, teams, motivation }),
   });
+}
 
-export const initApiKey = (api: any, team: any, plan: any, apikey: any) =>
+export const initApiKey = (api: any, team: any, plan: string, apikey: any) =>
   customFetch(`/api/apis/${api}/subscriptions/_init`, {
     method: 'POST',
     body: JSON.stringify({ plan, team, apikey }),
@@ -835,13 +837,13 @@ export const createNewApiVersion = (apiId: any, teamId: any, version: any) =>
     body: JSON.stringify({ version }),
   });
 
-export const extendApiKey = (apiId: any, apiKeyId: any, teams: any, plan: any) =>
+export const extendApiKey = (apiId: string, apiKeyId: string, teams: Array<string>, plan: string, motivation?: string) =>
   customFetch(`/api/apis/${apiId}/subscriptions/${apiKeyId}`, {
     method: 'PUT',
-    body: JSON.stringify({ plan, teams }),
+    body: JSON.stringify({ plan, teams, motivation }),
   });
 
-export const getAllTeamSubscriptions = (team: any) => customFetch(`/api/subscriptions/teams/${team}`);
+export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscription>> => customFetch(`/api/subscriptions/teams/${teamId}`);
 
 export const getAllApiVersions = (teamId: any, apiId: any) =>
   fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {

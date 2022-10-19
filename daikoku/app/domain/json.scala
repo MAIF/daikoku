@@ -2517,7 +2517,8 @@ object json {
             plan = (json \ "plan").as(UsagePlanIdFormat),
             team = (json \ "team").as(TeamIdFormat),
             parentSubscriptionId =
-              (json \ "parentSubscriptionId").asOpt(ApiSubscriptionIdFormat)
+              (json \ "parentSubscriptionId").asOpt(ApiSubscriptionIdFormat),
+            motivation = (json \ "motivation").asOpt[String]
           )
         )
       } recover {
@@ -2530,6 +2531,10 @@ object json {
       "team" -> TeamIdFormat.writes(o.team),
       "parentSubscriptionId" -> o.parentSubscriptionId
         .map(ApiSubscriptionIdFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "motivation" -> o.motivation
+        .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue]
     )

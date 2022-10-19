@@ -745,7 +745,8 @@ class TeamControllerSpec()
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(defaultApi.id,
                                            UsagePlanId("2"),
-                                           teamConsumerId)
+                                           teamConsumerId,
+                                           motivation = Some("motication"))
           ))
       )
       val session = loginWithBlocking(randomUser, tenant)

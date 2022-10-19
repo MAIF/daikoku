@@ -238,7 +238,8 @@ class NotificationController(
               case ApiSubscriptionDemand(apiId,
                                          planId,
                                          requestedteamId,
-                                         apiKeyId) =>
+                                         apiKeyId,
+                                         _) =>
                 EitherT(
                   acceptApiSubscription(
                     requestedteamId,
@@ -407,7 +408,7 @@ class NotificationController(
                           Map("user" -> user.name, "teamName" -> team.name))
                     }
               }
-          case ApiSubscriptionDemand(apiId, _, _, _) =>
+          case ApiSubscriptionDemand(apiId, _, _, _, _) =>
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(apiId)

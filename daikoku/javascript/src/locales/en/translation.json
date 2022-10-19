@@ -1188,5 +1188,6 @@
     "doc.page.error.unknown": "unknown error",
     "otoroshi.list.add.label": "Add an Otoroshi instance",
     "Global stats": "Global stats",
-    "apikeys visibility": "API keys visibility"
+    "apikeys visibility": "API keys visibility",
+    "motivations.modal.title": "Tell us why do you want an API key"
 }

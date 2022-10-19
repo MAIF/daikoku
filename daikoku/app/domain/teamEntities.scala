@@ -175,7 +175,8 @@ object NotificationAction {
       api: ApiId,
       plan: UsagePlanId,
       team: TeamId,
-      parentSubscriptionId: Option[ApiSubscriptionId] = None)
+      parentSubscriptionId: Option[ApiSubscriptionId] = None,
+      motivation: Option[String])
       extends NotificationAction
 
   case class OtoroshiSyncSubscriptionError(subscription: ApiSubscription,

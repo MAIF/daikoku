@@ -1263,7 +1263,8 @@ class ApiControllerSpec()
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("3"),
-              teamConsumerId
+              teamConsumerId,
+              motivation = Some("motivation")
             )
           )
         )
@@ -2066,7 +2067,8 @@ class ApiControllerSpec()
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
-              teamConsumerId
+              teamConsumerId,
+              motivation = Some("motivation")
             )
           )
         )
@@ -2130,7 +2132,8 @@ class ApiControllerSpec()
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
-              teamConsumerId
+              teamConsumerId,
+              motivation = Some("motivation")
             )
           )
         )
@@ -2175,7 +2178,8 @@ class ApiControllerSpec()
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
-              teamConsumerId
+              teamConsumerId,
+              motivation = Some("motivation")
             )
           )
         )

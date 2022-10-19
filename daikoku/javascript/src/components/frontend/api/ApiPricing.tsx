@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import find from 'lodash/find';
 import difference from 'lodash/difference';
 import { getApolloContext } from '@apollo/client';
+import { type as formType, constraints, format } from '@maif/react-forms';
 
 import { currencies } from '../../../services/currencies';
 import { formatPlanType } from '../../utils/formatters';
@@ -15,11 +16,13 @@ import {
   manage,
   Option,
 } from '../../utils';
-import { openLoginOrRegisterModal, openApiKeySelectModal, I18nContext } from '../../../core';
-import { connect } from 'react-redux';
+import { openLoginOrRegisterModal, openApiKeySelectModal, I18nContext, openFormModal } from '../../../core';
+import { connect, useDispatch } from 'react-redux';
 import * as Services from '../../../services';
 import { any } from 'cypress/types/bluebird';
 import { placements } from '@popperjs/core';
+import { IApi, isMiniFreeWithQuotas, isPayPerUse, isQuotasWitoutLimit, ISubscription, ITeamSimple, ITenant, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit, IUserSimple } from '../../../types';
+import { INotification } from '../../../types/modal';
 
 const Curreny = ({
   plan
@@ -39,16 +42,16 @@ const currency = (plan: any) => {
 };
 
 type ApiPricingProps = {
-  plan: any,
-  api: any,
-  askForApikeys: (team: any, plan: any, apiKey?: any) => void,
+  plan: IUsagePlan,
+  api: IApi,
+  askForApikeys: (x: {teams: Array<string>, plan: string, apiKey?: ISubscription, motivation?: string}) => void,
   openApiKeySelectModal?: (props: any) => void, //FIXME: not an optional props ==> use useSelector to get it from hook instead
-  myTeams: any,
-  tenant: any,
-  ownerTeam: any,
-  subscriptions: any,
-  pendingSubscriptions: any,
-  connectedUser: any,
+  myTeams: Array<ITeamSimple>,
+  tenant: ITenant,
+  ownerTeam: ITeamSimple,
+  subscriptions: Array<ISubscription>,
+  pendingSubscriptions: Array<INotification>,
+  connectedUser: IUserSimple,
   openLoginOrRegisterModal?: (props: any) => void //FIXME: not an optional props ==> use useSelector to get it from hook instead
 
 }
@@ -56,6 +59,8 @@ type ApiPricingProps = {
 const ApiPricingCardComponent = (props: ApiPricingProps) => {
   const { Translation } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
+
+  const dispatch = useDispatch();
 
   const renderFreeWithoutQuotas = () => (
     <span>
@@ -65,48 +70,61 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
     </span>
   );
 
-  const renderFreeWithQuotas = () => (
-    <span>
-      <Translation i18nkey="free.with.quotas.desc" replacements={[props.plan.maxPerMonth]}>
-        You'll pay nothing but you'll have {props.plan.maxPerMonth} authorized requests per month
-      </Translation>
-    </span>
-  );
+  const renderFreeWithQuotas = () => {
+    const plan: IUsagePlanFreeWithQuotas = props.plan as IUsagePlanFreeWithQuotas
+    return (
+      <span>
+        <Translation i18nkey="free.with.quotas.desc" replacements={[plan.maxPerMonth]}>
+          You'll pay nothing but you'll have {plan.maxPerMonth} authorized requests per month
+        </Translation>
+      </span>
+    )
+  };
 
-  const renderQuotasWithLimits = () => (
-    <span>
-      <Translation
-        i18nkey="quotas.with.limits.desc"
-        replacements={[props.plan.costPerMonth, currency(props.plan), props.plan.maxPerMonth]}
-      >
-        You'll pay {props.plan.costPerMonth}
-        <Curreny plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
-        per month
-      </Translation>
-    </span>
-  );
+  const renderQuotasWithLimits = () => {
+    const plan: IUsagePlanQuotasWithLimits = props.plan as IUsagePlanQuotasWithLimits;
 
-  const renderQuotasWithoutLimits = () => (
-    <span>
-      <Translation
-        i18nkey="quotas.without.limits.desc"
-        replacements={[
-          props.plan.costPerMonth,
-          currency(props.plan),
-          props.plan.maxPerMonth,
-          props.plan.costPerAdditionalRequest,
-          currency(props.plan),
-        ]}
-      >
-        You'll pay {props.plan.costPerMonth}
-        <Curreny plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
-        you'll be charged {props.plan.costPerAdditionalRequest}
-        <Curreny plan={props.plan} /> per additional request
-      </Translation>
-    </span>
-  );
+    return (
+      <span>
+        <Translation
+          i18nkey="quotas.with.limits.desc"
+          replacements={[props.plan.costPerMonth, currency(props.plan), plan.maxPerMonth]}
+        >
+          You'll pay {props.plan.costPerMonth}
+          <Curreny plan={props.plan} /> and you'll have {plan.maxPerMonth} authorized requests
+          per month
+        </Translation>
+      </span>
+    )
+  };
+
+  const renderQuotasWithoutLimits = () => {
+    const plan: IUsagePlanQuotasWitoutLimit = props.plan as IUsagePlanQuotasWitoutLimit
+    return (
+      <span>
+        <Translation
+          i18nkey="quotas.without.limits.desc"
+          replacements={[
+            props.plan.costPerMonth,
+            currency(props.plan),
+            plan.maxPerMonth,
+            plan.costPerAdditionalRequest,
+            currency(props.plan),
+          ]}
+        >
+          You'll pay {props.plan.costPerMonth}
+          <Curreny plan={props.plan} /> for {plan.maxPerMonth} authorized requests per month and
+          you'll be charged {plan.costPerAdditionalRequest}
+          <Curreny plan={props.plan} /> per additional request
+        </Translation>
+      </span>
+    )
+  }
 
   const renderPayPerUse = () => {
+
+    const plan: IUsagePlanPayPerUse = props.plan as IUsagePlanPayPerUse
+
     if (props.plan.costPerMonth === 0.0) {
       return (
         <span>
@@ -115,13 +133,13 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
             replacements={[
               props.plan.costPerMonth,
               currency(props.plan),
-              props.plan.costPerRequest,
+              plan.costPerRequest,
               currency(props.plan),
             ]}
           >
             You'll pay {props.plan.costPerMonth}
             <Curreny plan={props.plan} /> per month and you'll be charged{' '}
-            {props.plan.costPerRequest}
+            {plan.costPerRequest}
             <Curreny plan={props.plan} /> per request
           </Translation>
         </span>
@@ -134,11 +152,11 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
             replacements={[
               props.plan.costPerMonth,
               currency(props.plan),
-              props.plan.costPerRequest,
+              plan.costPerRequest,
               currency(props.plan),
             ]}
           >
-            You'll be charged {props.plan.costPerRequest}
+            You'll be charged {plan.costPerRequest}
             <Curreny plan={props.plan} /> per request
           </Translation>
         </span>
@@ -146,44 +164,66 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
     }
   };
 
-  const showApiKeySelectModal = (team: any) => {
-    const { api, plan } = props;
+  const showApiKeySelectModal = (teams: Array<string>) => {
+    const { plan } = props;
 
     //FIXME: not bwaaagh !!
     if (!client) {
       return;
     }
 
-    Services.getAllTeamSubscriptions(team)
+    const askForApikeys = (teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription) => {
+      if (plan.subscriptionProcess === "Automatic") {
+        props.askForApikeys({teams, plan: plan._id, apiKey})
+      } else (
+        dispatch(openFormModal<{motivation: string}>({
+          title: translate('motivations.modal.title'),
+          schema: {
+            motivation: {
+              type: formType.string,
+              format: format.text,
+              label: null,
+              constraints: [
+                constraints.required()
+              ]
+            }
+          },
+          onSubmit: ({motivation}) => props.askForApikeys({teams, plan: plan._id, apiKey, motivation}),
+          actionLabel: translate('Send')
+        }))
+      )
+    }
+
+    Services.getAllTeamSubscriptions(teams[0])
       .then((subscriptions) => client
         .query({
           query: Services.graphql.apisByIdsWithPlans,
-          variables: { ids: [...new Set(subscriptions.map((s: any) => s.api))] },
+          variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
         })
         .then(({ data }) => ({ apis: data.apis, subscriptions }))
       ).then(({ apis, subscriptions }) => {
         const filteredApiKeys = subscriptions
-          .map((subscription: any) => {
-            const api = apis.find((a: any) => a._id === subscription.api);
+          .map((subscription) => {
+            const api = apis.find((a) => a._id === subscription.api);
             const plan = Option(api?.possibleUsagePlans)
               .flatMap((plans: any) => Option(plans.find((plan: any) => plan._id === subscription.plan)))
               .getOrNull();
             return { subscription, api, plan };
           })
           .filter(
-            (infos: any) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
+            (infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
               plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
           )
-          .map((infos: any) => infos.subscription);
+          .map((infos) => infos.subscription);
 
         if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
-          props.askForApikeys(team, plan);
+          askForApikeys(teams, plan);
         } else {
           props.openApiKeySelectModal && props.openApiKeySelectModal({
             plan,
             apiKeys: filteredApiKeys,
-            onSubscribe: () => props.askForApikeys(team, plan),
-            extendApiKey: (apiKey: any) => props.askForApikeys(team, plan, apiKey),
+            onSubscribe: () => askForApikeys(teams, plan),
+            extendApiKey: (apiKey: any) => askForApikeys(teams, plan, apiKey),
           });
         }
       });
@@ -194,11 +234,10 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
   const customDescription = plan.customDescription;
 
   const authorizedTeams = props.myTeams
-    .filter((t: any) => !props.tenant.subscriptionSecurity || t.type !== 'Personal')
-    .filter(
-      (t: any) => props.api.visibility === 'Public' ||
-        props.api.authorizedTeams.includes(t._id) ||
-        t._id === props.ownerTeam._id
+    .filter((t) => !props.tenant.subscriptionSecurity || t.type !== 'Personal')
+    .filter((t) => props.api.visibility === 'Public' ||
+      props.api.authorizedTeams.includes(t._id) ||
+      t._id === props.ownerTeam._id
     );
 
   const allPossibleTeams = difference(
@@ -221,20 +260,20 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
   let pricing = translate('Free');
   const req = translate('req.');
   const month = translate('month');
-  if (plan.costPerMonth && plan.costPerAdditionalRequest) {
+  if (isQuotasWitoutLimit(plan)) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
       plan.currency.code
     )}/${month} + ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(
+      plan.currency.code
+    )}/${req}`;
+  } else if (isPayPerUse(plan)) {
+    pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(
       plan.currency.code
     )}/${req}`;
   } else if (plan.costPerMonth) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
       plan.currency.code
     )}/${month}`;
-  } else if (plan.costPerRequest) {
-    pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${req}`;
   }
 
   return (
@@ -253,8 +292,8 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
         </p>
         <div className="d-flex flex-column mb-2">
           <span className="plan-quotas">
-            {!plan.maxPerSecond && !plan.maxPerMonth && translate('plan.limits.unlimited')}
-            {!!plan.maxPerSecond && !!plan.maxPerMonth && (
+            {!isMiniFreeWithQuotas(plan) && translate('plan.limits.unlimited')}
+            {isMiniFreeWithQuotas(plan) && (
               <div>
                 <div>
                   <Translation
@@ -284,14 +323,14 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
               I={access}
               a={apikey}
               teams={authorizedTeams.filter(
-                (team: any) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
+                (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
               )}
             >
               {props.api.visibility !== 'AdminOnly' && (
                 <Can
                   I={manage}
                   a={apikey}
-                  teams={authorizedTeams.filter((team: any) => team._id === props.ownerTeam._id)}
+                  teams={authorizedTeams.filter((team) => team._id === props.ownerTeam._id)}
                 >
                   {!plan.otoroshiTarget && (
                     <span className="badge bg-danger">Missing otoroshi target</span>
@@ -307,15 +346,13 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
                         ? 'team.selection.desc.get'
                         : 'team.selection.desc.request')}
                     teams={authorizedTeams
-                      .filter((t: any) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-                      .filter(
-                        (team: any) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
-                      )
-                      .filter((t: any) => !props.tenant.subscriptionSecurity || t.type !== 'Personnal')}
-                    pendingTeams={props.pendingSubscriptions.map((s: any) => s.action.team)}
+                      .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+                      .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
+                      .filter((t) => !props.tenant.subscriptionSecurity || t.type !== 'Personal')}
+                    pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
                     authorizedTeams={props.subscriptions
-                      .filter((f: any) => !f._deleted)
-                      .map((subs: any) => subs.team)}
+                      .filter((f) => !f._deleted)
+                      .map((subs) => subs.team)}
                     allowMultipleDemand={plan.allowMultipleKeys}
                     withAllTeamSelector={false}
                     action={(teams) => showApiKeySelectModal(teams)}

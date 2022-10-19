@@ -84,20 +84,24 @@ export interface IUsagePlan {
     allowMultipleKeys?: boolean
     otoroshiTarget?: IOtoroshiTarget
     aggregationApiKeysSecurity?: boolean
+    subscriptionProcess: 'Automatic' | 'manual'
+    integrationProcess: 'Automatic' | 'ApiKey'
+    autoRotation?: boolean
+    rotation: boolean
+    currency: ICurrency
+    billingDuration: IBillingDuration
+    visibility: 'Public' | 'Private'
+    authorizedTeams: Array<string>
+    costPerMonth?: number
 }
+
+
 
 export interface IUsagePlanAdmin extends IUsagePlan {
 }
 
 export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan {
-    currency: ICurrency
-    billingDuration: IBillingDuration
-    visibility: 'Public' | 'Private'
-    authorizedTeams: Array<string>
-    autoRotation?: boolean
-    subscriptionProcess: 'Automatic' | 'manual'
-    integrationProcess: 'Automatic' | 'ApiKey'
-    rotation: boolean
+    
 }
 export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
     maxPerSecond: number
@@ -189,10 +193,58 @@ export interface IDocPage {
     remoteContentHeaders: object
 }
 
+interface IApiKey {
+    clientName: string
+    clientId: string
+    clientSecret: string
+}
+
+interface IRotation {
+    enabled: boolean
+    rotationEvery: number
+    gracePeriod: number
+    pendingRotation: boolean
+}
+export interface ISubscription {
+    _id: string
+    _tenant: string
+    _deleted: boolean
+    apiKey?: IApiKey
+    plan: string
+    team: string
+    api: string
+    createdAt: string
+    by: string
+    customName: string | null
+    enabled: boolean
+    rotation: IRotation
+    integrationToken: string
+    customMetadata: object
+    customMaxPerSecond: number | null
+    customMaxPerMonth: number | null
+    customMaxPerDay: number | null
+    customReadOnly: boolean | null
+    parent: string | null
+}
+
+export const isPayPerUse = (obj: IUsagePlan): obj is IUsagePlanPayPerUse => {
+    return (<IUsagePlanPayPerUse>obj).costPerRequest !== undefined;
+}
+
+export const isQuotasWitoutLimit = (obj: IUsagePlan): obj is IUsagePlanQuotasWitoutLimit => {
+    return (<IUsagePlanQuotasWitoutLimit>obj).costPerAdditionalRequest !== undefined;
+}
+
+
+export const isMiniFreeWithQuotas = (obj: IUsagePlan): obj is IUsagePlanFreeWithQuotas => {
+    return (<IUsagePlanFreeWithQuotas>obj).maxPerSecond !== undefined;
+}
+
+
 export type ErrorStr = {
     error: string
-  }
+}
 
 export function isError(obj: any): obj is ErrorStr {
     return (<ErrorStr>obj).error !== undefined;
- }
+}

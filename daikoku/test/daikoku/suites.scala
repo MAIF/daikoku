@@ -157,7 +157,7 @@ object utils {
         posts,
         cmsPages
       ).futureValue
-//      await(0.1.seconds)
+      await(0.1.seconds)
     }
 
     def setupEnv(

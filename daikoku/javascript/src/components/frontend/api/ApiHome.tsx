@@ -17,6 +17,7 @@ import { LoginOrRegisterModal } from '../modals';
 import { useApiFrontOffice } from '../../../contexts';
 
 import 'highlight.js/styles/monokai.css';
+import { IApi, ISubscription, IUsagePlan } from '../../../types';
 
 (window as any).hljs = hljs;
 
@@ -133,7 +134,7 @@ const ApiHomeComponent = ({
   tenant,
   groupView
 }: ApiHomeProps) => {
-  const [api, setApi] = useState<any>(undefined);
+  const [api, setApi] = useState<IApi>();
   const [subscriptions, setSubscriptions] = useState([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
   const [ownerTeam, setOwnerTeam] = useState(undefined);
@@ -180,7 +181,7 @@ const ApiHomeComponent = ({
                 return;
               }
               navigate(
-                `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`
+                `/${team._humanReadableId}/settings/apikeys/${api?._humanReadableId}/${api?.currentVersion}`
               );
             }}
             actionLabel={translate('View your api keys')}
@@ -254,56 +255,60 @@ const ApiHomeComponent = ({
     );
   };
 
-  const askForApikeys = (teams: any, plan: any, apiKey: any) => {
+
+  const askForApikeys = ({teams, plan, apiKey, motivation}: {teams: Array<string>, plan: string, apiKey?: ISubscription, motivation?: string}) => {
     const planName = formatPlanType(plan, translate);
 
-    return (
-      apiKey
-        ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id)
-        : Services.askForApiKey(api._id, teams, plan._id)
-    )
-      .then((results) => {
-        if (results.error) {
-          return toastr.error(translate('Error'), results.error);
-        }
-        return results.forEach((result: any) => {
-          if (result.error) {
-            return toastr.error(translate('Error'), result.error);
-          } else if (result.creation === 'done') {
-            const team: any = myTeams.find((t) => t._id === result.subscription.team);
-            return toastr.success(
-              translate('Done'),
-              translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
-            );
-          } else if (result.creation === 'waiting') {
-            const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
-            return toastr.info(
-              translate('Pending request'),
-              translate({ key: 'subscription.plan.waiting', replacements: [planName, team.name] })
-            );
+    if (api) {
+      return (
+        apiKey
+          ? Services.extendApiKey(api!._id, apiKey._id, teams, plan, motivation)
+          : Services.askForApiKey(api!._id, teams, plan, motivation)
+      ).then((results) => {
+          if (results.error) {
+            return toastr.error(translate('Error'), results.error);
           }
-        });
-      })
-      .then(() => updateSubscriptions(api._id));
+          return results.forEach((result: any) => {
+            if (result.error) {
+              return toastr.error(translate('Error'), result.error);
+            } else if (result.creation === 'done') {
+              const team: any = myTeams.find((t) => t._id === result.subscription.team);
+              return toastr.success(
+                translate('Done'),
+                translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
+              );
+            } else if (result.creation === 'waiting') {
+              const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
+              return toastr.info(
+                translate('Pending request'),
+                translate({ key: 'subscription.plan.waiting', replacements: [planName, team.name] })
+              );
+            }
+          });
+        })
+        .then(() => updateSubscriptions(api._id));
+    }
   };
 
   const toggleStar = () => {
-    Services.toggleStar(api._id).then((res) => {
-      if (!res.error) {
-        const alreadyStarred = connectedUser.starredApis.includes(api._id);
-        api.stars += alreadyStarred ? -1 : 1;
-        setApi(api);
-
-        //FIXME: remove line after use readuc hooks
-        //@ts-ignore
-        updateUser({
-          ...connectedUser,
-          starredApis: alreadyStarred
-            ? connectedUser.starredApis.filter((id: any) => id !== api._id)
-            : [...connectedUser.starredApis, api._id],
-        });
-      }
-    });
+    if (api) {
+      Services.toggleStar(api._id).then((res) => {
+        if (!res.error) {
+          const alreadyStarred = connectedUser.starredApis.includes(api._id);
+          api.stars += alreadyStarred ? -1 : 1;
+          setApi(api);
+  
+          //FIXME: remove line after use readuc hooks
+          //@ts-ignore
+          updateUser({
+            ...connectedUser,
+            starredApis: alreadyStarred
+              ? connectedUser.starredApis.filter((id: any) => id !== api._id)
+              : [...connectedUser.starredApis, api._id],
+          });
+        }
+      });
+    }
   };
 
   if (showGuestModal)

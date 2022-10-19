@@ -163,33 +163,43 @@ export function SimpleNotification(props: any) {
           switch (props.notification.action.type) {
             case 'ApiSubscription':
               return (
-                <div>
-                  <a
-                    className="btn btn-outline-success btn-sm me-1"
-                    href="#"
-                    title={translate('Accept')}
-                    onClick={() =>
-                      props.openSubMetadataModal({
-                        save: props.accept,
-                        api: props.notification.action.api,
-                        plan: props.notification.action.plan,
-                        team: props.getTeam(props.notification.action.team),
-                        notification: props.notification,
-                        creationMode: true,
-                      })
-                    }
-                  >
-                    <i className="fas fa-check" />
-                  </a>
-                  <a
-                    className="btn btn-outline-danger btn-sm"
-                    href="#"
-                    title={translate('Reject')}
-                    onClick={() => props.reject()}
-                  >
-                    <i className="fas fa-times" />
-                  </a>
-                </div>
+                <div className='d-flex flex-row flex-grow-1'>
+                  <div className='d-flex flex-wrap flex-grow-1'>
+                    {props.notification.action.motivation}
+                  </div>
+                  <div className='d-flex flex-row flex-nowrap'>
+                    
+                      <a
+                        className="btn btn-outline-success btn-sm me-1"
+                         // todo: @baudelotphilippe, don't sure it's the best solution
+                        style={{height: '30px'}}
+                        href="#"
+                        title={translate('Accept')}
+                        onClick={() =>
+                          props.openSubMetadataModal({
+                            save: props.accept,
+                            api: props.notification.action.api,
+                            plan: props.notification.action.plan,
+                            team: props.getTeam(props.notification.action.team),
+                            notification: props.notification,
+                            creationMode: true,
+                          })
+                        }
+                      >
+                        <i className="fas fa-check" />
+                      </a>
+                      <a
+                        className="btn btn-outline-danger btn-sm"
+                        style={{height: '30px'}}
+                        href="#"
+                        title={translate('Reject')}
+                        onClick={() => props.reject()}
+                      >
+                        <i className="fas fa-times" />
+                      </a>
+                    </div>
+
+                  </div>
               );
             default:
               return (
@@ -220,7 +230,7 @@ export function SimpleNotification(props: any) {
             <a
               className="btn disabled"
               title={moment(date).format(
-                translate({key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z'})
+                translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
               )}
             >
               <i className="fas fa-check" />
@@ -231,7 +241,7 @@ export function SimpleNotification(props: any) {
             <a
               className="btn disabled"
               title={moment(date).format(
-                translate({key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z'})
+                translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
               )}
             >
               <i className="fas fa-times" />
@@ -370,12 +380,12 @@ export function SimpleNotification(props: any) {
             </div>)}
             {notification.action.type === 'NewPostPublished' && (<div>
               <Translation
-                  i18nkey="new.published.post.notification"
-                  replacements={[
-                    notification.sender.name,
-                    props.getTeam(notification.action.teamId).name,
-                    notification.action.apiName
-                  ]}
+                i18nkey="new.published.post.notification"
+                replacements={[
+                  notification.sender.name,
+                  props.getTeam(notification.action.teamId).name,
+                  notification.action.apiName
+                ]}
               >
                 {notification.sender.name}, as admin of{' '}
                 {props.getTeam(notification.action.teamId).name}, has published a new post on{' '}
