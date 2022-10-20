@@ -176,6 +176,12 @@ object NotificationAction {
       api: ApiId,
       plan: UsagePlanId,
       team: TeamId) extends NotificationAction
+
+  case class ApiSubscriptionAccept(
+      api: ApiId,
+      plan: UsagePlanId,
+      team: TeamId) extends NotificationAction
+
   case class ApiSubscriptionDemand(
       api: ApiId,
       plan: UsagePlanId,

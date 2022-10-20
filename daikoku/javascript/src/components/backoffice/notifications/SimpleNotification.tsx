@@ -64,6 +64,14 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             title={translate('Subscription to an API is refused')}
           />
         );
+      case 'ApiSubscriptionAccept':
+        return (
+            <i
+                className="fas fa-check"
+                style={{ marginRight: 5 }}
+                title={translate('Subscription to an API is accepted')}
+            />
+        );
       case 'OtoroshiSyncSubscriptionError':
         return (
           <i

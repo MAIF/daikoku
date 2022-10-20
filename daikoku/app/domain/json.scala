@@ -2326,6 +2326,7 @@ object json {
         case "TeamAccess"      => TeamAccessFormat.reads(json)
         case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
         case "ApiSubscriptionReject" => ApiSubscriptionRejectFormat.reads(json)
+        case "ApiSubscriptionAccept" => ApiSubscriptionAcceptFormat.reads(json)
         case "OtoroshiSyncSubscriptionError" =>
           OtoroshiSyncSubscriptionErrorFormat.reads(json)
         case "OtoroshiSyncApiError" => OtoroshiSyncApiErrorFormat.reads(json)
@@ -2356,6 +2357,9 @@ object json {
         case p: ApiSubscriptionReject =>
           ApiSubscriptionRejectFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "ApiSubscriptionReject")
+        case p: ApiSubscriptionAccept =>
+          ApiSubscriptionAcceptFormat.writes(p).as[JSObject] ++ Json.obj(
+            "type" -> "ApiSubscriptionAccept")
         case p: OtoroshiSyncSubscriptionError =>
           OtoroshiSyncSubscriptionErrorFormat.writes(p).as[JsObject] ++ Json
             .obj("type" -> "OtoroshiSyncSubscriptionError")
@@ -2566,6 +2570,27 @@ object json {
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue]
+    )
+  }
+
+  val ApiSubscriptionAcceptFormat = new Format[ApiSubscriptionAccept] {
+    override def read(json: JsValue): JsResult[ApiSubscriptionAccept] =
+      Try {
+        JsSuccess(
+          ApiSubscriptionAccept(
+            api = (json \ "api").as(ApiIdFormat),
+            plan = (json \ "plan").as(UsagePlanIdFormat),
+            team = (json \ "team").as(TeamIdFormat)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiSubscriptionAccept): JsValue = Json.obj(
+      "api" -> ApiIdFormat.writes(o.api),
+      "plan" -> UsagePlanIdFormat.writes(o.plan),
+      "team" -> TeamIdFormat.writes(o.team)
     )
   }
   val ApiKeyDeletionInformationFormat = new Format[ApiKeyDeletionInformation] {
