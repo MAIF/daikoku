@@ -2358,7 +2358,7 @@ object json {
           ApiSubscriptionRejectFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "ApiSubscriptionReject")
         case p: ApiSubscriptionAccept =>
-          ApiSubscriptionAcceptFormat.writes(p).as[JSObject] ++ Json.obj(
+          ApiSubscriptionAcceptFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "ApiSubscriptionAccept")
         case p: OtoroshiSyncSubscriptionError =>
           OtoroshiSyncSubscriptionErrorFormat.writes(p).as[JsObject] ++ Json
@@ -2574,7 +2574,7 @@ object json {
   }
 
   val ApiSubscriptionAcceptFormat = new Format[ApiSubscriptionAccept] {
-    override def read(json: JsValue): JsResult[ApiSubscriptionAccept] =
+    override def reads(json: JsValue): JsResult[ApiSubscriptionAccept] =
       Try {
         JsSuccess(
           ApiSubscriptionAccept(
