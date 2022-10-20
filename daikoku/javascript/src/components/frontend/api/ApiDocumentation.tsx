@@ -14,9 +14,7 @@ import { IDocDetail, IDocPage, isError } from '../../../types';
 
 const asciidoctorConverter = asciidoctor();
 
-export function ApiDocumentationCartidge({
-  details
-}: any) {
+export function ApiDocumentationCartidge({ details }: any) {
   const params = useParams();
   return (
     <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
@@ -38,7 +36,7 @@ export function ApiDocumentationCartidge({
 }
 
 export function ApiDocumentation(props: any) {
-  const { translate, Translation } = useContext(I18nContext);
+  const { Translation } = useContext(I18nContext);
 
   const params = useParams();
   const match = useMatch('/:teamId/:apiId/:version/documentation/:pageId')
@@ -60,7 +58,7 @@ export function ApiDocumentation(props: any) {
   const fetchPage = () => {
     Services.getDocDetails(props.api._humanReadableId, props.api.currentVersion)
       .then((d) => {
-        const pageId = match?.params.pageId;
+        const pageId = match?.params.pageId || d.pages[0];
         if (pageId) {
           Services.getDocPage(props.api._id, pageId)
             .then((page) => {
@@ -107,7 +105,7 @@ export function ApiDocumentation(props: any) {
         </Link>)}
       </div>
       {!state?.remoteContentEnabled && (<AwesomeContentViewer contentType={state?.contentType} content={state?.content} />)}
-      {state?.remoteContentEnabled && (<AwesomeContentViewer contentType={state.contentType} remoteContent={{url: state?.remoteContentUrl}} />)}
+      {state?.remoteContentEnabled && (<AwesomeContentViewer contentType={state.contentType} remoteContent={{ url: state?.remoteContentUrl }} />)}
       <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
         {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
           <i className="fas fa-chevron-left me-1" />
@@ -126,10 +124,7 @@ const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;
 const Image = (props: any) => <img src={props.url} style={{ width: '100%' }} alt={props.alt} />;
 const Video = (props: any) => <video src={props.url} style={{ width: '100%' }} />;
 const Html = (props: any) => <iframe src={props.url} style={{ width: '100%', height: '100vh', border: 0 }} />;
-
-const Pdf = ({
-  url
-}: any) => {
+const Pdf = ({url}: any) => {
   return (
     <embed src={url} type="application/pdf" style={{ width: '100%', height: '100vh', border: 0 }} />
   );
