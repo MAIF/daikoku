@@ -9,6 +9,7 @@ export default ({
   className = '',
   readOnly,
   mode = 'javascript',
+  setRef
 }: any) => {
   return (
     <CodeInput
@@ -17,6 +18,7 @@ export default ({
       mode={mode}
       onChange={onChange}
       value={value}
+      setRef={setRef}
     />
   );
 };

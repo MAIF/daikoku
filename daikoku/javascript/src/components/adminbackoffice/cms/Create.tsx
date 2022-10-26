@@ -140,43 +140,47 @@ export const Create = (props: any) => {
     </div>
   );
 
-  if (loading) return <Spinner />;
+  if (loading) {
+    return <Spinner />;
+  }
 
-  return (<>
-    <Sidebar
-      setFinalValue={setFinalSideValue}
-      updatePage={updatePage}
-      ref={sideRef}
-      savePath={savePath}
-      pages={props.pages}
-      setContentType={setContentType}
-      inValue={inValue.side} />
-    <div className="p-2 d-flex flex-column" style={{ flex: 1, overflow: 'hidden' }}>
-      <div className="d-flex align-items-center mt-2">
-        {[
-          { title: translate('cms.create.draft'), id: 0, showPreview: () => setTab(0) },
-          {
-            title: translate('cms.create.draft_preview'),
-            id: 1,
-            showPreview: () => {
-              setFormAction('update_before_preview');
-              [bodyRef, sideRef].map((r) => r.current?.handleSubmit());
+  return (
+    <div className='d-flex'>
+      <Sidebar
+        setFinalValue={setFinalSideValue}
+        updatePage={updatePage}
+        ref={sideRef}
+        savePath={savePath}
+        pages={props.pages}
+        setContentType={setContentType}
+        inValue={inValue.side} />
+      <div className="p-2 d-flex flex-column" style={{ flex: 1, overflow: 'hidden' }}>
+        <div className="d-flex align-items-center mt-2">
+          {[
+            { title: translate('cms.create.draft'), id: 0, showPreview: () => setTab(0) },
+            {
+              title: translate('cms.create.draft_preview'),
+              id: 1,
+              showPreview: () => {
+                setFormAction('update_before_preview');
+                [bodyRef, sideRef].map((r) => r.current?.handleSubmit());
+              },
             },
-          },
-          { title: translate('cms.create.content'), id: 2 },
-        ].map(({ title, id, showPreview }) => !savePath ? null : (<TabButton title={title} selected={tab === id} key={`tabButton${id}`} onClick={() => {
-          if (showPreview)
-            showPreview();
-          else {
-            setFormAction(undefined);
-            [bodyRef, sideRef].map((r) => r.current?.handleSubmit());
-            setTab(id);
-          }
-        }} />))}
+            { title: translate('cms.create.content'), id: 2 },
+          ].map(({ title, id, showPreview }) => !savePath ? null : (<TabButton title={title} selected={tab === id} key={`tabButton${id}`} onClick={() => {
+            if (showPreview)
+              showPreview();
+            else {
+              setFormAction(undefined);
+              [bodyRef, sideRef].map((r) => r.current?.handleSubmit());
+              setTab(id);
+            }
+          }} />))}
+        </div>
+        <Body show={tab === 0} ref={bodyRef} pages={props.pages} contentType={contentType} setFinalValue={setFinalBodyValue} inValue={(inValue as any).draft} history={(inValue as any).history} publish={onPublish} />
+        {tab === 1 && (<iframe className="mt-3" style={{ flex: 1 }} src={`/_${savePath || '/'}?draft=true`} />)}
+        {tab === 2 && (<iframe className="mt-3" style={{ flex: 1 }} src={`/_${savePath || '/'}?force_reloading=true`} />)}
       </div>
-      <Body show={tab === 0} ref={bodyRef} pages={props.pages} contentType={contentType} setFinalValue={setFinalBodyValue} inValue={(inValue as any).draft} history={(inValue as any).history} publish={onPublish} />
-      {tab === 1 && (<iframe className="mt-3" style={{ flex: 1 }} src={`/_${savePath || '/'}?draft=true`} />)}
-      {tab === 2 && (<iframe className="mt-3" style={{ flex: 1 }} src={`/_${savePath || '/'}?force_reloading=true`} />)}
     </div>
-  </>);
+  );
 };
