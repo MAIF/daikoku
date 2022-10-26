@@ -1,4 +1,4 @@
-export const Option = (x) => x === undefined || x === null ? None : Some(x);
+export const Option = (x) => (x === undefined || x === null ? None : Some(x));
 
 export const Some = (x) => ({
   map: (f) => Option(f(x)),
@@ -9,7 +9,7 @@ export const Some = (x) => ({
   getOrNull: () => x,
   isDefined: true,
   exists: (f) => Option(f(x)).isDefined,
-  filter: (f) => f(x) ? Option(x) : None
+  filter: (f) => (f(x) ? Option(x) : None),
 });
 
 export const None = {

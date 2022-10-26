@@ -8,7 +8,12 @@ import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Evolution, TeamApiKeyVisibility, Tenant}
+import fr.maif.otoroshi.daikoku.domain.{
+  DatastoreId,
+  Evolution,
+  TeamApiKeyVisibility,
+  Tenant
+}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.logger.AppLogger
@@ -291,8 +296,9 @@ class DaikokuEnv(ws: WSClient,
 
   private var _dataStore: DataStore =
     configuration.getOptional[String]("daikoku.storage") match {
-      case Some("mongo")    => new MongoDataStore(context, this)
-      case Some("postgres") => new PostgresDataStore(configuration, this, pgPool)
+      case Some("mongo") => new MongoDataStore(context, this)
+      case Some("postgres") =>
+        new PostgresDataStore(configuration, this, pgPool)
       case Some(e) =>
         throw new RuntimeException(s"Bad storage value from conf: $e")
       case None => throw new RuntimeException("No storage found from conf")

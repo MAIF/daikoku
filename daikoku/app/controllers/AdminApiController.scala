@@ -82,7 +82,8 @@ class StateController(DaikokuAction: DaikokuAction,
                   "message" -> "You're already on postgres"
                 )))
           case _ =>
-            val postgresStore = new PostgresDataStore(env.rawConfiguration, env, pgPool)
+            val postgresStore =
+              new PostgresDataStore(env.rawConfiguration, env, pgPool)
             (for {
               _ <- postgresStore.checkIfTenantsTableExists()
               _ <- env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>

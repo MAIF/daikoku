@@ -29,10 +29,11 @@ export const CanIDoAction = (
       .map((userWithPermission: any) => userWithPermission.teamPermission)
       .map((ability: string) => permissions[ability])
       .flatMap((perms: any) => Option(perms.find((p: any) => p.what === what)))
-      .map((perm: any) => Option(perm.condition).fold(
-        () => perm.action,
-        (condition: any) => condition(team) ? perm.action : doNothing
-      )
+      .map((perm: any) =>
+        Option(perm.condition).fold(
+          () => perm.action,
+          (condition: any) => (condition(team) ? perm.action : doNothing)
+        )
       )
       .fold(
         () => doNothing,
@@ -43,8 +44,16 @@ export const CanIDoAction = (
   }
 };
 
-export const CanIDoActionForOneOfTeams = (user: any, action: any, what: any, teams: any, apiCreationPermitted: any) => {
-  return teams.some((team: any) => CanIDoAction(user, action, what, team, apiCreationPermitted, false));
+export const CanIDoActionForOneOfTeams = (
+  user: any,
+  action: any,
+  what: any,
+  teams: any,
+  apiCreationPermitted: any
+) => {
+  return teams.some((team: any) =>
+    CanIDoAction(user, action, what, team, apiCreationPermitted, false)
+  );
 };
 
 const CanComponent = ({
@@ -60,34 +69,34 @@ const CanComponent = ({
   isTenantAdmin,
   tenant,
   whichOne = tenant,
-  apiCreationPermitted
-}: { 
-  I: any, 
-  a: any, 
-  team?: any, 
-  teams?: any, 
-  connectedUser?: any, 
-  dispatchError?: any, 
-  children: any, 
-  setError?: any, 
-  orElse?: any, 
-  isTenantAdmin?: any, 
-  tenant?: any, 
-  whichOne?: any,
-  apiCreationPermitted?: any
+  apiCreationPermitted,
+}: {
+  I: any;
+  a: any;
+  team?: any;
+  teams?: any;
+  connectedUser?: any;
+  dispatchError?: any;
+  children: any;
+  setError?: any;
+  orElse?: any;
+  isTenantAdmin?: any;
+  tenant?: any;
+  whichOne?: any;
+  apiCreationPermitted?: any;
 }) => {
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams, apiCreationPermitted)
     : CanIDoAction(
-      connectedUser,
-      I,
-      a,
-      team,
-      apiCreationPermitted,
-      isTenantAdmin,
-      whichOne,
-      tenant
-    );
+        connectedUser,
+        I,
+        a,
+        team,
+        apiCreationPermitted,
+        isTenantAdmin,
+        whichOne,
+        tenant
+      );
   if (!authorized) {
     if (dispatchError) {
       setError({ error: { status: 401, message: 'unauthorized', from: 'CAN component' } });
@@ -99,7 +108,7 @@ const CanComponent = ({
 };
 
 const mapStateToProps = (state: any) => ({
-  ...state.context
+  ...state.context,
 });
 const mapDispatchToProps = {
   setError: (error: any) => setError(error),

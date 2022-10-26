@@ -111,8 +111,7 @@ class ApiControllerSpec()
 
       //no api created ==> resp = []
       result.forall(tuple =>
-        !apis.exists(api => api.name == tuple._1 && tuple._2)
-      ) mustBe true
+        !apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
     }
 
     "initialize tenant apis" in {
@@ -144,16 +143,14 @@ class ApiControllerSpec()
         .map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
 
       result.forall(tuple =>
-        apis.exists(api => api.name == tuple._1 && tuple._2)
-      ) mustBe true
+        apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
     }
 
     "not initialize subscriptions for a tenant for which he's not admin" in {
       setupEnvBlocking(
         tenants = Seq(tenant, tenant2),
         users = Seq(tenantAdmin),
-        teams =
-          Seq(defaultAdminTeam, teamOwner, teamConsumer, tenant2AdminTeam),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer, tenant2AdminTeam),
         apis = Seq.empty
       )
 
@@ -295,13 +292,13 @@ class ApiControllerSpec()
       resp.status mustBe 201
       val result = resp.json.as[JsArray].value.map(_.as[String])
 
-      result.forall(res =>
-        apikeys.exists(apikey =>
-          (apikey \ "apikey")
-            .as(json.OtoroshiApiKeyFormat)
-            .clientName == res
-        )
-      ) mustBe true
+      result.forall(
+        res =>
+          apikeys.exists(
+            apikey =>
+              (apikey \ "apikey")
+                .as(json.OtoroshiApiKeyFormat)
+                .clientName == res)) mustBe true
 
       val sessionTest = loginWithBlocking(userAdmin, tenant)
       val respTestApis = httpJsonCallBlocking(
@@ -325,9 +322,7 @@ class ApiControllerSpec()
       resultTestSubscriptions.get.length mustBe 5
       Seq("1", "2", "3", "4", "5")
         .map(UsagePlanId)
-        .forall(id =>
-          resultTestSubscriptions.get.exists(sub => sub.plan == id)
-        ) mustBe true
+        .forall(id => resultTestSubscriptions.get.exists(sub => sub.plan == id)) mustBe true
 
       val respTestMySubscriptions = httpJsonCallBlocking(
         s"/api/me/subscriptions/${defaultApi.humanReadableId}/${defaultApi.currentVersion.value}"
@@ -647,8 +642,9 @@ class ApiControllerSpec()
 
       val respGet =
         httpJsonCallBlocking(path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
-        )(tenant, session)
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
+          tenant,
+          session)
 
       respGet.status mustBe 200
       val resultAsApi =
@@ -922,8 +918,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -993,8 +988,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -1128,8 +1122,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -1240,8 +1233,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     ),
                     ApikeyCustomization(
                       customMetadata = Seq(
@@ -1528,8 +1520,9 @@ class ApiControllerSpec()
 
       val respGet =
         httpJsonCallBlocking(path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
-        )(tenant, session)
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
+          tenant,
+          session)
 
       respGet.status mustBe 200
       val resultAsApi =
@@ -1651,8 +1644,9 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userApiEditor, tenant)
       var resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
-      )(tenant, session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+        tenant,
+        session)
 
       resp.status mustBe Status.OK
       ApiFormat.reads(resp.json).get.possibleUsagePlans.size mustBe 0
@@ -1671,8 +1665,9 @@ class ApiControllerSpec()
       resp.status mustBe Status.OK
 
       resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
-      )(tenant, session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+        tenant,
+        session)
       resp.status mustBe Status.OK
 
       ApiFormat.reads(resp.json).get.possibleUsagePlans.size mustBe 1
@@ -1711,8 +1706,9 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userApiEditor, tenant)
       var resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}"
-      )(tenant, session)
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+        tenant,
+        session)
 
       resp.status mustBe Status.OK
       ApiFormat.reads(resp.json).get.documentation.pages.size mustBe 0
@@ -1782,7 +1778,8 @@ class ApiControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          path = s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
+          path =
+            s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
         )(tenant, session)
       respVerif.status mustBe 200 //FIXME 404
       val eventualApi = json.ApiFormat.reads(respVerif.json)
@@ -2299,8 +2296,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2723,8 +2719,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2785,8 +2780,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2933,8 +2927,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -2953,8 +2946,9 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userAdmin, tenant)
       val respGetSubsStart = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
+        tenant,
+        session)
       respGetSubsStart.status mustBe 200
       val resultStart =
         fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
@@ -2972,8 +2966,9 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respGetSubs = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
+        tenant,
+        session)
       respGetSubs.status mustBe 200
       val result = fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
         .reads(respGetSubs.json)
@@ -3021,8 +3016,7 @@ class ApiControllerSpec()
                     OtoroshiSettingsId("default"),
                     Some(
                       AuthorizedEntities(groups =
-                        Set(OtoroshiServiceGroupId("12345"))
-                      )
+                        Set(OtoroshiServiceGroupId("12345")))
                     )
                   )
                 ),
@@ -3041,8 +3035,9 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userAdmin, tenant)
       val respGetSubsStart = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
+        tenant,
+        session)
       respGetSubsStart.status mustBe 200
       val resultStart =
         fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
@@ -3057,8 +3052,9 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respGetSubs = httpJsonCallBlocking(path =
-        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
+        s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}")(
+        tenant,
+        session)
       respGetSubs.status mustBe 404
 
       val respGetTeam = httpJsonCallBlocking(

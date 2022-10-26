@@ -1,4 +1,9 @@
-import { IApiDocumentationSelectModalProps, IFormModalProps, ITeamInvitationModalProp, TeamSelectorModalProps } from '../../components';
+import {
+  IApiDocumentationSelectModalProps,
+  IFormModalProps,
+  ITeamInvitationModalProp,
+  TeamSelectorModalProps,
+} from '../../components';
 import { CLOSE_MODAL, OPEN_MODAL } from './';
 
 export const openCreationTeamModal = (modalProps: any) => (dispatch: any) => {
@@ -47,7 +52,8 @@ export const openSubMetadataModal = (modalProps: any) => ({
   modalType: 'subscriptionMetadataModal',
 });
 
-export const openContactModal = (name = undefined, email = undefined, tenant: any, team = undefined, api = undefined) =>
+export const openContactModal =
+  (name = undefined, email = undefined, tenant: any, team = undefined, api = undefined) =>
   (dispatch: any) => {
     return dispatch({
       type: OPEN_MODAL,
@@ -68,17 +74,19 @@ export const openInvitationTeamModal = (modalProps: ITeamInvitationModalProp) =>
   modalType: 'teamInvitation',
 });
 
-export const openJoinTeamModal = (modalProps: any) => (dispatch: any) => dispatch({
-  type: OPEN_MODAL,
-  modalProps,
-  modalType: 'joinTeamInvitation',
-});
+export const openJoinTeamModal = (modalProps: any) => (dispatch: any) =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'joinTeamInvitation',
+  });
 
-export const openApiKeySelectModal = (modalProps: any) => (dispatch: any) => dispatch({
-  type: OPEN_MODAL,
-  modalProps,
-  modalType: 'apiKeySelectModal',
-});
+export const openApiKeySelectModal = (modalProps: any) => (dispatch: any) =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'apiKeySelectModal',
+  });
 
 export const openApiSelectModal = (modalProps: any) => ({
   type: OPEN_MODAL,
@@ -95,9 +103,9 @@ export const openApiDocumentationSelectModal = (modalProps: IApiDocumentationSel
 export const openFormModal = <T>(modalProps: IFormModalProps<T>) => ({
   type: OPEN_MODAL,
   modalProps,
-  modalType: 'formModal'
+  modalType: 'formModal',
 });
 
 export const closeModal = () => ({
-    type: CLOSE_MODAL,
+  type: CLOSE_MODAL,
 });

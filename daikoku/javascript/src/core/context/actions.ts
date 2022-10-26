@@ -10,38 +10,31 @@ import {
 } from './';
 
 export const login =
-  ({
-    user,
-    team,
-    tenant,
-    language
-  }: any) =>
-    (dispatch: any) => {
-      return dispatch({
-        type: LOGIN,
-        user,
-        team,
-        tenant,
-        language,
-      });
-    };
+  ({ user, team, tenant, language }: any) =>
+  (dispatch: any) => {
+    return dispatch({
+      type: LOGIN,
+      user,
+      team,
+      tenant,
+      language,
+    });
+  };
 
 export const logout = () => {
-  return ({
+  return {
     type: LOGOUT,
-  });
+  };
 };
 
 export const impersonate =
-  ({
-    impersonator
-  }: any) =>
-    (dispatch: any) => {
-      return dispatch({
-        type: IMPERSONATE,
-        impersonator,
-      });
-    };
+  ({ impersonator }: any) =>
+  (dispatch: any) => {
+    return dispatch({
+      type: IMPERSONATE,
+      impersonator,
+    });
+  };
 
 export const updateTeam = (team: any) => (dispatch: any) => {
   return dispatch({
@@ -84,4 +77,4 @@ export const toggleExpertMode = () => {
   return {
     type: TOGGLE_EXPERT_MODE,
   };
-}
+};
