@@ -1,13 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import akka.util.ByteString
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -16,13 +13,9 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
 import play.api.i18n.I18nSupport
+import play.api.libs.streams.Accumulator
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import play.api.mvc.{
-  AbstractController,
-  AnyContent,
-  ControllerComponents,
-  Result
-}
+import play.api.mvc.{AbstractController, AnyContent, BodyParser, ControllerComponents, Result}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -321,7 +314,7 @@ class NotificationController(
   def rejectNotificationOfTeam(teamId: TeamId,
                                notification: Notification,
                                maybeMessage: Option[String])(
-      implicit ctx: DaikokuActionContext[JsValue]) =
+      implicit ctx: DaikokuActionContext[AnyContent]) =
     TeamAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed number of unread notifications for team @{team.name} - @{team.id} => @{notifications}"))(
       teamId.value,
@@ -494,7 +487,7 @@ class NotificationController(
     }
 
   def rejectNotificationOfMe(notification: Notification)(
-      implicit ctx: DaikokuActionContext[JsValue]) =
+      implicit ctx: DaikokuActionContext[AnyContent]) =
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has accessed number of unread notifications for team @{team.name} - @{team.id} => @{notifications}"))(
       ctx) {
@@ -572,10 +565,12 @@ class NotificationController(
     }
 
   def rejectNotification(notificationId: String) =
-    DaikokuAction.async(parse.json) { ctx =>
-      implicit val context: DaikokuActionContext[JsValue] = ctx
+    DaikokuAction.async(parse.anyContent) { ctx =>
+      val maybeMessage = ctx.request.body.asJson
+        .flatMap(jsonBody => (jsonBody \ "message").asOpt[String])
 
-      val maybeMessage = (ctx.request.body \ "message").asOpt[String]
+      implicit val context: DaikokuActionContext[AnyContent] = ctx
+
 
       env.dataStore.notificationRepo
         .forTenant(ctx.tenant.id)
