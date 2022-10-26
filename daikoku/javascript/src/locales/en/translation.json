@@ -107,6 +107,7 @@
     "from": "from",
     "notif.api.subscription": "Request subscription to %s for plan %s",
     "notif.api.demand.reject": "Your request subscription to %s for plan %s has been rejected",
+    "notif.api.demand.accept": "Your request subscription to %s for plan %s has been accepted",
     "notif.api.access": "Request access to %s",
     "notif.membership.team": "membership request to your team",
     "notif.apikey.deletion": "Your API key with clientId %s for API %s has been deleted",

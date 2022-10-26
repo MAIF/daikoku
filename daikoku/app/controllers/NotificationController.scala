@@ -724,6 +724,17 @@ class NotificationController(
                           customMaxPerDay,
                           customMaxPerMonth,
                           customReadOnly))
+        newNotification = Notification(
+          id = NotificationId(BSONObjectID.generate().stringify),
+          tenant = tenant.id,
+          team = Some(team.id),
+          sender = user,
+          notificationType = NotificationType.AcceptOnly,
+          action = NotificationAction.ApiSubscriptionAccept( apiId, plan, team.id )
+      )
+      _ <- EitherT.liftF(
+        env.dataStore.notificationRepo.forTenant(tenant).save(newNotification)
+      )
       _ <- EitherT.liftF(
         Future.sequence((administrators ++ Seq(sender)).map(admin => {
           implicit val language: String = admin.defaultLanguage.getOrElse(
