@@ -110,6 +110,7 @@
   "from": "depuis",
   "notif.api.subscription": "Souscription à %s pour le plan %s",
   "notif.api.demand.reject": "Votre souscription à %s pour le plan %s a été refusée",
+  "notif.api.demand.accept": "Votre souscription à %s pour le plan %s a été acceptée",
   "notif.api.access": "demande d'accès à %s",
   "notif.membership.team": "Demande d'adhésion a votre équipe",
   "notif.apikey.deletion": "Votre clé d'API avec l'identifiant client %s pour API %s a été supprimée",

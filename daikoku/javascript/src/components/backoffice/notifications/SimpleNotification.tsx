@@ -64,6 +64,14 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             title={translate('Subscription to an API is refused')}
           />
         );
+      case 'ApiSubscriptionAccept':
+        return (
+            <i
+                className="fas fa-check"
+                style={{ marginRight: 5 }}
+                title={translate('Subscription to an API is accepted')}
+            />
+        );
       case 'OtoroshiSyncSubscriptionError':
         return (
           <i
@@ -321,6 +329,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
       case 'TransferApiOwnership':
         return `${sender.name}`;
       case 'ApiSubscriptionReject':
+      case 'ApiSubscriptionAccept':
       case 'TeamInvitation':
         return props.getTeam(action.team).name;
       case 'ApiSubscription':
@@ -344,7 +353,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
 
   const { notification, getApi } = props;
   let infos = {};
-  if (['ApiAccess', 'ApiSubscription', 'TransferApiOwnership', 'ApiSubscriptionReject'].includes(notification.action.type)) {
+  if (['ApiAccess', 'ApiSubscription', 'TransferApiOwnership', 'ApiSubscriptionReject', 'ApiSubscriptionAccept'].includes(notification.action.type)) {
     const api = getApi(notification.action.api);
     const plan = !api
       ? { customName: translate('deleted') }
@@ -384,6 +393,9 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             </div>)}
             {notification.action.type === 'ApiSubscriptionReject' && translate({
               key: 'notif.api.demand.reject', 
+              replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]})}
+            {notification.action.type === 'ApiSubscriptionAccept' && translate({
+              key: 'notif.api.demand.accept',
               replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]})}
             {notification.action.type === 'ApiKeyDeletionInformation' && (<div>
               <Translation i18nkey="notif.apikey.deletion" replacements={[notification.action.clientId, notification.action.api]}>
