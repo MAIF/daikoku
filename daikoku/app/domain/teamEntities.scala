@@ -172,10 +172,9 @@ object NotificationAction {
       extends NotificationAction
 
 
-  case class ApiSubscriptionReject(message: Option[String],
-                                   api: ApiId,
-                                   plan: UsagePlanId,
-                                   team: TeamId) 
+  case class ApiSubscriptionAccept(api: ApiId,
+                                    plan: UsagePlanId,
+                                    team: TeamId)
       extends NotificationAction
 
   case class ApiSubscriptionReject(message: Option[String],
