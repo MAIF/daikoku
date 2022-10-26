@@ -49,18 +49,19 @@ export function addCallback(cb: any, id: any) {
 }
 
 export function removeCallback(id: any) {
-  callback = callback.filter((c:any) => c.id !== id);
+  callback = callback.filter((c: any) => c.id !== id);
 }
 
-export const fromMessagesToDialog = (messages: any) => orderBy(messages, ['date']).reduce((dialog, message) => {
-  if (!dialog.length) {
-    return [[message]];
-  } else {
-    const l:any = last(dialog);
-    if (l.some((m: any) => m.sender === message.sender)) {
-      return [...dialog.slice(0, dialog.length - 1), [...l, message]];
+export const fromMessagesToDialog = (messages: any) =>
+  orderBy(messages, ['date']).reduce((dialog, message) => {
+    if (!dialog.length) {
+      return [[message]];
     } else {
-      return [...dialog, [message]];
+      const l: any = last(dialog);
+      if (l.some((m: any) => m.sender === message.sender)) {
+        return [...dialog.slice(0, dialog.length - 1), [...l, message]];
+      } else {
+        return [...dialog, [message]];
+      }
     }
-  }
-}, []);
+  }, []);

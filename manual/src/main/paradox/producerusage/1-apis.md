@@ -125,7 +125,7 @@ The documentation tabs allows you to create a paginated documentation. Like desc
 
 ## Manage subscription
 
-On the team APIs screen on your team back office, it's possible to manage for every APIs its [subscriptions](./2-subscriptions.md) by clicking on the `key` button.
+On the team APIs screen on your team back office, it's possible to manage for every APIs its subscriptions by clicking on the `key` button.
 You can activate/deactivate API keys or update metadata.
 
 ## Api consumptions

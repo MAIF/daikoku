@@ -1,12 +1,15 @@
 import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
-import { useContext, useState } from 'react';
+import { Children, useContext, useState } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 import classNames from 'classnames';
+import { DndContext, DragEndEvent, UniqueIdentifier, useDraggable, useDroppable } from '@dnd-kit/core';
+import get from 'lodash/get'
+import set from 'lodash/set'
 
 import { I18nContext, openApiDocumentationSelectModal, openFormModal } from '../../../core';
 import * as Services from '../../../services';
@@ -14,6 +17,9 @@ import { IApi, IDocPage, IDocTitle, isError, IState, ITeamSimple } from '../../.
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { BeautifulTitle, Spinner } from '../../utils';
 import { removeArrayIndex, moveArrayIndex } from '../../utils/array';
+import { SortableTree } from '../../utils/dnd/SortableTree';
+import { Wrapper } from '../../utils/dnd/Wrapper';
+import { TreeItem, TreeItems } from '../../utils/dnd/types';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -221,23 +227,6 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     },
   };
 
-
-  // useEffect(() => {
-  //   if (!creationInProgress) {
-  //     updateDetails();
-  //     setSelected(null);
-  //   }
-  // }, [versionId]);
-
-  // useEffect(() => {
-  //   if (selected || deletedPage) {
-  //     setDeletedPage(false);
-  //     props.saveApi(api)
-  //       .then(() => updateDetails());
-  //   }
-  // }, [api]);
-
-
   const updatePage = (selectedPage: IDocTitle) => {
     Services.getDocPage(api._id, selectedPage._id)
       .then((page) => {
@@ -265,42 +254,6 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         });
     }
   }
-
-  // function isSelected(page: any) {
-  //   return selected && page._id === selected._id;
-  // }
-
-  // function onUp() {
-  //   let pages = cloneDeep(api.documentation.pages);
-  //   if (selected) {
-  //     const oldIndex = pages.indexOf(selected._id);
-  //     if (oldIndex >= 0) {//@ts-ignore //fixme with monkey patch
-  //       pages = pages.move(oldIndex, oldIndex - 1);
-  //       const newValue = cloneDeep(api);
-  //       newValue.documentation.pages = pages;
-  //       props.onChange(newValue);
-  //       props.saveApi(newValue).then(() => {
-  //         updateDetails();
-  //       });
-  //     }
-  //   }
-  // }
-
-  // function onDown() {
-  //   let pages = cloneDeep(api.documentation.pages);
-  //   if (selected) {
-  //     const oldIndex = pages.indexOf(selected._id);
-  //     if (oldIndex < pages.length) { //@ts-ignore //fixme with monkey patch
-  //       pages = pages.move(oldIndex, oldIndex + 1);
-  //       const newValue = cloneDeep(api);
-  //       newValue.documentation.pages = pages;
-  //       props.onChange(newValue);
-  //       props.saveApi(newValue).then(() => {
-  //         updateDetails();
-  //       });
-  //     }
-  //   }
-  // }
 
   const movePage = (page: IDocTitle, move: number) => {
     if (detailsQuery.data) {
@@ -458,12 +411,6 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
             <div className="">
               <div className="d-flex justify-content-between align-items-center">
                 <div className="btn-group">
-                  {/* <button onClick={onUp} type="button" className="btn btn-sm btn-outline-success">
-                    <i className="fas fa-arrow-up" />
-                  </button>
-                  <button onClick={onDown} type="button" className="btn btn-sm btn-outline-success">
-                    <i className="fas fa-arrow-down" />
-                  </button> */}
                   <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
                     <i className="fas fa-plus" />
                   </button>
@@ -474,58 +421,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
               </div>
             </div>
             <div className='d-flex flex-column'>
-              {detailsQuery.data.titles.map((page, idx) => {
-                return (
-                  <div
-                    style={{ marginLeft: `${5 * parseInt(page.level)}px` }}
-                    className='d-flex flex-row justify-content-between'
-                    key={page._id} >
-                    <div> {idx + 1}.{page.level === '0' ? '' : page.level} - {page.title}</div>
-                    <div>
-                      <button
-                        onClick={() => moveLeft(page)}
-                        type="button"
-                        disabled={page.level === "0"}
-                        className="btn btn-sm btn-outline-danger float-right">
-                        <i className="fas fa-arrow-left" />
-                      </button>
-                      <button
-                        onClick={() => moveRight(page)}
-                        type="button"
-                        className="btn btn-sm btn-outline-danger float-right">
-                        <i className="fas fa-arrow-right" />
-                      </button>
-                      <button
-                        onClick={() => moveUp(page)}
-                        disabled={idx === 0}
-                        type="button"
-                        className="btn btn-sm btn-outline-danger float-right">
-                        <i className="fas fa-arrow-up" />
-                      </button>
-                      <button
-                        onClick={() => moveDown(page)}
-                        disabled={idx === detailsQuery.data.titles.length -1}
-                        type="button"
-                        className="btn btn-sm btn-outline-danger float-right">
-                        <i className="fas fa-arrow-down" />
-                      </button>
-                      <button
-                        onClick={() => deletePage(page)}
-                        type="button"
-                        className="btn btn-sm btn-outline-danger">
-                        <i className="fas fa-trash" />
-                      </button>
-                      <button
-                        onClick={() => updatePage(page)}
-                        type="button"
-                        className="btn btn-sm btn-outline-primary float-right">
-                        <i className="fas fa-edit" />
-                      </button>
-                    </div>
-
-                  </div>
-                );
-              })}
+              <TestDnD items={detailsQuery.data.titles} />
             </div>
           </div>
         </div>
@@ -536,54 +432,88 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 };
 
+const TestDnD = ({ items }: { items: Array<IDocTitle> }) => {
+  type Result = {
+    result: object,
+    info: {
+      previousItem?: IDocTitle,
+      path?: string,
+      groupPath: string
+    }
+  }
 
-const MultiButtons = (props: {
-  handleUp: () => void,
-  handleRight: () => void,
-  handleDown: () => void,
-  handleLeft: () => void,
-}) => {
-  const [display, setDisplay] = useState(false);
+  //@ts-ignore
+  const result: Result = items.reduce<Result>((acc, item) => {
+    if (item.level === '0') {
+      return ({
+        info: {
+          previousItem: item,
+          path: item._id,
+          groupPath: undefined,
+        },
+        result: { ...acc.result, [item._id]: { ...item, id: item.title } }
+      })
+    } else {
+      const compare = item.level.localeCompare(acc.info.previousItem?.level || '0')
+      if (compare === 1) {
+        return ({
+          info: {
+            previousItem: item,
+            path: `${acc.info.path}.${item._id}`,
+            groupPath: acc.info.path,
+          },
+          result: set(acc.result, acc.info.path!, { ...get(acc.result, acc.info.path!), [item._id]: { ...item, id: item.title } })
+        })
+      } else if (compare === 0) {
+        return ({
+          info: {
+            previousItem: item,
+            path: `${acc.info.groupPath}.${item._id}`,
+            groupPath: acc.info.groupPath,
+          },
+          result: set(acc.result, acc.info.groupPath, { ...get(acc.result, acc.info.groupPath), [item._id]: { ...item, id: item.title } })
+        })
+      } else {
+        const offset = parseInt(acc.info.previousItem?.level || '0', 10) - parseInt(item.level, 10)
+        const newPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset).join('.')
+        const newGroupPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset - 1).join('.')
+
+        return ({
+          info: {
+            previousItem: item,
+            path: `${newPath}.${item._id}`,
+            groupPath: newGroupPath,
+          },
+          result: set(acc.result, newPath, { ...get(acc.result, newPath), [item._id]: { ...item, id: item.title } })
+        })
+      }
+    }
+  }, { result: {}, info: { previousItem: undefined, path: undefined, groupPath: '' } })
+
+  const isAnObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+
+  const getValueWithChildren = (item: object) => {
+    return Object.entries(item) //@ts-ignore
+      .reduce((acc, curr) => {
+        if (isAnObject(curr[1])) {
+          return { ...acc, children: [...acc.children, getValueWithChildren(curr[1])] }
+        } else {
+          return { ...acc, [curr[0]]: curr[1] }
+        }
+      }, { children: [] })
+  }
+
+
+  const docs = Object.values(result.result)
+    .map((value) => {
+      return getValueWithChildren(value)
+    })
+
 
   return (
-    <div className='multi-button-container d-flex align-items-center justify-content-center'>
-      <button
-        className='btn btn-sm btn-outline-primary multi-btn-center'
-        onClick={() => setDisplay(!display)}>
-        move
-      </button>
-      <button
-        onClick={() => props.handleUp()}
-        type="button"
-        className={classNames("btn btn-sm btn-outline-primary multi-button multi-button-up", {
-          hidden: !display
-        })}>
-        <i className="fas fa-arrow-up" />
-      </button>
-      <button
-        onClick={() => props.handleDown()}
-        type="button"
-        className={classNames("btn btn-sm btn-outline-primary multi-button multi-button-down", {
-          hidden: !display
-        })}>
-        <i className="fas fa-arrow-down" />
-      </button>
-      <button
-        onClick={() => props.handleRight()}
-        type="button"
-        className={classNames("btn btn-sm btn-outline-primary multi-button multi-button-right", {
-          hidden: !display
-        })}>
-        <i className="fas fa-arrow-right" />
-      </button>
-      <button
-        onClick={() => props.handleLeft()}
-        type="button"
-        className={classNames("multi-button  btn btn-sm btn-outline-primary multi-button-left", {
-          hidden: !display
-        })}>
-        <i className="fas fa-arrow-left" />
-      </button>
-    </div>
+    <Wrapper>
+      <SortableTree collapsible indicator removable defaultItems={docs} handleUpdateItems={console.debug} handleRemoveItem={console.warn} />
+    </Wrapper>
   )
 }

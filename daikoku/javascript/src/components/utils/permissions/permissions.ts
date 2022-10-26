@@ -14,7 +14,9 @@ export const isUserIsTeamAdmin = (user: any, team: any) =>
       (perm: any) => perm === administrator
     );
 
-export const permissions: { [key: string]: Array<{ action: any, what: any, condition?: (team: any) => boolean }> } = {
+export const permissions: {
+  [key: string]: Array<{ action: any; what: any; condition?: (team: any) => boolean }>;
+} = {
   User: [
     {
       action: manage,

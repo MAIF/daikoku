@@ -1,26 +1,26 @@
-import { ITeamSimple, IUser } from "./team"
+import { ITeamSimple, IUser } from './team';
 
 export interface INotification {
-  _deleted: boolean
-  _id: string
-  _tenant: string
-  action: any
-  date: string
-  notificationType: string
-  sender: IUser
-  status: { status: string, date: string }
-  team: string
+  _deleted: boolean;
+  _id: string;
+  _tenant: string;
+  action: any;
+  date: string;
+  notificationType: string;
+  sender: IUser;
+  status: { status: string; date: string };
+  team: string;
 }
 
 export type SubscriptionMetadataModalProps = {
-  api: string,
+  api: string;
   closeModal: () => void;
-  creationMode: boolean,
-  notification: INotification,
-  plan: string,
+  creationMode: boolean;
+  notification: INotification;
+  plan: string;
   save: (...args: any[]) => any;
-  team: ITeamSimple,
-  config?: any,
-  subscription?: any,
-  description?: any
+  team: ITeamSimple;
+  config?: any;
+  subscription?: any;
+  description?: any;
 };

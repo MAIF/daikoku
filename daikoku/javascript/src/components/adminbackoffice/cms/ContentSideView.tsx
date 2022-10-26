@@ -1,7 +1,8 @@
 import { CodeInput, SelectInput } from '@maif/react-forms';
-import React, { useContext, useEffect, useState } from 'react';
+import RefAutoComplete from 'antd/lib/auto-complete';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Select from 'react-select';
+import Select, { SingleValue } from 'react-select';
 
 import { I18nContext } from '../../../core';
 import Editor from './Editor';
@@ -40,10 +41,10 @@ const LinksView = ({
             { label: translate('cms.content_side_view.sign_up'), value: 'signup' },
             { label: translate('cms.content_side_view.home'), value: 'home' },
           ]}
-          onChange={(link) => {
+          onChange={(link: SingleValue<{label: string, value: string}>) => {
             setShow(true);
             onChange();
-            copy(editor, `{{daikoku-links-${link}}}`);
+            copy(editor, `{{daikoku-links-${link?.value}}}`);
           }}
         />}
       </Copied>
@@ -75,9 +76,18 @@ const Copied = ({
     );
   else return children(setShow);
 };
+interface Range {
+  from: any;
+  to: any;
+}
+const copy = (editor: any, text: string) => {
+  editor.dispatch(editor.state.changeByRange((range: Range) => ({
+    changes: [{ from: range.from, insert: text }],
+    range
+  })))
+  editor.focus()
 
-const copy = (r: any, text: any) => {
-  r.session.insert(r.getCursorPosition(), text);
+  // r.session.insert(r.getCursorPosition(), text);
 };
 
 const PagesView = ({
@@ -95,10 +105,10 @@ const PagesView = ({
           label: page.name,
           value: page.id
         }))}
-        onChange={(page) => {
+        onChange={(page: SingleValue<{label: string, value: string}>) => {
           setShow(true);
           onChange();
-          copy(editor, `{{${prefix} "${page}"}}`);
+          copy(editor, `{{${prefix} "${page?.value}"}}`);
         }}
       />}
     </Copied>
@@ -210,10 +220,11 @@ export const ContentSideView = ({
 }: any) => {
   const { translate } = useContext(I18nContext);
   const [sideView, setSideView] = useState(false);
-  const [selector, setSelector] = useState('');
+  const [selector, setSelector] = useState<any>('');
   const [search, setSearch] = useState('');
   const [helpersList, setHelpers] = useState<any>([]);
-  const [ref, setRef] = useState<any>();
+
+  const editorRef = useRef<any>();
 
   const [selectedPage, setSelectedPage] = useState<any>({
     top: 0,
@@ -261,17 +272,17 @@ export const ContentSideView = ({
   window.pages = pages;
 
   const onMouseDown = () => {
-    if (ref) {
+    if (editorRef.current) {
       setTimeout(() => {
-        const pos = ref.getCursorPosition();
-        const token = ref.session.getTokenAt(pos.row, pos.column);
+        const pos = editorRef.current.getCursorPosition();
+        const token = editorRef.current.session.getTokenAt(pos.row, pos.column);
 
         const value = token ? token.value.trim() : '';
         try {
           const id = value.match(/(?:"[^"]*"|^[^"]*$)/)[0].replace(/"/g, ''); //@ts-ignore //FIXME???
           const page = window.pages.find((p: any) => p.id === id);
           setSelectedPage({
-            ...(ref as any).renderer.$cursorLayer.getPixelPosition(),
+            ...editorRef.current.renderer.$cursorLayer.getPixelPosition(),
             pageName: page.name,
             id,
           });
@@ -282,9 +293,11 @@ export const ContentSideView = ({
     }
   };
 
-  useEffect(() => {
-    if (ref) (ref as any).on('mousedown', onMouseDown);
-  }, [ref]);
+  // useEffect(() => {
+  //   if (editorRef.current) {
+  //     editorRef.current.on('mousedown', onMouseDown);
+  //   }
+  // }, [editorRef.current]);
 
   const filterHelpers = (value: any) => {
     const term = value.toLowerCase().replace(/[\[\]&]+/g, '');
@@ -303,8 +316,6 @@ export const ContentSideView = ({
     ])));
   };
 
-  console.log(helpersList);
-
   return (<div className="d-flex flex-column" style={{
     position: 'relative',
     marginTop: '52px',
@@ -322,19 +333,26 @@ export const ContentSideView = ({
       border: '1px solid rgba(225,225,225,.5)',
       flex: 1,
     }}>
-      {selectedPage.pageName && (<Link className="btn btn-sm px-1" style={{
-        position: 'absolute',
-        zIndex: 100,
-        top: selectedPage.top - 42,
-        left: selectedPage.left,
-        backgroundColor: '#fff',
-        border: '1px solid #f0f1f6',
-        boxShadow: '0 1px 3px rgb(0 0 0 / 15%)',
-      }} to={`/settings/pages/edit/${(selectedPage as any).id}`} onClick={() => setSelectedPage({ pageName: undefined })}>{`${translate('cms.content_side_view.edit')} ${selectedPage.pageName}`}</Link>)}
-      <Editor value={value} onChange={onChange} onLoad={(editorInstance: any) => {
-        setRef(editorInstance);
-        editorInstance.container.style.resize = 'both';
-        document.addEventListener('mouseup', (e) => editorInstance.resize());
+      {selectedPage.pageName && (
+        <Link
+          className="btn btn-sm px-1"
+          style={{
+            position: 'absolute',
+            zIndex: 100,
+            top: selectedPage.top - 42,
+            left: selectedPage.left,
+            backgroundColor: '#fff',
+            border: '1px solid #f0f1f6',
+            boxShadow: '0 1px 3px rgb(0 0 0 / 15%)',
+          }}
+          to={`/settings/pages/edit/${(selectedPage as any).id}`}
+          onClick={() => setSelectedPage({ pageName: undefined })}>
+          {`${translate('cms.content_side_view.edit')} ${selectedPage.pageName}`}
+        </Link>)}
+      <Editor value={value} onChange={onChange} setRef={(editorInstance: any) => {
+        editorRef.current = editorInstance
+        // editorInstance.container.style.resize = 'both';
+        // document.addEventListener('mouseup', (e) => editorInstance.resize());
       }} mode={CONTENT_TYPES_TO_MODE[contentType] || 'html'} height={height} width="-1" />
       {sideView && (<div style={{
         backgroundColor: '#fff',
@@ -369,29 +387,41 @@ export const ContentSideView = ({
                         ];
                       return [g, { ...rest, collapsed }];
                     })))}>
-                    {(helpers as any).filter((helper: any) => !helper.filtered).length > 0 && (<div style={{
-                      background: '#fff',
-                    }} className="p-2 px-3 mb-1 d-flex justify-content-between align-items-center">
-                      <span>{groupName}</span>
-                      <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
-                    </div>)}
+                    {helpers.filter((helper) => !helper.filtered).length > 0 && (
+                      <div
+                        style={{
+                          background: '#fff',
+                        }}
+                        className="p-2 px-3 mb-1 d-flex justify-content-between align-items-center">
+                        <span>{groupName}</span>
+                        <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
+                      </div>
+                    )}
                     {!collapsed &&
-                      (helpers as any).filter((helper: any) => !helper.filtered)
-                        .map((helper: any) => <button id={helper.name} type="button" key={helper.name} className="py-2 ps-3 mb-2" style={{
-                          textAlign: 'left',
-                          flex: 1,
-                          width: '100%',
-                          border: 'none',
-                          backgroundColor: (selector as any)?.name === helper.name ? '#bdc3c7' : '#ddd',
-                          borderRight: `${(selector as any)?.name === helper.name ? 2 : 0}px solid`,
-                          fontSize: '14px',
-                        }} onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelector(helper);
-                        }}>
-                          {translate(`cms.content_side_view.${helper.name}`)}
-                        </button>)}
+                      helpers.filter((helper) => !helper.filtered)
+                        .map((helper) => (
+                          <button
+                            id={helper.name}
+                            type="button"
+                            key={helper.name}
+                            className="py-2 ps-3 mb-2"
+                            style={{
+                              textAlign: 'left',
+                              flex: 1,
+                              width: '100%',
+                              border: 'none',
+                              backgroundColor: selector?.name === helper.name ? '#bdc3c7' : '#ddd',
+                              borderRight: `${selector?.name === helper.name ? 2 : 0}px solid`,
+                              fontSize: '14px',
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelector(helper);
+                            }}>
+                            {translate(`cms.content_side_view.${helper.name}`)}
+                          </button>
+                        ))}
                   </div>))}
             </div>
           </div>)}
@@ -403,12 +433,12 @@ export const ContentSideView = ({
               top: '6px',
               right: '6px',
             }} onClick={() => setSideView(false)} />
-            {(selector as any)?.name === 'links' && (<LinksView editor={ref} onChange={() => setSideView(false)} />)}
-            {(selector as any)?.name === 'pages' && (<PagesView pages={pages} prefix="daikoku-page-url" title={translate('cms.content_side_view.link_to_insert')} editor={ref} onChange={() => setSideView(false)} />)}
-            {(selector as any)?.name === 'blocks' && (<PagesView pages={pages} prefix="daikoku-include-block" title={translate('cms.content_side_view.block_to_render')} editor={ref} onChange={() => setSideView(false)} />)}
+            {(selector as any)?.name === 'links' && (<LinksView editor={editorRef.current} onChange={() => setSideView(false)} />)}
+            {(selector as any)?.name === 'pages' && (<PagesView pages={pages} prefix="daikoku-page-url" title={translate('cms.content_side_view.link_to_insert')} editor={editorRef.current} onChange={() => setSideView(false)} />)}
+            {(selector as any)?.name === 'blocks' && (<PagesView pages={pages} prefix="daikoku-include-block" title={translate('cms.content_side_view.block_to_render')} editor={editorRef.current} onChange={() => setSideView(false)} />)}
             {((selector as any)?.name.startsWith('daikoku') ||
               !['links', 'blocks', 'pages'].includes((selector as any)?.name)) &&
-              selector && (<HelperView editor={ref} onChange={() => setSideView(false)} content={selector} />)}
+              selector && (<HelperView editor={editorRef.current} onChange={() => setSideView(false)} content={selector} />)}
           </div>
         </div>
       </div>)}

@@ -5,13 +5,14 @@ export function customizeFetch(store: any) {
   let willRedirect = false;
   (window as any).old_fetch = window.fetch;
   window.fetch = (...args) => {
-    const dispatchError = (response: any) => response.json().then((error: any) => {
-      store.dispatch({
-        type: SET_ERROR,
-        error: { status: response.status, message: error.error, args, response: error },
+    const dispatchError = (response: any) =>
+      response.json().then((error: any) => {
+        store.dispatch({
+          type: SET_ERROR,
+          error: { status: response.status, message: error.error, args, response: error },
+        });
+        return Promise.reject(error);
       });
-      return Promise.reject(error);
-    });
 
     const query = queryString.parse(window.location.search);
     const url = args[0];
@@ -28,32 +29,26 @@ export function customizeFetch(store: any) {
     newArgs = [newUrl, ...newArgs];
 
     return (window as any).old_fetch(...newArgs).then((r: any) => {
-    const status = r.status;
-    if (r.redirected && r.url.indexOf('/auth/') > -1) {
+      const status = r.status;
+      if (r.redirected && r.url.indexOf('/auth/') > -1) {
         if (willRedirect === false) {
-            willRedirect = true;
-            // redirect();
+          willRedirect = true;
+          // redirect();
         }
-    }
-    else if (status > 199 && status < 300) {
+      } else if (status > 199 && status < 300) {
         // nothing to do yet
-    }
-    else if (status > 299 && status < 400) {
+      } else if (status > 299 && status < 400) {
         // nothing to do yet
-    }
-    else if (status === 409) {
+      } else if (status === 409) {
         // toastr.error('Conflict', 'The resource already exists');
-    }
-    else if (status === 404) {
+      } else if (status === 404) {
         // nothing to do yet
-    }
-    else if (status >= 500 && status < 600) {
+      } else if (status >= 500 && status < 600) {
         return dispatchError(r);
-    }
-    else {
+      } else {
         // nothing to do yet
-    }
-    return r;
-});
+      }
+      return r;
+    });
   };
 }

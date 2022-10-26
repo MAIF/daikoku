@@ -38,5 +38,5 @@ export const newPossibleUsagePlan = (customName: string): IUsagePlanFreeWithQuot
         notFound: [],
       },
     },
-  }
+  },
 });

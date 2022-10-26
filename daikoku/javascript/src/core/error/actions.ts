@@ -1,9 +1,7 @@
 import { SET_ERROR, UNSET_ERROR } from './';
 
 export const setError =
-  ({
-    error
-  }: any) =>
+  ({ error }: any) =>
   (dispatch: any) => {
     return dispatch({
       type: SET_ERROR,

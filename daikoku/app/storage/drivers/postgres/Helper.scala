@@ -84,13 +84,15 @@ object Helper {
     if (field._1 == "$push") {
       val entry = field._2.as[JsObject].fields.head
       (
-        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(params.size)} || ${getParam(params.size + 1)})",
+        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(
+          params.size)} || ${getParam(params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
     } else if (field._1 == "$set") {
       val entry = field._2.as[JsObject].fields.head
       (
-        s"content = jsonb_set(content, array[${getParam(params.size)}], ${getParam(params.size + 1)})",
+        s"content = jsonb_set(content, array[${getParam(params.size)}], ${getParam(
+          params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
     } else {

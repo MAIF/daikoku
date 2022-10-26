@@ -222,8 +222,8 @@ export const theMachine = createMachine({
                       otoroshiSettings: context.otoroshi,
                       authorizedEntities: { groups: [], services: [api.id] },
                       apikeyCustomization,
-                    }
-                  }))
+                    },
+                  })),
                 }))
               )
               .then((apis) => Services.apisInit(apis))
@@ -255,7 +255,11 @@ export const theMachine = createMachine({
                 else {
                   const hasMore = newApikeys.length === (context as any).perPage;
                   if (hasMore) {
-                    callBack({ type: 'DONE_MORE', newApikeys, nextPage: (context as any).page + 1 });
+                    callBack({
+                      type: 'DONE_MORE',
+                      newApikeys,
+                      nextPage: (context as any).page + 1,
+                    });
                   } else {
                     callBack({ type: 'DONE_COMPLETE', newApikeys });
                   }
@@ -328,7 +332,7 @@ export const theMachine = createMachine({
 
               plan: apikey.plan._id,
               team: apikey.team,
-              api: apikey.api._id
+              api: apikey.api._id,
             }));
 
             Services.subscriptionsInit(subscriptions)

@@ -2322,9 +2322,9 @@ object json {
   val NotificationActionFormat: Format[NotificationAction] =
     new Format[NotificationAction] {
       override def reads(json: JsValue) = (json \ "type").as[String] match {
-        case "ApiAccess"       => ApiAccessFormat.reads(json)
-        case "TeamAccess"      => TeamAccessFormat.reads(json)
-        case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
+        case "ApiAccess"             => ApiAccessFormat.reads(json)
+        case "TeamAccess"            => TeamAccessFormat.reads(json)
+        case "ApiSubscription"       => ApiSubscriptionDemandFormat.reads(json)
         case "ApiSubscriptionReject" => ApiSubscriptionRejectFormat.reads(json)
         case "ApiSubscriptionAccept" => ApiSubscriptionAcceptFormat.reads(json)
         case "OtoroshiSyncSubscriptionError" =>

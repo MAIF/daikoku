@@ -13,7 +13,7 @@ const JoinTeamComponent = (props: any) => {
 };
 
 const mapStateToProps = (state: any) => ({
-  ...state.context
+  ...state.context,
 });
 
 const mapDispatchToProps = {
