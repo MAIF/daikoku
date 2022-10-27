@@ -1,9 +1,10 @@
 import { ITenant } from './tenant';
 
-export type TOptions = Array<{
+export type TOption = {
   value: string;
   label: string;
-}>;
+}
+export type TOptions = Array<TOption>;
 
 export enum Language {
   en = 'En',

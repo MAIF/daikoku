@@ -1,8 +1,9 @@
-export interface IApi {
+import { ITeamSimple } from "./team";
+
+interface IBaseApi {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
-  team: string;
   _deleted: boolean;
   lastUpdate: string;
   name: string;
@@ -37,7 +38,19 @@ export interface IIssuesTag {
   color: string
 }
 
-export interface IApiWithAuthorization extends IApi {
+export interface IApiWithSimpleTeam extends IBaseApi {
+  team: {
+    _humanReadableId: string
+    _id: string
+    avatar: string
+    name: string
+  };
+}
+export interface IApi extends IBaseApi {
+  team: string
+}
+
+export interface IApiWithAuthorization extends IApiWithSimpleTeam {
   authorizations: Array<{
     team: string;
     authorized: boolean;
