@@ -301,16 +301,8 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         props.saveApi({...props.api, documentation: {...props.api.documentation, pages: [...props.api.documentation.pages, page._id]}})
       })
 
+      //todo: update list of doc page
 
-    if (detailsQuery.isSuccess) {
-      //todo: if page is newPage => created it
-      //then update api
-      if (!detailsQuery.data.pages.includes(page._id)) {
-        
-      } else {
-        
-      }
-    }
 
     //FIXME
     // if (detailsQuery.data) {
