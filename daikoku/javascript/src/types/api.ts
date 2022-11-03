@@ -199,11 +199,10 @@ interface IRotation {
   gracePeriod: number;
   pendingRotation: boolean;
 }
-export interface ISubscription {
+export interface IBaseSubscription {
   _id: string;
   _tenant: string;
   _deleted: boolean;
-  apiKey?: IApiKey;
   plan: string;
   team: string;
   api: string;
@@ -212,8 +211,8 @@ export interface ISubscription {
   customName: string | null;
   enabled: boolean;
   rotation: IRotation;
-  integrationToken: string;
-  customMetadata: object;
+  customMetadata?: object;
+  metadata?: object;
   customMaxPerSecond: number | null;
   customMaxPerMonth: number | null;
   customMaxPerDay: number | null;
@@ -244,3 +243,15 @@ export type ResponseDone = {
 export function isError(obj: any): obj is ResponseError {
   return (<ResponseError>obj).error !== undefined;
 }
+
+export interface ISafeSubscription extends IBaseSubscription{
+  apiKey: {clientName: string};
+
+}
+
+export interface ISubscription extends IBaseSubscription{
+  apiKey?: IApiKey;
+  integrationToken: string;
+
+}
+

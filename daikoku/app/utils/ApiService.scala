@@ -14,7 +14,7 @@ import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.i18n.{Lang, MessagesApi}
-import play.api.libs.json.{JsArray, JsNull, JsObject, Json}
+import play.api.libs.json.{JsArray, JsNull, JsObject, JsString, Json}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
@@ -177,6 +177,12 @@ class ApiService(env: Env,
               customMaxPerMonth = customMaxPerMonth,
               customReadOnly = customReadOnly,
               maybeOtoroshiApiKey = otoroshiApiKey)
+
+            val automaticMetadata = tunedApiKey.metadata.filterNot(i => i._1.startsWith("daikoku_")) -- customMetadata
+              .flatMap(_.asOpt[Map[String, String]])
+              .getOrElse(Map.empty[String, String])
+              .keys
+
             val apiSubscription = ApiSubscription(
               id = ApiSubscriptionId(BSONObjectID.generate().stringify),
               tenant = tenant.id,
@@ -189,6 +195,7 @@ class ApiService(env: Env,
               customName = None,
               rotation = plan.autoRotation.map(rotation => ApiSubscriptionRotation(enabled = rotation)),
               integrationToken = integrationToken,
+              metadata = Some(JsObject(automaticMetadata.view.mapValues(i => JsString(i)).toSeq)),
               customMetadata = customMetadata,
               customMaxPerSecond = customMaxPerSecond,
               customMaxPerDay = customMaxPerDay,

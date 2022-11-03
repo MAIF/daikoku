@@ -2118,6 +2118,7 @@ object json {
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
             integrationToken = (json \ "integrationToken").as[String],
+            metadata = (json \ "metadata").asOpt[JsObject],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt(LongFormat),
             customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
@@ -2150,6 +2151,7 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "integrationToken" -> o.integrationToken,
+      "metadata" -> o.metadata,
       "customMetadata" -> o.customMetadata,
       "customMaxPerSecond" -> o.customMaxPerSecond
         .map(JsNumber(_))

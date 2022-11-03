@@ -13,12 +13,15 @@ import {
 } from '../../utils';
 import * as Services from '../../../services';
 import { Table, BooleanColumnFilter, SwitchButton, TableRef } from '../../inputs';
-import { I18nContext, openSubMetadataModal } from '../../../core';
+import {I18nContext, openFormModal, openSubMetadataModal} from '../../../core';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
+import {format, type} from "@maif/react-forms";
+import {IApi} from "../../../types";
+import {string} from "prop-types";
 
 type TeamApiSubscriptionsProps = {
-  api: any,
+  api: IApi,
 }
 export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const currentTeam = useSelector((s: any) => s.context.currentTeam);
@@ -27,6 +30,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const [teams, setTeams] = useState<Array<any>>([]);
   const [columns, setColumns] = useState<Array<any>>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<Array<{key: string , value: string}>>([])
   const tableRef = useRef<TableRef>()
 
   const { translate, language } = useContext(I18nContext);
@@ -39,7 +43,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
 
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
   }, []);
-
+//TODO dans le use effect : rajouter une colonne metadata
   useEffect(() => {
     if (api && tableRef.current && teams.length) {
       setColumns([
@@ -137,16 +141,67 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       });
   };
 
+  const options = api.possibleUsagePlans.flatMap(plan => {
+    return [
+    ...(plan.otoroshiTarget?.apikeyCustomization.customMetadata.map(({key}) => key) || []),
+    ...Object.keys(plan.otoroshiTarget?.apikeyCustomization.metadata || {})
+    ]
+  });
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
       {!loading && (
         <div className="row">
+          <div>
+            <button className='btn btn-sm btn-outline-primary' onClick={() => dispatch(openFormModal({
+              actionLabel: "filter",
+              onSubmit: data => setFilters([{key: 'tenant', value: 'prod'}]),
+              schema: {
+                filter: {
+                  type: type.object,
+                  format: format.form,
+                  array: true,
+                  schema: {
+                    key: {
+                      type: type.string,
+                      format: format.select,
+                      options: Array.from(new Set(options))
+                    },
+                    value: {
+                      type: type.string,
+                    }
+                  }
+                }
+              },
+              title: "filter data",
+              value: {filter: filters}
+            }))}> filter </button>
+          </div>
           <div className="col-12">
             <Table
               defaultSort="name"
               columns={columns}
               fetchItems={() =>
                 Services.apiSubscriptions(api._id, currentTeam._id, api.currentVersion)
+                    .then( subscriptions => {
+                      if (!filters.length) {
+                        return subscriptions
+                      } else {
+                        return subscriptions.filter( subscription => {
+                          const meta = {...(subscription.metadata || {}), ...(subscription.customMetadata || {})}
+                          if (!Object.keys(meta).length) {
+                            return false;
+                          } else {
+                            // ######
+                            return filters.every(item => {
+                              const value = meta[item.key]
+                              return value && value.includes(item.value)
+                            })
+                            //######
+                          }
+                        })
+
+                      }
+                    })
               }
               injectTable={(t: TableRef) => tableRef.current = t}
             />
