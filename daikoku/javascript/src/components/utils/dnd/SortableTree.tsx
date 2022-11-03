@@ -97,12 +97,12 @@ const dropAnimationConfig: DropAnimation = {
 
 interface Props {
   collapsible?: boolean;
-  defaultItems?: TreeItems;
+  defaultItems?: any;
   indentationWidth?: number;
   indicator?: boolean;
   removable?: boolean;
-  handleUpdateItems: (x: TreeItems) => void
-  handleRemoveItem: (x: TreeItem) => void
+  handleUpdateItems: (x: any) => void
+  handleRemoveItem: (x: any) => void
 }
 
 export function SortableTree({

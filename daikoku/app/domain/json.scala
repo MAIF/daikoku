@@ -1342,7 +1342,7 @@ object json {
             // api = (json \ "api").as(ApiIdFormat),
             title = (json \ "title").as[String],
             // index = (json \ "index").as[Double],
-            level = (json \ "level").as[Int],
+            level = 0,
             lastModificationAt =
               (json \ "lastModificationAt").as(DateTimeFormat),
             content = (json \ "content").asOpt[String].getOrElse(""),
@@ -1357,7 +1357,9 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn(e.getMessage)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: ApiDocumentationPage): JsValue = Json.obj(

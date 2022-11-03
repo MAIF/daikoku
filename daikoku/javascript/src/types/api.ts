@@ -1,3 +1,4 @@
+import { TreeItem, TreeItems } from "../components/utils/dnd/types";
 import { ITeamSimple } from "./team";
 
 interface IBaseApi {
@@ -82,6 +83,12 @@ export interface ITestingConfig {
   customReadOnly?: boolean;
 }
 
+export type IDocumentationPages =  IDocumentationPage[]
+export interface IDocumentationPage {
+  _id: string;
+  level?: number;
+  title: string;
+}
 export interface IDocumentation {
   _id: string;
   _tenant: string;
@@ -190,7 +197,6 @@ export interface IDocDetail {
   pages: Array<string>;
   titles: Array<IDocTitle>;
 }
-
 export interface IDocPage {
   _id: string;
   _humanReadableId: string;
@@ -198,7 +204,7 @@ export interface IDocPage {
   _deleted: boolean;
   title: string;
   level: number;
-  lastModificationAt: string;
+  lastModificationAt: number;
   content: string;
   contentType: string;
   remoteContentEnabled: boolean;

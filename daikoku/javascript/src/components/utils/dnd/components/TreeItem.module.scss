@@ -69,6 +69,8 @@
 .TreeItem {
   --vertical-padding: 10px;
 
+  border-radius: 4px;
+  
   position: relative;
   display: flex;
   align-items: center;
@@ -77,6 +79,8 @@
   border: 1px solid #dedede;
   color: #222;
   box-sizing: border-box;
+  
+  margin-top: 5px;
 }
 
 .Text {

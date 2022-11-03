@@ -19,10 +19,6 @@ $focused-outline-color: #4c9ffe;
   @media (hover: hover) {
     &:hover {
       background-color: var(--action-background, rgba(0, 0, 0, 0.05));
-
-      svg {
-        fill: #6f7b88;
-      }
     }
   }
 
@@ -31,15 +27,10 @@ $focused-outline-color: #4c9ffe;
     margin: auto;
     height: 100%;
     overflow: visible;
-    fill: #919eab;
   }
 
   &:active {
     background-color: var(--background, rgba(0, 0, 0, 0.05));
-
-    svg {
-      fill: var(--fill, #788491);
-    }
   }
 
   &:focus-visible {

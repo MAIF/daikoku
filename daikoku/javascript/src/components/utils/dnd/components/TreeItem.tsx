@@ -1,9 +1,9 @@
-import React, {forwardRef, HTMLAttributes} from 'react';
+import React, { forwardRef, HTMLAttributes } from 'react';
 import classNames from 'classnames';
 
-import {Action} from './Action';
-import {Handle} from './Handle';
-import {Remove} from './Remove';
+import { Action } from './Action';
+import { Handle } from './Handle';
+import { Remove } from './Remove';
 
 //@ts-ignore
 import styles from './TreeItem.module.scss';
@@ -49,14 +49,14 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
   ) => {
     return (
       <li
-      className={classNames(
-        styles.Wrapper,
-        clone && styles.clone,
-        ghost && styles.ghost,
-        indicator && styles.indicator,
-        disableSelection && styles.disableSelection,
-        disableInteraction && styles.disableInteraction
-      )}
+        className={classNames(
+          styles.Wrapper,
+          clone && styles.clone,
+          ghost && styles.ghost,
+          indicator && styles.indicator,
+          disableSelection && styles.disableSelection,
+          disableInteraction && styles.disableInteraction
+        )}
         ref={wrapperRef}
         style={
           {

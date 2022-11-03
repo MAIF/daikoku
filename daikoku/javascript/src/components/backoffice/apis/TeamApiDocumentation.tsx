@@ -13,7 +13,7 @@ import set from 'lodash/set'
 
 import { I18nContext, openApiDocumentationSelectModal, openFormModal } from '../../../core';
 import * as Services from '../../../services';
-import { IApi, IDocPage, IDocTitle, isError, IState, ITeamSimple } from '../../../types';
+import { IApi, IDocDetail, IDocPage, IDocTitle, IDocumentation, IDocumentationPages, isError, IState, ITeamSimple } from '../../../types';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { BeautifulTitle, Spinner } from '../../utils';
 import { removeArrayIndex, moveArrayIndex } from '../../utils/array';
@@ -129,14 +129,14 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         constraints.required(translate("constraints.required.name"))
       ]
     },
-    level: {
-      type: type.number,
-      label: translate('Page level'),
-      defaultValue: 0,
-      props: {
-        min: 0, step: 1
-      },
-    },
+    // level: {
+    //   type: type.string,
+    //   label: translate('Page level'),
+    //   defaultValue: 0,
+    //   props: {
+    //     min: 0, step: 1
+    //   },
+    // },
     content: {
       type: type.string,
       format: format.markdown,
@@ -227,135 +227,113 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     },
   };
 
-  const updatePage = (selectedPage: IDocTitle) => {
-    Services.getDocPage(api._id, selectedPage._id)
-      .then((page) => {
-        if (isError(page)) {
-          toastr.error(translate('Error'), page.error);
-        } else {
-          dispatch(openFormModal({
-            title: translate('doc.page.update.modal.title'),
-            flow: flow,
-            schema: schema,
-            value: page,
-            onSubmit: savePage,
-            actionLabel: translate('Save')
-          }))
-        }
-      });
-  }
+  // const updatePage = (selectedPage: IDocTitle) => {
+  //   Services.getDocPage(api._id, selectedPage._id)
+  //     .then((page) => {
+  //       if (isError(page)) {
+  //         toastr.error(translate('Error'), page.error);
+  //       } else {
+  //         dispatch(openFormModal({
+  //           title: translate('doc.page.update.modal.title'),
+  //           flow: flow,
+  //           schema: schema,
+  //           value: page,
+  //           onSubmit: savePage,
+  //           actionLabel: translate('Save')
+  //         }))
+  //       }
+  //     });
+  // }
 
-  const savePage = (page?: IDocPage) => {
-    if (page) {
-      return Services.saveDocPage(team._id, page)
-        .then(() => {
-          queryClient.invalidateQueries('details')
-          toastr.success(translate('Success'), translate("doc.page.save.successfull"))
-        });
-    }
-  }
+  // const savePage = (page?: IDocPage) => {
+  //   if (page) {
+  //     return Services.saveDocPage(team._id, page)
+  //       .then(() => {
+  //         queryClient.invalidateQueries('details')
+  //         toastr.success(translate('Success'), translate("doc.page.save.successfull"))
+  //       });
+  //   }
+  // }
 
-  const movePage = (page: IDocTitle, move: number) => {
-    if (detailsQuery.data) {
-      const index = detailsQuery.data.pages.findIndex(id => id === page._id)
-      if (index === 0 && move < 0) {
-        toastr.error(translate('Error'), translate('doc.page.move.error'))
-      } else if (index === detailsQuery.data.pages.length - 1 && move > 0) {
-        toastr.error(translate('Error'), translate('doc.page.move.error'))
-      } else {
-        const pages = moveArrayIndex(detailsQuery.data.pages, index, index + move)
+  // const updatePages = (pages: IDocumentationPages) => {
+  //   const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
 
-        const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-        Services.saveTeamApi(
-          currentTeam._id,
-          updatedApi,
-          updatedApi.currentVersion
-        ).then(() => {
-          toastr.success(translate('Success'), translate('doc.page.move.successfull'))
-          queryClient.invalidateQueries('details')
-        })
-      }
-
-    }
-  }
-
-  const moveLevel = (page: IDocTitle, move: number) => {
-    if (detailsQuery.data) {
-      const level = parseInt(page.level)
-
-      if (level === 0 && move < 0) {
-        toastr.error(translate('Error'), translate('doc.page.move.error'))
-      } else {
-
-        Services.getDocPage(props.api._id, page._id)
-          .then((res) => {
-            if (!isError(res)) {
-              savePage({ ...res, level: res.level + move })
-            }
-          })
-      }
-
-    }
-  }
-
-  const moveUp = (page: IDocTitle) => {
-    movePage(page, -1)
-  }
-
-  const moveDown = (page: IDocTitle) => {
-    movePage(page, 1)
-  }
-
-  const moveRight = (page: IDocTitle) => {
-    moveLevel(page, 1)
-  }
-
-  const moveLeft = (page: IDocTitle) => {
-    moveLevel(page, -1)
-  }
+  //   return Services.saveTeamApi(
+  //     currentTeam._id,
+  //     updatedApi,
+  //     updatedApi.currentVersion
+  //   )
+  //     .then(() => {
+  //       toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
+  //       queryClient.invalidateQueries('details')
+  //     })
+  // }
 
   const addNewPage = () => {
-    Services.createDocPage(team._id, {
-      _id: nanoid(32),
-      _tenant: api._tenant,
-      title: 'New page',
-      level: 0,
-      lastModificationAt: Date.now(),
-      content: '# New page\n\nA new page',
-    }).then((page) => {
+      const newPage: IDocPage = {
+          _id: nanoid(32),
+          _tenant: api._tenant,
+          _deleted: false,
+          _humanReadableId: 'new-page',
+          title: 'New page',
+          level: 0,
+          lastModificationAt: Date.now(),
+          content: '# New page\n\nA new page',
+          contentType: 'text/markdown',
+          remoteContentEnabled: false,
+          remoteContentUrl: null,
+          remoteContentHeaders: {}
+        }
+
       dispatch(openFormModal({
         title: translate('doc.page.create.modal.title'),
         flow: flow,
         schema: schema,
-        value: page,
+        value: newPage,
         onSubmit: saveNewPage,
         actionLabel: translate('Save')
       }))
-    })
-  };
+    }
 
   const saveNewPage = (page: IDocPage) => {
-    if (detailsQuery.data) {
-      const index = detailsQuery.data.pages.length
-      const pages = [...detailsQuery.data.pages];
-      pages.splice(index, 0, page._id);
+    Services.createDocPage(team._id, page)
+      .then(page => {
+        props.saveApi({...props.api, documentation: {...props.api.documentation, pages: [...props.api.documentation.pages, page._id]}})
+      })
 
-      return Services.saveDocPage(team._id, page)
-        .then(() => {
-          const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-          return Services.saveTeamApi(
-            currentTeam._id,
-            updatedApi,
-            updatedApi.currentVersion
-          )
-        })
-        .then(() => {
-          toastr.success(translate('Success'), translate('doc.page.creation.successfull'))
-          queryClient.invalidateQueries('details')
-        })
-    } else {
-      toastr.error(translate('Error'), translate('doc.page.error.unknown'))
+
+    if (detailsQuery.isSuccess) {
+      //todo: if page is newPage => created it
+      //then update api
+      if (!detailsQuery.data.pages.includes(page._id)) {
+        
+      } else {
+        
+      }
     }
+
+    //FIXME
+    // if (detailsQuery.data) {
+    //   const index = detailsQuery.data.pages.length
+    //   const pages = [...detailsQuery.data.pages];
+    //   pages.splice(index, 0, page._id);
+
+    //   return Services.saveDocPage(team._id, page)
+    //     .then(() => {
+    //       const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
+    //       return Services.saveTeamApi(
+    //         currentTeam._id,
+    //         updatedApi,
+    //         updatedApi.currentVersion
+    //       )
+    //     })
+    //     .then(() => {
+    //       toastr.success(translate('Success'), translate('doc.page.creation.successfull'))
+    //       queryClient.invalidateQueries('details')
+    //     })
+    // } else {
+    //   toastr.error(translate('Error'), translate('doc.page.error.unknown'))
+    // }
   }
 
   const deletePage = (page: IDocTitle) => {
@@ -421,7 +399,8 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
               </div>
             </div>
             <div className='d-flex flex-column'>
-              <TestDnD items={detailsQuery.data.titles} />
+              {/* @ts-ignore */}
+              <TestDnD items={detailsQuery.data.titles} deletePage={deletePage} updatePages={console.debug} />
             </div>
           </div>
         </div>
@@ -432,7 +411,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 };
 
-const TestDnD = ({ items }: { items: Array<IDocTitle> }) => {
+const TestDnD = ({ items, deletePage, updatePages }: { items: IDocDetail[] | IDocumentationPages, deletePage: (p: IDocTitle) => void, updatePages: (p: IDocumentationPages) => void }) => {
   type Result = {
     result: object,
     info: {
@@ -442,78 +421,93 @@ const TestDnD = ({ items }: { items: Array<IDocTitle> }) => {
     }
   }
 
-  //@ts-ignore
-  const result: Result = items.reduce<Result>((acc, item) => {
-    if (item.level === '0') {
-      return ({
-        info: {
-          previousItem: item,
-          path: item._id,
-          groupPath: undefined,
-        },
-        result: { ...acc.result, [item._id]: { ...item, id: item.title } }
-      })
-    } else {
-      const compare = item.level.localeCompare(acc.info.previousItem?.level || '0')
-      if (compare === 1) {
-        return ({
-          info: {
-            previousItem: item,
-            path: `${acc.info.path}.${item._id}`,
-            groupPath: acc.info.path,
-          },
-          result: set(acc.result, acc.info.path!, { ...get(acc.result, acc.info.path!), [item._id]: { ...item, id: item.title } })
-        })
-      } else if (compare === 0) {
-        return ({
-          info: {
-            previousItem: item,
-            path: `${acc.info.groupPath}.${item._id}`,
-            groupPath: acc.info.groupPath,
-          },
-          result: set(acc.result, acc.info.groupPath, { ...get(acc.result, acc.info.groupPath), [item._id]: { ...item, id: item.title } })
-        })
-      } else {
-        const offset = parseInt(acc.info.previousItem?.level || '0', 10) - parseInt(item.level, 10)
-        const newPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset).join('.')
-        const newGroupPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset - 1).join('.')
-
-        return ({
-          info: {
-            previousItem: item,
-            path: `${newPath}.${item._id}`,
-            groupPath: newGroupPath,
-          },
-          result: set(acc.result, newPath, { ...get(acc.result, newPath), [item._id]: { ...item, id: item.title } })
-        })
-      }
-    }
-  }, { result: {}, info: { previousItem: undefined, path: undefined, groupPath: '' } })
-
-  const isAnObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
-
-
-  const getValueWithChildren = (item: object) => {
-    return Object.entries(item) //@ts-ignore
-      .reduce((acc, curr) => {
-        if (isAnObject(curr[1])) {
-          return { ...acc, children: [...acc.children, getValueWithChildren(curr[1])] }
+  
+  
+  const transformOldDoc = () => {
+    //@ts-ignore
+    if (items.some(x => !x.children)) {
+      //@ts-ignore
+      const result: Result = items.reduce<Result>((acc, item) => {
+        if (item.level === '0') {
+          return ({
+            info: {
+              previousItem: item,
+              path: item._id,
+              groupPath: undefined,
+            },
+            result: { ...acc.result, [item._id]: { ...item, id: item.title } }
+          })
         } else {
-          return { ...acc, [curr[0]]: curr[1] }
+          //@ts-ignore
+          const compare = item.level.localeCompare(acc.info.previousItem?.level || '0')
+          if (compare === 1) {
+            return ({
+              info: {
+                previousItem: item,
+                path: `${acc.info.path}.${item._id}`,
+                groupPath: acc.info.path,
+              },
+              result: set(acc.result, acc.info.path!, { ...get(acc.result, acc.info.path!), [item._id]: { ...item, id: item.title } })
+            })
+          } else if (compare === 0) {
+            return ({
+              info: {
+                previousItem: item,
+                path: `${acc.info.groupPath}.${item._id}`,
+                groupPath: acc.info.groupPath,
+              },
+              result: set(acc.result, acc.info.groupPath, { ...get(acc.result, acc.info.groupPath), [item._id]: { ...item, id: item.title } })
+            })
+          } else {
+            //@ts-ignore
+            const offset = parseInt(acc.info.previousItem?.level || '0', 10) - parseInt(item.level, 10)
+            const newPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset).join('.')
+            const newGroupPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset - 1).join('.')
+    
+            return ({
+              info: {
+                previousItem: item,
+                path: `${newPath}.${item._id}`,
+                groupPath: newGroupPath,
+              },
+              result: set(acc.result, newPath, { ...get(acc.result, newPath), [item._id]: { ...item, id: item.title } })
+            })
+          }
         }
-      }, { children: [] })
+      }, { result: {}, info: { previousItem: undefined, path: undefined, groupPath: '' } })
+    
+      const isAnObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
+    
+    
+      const getValueWithChildren = (item: object) => {
+        return Object.entries(item) //@ts-ignore
+          .reduce((acc, curr) => {
+            if (isAnObject(curr[1])) {
+              return { ...acc, children: [...acc.children, getValueWithChildren(curr[1])] }
+            } else {
+              return { ...acc, [curr[0]]: curr[1] }
+            }
+          }, { children: [] })
+      }
+    
+    
+      const docs: IDocumentationPages = Object.values(result.result)
+        .map((value) => {
+          return getValueWithChildren(value)
+        })
+
+      return docs;
+    } else {
+      return items
+    }
   }
 
-
-  const docs = Object.values(result.result)
-    .map((value) => {
-      return getValueWithChildren(value)
-    })
+  const docs = transformOldDoc()
 
 
   return (
     <Wrapper>
-      <SortableTree collapsible indicator removable defaultItems={docs} handleUpdateItems={console.debug} handleRemoveItem={console.warn} />
+      <SortableTree collapsible indicator removable defaultItems={docs} handleUpdateItems={updatePages} handleRemoveItem={deletePage} />
     </Wrapper>
   )
 }
