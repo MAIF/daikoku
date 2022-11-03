@@ -510,7 +510,7 @@ class DaikokuEnv(ws: WSClient,
             case store: PostgresDataStore => store.checkDatabase()
             case _                        => FastFuture.successful(None)
           }).flatMap { _ =>
-            evolutions.run(dataStore)
+            evolutions.run(dataStore, new OtoroshiClient(this))
           }
       }
     }
