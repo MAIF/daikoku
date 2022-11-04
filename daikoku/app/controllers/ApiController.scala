@@ -6,6 +6,7 @@ import akka.stream.{FlowShape, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import cats.data.EitherT
+import cats.implicits.toTraverseOps
 import controllers.AppError
 import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
@@ -1403,7 +1404,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       sender = ctx.user,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
-
+    //TODO s'inspirer de ça
     val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
 
     for {
@@ -1872,6 +1873,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                     .save(api.copy(posts = api.posts ++ Seq(postId)))
                     .flatMap {
                       case true =>
+                        val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
                         for {
                           subs <- env.dataStore.apiSubscriptionRepo
                             .forTenant(ctx.tenant.id)
@@ -1891,6 +1893,36 @@ class ApiController(DaikokuAction: DaikokuAction,
                                 ))
                             ))
                           }
+                          maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(teamId)
+                          maybeMembers <- maybeOwnerteam.traverse { _ =>
+                            env.dataStore.userRepo
+                              .find(
+                                Json
+                                  .obj(
+                                    "_deleted" -> false //absolument pas sûr
+                                  )
+                              )
+                          }
+                          _ <- maybeMembers.traverse { members =>
+                            Future.sequence(
+                              members.map { member =>
+                                implicit val language: String = member.defaultLanguage.getOrElse(tenantLanguage)
+                                (for {
+                                  title <- translator.translate("mail.create.post.title", ctx.tenant)
+                                  body <- translator.translate("mail.create.post.body", ctx.tenant, Map(
+                                    "user" -> ctx.user.name,
+                                    "apiName" -> api.get.humanReadableId,
+                                    "teamName" -> api.get.team.value, //not sure
+                                    "link" -> env.getDaikokuUrl(ctx.tenant, "/" +api.get.team.value+"/" + api.get.humanReadableId + "/" + api.get.currentVersion.value +"/news") //same
+                                  ))
+                                } yield {
+                                  ctx.tenant.mailer.send(title, Seq(member.email), body, ctx.tenant)
+                                }).flatten
+                              })
+                          }
+
+
+                          //TODO ça se passe ici pour l'envoie de mail ( à tout ceux de la team )
                         } yield {
                           Ok(Json.obj("created" -> true))
                         }
@@ -2059,6 +2091,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                         .flatMap {
                           case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to save new issue in api issues list")))
                           case true =>
+                            val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
                             for {
                               subs <- env.dataStore.apiSubscriptionRepo
                                 .forTenant(ctx.tenant.id)
@@ -2084,6 +2117,36 @@ class ApiController(DaikokuAction: DaikokuAction,
                                       ))
                                   ))
                               }
+                              maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(api.team)
+                              maybeAdmins <- maybeOwnerteam.traverse { ownerTeam =>
+                                env.dataStore.userRepo
+                                  .find(
+                                    Json
+                                      .obj(
+                                        "_deleted" -> false,
+                                        "_id" -> Json.obj("$in" -> JsArray(ownerTeam.admins().map(_.asJson).toSeq))
+                                      )
+                                  )
+                              }
+                              _ <- maybeAdmins.traverse { admins =>
+                                Future.sequence(
+                                  admins.map { admin =>
+                                    implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
+                                    (for {
+                                      title <- translator.translate("mail.new.issue.title", ctx.tenant)
+                                      body <- translator.translate("mail.new.issue.body", ctx.tenant, Map(
+                                        "user" -> ctx.user.name,
+                                        "apiName" -> api.name,
+                                        "teamName" -> api.team.value, // not sure if it's okay
+                                        "link" -> env.getDaikokuUrl(ctx.tenant, "/" +api.team.value+"/" + api.humanReadableId + "/" + api.currentVersion.value +"/issues") //same
+                                      ))
+                                    } yield {
+                                      ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
+                                    }).flatten
+                                  })
+                              }
+
+                              //TODO ici pour l'envoie de mail aux admins
                             } yield {
                               Created(Json.obj("created" -> true))
                             }
