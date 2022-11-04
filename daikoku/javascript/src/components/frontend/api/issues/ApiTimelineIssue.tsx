@@ -43,7 +43,8 @@ const styles = {
 
 type Issue = {
   comments: Array<any>,
-  title: string
+  title: string,
+  by: any
 }
 
 type Tag = { value: string, label: string }
@@ -56,7 +57,7 @@ export function ApiTimelineIssue({
   basePath,
   onChange
 }: any) {
-  const [issue, setIssue] = useState<Issue>({ title: '', comments: [] });
+  const [issue, setIssue] = useState<Issue>({ title: '', comments: [] , by: {}});
   const [editionMode, handleEdition] = useState(false);
   const [tags, setTags] = useState<Array<Tag>>([]);
 
@@ -84,7 +85,8 @@ export function ApiTimelineIssue({
   }, [id]);
 
   useEffect(() => {
-    if (tags.length !== api.tags.length) {
+    if (tags.length !== api.tags.length && issue.by._id) {
+      console.log(issue)
       updateIssue({ ...issue, tags: tags.map(t => (t as any).value) });
     }
   }, [tags])

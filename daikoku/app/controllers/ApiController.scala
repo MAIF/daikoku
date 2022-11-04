@@ -2050,7 +2050,7 @@ class ApiController(DaikokuAction: DaikokuAction,
             case None => FastFuture.successful(AppError.render(ApiNotFound))
             case Some(api) =>
               env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id)
-                .save(issue.copy(seqId = api.issues.size))
+                .save(issue.copy(seqId = api.issues.size, by = ctx.user.id))
                 .flatMap {
                   case false => FastFuture.successful(BadRequest(Json.obj("error" -> "failed to create issue")))
                   case true =>
@@ -2077,7 +2077,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                                         sender = ctx.user,
                                         action = NotificationAction.NewIssueOpen(teamId,
                                           api.name,
-                                          s"${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
+                                          s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
                                         ),
                                         notificationType = NotificationType.AcceptOnly,
                                         team = Some(sub.team)

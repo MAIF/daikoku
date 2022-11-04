@@ -178,7 +178,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             className="btn btn-sm btn-outline-success"
             onClick={() => {
               props.accept();
-              navigate(notification.action.linkTo);
+              navigate(notification.action.linkTo, {replace: true});
             }}
           >
             <i className="fas fa-eye" />
