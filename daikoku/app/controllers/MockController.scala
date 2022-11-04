@@ -1443,7 +1443,7 @@ class MockController(DaikokuAction: DaikokuAction,
             ActualOtoroshiApiKey(
               clientId = clientId,
               clientSecret = subscription.apiKey.clientSecret,
-              clientName = "",
+              clientName = subscription.apiKey.clientName,
               authorizedEntities = AuthorizedEntities(),
               throttlingQuota = 10,
               dailyQuota = 10000,
