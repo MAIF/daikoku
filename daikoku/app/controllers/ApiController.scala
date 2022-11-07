@@ -1112,6 +1112,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                 _             <- EitherT.right[AppError](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
                   .save(subscription.copy(
                     parent = None,
+                    metadata = Some(JsObject(apikey.metadata.filterNot(i => i._1.startsWith("daikoku_")).view.mapValues(i => JsString(i)).toSeq)),
                     apiKey = subscription.apiKey.copy(
                       clientId = createdApiKey.clientId,
                       clientSecret = createdApiKey.clientSecret,
