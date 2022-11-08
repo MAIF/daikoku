@@ -55,7 +55,7 @@ export function ApiIssue({
           path="/:issueId"
           element={
             <ApiTimelineIssue
-              issueId={issueId}
+              issueId={issueId!}
               team={ownerTeam}
               api={api}
               connectedUser={props.connectedUser}
