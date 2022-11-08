@@ -15,6 +15,7 @@ import { I18nContext, openFormModal } from '../../../../core';
 import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
 import { Can, getColorByBgColor, randomColor } from '../../../utils';
+import { IApi, ITeamSimple, IUserSimple } from '../../../../types';
 
 const styles = {
   commentHeader: {
@@ -44,10 +45,19 @@ const styles = {
 type Issue = {
   comments: Array<any>,
   title: string,
-  by: any
+  by: IUserSimple
 }
 
 type Tag = { value: string, label: string }
+
+type IApiTimelineIssueProps= {
+  issueId: string,
+  connectedUser: IUserSimple,
+  team: ITeamSimple,
+  api: IApi,
+  basePath: string,
+  onChange: (api: IApi) => void
+}
 
 export function ApiTimelineIssue({
   issueId,
@@ -56,8 +66,8 @@ export function ApiTimelineIssue({
   api,
   basePath,
   onChange
-}: any) {
-  const [issue, setIssue] = useState<Issue>({ title: '', comments: [] , by: {}});
+}: IApiTimelineIssueProps) {
+  const [issue, setIssue] = useState<Issue>({ title: '', comments: [] , by: connectedUser});
   const [editionMode, handleEdition] = useState(false);
   const [tags, setTags] = useState<Array<Tag>>([]);
 
@@ -85,8 +95,7 @@ export function ApiTimelineIssue({
   }, [id]);
 
   useEffect(() => {
-    if (tags.length !== api.tags.length && issue.by._id) {
-      console.log(issue)
+    if (tags.length !== api.tags.length) {
       updateIssue({ ...issue, tags: tags.map(t => (t as any).value) });
     }
   }, [tags])
@@ -273,7 +282,7 @@ export function ApiTimelineIssue({
           </div>
           <div id="tags" className='d-flex flex-column flex-wrap'>
             {tags.map((tag) => {
-              const bgColor = api.issuesTags.find((t: any) => t.id === tag.value).color;
+              const bgColor = api.issuesTags.find((t) => t.id === tag.value)?.color || '#fff';
               return (<div className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center" style={{
                 backgroundColor: bgColor,
                 color: getColorByBgColor(bgColor)
