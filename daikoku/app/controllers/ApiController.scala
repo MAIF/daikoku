@@ -1847,7 +1847,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def createPost(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}"))(teamId, ctx) { _ =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has created posts for @{api.id}"))(teamId, ctx) { _ =>
 
       val postId = ApiPostId(BSONObjectID.generate().stringify)
 
@@ -1875,12 +1875,11 @@ class ApiController(DaikokuAction: DaikokuAction,
                       case true =>
                         val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
                         for {
-                          subs <- env.dataStore.apiSubscriptionRepo
+                          subs  <- env.dataStore.apiSubscriptionRepo
                             .forTenant(ctx.tenant.id)
                             .find(Json.obj("api" -> apiId))
-                          api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId)
-                          _ <- {
-                            Future.sequence(subs.toSet[ApiSubscription].map(sub =>
+                          api   <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId)
+                          _     <- Future.sequence(subs.toSet[ApiSubscription].map(sub =>
                               env.dataStore.notificationRepo
                                 .forTenant(ctx.tenant.id)
                                 .save(Notification(
@@ -1892,19 +1891,22 @@ class ApiController(DaikokuAction: DaikokuAction,
                                   team = Some(sub.team)
                                 ))
                             ))
+                          subTeams <- {
+                            val teamIds = subs.toSet[ApiSubscription]
+                              .map(_.team)
+                            env.dataStore.teamRepo.forTenant(ctx.tenant).find(Json.obj("_id" -> Json.obj("$in" -> JsArray(teamIds.map(_.asJson).toList))))
                           }
-                          maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(teamId)
-                          maybeMembers <- maybeOwnerteam.traverse { _ =>
+                          members <- subTeams.traverse { t =>
                             env.dataStore.userRepo
                               .find(
                                 Json
                                   .obj(
-                                    "_deleted" -> false //absolument pas sûr
+                                    "_id" -> Json.obj("$in" -> JsArray(t.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId.asJson).toList)),
+                                    "_deleted" -> false
                                   )
                               )
-                          }
-                          _ <- maybeMembers.traverse { members =>
-                            Future.sequence(
+                          }.map(_.flatten)
+                          _ <- Future.sequence(
                               members.map { member =>
                                 implicit val language: String = member.defaultLanguage.getOrElse(tenantLanguage)
                                 (for {
@@ -1919,10 +1921,6 @@ class ApiController(DaikokuAction: DaikokuAction,
                                   ctx.tenant.mailer.send(title, Seq(member.email), body, ctx.tenant)
                                 }).flatten
                               })
-                          }
-
-
-                          //TODO ça se passe ici pour l'envoie de mail ( à tout ceux de la team )
                         } yield {
                           Ok(Json.obj("created" -> true))
                         }
