@@ -24,11 +24,17 @@ export interface IApi {
   authorizedTeams: Array<string>;
   posts: Array<string>;
   issues: Array<string>;
-  issuesTag: Array<string>;
+  issuesTags: Array<IIssuesTag>;
   stars: number;
   parent?: string;
   isDefault: boolean;
   apis: Array<string>;
+}
+
+export interface IIssuesTag {
+  id: string
+  name: string
+  color: string
 }
 
 export interface IApiWithAuthorization extends IApi {
