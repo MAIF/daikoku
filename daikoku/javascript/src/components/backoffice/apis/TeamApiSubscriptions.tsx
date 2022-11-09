@@ -16,12 +16,16 @@ import { Table, BooleanColumnFilter, SwitchButton, TableRef } from '../../inputs
 import {I18nContext, openFormModal, openSubMetadataModal} from '../../../core';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import {format, type} from "@maif/react-forms";
+import {Form, format, type} from "@maif/react-forms";
 import {IApi} from "../../../types";
 import {string} from "prop-types";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
+}
+type SubriptionsFilter = {
+  metadata: Array<{key: string , value: string}>,
+  tags: Array<string>
 }
 export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const currentTeam = useSelector((s: any) => s.context.currentTeam);
@@ -30,10 +34,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const [teams, setTeams] = useState<Array<any>>([]);
   const [columns, setColumns] = useState<Array<any>>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<Array<{key: string , value: string}>>([])
+  const [filters, setFilters] = useState<SubriptionsFilter>()
   const tableRef = useRef<TableRef>()
 
-  const { translate, language } = useContext(I18nContext);
+  const { translate, language, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     Services.teams().then((teams) => {
@@ -147,18 +151,25 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     ...Object.keys(plan.otoroshiTarget?.apikeyCustomization.metadata || {})
     ]
   });
+ 
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
       {!loading && (
         <div className="row">
-          <div>
+          <div className='d-flex flex-row justify-content-start align-items-center'>
             <button className='btn btn-sm btn-outline-primary' onClick={() => dispatch(openFormModal({
               actionLabel: "filter",
-              onSubmit: data => setFilters([{key: 'tenant', value: 'prod'}]),
+              onSubmit: data => {
+                console.debug({data})
+                //FIXME: understand why form is not working in DK
+                // setFilters({tags: [], metadata: [{key: "tenant", value: "recx"}]})
+                setFilters({tags: ["contrat"], metadata: []})
+              },
               schema: {
-                filter: {
+                metadata: {
                   type: type.object,
                   format: format.form,
+                  label: translate('Filter metadata'),
                   array: true,
                   schema: {
                     key: {
@@ -170,11 +181,24 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                       type: type.string,
                     }
                   }
+                },
+                tags: {
+                  type: type.string,
+                  format: format.select,
+                  label: translate('Filter tags'),
+                  isMulti: true,
+                  options: api.possibleUsagePlans.flatMap(pp => pp.otoroshiTarget?.apikeyCustomization.tags || [])
                 }
               },
               title: "filter data",
-              value: {filter: filters}
+              value: filters
             }))}> filter </button>
+            {!!filters && (
+              <div className="clear cursor-pointer ms-1" onClick={() => setFilters(undefined)}>
+              <i className="far fa-times-circle me-1" />
+              <Translation i18nkey="clear filter">clear filter</Translation>
+            </div>
+            )}
           </div>
           <div className="col-12">
             <Table
@@ -183,7 +207,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
               fetchItems={() =>
                 Services.apiSubscriptions(api._id, currentTeam._id, api.currentVersion)
                     .then( subscriptions => {
-                      if (!filters.length) {
+                      if (!filters) {
                         return subscriptions
                       } else {
                         return subscriptions.filter( subscription => {
@@ -191,12 +215,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                           if (!Object.keys(meta).length) {
                             return false;
                           } else {
-                            // ######
-                            return filters.every(item => {
+                            return filters.metadata.every(item => {
                               const value = meta[item.key]
                               return value && value.includes(item.value)
-                            })
-                            //######
+                            }) && filters.tags.every(tag => subscription.tags.includes(tag))
                           }
                         })
 

@@ -2120,6 +2120,7 @@ object json {
             integrationToken = (json \ "integrationToken").as[String],
             metadata = (json \ "metadata").asOpt[JsObject],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
+            tags = (json \ "tags").asOpt[Seq[String]],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt(LongFormat),
             customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
@@ -2153,6 +2154,7 @@ object json {
       "integrationToken" -> o.integrationToken,
       "metadata" -> o.metadata,
       "customMetadata" -> o.customMetadata,
+      "tags" -> JsArray(o.tags.getOrElse(Seq.empty).map(JsString.apply)),
       "customMaxPerSecond" -> o.customMaxPerSecond
         .map(JsNumber(_))
         .getOrElse(JsNull)

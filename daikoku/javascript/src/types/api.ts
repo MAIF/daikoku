@@ -213,6 +213,7 @@ export interface IBaseSubscription {
   rotation: IRotation;
   customMetadata?: object;
   metadata?: object;
+  tags: Array<string>;
   customMaxPerSecond: number | null;
   customMaxPerMonth: number | null;
   customMaxPerDay: number | null;
