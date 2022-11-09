@@ -51,6 +51,9 @@ libraryDependencies ++= Seq(
   "com.themillhousegroup" %% "scoup" % "0.5.0" % Test,
   "com.github.tomakehurst" % "wiremock" % wiremockVersion % Test,
   "com.github.tomakehurst" % "wiremock-jre8" % wiremockVersion % Test,
+//  "org.testcontainers" % "testcontainers" % "1.17.5" % Test,
+  "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.11" % Test,
+  "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.11" % Test,
   "org.apache.commons" % "commons-lang3" % "3.10",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.65",
   "com.typesafe.play" %% "play-json" % "2.8.1",
@@ -155,7 +158,7 @@ dockerExposedPorts := Seq(
 )
 packageName in Docker := "daikoku"
 maintainer in Docker := "MAIF OSS Team <oss@maif.fr>"
-dockerBaseImage := "eclipse-temurin:11"
+dockerBaseImage := "eclipse-temurin:11.0.13_8-jre-focal"
 dockerUsername := Some("maif")
 dockerUpdateLatest := true
 dockerCommands := dockerCommands.value.filterNot {
