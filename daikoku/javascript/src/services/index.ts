@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import { ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser, IUserSimple } from '../types';
+import {ISafeSubscription, ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser, IUserSimple} from '../types';
 import {
   ResponseError,
   IApi,
@@ -469,7 +469,7 @@ export const apiConsumption = (apiId: any, planId: any, teamId: any, from: any, 
 export const apiGlobalConsumption = (apiId: any, teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`);
 
-export const apiSubscriptions = (apiId: any, teamId: any, version: any) =>
+export const apiSubscriptions = (apiId: string, teamId: string, version: string): Promise<ISafeSubscription[]> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/subscriptions`);
 
 export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, enabled: any) =>

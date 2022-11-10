@@ -25,6 +25,8 @@ export const FormModal = <T extends TBaseObject>({
 }: IFormModalProps<T>) => {
   const dispatch = useDispatch();
   const ref = useRef<FormRef>();
+
+  
   return (
     <div className="modal-content">
       <div className="modal-header">
@@ -53,6 +55,8 @@ export const FormModal = <T extends TBaseObject>({
         <button type="button" className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
           {actionLabel}
         </button>
+
+        <button type='button' onClick={() => console.log(ref.current?.methods.watch())}>test</button>
       </div>
     </div>
   );

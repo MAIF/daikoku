@@ -58,6 +58,8 @@ case class ApiSubscription(
     rotation: Option[ApiSubscriptionRotation],
     integrationToken: String,
     customMetadata: Option[JsObject] = None,
+    metadata: Option[JsObject] = None,
+    tags: Option[Seq[String]] = None,
     customMaxPerSecond: Option[Long] = None,
     customMaxPerDay: Option[Long] = None,
     customMaxPerMonth: Option[Long] = None,
