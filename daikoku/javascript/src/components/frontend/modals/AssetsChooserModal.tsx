@@ -6,6 +6,8 @@ import * as Services from '../../../services';
 import { openAssetSelectorModal } from '../../../core/modal/actions';
 import { BeautifulTitle } from '../../utils';
 import { I18nContext } from '../../../core';
+import { isError, ResponseError } from '../../../types/api';
+import { IAsset, ITeamSimple } from '../../../types';
 
 export const MimeTypeFilter = {
   image: (value: any) => value.startsWith('image'),
@@ -111,39 +113,43 @@ export function AssetChooserComponent(props: AssetChooserProps) {
     error: false,
   });
 
-  const getTenantAssets = () =>
-    Services.listTenantAssets(props.teamId)
-      .then((assets) =>
-        assets.error
-          ? []
-          : assets.map((asset: any) => ({
-            label: asset.meta.filename + ' - ' + asset.meta.title,
-            value: asset.meta.asset,
-            filename: asset.meta.filename,
-            title: asset.meta.title,
-            desc: asset.meta.desc,
-            contentType: asset.meta['content-type'],
-            meta: asset.meta,
-            link: `/tenant-assets/${asset.meta.asset}`
-          }))
-      );
+  const getTenantAssets = () => Services.listTenantAssets(props.teamId)
+    .then((response) => {
+      if (isError(response)) {
+        return [];
+      } else {
+        return response.map((asset) => ({
+          label: asset.meta.filename + ' - ' + asset.meta.title,
+          value: asset.meta.asset,
+          filename: asset.meta.filename,
+          title: asset.meta.title,
+          desc: asset.meta.desc,
+          contentType: asset.meta['content-type'],
+          meta: asset.meta,
+          link: `/tenant-assets/${asset.meta.asset}`
+        }))
+      }
+    });
 
-  const getTeamAssets = (team: any) => Services.listAssets(team._id).then((assets) =>
-    assets.error
-      ? []
-      : assets.map((asset: any) => ({
-        label: asset.meta.filename + ' - ' + asset.meta.title,
-        value: asset.meta.asset,
-        filename: asset.meta.filename,
-        title: asset.meta.title,
-        desc: asset.meta.desc,
-        contentType: asset.meta['content-type'],
-        meta: asset.meta,
-        link: `/team-assets/${team._id}/${asset.meta.asset}`
-      }))
-  );
+  const getTeamAssets = (team: ITeamSimple) => Services.listAssets(team._id)
+    .then((response) => {
+      if (isError(response)) {
+        return [];
+      } else {
+        return response.map((asset) => ({
+          label: asset.meta.filename + ' - ' + asset.meta.title,
+          value: asset.meta.asset,
+          filename: asset.meta.filename,
+          title: asset.meta.title,
+          desc: asset.meta.desc,
+          contentType: asset.meta['content-type'],
+          meta: asset.meta,
+          link: `/team-assets/${team._id}/${asset.meta.asset}`
+        }))
+      }
+    });
 
-  let mounted: any;
+  let mounted: boolean;
 
   useEffect(() => {
     mounted = true;
@@ -152,8 +158,8 @@ export function AssetChooserComponent(props: AssetChooserProps) {
     return () => { mounted = false };
   }, []);
 
-  const getAssets = (team: any) => {
-    let fetchAssets = () => new Promise((resolve) => resolve([]));
+  const getAssets = (team: ITeamSimple) => {
+    let fetchAssets = (): Promise<Array<IAsset>> => new Promise((resolve) => resolve([]));
     if (props.tenantMode) {
       fetchAssets = () => getTenantAssets();
     } else if (!props.tenantMode && team._id) {
@@ -166,7 +172,7 @@ export function AssetChooserComponent(props: AssetChooserProps) {
           if (props.typeFilter) {
             setState({
               ...state,
-              assets: (assets as any).filter((asset: any) => props.typeFilter(asset.contentType)),
+              assets: assets.filter((asset: any) => props.typeFilter(asset.contentType)),
               loading: false,
             });
           } else {
@@ -175,7 +181,9 @@ export function AssetChooserComponent(props: AssetChooserProps) {
         }
       })
       .catch((error) => {
-        if (mounted) setState({ ...state, error, loading: false });
+        if (mounted) {
+          setState({ ...state, error, loading: false })
+        };
       });
   };
 

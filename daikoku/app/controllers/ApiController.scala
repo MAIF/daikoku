@@ -415,7 +415,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   private def getDocumentationDetailsImpl(tenant: Tenant, apiId: String, version: String): Future[Either[JsValue, JsValue]] = {
     env.dataStore.apiRepo
         .findByVersion(tenant, apiId, version).flatMap {
-      case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
+      case None => FastFuture.successful(Left(AppError.ApiNotFound.toJson()))
       case Some(api) =>
         val doc = api.documentation
         env.dataStore.apiDocumentationPageRepo
@@ -423,7 +423,7 @@ class ApiController(DaikokuAction: DaikokuAction,
           .findWithProjection(
             Json.obj(
               "_deleted" -> false,
-              "_id" -> Json.obj("$in" -> JsArray(doc.pages.map(_.value).map(JsString.apply).toSeq))
+              "_id" -> Json.obj("$in" -> JsArray(doc.docIds().map(JsString.apply)))
             ),
             Json.obj(
               "_id" -> true,
@@ -434,8 +434,10 @@ class ApiController(DaikokuAction: DaikokuAction,
             )
           )
           .map { list =>
-            val pages: Seq[JsObject] =
-              api.documentation.pages.map(id => list.find(o => (o \ "_id").as[String] == id.value)).collect {
+            AppLogger.warn(Json.prettyPrint(JsArray(list)))
+            val pages: Seq[JsObject] = api.documentation.docIds()
+              .map(pageId => list.find(o => (o \ "_id").as[String] == pageId))
+              .collect {
                 case Some(e) => e
               }
             Right(
@@ -1320,7 +1322,7 @@ class ApiController(DaikokuAction: DaikokuAction,
             apis.map { api =>
               env.dataStore.apiDocumentationPageRepo
                 .forTenant(ctx.tenant.id)
-                .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.documentation.pages.map(_.asJson)))))
+                .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.documentation.docIds().map(JsString.apply)))))
                 .map { pages => Json.obj(
                   "currentVersion" -> api.currentVersion.value,
                   "apiId" -> api.id.asJson,
@@ -1357,11 +1359,13 @@ class ApiController(DaikokuAction: DaikokuAction,
         } yield {
           api match {
             case None => FastFuture.successful(AppError.render(ApiNotFound))
-            case Some(api) => env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(
-              api.copy(documentation = api.documentation.copy(pages = api.documentation.pages ++ createdPages))
-            ).map { _ =>
-              Ok(Json.obj("cloned" -> true))
-            }
+            case Some(api) =>
+              ???
+//              env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(
+//                api.copy(documentation = api.documentation.copy(pages = api.documentation.pages ++ createdPages))
+//              ).map { _ =>
+//                Ok(Json.obj("cloned" -> true))
+//              }
           }
         }).flatten
       }
@@ -1643,12 +1647,10 @@ class ApiController(DaikokuAction: DaikokuAction,
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   def createDocPage(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamApiEditorOnly(
-      AuditTrailEvent(s"@{user.name} has created a doc page on @{team.name} - @{team.id} (@{page.id})")
-    )(
+    TeamApiEditorOnly( AuditTrailEvent(s"@{user.name} has created a doc page on @{team.name} - @{team.id} (@{page.id})"))(
       teamId,
       ctx
-    ) { team =>
+    ) { _ =>
       ApiDocumentationPageFormat.reads(ctx.request.body) match {
         case JsError(e) =>
           FastFuture.successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString)))

@@ -58,9 +58,9 @@ export const ApiHeader = ({
   const [versions, setApiVersions] = useState<Array<Version>>([]);
 
   useEffect(() => {
-    Services.getAllApiVersions(ownerTeam._id, params.apiId)
+    Services.getAllApiVersions(ownerTeam._id, params.apiId!)
       .then((versions) =>
-        setApiVersions(versions.map((v: any) => ({
+        setApiVersions(versions.map((v) => ({
           label: v,
           value: v
         })))

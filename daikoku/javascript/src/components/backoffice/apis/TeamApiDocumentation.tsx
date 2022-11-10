@@ -1,4 +1,4 @@
-import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
+import { constraints, Flow, format, Schema, SchemaRenderType, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import { Children, useContext, useState } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
@@ -13,13 +13,14 @@ import set from 'lodash/set'
 
 import { I18nContext, openApiDocumentationSelectModal, openFormModal } from '../../../core';
 import * as Services from '../../../services';
-import { IApi, IDocDetail, IDocPage, IDocTitle, IDocumentation, IDocumentationPages, isError, IState, ITeamSimple } from '../../../types';
+import { IApi, IAsset, IDocDetail, IDocPage, IDocTitle, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, IStateContext, ITeamSimple } from '../../../types';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { BeautifulTitle, Spinner } from '../../utils';
 import { removeArrayIndex, moveArrayIndex } from '../../utils/array';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
 import { TreeItem, TreeItems } from '../../utils/dnd/types';
+import { spawn } from 'xstate';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -64,7 +65,12 @@ Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit 
 
 Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`;
 
-function AssetButton(props: any) {
+type AssetButtonProps = {
+  onChange: (value: string) => void,
+  team: ITeamSimple,
+  setValue: (key: string, value: any) => void
+}
+const AssetButton = (props: AssetButtonProps) => {
   const { translate } = useContext(I18nContext);
 
   return (
@@ -78,7 +84,7 @@ function AssetButton(props: any) {
           team={props.team}
           teamId={props.team._id}
           label={translate('Set from asset')}
-          onSelect={(asset: any) => {
+          onSelect={(asset: IAsset) => {
             props.onChange(asset.link);
             props.setValue('contentType', asset.contentType)
           }}
@@ -98,22 +104,21 @@ type TeamApiDocumentationProps = {
   saveApi: (value: IApi) => Promise<any>
 }
 
-
 export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
-  const { team, api, versionId } = props;
+  const { team, versionId } = props;
 
   const params = useParams();
   const { translate } = useContext(I18nContext);
   const dispatch = useDispatch();
 
-  const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
+  const { currentTeam, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
   const queryClient = useQueryClient();
-  const detailsQuery = useQuery(['details'], () => Services.getDocDetails(params.apiId!, versionId!));
+  // const detailsQuery = useQuery(['details'], () => Services.getDocDetails(params.apiId!, versionId!));
+  const apiQuery = useQuery(['api'], () => Services.teamApi(currentTeam._id, params.apiId!, versionId!));
 
   const flow: Flow = [
     'title',
-    'level',
     'contentType',
     'remoteContentEnabled',
     'remoteContentUrl',
@@ -129,25 +134,17 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         constraints.required(translate("constraints.required.name"))
       ]
     },
-    // level: {
-    //   type: type.string,
-    //   label: translate('Page level'),
-    //   defaultValue: 0,
-    //   props: {
-    //     min: 0, step: 1
-    //   },
-    // },
     content: {
       type: type.string,
       format: format.markdown,
       visible: ({
         rawValues
-      }: any) => !rawValues.remoteContentEnabled,
+      }) => !rawValues.remoteContentEnabled,
       label: translate('Page content'),
       props: {
         height: '800px',
         team: team,
-        actions: (insert: any) => {
+        actions: (insert) => {
           return <>
             <button
               type="button"
@@ -201,7 +198,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
       type: type.string,
       visible: ({
         rawValues
-      }: any) => !!rawValues.remoteContentEnabled,
+      }) => !!rawValues.remoteContentEnabled,
       label: translate('Content URL'),
       render: ({
         onChange,
@@ -212,7 +209,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
           <div className='flex-grow-1 ms-3'>
             <input className='mrf-input mb-3' value={value} onChange={onChange} />
             <div className="col-12 d-flex justify-content-end">
-              <AssetButton onChange={onChange} team={team} value={value} setValue={setValue} />
+              <AssetButton onChange={onChange} team={team} setValue={setValue} />
             </div>
           </div>
         )
@@ -255,53 +252,69 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   //   }
   // }
 
-  // const updatePages = (pages: IDocumentationPages) => {
-  //   const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
+  const updatePages = (pages: IDocumentationPages) => {
+    const api = apiQuery.data! as IApi;
+    const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
 
-  //   return Services.saveTeamApi(
-  //     currentTeam._id,
-  //     updatedApi,
-  //     updatedApi.currentVersion
-  //   )
-  //     .then(() => {
-  //       toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
-  //       queryClient.invalidateQueries('details')
-  //     })
-  // }
+    return Services.saveTeamApi(
+      currentTeam._id,
+      updatedApi,
+      updatedApi.currentVersion
+    )
+      .then(() => {
+        toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
+        queryClient.invalidateQueries('details')
+      })
+  }
 
   const addNewPage = () => {
-      const newPage: IDocPage = {
-          _id: nanoid(32),
-          _tenant: api._tenant,
-          _deleted: false,
-          _humanReadableId: 'new-page',
-          title: 'New page',
-          level: 0,
-          lastModificationAt: Date.now(),
-          content: '# New page\n\nA new page',
-          contentType: 'text/markdown',
-          remoteContentEnabled: false,
-          remoteContentUrl: null,
-          remoteContentHeaders: {}
-        }
-
-      dispatch(openFormModal({
-        title: translate('doc.page.create.modal.title'),
-        flow: flow,
-        schema: schema,
-        value: newPage,
-        onSubmit: saveNewPage,
-        actionLabel: translate('Save')
-      }))
+    const newPage: IDocPage = {
+      _id: nanoid(32),
+      _tenant: tenant._id,
+      _deleted: false,
+      _humanReadableId: 'new-page',
+      title: 'New page',
+      lastModificationAt: Date.now(),
+      content: '# New page\n\nA new page',
+      contentType: 'text/markdown',
+      remoteContentEnabled: false,
+      remoteContentUrl: null,
+      remoteContentHeaders: {}
     }
+
+    dispatch(openFormModal({
+      title: translate('doc.page.create.modal.title'),
+      flow: flow,
+      schema: schema,
+      value: newPage,
+      onSubmit: saveNewPage,
+      actionLabel: translate('Save')
+    }))
+  }
 
   const saveNewPage = (page: IDocPage) => {
     Services.createDocPage(team._id, page)
       .then(page => {
-        props.saveApi({...props.api, documentation: {...props.api.documentation, pages: [...props.api.documentation.pages, page._id]}})
-      })
+        const api = apiQuery.data as IApi
+        const newPage: IDocumentationPage = {
+          id: page._id,
+          title: page.title,
+          children: []
+        }
+        const updatedApi = {
+          ...api,
+          documentation: { ...api.documentation, pages: [...api.documentation.pages, newPage] }
+        }
 
-      //todo: update list of doc page
+        return Services.saveTeamApi(
+          currentTeam._id,
+          updatedApi,
+          updatedApi.currentVersion
+        )
+      })
+      .then(() => queryClient.invalidateQueries('api'))
+
+    //todo: update list of doc page
 
 
     //FIXME
@@ -328,52 +341,45 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     // }
   }
 
-  const deletePage = (page: IDocTitle) => {
-    if (detailsQuery.data) {
-      (window
-        .confirm(translate('delete.documentation.page.confirm'))) //@ts-ignore //FIXME: remove after fix typing monkey patch of window.confirm
-        .then((ok: boolean) => {
-          if (ok) {
-            Services.deleteDocPage(team._id, page._id)
-              .then(() => {
-                const index = detailsQuery.data.pages.findIndex(id => id === page._id)
-                const pages = removeArrayIndex(detailsQuery.data.pages, index)
+  const deletePage = (page: IDocumentationPage) => {
+    if (apiQuery.data) {
+      Services.deleteDocPage(team._id, page.id)
+        //TODO: handleUpdate is send ???
+        // .then(() => {
+        //   const api = apiQuery.data as IApi
+        //   const index = detailsQuery.data.pages.findIndex(id => id === page._id)
+        //   const pages = removeArrayIndex(detailsQuery.data.pages, index)
 
-                const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-                return Services.saveTeamApi(
-                  currentTeam._id,
-                  updatedApi,
-                  updatedApi.currentVersion
-                )
-              })
-              .then(() => {
-                toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
-                queryClient.invalidateQueries('details')
-              })
-          }
-        });
-    } else {
-      toastr.error(translate('Error'), translate('doc.page.error.unknown'))
+        //   const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
+        //   return Services.saveTeamApi(
+        //     currentTeam._id,
+        //     updatedApi,
+        //     updatedApi.currentVersion
+        //   )
+        // })
+        .then(() => {
+          toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
+          queryClient.invalidateQueries('details')
+        })
     }
-
   }
 
   const importPage = () => {
+    const api = apiQuery.data as IApi
     dispatch(openApiDocumentationSelectModal({
       api,
       teamId: team._id,
       onClose: () => {
         toastr.success(translate('Success'), translate('doc.page.import.successfull'))
         queryClient.invalidateQueries('details')
+        queryClient.invalidateQueries('api')
       },
     }));
   }
 
-  if (api === null) {
-    return null;
-  } else if (detailsQuery.isLoading) {
+  if (apiQuery.isLoading) {
     return <Spinner />
-  } else if (detailsQuery.data) {
+  } else if (apiQuery.data && !isError(apiQuery.data)) {
     return (
       <div className="row">
         <div className="col-12 col-sm-6 col-lg-3 p-1">
@@ -390,9 +396,8 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                 </div>
               </div>
             </div>
-            <div className='d-flex flex-column'>
-              {/* @ts-ignore */}
-              <TestDnD items={detailsQuery.data.titles} deletePage={deletePage} updatePages={console.debug} />
+            <div className='d-flex flex-column'>  {/* @ts-ignore */}
+              <DnDoc items={apiQuery.data.documentation.pages} deletePage={deletePage} updatePages={updatePages} confirmRemoveItem={() => (window.confirm(translate('delete.documentation.page.confirm')))} />
             </div>
           </div>
         </div>
@@ -403,103 +408,108 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 };
 
-const TestDnD = ({ items, deletePage, updatePages }: { items: IDocDetail[] | IDocumentationPages, deletePage: (p: IDocTitle) => void, updatePages: (p: IDocumentationPages) => void }) => {
-  type Result = {
-    result: object,
-    info: {
-      previousItem?: IDocTitle,
-      path?: string,
-      groupPath: string
-    }
-  }
+type DndProps = {
+  items: IDocumentationPages,
+  deletePage: (p: IDocumentationPage) => void,
+  updatePages: (p: IDocumentationPages) => void,
+  confirmRemoveItem: () => Promise<boolean>
+}
 
-  
-  
-  const transformOldDoc = () => {
-    //@ts-ignore
-    if (items.some(x => !x.children)) {
-      //@ts-ignore
-      const result: Result = items.reduce<Result>((acc, item) => {
-        if (item.level === '0') {
-          return ({
-            info: {
-              previousItem: item,
-              path: item._id,
-              groupPath: undefined,
-            },
-            result: { ...acc.result, [item._id]: { ...item, id: item.title } }
-          })
-        } else {
-          //@ts-ignore
-          const compare = item.level.localeCompare(acc.info.previousItem?.level || '0')
-          if (compare === 1) {
-            return ({
-              info: {
-                previousItem: item,
-                path: `${acc.info.path}.${item._id}`,
-                groupPath: acc.info.path,
-              },
-              result: set(acc.result, acc.info.path!, { ...get(acc.result, acc.info.path!), [item._id]: { ...item, id: item.title } })
-            })
-          } else if (compare === 0) {
-            return ({
-              info: {
-                previousItem: item,
-                path: `${acc.info.groupPath}.${item._id}`,
-                groupPath: acc.info.groupPath,
-              },
-              result: set(acc.result, acc.info.groupPath, { ...get(acc.result, acc.info.groupPath), [item._id]: { ...item, id: item.title } })
-            })
-          } else {
-            //@ts-ignore
-            const offset = parseInt(acc.info.previousItem?.level || '0', 10) - parseInt(item.level, 10)
-            const newPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset).join('.')
-            const newGroupPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset - 1).join('.')
-    
-            return ({
-              info: {
-                previousItem: item,
-                path: `${newPath}.${item._id}`,
-                groupPath: newGroupPath,
-              },
-              result: set(acc.result, newPath, { ...get(acc.result, newPath), [item._id]: { ...item, id: item.title } })
-            })
-          }
-        }
-      }, { result: {}, info: { previousItem: undefined, path: undefined, groupPath: '' } })
-    
-      const isAnObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
-    
-    
-      const getValueWithChildren = (item: object) => {
-        return Object.entries(item) //@ts-ignore
-          .reduce((acc, curr) => {
-            if (isAnObject(curr[1])) {
-              return { ...acc, children: [...acc.children, getValueWithChildren(curr[1])] }
-            } else {
-              return { ...acc, [curr[0]]: curr[1] }
-            }
-          }, { children: [] })
-      }
-    
-    
-      const docs: IDocumentationPages = Object.values(result.result)
-        .map((value) => {
-          return getValueWithChildren(value)
-        })
+const DnDoc = ({ items, deletePage, updatePages, confirmRemoveItem }: DndProps) => {
+  // type Result = {
+  //   result: object,
+  //   info: {
+  //     previousItem?: IDocTitle,
+  //     path?: string,
+  //     groupPath: string
+  //   }
+  // }
 
-      return docs;
-    } else {
-      return items
-    }
-  }
 
-  const docs = transformOldDoc()
 
+  // const transformOldDoc = () => {
+  //   //@ts-ignore
+  //   if (items.some(x => !x.children)) {
+  //     //@ts-ignore
+  //     const result: Result = items.reduce<Result>((acc, item) => {
+  //       if (item.level === '0') {
+  //         return ({
+  //           info: {
+  //             previousItem: item,
+  //             path: item._id,
+  //             groupPath: undefined,
+  //           },
+  //           result: { ...acc.result, [item._id]: { ...item, id: item.title } }
+  //         })
+  //       } else {
+  //         //@ts-ignore
+  //         const compare = item.level.localeCompare(acc.info.previousItem?.level || '0')
+  //         if (compare === 1) {
+  //           return ({
+  //             info: {
+  //               previousItem: item,
+  //               path: `${acc.info.path}.${item._id}`,
+  //               groupPath: acc.info.path,
+  //             },
+  //             result: set(acc.result, acc.info.path!, { ...get(acc.result, acc.info.path!), [item._id]: { ...item, id: item.title } })
+  //           })
+  //         } else if (compare === 0) {
+  //           return ({
+  //             info: {
+  //               previousItem: item,
+  //               path: `${acc.info.groupPath}.${item._id}`,
+  //               groupPath: acc.info.groupPath,
+  //             },
+  //             result: set(acc.result, acc.info.groupPath, { ...get(acc.result, acc.info.groupPath), [item._id]: { ...item, id: item.title } })
+  //           })
+  //         } else {
+  //           //@ts-ignore
+  //           const offset = parseInt(acc.info.previousItem?.level || '0', 10) - parseInt(item.level, 10)
+  //           const newPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset).join('.')
+  //           const newGroupPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset - 1).join('.')
+
+  //           return ({
+  //             info: {
+  //               previousItem: item,
+  //               path: `${newPath}.${item._id}`,
+  //               groupPath: newGroupPath,
+  //             },
+  //             result: set(acc.result, newPath, { ...get(acc.result, newPath), [item._id]: { ...item, id: item.title } })
+  //           })
+  //         }
+  //       }
+  //     }, { result: {}, info: { previousItem: undefined, path: undefined, groupPath: '' } })
+
+  //     const isAnObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+
+  //     const getValueWithChildren = (item: object) => {
+  //       return Object.entries(item) //@ts-ignore
+  //         .reduce((acc, curr) => {
+  //           if (isAnObject(curr[1])) {
+  //             return { ...acc, children: [...acc.children, getValueWithChildren(curr[1])] }
+  //           } else {
+  //             return { ...acc, [curr[0]]: curr[1] }
+  //           }
+  //         }, { children: [] })
+  //     }
+
+
+  //     const docs: IDocumentationPages = Object.values(result.result)
+  //       .map((value) => {
+  //         return getValueWithChildren(value)
+  //       })
+
+  //     return docs;
+  //   } else {
+  //     return items
+  //   }
+  // }
+  // const docs = transformOldDoc()
 
   return (
     <Wrapper>
-      <SortableTree collapsible indicator removable defaultItems={docs} handleUpdateItems={updatePages} handleRemoveItem={deletePage} />
+      <SortableTree collapsible indicator removable defaultItems={items} handleUpdateItems={updatePages} handleRemoveItem={deletePage} confirmRemoveItem={confirmRemoveItem} />
     </Wrapper>
   )
 }

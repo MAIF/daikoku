@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { Histogram, RoundChart } from './Recharts';
 //@ts-ignore
-import { converterBase2 } from 'byte-converter';
 import moment from 'moment';
 import Select from 'react-select';
 import maxBy from 'lodash/maxBy';
@@ -283,23 +282,18 @@ export function OtoroshiStatsVizualization(props: any) {
 export function GlobalDataConsumption(props: any) {
   const { translate } = useContext(I18nContext);
 
-  const computeValue = (value: any) => {
-    let unit = 'Mb';
-    let computedValue = parseFloat((converterBase2(value, 'B', 'MB') || 0).toFixed(3));
-    if (computedValue > 1024.0) {
-      computedValue = parseFloat((converterBase2(value, 'B', 'GB') || 0).toFixed(3));
-      unit = 'Gb';
+  const units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+  const computeValue = (x: number): string => {
+
+    let l = 0;
+
+    while (x >= 1024 && ++l) {
+      x = x / 1024;
     }
-    if (computedValue > 1024.0) {
-      computedValue = parseFloat((converterBase2(value, 'B', 'TB') || 0).toFixed(3));
-      unit = 'Tb';
-    }
-    if (computedValue > 1024.0) {
-      computedValue = parseFloat((converterBase2(value, 'B', 'PB') || 0).toFixed(3));
-      unit = 'Pb';
-    }
-    return `${computedValue ? (computedValue as any).prettify() : 0} ${unit}`;
-  };
+
+    return (x.toFixed(x < 10 && l > 0 ? 1 : 0) + ' ' + units[l]);
+  }
 
   const row = (value: any, label: any) => {
     return (
@@ -322,7 +316,7 @@ export function GlobalDataConsumption(props: any) {
   const avgOverhead = data.avgOverhead ? data.avgOverhead.toFixed(3) : 0;
 
   return <>
-    {row(hits, ' ' + translate({key: 'Hit', plural: data.hits > 1}))}
+    {row(hits, ' ' + translate({ key: 'Hit', plural: data.hits > 1 }))}
     {row(totalDataIn, ' ' + translate('in'))}
     {row(totalDataOut, ' ' + translate('out'))}
     {row(avgDuration, ' ' + translate('ms. average duration'))}

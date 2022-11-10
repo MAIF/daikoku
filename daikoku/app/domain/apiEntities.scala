@@ -463,12 +463,26 @@ case class SwaggerAccess(url: String,
   }
 }
 
+case class ApiDocumentationDetailPage(id: ApiDocumentationPageId,
+                                title: String,
+                                children: Seq[ApiDocumentationDetailPage])
+  extends CanJson[ApiDocumentationDetailPage] {
+  override def asJson: JsValue = ???
+}
 case class ApiDocumentation(id: ApiDocumentationId,
                             tenant: TenantId,
-                            pages: Seq[ApiDocumentationPageId],
+                            pages: Seq[ApiDocumentationDetailPage],
                             lastModificationAt: DateTime)
     extends CanJson[ApiDocumentation] {
   override def asJson: JsValue = json.ApiDocumentationFormat.writes(this)
+
+  private def flatDocIds(pages: Seq[ApiDocumentationDetailPage]): Seq[String] = {
+    pages.flatMap(page => {
+      Seq(page.id.value) ++ page.children.flatMap(child => flatDocIds(child.children))
+    })
+  }
+
+  def docIds() = flatDocIds(pages)
   def fetchPages(tenant: Tenant)(implicit ec: ExecutionContext, env: Env) = {
     env.dataStore.apiDocumentationPageRepo
       .forTenant(tenant.id)
@@ -476,7 +490,7 @@ case class ApiDocumentation(id: ApiDocumentationId,
         Json.obj(
           "_deleted" -> false,
           "_id" -> Json.obj(
-            "$in" -> JsArray(pages.map(_.value).map(JsString.apply).toSeq))),
+            "$in" -> JsArray(docIds().map(JsString.apply)))),
         Json.obj(
           "_id" -> true,
           "_humanReadableId" -> true,
@@ -490,7 +504,7 @@ case class ApiDocumentation(id: ApiDocumentationId,
       .map { list =>
         // TODO: fetch remote content
         pages
-          .map(id => list.find(o => (o \ "_id").as[String] == id.value))
+          .map(page => list.find(o => (o \ "_id").as[String] == page.id.toString))
           .collect { case Some(e) => e }
       }
   }
@@ -500,10 +514,7 @@ case class ApiDocumentation(id: ApiDocumentationId,
 case class ApiDocumentationPage(id: ApiDocumentationPageId,
                                 tenant: TenantId,
                                 deleted: Boolean = false,
-                                // api: ApiId,
                                 title: String,
-                                //index: Double,
-                                level: Int = 0,
                                 lastModificationAt: DateTime,
                                 content: String,
                                 contentType: String = "text/markdown",
@@ -513,7 +524,7 @@ case class ApiDocumentationPage(id: ApiDocumentationPageId,
                                   Map.empty[String, String])
     extends CanJson[ApiDocumentationPage] {
   //def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
-  def humanReadableId = s"$level-${title.urlPathSegmentSanitized}"
+  def humanReadableId = id.toString
   override def asJson: JsValue = json.ApiDocumentationPageFormat.writes(this)
   def asWebUiJson: JsValue =
     json.ApiDocumentationPageFormat.writes(this).as[JsObject]

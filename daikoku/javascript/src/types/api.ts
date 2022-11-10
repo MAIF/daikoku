@@ -85,14 +85,14 @@ export interface ITestingConfig {
 
 export type IDocumentationPages =  IDocumentationPage[]
 export interface IDocumentationPage {
-  _id: string;
-  level?: number;
+  id: string;
   title: string;
+  children: IDocumentationPages
 }
 export interface IDocumentation {
   _id: string;
   _tenant: string;
-  pages: Array<string>;
+  pages: IDocumentationPages;
   lastModificationAt: string;
 }
 
@@ -203,7 +203,6 @@ export interface IDocPage {
   _tenant: string;
   _deleted: boolean;
   title: string;
-  level: number;
   lastModificationAt: number;
   content: string;
   contentType: string;
