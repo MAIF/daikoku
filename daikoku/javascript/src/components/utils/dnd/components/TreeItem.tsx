@@ -7,6 +7,7 @@ import { Remove } from './Remove';
 
 //@ts-ignore
 import styles from './TreeItem.module.scss';
+import { Update } from './Update';
 
 export interface Props extends Omit<HTMLAttributes<HTMLLIElement>, 'id'> {
   childCount?: number;
@@ -22,6 +23,7 @@ export interface Props extends Omit<HTMLAttributes<HTMLLIElement>, 'id'> {
   value: string;
   onCollapse?(): void;
   onRemove?(): void;
+  onUpdate?(): void;
   wrapperRef?(node: HTMLLIElement): void;
 }
 
@@ -40,6 +42,8 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
       collapsed,
       onCollapse,
       onRemove,
+      onUpdate,
+      onTimeUpdate,
       style,
       value,
       wrapperRef,
@@ -65,11 +69,16 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
         }
         {...props}
       >
-        <div className={styles.TreeItem} ref={ref} style={style}>
+        <div className={classNames(styles.TreeItem, 'tree-item')} ref={ref} style={style}>
           <Handle {...handleProps} />
           {onCollapse && (
             <Action
               onClick={onCollapse}
+              style={{
+                width: '12px',
+                padding: '15px',
+                border: 'none'
+              }}
               className={classNames(
                 styles.Collapse,
                 collapsed && styles.collapsed
@@ -79,6 +88,7 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
             </Action>
           )}
           <span className={styles.Text}>{value}</span>
+          {!clone && onUpdate && <Update onClick={onUpdate} />}
           {!clone && onRemove && <Remove onClick={onRemove} />}
           {clone && childCount && childCount > 1 ? (
             <span className={styles.count}>{childCount}</span>

@@ -291,7 +291,7 @@ export const deleteDocPage = (teamId: string, pageId: string): Promise<any> =>
     method: 'DELETE',
   });
 
-export const saveDocPage = (teamId: string, page: IDocPage) =>
+export const saveDocPage = (teamId: string, page: IDocPage): Promise<IDocPage | ResponseError> =>
   customFetch(`/api/teams/${teamId}/pages/${page._id}`, {
     method: 'PUT',
     body: JSON.stringify(page),

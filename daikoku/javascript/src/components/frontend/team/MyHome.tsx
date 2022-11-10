@@ -118,7 +118,6 @@ export const MyHome = () => {
     const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams) //@ts-ignore //FIXME: y'a vraiment team._id ???
       .find((team) => api.team._id === team._id);
 
-    console.debug({adminTeam, connectedUser, apiCreationPermitted})
     if (adminTeam && CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
       updateTeamPromise(adminTeam)(dispatch)
         .then(() => {

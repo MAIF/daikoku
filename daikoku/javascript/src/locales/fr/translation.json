@@ -1188,6 +1188,7 @@
   "doc.page.import.successfull": "La page a été iportée avec succès",
   "doc.page.move.successfull": "La page a été déplacée avec succès",
   "doc.page.deletion.successfull": "La page a été supprimée avec succès",
+  "doc.page.update.successfull": "La page a été modifiée avec succès",
   "doc.page.move.error": "Cette page ne peut être déplacée",
   "doc.page.error.unknown": "Erreur inconnue",
   "otoroshi.list.add.label": "Ajouter une instance Otoroshi",

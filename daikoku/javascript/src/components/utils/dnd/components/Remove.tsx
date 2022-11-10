@@ -7,6 +7,7 @@ export function Remove(props: ActionProps) {
   return (
     <Action
       {...props}
+      className="remove-button"
     >
       <Trash2 />
     </Action>

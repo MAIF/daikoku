@@ -306,25 +306,25 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def getDocumentationPage(apiId: String, pageId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(
-      AuditTrailEvent(s"@{user.name} has accessed documentation page for @{api.name} - @{api.id} - $pageId")
+      AuditTrailEvent(s"@{user.name} has accessed documentation page for @{api.name} - @{api.id} - $pageId")
     )(ctx) {
       env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId).flatMap {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
+        case None => AppError.ApiNotFound.renderF()
         case Some(api) =>
           ctx.setCtxValue("api.id", api.id)
           ctx.setCtxValue("api.name", api.name)
           env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id).findByIdOrHrId(pageId).map {
-            case None => NotFound(Json.obj("error" -> "Page not found"))
+            case None => AppError.PageNotFound.render()
             case Some(page) =>
+              AppLogger.info(Json.prettyPrint(page.asJson))
+              AppLogger.info(s"${api.documentation.docIds()}")
               api.documentation match {
-                case doc if !doc.pages.contains(page.id) =>
-                  NotFound(Json.obj("error" -> "Page not found"))
-                case doc if doc.pages.contains(page.id) && page.remoteContentEnabled =>
+                case doc if !doc.docIds().contains(page.id.value) => AppError.PageNotFound.render()
+                case doc if page.remoteContentEnabled =>
                   //Ok(page.asWebUiJson.as[JsObject] ++ Json.obj("contentUrl" -> s"/api/apis/$apiId/pages/$pageId/content"))
                   val url: String = page.remoteContentUrl.getOrElse(s"/api/apis/$apiId/pages/$pageId/content")
                   Ok(page.asWebUiJson.as[JsObject] ++ Json.obj("contentUrl" -> url))
-                case doc if doc.pages.contains(page.id) =>
-                  Ok(page.asWebUiJson)
+                case doc => Ok(page.asWebUiJson)
               }
           }
       }

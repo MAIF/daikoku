@@ -477,9 +477,7 @@ case class ApiDocumentation(id: ApiDocumentationId,
   override def asJson: JsValue = json.ApiDocumentationFormat.writes(this)
 
   private def flatDocIds(pages: Seq[ApiDocumentationDetailPage]): Seq[String] = {
-    pages.flatMap(page => {
-      Seq(page.id.value) ++ page.children.flatMap(child => flatDocIds(child.children))
-    })
+    pages.flatMap(page => Seq(page.id.value) ++ flatDocIds(page.children))
   }
 
   def docIds() = flatDocIds(pages)

@@ -106,6 +106,7 @@ interface Props {
   indicator?: boolean;
   removable?: boolean;
   handleUpdateItems: (x: any) => void
+  handleUpdateItem: (x: string) => void
   handleRemoveItem: (x: any) => void
   confirmRemoveItem: () => Promise<boolean>
 }
@@ -118,6 +119,7 @@ export function SortableTree({
   removable,
   handleRemoveItem,
   handleUpdateItems,
+  handleUpdateItem,
   confirmRemoveItem
 }: Props) {
   const isFirstRender = useRef(true);
@@ -248,6 +250,7 @@ export function SortableTree({
                 : undefined
             }
             onRemove={removable ? () => handleRemove(id) : undefined}
+            onUpdate={() => handleUpdateItem(id.toString())}
           />
         ))}
         {createPortal(

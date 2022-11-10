@@ -1186,6 +1186,7 @@
     "doc.page.import.successfull": "Page imported successfully",
     "doc.page.move.successfull": "Page moved successfully",
     "doc.page.deletion.successfull": "page deleted successfully",
+    "doc.page.update.successfull": "page updated successfully",
     "doc.page.move.error": "You can't move this documentation",
     "doc.page.error.unknown": "unknown error",
     "otoroshi.list.add.label": "Add an Otoroshi instance",

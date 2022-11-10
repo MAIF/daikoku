@@ -224,36 +224,54 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     },
   };
 
-  // const updatePage = (selectedPage: IDocTitle) => {
-  //   Services.getDocPage(api._id, selectedPage._id)
-  //     .then((page) => {
-  //       if (isError(page)) {
-  //         toastr.error(translate('Error'), page.error);
-  //       } else {
-  //         dispatch(openFormModal({
-  //           title: translate('doc.page.update.modal.title'),
-  //           flow: flow,
-  //           schema: schema,
-  //           value: page,
-  //           onSubmit: savePage,
-  //           actionLabel: translate('Save')
-  //         }))
-  //       }
-  //     });
-  // }
+  const updatePage = (selectedPage: string) => {
+    const api = apiQuery.data as IApi
+    Services.getDocPage(api._id, selectedPage)
+      .then((page) => {
+        if (isError(page)) {
+          toastr.error(translate('Error'), page.error);
+        } else {
+          dispatch(openFormModal({
+            title: translate('doc.page.update.modal.title'),
+            flow: flow,
+            schema: schema,
+            value: page,
+            onSubmit: updatedPage => savePage(updatedPage, page),
+            actionLabel: translate('Save')
+          }))
+        }
+      });
+  }
 
-  // const savePage = (page?: IDocPage) => {
-  //   if (page) {
-  //     return Services.saveDocPage(team._id, page)
-  //       .then(() => {
-  //         queryClient.invalidateQueries('details')
-  //         toastr.success(translate('Success'), translate("doc.page.save.successfull"))
-  //       });
-  //   }
-  // }
+  const updateTitle = (pages: IDocumentationPages, title: string, id: string) => {
+    return pages.map(page => {
+      if (page.id === id) {
+        return {...page, title }
+      } else {
+        return {...page, children: updateTitle(page.children, title, id)}
+      }
+    })
+  }
+
+  const savePage = (page: IDocPage, original: IDocPage) => {
+    if (page) {
+      return Services.saveDocPage(team._id, page)
+        .then((resp) => {
+          if (isError(resp)) {
+            toastr.error(translate('Error'), resp.error);
+          } else if (resp.title === original.title) {
+            queryClient.invalidateQueries('api')
+            toastr.success(translate('Success'), translate("doc.page.save.successfull"))
+          } else {
+            const api = apiQuery.data as IApi;
+            updatePages(updateTitle(api.documentation.pages, page.title, page._id))
+          }
+        })
+    }
+  }
 
   const updatePages = (pages: IDocumentationPages) => {
-    const api = apiQuery.data! as IApi;
+    const api = apiQuery.data as IApi;
     const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
 
     return Services.saveTeamApi(
@@ -262,8 +280,8 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
       updatedApi.currentVersion
     )
       .then(() => {
-        toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
-        queryClient.invalidateQueries('details')
+        toastr.success(translate('Success'), translate('doc.page.update.successfull'))
+        queryClient.invalidateQueries('api')
       })
   }
 
@@ -382,7 +400,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   } else if (apiQuery.data && !isError(apiQuery.data)) {
     return (
       <div className="row">
-        <div className="col-12 col-sm-6 col-lg-3 p-1">
+        <div className="col-12 col-sm-6 col-lg-6 p-1">
           <div className="d-flex flex-column">
             <div className="">
               <div className="d-flex justify-content-between align-items-center">
@@ -396,8 +414,13 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                 </div>
               </div>
             </div>
-            <div className='d-flex flex-column'>  {/* @ts-ignore */}
-              <DnDoc items={apiQuery.data.documentation.pages} deletePage={deletePage} updatePages={updatePages} confirmRemoveItem={() => (window.confirm(translate('delete.documentation.page.confirm')))} />
+            <div className='d-flex flex-column'>
+              <DnDoc
+                items={apiQuery.data.documentation.pages}
+                deletePage={deletePage}
+                updatePages={updatePages} //@ts-ignore
+                confirmRemoveItem={() => (window.confirm(translate('delete.documentation.page.confirm')))}
+                updateItem={updatePage} />
             </div>
           </div>
         </div>
@@ -412,10 +435,11 @@ type DndProps = {
   items: IDocumentationPages,
   deletePage: (p: IDocumentationPage) => void,
   updatePages: (p: IDocumentationPages) => void,
-  confirmRemoveItem: () => Promise<boolean>
+  confirmRemoveItem: () => Promise<boolean>,
+  updateItem: (id: string) => void
 }
 
-const DnDoc = ({ items, deletePage, updatePages, confirmRemoveItem }: DndProps) => {
+const DnDoc = ({ items, deletePage, updatePages, confirmRemoveItem, updateItem }: DndProps) => {
   // type Result = {
   //   result: object,
   //   info: {
@@ -509,7 +533,11 @@ const DnDoc = ({ items, deletePage, updatePages, confirmRemoveItem }: DndProps) 
 
   return (
     <Wrapper>
-      <SortableTree collapsible indicator removable defaultItems={items} handleUpdateItems={updatePages} handleRemoveItem={deletePage} confirmRemoveItem={confirmRemoveItem} />
+      <SortableTree collapsible indicator removable defaultItems={items}
+        handleUpdateItems={updatePages}
+        handleUpdateItem={updateItem}
+        handleRemoveItem={deletePage}
+        confirmRemoveItem={confirmRemoveItem} />
     </Wrapper>
   )
 }
