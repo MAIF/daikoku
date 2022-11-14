@@ -1,11 +1,12 @@
 package fr.maif.otoroshi.daikoku.env
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationFormat, ApiDocumentationPageFormat, ApiDocumentationPageIdFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.domain.{ApiDocumentationDetailPage, ApiDocumentationPageId, ApiId, CmsPage, CmsPageId, DatastoreId, Evolution, TenantId}
+import fr.maif.otoroshi.daikoku.env.evolution_157.version
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import org.joda.time.DateTime
@@ -405,8 +406,9 @@ object evolution_157_b extends EvolutionScript {
         .streamAllRaw()
         .mapAsync(10) { value =>
           val apiId = ApiId((value \ "_id").as[String])
-          val oldPages = (value \ "documentation" \ "pages").as[Seq[String]]
-          val tenantId = TenantId((value \ "tenant").as[String])
+          val doc = (value \ "documentation").as[JsObject]
+          val oldPages = (doc \ "pages").as[Seq[String]]
+          val tenantId = TenantId((value \ "_tenant").as[String])
 
           val newPages: Future[Seq[ApiDocumentationDetailPage]] = Future.sequence(oldPages.map(page => dataStore.apiDocumentationPageRepo.forTenant(tenantId).findById(page).map {
             case Some(p) => ApiDocumentationDetailPage(id = p.id, title = p.title, children = Seq.empty)
@@ -417,8 +419,8 @@ object evolution_157_b extends EvolutionScript {
             Json.obj(
               "_id" -> apiId.asJson
             ),
-            Json.obj("$set" -> Json.obj("documentation.pages" -> SeqApiDocumentationDetailPageFormat.writes(n)))
-          ))
+            Json.obj("$set" -> Json.obj("documentation" -> (doc ++ Json.obj("pages" -> SeqApiDocumentationDetailPageFormat.writes(n))))
+          )))
         }
 
       val recalcDocHumanReadableIdSource = dataStore.apiDocumentationPageRepo
@@ -444,14 +446,14 @@ object evolution_157_b extends EvolutionScript {
 }
 
 object evolutions {
-  val list: Set[EvolutionScript] =
-    Set(evolution_102, evolution_150, evolution_151, evolution_155, evolution_157, evolution_157_b)
+  val list: List[EvolutionScript] =
+    List(evolution_102, evolution_150, evolution_151, evolution_155, evolution_157, evolution_157_b)
   def run(
       dataStore: DataStore,
       otoroshiClient: OtoroshiClient
   )(implicit ec: ExecutionContext, mat: Materializer): Future[Done] =
     Source(list)
-      .map { evolution =>
+      .mapAsync(1) { evolution =>
         dataStore.evolutionRepo
           .findOne(Json.obj("version" -> evolution.version))
           .flatMap {
@@ -488,6 +490,8 @@ object evolutions {
                       f
                     })
                 }
+
+            case _ => FastFuture.successful(Done)
           }
       }
       .runWith(Sink.ignore)
