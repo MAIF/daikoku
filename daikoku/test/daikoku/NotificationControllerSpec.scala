@@ -269,7 +269,7 @@ class NotificationControllerSpec()
         apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = UsagePlanId("1"),
         createdAt = DateTime.now(),
-        team = teamOwnerId,
+        team = teamConsumerId,
         api = defaultApi.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
@@ -279,7 +279,7 @@ class NotificationControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
-        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
+        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id), users = Set(UserWithPermission(user.id, Administrator)))),
         apis = Seq(
           defaultApi),
         subscriptions = Seq(
@@ -303,10 +303,10 @@ class NotificationControllerSpec()
       post.status mustBe 200
       (post.json \ "created").as[Boolean] mustBe true
 
-      val adminSession = loginWithBlocking(userAdmin, tenant)
+      val userSession = loginWithBlocking(user, tenant)
       val countNotification =
         httpJsonCallBlocking(s"/api/me/notifications/unread-count")(tenant,
-          adminSession)
+          userSession)
       countNotification.status mustBe 200
       (countNotification.json \ "count").as[Long] mustBe 1
     }

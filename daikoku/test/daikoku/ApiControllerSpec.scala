@@ -3287,7 +3287,7 @@ class ApiControllerSpec()
 
       assert(resp.status != 204)
     }
-    "can't create an issue when the name of the team is wrong" in {
+    "can't create an issue when a team don't exist" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
