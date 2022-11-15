@@ -71,22 +71,6 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
       >
         <div className={classNames(styles.TreeItem, 'tree-item')} ref={ref} style={style}>
           <Handle {...handleProps} />
-          {onCollapse && (
-            <Action
-              onClick={onCollapse}
-              style={{
-                width: '12px',
-                padding: '15px',
-                border: 'none'
-              }}
-              className={classNames(
-                styles.Collapse,
-                collapsed && styles.collapsed
-              )}
-            >
-              {collapseIcon}
-            </Action>
-          )}
           <span className={styles.Text}>{value}</span>
           {!clone && onUpdate && <Update onClick={onUpdate} />}
           {!clone && onRemove && <Remove onClick={onRemove} />}

@@ -316,8 +316,6 @@ class ApiController(DaikokuAction: DaikokuAction,
           env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id).findByIdOrHrId(pageId).map {
             case None => AppError.PageNotFound.render()
             case Some(page) =>
-              AppLogger.info(Json.prettyPrint(page.asJson))
-              AppLogger.info(s"${api.documentation.docIds()}")
               api.documentation match {
                 case doc if !doc.docIds().contains(page.id.value) => AppError.PageNotFound.render()
                 case doc if page.remoteContentEnabled =>
@@ -414,40 +412,40 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   private def getDocumentationDetailsImpl(tenant: Tenant, apiId: String, version: String): Future[Either[JsValue, JsValue]] = {
     env.dataStore.apiRepo
-        .findByVersion(tenant, apiId, version).flatMap {
-      case None => FastFuture.successful(Left(AppError.ApiNotFound.toJson()))
-      case Some(api) =>
-        val doc = api.documentation
-        env.dataStore.apiDocumentationPageRepo
-          .forTenant(tenant.id)
-          .findWithProjection(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj("$in" -> JsArray(doc.docIds().map(JsString.apply)))
-            ),
-            Json.obj(
-              "_id" -> true,
-              "_humanReadableId" -> true,
-              "title" -> true,
-              "level" -> true,
-              "lastModificationAt" -> true
-            )
-          )
-          .map { list =>
-            AppLogger.warn(Json.prettyPrint(JsArray(list)))
-            val pages: Seq[JsObject] = api.documentation.docIds()
-              .map(pageId => list.find(o => (o \ "_id").as[String] == pageId))
-              .collect {
-                case Some(e) => e
-              }
-            Right(
+      .findByVersion(tenant, apiId, version)
+      .flatMap {
+        case None => FastFuture.successful(Left(AppError.ApiNotFound.toJson()))
+        case Some(api) =>
+          val doc = api.documentation
+          env.dataStore.apiDocumentationPageRepo
+            .forTenant(tenant.id)
+            .findWithProjection(
               Json.obj(
-                "pages" -> JsArray(pages.map(p => JsString((p \ "_id").as[String]))),
-                "titles" -> JsArray(pages)
+                "_deleted" -> false,
+                "_id" -> Json.obj("$in" -> JsArray(doc.docIds().map(JsString.apply)))
+              ),
+              Json.obj(
+                "_id" -> true,
+                "_humanReadableId" -> true,
+                "title" -> true,
+                "lastModificationAt" -> true
               )
             )
-          }
-    }
+            .map { list =>
+              AppLogger.warn(Json.prettyPrint(JsArray(list)))
+              val pages: Seq[JsObject] = api.documentation.docIds()
+                .map(pageId => list.find(o => (o \ "_id").as[String] == pageId))
+                .collect {
+                  case Some(e) => e
+                }
+              Right(
+                Json.obj(
+                  "pages" -> SeqApiDocumentationDetailPageFormat.writes(api.documentation.pages),
+                  "titles" -> JsArray(pages)
+                )
+              )
+            }
+      }
   }
 
   def getRootApi(apiId: String)  = DaikokuActionMaybeWithGuest.async { ctx =>
@@ -1353,20 +1351,16 @@ class ApiController(DaikokuAction: DaikokuAction,
               val generatedId = BSONObjectID.generate().stringify
               env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id)
                 .save(page.copy(id = ApiDocumentationPageId(generatedId)))
-                .flatMap(_ => FastFuture.successful(ApiDocumentationPageId(generatedId)))
+                .flatMap(_ => FastFuture.successful(ApiDocumentationDetailPage(page.id, page.title, Seq.empty)))
             }))
           api <- env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version)
         } yield {
           api match {
             case None => FastFuture.successful(AppError.render(ApiNotFound))
             case Some(api) =>
-              //FIXME
-              ???
-//              env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(
-//                api.copy(documentation = api.documentation.copy(pages = api.documentation.pages ++ createdPages))
-//              ).map { _ =>
-//                Ok(Json.obj("cloned" -> true))
-//              }
+              env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+                .save(api.copy(documentation = api.documentation.copy(pages = api.documentation.pages ++ createdPages)))
+                .map (_ => Ok(Json.obj("cloned" -> true)))
           }
         }).flatten
       }

@@ -114,7 +114,6 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   const { currentTeam, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
   const queryClient = useQueryClient();
-  // const detailsQuery = useQuery(['details'], () => Services.getDocDetails(params.apiId!, versionId!));
   const apiQuery = useQuery(['api'], () => Services.teamApi(currentTeam._id, params.apiId!, versionId!));
 
   const flow: Flow = [
@@ -246,9 +245,9 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   const updateTitle = (pages: IDocumentationPages, title: string, id: string) => {
     return pages.map(page => {
       if (page.id === id) {
-        return {...page, title }
+        return { ...page, title }
       } else {
-        return {...page, children: updateTitle(page.children, title, id)}
+        return { ...page, children: updateTitle(page.children, title, id) }
       }
     })
   }
@@ -331,50 +330,11 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         )
       })
       .then(() => queryClient.invalidateQueries('api'))
-
-    //todo: update list of doc page
-
-
-    //FIXME
-    // if (detailsQuery.data) {
-    //   const index = detailsQuery.data.pages.length
-    //   const pages = [...detailsQuery.data.pages];
-    //   pages.splice(index, 0, page._id);
-
-    //   return Services.saveDocPage(team._id, page)
-    //     .then(() => {
-    //       const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-    //       return Services.saveTeamApi(
-    //         currentTeam._id,
-    //         updatedApi,
-    //         updatedApi.currentVersion
-    //       )
-    //     })
-    //     .then(() => {
-    //       toastr.success(translate('Success'), translate('doc.page.creation.successfull'))
-    //       queryClient.invalidateQueries('details')
-    //     })
-    // } else {
-    //   toastr.error(translate('Error'), translate('doc.page.error.unknown'))
-    // }
   }
 
   const deletePage = (page: IDocumentationPage) => {
     if (apiQuery.data) {
       Services.deleteDocPage(team._id, page.id)
-        //TODO: handleUpdate is send ???
-        // .then(() => {
-        //   const api = apiQuery.data as IApi
-        //   const index = detailsQuery.data.pages.findIndex(id => id === page._id)
-        //   const pages = removeArrayIndex(detailsQuery.data.pages, index)
-
-        //   const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-        //   return Services.saveTeamApi(
-        //     currentTeam._id,
-        //     updatedApi,
-        //     updatedApi.currentVersion
-        //   )
-        // })
         .then(() => {
           toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
           queryClient.invalidateQueries('details')
@@ -408,7 +368,10 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                   <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
                     <i className="fas fa-plus" />
                   </button>
-                  <button onClick={importPage} type="button" className="btn btn-sm btn-outline-primary">
+                  <button
+                    onClick={importPage}
+                    type="button"
+                    className="btn btn-sm btn-outline-primary">
                     <i className="fas fa-download" />
                   </button>
                 </div>
@@ -440,97 +403,6 @@ type DndProps = {
 }
 
 const DnDoc = ({ items, deletePage, updatePages, confirmRemoveItem, updateItem }: DndProps) => {
-  // type Result = {
-  //   result: object,
-  //   info: {
-  //     previousItem?: IDocTitle,
-  //     path?: string,
-  //     groupPath: string
-  //   }
-  // }
-
-
-
-  // const transformOldDoc = () => {
-  //   //@ts-ignore
-  //   if (items.some(x => !x.children)) {
-  //     //@ts-ignore
-  //     const result: Result = items.reduce<Result>((acc, item) => {
-  //       if (item.level === '0') {
-  //         return ({
-  //           info: {
-  //             previousItem: item,
-  //             path: item._id,
-  //             groupPath: undefined,
-  //           },
-  //           result: { ...acc.result, [item._id]: { ...item, id: item.title } }
-  //         })
-  //       } else {
-  //         //@ts-ignore
-  //         const compare = item.level.localeCompare(acc.info.previousItem?.level || '0')
-  //         if (compare === 1) {
-  //           return ({
-  //             info: {
-  //               previousItem: item,
-  //               path: `${acc.info.path}.${item._id}`,
-  //               groupPath: acc.info.path,
-  //             },
-  //             result: set(acc.result, acc.info.path!, { ...get(acc.result, acc.info.path!), [item._id]: { ...item, id: item.title } })
-  //           })
-  //         } else if (compare === 0) {
-  //           return ({
-  //             info: {
-  //               previousItem: item,
-  //               path: `${acc.info.groupPath}.${item._id}`,
-  //               groupPath: acc.info.groupPath,
-  //             },
-  //             result: set(acc.result, acc.info.groupPath, { ...get(acc.result, acc.info.groupPath), [item._id]: { ...item, id: item.title } })
-  //           })
-  //         } else {
-  //           //@ts-ignore
-  //           const offset = parseInt(acc.info.previousItem?.level || '0', 10) - parseInt(item.level, 10)
-  //           const newPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset).join('.')
-  //           const newGroupPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset - 1).join('.')
-
-  //           return ({
-  //             info: {
-  //               previousItem: item,
-  //               path: `${newPath}.${item._id}`,
-  //               groupPath: newGroupPath,
-  //             },
-  //             result: set(acc.result, newPath, { ...get(acc.result, newPath), [item._id]: { ...item, id: item.title } })
-  //           })
-  //         }
-  //       }
-  //     }, { result: {}, info: { previousItem: undefined, path: undefined, groupPath: '' } })
-
-  //     const isAnObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
-
-
-  //     const getValueWithChildren = (item: object) => {
-  //       return Object.entries(item) //@ts-ignore
-  //         .reduce((acc, curr) => {
-  //           if (isAnObject(curr[1])) {
-  //             return { ...acc, children: [...acc.children, getValueWithChildren(curr[1])] }
-  //           } else {
-  //             return { ...acc, [curr[0]]: curr[1] }
-  //           }
-  //         }, { children: [] })
-  //     }
-
-
-  //     const docs: IDocumentationPages = Object.values(result.result)
-  //       .map((value) => {
-  //         return getValueWithChildren(value)
-  //       })
-
-  //     return docs;
-  //   } else {
-  //     return items
-  //   }
-  // }
-  // const docs = transformOldDoc()
-
   return (
     <Wrapper>
       <SortableTree collapsible indicator removable defaultItems={items}
