@@ -139,8 +139,8 @@ object utils {
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
         cmsPages: Seq[CmsPage] = Seq.empty
-    ): Unit = {
-      setupEnv(
+    ) = {
+      Await.result(setupEnv(
         tenants,
         users,
         teams,
@@ -156,8 +156,7 @@ object utils {
         issues,
         posts,
         cmsPages
-      ).futureValue
-      await(0.1.seconds)
+      ), 1.second)
     }
 
     def setupEnv(
@@ -748,7 +747,7 @@ object utils {
     val tenant = Tenant(
       id = Tenant.Default,
       name = "Test Corp.",
-      domain = "localhost.default",
+      domain = "localhost",
       style = Some(
         DaikokuStyle(
           title = "Test Corp."

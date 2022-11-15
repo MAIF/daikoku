@@ -2074,87 +2074,103 @@ class ApiController(DaikokuAction: DaikokuAction,
       ApiIssueFormat.reads(ctx.request.body) match {
         case JsError(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Body can't be parse to issue")))
         case JsSuccess(issue, _) =>
-          env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
-            "_humanReadableId" -> apiId,
-            "parent" -> JsNull
-          )).flatMap {
-            case None => FastFuture.successful(AppError.render(ApiNotFound))
-            case Some(api) =>
-              env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id)
-                .save(issue.copy(seqId = api.issues.size, by = ctx.user.id))
-                .flatMap {
-                  case false => FastFuture.successful(BadRequest(Json.obj("error" -> "failed to create issue")))
-                  case true =>
-                    env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-                        .save(api.copy(issues = api.issues ++ Seq(issue.id)))
-                        .flatMap {
-                          case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to save new issue in api issues list")))
-                          case true =>
-                            val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
-                            for {
-                              subs <- env.dataStore.apiSubscriptionRepo
-                                .forTenant(ctx.tenant.id)
-                                .find(Json.obj(
-                                  "api" -> api.id.value
-                                ))
-                              optTeam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
-                              _ <- {
-                                Future.sequence(subs.distinctBy(_.team)
-                                  .map(sub =>
-                                    env.dataStore.notificationRepo
-                                      .forTenant(ctx.tenant.id)
-                                      .save(Notification(
-                                        id = NotificationId(BSONObjectID.generate().stringify),
-                                        tenant = ctx.tenant.id,
-                                        sender = ctx.user,
-                                        action = NotificationAction.NewIssueOpen(teamId,
-                                          api.name,
-                                          s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
-                                        ),
-                                        notificationType = NotificationType.AcceptOnly,
-                                        team = Some(sub.team)
-                                      ))
+          env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrId(teamId).flatMap {
+            case None => FastFuture.successful(Results.NotFound(Json.obj("error" -> "Team not found")))
+            case Some(_) =>
+              env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+                "_humanReadableId" -> apiId,
+                "parent" -> JsNull
+              )).flatMap {
+                case None => FastFuture.successful(AppError.render(ApiNotFound))
+                case Some(api) =>
+                  env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id)
+                    .save(issue.copy(seqId = api.issues.size, by = ctx.user.id))
+                    .flatMap {
+                      case false => FastFuture.successful(BadRequest(Json.obj("error" -> "failed to create issue")))
+                      case true =>
+                        env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+                          .save(api.copy(issues = api.issues ++ Seq(issue.id)))
+                          .flatMap {
+                            case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to save new issue in api issues list")))
+                            case true =>
+                              val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
+                              for {
+                                subs <- env.dataStore.apiSubscriptionRepo
+                                  .forTenant(ctx.tenant.id)
+                                  .find(Json.obj(
+                                    "api" -> api.id.value
                                   ))
-                              }
-                              maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(api.team)
-                              maybeAdmins <- maybeOwnerteam.traverse { ownerTeam =>
-                                env.dataStore.userRepo
-                                  .find(
-                                    Json
-                                      .obj(
-                                        "_deleted" -> false,
-                                        "_id" -> Json.obj("$in" -> JsArray(ownerTeam.admins().map(_.asJson).toSeq))
-                                      )
-                                  )
-                              }
-                              _ <- maybeAdmins.traverse { admins =>
-                                Future.sequence(
-                                  admins.map { admin =>
-                                    implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
-                                    (for {
-                                      title <- translator.translate("mail.new.issue.title", ctx.tenant)
-                                      body <- translator.translate("mail.new.issue.body", ctx.tenant, Map(
-                                        "user" -> ctx.user.name,
-                                        "apiName" -> api.name,
-                                        "teamName" -> api.team.value, // not sure if it's okay
-                                        "link" -> env.getDaikokuUrl(ctx.tenant, "/" +api.team.value+"/" + api.humanReadableId + "/" + api.currentVersion.value +"/issues") //same
-                                      ))
-                                    } yield {
-                                      ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
-                                    }).flatten
-                                  })
-                              }
+                                optTeam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
+                                _ <- {
+                                  Future.sequence(subs.distinctBy(_.team)
+                                    .map(sub =>
+                                      env.dataStore.notificationRepo
+                                        .forTenant(ctx.tenant.id)
+                                        .save(Notification(
+                                          id = NotificationId(BSONObjectID.generate().stringify),
+                                          tenant = ctx.tenant.id,
+                                          sender = ctx.user,
+                                          action = NotificationAction.NewIssueOpen(teamId,
+                                            api.name,
+                                            s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
+                                          ),
+                                          notificationType = NotificationType.AcceptOnly,
+                                          team = Some(sub.team)
+                                        ))
+                                    ))
+                                }
+                                maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(api.team)
+                                maybeAdmins <- maybeOwnerteam.traverse { ownerTeam =>
+                                  env.dataStore.userRepo
+                                    .find(
+                                      Json
+                                        .obj(
+                                          "_deleted" -> false,
+                                          "_id" -> Json.obj("$in" -> JsArray(ownerTeam.admins().map(_.asJson).toSeq))
+                                        )
+                                    )
+                                }
+                                _ <- maybeAdmins.traverse { admins =>
+                                  Future.sequence(
+                                    admins.map { admin =>
+                                      implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
+                                      (for {
+                                        title <- translator.translate("mail.new.issue.title", ctx.tenant)
+                                        body <- translator.translate("mail.new.issue.body", ctx.tenant, Map(
+                                          "user" -> ctx.user.name,
+                                          "apiName" -> api.name,
+                                          "teamName" -> api.team.value, // not sure if it's okay
+                                          "link" -> env.getDaikokuUrl(ctx.tenant, "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/issues") //same
+                                        ))
+                                      } yield {
+                                        ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
+                                      }).flatten
+                                    })
+                                }
+                                _ <- env.dataStore.notificationRepo
+                                  .forTenant(ctx.tenant.id)
+                                  .save(Notification(
+                                    id = NotificationId(BSONObjectID.generate().stringify),
+                                    tenant = ctx.tenant.id,
+                                    sender = ctx.user,
+                                    action = NotificationAction.NewIssueOpen(teamId,
+                                      api.name,
+                                      s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
+                                    ),
+                                    notificationType = NotificationType.AcceptOnly,
+                                    team = Some(maybeOwnerteam.get.id)
+                                  ))
 
-                              //TODO ici pour l'envoie de mail aux admins
-                            } yield {
-                              Created(Json.obj("created" -> true))
-                            }
-                        }
-                }
+                              } yield {
+                                Created(Json.obj("created" -> true))
+                              }
+                          }
+                    }
+              }
           }
+        }
       }
     }
-  }
 
   def updateIssue(teamId: String, apiId: String, issueId: String) = DaikokuAction.async(parse.json) { ctx =>
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has updated issues for @{api.id}"))(ctx) {
