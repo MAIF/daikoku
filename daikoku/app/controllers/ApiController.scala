@@ -432,7 +432,6 @@ class ApiController(DaikokuAction: DaikokuAction,
               )
             )
             .map { list =>
-              AppLogger.warn(Json.prettyPrint(JsArray(list)))
               val pages: Seq[JsObject] = api.documentation.docIds()
                 .map(pageId => list.find(o => (o \ "_id").as[String] == pageId))
                 .collect {
