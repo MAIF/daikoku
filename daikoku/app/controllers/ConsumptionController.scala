@@ -141,6 +141,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                 apiKeyStatsJob
                   .syncForApi(api, ctx.tenant)
                   .map(seq => Ok(JsArray(seq.map(_.asJson))))
+
             }
       }
   }
@@ -169,18 +170,16 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getApiKeyQuotas(clientId: String, teamId: String): Action[AnyContent] =
+  def getApiKeyQuotasWithSubscriptionId(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(AuditTrailEvent(
         s"@{user.name} has accessed to apikey quotas for clientId @{clientId}"))(
         teamId,
         ctx) { team =>
-        ctx.setCtxValue("clientId", clientId)
-
+        ctx.setCtxValue("subscriptionId", subscriptionId)
+        println("cd")
         env.dataStore.apiSubscriptionRepo
-          .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(
-            Json.obj("team" -> team.id.value, "apiKey.clientId" -> clientId))
+          .forTenant(ctx.tenant.id).findByIdNotDeleted(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(NotFound(Json.obj(
@@ -209,15 +208,18 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                                   Future.successful(NotFound(Json.obj(
                                     "error" -> "Otoroshi settings not found")))
                                 case Some(otoSettings) =>
+
                                   implicit val otoroshiSettings
                                     : OtoroshiSettings = otoSettings
                                   otoroshiClient
-                                    .getApiKeyQuotas(clientId)
+                                    .getApiKeyQuotas(subscription.apiKey.clientId)
                                     .map(result => Ok(result))
+
                               }
                         }
                       )
                       .get
+
                 }
           }
       }

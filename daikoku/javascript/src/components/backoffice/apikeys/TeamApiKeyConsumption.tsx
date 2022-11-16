@@ -9,13 +9,39 @@ import { OtoroshiStatsVizualization } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
+import {useQuery, useQueryClient} from "react-query";
+import {IState, ITeamSimple} from "../../../types";
+import {getSubscriptionInformations} from "../../../services";
 
+type QuotasProps = {
+  currentTeam: ITeamSimple,
+
+
+}
+const Quotas = (props: QuotasProps) =>{
+  const params = useParams()
+  const queryClient = useQueryClient()
+  const queryQuotas = useQuery(['quotas'], () => Services.getConsummedQuotasWithSubscriptionId(props.currentTeam._id, params.subscription!))
+  console.log(queryQuotas.data + " <- data | bool ->" + queryQuotas.isError)
+  if(queryQuotas.isLoading || queryQuotas.isIdle ) {
+    return <Spinner />
+  } else if(queryQuotas.data) {
+    return (
+        <div>
+          {JSON.stringify(queryQuotas.data)}
+        </div>
+    )
+  } else {
+    console.log(queryQuotas)
+
+    return <div>Error while searching quotas.</div>
+  }
+}
 export const TeamApiKeyConsumption = () => {
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const  currentTeam  = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   useTeamBackOffice(currentTeam);
   const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
-
   const mappers = [
     {
       type: 'LineChart',
@@ -33,10 +59,16 @@ export const TeamApiKeyConsumption = () => {
       label: translate('Global informations'),
       formatter: (data: any) => data.length ? data[data.length - 1].globalInformations : [],
     },
+    {
+      type: 'Custom',
+      label: translate('quo'),
+      formatter: () =>  <Quotas currentTeam={currentTeam}/>,
+    },
   ];
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('API key consumption')}`;
+
   }, []);
 
   const getLabelForDataIn = (datas: any, max: any) => {
@@ -67,7 +99,7 @@ export const TeamApiKeyConsumption = () => {
   };
 
   const getInformations = () => {
-    return Services.getSubscriptionInformations(params.subscription, currentTeam._id);
+    return Services.getSubscriptionInformations(params.subscription!, currentTeam._id);
   };
 
   return (
@@ -99,7 +131,7 @@ export const TeamApiKeyConsumption = () => {
       </div>
     </Can>
   );
-};
+}
 
 const PlanInformations = (props: any) => {
   const [state, setState] = useState({

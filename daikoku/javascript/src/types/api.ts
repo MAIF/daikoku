@@ -262,3 +262,15 @@ export interface ISubscription extends IBaseSubscription{
 
 }
 
+export interface IQuotas {
+  currentCallsPerSec:string,
+  remainingCallsPerSec: string,
+  currentCallsPerDay: string,
+  authorizedCallsPerDay: string,
+  currentCallsPerMonth: string,
+  remainingCallsPerMonth: string,
+  authorizedCallsPerSec: string,
+  authorizedCallsPerMonth: string,
+  remainingCallsPerDay: string
+}
+
