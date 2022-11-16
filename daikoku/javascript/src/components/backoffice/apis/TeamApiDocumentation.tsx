@@ -14,7 +14,7 @@ import set from 'lodash/set'
 import { I18nContext, openApiDocumentationSelectModal, openFormModal } from '../../../core';
 import * as Services from '../../../services';
 import { IApi, IAsset, IDocDetail, IDocPage, IDocTitle, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, IStateContext, ITeamSimple } from '../../../types';
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
+import { AssetChooserByModal, IFormModalProps, MimeTypeFilter } from '../../frontend';
 import { BeautifulTitle, Spinner } from '../../utils';
 import { removeArrayIndex, moveArrayIndex } from '../../utils/array';
 import { SortableTree } from '../../utils/dnd/SortableTree';
@@ -68,10 +68,14 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
 type AssetButtonProps = {
   onChange: (value: string) => void,
   team: ITeamSimple,
-  setValue: (key: string, value: any) => void
+  setValue: (key: string, value: any) => void,
+  rawValues: IDocPage,
+  formModalProps: IFormModalProps<IDocPage>
 }
 const AssetButton = (props: AssetButtonProps) => {
   const { translate } = useContext(I18nContext);
+
+  const dispatch = useDispatch();
 
   return (
     <div className="mb-3 row">
@@ -85,9 +89,18 @@ const AssetButton = (props: AssetButtonProps) => {
           teamId={props.team._id}
           label={translate('Set from asset')}
           onSelect={(asset: IAsset) => {
-            props.onChange(asset.link);
-            props.setValue('contentType', asset.contentType)
+            console.debug(asset)
+
+            dispatch(openFormModal({
+              ...props.formModalProps,
+              value: {
+                ...props.rawValues,
+                contentType: asset.contentType,
+                remoteContentUrl: asset.link
+              }
+            }))
           }}
+          noClose
         />
       </div>
     </div>
@@ -125,102 +138,112 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     'content',
   ];
 
-  const schema: Schema = {
-    title: {
-      type: type.string,
-      label: translate('Page title'),
-      constraints: [
-        constraints.required(translate("constraints.required.name"))
-      ]
-    },
-    content: {
-      type: type.string,
-      format: format.markdown,
-      visible: ({
-        rawValues
-      }) => !rawValues.remoteContentEnabled,
-      label: translate('Page content'),
-      props: {
-        height: '800px',
-        team: team,
-        actions: (insert) => {
-          return <>
-            <button
-              type="button"
-              className="btn-for-descriptionToolbar"
-              aria-label={translate('Lorem Ipsum')}
-              title={translate('Lorem Ipsum')}
-              onClick={() => insert(loremIpsum)}
-            >
-              <i className={`fas fa-feather-alt`} />
-            </button>
-            <button
-              type="button"
-              className="btn-for-descriptionToolbar"
-              aria-label={translate('Long Lorem Ipsum')}
-              title={translate('Long Lorem Ipsum')}
-              onClick={() => insert(longLoremIpsum)}
-            >
-              <i className={`fas fa-feather`} />
-            </button>
-            <BeautifulTitle
-              placement="bottom"
-              title={translate('image url from asset')}
-            >
-              <AssetChooserByModal
-                typeFilter={MimeTypeFilter.image}
-                onlyPreview
-                tenantMode={false}
-                team={team}
-                teamId={team._id}
-                icon="fas fa-file-image"
-                classNames="btn-for-descriptionToolbar"
-                onSelect={(asset: any) => insert(asset.link)}
-                label={translate("Insert URL")}
-              />
-            </BeautifulTitle>
-          </>;
+  const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
+    return {
+      title: {
+        type: type.string,
+        label: translate('Page title'),
+        constraints: [
+          constraints.required(translate("constraints.required.name"))
+        ]
+      },
+      content: {
+        type: type.string,
+        format: format.markdown,
+        visible: ({
+          rawValues
+        }) => !rawValues.remoteContentEnabled,
+        label: translate('Page content'),
+        props: {
+          height: '800px',
+          team: team,
+          actions: (insert) => {
+            return <>
+              <button
+                type="button"
+                className="btn-for-descriptionToolbar"
+                aria-label={translate('Lorem Ipsum')}
+                title={translate('Lorem Ipsum')}
+                onClick={() => insert(loremIpsum)}
+              >
+                <i className={`fas fa-feather-alt`} />
+              </button>
+              <button
+                type="button"
+                className="btn-for-descriptionToolbar"
+                aria-label={translate('Long Lorem Ipsum')}
+                title={translate('Long Lorem Ipsum')}
+                onClick={() => insert(longLoremIpsum)}
+              >
+                <i className={`fas fa-feather`} />
+              </button>
+              <BeautifulTitle
+                placement="bottom"
+                title={translate('image url from asset')}
+              >
+                <AssetChooserByModal
+                  typeFilter={MimeTypeFilter.image}
+                  onlyPreview
+                  tenantMode={false}
+                  team={team}
+                  teamId={team._id}
+                  icon="fas fa-file-image"
+                  classNames="btn-for-descriptionToolbar"
+                  onSelect={(asset) => insert(asset.link)}
+                  label={translate("Insert URL")}
+                />
+              </BeautifulTitle>
+            </>;
+          }
         }
-      }
-    },
-    remoteContentEnabled: {
-      type: type.bool,
-      label: translate('Remote content'),
-    },
-    contentType: {
-      type: type.string,
-      format: format.select,
-      label: translate('Content type'),
-      options: mimeTypes,
-    },
-    remoteContentUrl: {
-      type: type.string,
-      visible: ({
-        rawValues
-      }) => !!rawValues.remoteContentEnabled,
-      label: translate('Content URL'),
-      render: ({
-        onChange,
-        value,
-        setValue
-      }: any) => {
-        return (
-          <div className='flex-grow-1 ms-3'>
-            <input className='mrf-input mb-3' value={value} onChange={onChange} />
-            <div className="col-12 d-flex justify-content-end">
-              <AssetButton onChange={onChange} team={team} setValue={setValue} />
+      },
+      remoteContentEnabled: {
+        type: type.bool,
+        label: translate('Remote content'),
+      },
+      contentType: {
+        type: type.string,
+        format: format.select,
+        label: translate('Content type'),
+        options: mimeTypes,
+      },
+      remoteContentUrl: {
+        type: type.string,
+        visible: ({
+          rawValues
+        }) => !!rawValues.remoteContentEnabled,
+        label: translate('Content URL'),
+        render: ({
+          onChange,
+          value,
+          setValue,
+          rawValues
+        }: any) => {
+          return (
+            <div className='flex-grow-1 ms-3'>
+              <input className='mrf-input mb-3' value={value} onChange={onChange} />
+              <div className="col-12 d-flex justify-content-end">
+                <AssetButton onChange={onChange} team={team} setValue={setValue} rawValues={rawValues} formModalProps={{
+                  title: translate('doc.page.update.modal.title'),
+                  flow: flow,
+                  schema: schema(onSubmitAsset),
+                  value: rawValues,
+                  onSubmit: onSubmitAsset,
+                  actionLabel: translate('Save')
+                }} />
+              </div>
             </div>
-          </div>
-        )
-      }
-    },
-    remoteContentHeaders: {
-      type: type.object,
-      visible: ({
-        rawValues
-      }: any) => !!rawValues.remoteContentEnabled,
-      label: translate('Content headers'),
-    },
+          )
+        }
+      },
+      remoteContentHeaders: {
+        type: type.object,
+        visible: ({
+          rawValues
+        }: any) => !!rawValues.remoteContentEnabled,
+        label: translate('Content headers'),
+      },
+    }
   };
 
   const updatePage = (selectedPage: string) => {
@@ -233,7 +256,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
           dispatch(openFormModal({
             title: translate('doc.page.update.modal.title'),
             flow: flow,
-            schema: schema,
+            schema: schema(updatedPage => savePage(updatedPage, page)),
             value: page,
             onSubmit: updatedPage => savePage(updatedPage, page),
             actionLabel: translate('Save')
@@ -302,7 +325,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     dispatch(openFormModal({
       title: translate('doc.page.create.modal.title'),
       flow: flow,
-      schema: schema,
+      schema: schema(saveNewPage),
       value: newPage,
       onSubmit: saveNewPage,
       actionLabel: translate('Save')

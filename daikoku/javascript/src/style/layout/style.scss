@@ -109,32 +109,36 @@ a.nav-link.active {
 .additionalContent {
   background-color: $aside-bg-color;
   color: $aside-text-color;
-  border-right: 1px solid $link-color;
 }
 
-.navDocumentation ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-weight: bold;
-  font-size: 0.9 rem;
+.navDocumentation {
+  border-right: 1px solid $link-color;
 
-  .api-doc-cartridge-link a {
-    line-height: 2rem;
-    border-radius: 4px;
-    padding: 0 .5rem;
-    display: block;
-    width: 100%;
-    color: $menu-text-color;
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-weight: bold;
+    font-size: 0.9 rem;
 
-    &:hover {
-      background-color: $menu-text-hover-bg-color;
-      color: $menu-text-hover-color;
-    }
+    .api-doc-cartridge-link a {
+      line-height: 2rem;
+      border-radius: 4px;
+      padding: 0 .5rem;
+      display: block;
+      width: 100%;
+      color: $menu-text-color;
+      margin-bottom: .3rem;
 
-    &.active {
-      background-color: $menu-text-hover-bg-color;
-      color: $menu-text-hover-color;
+      &:hover {
+        background-color: $menu-text-hover-bg-color;
+        color: $menu-text-hover-color;
+      }
+
+      &.active {
+        background-color: $menu-text-hover-bg-color;
+        color: $menu-text-hover-color;
+      }
     }
   }
 }
