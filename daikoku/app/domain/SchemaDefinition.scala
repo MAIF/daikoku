@@ -514,7 +514,7 @@ object SchemaDefinition {
         Field("tenant", OptionType(TenantType), resolve = ctx =>
           ctx.ctx._1.tenantRepo.findById(ctx.value.tenant)),
         Field("pages", ListType(OptionType(ApiDocumentationPageType)), resolve = ctx => Future.sequence(
-          ctx.value.pages.map(page => ctx.ctx._1.apiDocumentationPageRepo.forTenant(ctx.ctx._2.tenant).findById(page))
+          ctx.value.pages.map(page => ctx.ctx._1.apiDocumentationPageRepo.forTenant(ctx.ctx._2.tenant).findById(page.id))
         )),
         Field("lastModificationAt", DateTimeUnitype, resolve = _.value.lastModificationAt)
       )

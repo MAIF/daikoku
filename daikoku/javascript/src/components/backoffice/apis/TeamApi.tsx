@@ -25,7 +25,7 @@ import {
   toggleExpertMode,
 } from '../../../core';
 import { TOptions } from '../../../types/types';
-import { IApi } from '../../../types/api';
+import { IApi, isError } from '../../../types/api';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 const CreateNewVersionButton = ({
@@ -140,10 +140,10 @@ export const TeamApi = (props: { creation: boolean }) => {
   const reloadState = () => {
     Promise.all([
       Services.teamApi(currentTeam._id, params.apiId!, params.versionId!),
-      Services.getAllApiVersions(currentTeam._id, params.apiId),
+      Services.getAllApiVersions(currentTeam._id, params.apiId!),
     ]).then(([api, v]) => {
-      if (!api.error) {
-        const versions = (v || []).map((v: any) => ({
+      if (!isError(api)) {
+        const versions = (v || []).map((v) => ({
           label: v,
           value: v
         }));

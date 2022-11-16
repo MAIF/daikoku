@@ -1,3 +1,15 @@
+// export interface TOption<A> {
+//   map<B>(f: (a: A) => B): TOption<B>;
+//   flatMap<B>(f: (a: A) => TOption<B>): TOption<B>;
+//   fold<B>(ifEmpty: B, f: (a: A) => B): B;
+//   orElse<B extends A>(ob: TOption<B>): TOption<A>;
+//   getOrElse<B extends A>(a: B): A;
+//   getOrNull(): A | undefined
+//   isDefined: boolean;
+//   exists(f: (a: A) => boolean): boolean;
+//   filter(f: (a: A) => boolean): TOption<A>;
+// }
+
 export const Option = (x) => (x === undefined || x === null ? None : Some(x));
 
 export const Some = (x) => ({

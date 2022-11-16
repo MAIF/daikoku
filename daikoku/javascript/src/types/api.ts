@@ -1,8 +1,10 @@
-export interface IApi {
+import { TreeItem, TreeItems } from "../components/utils/dnd/types";
+import { ITeamSimple } from "./team";
+
+interface IBaseApi {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
-  team: string;
   _deleted: boolean;
   lastUpdate: string;
   name: string;
@@ -37,7 +39,19 @@ export interface IIssuesTag {
   color: string
 }
 
-export interface IApiWithAuthorization extends IApi {
+export interface IApiWithSimpleTeam extends IBaseApi {
+  team: {
+    _humanReadableId: string
+    _id: string
+    avatar: string
+    name: string
+  };
+}
+export interface IApi extends IBaseApi {
+  team: string
+}
+
+export interface IApiWithAuthorization extends IApiWithSimpleTeam {
   authorizations: Array<{
     team: string;
     authorized: boolean;
@@ -69,10 +83,16 @@ export interface ITestingConfig {
   customReadOnly?: boolean;
 }
 
+export type IDocumentationPages =  IDocumentationPage[]
+export interface IDocumentationPage {
+  id: string;
+  title: string;
+  children: IDocumentationPages
+}
 export interface IDocumentation {
   _id: string;
   _tenant: string;
-  pages: Array<string>;
+  pages: IDocumentationPages;
   lastModificationAt: string;
 }
 
@@ -177,15 +197,13 @@ export interface IDocDetail {
   pages: Array<string>;
   titles: Array<IDocTitle>;
 }
-
 export interface IDocPage {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
   _deleted: boolean;
   title: string;
-  level: number;
-  lastModificationAt: string;
+  lastModificationAt: number;
   content: string;
   contentType: string;
   remoteContentEnabled: boolean;

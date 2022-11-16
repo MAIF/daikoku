@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import {ISafeSubscription, ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser, IUserSimple} from '../types';
+import { IAsset, ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser, IUserSimple, ISafeSubscription } from '../types';
 import {
   ResponseError,
   IApi,
@@ -27,7 +27,7 @@ export const getVisibleApi = (id: any, version: any) =>
 export const getVisibleApiGroup = (id: any) => customFetch(`/api/me/visible-groups/${id}`);
 export const getTeamVisibleApi = (teamId: any, apiId: any, version: any) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
-// export const myTeams = () => customFetch('/api/me/teams');
+export const myTeams = (): Promise<Array<ITeamSimple>> => customFetch('/api/me/teams');
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 
 export const teamAllNotifications = (teamId: any, page = 0) =>
@@ -158,7 +158,7 @@ export const members = (teamId: string): Promise<Array<IUserSimple>> =>
   customFetch(`/api/teams/${teamId}/members`);
 export const teamHome = (teamId: string) => customFetch(`/api/teams/${teamId}/home`);
 
-export const teamApi = (teamId: string, apiId: string, version: string) =>
+export const teamApi = (teamId: string, apiId: string, version: string): Promise<ResponseError | IApi> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
 
 export const teamApiGroup = (teamId: string, apiGroupId: string) =>
@@ -291,7 +291,7 @@ export const deleteDocPage = (teamId: string, pageId: string): Promise<any> =>
     method: 'DELETE',
   });
 
-export const saveDocPage = (teamId: string, page: IDocPage) =>
+export const saveDocPage = (teamId: string, page: IDocPage): Promise<IDocPage | ResponseError> =>
   customFetch(`/api/teams/${teamId}/pages/${page._id}`, {
     method: 'PUT',
     body: JSON.stringify(page),
@@ -510,7 +510,7 @@ export const deleteAsset = (teamId: any, assetId: any) =>
     method: 'DELETE',
   });
 
-export const listAssets = (teamId: any) => customFetch(`/api/teams/${teamId}/assets`);
+export const listAssets = (teamId: string): Promise<Array<IAsset> | ResponseError> => customFetch(`/api/teams/${teamId}/assets`);
 
 export const storeAsset = (
   teamId: any,
@@ -564,7 +564,7 @@ export const updateTenantAsset = (assetId: any, contentType: any, formData: any)
     body: formData,
   });
 
-export const listTenantAssets = (teamId?: any) => {
+export const listTenantAssets = (teamId?: string): Promise<Array<IAsset> | ResponseError> => {
   if (teamId) {
     return customFetch(`/tenant-assets?teamId=${teamId}`, {
       credentials: 'include',
@@ -934,7 +934,7 @@ export const extendApiKey = (
 export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscription>> =>
   customFetch(`/api/subscriptions/teams/${teamId}`);
 
-export const getAllApiVersions = (teamId: any, apiId: any) =>
+export const getAllApiVersions = (teamId: string, apiId: string): Promise<Array<string>> =>
   fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
     headers: HEADERS,
   })

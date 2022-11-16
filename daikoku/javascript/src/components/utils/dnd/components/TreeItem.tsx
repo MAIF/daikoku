@@ -1,12 +1,13 @@
-import React, {forwardRef, HTMLAttributes} from 'react';
+import React, { forwardRef, HTMLAttributes } from 'react';
 import classNames from 'classnames';
 
-import {Action} from './Action';
-import {Handle} from './Handle';
-import {Remove} from './Remove';
+import { Action } from './Action';
+import { Handle } from './Handle';
+import { Remove } from './Remove';
 
 //@ts-ignore
 import styles from './TreeItem.module.scss';
+import { Update } from './Update';
 
 export interface Props extends Omit<HTMLAttributes<HTMLLIElement>, 'id'> {
   childCount?: number;
@@ -22,6 +23,7 @@ export interface Props extends Omit<HTMLAttributes<HTMLLIElement>, 'id'> {
   value: string;
   onCollapse?(): void;
   onRemove?(): void;
+  onUpdate?(): void;
   wrapperRef?(node: HTMLLIElement): void;
 }
 
@@ -40,6 +42,8 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
       collapsed,
       onCollapse,
       onRemove,
+      onUpdate,
+      onTimeUpdate,
       style,
       value,
       wrapperRef,
@@ -49,14 +53,14 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
   ) => {
     return (
       <li
-      className={classNames(
-        styles.Wrapper,
-        clone && styles.clone,
-        ghost && styles.ghost,
-        indicator && styles.indicator,
-        disableSelection && styles.disableSelection,
-        disableInteraction && styles.disableInteraction
-      )}
+        className={classNames(
+          styles.Wrapper,
+          clone && styles.clone,
+          ghost && styles.ghost,
+          indicator && styles.indicator,
+          disableSelection && styles.disableSelection,
+          disableInteraction && styles.disableInteraction
+        )}
         ref={wrapperRef}
         style={
           {
@@ -65,20 +69,10 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
         }
         {...props}
       >
-        <div className={styles.TreeItem} ref={ref} style={style}>
+        <div className={classNames(styles.TreeItem, 'tree-item')} ref={ref} style={style}>
           <Handle {...handleProps} />
-          {onCollapse && (
-            <Action
-              onClick={onCollapse}
-              className={classNames(
-                styles.Collapse,
-                collapsed && styles.collapsed
-              )}
-            >
-              {collapseIcon}
-            </Action>
-          )}
           <span className={styles.Text}>{value}</span>
+          {!clone && onUpdate && <Update onClick={onUpdate} />}
           {!clone && onRemove && <Remove onClick={onRemove} />}
           {clone && childCount && childCount > 1 ? (
             <span className={styles.count}>{childCount}</span>

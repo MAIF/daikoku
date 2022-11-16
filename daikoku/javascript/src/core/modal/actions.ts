@@ -1,4 +1,5 @@
 import {
+  AssetSelectorModalProps,
   IApiDocumentationSelectModalProps,
   IFormModalProps,
   ITeamInvitationModalProp,
@@ -22,12 +23,12 @@ export const openTeamSelectorModal = (modalProps: TeamSelectorModalProps) => {
   };
 };
 
-export const openAssetSelectorModal = (modalProps: any) => (dispatch: any) => {
-  return dispatch({
+export const openAssetSelectorModal = (modalProps: AssetSelectorModalProps) => {
+  return {
     type: OPEN_MODAL,
     modalProps,
     modalType: 'assetSelector',
-  });
+  };
 };
 
 export const openSaveOrCancelModal = (modalProps: any) => {
@@ -54,13 +55,13 @@ export const openSubMetadataModal = (modalProps: any) => ({
 
 export const openContactModal =
   (name = undefined, email = undefined, tenant: any, team = undefined, api = undefined) =>
-  (dispatch: any) => {
-    return dispatch({
-      type: OPEN_MODAL,
-      modalProps: { name, email, tenant, team, api },
-      modalType: 'contactModal',
-    });
-  };
+    (dispatch: any) => {
+      return dispatch({
+        type: OPEN_MODAL,
+        modalProps: { name, email, tenant, team, api },
+        modalType: 'contactModal',
+      });
+    };
 
 export const openTestingApiKeyModal = (modalProps: any) => ({
   type: OPEN_MODAL,

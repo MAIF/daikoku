@@ -1,10 +1,11 @@
 import { read, manage } from './actions';
 import { api, apikey, asset, stat, team, backoffice } from './subjects';
 import { Option } from '..';
+import { ITeamSimple, TeamPermission } from '../../../types';
 
-export const administrator = 'Administrator';
-export const user = 'User';
-export const apiEditor = 'ApiEditor';
+export const administrator: TeamPermission = 'Administrator';
+export const user: TeamPermission = 'User';
+export const apiEditor: TeamPermission = 'ApiEditor';
 
 export const isUserIsTeamAdmin = (user: any, team: any) =>
   Option(team.users.find((u: any) => u.userId === user._id))
@@ -13,15 +14,20 @@ export const isUserIsTeamAdmin = (user: any, team: any) =>
       () => false,
       (perm: any) => perm === administrator
     );
-
+export type TPermission = {
+  action: number;
+  what: string;
+  condition?: (team: ITeamSimple) => boolean
+}
+export type TPermissions = Array<TPermission>;
 export const permissions: {
-  [key: string]: Array<{ action: any; what: any; condition?: (team: any) => boolean }>;
+  [key: string]: TPermissions;
 } = {
   User: [
     {
       action: manage,
       what: apikey,
-      condition: (team: any) => !team.apiKeyVisibility || team.apiKeyVisibility === 'User',
+      condition: (team: ITeamSimple) => !team.apiKeyVisibility || team.apiKeyVisibility === 'User',
     },
     { action: read, what: api },
     { action: read, what: asset },

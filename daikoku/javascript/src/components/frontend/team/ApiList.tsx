@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
-import Select from 'react-select';
+import Select, { SingleValue } from 'react-select';
 import Pagination from 'react-paginate';
 import find from 'lodash/find';
 import sortBy from 'lodash/sortBy';
@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { ApiCard } from '../api';
 import { I18nContext } from '../../../core';
-import { IApi, ITeamSimple, IUserSimple } from '../../../types';
+import { IApi, IApiWithAuthorization, IApiWithSimpleTeam, ITeamSimple, IUserSimple, TOption, TOptions } from '../../../types';
 import { useSelector } from 'react-redux';
 import { IState, IStateContext } from '../../../types/context';
 
@@ -19,53 +19,53 @@ const all = { value: 'All', label: 'All' };
 const GRID = 'GRID';
 const LIST = 'LIST';
 
-const computeTop = (arrayOfArray: any) => {
+const computeTop = (arrayOfArray: string[][]): TOptions => {
   return arrayOfArray
     .flat()
-    .reduce((acc: any, value: any) => {
-      const val = acc.find((item: any) => item.value === value);
+    .reduce<Array<TOption & {count: number}>>((acc, value) => {
+      const val = acc.find((item) => item.value === value);
       let newVal;
       if (val) {
         newVal = { ...val, count: val.count + 1 };
       } else {
         newVal = { value, label: value, count: 1 };
       }
-      return [...acc.filter((item: any) => item.value !== value), newVal];
+      return [...acc.filter((item) => item.value !== value), newVal];
     }, [])
-    .sort((a: any, b: any) => b.count - a.count);
+    .sort((a, b) => b.count - a.count);
 };
 
 type TApiList = {
-  apis: Array<IApi>,
+  apis: Array<IApiWithAuthorization>,
   teams: Array<ITeamSimple>,
   team?: ITeamSimple,
   groupView?: boolean,
   myTeams?: Array<ITeamSimple>,
   showTeam: boolean,
   teamVisible: boolean,
-  askForApiAccess: (api: IApi, teams: Array<string>) => Promise<any>,
+  askForApiAccess: (api: IApiWithAuthorization, teams: Array<string>) => Promise<any>,
   redirectToTeamPage: (team: ITeamSimple) => void,
-  redirectToApiPage: (api: IApi) => void,
-  redirectToEditPage: (api: IApi, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => void,
-  toggleStar: (api: IApi) => void
+  redirectToApiPage: (api: IApiWithAuthorization) => void,
+  redirectToEditPage: (api: IApiWithAuthorization, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => void,
+  toggleStar: (api: IApiWithAuthorization) => void
 }
 
 export const ApiList = (props: TApiList) => {
   const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
-  const allCategories = () => ({ value: 'All', label: translate('All categories') });
-  const allTags = () => ({ value: 'All', label: translate('All tags') });
+  const allCategories = (): TOption => ({ value: 'All', label: translate('All categories') });
+  const allTags = (): TOption => ({ value: 'All', label: translate('All tags') });
 
   const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
 
   const [searched, setSearched] = useState('');
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [selectedTag, setSelectedTag] = useState<any>(allTags());
-  const [selectedCategory, setSelectedCategory] = useState<any>(allCategories());
-  const [tags, setTags] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [selectedTag, setSelectedTag] = useState<TOption | undefined>(allTags());
+  const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(allCategories());
+  const [tags, setTags] = useState<TOptions>([]);
+  const [categories, setCategories] = useState<TOptions>([]);
   const [view, setView] = useState<'LIST' | 'GRID'>(LIST);
   const pageNumber = view === GRID ? 12 : 10;
 
@@ -73,25 +73,25 @@ export const ApiList = (props: TApiList) => {
     computeTops(props.apis);
   }, [props.apis]);
 
-  const redirectToTeam = (team: any) => {
+  const redirectToTeam = (team: ITeamSimple) => {
     navigate(`/${team._humanReadableId}/settings`);
   };
 
-  const computeTops = (apis: any) => {
-    const tags = computeTop(apis.map((api: any) => api.tags));
-    const categories = computeTop(apis.map((api: any) => api.categories));
+  const computeTops = (apis: Array<IApiWithSimpleTeam>) => {
+    const tags = computeTop(apis.map((api) => api.tags));
+    const categories = computeTop(apis.map((api) => api.categories));
 
     setTags(tags);
     setCategories(categories);
   };
 
-  const tagMatches = (api: any, term: any) => {
+  const tagMatches = (api: IApiWithSimpleTeam, term: string) => {
     return !!find(api.tags, (tag) => tag.trim().toLowerCase().indexOf(term) > -1);
   };
-  const categoryMatches = (api: any, term: any) => {
+  const categoryMatches = (api: IApiWithSimpleTeam, term: string) => {
     return !!find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
   };
-  const teamMatch = (api: any, searched: any) => {
+  const teamMatch = (api: IApiWithSimpleTeam, searched: string) => {
     const ownerTeam = props.teams?.find((t: any) => t._id === api.team._id);
     return ownerTeam && ownerTeam.name.trim().toLowerCase().indexOf(searched) > -1;
   };
@@ -101,8 +101,8 @@ export const ApiList = (props: TApiList) => {
     setSearched('');
   };
 
-  const filterPreview = (count: any) => {
-    if (selectedCategory.value === all.value && selectedTag.value === all.value && !searched) {
+  const filterPreview = (count: number) => {
+    if (selectedCategory?.value === all.value && selectedTag?.value === all.value && !searched) {
       return null;
     }
 
@@ -116,15 +116,15 @@ export const ApiList = (props: TApiList) => {
               {translate('matching')} <strong>{searched}</strong>&nbsp;
             </span>
           )}
-          {selectedCategory.value !== all.value && (
+          {selectedCategory?.value !== all.value && (
             <span>
-              {translate('categorised in')} <strong>{selectedCategory.value}</strong>
+              {translate('categorised in')} <strong>{selectedCategory?.value}</strong>
               &nbsp;
             </span>
           )}
-          {selectedTag.value !== all.value && (
+          {selectedTag?.value !== all.value && (
             <span>
-              {translate('tagged')} <strong>{selectedTag.value}</strong>
+              {translate('tagged')} <strong>{selectedTag?.value}</strong>
             </span>
           )}
         </div>
@@ -136,7 +136,7 @@ export const ApiList = (props: TApiList) => {
     );
   };
 
-  const handlePageClick = (data: any) => {
+  const handlePageClick = (data) => {
     setOffset(data.selected * pageNumber);
     setSelectedPage(data.selected);
   };
@@ -146,17 +146,17 @@ export const ApiList = (props: TApiList) => {
   const searchedTrim = searched.trim().toLowerCase();
 
   const categorisedApis = apis.filter(
-    (api: any) => selectedCategory.value === all.value || api.categories.includes(selectedCategory.value)
+    (api) => selectedCategory?.value === all.value || api.categories.some(c => c === selectedCategory?.value)
   );
 
   const taggedApis = categorisedApis.filter(
-    (api: any) => selectedTag.value === all.value || api.tags.includes(selectedTag.value)
+    (api) => selectedTag?.value === all.value || api.tags.some(t => t === selectedTag?.value)
   );
 
   const filteredApis = Object.values(groupBy((
     searchedTrim === ''
       ? taggedApis
-      : taggedApis.filter((api: any) => {
+      : taggedApis.filter((api) => {
         if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
           return true;
         } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
@@ -176,8 +176,8 @@ export const ApiList = (props: TApiList) => {
     })
 
   const paginateApis = (() => {
-    const starredApis: any = [],
-      unstarredApis: any = [];
+    const starredApis: Array<IApiWithAuthorization> = [];
+    const unstarredApis: Array<IApiWithAuthorization> = [];
     filteredApis.forEach((a) => {
       if (connectedUser.starredApis.includes(a._id)) {
         starredApis.push(a);
@@ -188,10 +188,10 @@ export const ApiList = (props: TApiList) => {
 
     return [
       ...starredApis.sort(
-        (a: any, b: any) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
+        (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
       ),
       ...unstarredApis.sort(
-        (a: any, b: any) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
+        (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
       ),
     ];
   })().slice(offset, offset + pageNumber);
@@ -219,8 +219,8 @@ export const ApiList = (props: TApiList) => {
           value={selectedTag}
           isClearable={false}
           options={[allTags(), ...tags]}
-          onChange={(e: any) => {
-            setSelectedTag(e);
+          onChange={(e: SingleValue<TOption>) => {
+            setSelectedTag(e || undefined);
             setOffset(0);
             setSelectedPage(0);
           }}
@@ -232,8 +232,8 @@ export const ApiList = (props: TApiList) => {
           value={selectedCategory}
           isClearable={false}
           options={[allCategories(), ...categories]}
-          onChange={(e: any) => {
-            setSelectedCategory(e);
+          onChange={(e: SingleValue<TOption>) => {
+            setSelectedCategory(e || undefined);
             setOffset(0);
             setSelectedPage(0);
           }}
@@ -280,13 +280,13 @@ export const ApiList = (props: TApiList) => {
                 teamVisible={props.teamVisible}
                 team={props.teams.find((t) => t._id === api.team._id)}
                 myTeams={props.myTeams || []}
-                askForApiAccess={(teams: Array<string>) => props.askForApiAccess(api, teams)}
-                redirectToTeamPage={(team: any) => props.redirectToTeamPage(team)}
+                askForApiAccess={(teams) => props.askForApiAccess(api, teams)}
+                redirectToTeamPage={(team) => props.redirectToTeamPage(team)}
                 redirectToApiPage={() => props.redirectToApiPage(api)}
                 redirectToEditPage={() => props.redirectToEditPage(api, props.teams, props.myTeams || [])}
-                handleTagSelect={(tag: any) => setSelectedTag(tags.find((t) => (t as any).value === tag))}
+                handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
                 toggleStar={() => props.toggleStar(api)}
-                handleCategorySelect={(category: any) => setSelectedCategory(categories.find((c) => (c as any).value === category))}
+                handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
                 view={view}
                 connectedUser={connectedUser}
                 groupView={props.groupView} />);
@@ -320,7 +320,7 @@ export const ApiList = (props: TApiList) => {
                 title="Top tags"
                 icon="fas fa-tag me-2"
                 list={tags}
-                formatter={(tag: any) => tag.value}
+                formatter={(tag) => tag.value}
                 handleClick={setSelectedTag}
               />
             )}
@@ -330,7 +330,7 @@ export const ApiList = (props: TApiList) => {
                 title="Top categories"
                 icon="fas fa-folder me-2"
                 list={categories}
-                formatter={(category: any) => category.value}
+                formatter={(category) => category.value}
                 handleClick={setSelectedCategory}
               />
             )}
@@ -341,7 +341,15 @@ export const ApiList = (props: TApiList) => {
   );
 };
 
-const Top = (props: any) => {
+type TTopProps = {
+  className?: string,
+  icon: string,
+  title: string,
+  list: TOptions,
+  formatter: (x: TOption) => string,
+  handleClick: (x: TOption) => void
+}
+const Top = (props: TTopProps) => {
   return (
     <div className={`top__container ${props.className ? props.className : ''}`}>
       <div>
@@ -350,7 +358,7 @@ const Top = (props: any) => {
           {props.title}
         </h5>
       </div>
-      {props.list.slice(0, 10).map((item: any, idx: any) => {
+      {props.list.slice(0, 10).map((item, idx) => {
         return (
           <span
             className="badge bg-warning me-1 cursor-pointer"

@@ -11,13 +11,11 @@ import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
-import { IApi, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
+import { IApi, IApiWithAuthorization, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
 
 export const MyHome = () => {
-  const [state, setState] = useState({
-    apis: [],
-    loading: false
-  });
+  const [loading, setLoading] = useState(false)
+  const [apis, setApis] = useState<Array<IApiWithAuthorization>>([]);
 
 
   const dispatch = useDispatch();
@@ -27,10 +25,11 @@ export const MyHome = () => {
 
   const { client } = useContext(getApolloContext());
 
-  const myTeamRequest = useQuery(['myTeams'], () => client?.query<{myTeams: Array<ITeamSimple>}>({
-    query: Services.graphql.myTeams
-  }))
+  // const myTeamRequest = useQuery(['myTeams'], () => client?.query<{ myTeams: Array<ITeamSimple> }>({
+  //   query: Services.graphql.myTeams
+  // }))
 
+  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const teamsRequest = useQuery(['teams'], () => Services.teams())
 
   const location = useLocation();
@@ -43,9 +42,9 @@ export const MyHome = () => {
     if (!client) {
       return; //todo handle error
     }
-    setState({ ...state, loading: true });
+    setLoading(true)
     Promise.all([
-      client.query({
+      client.query<{ visibleApis: Array<{ api: IApiWithAuthorization, authorizations: any }> }>({
         query: Services.graphql.myVisibleApis,
       })
     ]).then(
@@ -54,14 +53,13 @@ export const MyHome = () => {
           data: { visibleApis },
         },
       ]) => {
-        setState({
-          ...state,
-          apis: visibleApis.map(({
+        setApis(
+          visibleApis.map(({
             api,
             authorizations
-          }: any) => ({ ...api, authorizations })),
-          loading: false,
-        });
+          }) => ({ ...api, authorizations })),
+        );
+        setLoading(false)
       }
     );
   };
@@ -81,13 +79,12 @@ export const MyHome = () => {
       if (!res.error) {
         const alreadyStarred = connectedUser.starredApis.includes(api._id);
 
-        setState({
-          ...state,
-          apis: state.apis.map((a) => {
-            if ((a as any)._id === api._id) (a as any).stars += alreadyStarred ? -1 : 1;
+        setApis(
+          apis.map((a) => {
+            if (a._id === api._id) a.stars += alreadyStarred ? -1 : 1;
             return a;
           }),
-        });
+        );
 
         updateUser({
           ...connectedUser,
@@ -117,7 +114,7 @@ export const MyHome = () => {
       );
   };
 
-  const redirectToEditPage = (api: IApi, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => {
+  const redirectToEditPage = (api: IApiWithAuthorization, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => {
     const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams) //@ts-ignore //FIXME: y'a vraiment team._id ???
       .find((team) => api.team._id === team._id);
 
@@ -132,11 +129,11 @@ export const MyHome = () => {
     }
   };
 
-  if (myTeamRequest.isLoading || teamsRequest.isLoading) {
+  if (myTeamsRequest.isLoading || teamsRequest.isLoading) {
     return (
       <Spinner />
     )
-  } else if (myTeamRequest.data && teamsRequest.isSuccess) {
+  } else if (myTeamsRequest.isSuccess && teamsRequest.isSuccess) {
     return (
       <main role="main">
         <section className="organisation__header col-12 mb-4 p-3">
@@ -159,9 +156,9 @@ export const MyHome = () => {
           </div>
         </section>
         <ApiList
-          apis={state.apis}
+          apis={apis}
           teams={teamsRequest.data}
-          myTeams={myTeamRequest.data.data.myTeams}
+          myTeams={myTeamsRequest.data}
           teamVisible={true}
           askForApiAccess={askForApiAccess}
           toggleStar={toggleStar}
