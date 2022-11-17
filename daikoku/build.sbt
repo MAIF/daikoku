@@ -97,6 +97,8 @@ libraryDependencies ++= Seq(
 
 dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"
 
+Test / fork := true
+
 scalacOptions ++= Seq(
   "-feature",
   "-language:higherKinds",

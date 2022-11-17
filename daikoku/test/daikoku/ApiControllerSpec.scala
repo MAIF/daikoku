@@ -44,37 +44,12 @@ class ApiControllerSpec()
     with ForAllTestContainer {
 
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
-//  override val container = GenericContainer("maif/otoroshi:1.5.15",
-//    exposedPorts = Seq(8080),
-//    waitStrategy = Wait.forHttp("/")
-//  )
-
-  val net: Network = Network.newNetwork()
-  lazy val postgresContainer = GenericContainer("postgres",
-    exposedPorts = Seq(5432),
-    env = Map(
-      "POSTGRES_PASSWORD" -> "password",
-      "POSTGRES_USER" -> "daikoku",
-      "POSTGRES_DB" -> "daikoku",
-  ))
-
-  lazy val daikokuContainer = GenericContainer("maif/daikoku:1.5.7-dev",
+  override val container = GenericContainer("maif/otoroshi:dev",
     exposedPorts = Seq(8080),
-    waitStrategy = Wait.forHttp("/health"),
-    env = Map(
-      "DAIKOKU_STORAGE" -> "postgres",
-      "DAIKOKU_POSTGRES_DATABASE" -> "daikoku",
-      "DAIKOKU_POSTGRES_USERNAME" -> "daikoku",
-      "DAIKOKU_POSTGRES_PASSWORD" -> "password",
-      "DAIKOKU_POSTGRES_HOST" -> postgresContainer.host,
-      "DAIKOKU_POSTGRES_PORT" -> postgresContainer.mappedPort(5432).toString)
+    waitStrategy = Wait.forHttp("/")
   )
 
-  override val container: MultipleContainers = MultipleContainers(postgresContainer, daikokuContainer)
-
   before {
-    postgresContainer.container.setNetwork(net)
-    daikokuContainer.container.setNetwork(net)
 
     wireMockServer.start()
     WireMock.configureFor(stubHost, stubPort)
@@ -95,8 +70,8 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(tenantAdmin, tenant2)
 
-      val otoIP = daikokuContainer.containerIpAddress
-      val otoPort = daikokuContainer.mappedPort(8080);
+      val otoIP = container.containerIpAddress
+      val otoPort = container.mappedPort(8080);
 
       val resp = httpJsonCallBlocking(
         path = "/health",
