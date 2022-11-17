@@ -1,5 +1,15 @@
 import { gql } from '@apollo/client';
-import {IQuotas, ISafeSubscription, ITeamFull, ITeamSimple, ITenant, ITenantFull, IUser, IUserSimple} from '../types';
+import {
+    IQuotas,
+    ISafeSubscription,
+    ISubscriptionInformation,
+    ITeamFull,
+    ITeamSimple,
+    ITenant,
+    ITenantFull,
+    IUser,
+    IUserSimple
+} from '../types';
 import {
   ResponseError,
   IApi,
@@ -302,7 +312,7 @@ export const oneTenant = (tenantId: string): Promise<ITenantFull> =>
   customFetch(`/api/tenants/${tenantId}`);
 
 export const getConsummedQuotasWithSubscriptionId =  (teamId: string, subscriptionId: string): Promise<IQuotas> => customFetch(
-    `/api/team/${teamId}/subscription/${subscriptionId}/quotas`
+    `/api/teams/${teamId}/subscription/${subscriptionId}/quotas`
 
 )
 
@@ -490,7 +500,7 @@ export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, en
     }
   );
 
-export const getSubscriptionInformations = (subscription: string, teamId: string): Promise<ISubscription> =>
+export const getSubscriptionInformations = (subscription: string, teamId: string): Promise<ISubscriptionInformation> =>
   customFetch(`/api/teams/${teamId}/subscription/${subscription}/informations`);
 
 export const getTeamConsumptions = (teamId: any, from: any, to: any) =>
