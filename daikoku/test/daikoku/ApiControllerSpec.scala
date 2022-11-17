@@ -1,5 +1,6 @@
 package fr.maif.otoroshi.daikoku.tests
 
+import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
@@ -32,7 +33,7 @@ import java.util
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.util.Random
 import org.scalatest.FlatSpec
-import org.testcontainers.containers.Network
+import org.testcontainers.containers.{BindMode, Network}
 
 class ApiControllerSpec()
     extends PlaySpec
@@ -43,14 +44,16 @@ class ApiControllerSpec()
     with BeforeAndAfter
     with ForAllTestContainer {
 
+  val pwd = System.getProperty("user.dir");
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
+  AppLogger.error(s"$pwd/test/daikoku/otoroshi.json")
   override val container = GenericContainer("maif/otoroshi:dev",
     exposedPorts = Seq(8080),
-    waitStrategy = Wait.forHttp("/")
+    fileSystemBind = Seq(FileSystemBind(s"$pwd/test/daikoku/otoroshi.json", "/home/user/otoroshi.json", BindMode.READ_ONLY)),
+    env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
   )
 
   before {
-
     wireMockServer.start()
     WireMock.configureFor(stubHost, stubPort)
   }
@@ -70,17 +73,20 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(tenantAdmin, tenant2)
 
-      val otoIP = container.containerIpAddress
       val otoPort = container.mappedPort(8080);
 
       val resp = httpJsonCallBlocking(
-        path = "/health",
-        method = "GET",
-        baseUrl = s"http://$otoIP",
-        port = otoPort
+        path = "/api/services",
+        baseUrl = "http://localhost",
+        port = otoPort,
+        headers = Map(
+          "Host" -> "otoroshi-api.oto.tools",
+          "Otoroshi-Client-Id" -> "admin-api-apikey-id",
+          "Otoroshi-Client-Secret" -> "admin-api-apikey-secret",
+        )
       )(tenant2, session)
 
-//      println(Json.prettyPrint(resp.body.getBytes))
+      println(Json.prettyPrint(resp.json))
 
       resp.status mustBe 200
     }

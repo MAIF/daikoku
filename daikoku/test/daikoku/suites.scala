@@ -398,7 +398,7 @@ object utils {
       }
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
-        .withHttpHeaders((headers ++ Map("Host" -> tenant.domain)).toSeq: _*)
+        .withHttpHeaders((Map("Host" -> tenant.domain) ++ headers).toSeq: _*)
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod(method)
