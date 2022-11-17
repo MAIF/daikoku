@@ -1,73 +1,86 @@
 import React, { useContext, useEffect, useState } from 'react';
-import {Col, Progress, Row, Statistic} from 'antd';
+import { Progress } from 'antd';
 import moment from 'moment';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import {BeautifulTitle, OtoroshiStatsVizualization} from '../..';
+import { BeautifulTitle, OtoroshiStatsVizualization } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
-import {useQuery, useQueryClient} from "react-query";
-import {IState, ITeamSimple, IUsagePlan} from "../../../types";
+import { useQuery } from "react-query";
+import { IState, ITeamSimple } from "../../../types";
 
 type QuotasProps = {
   currentTeam: ITeamSimple,
   typePlan: string
 
 }
-const Quotas = (props: QuotasProps) =>{
+const Quotas = (props: QuotasProps) => {
   const params = useParams()
   const queryQuotas = useQuery(['quotas'], () => Services.getConsummedQuotasWithSubscriptionId(props.currentTeam._id, params.subscription!))
 
-  if(queryQuotas.isLoading || queryQuotas.isIdle ) {
+  const { translate } = useContext(I18nContext);
+
+  if (queryQuotas.isLoading || queryQuotas.isIdle) {
     return <Spinner />
-  } else if(queryQuotas.data) {
+  } else if (queryQuotas.data) {
     let colorDaily
     const percentDaily = ((queryQuotas.data.authorizedCallsPerDay - queryQuotas.data.remainingCallsPerDay) / queryQuotas.data.authorizedCallsPerDay) * 100
     let colorMonthly
-    const percentMontly =((queryQuotas.data.authorizedCallsPerMonth - queryQuotas.data.remainingCallsPerMonth) / queryQuotas.data.authorizedCallsPerMonth) * 100
-    if(percentDaily <= 33){
-      colorDaily = '#00FF00'
-    } else if(33<percentDaily && percentDaily<= 66) {
-       colorDaily = '#FF7700'
+    const percentMontly = ((queryQuotas.data.authorizedCallsPerMonth - queryQuotas.data.remainingCallsPerMonth) / queryQuotas.data.authorizedCallsPerMonth) * 100
+
+    if (percentDaily <= 33) {
+      colorDaily = "var(--success-color, #4F8A10)"
+    } else if (33 < percentDaily && percentDaily <= 66) {
+      colorDaily = "var(--warning-color, #ffc107)"
     } else {
-      colorDaily = '#FF0000'
+      colorDaily = "var(--danger-color, #dc3545)"
     }
-    if(percentMontly <= 33){
-      colorMonthly = '#00FF00'
-    } else if(33<percentMontly && percentMontly<= 66) {
-      colorMonthly = '#FF7700'
+    if (percentMontly <= 33) {
+      colorMonthly = "var(--success-color, #4F8A10)"
+    } else if (33 < percentMontly && percentMontly <= 66) {
+      colorMonthly = "var(--warning-color, #ffc107)"
     } else {
-      colorMonthly = '#FF0000'
+      colorMonthly = "var(--danger-color, #dc3545)"
     }
     return (
-        <div className="col-12">
-          <h5>Daily Quotas used</h5>
-          <BeautifulTitle title={(queryQuotas.data.authorizedCallsPerDay - queryQuotas.data.remainingCallsPerDay)+ "  daily calls used on  " + queryQuotas.data.authorizedCallsPerDay}>
-            <Progress
-                strokeColor={colorDaily }
-                percent={percentDaily}
-                status="active"
-            />
-          </BeautifulTitle>
-          <h5>Montlhy Quotas used</h5>
-          <BeautifulTitle title={(queryQuotas.data.authorizedCallsPerMonth - queryQuotas.data.remainingCallsPerMonth)+ "  monthly calls used on  " + queryQuotas.data.authorizedCallsPerMonth}>
-            <Progress
-                strokeColor={colorMonthly}
-                percent={percentMontly}
-                status="active"
-            />
-          </BeautifulTitle>
-        </div>
-        )
+      <div className="col-12">
+        <h5>{translate('Daily quotas consumed')}</h5>
+        <BeautifulTitle
+          title={translate({
+            key: "daily.quotas.consumed.title",
+            replacements: [(queryQuotas.data.authorizedCallsPerDay - queryQuotas.data.remainingCallsPerDay).toString(), queryQuotas.data.authorizedCallsPerDay.toString()]
+          })}>
+          <Progress
+            strokeColor={colorDaily}
+            percent={percentDaily}
+            status="active"
+          />
+        </BeautifulTitle>
+        <h5>
+          {translate("Monthly quotas consumed")}
+        </h5>
+        <BeautifulTitle
+          title={translate({
+            key: "monthly.quotas.consumed.title",
+            replacements: [(queryQuotas.data.authorizedCallsPerMonth - queryQuotas.data.remainingCallsPerMonth).toString(), queryQuotas.data.authorizedCallsPerMonth.toString()]
+          })}>
+          <Progress
+            strokeColor={colorMonthly}
+            percent={percentMontly}
+            status="active"
+          />
+        </BeautifulTitle>
+      </div>
+    )
   } else {
     return <div>Error while searching quotas.</div>
   }
 }
 export const TeamApiKeyConsumption = () => {
-  const  currentTeam  = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   useTeamBackOffice(currentTeam);
   const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
@@ -75,55 +88,38 @@ export const TeamApiKeyConsumption = () => {
     return Services.getSubscriptionInformations(params.subscription!, currentTeam._id);
   };
   const subInf = useQuery(['subInf'], () => getInformations())
-  let mappers;
+  let mappers = [
+    {
+      type: 'LineChart',
+      label: (data: any, max: any) => getLabelForDataIn(data, max),
+      title: translate('Data In'),
+      formatter: (data: any) => data.map((item: any) => ({
+        date: moment(item.from).format('DD MMM.'),
+        count: item.hits
+      })),
+      xAxis: 'date',
+      yAxis: 'count',
+    },
+    {
+      type: 'Global',
+      label: translate('Global informations'),
+      formatter: (data: any) => data.length ? data[data.length - 1].globalInformations : [],
+    },
+  ];;
   switch (subInf.data?.plan.type) {
-    case 'FreeWithQuotas' :
+    case 'FreeWithQuotas':
     case 'QuotasWithLimits':
     case 'QuotasWithoutLimits':
       mappers = [
-        {
-          type: 'LineChart',
-          label: (data: any, max: any) => getLabelForDataIn(data, max),
-          title: translate('Data In'),
-          formatter: (data: any) => data.map((item: any) => ({
-            date: moment(item.from).format('DD MMM.'),
-            count: item.hits
-          })),
-          xAxis: 'date',
-          yAxis: 'count',
-        },
-        {
-          type: 'Global',
-          label: translate('Global informations'),
-          formatter: (data: any) => data.length ? data[data.length - 1].globalInformations : [],
-        },
+        ...mappers,
         {
           type: 'Custom',
           label: translate('Quotas consumptions'),
-          formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.type}/>,
-        },
-      ];
-      break
-    default:
-      mappers = [
-        {
-          type: 'LineChart',
-          label: (data: any, max: any) => getLabelForDataIn(data, max),
-          title: translate('Data In'),
-          formatter: (data: any) => data.map((item: any) => ({
-            date: moment(item.from).format('DD MMM.'),
-            count: item.hits
-          })),
-          xAxis: 'date',
-          yAxis: 'count',
-        },
-        {
-          type: 'Global',
-          label: translate('Global informations'),
-          formatter: (data: any) => data.length ? data[data.length - 1].globalInformations : [],
+          formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.type} />,
         },
       ];
   }
+  
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('API key consumption')}`;
 
