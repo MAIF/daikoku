@@ -181,3 +181,14 @@ export interface ITranslation {
   lastModificationAt?: number;
   value: string;
 }
+
+export interface IAsset {
+  label: string,
+  value: string,
+  filename: string,
+  title: string,
+  desc: string,
+  contentType: string,
+  meta: { [key: string]: string },
+  link: string
+}

@@ -1,0 +1,49 @@
+
+
+.tree-item {
+  --vertical-padding: 10px;
+
+  border-radius: 4px;
+  
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: var(--vertical-padding) 10px;
+  background-color: #fff;
+  border: 1px solid #dedede;
+  color: #222;
+  box-sizing: border-box;
+  
+  margin-top: 5px;
+
+  .remove-button {
+    position: absolute;
+    display: none;
+    top: -10px;
+    right: -10px;
+    border: 1px solid $danger-color;
+    width: 40px;
+    height: 40px;
+    padding: 0px;
+
+    svg {
+      color: $danger-color;
+    }
+
+    &:hover {
+      background-color: $danger-color;
+
+      svg {
+        color: #fff;
+      }
+    }
+  }
+
+  &:hover {
+    .remove-button {
+      display: block;
+    }
+  }
+
+  
+}

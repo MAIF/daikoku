@@ -1,6 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client'
 import { Provider } from 'react-redux';
 import { QueryClientProvider, QueryClient } from "react-query";
 import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
@@ -63,7 +64,10 @@ export function init(
 
   customizeFetch(storeInst);
 
-  ReactDOM.render(
+  const container = document.getElementById('app');
+  const root = createRoot(container!)
+
+  root.render(
     <Provider store={storeInst}>
       <ApolloProvider client={client}>
         <QueryClientProvider client={queryClient}>
@@ -79,7 +83,7 @@ export function init(
         </QueryClientProvider>
       </ApolloProvider>
     </Provider>,
-    document.getElementById('app')
+    
   );
   if (session) {
     registerAlert(storeInst); // Hell Yeah !!!!
@@ -107,13 +111,16 @@ export function login(provider: any, callback: any, tenant: any) {
 
 export function initNotLogged(tenant: any) {
   const storeInst = store({ tenant });
-  ReactDOM.render(
+
+  const container = document.getElementById('app');
+  const root = createRoot(container!)
+
+  root.render(
     <Provider store={storeInst}>
       <I18nProvider tenant={tenant}>
         <DaikokuHomeApp tenant={tenant} />
       </I18nProvider>
-    </Provider>,
-    document.getElementById('app')
+    </Provider>
   );
   registerAlert(storeInst); // Hell Yeah !!!!
   registerConfirm(storeInst);

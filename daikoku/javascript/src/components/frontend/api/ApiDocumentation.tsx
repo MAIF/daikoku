@@ -1,6 +1,5 @@
 /* eslint-disable react/display-name */
 import React, { useContext, useEffect, useState } from 'react';
-import findIndex from 'lodash/findIndex';
 import hljs from 'highlight.js';
 import { Link, useMatch, useParams } from 'react-router-dom';
 import asciidoctor from 'asciidoctor';
@@ -10,91 +9,136 @@ import { converter } from '../../../services/showdown';
 import { I18nContext } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
-import { IDocDetail, IDocPage, isError } from '../../../types';
+import { IApi, IDocDetail, IDocPage, IDocumentationPages, isError } from '../../../types';
+import { useQuery, useQueryClient } from 'react-query';
+import { api, Spinner } from '../../utils';
+import classNames from 'classnames';
 
 const asciidoctorConverter = asciidoctor();
 
-export function ApiDocumentationCartidge({ details }: any) {
+type ApiDocumentationCartidgeProps = {
+  api: IApi,
+  currentPageId: string
+}
+export const ApiDocumentationCartidge = ({ api, currentPageId }: ApiDocumentationCartidgeProps) => {
   const params = useParams();
+
+  const renderLinks = (pages: IDocumentationPages, level: number = 0) => {
+    if (!pages.length) {
+      return null;
+    } else {
+      return (
+        <ul>
+          {pages.map((page) => {
+            console.debug({page: page.id, currentPageId})
+            return (
+              <li className="api-doc-cartridge-link" key={page.id} style={{ marginLeft: level * 10 }}>
+                <Link className={classNames({active: page.id === currentPageId})} to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${page.id}`}>
+                  {page.title}
+                </Link>
+                {renderLinks(page.children, level + 1)}
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  }
+
+
   return (
     <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
-      <ul>
-        {details.titles.map((obj: any) => {
-          return (
-            <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
-              <Link
-                to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}
-              >
-                {obj.title}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      {renderLinks(api.documentation.pages)}
     </div>
   );
 }
 
-export function ApiDocumentation(props: any) {
+type ApiDocPageProps = {
+  api: IApi
+  pageId: string
+}
+const ApiDocPage = (props: ApiDocPageProps) => {
+  const queryClient = useQueryClient();
+  const pageRequest = useQuery(['page', { pageId: props.pageId }], ({ queryKey }) => {
+    const [_key, keys] = queryKey //@ts-ignore
+    return Services.getDocPage(props.api._id, keys.pageId)
+  });
+
+
+  useEffect(() => {
+    if (pageRequest.data && !isError(pageRequest.data)) {
+      if (pageRequest.data.content)
+        (window as any).$('pre code').each((i: any, block: any) => {
+          hljs.highlightElement(block);
+        });
+    }
+  }, [pageRequest.data]);
+
+  useEffect(() => {
+    queryClient.invalidateQueries('page')
+  }, [props.pageId])
+
+
+  if (pageRequest.isLoading) {
+    return <Spinner />
+  } else if (pageRequest.data && !isError(pageRequest.data)) {
+    if (isError(pageRequest.data)) {
+      return <span>Error while fetching documentation page: {pageRequest.data.error}</span>
+    } else if (pageRequest.data.remoteContentEnabled) {
+      return (
+        <AwesomeContentViewer contentType={pageRequest.data.contentType} remoteContent={{ url: pageRequest.data.remoteContentUrl! }} />
+      )
+    } else {
+      return (
+        <AwesomeContentViewer contentType={pageRequest.data.contentType} content={pageRequest.data.content} />
+      )
+    }
+  } else {
+    return <span>Error while fetching documentation page</span>
+  }
+
+
+}
+
+type ApiDocumentationProps = {
+  api: IApi
+}
+export function ApiDocumentation(props: ApiDocumentationProps) {
   const { Translation } = useContext(I18nContext);
 
   const params = useParams();
   const match = useMatch('/:teamId/:apiId/:version/documentation/:pageId')
 
-  const [details, setDetails] = useState<IDocDetail>();
-  const [state, setState] = useState<IDocPage>();
+  const pageId = match?.params.pageId || props.api.documentation.pages[0].id;
 
-  useEffect(() => {
-    if (state?.content)
-      (window as any).$('pre code').each((i: any, block: any) => {
-        hljs.highlightElement(block);
-      });
-  }, [state?.content]);
-
-  useEffect(() => {
-    fetchPage();
-  }, [props.api, match?.params.pageId]);
-
-  const fetchPage = () => {
-    Services.getDocDetails(props.api._humanReadableId, props.api.currentVersion)
-      .then((d) => {
-        const pageId = match?.params.pageId || d.pages[0];
-        if (pageId) {
-          Services.getDocPage(props.api._id, pageId)
-            .then((page) => {
-              if (isError(page)) {
-
-              } else {
-                setDetails(d)
-                setState(page);
-              }
-            });
-        }
-      });
-  };
-
-  const api = props.api;
-  if (!api || !details) {
-    return null;
+  const flattenDoc = (pages: IDocumentationPages): Array<string> => {
+    return pages.flatMap(p => [p.id, ...flattenDoc(p.children)])
   }
 
-  const apiId = params.apiId;
-  const pageId = match?.params.pageId;
-  const versionId = params.versionId;
-  const idx = findIndex(details.pages, (p) => p === pageId);
+  const orderedPages = flattenDoc(props.api.documentation.pages)
 
-  let prevId;
-  let nextId;
-
-  const next = details.pages[idx + (pageId ? 1 : 2)];
-  const prev = details.pages[idx - 1];
-  if (next) nextId = next;
-  if (prev) prevId = prev;
+  const idx = orderedPages.findIndex(p => p === pageId)
+  const next = orderedPages[idx + (pageId ? 1 : 2)];
+  const prev = orderedPages[idx - 1];
 
   return (<>
-    {details && <ApiDocumentationCartidge details={details} />}
-    <div className="col p-3">
-      <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
+    <ApiDocumentationCartidge api={props.api} currentPageId={pageId}/>
+    <div className="col p-3 d-flex flex-column">
+      <div className={classNames("d-flex", {
+        'justify-content-between': !!prev,
+        'justify-content-end': !prev,
+      })}>
+        {prev && (<Link to={`/${params.teamId}/${props.api._humanReadableId}/${props.api.currentVersion}/documentation/${prev}`}>
+          <i className="fas fa-chevron-left me-1" />
+          <Translation i18nkey="Previous page">Previous page</Translation>
+        </Link>)}
+        {next && (<Link to={`/${params.teamId}/${props.api._humanReadableId}/${props.api.currentVersion}/documentation/${next}`}>
+          <Translation i18nkey="Next page">Next page</Translation>
+          <i className="fas fa-chevron-right ms-1" />
+        </Link>)}
+      </div>
+      <ApiDocPage api={props.api} pageId={pageId} />
+      {/* <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
         {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
           <i className="fas fa-chevron-left me-1" />
           <Translation i18nkey="Previous page">Previous page</Translation>
@@ -102,21 +146,8 @@ export function ApiDocumentation(props: any) {
         {nextId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
           <Translation i18nkey="Next page">Next page</Translation>
           <i className="fas fa-chevron-right ms-1" />
-        </Link>)}
-      </div>
-      {!state?.remoteContentEnabled && (<AwesomeContentViewer contentType={state?.contentType} content={state?.content} />)}
-      {state?.remoteContentEnabled && (<AwesomeContentViewer contentType={state.contentType} remoteContent={{ url: state?.remoteContentUrl }} />)}
-      <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
-        {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
-          <i className="fas fa-chevron-left me-1" />
-          <Translation i18nkey="Previous page">Previous page</Translation>
-        </Link>)}
-        {nextId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
-          <Translation i18nkey="Next page">Next page</Translation>
-          <i className="fas fa-chevron-right ms-1" />
-        </Link>)}
-      </div>
-    </div>
+        </Link>)} */}
+    </div >
   </>);
 }
 
@@ -124,7 +155,7 @@ const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;
 const Image = (props: any) => <img src={props.url} style={{ width: '100%' }} alt={props.alt} />;
 const Video = (props: any) => <video src={props.url} style={{ width: '100%' }} />;
 const Html = (props: any) => <iframe src={props.url} style={{ width: '100%', height: '100vh', border: 0 }} />;
-const Pdf = ({url}: any) => {
+const Pdf = ({ url }: any) => {
   return (
     <embed src={url} type="application/pdf" style={{ width: '100%', height: '100vh', border: 0 }} />
   );
@@ -280,7 +311,12 @@ const mimeTypes = [
   { label: '.webm WEBM video file ', value: 'video/webm', render: (url: any) => <Video url={url} /> },
 ];
 
-const AwesomeContentViewer = (props: any) => {
+type AwesomeContentViewerProp = {
+  contentType: string
+  remoteContent?: { url: string }
+  content?: string
+}
+const AwesomeContentViewer = (props: AwesomeContentViewerProp) => {
   const mimeType = mimeTypes.filter((t) => t.value === props.contentType)[0] || {
     render: () => <TypeNotSupportedYet />,
   };

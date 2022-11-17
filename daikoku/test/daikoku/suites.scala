@@ -697,7 +697,7 @@ object utils {
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
-        pages = Seq.empty[ApiDocumentationPageId],
+        pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
       ),
       swagger = None,
@@ -727,7 +727,7 @@ object utils {
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
-        pages = Seq.empty[ApiDocumentationPageId],
+        pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
       ),
       swagger = None,
@@ -814,7 +814,7 @@ object utils {
     def generateApi(version: String = "0",
                     tenant: TenantId,
                     teamId: TeamId,
-                    docIds: Seq[ApiDocumentationPageId]) = Api(
+                    docIds: Seq[ApiDocumentationDetailPage]) = Api(
       id = ApiId(s"api-${tenant.value}-$version"),
       tenant = tenant,
       team = teamId,

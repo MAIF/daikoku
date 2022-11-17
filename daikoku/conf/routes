@@ -42,6 +42,7 @@ POST    /auth/:provider/callback                        fr.maif.otoroshi.daikoku
 GET     /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.loginGet(provider)
 POST    /api/auth/ldap/_check                           fr.maif.otoroshi.daikoku.ctrls.LoginController.checkLdapConnection()
 
+GET     /api/me/teams                                   fr.maif.otoroshi.daikoku.ctrls.ApiController.myTeams()
 GET     /api/me/teams/own                               fr.maif.otoroshi.daikoku.ctrls.ApiController.myOwnTeam()
 GET     /api/me/teams/:id                               fr.maif.otoroshi.daikoku.ctrls.ApiController.oneOfMyTeam(id)
 

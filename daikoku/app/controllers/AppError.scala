@@ -16,6 +16,7 @@ sealed trait AppError {
 object AppError {
   case object ApiVersionConflict extends AppError
   case object ApiNotFound extends AppError
+  case object PageNotFound extends AppError
   case object ApiGroupNotFound extends AppError
   case object TeamNotFound extends AppError
   case object UserNotFound extends AppError
@@ -50,6 +51,7 @@ object AppError {
   def render(error: AppError): mvc.Result = error match {
     case ApiVersionConflict       => Conflict(toJson(ApiVersionConflict))
     case ApiNotFound              => NotFound(toJson(error))
+    case PageNotFound             => NotFound(toJson(error))
     case ApiGroupNotFound         => NotFound(toJson(error))
     case TeamNotFound             => NotFound(toJson(error))
     case UserNotFound             => NotFound(toJson(error))
@@ -93,6 +95,7 @@ object AppError {
         Json.obj("error" -> (err match {
           case ApiVersionConflict       => "This version already existed"
           case ApiNotFound              => "API not found"
+          case PageNotFound             => "Page not found"
           case ApiGroupNotFound         => "API group not found"
           case TeamNotFound             => "Team not found"
           case UserNotFound             => "User not found"

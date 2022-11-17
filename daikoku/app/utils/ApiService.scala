@@ -164,6 +164,7 @@ class ApiService(env: Env,
           case (maybeParentSub, otoroshiApiKey) =>
 
             val integrationToken = IdGenerator.token(64)
+
             val tunedApiKey = createOtoroshiApiKey(
               user = user,
               api = api,

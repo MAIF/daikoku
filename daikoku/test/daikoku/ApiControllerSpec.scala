@@ -1682,7 +1682,7 @@ class ApiControllerSpec()
 
       val rootApi = adminApi.copy(
         team = teamOwner.id,
-        documentation = adminApi.documentation.copy(pages = Seq(page.id))
+        documentation = adminApi.documentation.copy(pages = Seq(ApiDocumentationDetailPage(page.id, page.title, Seq.empty)))
       )
 
       setupEnvBlocking(
@@ -1711,7 +1711,7 @@ class ApiControllerSpec()
             "pages" -> Json.arr(
               Json.obj(
                 "apiId" -> rootApi.id.value,
-                "pageId" -> rootApi.documentation.pages.head.value,
+                "pageId" -> rootApi.documentation.pages.head.id.asJson,
                 "version" -> rootApi.currentVersion.value
               )
             )

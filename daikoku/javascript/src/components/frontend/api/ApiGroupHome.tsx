@@ -242,7 +242,7 @@ export const ApiGroupHome = ({ }) => {
             />
           )}
           {params.tab === 'documentation' && (
-            <ApiDocumentation api={apiGroup} ownerTeam={ownerTeam} />
+            <ApiDocumentation api={apiGroup} />
           )}
           {params.tab === 'issues' && (
             <ApiIssue

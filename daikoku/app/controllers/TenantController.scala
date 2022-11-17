@@ -216,7 +216,7 @@ class TenantController(DaikokuAction: DaikokuAction,
             documentation = ApiDocumentation(
               id = ApiDocumentationId(BSONObjectID.generate().stringify),
               tenant = tenant.id,
-              pages = Seq.empty[ApiDocumentationPageId],
+              pages = Seq.empty[ApiDocumentationDetailPage],
               lastModificationAt = DateTime.now()
             ),
             swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),

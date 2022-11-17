@@ -55,8 +55,6 @@ export const FormModal = <T extends TBaseObject>({
         <button type="button" className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
           {actionLabel}
         </button>
-
-        <button type='button' onClick={() => console.log(ref.current?.methods.watch())}>test</button>
       </div>
     </div>
   );

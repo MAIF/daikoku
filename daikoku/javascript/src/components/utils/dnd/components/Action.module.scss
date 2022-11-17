@@ -2,15 +2,15 @@ $focused-outline-color: #4c9ffe;
 
 .Action {
   display: flex;
-  width: 12px;
-  padding: 15px;
+  // width: 12px;
+  // padding: 15px;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   touch-action: none;
   cursor: var(--cursor, pointer);
   border-radius: 5px;
-  border: none;
+  // border: none;
   outline: none;
   appearance: none;
   background-color: transparent;
@@ -19,10 +19,6 @@ $focused-outline-color: #4c9ffe;
   @media (hover: hover) {
     &:hover {
       background-color: var(--action-background, rgba(0, 0, 0, 0.05));
-
-      svg {
-        fill: #6f7b88;
-      }
     }
   }
 
@@ -31,15 +27,10 @@ $focused-outline-color: #4c9ffe;
     margin: auto;
     height: 100%;
     overflow: visible;
-    fill: #919eab;
   }
 
   &:active {
     background-color: var(--background, rgba(0, 0, 0, 0.05));
-
-    svg {
-      fill: var(--fill, #788491);
-    }
   }
 
   &:focus-visible {

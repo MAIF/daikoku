@@ -9,6 +9,7 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../../services';
 import { Can, manage, CanIDoAction, api as API } from '../../../utils';
 import { I18nContext, openFormModal } from '../../../../core';
+import { IState, ITeamSimple } from '../../../../types';
 
 export function ApiFilter({
   handleFilter,
@@ -22,10 +23,10 @@ export function ApiFilter({
   ownerTeam,
   basePath
 }: any) {
-  const [availableApiVersions, setApiVersions] = useState([]);
+  const [availableApiVersions, setApiVersions] = useState<Array<string>>([]);
   const { translate } = useContext(I18nContext);
   const dispatch = useDispatch();
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const schema = {
     title: {

@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
-import { ITeamSimple } from '../../../types';
+import { isError, ITeamSimple } from '../../../types';
 
 export const TeamPlanConsumption = ({
   apiGroup
@@ -64,12 +64,12 @@ export const TeamPlanConsumption = ({
   const getPlanInformation = () => {
     return Services.teamApi(currentTeam._id, match?.params.apiId!, match?.params.version!).then(
       (api) => {
-        if (api.error) {
+        if (isError(api)) {
           return null;
         }
         return {
           api,
-          plan: api.possibleUsagePlans.find((pp: any) => pp._id === match?.params.planId),
+          plan: api.possibleUsagePlans.find((pp) => pp._id === match?.params.planId),
         };
       }
     );
