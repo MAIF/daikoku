@@ -1192,5 +1192,10 @@
     "otoroshi.list.add.label": "Add an Otoroshi instance",
     "Global stats": "Global stats",
     "apikeys visibility": "API keys visibility",
-    "motivations.modal.title": "Tell us why do you want an API key"
+    "motivations.modal.title": "Tell us why do you want an API key",
+    "Daily quotas consumed": "Daily quotas consumed",
+    "Monthly quotas consumed": "Monthly quotas consumed",
+    "daily.quotas.consumed.title": "%s daily calls consumed over %s",
+    "monthly.quotas.consumed.title": "%s monthly calls consumed over %s",
+    "Quotas consumptions": "Quotas consumptions"
 }

@@ -5,18 +5,90 @@ import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { OtoroshiStatsVizualization } from '../..';
+import { BeautifulTitle, OtoroshiStatsVizualization } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
+import { useQuery } from "react-query";
+import { IState, ITeamSimple } from "../../../types";
 
+type QuotasProps = {
+  currentTeam: ITeamSimple,
+  typePlan: string
+
+}
+const Quotas = (props: QuotasProps) => {
+  const params = useParams()
+  const queryQuotas = useQuery(['quotas'], () => Services.getConsummedQuotasWithSubscriptionId(props.currentTeam._id, params.subscription!))
+
+  const { translate } = useContext(I18nContext);
+
+  if (queryQuotas.isLoading || queryQuotas.isIdle) {
+    return <Spinner />
+  } else if (queryQuotas.data) {
+    let colorDaily
+    const percentDaily = ((queryQuotas.data.authorizedCallsPerDay - queryQuotas.data.remainingCallsPerDay) / queryQuotas.data.authorizedCallsPerDay) * 100
+    let colorMonthly
+    const percentMontly = ((queryQuotas.data.authorizedCallsPerMonth - queryQuotas.data.remainingCallsPerMonth) / queryQuotas.data.authorizedCallsPerMonth) * 100
+
+    if (percentDaily <= 33) {
+      colorDaily = "var(--success-color, #4F8A10)"
+    } else if (33 < percentDaily && percentDaily <= 66) {
+      colorDaily = "var(--warning-color, #ffc107)"
+    } else {
+      colorDaily = "var(--danger-color, #dc3545)"
+    }
+    if (percentMontly <= 33) {
+      colorMonthly = "var(--success-color, #4F8A10)"
+    } else if (33 < percentMontly && percentMontly <= 66) {
+      colorMonthly = "var(--warning-color, #ffc107)"
+    } else {
+      colorMonthly = "var(--danger-color, #dc3545)"
+    }
+    return (
+      <div className="col-12">
+        <h5>{translate('Daily quotas consumed')}</h5>
+        <BeautifulTitle
+          title={translate({
+            key: "daily.quotas.consumed.title",
+            replacements: [(queryQuotas.data.authorizedCallsPerDay - queryQuotas.data.remainingCallsPerDay).toString(), queryQuotas.data.authorizedCallsPerDay.toString()]
+          })}>
+          <Progress
+            strokeColor={colorDaily}
+            percent={percentDaily}
+            status="active"
+          />
+        </BeautifulTitle>
+        <h5>
+          {translate("Monthly quotas consumed")}
+        </h5>
+        <BeautifulTitle
+          title={translate({
+            key: "monthly.quotas.consumed.title",
+            replacements: [(queryQuotas.data.authorizedCallsPerMonth - queryQuotas.data.remainingCallsPerMonth).toString(), queryQuotas.data.authorizedCallsPerMonth.toString()]
+          })}>
+          <Progress
+            strokeColor={colorMonthly}
+            percent={percentMontly}
+            status="active"
+          />
+        </BeautifulTitle>
+      </div>
+    )
+  } else {
+    return <div>Error while searching quotas.</div>
+  }
+}
 export const TeamApiKeyConsumption = () => {
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   useTeamBackOffice(currentTeam);
   const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
-
-  const mappers = [
+  const getInformations = () => {
+    return Services.getSubscriptionInformations(params.subscription!, currentTeam._id);
+  };
+  const subInf = useQuery(['subInf'], () => getInformations())
+  let mappers = [
     {
       type: 'LineChart',
       label: (data: any, max: any) => getLabelForDataIn(data, max),
@@ -33,10 +105,24 @@ export const TeamApiKeyConsumption = () => {
       label: translate('Global informations'),
       formatter: (data: any) => data.length ? data[data.length - 1].globalInformations : [],
     },
-  ];
-
+  ];;
+  switch (subInf.data?.plan.type) {
+    case 'FreeWithQuotas':
+    case 'QuotasWithLimits':
+    case 'QuotasWithoutLimits':
+      mappers = [
+        ...mappers,
+        {
+          type: 'Custom',
+          label: translate('Quotas consumptions'),
+          formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.type} />,
+        },
+      ];
+  }
+  
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('API key consumption')}`;
+
   }, []);
 
   const getLabelForDataIn = (datas: any, max: any) => {
@@ -66,9 +152,6 @@ export const TeamApiKeyConsumption = () => {
     );
   };
 
-  const getInformations = () => {
-    return Services.getSubscriptionInformations(params.subscription, currentTeam._id);
-  };
 
   return (
     <Can I={read} a={stat} team={currentTeam} dispatchError>
@@ -99,7 +182,7 @@ export const TeamApiKeyConsumption = () => {
       </div>
     </Can>
   );
-};
+}
 
 const PlanInformations = (props: any) => {
   const [state, setState] = useState({
@@ -122,5 +205,6 @@ const PlanInformations = (props: any) => {
   return (<h3>
     {(state.informations as any).api.name} -{' '}
     {(state.informations as any).plan.customName || (state.informations as any).plan.type}
+
   </h3>);
 };
