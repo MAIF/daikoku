@@ -175,9 +175,8 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
       TeamAdminOnly(AuditTrailEvent(
         s"@{user.name} has accessed to apikey quotas for clientId @{clientId}"))(
         teamId,
-        ctx) { team =>
+        ctx) { _ =>
         ctx.setCtxValue("subscriptionId", subscriptionId)
-        println("cd")
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id).findByIdNotDeleted(subscriptionId)
           .flatMap {
