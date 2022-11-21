@@ -117,11 +117,6 @@ class ApiService(env: Env,
           throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
           dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
           monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
-      case p: QuotasWithoutLimits =>
-        apiKey.copy(
-          throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
-          dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
-          monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
       case _ => apiKey
     }
   }

@@ -969,7 +969,7 @@ object utils {
           customName = None,
           customDescription = None,
           otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("wiremock"),
+            OtoroshiTarget(OtoroshiSettingsId("default"),
                            Some(
                              AuthorizedEntities(
                                groups = Set(OtoroshiServiceGroupId("12345")))))

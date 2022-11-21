@@ -742,8 +742,8 @@ class ApiController(DaikokuAction: DaikokuAction,
       case Some(_) if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
-        case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team, apiKeyId, motivation))
-        case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team, apiKeyId))
+        case SubscriptionProcess.Manual     => EitherT(notifyApiSubscription(tenant, user, api, planId, team, apiKeyId, motivation))
+        case SubscriptionProcess.Automatic  => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team, apiKeyId))
       }
     }
   }

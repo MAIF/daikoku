@@ -16,7 +16,7 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, OtoroshiApiKeyFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
@@ -28,7 +28,6 @@ import org.testcontainers.utility.DockerImageName
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
-
 import reactivemongo.bson.BSONObjectID
 
 import java.util
@@ -44,16 +43,15 @@ class ApiControllerSpec()
     with IntegrationPatience
     with BeforeAndAfterEach
     with BeforeAndAfter
-//    with ForAllTestContainer
-    {
+    with ForAllTestContainer {
 
-//  val pwd = System.getProperty("user.dir");
+  val pwd = System.getProperty("user.dir");
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
-//  override val container = GenericContainer("maif/otoroshi:dev",
-//    exposedPorts = Seq(8080),
-//    fileSystemBind = Seq(FileSystemBind(s"$pwd/test/daikoku/otoroshi.json", "/home/user/otoroshi.json", BindMode.READ_ONLY)),
-//    env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
-//  )
+  override val container = GenericContainer("maif/otoroshi:dev",
+    exposedPorts = Seq(8080),
+    fileSystemBind = Seq(FileSystemBind(s"$pwd/test/daikoku/otoroshi.json", "/home/user/otoroshi.json", BindMode.READ_ONLY)),
+    env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
+  )
 
   before {
     wireMockServer.start()
@@ -65,32 +63,100 @@ class ApiControllerSpec()
   }
 
 //  "a simple test" can {
-//    "test otoroshi" in {
+//    "api-keys creation on otoroshi" in {
 //      setupEnvBlocking(
-//        tenants = Seq(tenant),
-//        users = Seq(tenantAdmin),
-//        teams = Seq(defaultAdminTeam, teamConsumer),
+//        tenants = Seq(tenant.copy(otoroshiSettings = Set(OtoroshiSettings(
+//          id = OtoroshiSettingsId("default"),
+//          url = "http://localhost:8080",
+//          host = "otoroshi-api.oto.tools",
+//          clientId = "admin-api-apikey-id",
+//          clientSecret = "password"
+//        )))),
+//        users = Seq(userAdmin),
+//        teams = Seq(teamConsumer),
 //        apis = Seq(defaultApi)
 //      )
 //
-//      val session = loginWithBlocking(tenantAdmin, tenant2)
+//      //plans
+//      //free without quotas : 1
+//      //free with quotas : 2
+//      //Quotas With Limits : 3
+//      //Quotas Without Limits : 4
+//      //PayPerUse : 5
 //
-//      val otoPort = container.mappedPort(8080);
+//      val session = loginWithBlocking(userAdmin, tenant)
 //
-//      val resp = httpJsonCallBlocking(
-//        path = "/api/services",
-//        baseUrl = "http://localhost",
-//        port = otoPort,
-//        headers = Map(
-//          "Host" -> "otoroshi-api.oto.tools",
-//          "Otoroshi-Client-Id" -> "admin-api-apikey-id",
-//          "Otoroshi-Client-Secret" -> "admin-api-apikey-secret",
-//        )
-//      )(tenant2, session)
+//      (1 to 5).foreach(id => {
+//        val resp = httpJsonCallBlocking(
+//          path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+//          method = "POST",
+//          body = Some(
+//            Json.obj("plan" -> id.toString, "teams" -> Json.arr(teamConsumer.id.asJson))
+//          )
+//        )(tenant, session)
+//        resp.status mustBe 200
 //
-//      println(Json.prettyPrint(resp.json))
 //
-//      resp.status mustBe 200
+//        AppLogger.info(Json.prettyPrint(resp.json))
+//      })
+//
+//      val respSubs = httpJsonCallBlocking(
+//        path = s"/api/subscriptions/teams/${teamConsumer.id.value}"
+//      )(tenant, session)
+//
+//      respSubs.status mustBe 200
+//
+//      val eventualSubs = SeqApiSubscriptionFormat.reads(respSubs.json)
+//
+//      eventualSubs.isSuccess mustBe true
+//
+//      val subs = eventualSubs.get
+//      subs.length mustBe 5
+//
+//      Map(
+//        "1" -> Int.MaxValue,
+//        "2" -> Int.MaxValue,
+//        "3" -> 2000,
+//        "4" -> 10000,
+//        "5" -> Int.MaxValue,
+//      ).foreach(tuple => {
+//        val planId = tuple._1
+//        val quotas = tuple._2
+//
+//        val sub = subs.find(s => s.plan.value === planId).get
+//
+//        val respApiKey = httpJsonCallBlocking(
+//          path = s"/api/apikeys/${sub.apiKey.clientId}",
+//          baseUrl = "http://localhost",
+//          port = container.mappedPort(8080),
+//          headers = Map(
+//            "Host" -> "otoroshi-api.oto.tools",
+//            "Otoroshi-Client-Id" -> "admin-api-apikey-id",
+//            "Otoroshi-Client-Secret" -> "password",
+//          )
+//        )(tenant, session)
+//
+//        val test = httpJsonCallBlocking(
+//          path = s"/api/apikeys",
+//          baseUrl = "http://localhost",
+//          port = container.mappedPort(8080),
+//          headers = Map(
+//            "Host" -> "otoroshi-api.oto.tools",
+//            "Otoroshi-Client-Id" -> "admin-api-apikey-id",
+//            "Otoroshi-Client-Secret" -> "password",
+//          )
+//        )(tenant, session)
+//        AppLogger.info(Json.prettyPrint(test.json))
+//
+//        AppLogger.info(s"/api/apikeys/${sub.apiKey.clientId}")
+//        AppLogger.info(Json.prettyPrint(respApiKey.json))
+//        respApiKey.status mustBe 200
+//
+//        (respApiKey.json \ "dailyQuota").as[Long] mustBe quotas
+//        (respApiKey.json \ "monthlyQuota").as[Long] mustBe quotas
+//      })
+//
+//
 //    }
 //  }
 

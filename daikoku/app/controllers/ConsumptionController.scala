@@ -190,7 +190,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                 .flatMap {
                   case None =>
                     FastFuture.successful(
-                      NotFound(Json.obj("error" -> "Api not found (12)")))
+                      NotFound(Json.obj("error" -> "Api not found")))
                   case Some(api) =>
                     api.possibleUsagePlans
                       .find(pp => pp.id == subscription.plan)

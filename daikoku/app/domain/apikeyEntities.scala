@@ -100,7 +100,7 @@ case class ApiSubscription(
 }
 
 object RemainingQuotas {
-  val MaxValue: Long = 10000000L
+  val MaxValue: Long = Int.MaxValue
 }
 
 case class ActualOtoroshiApiKey(
