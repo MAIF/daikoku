@@ -9,6 +9,7 @@ import { useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
 
 import * as Services from '../../../services';
+import { isError } from '../../../types';
 import { Can, manage, Spinner, tenant as TENANT, Option, BeautifulTitle } from '../../utils';
 import {
   theMachine,
@@ -103,12 +104,14 @@ export const InitializeFromOtoroshi = () => {
 
   const updateApi = (api: any) => {
     return Services.teamApi(api.team, api._humanReadableId, api.currentVersion)
-      .then((oldApi) =>
-        Services.saveTeamApi(api.team, { ...oldApi, ...api }, oldApi.currentVersion)
-      )
-      .then((updatedApi) => {
-        const filteredApis = apis.filter((a) => (a as any)._id !== updatedApi._id);
-        setApis([...filteredApis, updatedApi]);
+      .then((oldApi) => {
+        if (!isError(oldApi)) {
+          return Services.saveTeamApi(api.team, { ...oldApi, ...api }, oldApi.currentVersion)
+            .then((updatedApi) => {
+              const filteredApis = apis.filter((a) => (a as any)._id !== updatedApi._id);
+              setApis([...filteredApis, updatedApi]);
+            })
+        }
       });
   };
 

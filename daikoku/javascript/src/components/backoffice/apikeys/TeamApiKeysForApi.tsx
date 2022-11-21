@@ -166,7 +166,7 @@ export const TeamApiKeysForApi = () => {
         <h1>
           <Translation i18nkey="Api keys for">Api keys for</Translation>
           &nbsp;
-          <Link to={`/${(apiTeam as any)._humanReadableId}/${(api as any)._humanReadableId}/${(api as any).currentVersion}`} className="cursor-pointer underline-on-hover a-fake">
+          <Link to={`/${(apiTeam as any)._humanReadableId}/${(api as any)._humanReadableId}/${(api as any).currentVersion}/description`} className="cursor-pointer underline-on-hover a-fake">
             {api.name}
           </Link>
         </h1>

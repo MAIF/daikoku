@@ -2,6 +2,7 @@ package fr.maif.otoroshi.daikoku.tests
 
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
+import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
@@ -27,6 +28,7 @@ import org.testcontainers.utility.DockerImageName
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
+
 import reactivemongo.bson.BSONObjectID
 
 import java.util
@@ -1728,7 +1730,7 @@ class ApiControllerSpec()
 
       val rootApi = adminApi.copy(
         team = teamOwner.id,
-        documentation = adminApi.documentation.copy(pages = Seq(page.id))
+        documentation = adminApi.documentation.copy(pages = Seq(ApiDocumentationDetailPage(page.id, page.title, Seq.empty)))
       )
 
       setupEnvBlocking(
@@ -1757,7 +1759,7 @@ class ApiControllerSpec()
             "pages" -> Json.arr(
               Json.obj(
                 "apiId" -> rootApi.id.value,
-                "pageId" -> rootApi.documentation.pages.head.value,
+                "pageId" -> rootApi.documentation.pages.head.id.asJson,
                 "version" -> rootApi.currentVersion.value
               )
             )
@@ -3332,6 +3334,48 @@ class ApiControllerSpec()
       )(tenant)
 
       assert(resp.status != 204)
+    }
+    "can't create an issue when a team don't exist" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(
+          teamOwner,
+          teamConsumer.copy(users = Set(UserWithPermission(userId = user.id, teamPermission = TeamPermission.Administrator)))),
+        apis = Seq(
+          defaultApi),
+
+
+      )
+
+      val userSession = loginWithBlocking(user, tenant)
+      val issue = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId}/apis/${defaultApi.humanReadableId}/issues",
+        method = "POST",
+        body = Some(ApiIssue(
+          id = ApiIssueId(BSONObjectID.generate().stringify),
+          seqId = 0,
+          tenant = tenant.id,
+          title = "",
+          tags = Set.empty,
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = user.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = user.id,
+              createdAt = DateTime.now(),
+              lastModificationAt = DateTime.now(),
+              content = ""
+            )),
+          lastModificationAt = DateTime.now(),
+          apiVersion = defaultApi.currentVersion.value.some,
+        ).asJson)
+      )(tenant, userSession )
+      Json.prettyPrint(issue.json)
+      issue.status mustBe 404
+
     }
     "can retrieve all same issues list from any api versions" in {
       val issuesTags = Set(

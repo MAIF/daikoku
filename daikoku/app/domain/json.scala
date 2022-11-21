@@ -1339,10 +1339,7 @@ object json {
             id = (json \ "_id").as(ApiDocumentationPageIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            // api = (json \ "api").as(ApiIdFormat),
             title = (json \ "title").as[String],
-            // index = (json \ "index").as[Double],
-            level = (json \ "level").as[Int],
             lastModificationAt =
               (json \ "lastModificationAt").as(DateTimeFormat),
             content = (json \ "content").asOpt[String].getOrElse(""),
@@ -1357,17 +1354,17 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn(e.getMessage)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: ApiDocumentationPage): JsValue = Json.obj(
       "_id" -> ApiDocumentationPageIdFormat.writes(o.id),
-      "_humanReadableId" -> o.humanReadableId,
+      "_humanReadableId" -> ApiDocumentationPageIdFormat.writes(o.id),
       "_tenant" -> o.tenant.asJson,
       "_deleted" -> o.deleted,
       "title" -> o.title,
-      // "index"              -> o.index,
-      "level" -> o.level,
       "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
       "content" -> o.content,
       "remoteContentEnabled" -> o.remoteContentEnabled,
@@ -1378,7 +1375,6 @@ object json {
         .as[JsValue],
       "remoteContentHeaders" -> JsObject(
         o.remoteContentHeaders.view.mapValues(JsString.apply).toSeq),
-      // "api" -> o.api.asJson,
     )
   }
   val ApiPostFormat = new Format[ApiPost] {
@@ -1482,6 +1478,30 @@ object json {
 
     override def writes(o: ApiIssueTagId): JsValue = JsString(o.value)
   }
+
+  val ApiDocumentationDetailPageFormat = new Format[ApiDocumentationDetailPage] {
+    override def reads(json: JsValue): JsResult[ApiDocumentationDetailPage] =
+      Try {
+        JsSuccess(
+          ApiDocumentationDetailPage(
+            id = (json \ "id").as(ApiDocumentationPageIdFormat),
+            title = (json \ "title").as[String],
+            children = (json \ "children").as(SeqApiDocumentationDetailPageFormat)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+
+    override def writes(o: ApiDocumentationDetailPage): JsValue = Json.obj(
+      "id" -> o.id.asJson,
+      "title" -> o.title,
+      "children" -> SeqApiDocumentationDetailPageFormat.writes(o.children)
+    )
+
+  }
+
   val ApiDocumentationFormat = new Format[ApiDocumentation] {
     override def reads(json: JsValue): JsResult[ApiDocumentation] =
       Try {
@@ -1491,8 +1511,8 @@ object json {
             tenant = (json \ "_tenant").as(TenantIdFormat),
             //api = (json \ "api").as(ApiIdFormat),
             pages = (json \ "pages")
-              .asOpt(SeqApiDocumentationPageIdFormat)
-              .getOrElse(Seq.empty[ApiDocumentationPageId]),
+              .asOpt(SeqApiDocumentationDetailPageFormat)
+              .getOrElse(Seq.empty[ApiDocumentationDetailPage]),
             lastModificationAt =
               (json \ "lastModificationAt").as(DateTimeFormat)
           )
@@ -1504,7 +1524,7 @@ object json {
     override def writes(o: ApiDocumentation): JsValue = Json.obj(
       "_id" -> ApiDocumentationIdFormat.writes(o.id),
       "_tenant" -> o.tenant.asJson,
-      "pages" -> JsArray(o.pages.map(ApiDocumentationPageIdFormat.writes)),
+      "pages" -> SeqApiDocumentationDetailPageFormat.writes(o.pages),
       "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt)
     )
   }
@@ -2005,7 +2025,9 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.error(e.toString)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: Api): JsValue = Json.obj(
@@ -2118,7 +2140,9 @@ object json {
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
             integrationToken = (json \ "integrationToken").as[String],
+            metadata = (json \ "metadata").asOpt[JsObject],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
+            tags = (json \ "tags").asOpt[Seq[String]],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt(LongFormat),
             customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
@@ -2150,7 +2174,9 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "integrationToken" -> o.integrationToken,
+      "metadata" -> o.metadata,
       "customMetadata" -> o.customMetadata,
+      "tags" -> JsArray(o.tags.getOrElse(Seq.empty).map(JsString.apply)),
       "customMaxPerSecond" -> o.customMaxPerSecond
         .map(JsNumber(_))
         .getOrElse(JsNull)
@@ -3468,4 +3494,6 @@ object json {
            Writes.set(OtoroshiServiceGroupIdFormat))
   val SeqCmsHistoryFormat =
     Format(Reads.seq(CmsHistoryFormat), Writes.seq(CmsHistoryFormat))
+  val SeqApiDocumentationDetailPageFormat: Format[Seq[ApiDocumentationDetailPage]] =
+    Format(Reads.seq(ApiDocumentationDetailPageFormat), Writes.seq(ApiDocumentationDetailPageFormat))
 }

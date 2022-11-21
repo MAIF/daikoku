@@ -1,4 +1,4 @@
-import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
+import { constraints, Flow, format, Schema, SchemaRenderType, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import { Children, useContext, useState } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
@@ -13,13 +13,14 @@ import set from 'lodash/set'
 
 import { I18nContext, openApiDocumentationSelectModal, openFormModal } from '../../../core';
 import * as Services from '../../../services';
-import { IApi, IDocPage, IDocTitle, isError, IState, ITeamSimple } from '../../../types';
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
+import { IApi, IAsset, IDocDetail, IDocPage, IDocTitle, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, IStateContext, ITeamSimple } from '../../../types';
+import { AssetChooserByModal, IFormModalProps, MimeTypeFilter } from '../../frontend';
 import { BeautifulTitle, Spinner } from '../../utils';
 import { removeArrayIndex, moveArrayIndex } from '../../utils/array';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
 import { TreeItem, TreeItems } from '../../utils/dnd/types';
+import { spawn } from 'xstate';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -64,8 +65,17 @@ Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit 
 
 Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`;
 
-function AssetButton(props: any) {
+type AssetButtonProps = {
+  onChange: (value: string) => void,
+  team: ITeamSimple,
+  setValue: (key: string, value: any) => void,
+  rawValues: IDocPage,
+  formModalProps: IFormModalProps<IDocPage>
+}
+const AssetButton = (props: AssetButtonProps) => {
   const { translate } = useContext(I18nContext);
+
+  const dispatch = useDispatch();
 
   return (
     <div className="mb-3 row">
@@ -78,10 +88,19 @@ function AssetButton(props: any) {
           team={props.team}
           teamId={props.team._id}
           label={translate('Set from asset')}
-          onSelect={(asset: any) => {
-            props.onChange(asset.link);
-            props.setValue('contentType', asset.contentType)
+          onSelect={(asset: IAsset) => {
+            console.debug(asset)
+
+            dispatch(openFormModal({
+              ...props.formModalProps,
+              value: {
+                ...props.rawValues,
+                contentType: asset.contentType,
+                remoteContentUrl: asset.link
+              }
+            }))
           }}
+          noClose
         />
       </div>
     </div>
@@ -98,22 +117,20 @@ type TeamApiDocumentationProps = {
   saveApi: (value: IApi) => Promise<any>
 }
 
-
 export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
-  const { team, api, versionId } = props;
+  const { team, versionId } = props;
 
   const params = useParams();
   const { translate } = useContext(I18nContext);
   const dispatch = useDispatch();
 
-  const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
+  const { currentTeam, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
   const queryClient = useQueryClient();
-  const detailsQuery = useQuery(['details'], () => Services.getDocDetails(params.apiId!, versionId!));
+  const apiQuery = useQuery(['api'], () => Services.teamApi(currentTeam._id, params.apiId!, versionId!));
 
   const flow: Flow = [
     'title',
-    'level',
     'contentType',
     'remoteContentEnabled',
     'remoteContentUrl',
@@ -121,114 +138,117 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     'content',
   ];
 
-  const schema: Schema = {
-    title: {
-      type: type.string,
-      label: translate('Page title'),
-      constraints: [
-        constraints.required(translate("constraints.required.name"))
-      ]
-    },
-    level: {
-      type: type.number,
-      label: translate('Page level'),
-      defaultValue: 0,
-      props: {
-        min: 0, step: 1
+  const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
+    return {
+      title: {
+        type: type.string,
+        label: translate('Page title'),
+        constraints: [
+          constraints.required(translate("constraints.required.name"))
+        ]
       },
-    },
-    content: {
-      type: type.string,
-      format: format.markdown,
-      visible: ({
-        rawValues
-      }: any) => !rawValues.remoteContentEnabled,
-      label: translate('Page content'),
-      props: {
-        height: '800px',
-        team: team,
-        actions: (insert: any) => {
-          return <>
-            <button
-              type="button"
-              className="btn-for-descriptionToolbar"
-              aria-label={translate('Lorem Ipsum')}
-              title={translate('Lorem Ipsum')}
-              onClick={() => insert(loremIpsum)}
-            >
-              <i className={`fas fa-feather-alt`} />
-            </button>
-            <button
-              type="button"
-              className="btn-for-descriptionToolbar"
-              aria-label={translate('Long Lorem Ipsum')}
-              title={translate('Long Lorem Ipsum')}
-              onClick={() => insert(longLoremIpsum)}
-            >
-              <i className={`fas fa-feather`} />
-            </button>
-            <BeautifulTitle
-              placement="bottom"
-              title={translate('image url from asset')}
-            >
-              <AssetChooserByModal
-                typeFilter={MimeTypeFilter.image}
-                onlyPreview
-                tenantMode={false}
-                team={team}
-                teamId={team._id}
-                icon="fas fa-file-image"
-                classNames="btn-for-descriptionToolbar"
-                onSelect={(asset: any) => insert(asset.link)}
-                label={translate("Insert URL")}
-              />
-            </BeautifulTitle>
-          </>;
+      content: {
+        type: type.string,
+        format: format.markdown,
+        visible: ({
+          rawValues
+        }) => !rawValues.remoteContentEnabled,
+        label: translate('Page content'),
+        props: {
+          height: '800px',
+          team: team,
+          actions: (insert) => {
+            return <>
+              <button
+                type="button"
+                className="btn-for-descriptionToolbar"
+                aria-label={translate('Lorem Ipsum')}
+                title={translate('Lorem Ipsum')}
+                onClick={() => insert(loremIpsum)}
+              >
+                <i className={`fas fa-feather-alt`} />
+              </button>
+              <button
+                type="button"
+                className="btn-for-descriptionToolbar"
+                aria-label={translate('Long Lorem Ipsum')}
+                title={translate('Long Lorem Ipsum')}
+                onClick={() => insert(longLoremIpsum)}
+              >
+                <i className={`fas fa-feather`} />
+              </button>
+              <BeautifulTitle
+                placement="bottom"
+                title={translate('image url from asset')}
+              >
+                <AssetChooserByModal
+                  typeFilter={MimeTypeFilter.image}
+                  onlyPreview
+                  tenantMode={false}
+                  team={team}
+                  teamId={team._id}
+                  icon="fas fa-file-image"
+                  classNames="btn-for-descriptionToolbar"
+                  onSelect={(asset) => insert(asset.link)}
+                  label={translate("Insert URL")}
+                />
+              </BeautifulTitle>
+            </>;
+          }
         }
-      }
-    },
-    remoteContentEnabled: {
-      type: type.bool,
-      label: translate('Remote content'),
-    },
-    contentType: {
-      type: type.string,
-      format: format.select,
-      label: translate('Content type'),
-      options: mimeTypes,
-    },
-    remoteContentUrl: {
-      type: type.string,
-      visible: ({
-        rawValues
-      }: any) => !!rawValues.remoteContentEnabled,
-      label: translate('Content URL'),
-      render: ({
-        onChange,
-        value,
-        setValue
-      }: any) => {
-        return (
-          <div className='flex-grow-1 ms-3'>
-            <input className='mrf-input mb-3' value={value} onChange={onChange} />
-            <div className="col-12 d-flex justify-content-end">
-              <AssetButton onChange={onChange} team={team} value={value} setValue={setValue} />
+      },
+      remoteContentEnabled: {
+        type: type.bool,
+        label: translate('Remote content'),
+      },
+      contentType: {
+        type: type.string,
+        format: format.select,
+        label: translate('Content type'),
+        options: mimeTypes,
+      },
+      remoteContentUrl: {
+        type: type.string,
+        visible: ({
+          rawValues
+        }) => !!rawValues.remoteContentEnabled,
+        label: translate('Content URL'),
+        render: ({
+          onChange,
+          value,
+          setValue,
+          rawValues
+        }: any) => {
+          return (
+            <div className='flex-grow-1 ms-3'>
+              <input className='mrf-input mb-3' value={value} onChange={onChange} />
+              <div className="col-12 d-flex justify-content-end">
+                <AssetButton onChange={onChange} team={team} setValue={setValue} rawValues={rawValues} formModalProps={{
+                  title: translate('doc.page.update.modal.title'),
+                  flow: flow,
+                  schema: schema(onSubmitAsset),
+                  value: rawValues,
+                  onSubmit: onSubmitAsset,
+                  actionLabel: translate('Save')
+                }} />
+              </div>
             </div>
-          </div>
-        )
-      }
-    },
-    remoteContentHeaders: {
-      type: type.object,
-      visible: ({
-        rawValues
-      }: any) => !!rawValues.remoteContentEnabled,
-      label: translate('Content headers'),
-    },
+          )
+        }
+      },
+      remoteContentHeaders: {
+        type: type.object,
+        visible: ({
+          rawValues
+        }: any) => !!rawValues.remoteContentEnabled,
+        label: translate('Content headers'),
+      },
+    }
   };
 
-  const updatePage = (selectedPage: IDocTitle) => {
-    Services.getDocPage(api._id, selectedPage._id)
+  const updatePage = (selectedPage: string) => {
+    const api = apiQuery.data as IApi
+    Services.getDocPage(api._id, selectedPage)
       .then((page) => {
         if (isError(page)) {
           toastr.error(translate('Error'), page.error);
@@ -236,177 +256,134 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
           dispatch(openFormModal({
             title: translate('doc.page.update.modal.title'),
             flow: flow,
-            schema: schema,
+            schema: schema(updatedPage => savePage(updatedPage, page)),
             value: page,
-            onSubmit: savePage,
+            onSubmit: updatedPage => savePage(updatedPage, page),
             actionLabel: translate('Save')
           }))
         }
       });
   }
 
-  const savePage = (page?: IDocPage) => {
+  const updateTitle = (pages: IDocumentationPages, title: string, id: string) => {
+    return pages.map(page => {
+      if (page.id === id) {
+        return { ...page, title }
+      } else {
+        return { ...page, children: updateTitle(page.children, title, id) }
+      }
+    })
+  }
+
+  const savePage = (page: IDocPage, original: IDocPage) => {
     if (page) {
       return Services.saveDocPage(team._id, page)
-        .then(() => {
-          queryClient.invalidateQueries('details')
-          toastr.success(translate('Success'), translate("doc.page.save.successfull"))
-        });
-    }
-  }
-
-  const movePage = (page: IDocTitle, move: number) => {
-    if (detailsQuery.data) {
-      const index = detailsQuery.data.pages.findIndex(id => id === page._id)
-      if (index === 0 && move < 0) {
-        toastr.error(translate('Error'), translate('doc.page.move.error'))
-      } else if (index === detailsQuery.data.pages.length - 1 && move > 0) {
-        toastr.error(translate('Error'), translate('doc.page.move.error'))
-      } else {
-        const pages = moveArrayIndex(detailsQuery.data.pages, index, index + move)
-
-        const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-        Services.saveTeamApi(
-          currentTeam._id,
-          updatedApi,
-          updatedApi.currentVersion
-        ).then(() => {
-          toastr.success(translate('Success'), translate('doc.page.move.successfull'))
-          queryClient.invalidateQueries('details')
+        .then((resp) => {
+          if (isError(resp)) {
+            toastr.error(translate('Error'), resp.error);
+          } else if (resp.title === original.title) {
+            queryClient.invalidateQueries('api')
+            toastr.success(translate('Success'), translate("doc.page.save.successfull"))
+          } else {
+            const api = apiQuery.data as IApi;
+            updatePages(updateTitle(api.documentation.pages, page.title, page._id))
+          }
         })
-      }
-
     }
   }
 
-  const moveLevel = (page: IDocTitle, move: number) => {
-    if (detailsQuery.data) {
-      const level = parseInt(page.level)
+  const updatePages = (pages: IDocumentationPages) => {
+    const api = apiQuery.data as IApi;
+    const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
 
-      if (level === 0 && move < 0) {
-        toastr.error(translate('Error'), translate('doc.page.move.error'))
-      } else {
-
-        Services.getDocPage(props.api._id, page._id)
-          .then((res) => {
-            if (!isError(res)) {
-              savePage({ ...res, level: res.level + move })
-            }
-          })
-      }
-
-    }
-  }
-
-  const moveUp = (page: IDocTitle) => {
-    movePage(page, -1)
-  }
-
-  const moveDown = (page: IDocTitle) => {
-    movePage(page, 1)
-  }
-
-  const moveRight = (page: IDocTitle) => {
-    moveLevel(page, 1)
-  }
-
-  const moveLeft = (page: IDocTitle) => {
-    moveLevel(page, -1)
+    return Services.saveTeamApi(
+      currentTeam._id,
+      updatedApi,
+      updatedApi.currentVersion
+    )
+      .then(() => {
+        toastr.success(translate('Success'), translate('doc.page.update.successfull'))
+        queryClient.invalidateQueries('api')
+      })
   }
 
   const addNewPage = () => {
-    Services.createDocPage(team._id, {
+    const newPage: IDocPage = {
       _id: nanoid(32),
-      _tenant: api._tenant,
+      _tenant: tenant._id,
+      _deleted: false,
+      _humanReadableId: 'new-page',
       title: 'New page',
-      level: 0,
       lastModificationAt: Date.now(),
       content: '# New page\n\nA new page',
-    }).then((page) => {
-      dispatch(openFormModal({
-        title: translate('doc.page.create.modal.title'),
-        flow: flow,
-        schema: schema,
-        value: page,
-        onSubmit: saveNewPage,
-        actionLabel: translate('Save')
-      }))
-    })
-  };
-
-  const saveNewPage = (page: IDocPage) => {
-    if (detailsQuery.data) {
-      const index = detailsQuery.data.pages.length
-      const pages = [...detailsQuery.data.pages];
-      pages.splice(index, 0, page._id);
-
-      return Services.saveDocPage(team._id, page)
-        .then(() => {
-          const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-          return Services.saveTeamApi(
-            currentTeam._id,
-            updatedApi,
-            updatedApi.currentVersion
-          )
-        })
-        .then(() => {
-          toastr.success(translate('Success'), translate('doc.page.creation.successfull'))
-          queryClient.invalidateQueries('details')
-        })
-    } else {
-      toastr.error(translate('Error'), translate('doc.page.error.unknown'))
+      contentType: 'text/markdown',
+      remoteContentEnabled: false,
+      remoteContentUrl: null,
+      remoteContentHeaders: {}
     }
+
+    dispatch(openFormModal({
+      title: translate('doc.page.create.modal.title'),
+      flow: flow,
+      schema: schema(saveNewPage),
+      value: newPage,
+      onSubmit: saveNewPage,
+      actionLabel: translate('Save')
+    }))
   }
 
-  const deletePage = (page: IDocTitle) => {
-    if (detailsQuery.data) {
-      (window
-        .confirm(translate('delete.documentation.page.confirm'))) //@ts-ignore //FIXME: remove after fix typing monkey patch of window.confirm
-        .then((ok: boolean) => {
-          if (ok) {
-            Services.deleteDocPage(team._id, page._id)
-              .then(() => {
-                const index = detailsQuery.data.pages.findIndex(id => id === page._id)
-                const pages = removeArrayIndex(detailsQuery.data.pages, index)
+  const saveNewPage = (page: IDocPage) => {
+    Services.createDocPage(team._id, page)
+      .then(page => {
+        const api = apiQuery.data as IApi
+        const newPage: IDocumentationPage = {
+          id: page._id,
+          title: page.title,
+          children: []
+        }
+        const updatedApi = {
+          ...api,
+          documentation: { ...api.documentation, pages: [...api.documentation.pages, newPage] }
+        }
 
-                const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-                return Services.saveTeamApi(
-                  currentTeam._id,
-                  updatedApi,
-                  updatedApi.currentVersion
-                )
-              })
-              .then(() => {
-                toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
-                queryClient.invalidateQueries('details')
-              })
-          }
-        });
-    } else {
-      toastr.error(translate('Error'), translate('doc.page.error.unknown'))
+        return Services.saveTeamApi(
+          currentTeam._id,
+          updatedApi,
+          updatedApi.currentVersion
+        )
+      })
+      .then(() => queryClient.invalidateQueries('api'))
+  }
+
+  const deletePage = (page: IDocumentationPage) => {
+    if (apiQuery.data) {
+      Services.deleteDocPage(team._id, page.id)
+        .then(() => {
+          toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
+          queryClient.invalidateQueries('details')
+        })
     }
-
   }
 
   const importPage = () => {
+    const api = apiQuery.data as IApi
     dispatch(openApiDocumentationSelectModal({
       api,
       teamId: team._id,
       onClose: () => {
         toastr.success(translate('Success'), translate('doc.page.import.successfull'))
         queryClient.invalidateQueries('details')
+        queryClient.invalidateQueries('api')
       },
     }));
   }
 
-  if (api === null) {
-    return null;
-  } else if (detailsQuery.isLoading) {
+  if (apiQuery.isLoading) {
     return <Spinner />
-  } else if (detailsQuery.data) {
+  } else if (apiQuery.data && !isError(apiQuery.data)) {
     return (
       <div className="row">
-        <div className="col-12 col-sm-6 col-lg-3 p-1">
+        <div className="col-12 col-sm-6 col-lg-6 p-1">
           <div className="d-flex flex-column">
             <div className="">
               <div className="d-flex justify-content-between align-items-center">
@@ -414,14 +391,22 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                   <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
                     <i className="fas fa-plus" />
                   </button>
-                  <button onClick={importPage} type="button" className="btn btn-sm btn-outline-primary">
+                  <button
+                    onClick={importPage}
+                    type="button"
+                    className="btn btn-sm btn-outline-primary">
                     <i className="fas fa-download" />
                   </button>
                 </div>
               </div>
             </div>
             <div className='d-flex flex-column'>
-              <TestDnD items={detailsQuery.data.titles} />
+              <DnDoc
+                items={apiQuery.data.documentation.pages}
+                deletePage={deletePage}
+                updatePages={updatePages} //@ts-ignore
+                confirmRemoveItem={() => (window.confirm(translate('delete.documentation.page.confirm')))}
+                updateItem={updatePage} />
             </div>
           </div>
         </div>
@@ -432,88 +417,22 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 };
 
-const TestDnD = ({ items }: { items: Array<IDocTitle> }) => {
-  type Result = {
-    result: object,
-    info: {
-      previousItem?: IDocTitle,
-      path?: string,
-      groupPath: string
-    }
-  }
+type DndProps = {
+  items: IDocumentationPages,
+  deletePage: (p: IDocumentationPage) => void,
+  updatePages: (p: IDocumentationPages) => void,
+  confirmRemoveItem: () => Promise<boolean>,
+  updateItem: (id: string) => void
+}
 
-  //@ts-ignore
-  const result: Result = items.reduce<Result>((acc, item) => {
-    if (item.level === '0') {
-      return ({
-        info: {
-          previousItem: item,
-          path: item._id,
-          groupPath: undefined,
-        },
-        result: { ...acc.result, [item._id]: { ...item, id: item.title } }
-      })
-    } else {
-      const compare = item.level.localeCompare(acc.info.previousItem?.level || '0')
-      if (compare === 1) {
-        return ({
-          info: {
-            previousItem: item,
-            path: `${acc.info.path}.${item._id}`,
-            groupPath: acc.info.path,
-          },
-          result: set(acc.result, acc.info.path!, { ...get(acc.result, acc.info.path!), [item._id]: { ...item, id: item.title } })
-        })
-      } else if (compare === 0) {
-        return ({
-          info: {
-            previousItem: item,
-            path: `${acc.info.groupPath}.${item._id}`,
-            groupPath: acc.info.groupPath,
-          },
-          result: set(acc.result, acc.info.groupPath, { ...get(acc.result, acc.info.groupPath), [item._id]: { ...item, id: item.title } })
-        })
-      } else {
-        const offset = parseInt(acc.info.previousItem?.level || '0', 10) - parseInt(item.level, 10)
-        const newPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset).join('.')
-        const newGroupPath = acc.info.groupPath.split('.').slice(0, acc.info.groupPath.split('.').length - offset - 1).join('.')
-
-        return ({
-          info: {
-            previousItem: item,
-            path: `${newPath}.${item._id}`,
-            groupPath: newGroupPath,
-          },
-          result: set(acc.result, newPath, { ...get(acc.result, newPath), [item._id]: { ...item, id: item.title } })
-        })
-      }
-    }
-  }, { result: {}, info: { previousItem: undefined, path: undefined, groupPath: '' } })
-
-  const isAnObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
-
-
-  const getValueWithChildren = (item: object) => {
-    return Object.entries(item) //@ts-ignore
-      .reduce((acc, curr) => {
-        if (isAnObject(curr[1])) {
-          return { ...acc, children: [...acc.children, getValueWithChildren(curr[1])] }
-        } else {
-          return { ...acc, [curr[0]]: curr[1] }
-        }
-      }, { children: [] })
-  }
-
-
-  const docs = Object.values(result.result)
-    .map((value) => {
-      return getValueWithChildren(value)
-    })
-
-
+const DnDoc = ({ items, deletePage, updatePages, confirmRemoveItem, updateItem }: DndProps) => {
   return (
     <Wrapper>
-      <SortableTree collapsible indicator removable defaultItems={docs} handleUpdateItems={console.debug} handleRemoveItem={console.warn} />
+      <SortableTree collapsible indicator removable defaultItems={items}
+        handleUpdateItems={updatePages}
+        handleUpdateItem={updateItem}
+        handleRemoveItem={deletePage}
+        confirmRemoveItem={confirmRemoveItem} />
     </Wrapper>
   )
 }

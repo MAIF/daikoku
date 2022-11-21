@@ -45,7 +45,7 @@ class MockController(DaikokuAction: DaikokuAction,
       |```
     """.stripMargin
 
-  def saveApiDocPages(tenant: TenantId): Future[Seq[ApiDocumentationPageId]] = {
+  def saveApiDocPages(tenant: TenantId): Future[Seq[ApiDocumentationDetailPage]] = {
     val id1 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
     val id2 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
     val id21 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
@@ -81,7 +81,6 @@ class MockController(DaikokuAction: DaikokuAction,
           tenant = tenant,
           // api = api,
           title = "and do it well",
-          level = 1,
           lastModificationAt = DateTime.now(),
           content =
             s"# and do it well\n\nLorem ipsum dolor sit amet, \n\n@@@ warning { title='Achtung !!!' } \nHello World\n @@@ \n\nconsectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
@@ -110,7 +109,13 @@ class MockController(DaikokuAction: DaikokuAction,
         )
       )
     } yield {
-      Seq(id1, id2, id21, id3, id4)
+      Seq(
+        ApiDocumentationDetailPage(id = id1, title = "Introduction", children = Seq.empty),
+        ApiDocumentationDetailPage(id = id2, title = "Do This", children = Seq(
+          ApiDocumentationDetailPage(id = id1, title = "and do it well", children = Seq.empty),
+        )),
+        ApiDocumentationDetailPage(id = id3, title = "Do That ", children = Seq.empty),
+        ApiDocumentationDetailPage(id = id4, title = "FAQ", children = Seq.empty))
     }
   }
 
@@ -118,7 +123,7 @@ class MockController(DaikokuAction: DaikokuAction,
                 tenant: TenantId,
                 name: String,
                 team: TeamId,
-                docIds: Seq[ApiDocumentationPageId],
+                docPages: Seq[ApiDocumentationDetailPage],
                 visibility: ApiVisibility = ApiVisibility.Public) = Api(
     id = ApiId(BSONObjectID.generate().stringify),
     tenant = tenant,
@@ -164,7 +169,7 @@ class MockController(DaikokuAction: DaikokuAction,
     documentation = ApiDocumentation(
       id = ApiDocumentationId(BSONObjectID.generate().stringify),
       tenant = tenant,
-      pages = docIds,
+      pages = docPages,
       lastModificationAt = DateTime.now()
     ),
     swagger = Some(SwaggerAccess("/assets/swaggers/petstore.json", None)),
@@ -253,7 +258,7 @@ class MockController(DaikokuAction: DaikokuAction,
   def ToyApi(version: String,
              tenant: TenantId,
              teamId: TeamId,
-             docIds: Seq[ApiDocumentationPageId],
+             docPages: Seq[ApiDocumentationDetailPage],
              authorizedTeams: Seq[TeamId] = Seq.empty) = Api(
     id = ApiId(s"my-toy-api-${tenant.value}-$version"),
     tenant = tenant,
@@ -300,7 +305,7 @@ class MockController(DaikokuAction: DaikokuAction,
     documentation = ApiDocumentation(
       id = ApiDocumentationId(BSONObjectID.generate().stringify),
       tenant = tenant,
-      pages = docIds,
+      pages = docPages,
       lastModificationAt = DateTime.now(),
     ),
     swagger = Some(
@@ -522,7 +527,7 @@ class MockController(DaikokuAction: DaikokuAction,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
-        pages = Seq.empty[ApiDocumentationPageId],
+        pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
       ),
       swagger = Some(SwaggerAccess("/assets/swaggers/petstore.json", None)),
@@ -722,7 +727,7 @@ class MockController(DaikokuAction: DaikokuAction,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
-        pages = Seq.empty[ApiDocumentationPageId],
+        pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
       ),
       swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
@@ -751,7 +756,7 @@ class MockController(DaikokuAction: DaikokuAction,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = tenant2Id,
-        pages = Seq.empty[ApiDocumentationPageId],
+        pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
       ),
     )
@@ -1443,7 +1448,7 @@ class MockController(DaikokuAction: DaikokuAction,
             ActualOtoroshiApiKey(
               clientId = clientId,
               clientSecret = subscription.apiKey.clientSecret,
-              clientName = "",
+              clientName = subscription.apiKey.clientName,
               authorizedEntities = AuthorizedEntities(),
               throttlingQuota = 10,
               dailyQuota = 10000,

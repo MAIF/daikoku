@@ -1,8 +1,10 @@
-export interface IApi {
+import { TreeItem, TreeItems } from "../components/utils/dnd/types";
+import { ITeamSimple } from "./team";
+
+interface IBaseApi {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
-  team: string;
   _deleted: boolean;
   lastUpdate: string;
   name: string;
@@ -24,14 +26,32 @@ export interface IApi {
   authorizedTeams: Array<string>;
   posts: Array<string>;
   issues: Array<string>;
-  issuesTag: Array<string>;
+  issuesTags: Array<IIssuesTag>;
   stars: number;
   parent?: string;
   isDefault: boolean;
   apis: Array<string>;
 }
 
-export interface IApiWithAuthorization extends IApi {
+export interface IIssuesTag {
+  id: string
+  name: string
+  color: string
+}
+
+export interface IApiWithSimpleTeam extends IBaseApi {
+  team: {
+    _humanReadableId: string
+    _id: string
+    avatar: string
+    name: string
+  };
+}
+export interface IApi extends IBaseApi {
+  team: string
+}
+
+export interface IApiWithAuthorization extends IApiWithSimpleTeam {
   authorizations: Array<{
     team: string;
     authorized: boolean;
@@ -63,10 +83,16 @@ export interface ITestingConfig {
   customReadOnly?: boolean;
 }
 
+export type IDocumentationPages =  IDocumentationPage[]
+export interface IDocumentationPage {
+  id: string;
+  title: string;
+  children: IDocumentationPages
+}
 export interface IDocumentation {
   _id: string;
   _tenant: string;
-  pages: Array<string>;
+  pages: IDocumentationPages;
   lastModificationAt: string;
 }
 
@@ -171,15 +197,13 @@ export interface IDocDetail {
   pages: Array<string>;
   titles: Array<IDocTitle>;
 }
-
 export interface IDocPage {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
   _deleted: boolean;
   title: string;
-  level: number;
-  lastModificationAt: string;
+  lastModificationAt: number;
   content: string;
   contentType: string;
   remoteContentEnabled: boolean;
@@ -199,11 +223,10 @@ interface IRotation {
   gracePeriod: number;
   pendingRotation: boolean;
 }
-export interface ISubscription {
+export interface IBaseSubscription {
   _id: string;
   _tenant: string;
   _deleted: boolean;
-  apiKey?: IApiKey;
   plan: string;
   team: string;
   api: string;
@@ -212,8 +235,9 @@ export interface ISubscription {
   customName: string | null;
   enabled: boolean;
   rotation: IRotation;
-  integrationToken: string;
-  customMetadata: object;
+  customMetadata?: object;
+  metadata?: object;
+  tags: Array<string>;
   customMaxPerSecond: number | null;
   customMaxPerMonth: number | null;
   customMaxPerDay: number | null;
@@ -243,4 +267,33 @@ export type ResponseDone = {
 
 export function isError(obj: any): obj is ResponseError {
   return (<ResponseError>obj).error !== undefined;
+}
+
+export interface ISafeSubscription extends IBaseSubscription{
+  apiKey: {clientName: string};
+
+}
+
+export interface ISubscription extends IBaseSubscription{
+  apiKey?: IApiKey;
+  integrationToken: string;
+
+}
+
+export interface IQuotas {
+  currentCallsPerSec:number,
+  remainingCallsPerSec: number,
+  currentCallsPerDay: number,
+  authorizedCallsPerDay: number,
+  currentCallsPerMonth: number,
+  remainingCallsPerMonth: number,
+  authorizedCallsPerSec: number,
+  authorizedCallsPerMonth: number,
+  remainingCallsPerDay: number
+}
+
+export interface ISubscriptionInformation {
+  simpleApi: IApi,
+  simpleSubscription: ISubscription
+  plan: IUsagePlan
 }

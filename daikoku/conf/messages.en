@@ -51,9 +51,13 @@ mail.team.access.rejection.body=Your request to join the team [teamName] has bee
 mail.team.access.acceptation.body=Your request to access to team [teamName] has been accepted.
 mail.user.invitation.rejection.body=[user] rejected your request to join your team [teamName].
 mail.user.invitation.acceptation.body=[user] accepted your request to join your team [teamName].
-mail.api.transfer.ownership.rejection.body=Your request to transfer ownership of API [apiName] to team [teamName] has been rejected
-mail.api.transfer.ownership.acceptation.body=Your request to transfer ownership of API [apiName] to team [teamName] has been accepted
-mail.new.message.title=New message from [user]
+mail.api.transfer.ownership.rejection.body=Your request to transfer ownership of API [apiName] to team [teamName] has been rejected.
+mail.api.transfer.ownership.acceptation.body=Your request to transfer ownership of API [apiName] to team [teamName] has been accepted.
+mail.new.message.title=New message from [user].
+mail.new.issue.title=New issue created.
+mail.new.issue.body=A new issue has been created on the API [apiName]. Click on the link to see the issue.
+mail.create.post.title=New post created.
+mail.create.post.body=A new post on the API [apiName] has been created. Click on the link to see the post.
 mail.new.message.body=Hello,\
   <br/>\
   You''ve got a message,\

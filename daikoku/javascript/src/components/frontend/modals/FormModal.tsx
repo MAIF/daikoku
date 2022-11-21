@@ -25,6 +25,8 @@ export const FormModal = <T extends TBaseObject>({
 }: IFormModalProps<T>) => {
   const dispatch = useDispatch();
   const ref = useRef<FormRef>();
+
+  
   return (
     <div className="modal-content">
       <div className="modal-header">

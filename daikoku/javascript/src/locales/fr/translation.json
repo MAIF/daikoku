@@ -1188,10 +1188,16 @@
   "doc.page.import.successfull": "La page a été iportée avec succès",
   "doc.page.move.successfull": "La page a été déplacée avec succès",
   "doc.page.deletion.successfull": "La page a été supprimée avec succès",
+  "doc.page.update.successfull": "La page a été modifiée avec succès",
   "doc.page.move.error": "Cette page ne peut être déplacée",
   "doc.page.error.unknown": "Erreur inconnue",
   "otoroshi.list.add.label": "Ajouter une instance Otoroshi",
   "Global stats": "Statistiques",
   "apikeys visibility": "Visibilité des clés d'API",
-  "motivations.modal.title": "Dites-nous pourquoi vous voulez une clé d'API"
+  "motivations.modal.title": "Dites-nous pourquoi vous voulez une clé d'API",
+  "Daily quotas consumed": "Quotas journaliers consommés",
+  "Monthly quotas consumed": "Quotas mensuels consommés",
+  "daily.quotas.consumed.title": "%s appels quotidiens consommés sur %s",
+  "monthly.quotas.consumed.title": "%s appels mensuels consommés sur %s",
+  "Quotas consumptions": "Consommation des quotas"
 }

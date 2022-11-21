@@ -42,26 +42,30 @@ import { CSS } from '@dnd-kit/utilities';
 // const initialItems: TreeItems = [
 //   {
 //     id: 'Home',
+//     title: 'maison',
 //     children: [],
 //   },
 //   {
 //     id: 'Collections',
+//     title: "collections",
 //     children: [
-//       { id: 'Spring', children: [] },
-//       { id: 'Summer', children: [] },
-//       { id: 'Fall', children: [] },
-//       { id: 'Winter', children: [] },
+//       { id: 'Spring', title: 'printemps',children: [] },
+//       { id: 'Summer', title: 'été', children: [] },
+//       { id: 'Fall', title: "automne", children: [] },
+//       { id: 'Winter', title: "hiver", children: [] },
 //     ],
 //   },
 //   {
 //     id: 'About Us',
+//     title: "a propos",
 //     children: [],
 //   },
 //   {
 //     id: 'My Account',
+//     title: "Mon compte",
 //     children: [
-//       { id: 'Addresses', children: [] },
-//       { id: 'Order History', children: [] },
+//       { id: 'Addresses', title: "adresses", children: [] },
+//       { id: 'Order History', title: "historique", children: [] },
 //     ],
 //   },
 // ];
@@ -97,12 +101,14 @@ const dropAnimationConfig: DropAnimation = {
 
 interface Props {
   collapsible?: boolean;
-  defaultItems?: TreeItems;
+  defaultItems?: any;
   indentationWidth?: number;
   indicator?: boolean;
   removable?: boolean;
-  handleUpdateItems: (x: TreeItems) => void
-  handleRemoveItem: (x: TreeItem) => void
+  handleUpdateItems: (x: any) => void
+  handleUpdateItem: (x: string) => void
+  handleRemoveItem: (x: any) => void
+  confirmRemoveItem: () => Promise<boolean>
 }
 
 export function SortableTree({
@@ -112,7 +118,9 @@ export function SortableTree({
   indentationWidth = 50,
   removable,
   handleRemoveItem,
-  handleUpdateItems
+  handleUpdateItems,
+  handleUpdateItem,
+  confirmRemoveItem
 }: Props) {
   const isFirstRender = useRef(true);
   const [items, setItems] = useState(() => defaultItems);
@@ -132,6 +140,13 @@ export function SortableTree({
     handleUpdateItems(items)
   }, [items])
 
+  useEffect(() => {
+    if (!isFirstRender.current) {
+      setItems(defaultItems)
+    }
+  }, [defaultItems])
+  
+
 
   const flattenedItems = useMemo(() => {
     const flattenedTree = flattenTree(items);
@@ -146,6 +161,7 @@ export function SortableTree({
       activeId ? [activeId, ...collapsedItems] : collapsedItems
     );
   }, [activeId, items]);
+
   const projected =
     activeId && overId
       ? getProjection(
@@ -156,13 +172,16 @@ export function SortableTree({
         indentationWidth
       )
       : null;
+
   const sensorContext: SensorContext = useRef({
     items: flattenedItems,
     offset: offsetLeft,
   });
+
   const [coordinateGetter] = useState(() =>
     sortableTreeKeyboardCoordinates(sensorContext, indicator, indentationWidth)
   );
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -216,11 +235,11 @@ export function SortableTree({
       onDragCancel={handleDragCancel}
     >
       <SortableContext items={sortedIds} strategy={verticalListSortingStrategy}>
-        {flattenedItems.map(({ id, children, collapsed, depth }) => (
+        {flattenedItems.map(({ id, title, children, collapsed, depth }) => (
           <SortableTreeItem
             key={id}
             id={id}
-            value={id.toString()}
+            value={title}
             depth={id === activeId && projected ? projected.depth : depth}
             indentationWidth={indentationWidth}
             indicator={indicator}
@@ -231,6 +250,7 @@ export function SortableTree({
                 : undefined
             }
             onRemove={removable ? () => handleRemove(id) : undefined}
+            onUpdate={() => handleUpdateItem(id.toString())}
           />
         ))}
         {createPortal(
@@ -314,7 +334,12 @@ export function SortableTree({
   }
 
   function handleRemove(id: UniqueIdentifier) {
-    setItems((items) => removeItem(items, id, handleRemoveItem));
+    confirmRemoveItem()
+      .then(resp => {
+        if (resp) {
+          setItems((items) => removeItem(items, id, handleRemoveItem));
+        }
+      })
   }
 
   function handleCollapse(id: UniqueIdentifier) {

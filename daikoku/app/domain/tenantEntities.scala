@@ -774,7 +774,9 @@ case class CmsPage(
     handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
       val pages = Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)
         .flatMap {
-          case Some(api) => Future.sequence(api.documentation.pages.map(repo.forTenant(ctx.tenant).findById(_)))
+          case Some(api) => Future.sequence(api.documentation.docIds()
+            .map(pageId => repo.forTenant(ctx.tenant)
+            .findById(pageId)))
           case _ => FastFuture.successful(Seq())
         }, 10.seconds)
         .flatten
@@ -786,7 +788,7 @@ case class CmsPage(
     handlebars.registerHelper(s"daikoku-$name-json", (id: String, options: Options) => {
       Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)
         .flatMap {
-          case Some(api) => Future.sequence(api.documentation.pages.map(repo.forTenant(ctx.tenant).findById(_)))
+          case Some(api) => Future.sequence(api.documentation.docIds().map(pageId => repo.forTenant(ctx.tenant).findById(pageId)))
           case _ => FastFuture.successful(Seq())
         }, 10.seconds)
         .flatten
@@ -799,7 +801,7 @@ case class CmsPage(
       val page: Int = attrs.get("page").map(n => n.toString.toInt).getOrElse(0)
       val pages = Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)
         .flatMap {
-          case Some(api) => Future.sequence(api.documentation.pages.slice(page, page+1).map(repo.forTenant(ctx.tenant).findById(_)))
+          case Some(api) => Future.sequence(api.documentation.docIds().slice(page, page+1).map(repo.forTenant(ctx.tenant).findById(_)))
           case _ => FastFuture.successful(Seq())
         }, 10.seconds)
         .flatten
@@ -812,7 +814,7 @@ case class CmsPage(
       val page = attrs.getOrElse("page", "")
       Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)
         .flatMap {
-          case Some(api) => api.documentation.pages.find(_.value == page).map(repo.forTenant(ctx.tenant).findById(_))
+          case Some(api) => api.documentation.docIds().find(_ == page).map(repo.forTenant(ctx.tenant).findById(_))
             .getOrElse(FastFuture.successful(None))
           case _ => FastFuture.successful(None)
         }, 10.seconds)

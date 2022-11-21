@@ -15,6 +15,6 @@ export const randomColor = () => {
   return `#${hexCode}`;
 };
 
-export const getColorByBgColor = (bgColor: any) => {
+export const getColorByBgColor = (bgColor: string) => {
   return parseInt(bgColor.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff';
 };
