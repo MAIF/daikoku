@@ -1,0 +1,401 @@
+{
+  "label": "Otoroshi initial datastore",
+  "admins": [],
+  "simpleAdmins": [
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "username": "admin@otoroshi.io",
+      "password": "$2a$10$iQRkqjKTW.5XH8ugQrnMDeUstx4KqmIeQ58dHHdW2Dv1FkyyAs4C.",
+      "label": "Otoroshi Admin",
+      "createdAt": 1634651307724,
+      "type": "SIMPLE",
+      "metadata": {},
+      "tags": [],
+      "rights": [
+        {
+          "tenant": "*:rw",
+          "teams": [
+            "*:rw"
+          ]
+        }
+      ]
+    }
+  ],
+  "serviceGroups": [
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "admin-api-group",
+      "name": "Otoroshi Admin Api group",
+      "description": "No description",
+      "tags": [],
+      "metadata": {}
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "default",
+      "name": "default-group",
+      "description": "The default service group",
+      "tags": [],
+      "metadata": {}
+    }
+  ],
+  "apiKeys": [
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "clientId": "admin-api-apikey-id",
+      "clientSecret": "admin-api-apikey-secret",
+      "clientName": "Otoroshi Backoffice ApiKey",
+      "description": "The apikey use by the Otoroshi UI",
+      "authorizedGroup": "admin-api-group",
+      "authorizedEntities": [
+        "group_admin-api-group"
+      ],
+      "enabled": true,
+      "readOnly": false,
+      "allowClientIdOnly": false,
+      "throttlingQuota": 10000,
+      "dailyQuota": 10000000,
+      "monthlyQuota": 10000000,
+      "constrainedServicesOnly": false,
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      },
+      "rotation": {
+        "enabled": false,
+        "rotationEvery": 744,
+        "gracePeriod": 168,
+        "nextSecret": null
+      },
+      "validUntil": null,
+      "tags": [],
+      "metadata": {}
+    }
+  ],
+  "serviceDescriptors": [
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "admin-api-service",
+      "groupId": "admin-api-group",
+      "groups": [
+        "admin-api-group"
+      ],
+      "name": "otoroshi-admin-api",
+      "description": "",
+      "env": "prod",
+      "domain": "oto.tools",
+      "subdomain": "otoroshi-api",
+      "targetsLoadBalancing": {
+        "type": "RoundRobin"
+      },
+      "targets": [
+        {
+          "host": "127.0.0.1:8080",
+          "scheme": "http",
+          "weight": 1,
+          "mtlsConfig": {
+            "certs": [],
+            "trustedCerts": [],
+            "mtls": false,
+            "loose": false,
+            "trustAll": false
+          },
+          "tags": [],
+          "metadata": {},
+          "protocol": "HTTP/1.1",
+          "predicate": {
+            "type": "AlwaysMatch"
+          },
+          "ipAddress": null
+        }
+      ],
+      "root": "/",
+      "matchingRoot": null,
+      "stripPath": true,
+      "localHost": "127.0.0.1:8080",
+      "localScheme": "http",
+      "redirectToLocal": false,
+      "enabled": true,
+      "userFacing": false,
+      "privateApp": false,
+      "forceHttps": false,
+      "logAnalyticsOnServer": false,
+      "useAkkaHttpClient": true,
+      "useNewWSClient": false,
+      "tcpUdpTunneling": false,
+      "detectApiKeySooner": false,
+      "maintenanceMode": false,
+      "buildMode": false,
+      "strictlyPrivate": false,
+      "enforceSecureCommunication": true,
+      "sendInfoToken": true,
+      "sendStateChallenge": true,
+      "sendOtoroshiHeadersBack": true,
+      "readOnly": false,
+      "xForwardedHeaders": false,
+      "overrideHost": true,
+      "allowHttp10": true,
+      "letsEncrypt": false,
+      "secComHeaders": {
+        "claimRequestName": null,
+        "stateRequestName": null,
+        "stateResponseName": null
+      },
+      "secComTtl": 30000,
+      "secComVersion": 1,
+      "secComInfoTokenVersion": "Legacy",
+      "secComExcludedPatterns": [],
+      "securityExcludedPatterns": [],
+      "publicPatterns": [
+        "/health",
+        "/metrics"
+      ],
+      "privatePatterns": [],
+      "additionalHeaders": {
+        "Host": "otoroshi-admin-internal-api.oto.tools"
+      },
+      "additionalHeadersOut": {},
+      "missingOnlyHeadersIn": {},
+      "missingOnlyHeadersOut": {},
+      "removeHeadersIn": [],
+      "removeHeadersOut": [],
+      "headersVerification": {},
+      "matchingHeaders": {},
+      "ipFiltering": {
+        "whitelist": [],
+        "blacklist": []
+      },
+      "api": {
+        "exposeApi": false
+      },
+      "healthCheck": {
+        "enabled": false,
+        "url": "/"
+      },
+      "clientConfig": {
+        "useCircuitBreaker": true,
+        "retries": 1,
+        "maxErrors": 20,
+        "retryInitialDelay": 50,
+        "backoffFactor": 2,
+        "callTimeout": 30000,
+        "callAndStreamTimeout": 120000,
+        "connectionTimeout": 10000,
+        "idleTimeout": 60000,
+        "globalTimeout": 30000,
+        "sampleInterval": 2000,
+        "proxy": {},
+        "customTimeouts": [],
+        "cacheConnectionSettings": {
+          "enabled": false,
+          "queueSize": 2048
+        }
+      },
+      "canary": {
+        "enabled": false,
+        "traffic": 0.2,
+        "targets": [],
+        "root": "/"
+      },
+      "gzip": {
+        "enabled": false,
+        "excludedPatterns": [],
+        "whiteList": [
+          "text/*",
+          "application/javascript",
+          "application/json"
+        ],
+        "blackList": [],
+        "bufferSize": 8192,
+        "chunkedThreshold": 102400,
+        "compressionLevel": 5
+      },
+      "metadata": {},
+      "tags": [],
+      "chaosConfig": {
+        "enabled": false,
+        "largeRequestFaultConfig": null,
+        "largeResponseFaultConfig": null,
+        "latencyInjectionFaultConfig": null,
+        "badResponsesFaultConfig": null
+      },
+      "jwtVerifier": {
+        "type": "ref",
+        "ids": [],
+        "id": null,
+        "enabled": false,
+        "excludedPatterns": []
+      },
+      "secComSettings": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "secComUseSameAlgo": true,
+      "secComAlgoChallengeOtoToBack": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "secComAlgoChallengeBackToOto": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "secComAlgoInfoToken": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "cors": {
+        "enabled": false,
+        "allowOrigin": "*",
+        "exposeHeaders": [],
+        "allowHeaders": [],
+        "allowMethods": [],
+        "excludedPatterns": [],
+        "maxAge": null,
+        "allowCredentials": true
+      },
+      "redirection": {
+        "enabled": false,
+        "code": 303,
+        "to": "https://www.otoroshi.io"
+      },
+      "authConfigRef": null,
+      "clientValidatorRef": null,
+      "transformerRef": null,
+      "transformerRefs": [],
+      "transformerConfig": {},
+      "apiKeyConstraints": {
+        "basicAuth": {
+          "enabled": true,
+          "headerName": null,
+          "queryName": null
+        },
+        "customHeadersAuth": {
+          "enabled": true,
+          "clientIdHeaderName": null,
+          "clientSecretHeaderName": null
+        },
+        "clientIdAuth": {
+          "enabled": true,
+          "headerName": null,
+          "queryName": null
+        },
+        "jwtAuth": {
+          "enabled": true,
+          "secretSigned": true,
+          "keyPairSigned": true,
+          "includeRequestAttributes": false,
+          "maxJwtLifespanSecs": null,
+          "headerName": null,
+          "queryName": null,
+          "cookieName": null
+        },
+        "routing": {
+          "noneTagIn": [],
+          "oneTagIn": [],
+          "allTagsIn": [],
+          "noneMetaIn": {},
+          "oneMetaIn": {},
+          "allMetaIn": {},
+          "noneMetaKeysIn": [],
+          "oneMetaKeyIn": [],
+          "allMetaKeysIn": []
+        }
+      },
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      },
+      "accessValidator": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excludedPatterns": []
+      },
+      "preRouting": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excludedPatterns": []
+      },
+      "plugins": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excluded": []
+      },
+      "hosts": [
+        "otoroshi-api.oto.tools"
+      ],
+      "paths": [],
+      "handleLegacyDomain": true,
+      "issueCert": false,
+      "issueCertCA": null
+    }
+  ],
+  "errorTemplates": [],
+  "jwtVerifiers": [],
+  "authConfigs": [],
+  "certificates": [],
+  "clientValidators": [],
+  "scripts": [],
+  "tcpServices": [],
+  "dataExporters": [],
+  "tenants": [
+    {
+      "id": "default",
+      "name": "Default organization",
+      "description": "The default organization",
+      "metadata": {},
+      "tags": []
+    }
+  ],
+  "teams": [
+    {
+      "id": "default",
+      "tenant": "default",
+      "name": "Default Team",
+      "description": "The default Team of the default organization",
+      "metadata": {},
+      "tags": []
+    }
+  ]
+}

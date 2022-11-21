@@ -368,20 +368,26 @@ object utils {
     def httpJsonCallBlocking(path: String,
                              method: String = "GET",
                              headers: Map[String, String] = Map.empty,
-                             body: Option[JsValue] = None)(
+                             body: Option[JsValue] = None,
+                             baseUrl: String = "http://127.0.0.1",
+                             port: Int = port)(
         implicit tenant: Tenant,
         session: UserSession): WSResponse =
       httpJsonCall(
         path,
         method,
         headers,
-        body
+        body,
+        baseUrl,
+        port
       )(tenant, session).futureValue
 
     def httpJsonCall(_path: String,
                      method: String = "GET",
                      headers: Map[String, String] = Map.empty,
-                     body: Option[JsValue] = None)(
+                     body: Option[JsValue] = None,
+                     baseUrl: String = "http://127.0.0.1",
+                     port: Int = port)(
         implicit tenant: Tenant,
         session: UserSession): Future[WSResponse] = {
       val path = _path match {
@@ -390,8 +396,8 @@ object utils {
         case str => str + "?sessionId=" + session.sessionId.value
       }
       val builder = daikokuComponents.env.wsClient
-        .url(s"http://127.0.0.1:$port$path")
-        .withHttpHeaders((headers ++ Map("Host" -> tenant.domain)).toSeq: _*)
+        .url(s"$baseUrl:$port$path")
+        .withHttpHeaders((Map("Host" -> tenant.domain) ++ headers).toSeq: _*)
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod(method)
@@ -426,21 +432,27 @@ object utils {
         path: String,
         method: String = "GET",
         headers: Map[String, String] = Map.empty,
-        body: Option[JsValue] = None)(implicit tenant: Tenant): WSResponse =
+        body: Option[JsValue] = None,
+        baseUrl: String = "http://127.0.0.1",
+        port: Int = port)(implicit tenant: Tenant): WSResponse =
       httpJsonCallWithoutSession(
         path,
         method,
         headers,
-        body
+        body,
+        baseUrl,
+        port
       )(tenant).futureValue
 
     def httpJsonCallWithoutSession(path: String,
                                    method: String = "GET",
                                    headers: Map[String, String] = Map.empty,
-                                   body: Option[JsValue] = None)(
+                                   body: Option[JsValue] = None,
+                                   baseUrl: String = "http://127.0.0.1",
+                                   port: Int = port)(
         implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
-        .url(s"http://127.0.0.1:$port$path")
+        .url(s"$baseUrl:$port$path")
         .withHttpHeaders((headers ++ Map("Host" -> tenant.domain)).toSeq: _*)
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)

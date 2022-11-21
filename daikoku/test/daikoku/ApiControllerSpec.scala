@@ -1,5 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
+import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
+import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
 import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
@@ -18,33 +20,79 @@ import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, S
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
+import org.testcontainers.containers.wait.strategy.Wait
+import org.testcontainers.utility.DockerImageName
+import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
 
 import reactivemongo.bson.BSONObjectID
 
+import java.util
+import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.util.Random
+import org.scalatest.FlatSpec
+import org.testcontainers.containers.{BindMode, Network}
 
 class ApiControllerSpec()
     extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience
-    with BeforeAndAfterEach {
+    with BeforeAndAfterEach
+    with BeforeAndAfter
+//    with ForAllTestContainer
+    {
 
+//  val pwd = System.getProperty("user.dir");
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
+//  override val container = GenericContainer("maif/otoroshi:dev",
+//    exposedPorts = Seq(8080),
+//    fileSystemBind = Seq(FileSystemBind(s"$pwd/test/daikoku/otoroshi.json", "/home/user/otoroshi.json", BindMode.READ_ONLY)),
+//    env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
+//  )
 
-  override def beforeEach(): Unit = {
+  before {
     wireMockServer.start()
     WireMock.configureFor(stubHost, stubPort)
   }
 
-  override def afterEach(): Unit = {
+  after {
     wireMockServer.stop()
   }
+
+//  "a simple test" can {
+//    "test otoroshi" in {
+//      setupEnvBlocking(
+//        tenants = Seq(tenant),
+//        users = Seq(tenantAdmin),
+//        teams = Seq(defaultAdminTeam, teamConsumer),
+//        apis = Seq(defaultApi)
+//      )
+//
+//      val session = loginWithBlocking(tenantAdmin, tenant2)
+//
+//      val otoPort = container.mappedPort(8080);
+//
+//      val resp = httpJsonCallBlocking(
+//        path = "/api/services",
+//        baseUrl = "http://localhost",
+//        port = otoPort,
+//        headers = Map(
+//          "Host" -> "otoroshi-api.oto.tools",
+//          "Otoroshi-Client-Id" -> "admin-api-apikey-id",
+//          "Otoroshi-Client-Secret" -> "admin-api-apikey-secret",
+//        )
+//      )(tenant2, session)
+//
+//      println(Json.prettyPrint(resp.json))
+//
+//      resp.status mustBe 200
+//    }
+//  }
 
   "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
