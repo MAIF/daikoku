@@ -23,6 +23,7 @@ import { useDispatch } from 'react-redux';
 import { IApi, IUsagePlan } from '../../../types/api';
 import { ITenantFull } from '../../../types/tenant';
 import { ITeamSimple } from '../../../types';
+import { ModalContext } from '../../../contexts';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -181,7 +182,7 @@ const OtoroshiServicesAndGroupSelector = ({
 };
 
 const CustomMetadataInput = (props: {
-  value?: Array<{key: string, possibleValues: Array<string>}>;
+  value?: Array<{ key: string, possibleValues: Array<string> }>;
   onChange?: (param: any) => void;
   setValue?: (key: string, data: any) => void;
   translate: (key: string) => string
@@ -298,6 +299,7 @@ const Card = ({
   creation
 }: any) => {
   const { translate, Translation } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   let pricing = translate('Free');
   const req = translate('req.');
@@ -319,11 +321,12 @@ const Card = ({
   }
 
   const deleteWithConfirm = () => {
-    (window.confirm(translate('delete.plan.confirm')) as any).then((ok: any) => {
-      if (ok) {
-        deletePlan();
-      }
-    });
+    confirm({ message: translate('delete.plan.confirm') })
+      .then((ok) => {
+        if (ok) {
+          deletePlan();
+        }
+      });
   };
 
   return (
@@ -796,7 +799,7 @@ export const TeamApiPricings = (props: Props) => {
                   array: true,
                   label: translate('Custom Apikey metadata'),
                   defaultValue: [],
-                  render: (props) => <CustomMetadataInput {...props} translate={translate}/>,
+                  render: (props) => <CustomMetadataInput {...props} translate={translate} />,
                   help: translate('custom.metadata.help'),
                 },
                 tags: {

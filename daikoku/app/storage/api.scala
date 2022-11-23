@@ -8,6 +8,7 @@ import akka.util.ByteString
 import cats.data.OptionT
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
 import reactivemongo.api.indexes.Index
 import reactivemongo.play.json.collection.JSONCollection
@@ -278,10 +279,12 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
     val o: OptionT[Future, Seq[Api]] = for {
       api <- OptionT(
         env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrIdNotDeleted(id))
+      test = AppLogger.info(api.name)
       apis <- OptionT.liftF(
         env.dataStore.apiRepo
           .forTenant(tenant)
           .find(Json.obj("_humanReadableId" -> api.humanReadableId)))
+      toto = AppLogger.info(apis.map(_.currentVersion.value).mkString(" -- "))
     } yield apis
 
     o.value.map(_.getOrElse(Seq.empty))

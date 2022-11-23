@@ -11,7 +11,8 @@ import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
-import { IApi, IApiWithAuthorization, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
+import { IApiWithAuthorization, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
+import { ModalContext } from '../../../contexts';
 
 export const MyHome = () => {
   const [loading, setLoading] = useState(false)

@@ -17,9 +17,6 @@ import 'bootstrap';
 import { store } from './core';
 import { LoginPage, queryClient } from './components';
 import {
-  registerAlert,
-  registerConfirm,
-  registerPrompt,
   registerContact,
 } from './components/utils/window';
 import { customizeFetch } from './services/customize';
@@ -28,7 +25,6 @@ import { I18nProvider } from './locales/i18n-context';
 import { DaikokuApp, DaikokuHomeApp } from './apps';
 
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
-import { SessionModal } from './components/frontend/modals/SessionModal';
 
 const client = new ApolloClient({
   uri: '/api/search',
@@ -86,9 +82,6 @@ export function init(
     
   );
   if (session) {
-    registerAlert(storeInst); // Hell Yeah !!!!
-    registerConfirm(storeInst);
-    registerPrompt(storeInst);
     registerContact(storeInst);
   }
 }
@@ -103,9 +96,6 @@ export function login(provider: any, callback: any, tenant: any) {
     </Provider>,
     document.getElementById('app')
   );
-  registerAlert(storeInst); // Hell Yeah !!!!
-  registerConfirm(storeInst);
-  registerPrompt(storeInst);
   registerContact(storeInst);
 }
 
@@ -122,8 +112,5 @@ export function initNotLogged(tenant: any) {
       </I18nProvider>
     </Provider>
   );
-  registerAlert(storeInst); // Hell Yeah !!!!
-  registerConfirm(storeInst);
-  registerPrompt(storeInst);
   registerContact(storeInst);
 }

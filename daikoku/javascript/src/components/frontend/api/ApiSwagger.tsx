@@ -4,10 +4,12 @@ import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import 'swagger-ui-dist/swagger-ui.css';
 import { LoginOrRegisterModal } from '../..';
+import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 
 export function ApiSwagger(props: any) {
   const { translate } = useContext(I18nContext);
+  const { alert } = useContext(ModalContext);
 
   const [state, setState] = useState<{ error?: string, info?: string }>({});
 
@@ -89,7 +91,7 @@ export function ApiSwagger(props: any) {
       (window as any).ui.preauthorizeBasic(props.testing.name, 'fake-' + props.api._id, 'fake-' + props.api._id);
     } else {
       if (canCreate) {
-        window.alert('Unknown authentication type');
+        alert({message: 'Unknown authentication type'});
       } else {
         console.log('Unknown authentication type');
       }

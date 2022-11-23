@@ -5,7 +5,7 @@ import sortBy from 'lodash/sortBy';
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
 import { I18nContext } from '../../../core';
-import { useDaikokuBackOffice } from '../../../contexts';
+import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 
 export const TenantList = () => {
   useDaikokuBackOffice();
@@ -19,6 +19,7 @@ export const TenantList = () => {
   }, []);
 
   const { translate, Translation } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   const getTenants = () => Services.allTenants().then(setTenants);
 
@@ -33,12 +34,14 @@ export const TenantList = () => {
       });
   };
 
-  const removeTenant = (tenantId: any) => {
-    (window.confirm(translate('delete.tenant.confirm')) as any).then((ok: any) => {
-      if (ok) {
-        Services.deleteTenant(tenantId).then(() => getTenants());
-      }
-    });
+  const removeTenant = (tenantId: string) => {
+    (confirm({ message: translate('delete.tenant.confirm') }))
+      .then((ok) => {
+        if (ok) {
+          Services.deleteTenant(tenantId)
+            .then(() => getTenants());
+        }
+      });
   };
 
   const filteredTenants = search

@@ -1197,5 +1197,12 @@
     "Monthly quotas consumed": "Monthly quotas consumed",
     "daily.quotas.consumed.title": "%s daily calls consumed over %s",
     "monthly.quotas.consumed.title": "%s monthly calls consumed over %s",
-    "Quotas consumptions": "Quotas consumptions"
+    "Quotas consumptions": "Quotas consumptions",
+    "Event.details.modal.title": "Event details",
+    "modal.session.expire.title": "Your session is expiring",
+    "Confirm": "Confirm",
+    "Ok": "Ok",
+    "page.prompt.creation.message": "Specify the name of the new page",
+    "page.prompt.creation.title": "New page creation",
+    "page.prompt.creation.placeholder": "New page"
 }

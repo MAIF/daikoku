@@ -16,11 +16,11 @@ import {
   Option,
 } from '../../utils';
 import { I18nContext } from '../../../core';
-import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
-import { ITeamSimple, ITenantFull } from '../../../types';
+import { ModalContext, useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
+import { IState, IStateContext, ITeamSimple, ITenantFull, IUserSimple } from '../../../types';
 
 const AdminList = () => {
-  const context = useSelector((s) => (s as any).context);
+  const context = useSelector<IState, IStateContext>((s) => s.context);
 
   const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState<Array<any>>([]);
@@ -32,6 +32,7 @@ const AdminList = () => {
   const [selectedAdmin, setSelectedAdmin] = useState<any>(undefined);
 
   const { translate, Translation } = useContext(I18nContext);
+  const { alert, confirm } = useContext(ModalContext);
   const params = useParams();
 
   useEffect(() => {
@@ -90,12 +91,12 @@ const AdminList = () => {
     value: admin
   });
 
-  const removeAdmin = (admin: any) => {
+  const removeAdmin = (admin: IUserSimple) => {
     if (team?.users.length === 1) {
-      alert(translate('remove.admin.tenant.alert'));
+      alert({ message: translate('remove.admin.tenant.alert') });
     } else {
-      (window.confirm(translate('remove.admin.tenant.confirm'))) //@ts-ignore
-        .then((ok: any) => {
+      (confirm({ message: translate('remove.admin.tenant.confirm') }))
+        .then((ok) => {
           if (ok) {
             Services.removeAdminFromTenant(tenant?._id, admin._id).then((team) => {
               if (team.error) {
@@ -105,7 +106,7 @@ const AdminList = () => {
                 setTeam(team);
                 setAddableAdmins([...addableAdmins, admin]);
                 setAdmins(admins.filter((a) => a._id !== admin._id));
-                toastr.success(translate('Success'), translate({key: 'remove.admin.tenant.success', replacements: [admin.name]}));
+                toastr.success(translate('Success'), translate({ key: 'remove.admin.tenant.success', replacements: [admin.name] }));
               }
             });
           }

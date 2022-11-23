@@ -24,6 +24,7 @@
 
 @main(tenant.style.map(_.title).getOrElse(tenant.name), moreStyles = customStyle, moreScripts = customJs, favicon = tenant.favicon()) {
   <div id="app"></div>
+  <div id="portal-root"></div>
   @if(env.config.mode == DaikokuMode.Dev) {
     <script type="text/javascript" src="http://@host:3000/daikoku.js"></script>
   } 

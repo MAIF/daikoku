@@ -3170,6 +3170,47 @@ class ApiControllerSpec()
       result.isSuccess mustBe true
       result.get.subscriptions.length mustBe 0
     }
+
+    "clean other versions of the deleted version" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner),
+        apis = Seq(
+          defaultApi.copy(id = ApiId("123"), supportedVersions = Set(Version("1.0.0")), currentVersion = Version("1.0.0")),
+          defaultApi.copy(id = ApiId("345"), supportedVersions = Set(Version("2.0.0")), currentVersion = Version("2.0.0")),
+          defaultApi.copy(id = ApiId("678"), supportedVersions = Set(Version("3.0.0")), currentVersion = Version("3.0.0")),
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val respVersionsBefore = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/versions"
+      )(tenant, session)
+
+      respVersionsBefore.status mustBe 200
+      val versionsBefore = respVersionsBefore.json.as[Seq[String]]
+      versionsBefore.length mustBe 3
+
+
+      val respDelete = httpJsonCallBlocking(
+        path = s"/api/me/teams/${teamConsumerId.value}",
+        method = "DELETE"
+      )(tenant, session)
+
+      respDelete.status mustBe 200
+
+      val respVersionsAfter = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/versions ",
+      )(tenant, session)
+
+      respVersionsAfter.status mustBe 200
+      val versionsAfter = respVersionsAfter.json.as[Seq[String]]
+      versionsAfter.length mustBe 2
+
+
+    }
   }
 
   "an admin api" must {

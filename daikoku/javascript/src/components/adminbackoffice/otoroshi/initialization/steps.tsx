@@ -10,6 +10,7 @@ import { Table } from '../../../inputs';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan, BeautifulTitle, formatPlanType, Option } from '../../../utils';
 import { I18nContext } from '../../../../locales/i18n-context';
+import { ModalContext } from '../../../../contexts';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -120,13 +121,14 @@ export const RecapServiceStep = (props: any) => {
 
 export const RecapSubsStep = (props: any) => {
   const { Translation, translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   const reset = () => {
-    //@ts-ignore //FIXME when monkey patch & ts will be compatible
-    window.confirm(translate('initialize_from_otoroshi.confirm')).then((ok: any) => {
-      if (ok)
-        props.cancel();
-    });
+    confirm({ message: translate('initialize_from_otoroshi.confirm') })
+      .then((ok) => {
+        if (ok)
+          props.cancel();
+      });
   };
 
   return (
@@ -184,7 +186,7 @@ export const ServicesStep = (props: any) => {
   const [selectedTeam, setSelectedTeam] = useState(
     props.maybeCreatedApi.map((api: any) => api.team).getOrNull()
   );
-  const [error, setError] = useState<{name: string}>();
+  const [error, setError] = useState<{ name: string }>();
   const [inputRef, setInputRef] = useState<HTMLInputElement | null>();
 
   const { translate, Translation } = useContext(I18nContext);
@@ -339,7 +341,7 @@ export const ServicesStep = (props: any) => {
           options={teams}
           value={teams.find((t: any) => t.value === selectedTeam)}
           placeholder={translate('Select a team')}
-          formatCreateLabel={(value) => translate({key: 'create.team.label', replacements: [value]})}
+          formatCreateLabel={(value) => translate({ key: 'create.team.label', replacements: [value] })}
           classNamePrefix="reactSelect" />
       </div>
     </div>
@@ -420,7 +422,7 @@ const SelectPlan = ({
       value={possiblePlans.find((a: any) => !!selectedPlan && a.value._id === selectedPlan._id)}
       placeholder={translate('Select a plan')}
       formatCreateLabel={(value) =>
-        translate({key: 'create.plan.label', replacements: [value]})
+        translate({ key: 'create.plan.label', replacements: [value] })
       }
       classNamePrefix="reactSelect"
     />
@@ -448,7 +450,7 @@ const SelectTeam = ({
       value={teams.find((t: any) => t.value === selectedTeam)}
       placeholder={translate('Select a team')}
       formatCreateLabel={(value) =>
-        translate({key: 'create.team.label', replacements: [value]})
+        translate({ key: 'create.team.label', replacements: [value] })
       }
       classNamePrefix="reactSelect"
     />

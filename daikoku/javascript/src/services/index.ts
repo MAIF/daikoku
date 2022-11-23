@@ -211,7 +211,7 @@ export const allSimpleOtoroshis = (tenantId: any) =>
 export const oneOtoroshi = (tenantId: string, id: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${id}`);
 
-export const deleteOtoroshiSettings = (tenantId: any, id: any) =>
+export const deleteOtoroshiSettings = (tenantId: string, id: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
     method: 'DELETE',
   });
@@ -329,7 +329,7 @@ export const saveTenant = (tenant: ITenantFull) =>
     body: JSON.stringify(tenant),
   });
 
-export const deleteTenant = (id: any) =>
+export const deleteTenant = (id: string) =>
   customFetch(`/api/tenants/${id}`, {
     method: 'DELETE',
   });
@@ -866,7 +866,7 @@ export const publishNewPost = (apiId: any, teamId: any, post: any) =>
     body: JSON.stringify(post),
   });
 
-export const removePost = (apiId: any, teamId: any, postId: any) =>
+export const removePost = (apiId: string, teamId: string, postId: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
     method: 'DELETE',
   });
@@ -989,7 +989,7 @@ export const createCmsPage = (id: any, cmsPage: any) =>
     }),
   });
 
-export const createCmsPageWithName = (name: any) =>
+export const createCmsPageWithName = (name: string) =>
   customFetch(`/api/cms/pages/${name}`, { method: 'POST' });
 
 export const removeCmsPage = (id: any) =>

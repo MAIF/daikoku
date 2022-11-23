@@ -37,8 +37,8 @@ export const SessionModal = ({
         const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
         const secondPing = _session.expires - Date.now() + 2000;
         setTimeout(() => {
-          window.alert(
-            (close: any) => <div style={{ width: '100%' }}>
+          alert({
+            message: (close: any) => <div style={{ width: '100%' }}>
               <p>{sessionExpires}</p>
               <div
                 style={{
@@ -57,9 +57,8 @@ export const SessionModal = ({
                 </button>
               </div>
             </div>,
-            //@ts-ignore
-            'Your session is expiring'
-          );
+            title: translate('modal.session.expire.title')
+          });
         }, firstPing);
         reloadTimeout = setTimeout(() => { navigate('/') }, secondPing);
       };

@@ -20,7 +20,7 @@ import {
   Option,
 } from '../../utils';
 import { I18nContext } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
+import { ModalContext, useTeamBackOffice } from '../../../contexts';
 
 export const TeamApiKeysForApi = () => {
   const { currentTeam, connectedUser } = useSelector((state) => (state as any).context);
@@ -37,6 +37,7 @@ export const TeamApiKeysForApi = () => {
   const params = useParams();
   const { client } = useContext(getApolloContext());
   const { translate, Translation } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
     Promise.all([
@@ -80,15 +81,16 @@ export const TeamApiKeysForApi = () => {
   };
 
   const makeUniqueApiKey = (subscription: any) => {
-    (window.confirm(translate('team_apikey_for_api.ask_for_make_unique')) as any).then((ok: any) => {
-      if (ok)
-        Services.makeUniqueApiKey(currentTeam._id, subscription._id)
-          .then(() => Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId))
-          .then((subs) => {
-            toastr.success(translate('Success'), translate('team_apikey_for_api.ask_for_make_unique.success_message'));
-            setSubscriptions(subs);
-          });
-    });
+    confirm({ message: translate('team_apikey_for_api.ask_for_make_unique') })
+      .then((ok) => {
+        if (ok)
+          Services.makeUniqueApiKey(currentTeam._id, subscription._id)
+            .then(() => Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId))
+            .then((subs) => {
+              toastr.success(translate('Success'), translate('team_apikey_for_api.ask_for_make_unique.success_message'));
+              setSubscriptions(subs);
+            });
+      });
   };
 
   const toggleApiKeyRotation = (subscription: any, plan: any, enabled: any, rotationEvery: any, gracePeriod: any) => {

@@ -1,6 +1,7 @@
 import moment from 'moment';
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { Table } from '../../inputs';
@@ -20,6 +21,8 @@ export const Pages = ({
   removePage
 }: any) => {
   const { translate } = useContext(I18nContext);
+  const { alert, confirm } = useContext(ModalContext);
+
   const navigate = useNavigate();
 
   let table;
@@ -108,16 +111,17 @@ export const Pages = ({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                (window.confirm(translate('cms.pages.remove_confirm')) as any).then((ok: any) => {
-                  if (ok) {
-                    Services.removeCmsPage(value.id).then((res) => {
-                      if (res.error)
-                        window.alert(res.error);
-                      else
-                        removePage(value.id);
-                    });
-                  }
-                });
+                (confirm({ message: translate('cms.pages.remove_confirm') }))
+                  .then((ok) => {
+                    if (ok) {
+                      Services.removeCmsPage(value.id).then((res) => {
+                        if (res.error)
+                          alert({ message: res.error });
+                        else
+                          removePage(value.id);
+                      });
+                    }
+                  });
               }}
             >
               <i className="fas fa-trash" style={{ color: 'var(--danger-color, #dc3545)' }} />

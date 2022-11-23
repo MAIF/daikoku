@@ -5,9 +5,11 @@ import { UseMutationResult } from 'react-query';
 
 import { I18nContext } from '../../../../core';
 import { ITenantFull } from '../../../../types';
+import { ModalContext } from '../../../../contexts';
 
 export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-  const { translate } = useContext(I18nContext)
+  const { translate } = useContext(I18nContext);
+  const { alert } = useContext(ModalContext);
 
   const schema: Schema = {
     isPrivate: {
@@ -30,7 +32,7 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       onChange: (value) => {
         const security = (value as {value: any}).value
         if (security) {
-          window.alert(translate('aggregation.api_key.security.notification'));
+          alert({message: translate('aggregation.api_key.security.notification')});
         }
       }
     },

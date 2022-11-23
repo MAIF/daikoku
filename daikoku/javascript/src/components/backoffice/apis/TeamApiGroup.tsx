@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import { Can, manage, api as API, Spinner } from '../../utils';
-import { useApiGroupBackOffice } from '../../../contexts';
+import { ModalContext, useApiGroupBackOffice } from '../../../contexts';
 import { I18nContext, toggleExpertMode } from '../../../core';
 import * as Services from '../../../services';
 import {
@@ -89,6 +89,7 @@ export const TeamApiGroup = () => {
   };
 
   const { translate } = useContext(I18nContext);
+  const { alert } = useContext(ModalContext);
 
   const schema: ({ [key: string]: any }) = {
     name: {
@@ -241,7 +242,7 @@ export const TeamApiGroup = () => {
                     links: { links: { plans: { childs: { menu: { component } } } } },
                   },
                 })}
-                openApiSelectModal={() => alert('oops')} />
+                openApiSelectModal={() => alert({message: 'oops'})} />
             </div>)}
             {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
             {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}

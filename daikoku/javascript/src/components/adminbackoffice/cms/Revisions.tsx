@@ -7,6 +7,7 @@ import * as Services from '../../../services';
 import { Spinner } from '../../utils/Spinner';
 import { SwitchButton } from '../../inputs';
 import { I18nContext } from '../../../core';
+import { ModalContext } from '../../../contexts';
 
 const CURRENT_VERSION_ITEM = {
   value: {
@@ -20,6 +21,7 @@ export default ({ }) => {
   const params = useParams();
   const navigate = useNavigate();
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   const [reloading, setReloading] = useState(false);
 
@@ -148,8 +150,8 @@ export default ({ }) => {
                       <span>{item.value.user.name}</span>
                     </div>)}
                     {!isCurrentVersion && isSelected && (<button className="btn btn-sm btn-outline-info mt-2" onClick={() => {
-                      window.confirm(translate('cms.revisions.delete_sentence')) //@ts-ignore //FIXME when monkey-patch & ts will be compat
-                        .then((ok: any) => {
+                      confirm({ message: translate('cms.revisions.delete_sentence') })
+                        .then((ok) => {
                           if (ok) {
                             Services.restoreCmsDiff(params.id, item.value.id).then(() => setReloading(true));
                           }

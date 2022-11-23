@@ -8,13 +8,15 @@ import * as Services from '../../../services';
 import { I18nContext, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
 import { useDispatch } from 'react-redux';
 import { IState, ITeamSimple } from '../../../types';
+import { ModalContext } from '../../../contexts';
 
 export const TeamApiTesting = (props) => {
   const dispatch = useDispatch();
-   
+
   const testing = props.value.testing;
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const { translate, Translation } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   const handleOtoroshiUsage = () => {
     const random = nanoid(16);
@@ -58,24 +60,25 @@ export const TeamApiTesting = (props) => {
   };
 
   const deleteOtoroshiKey = () => {
-    (window.confirm(translate('otoroshi.testing.delete.confirm')) as any).then((ok: any) => {
-      if (ok)
-        Services.deleteTestingApiKey(currentTeam._id, {
-          otoroshiSettings: testing.config.otoroshiSettings,
-          authorizedEntities: testing.config.authorizedEntities,
-          clientId: testing.username,
-        }).then(() => props.onChange({
-          ...props.value,
-          testing: {
-            config: {},
-            enabled: false,
-            name: undefined,
-            auth: 'Basic',
-            username: undefined,
-            password: undefined,
-          },
-        }));
-    });
+    confirm({ message: translate('otoroshi.testing.delete.confirm') })
+      .then((ok) => {
+        if (ok)
+          Services.deleteTestingApiKey(currentTeam._id, {
+            otoroshiSettings: testing.config.otoroshiSettings,
+            authorizedEntities: testing.config.authorizedEntities,
+            clientId: testing.username,
+          }).then(() => props.onChange({
+            ...props.value,
+            testing: {
+              config: {},
+              enabled: false,
+              name: undefined,
+              auth: 'Basic',
+              username: undefined,
+              password: undefined,
+            },
+          }));
+      });
   };
 
   const otoKeyExists = Option(props.value.testing)

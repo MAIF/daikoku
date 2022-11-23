@@ -3,6 +3,7 @@ import RefAutoComplete from 'antd/lib/auto-complete';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
+import { ModalContext } from '../../../contexts';
 
 import { I18nContext } from '../../../core';
 import Editor from './Editor';
@@ -41,7 +42,7 @@ const LinksView = ({
             { label: translate('cms.content_side_view.sign_up'), value: 'signup' },
             { label: translate('cms.content_side_view.home'), value: 'home' },
           ]}
-          onChange={(link: SingleValue<{label: string, value: string}>) => {
+          onChange={(link: SingleValue<{ label: string, value: string }>) => {
             setShow(true);
             onChange();
             copy(editor, `{{daikoku-links-${link?.value}}}`);
@@ -105,7 +106,7 @@ const PagesView = ({
           label: page.name,
           value: page.id
         }))}
-        onChange={(page: SingleValue<{label: string, value: string}>) => {
+        onChange={(page: SingleValue<{ label: string, value: string }>) => {
           setShow(true);
           onChange();
           copy(editor, `{{${prefix} "${page?.value}"}}`);
@@ -121,6 +122,7 @@ const TopActions = ({
   setSelector
 }: any) => {
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
   const navigate = useNavigate();
   const select = (id: any) => {
     setSelector(undefined);
@@ -150,11 +152,12 @@ const TopActions = ({
           className="btn btn-sm btn-outline-success ms-1"
           type="button"
           onClick={() => {
-            (window.confirm(translate('cms.content_side.publish_label')) as any).then((ok: any) => {
-              if (ok) {
-                publish();
-              }
-            });
+            (confirm({ message: translate('cms.content_side.publish_label') }))
+              .then((ok) => {
+                if (ok) {
+                  publish();
+                }
+              });
           }}
         >
           {translate('cms.content_side.publish_button')}

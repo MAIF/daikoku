@@ -17,7 +17,7 @@ import {
   TeamApiConsumption,
   TeamApiSubscriptions
 } from '.';
-import { useApiBackOffice } from '../../../contexts';
+import { ModalContext, useApiBackOffice } from '../../../contexts';
 
 import {
   setError,
@@ -36,20 +36,25 @@ const CreateNewVersionButton = ({
   tab
 }: any) => {
   const { translate } = useContext(I18nContext);
+  const { prompt } = useContext(ModalContext);
 
   const navigate = useNavigate();
 
   const promptVersion = () => {
-    //FIXME:fix ts error with rewriting translate method
-    //@ts-ignore
-    (window.prompt(translate('Version number'), undefined, false, translate('New version'), versionId) as any).then((newVersion: any) => {
-      if (newVersion) {
-        if ((newVersion || '').split('').find((c: any) => reservedCharacters.includes(c)))
-          toastr.error(translate('Error'), "Can't create version with special characters : " + reservedCharacters.join(' | '));
-        else
-          createNewVersion(newVersion);
-      }
-    });
+    prompt({
+      placeholder: translate('Version number'),
+      title: translate('New version'),
+      value: versionId,
+      okLabel: translate('Create')
+    })
+      .then((newVersion) => {
+        if (newVersion) {
+          if ((newVersion || '').split('').find((c: any) => reservedCharacters.includes(c)))
+            toastr.error(translate('Error'), "Can't create version with special characters : " + reservedCharacters.join(' | '));
+          else
+            createNewVersion(newVersion);
+        }
+      });
   };
 
   const createNewVersion = (newVersion: any) => {
@@ -214,7 +219,7 @@ export const TeamApi = (props: { creation: boolean }) => {
           to={`/${currentTeam._humanReadableId}/settings/apis`}
         >
           <i className="fas fa-chevron-left me-1" />
-          {translate({key: 'back.to.team', replacements: [currentTeam.name]} )}
+          {translate({ key: 'back.to.team', replacements: [currentTeam.name] })}
         </Link>
       );
       if (props.creation) {

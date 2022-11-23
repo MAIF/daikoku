@@ -21,6 +21,7 @@ import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
 import { TreeItem, TreeItems } from '../../utils/dnd/types';
 import { spawn } from 'xstate';
+import { ModalContext } from '../../../contexts';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -122,6 +123,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   const params = useParams();
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
   const dispatch = useDispatch();
 
   const { currentTeam, tenant } = useSelector<IState, IStateContext>(s => s.context)
@@ -404,8 +406,8 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
               <DnDoc
                 items={apiQuery.data.documentation.pages}
                 deletePage={deletePage}
-                updatePages={updatePages} //@ts-ignore
-                confirmRemoveItem={() => (window.confirm(translate('delete.documentation.page.confirm')))}
+                updatePages={updatePages}
+                confirmRemoveItem={() => (confirm({message: translate('delete.documentation.page.confirm')}))}
                 updateItem={updatePage} />
             </div>
           </div>

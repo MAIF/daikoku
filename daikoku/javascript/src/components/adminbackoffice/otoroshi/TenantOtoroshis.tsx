@@ -8,11 +8,12 @@ import { Table } from '../../inputs';
 import { Can, manage, tenant as TENANT } from '../../utils';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../locales/i18n-context';
-import { useTenantBackOffice } from '../../../contexts';
+import { ModalContext, useTenantBackOffice } from '../../../contexts';
 
 export const TenantOtoroshis = () => {
   const { tenant, connectedUser } = useSelector((s) => (s as any).context);
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
   const navigate = useNavigate();
 
   useTenantBackOffice();
@@ -81,16 +82,17 @@ export const TenantOtoroshis = () => {
     },
   ];
 
-  const onDelete = (id: any) => {
-    (window.confirm(translate('otoroshi.settings.delete.confirm')) as any).then((ok: any) => {
-      if (ok) {
-        Services.deleteOtoroshiSettings(tenant._id, id)
-          .then(() => {
-            toastr.success(translate('Success'), translate('otoroshi.settings.deleted.success'));
-            table.update();
-          });
-      }
-    });
+  const onDelete = (id: string) => {
+    (confirm({ message: translate('otoroshi.settings.delete.confirm') }))
+      .then((ok) => {
+        if (ok) {
+          Services.deleteOtoroshiSettings(tenant._id, id)
+            .then(() => {
+              toastr.success(translate('Success'), translate('otoroshi.settings.deleted.success'));
+              table.update();
+            });
+        }
+      });
   };
 
   const createNewSettings = () => {

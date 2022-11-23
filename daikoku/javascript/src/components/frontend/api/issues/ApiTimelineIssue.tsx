@@ -16,6 +16,7 @@ import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
 import { Can, getColorByBgColor, randomColor } from '../../../utils';
 import { IApi, ITeamSimple, IUserSimple } from '../../../../types';
+import { ModalContext } from '../../../../contexts';
 
 const styles = {
   commentHeader: {
@@ -50,7 +51,7 @@ type Issue = {
 
 type Tag = { value: string, label: string }
 
-type IApiTimelineIssueProps= {
+type IApiTimelineIssueProps = {
   issueId: string,
   connectedUser: IUserSimple,
   team: ITeamSimple,
@@ -67,7 +68,7 @@ export function ApiTimelineIssue({
   basePath,
   onChange
 }: IApiTimelineIssueProps) {
-  const [issue, setIssue] = useState<Issue>({ title: '', comments: [] , by: connectedUser});
+  const [issue, setIssue] = useState<Issue>({ title: '', comments: [], by: connectedUser });
   const [editionMode, handleEdition] = useState(false);
   const [tags, setTags] = useState<Array<Tag>>([]);
 
@@ -77,6 +78,7 @@ export function ApiTimelineIssue({
   const dispatch = useDispatch();
 
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
     Services.getAPIIssue(api._humanReadableId, id)
@@ -136,21 +138,22 @@ export function ApiTimelineIssue({
   }
 
   function removeComment(i: any) {
-    (window.confirm(translate('issues.comments.confirm_delete')) as any).then((ok: any) => {
-      if (ok) {
-        const updatedIssue = {
-          ...issue,
-          comments: issue.comments.filter((_, j) => i !== j),
-        };
-        setIssue(updatedIssue);
-        Services.updateIssue(api._humanReadableId, team._id, id, updatedIssue).then((res) => {
-          if (res.error)
-            toastr.error(translate('Error'), res.error);
-          else
-            toastr.success(translate('Success'), translate('Api saved'));
-        });
-      }
-    });
+    confirm({ message: translate('issues.comments.confirm_delete') })
+      .then((ok) => {
+        if (ok) {
+          const updatedIssue = {
+            ...issue,
+            comments: issue.comments.filter((_, j) => i !== j),
+          };
+          setIssue(updatedIssue);
+          Services.updateIssue(api._humanReadableId, team._id, id, updatedIssue).then((res) => {
+            if (res.error)
+              toastr.error(translate('Error'), res.error);
+            else
+              toastr.success(translate('Success'), translate('Api saved'));
+          });
+        }
+      });
   }
 
   function createComment(content: any) {

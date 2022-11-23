@@ -5,6 +5,7 @@ import { toastr } from 'react-redux-toastr';
 
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
+import { IApi, IUsagePlan } from '../../../types';
 import { SubscriptionMetadataModalProps } from '../../../types/modal';
 import { formatPlanType, Option, Spinner } from '../../utils';
 
@@ -21,8 +22,8 @@ type FormData = {
 
 export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps) => {
   const [loading, setLoading] = useState(true);
-  const [api, setApi] = useState<any>(undefined);
-  const [plan, setPlan] = useState<any>(undefined);
+  const [api, setApi] = useState<IApi>();
+  const [plan, setPlan] = useState<IUsagePlan>();
   const [value, setValue] = useState<FormData>();
 
   const { translate, Translation } = useContext(I18nContext);
@@ -37,7 +38,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
 
   useEffect(() => {
     if (api) {
-      setPlan(api.possibleUsagePlans.find((pp: any) => pp._id === props.plan));
+      setPlan(api.possibleUsagePlans.find((pp) => pp._id === props.plan));
     }
   }, [api]);
 
@@ -51,10 +52,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
 
       const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
         ([accMeta, accCustomMeta]: any, item: any) => {
-          if (
-            plan &&
-            plan.otoroshiTarget.apikeyCustomization.customMetadata.some((x: any) => x.key === item[0])
-          ) {
+          if (plan && plan.otoroshiTarget?.apikeyCustomization.customMetadata.some((x: any) => x.key === item[0])) {
             return [[...accMeta, item], accCustomMeta];
           }
           return [accMeta, [...accCustomMeta, item]];
@@ -129,8 +127,8 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       type: type.object,
       format: format.form,
       visible: !!plan,
-      label: translate({ key: 'mandatory.metadata.label', replacements: [plan.otoroshiTarget.apikeyCustomization.customMetadata.length] }),
-      schema: sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key'])
+      label: translate({ key: 'mandatory.metadata.label', replacements: [plan!.otoroshiTarget!.apikeyCustomization.customMetadata.length.toString()] }),
+      schema: sortBy(plan!.otoroshiTarget?.apikeyCustomization.customMetadata, ['key'])
         .map((meta: { key: string, possibleValues: Array<string> }) => {
           return {
             key: meta.key,
@@ -200,8 +198,8 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
     </div>
     <div className="modal-body">
-      {loading && <Spinner />}
-      {!loading && (
+      {loading || !plan && <Spinner />}
+      {!loading && plan && (
         <>
           {!props.description && props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[

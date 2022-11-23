@@ -2,8 +2,6 @@ export * from './TeamApi';
 export * from './TeamApiDescription';
 export * from './TeamApiDocumentation';
 export * from './TeamApiInfo';
-export * from './TeamApiOtoroshi';
-export * from './TeamApiOtoroshiPlaceholder';
 export * from './TeamApiSwagger';
 export * from './TeamApiTesting';
 export * from './TeamApis';

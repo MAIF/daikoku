@@ -7,12 +7,14 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
 import { I18nContext } from '../../../locales/i18n-context';
-import { useDaikokuBackOffice } from '../../../contexts';
+import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import { IState, IUser, IUserSimple } from '../../../types';
 
 export const UserList = () => {
   const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
   useDaikokuBackOffice();
+
+  const {alert} = useContext(ModalContext);
 
   const [users, setUsers] = useState<Array<IUser>>([]);
   const [search, setSearch] = useState<string>();
@@ -47,7 +49,7 @@ export const UserList = () => {
 
   const toggleAdmin = (member: IUserSimple) => {
     if (member._id === connectedUser._id) {
-      alert(translate('toggle.admin.alert'));
+      alert({message: translate('toggle.admin.alert')});
     } else {
       Services.setAdminStatus(member, !member.isDaikokuAdmin).then(() => updateUsers());
     }

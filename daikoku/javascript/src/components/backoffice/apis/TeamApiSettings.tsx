@@ -7,13 +7,16 @@ import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
+import { ModalContext } from '../../../contexts';
+import { IState, ITeamSimple } from '../../../types';
 
 export const TeamApiSettings = ({
   api,
   apiGroup
 }: any) => {
   const { translate } = useContext(I18nContext);
-  const { currentTeam } = useSelector((s) => (s as any).context);
+  const { confirm } = useContext(ModalContext);
+  const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const navigate = useNavigate();
 
   const transferOwnership = ({
@@ -60,13 +63,14 @@ export const TeamApiSettings = ({
   };
 
   const deleteApi = () => {
-    (window.confirm(translate('delete.api.confirm')) as any).then((ok: any) => {
-      if (ok) {
-        Services.deleteTeamApi(currentTeam._id, api._id)
-          .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
-          .then(() => toastr.success(translate('Success'), translate('deletion successful')));
-      }
-    });
+    confirm({ message: translate('delete.api.confirm') })
+      .then((ok) => {
+        if (ok) {
+          Services.deleteTeamApi(currentTeam._id, api._id)
+            .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
+            .then(() => toastr.success(translate('Success'), translate('deletion successful')));
+        }
+      });
   };
 
   return (

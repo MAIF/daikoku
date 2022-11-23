@@ -7,7 +7,7 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant, Spinner } from '../../utils';
 import { I18nContext, openFormModal } from '../../../core';
-import { useTenantBackOffice } from '../../../contexts';
+import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
 import { ITeamSimple } from '../../../types';
 import { useQuery, useQueryClient } from 'react-query';
@@ -17,6 +17,7 @@ export const TeamList = () => {
   useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
   const queryClient = useQueryClient();
   const teamRequest = useQuery(['teams'], () => Services.teams());
 
@@ -46,9 +47,9 @@ export const TeamList = () => {
   };
 
 
-  const deleteTeam = (teamId: any) => {
-    window.confirm(translate('delete team'))//@ts-ignore //FIXME when monkey patch & ts will be compatible
-      .then((ok: boolean) => {
+  const deleteTeam = (teamId: string) => {
+    confirm({ message: translate('delete team') })
+      .then((ok) => {
         if (ok) {
           Services.deleteTeam(teamId)
             .then(() => {

@@ -7,7 +7,7 @@ import classnames from 'classnames';
 
 import * as Services from '../../../services';
 import { openInvitationTeamModal, updateTeamPromise, I18nContext } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
+import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import {
   Option,
   PaginatedComponent,
@@ -52,6 +52,7 @@ export const TeamMembersSimpleComponent = () => {
   });
 
   const { translate, Translation } = useContext(I18nContext);
+  const { alert } = useContext(ModalContext);
 
   useEffect(() => {
     updateMembers(currentTeam);
@@ -103,7 +104,7 @@ export const TeamMembersSimpleComponent = () => {
       isAdmin(member) &&
       currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
     ) {
-      alert(translate('remove.member.alert'));
+      alert({message: translate('remove.member.alert')});
     } else {
       (window
         .confirm(translate('remove.member.confirm')))//@ts-ignore
@@ -158,7 +159,7 @@ export const TeamMembersSimpleComponent = () => {
         userHavePemission(member, administrator) &&
         currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
       ) {
-        alert(translate('remove.admin.alert'));
+        alert({ message: translate('remove.admin.alert') });
       } else {
         const newPermission = userHavePemission(member, permission) ? user : permission;
         Services.updateTeamMemberPermission(teamId, [member._id], newPermission).then(
@@ -175,7 +176,7 @@ export const TeamMembersSimpleComponent = () => {
         );
       }
     } else {
-      window.alert(translate('not.admin.alert'));
+      alert({ message: translate('not.admin.alert') });
     }
   };
 
@@ -198,7 +199,7 @@ export const TeamMembersSimpleComponent = () => {
       return addLdapUserToTeam(email);
     } else {
       return Services.addUncheckedMembersToTeam(currentTeam._id, email)
-        .then(() => updateMembers(currentTeam) );
+        .then(() => updateMembers(currentTeam));
     }
   };
 
@@ -255,21 +256,23 @@ export const TeamMembersSimpleComponent = () => {
     </div>
     {state.tab === TABS.members && (<PaginatedComponent help={() => {
 
-      alert(<div className="d-flex flex-column">
-        <div>
-          <i className="fas fa-shield-alt me-1" />
-          {translate('permission.caption.administrator')}
-        </div>
-        <div>
-          <i className="fas fa-pencil-alt me-1" />
-          {translate('permission.caption.apiEditor')}
-        </div>
-        <div>
-          <i className="fas fa-user-alt me-1" />
-          {translate('permission.caption.user')}
-        </div>
-        {/* @ts-ignore */}
-      </div>, translate('Permission', true));
+      alert({
+        message: <div className="d-flex flex-column">
+          <div>
+            <i className="fas fa-shield-alt me-1" />
+            {translate('permission.caption.administrator')}
+          </div>
+          <div>
+            <i className="fas fa-pencil-alt me-1" />
+            {translate('permission.caption.apiEditor')}
+          </div>
+          <div>
+            <i className="fas fa-user-alt me-1" />
+            {translate('permission.caption.user')}
+          </div>
+          {/* @ts-ignore */}
+        </div>, title: translate({ key: 'Permission', plural: true })
+      });
     }} items={sortBy(filteredMembers, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
       const isAdmin = userHavePemission(member, administrator);
       const isApiEditor = userHavePemission(member, apiEditor);

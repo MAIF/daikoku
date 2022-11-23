@@ -7,10 +7,13 @@ import { getApolloContext } from '@apollo/client';
 import Sidebar, { SideBarRef } from './Sidebar';
 import Body, { BodyRef } from './Body';
 import { Spinner } from '../..';
+import { ModalContext } from '../../../contexts';
 
 export const Create = (props: any) => {
   const { client } = useContext(getApolloContext());
   const { translate } = useContext(I18nContext);
+  const { alert } = useContext(ModalContext)
+
   const params = useParams();
   const navigate = useNavigate();
 
@@ -89,8 +92,9 @@ export const Create = (props: any) => {
                 reload: true,
               },
             });
-          else if (res.error) window.alert(res.error);
-          else setSavePath((finalSideValue as any).path);
+          else if (res.error) {
+            alert({message: res.error});
+          } else setSavePath((finalSideValue as any).path);
 
           if (onUpdatePreview) setTimeout(() => setTab(1), 100);
         });

@@ -16,9 +16,6 @@ import '@fortawesome/fontawesome-free/css/all.css';
 
 import { DaikokuHomeApp } from './apps/DaikokuHomeApp';
 import {
-  registerAlert,
-  registerConfirm,
-  registerPrompt,
   registerContact,
 } from './components/utils/window';
 
@@ -37,8 +34,5 @@ export function initNotLogged(tenant: any) {
     document.getElementById('app')
   );
 
-  registerAlert(storeInst); // Hell Yeah !!!!
-  registerConfirm(storeInst);
-  registerPrompt(storeInst);
   registerContact(storeInst);
 }

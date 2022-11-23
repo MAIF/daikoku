@@ -7,7 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { I18nContext, logout, updateUser } from '../../../core';
-import { useUserBackOffice } from '../../../contexts';
+import { ModalContext, useUserBackOffice } from '../../../contexts';
 
 const TwoFactorAuthentication = ({
   user
@@ -17,6 +17,7 @@ const TwoFactorAuthentication = ({
   const [backupCodes, setBackupCodes] = useState('');
 
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   const getQRCode = () => {
     Services.getQRCode().then((res) =>
@@ -28,14 +29,15 @@ const TwoFactorAuthentication = ({
   };
 
   const disable2FA = () => {
-    (window.confirm(translate('2fa.disable_confirm_message')) as any).then((ok: any) => {
-      if (ok) {
-        Services.disable2FA().then(() => {
-          toastr.success(translate('Success'), translate('2fa.successfully_disabled_from_pr'));
-          window.location.reload();
-        });
-      }
-    });
+    confirm({ message: translate('2fa.disable_confirm_message') })
+      .then((ok) => {
+        if (ok) {
+          Services.disable2FA().then(() => {
+            toastr.success(translate('Success'), translate('2fa.successfully_disabled_from_pr'));
+            window.location.reload();
+          });
+        }
+      });
   };
 
   function copyToClipboard() {

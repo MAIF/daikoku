@@ -8,11 +8,14 @@ import { I18nContext, openFormModal } from '../../../core';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { ITranslation } from '../../../types/tenant';
+import { ModalContext } from '../../../contexts';
 
 
 export function EditFrontOfficeTranslations(props: any) {
   const dispatch = useDispatch();
   const table = useRef<TableRef>();
+
+  const { alert } = useContext(ModalContext)
 
   const {
     updateTranslation,
@@ -111,7 +114,7 @@ export function EditFrontOfficeTranslations(props: any) {
                     actionLabel: translate('Translate'),
                     onSubmit: (t: ITranslation) => {
                       if(t.key === 'poumon' ) {
-                        window.alert('poumon n\'a pas de traduction..') //🤣 cc mozinor
+                        alert({message: 'poumon n\'a pas de traduction..'}) //🤣 cc mozinor
                       } else {
                         updateTranslation(t)
                           .then(() => {

@@ -9,7 +9,6 @@ import 'bootstrap';
 import '@fortawesome/fontawesome-free/css/all.css';
 
 import { LoginPage } from './components/utils/login';
-import { registerAlert, registerConfirm, registerPrompt } from './components/utils/window';
 import { I18nProvider } from './locales/i18n-context';
 
 //@ts-ignore //FIXME when monkey-patch & ts will be compatible

@@ -1,14 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import moment from 'moment';
 
 import { Table } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
 import * as Services from '../../../services';
 import { Can, manage, tenant } from '../../utils';
-import { useTenantBackOffice } from '../../../contexts';
+import { ModalContext, useTenantBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../core';
 
 export const AuditTrailList = () => {
   useTenantBackOffice();
+
+  const { alert } = useContext(ModalContext);
+  const { translate } = useContext(I18nContext);
 
   const [from, setFrom] = useState(moment().subtract(1, 'hour'));
   const [to, setTo] = useState(moment());
@@ -59,14 +63,12 @@ export const AuditTrailList = () => {
           <button
             type="button"
             className="btn btn-sm btn-outline-primary"
-            onClick={() => {
-              window.alert(
-                <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
-                  {JSON.stringify(value, null, 2)}
-                </pre>, //@ts-ignore //FIXME when monkey patch & ts will be compat
-                'Event details'
-              );
-            }}
+            onClick={() => alert({
+              title: translate('Event.details.modal.title'),
+              message: <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
+                {JSON.stringify(value, null, 2)}
+              </pre>
+            })}
           >
             Details
           </button>

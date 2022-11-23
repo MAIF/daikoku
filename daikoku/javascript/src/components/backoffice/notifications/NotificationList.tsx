@@ -7,7 +7,7 @@ import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotifications, openSubMetadataModal, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
-import { useUserBackOffice } from '../../../contexts';
+import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { isError } from '../../../types';
 
 export const NotificationList = () => {
@@ -15,6 +15,7 @@ export const NotificationList = () => {
   const dispatch = useDispatch();
 
   const { translate, Translation } = useContext(I18nContext);
+  const { alert } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const [state, setState] = useState<any>({
@@ -96,7 +97,7 @@ export const NotificationList = () => {
       .then((res) => {
         if (isError(res)) {
           //@ts-ignore
-          window.alert(res.error, translate('notification.accept.on_error.title'));
+          alert({message: res.error, title: translate('notification.accept.on_error.title')});
         } else {
           return Promise.resolve();
         }

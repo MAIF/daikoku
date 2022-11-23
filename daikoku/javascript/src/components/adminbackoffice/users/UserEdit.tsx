@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useDaikokuBackOffice } from '../../../contexts';
+import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { IState, ITenant, IUser } from '../../../types';
@@ -171,6 +171,7 @@ export const UserEdit = () => {
   const tenant = useSelector<IState, ITenant>((s) => s.context.tenant);
   useDaikokuBackOffice();
   const { translate, Translation } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -234,8 +235,8 @@ export const UserEdit = () => {
   };
 
   const removeUser = (user: IUser) => {
-    (window.confirm(translate('remove.user.confirm'))) //@ts-ignore //FIXME
-      .then((ok: boolean) => {
+    (confirm({ message: translate('remove.user.confirm') }))
+      .then((ok) => {
         if (ok) {
           Services.deleteUserById(user._id)
             .then(() => {

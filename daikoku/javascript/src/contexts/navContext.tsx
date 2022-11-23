@@ -765,7 +765,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
             className: { active: currentTab === 'init' },
           },
           internationalization: {
-            label: translate('Internationalization'),
+            label: translate('internationalization'),
             action: () => navigateTo('internationalization/mail'),
             className: { active: currentTab === 'internationalization' },
           },

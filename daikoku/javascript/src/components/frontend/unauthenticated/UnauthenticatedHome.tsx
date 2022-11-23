@@ -1,15 +1,14 @@
 import React, { useContext, useEffect } from 'react';
-import { connect } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { converter } from '../../../services/showdown';
+import { useLocation } from 'react-router-dom';
 import hljs from 'highlight.js';
-import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux';
+
+import { converter } from '../../../services/showdown';
+import { I18nContext } from '../../../core';
 
 export function UnauthenticatedHome({children}: {children?: JSX.Element}) {
   const { Translation } = useContext(I18nContext);
   const location = useLocation();
-  const navigate = useNavigate();
 
   const tenant = useSelector((s: any) => s.context.tenant)
 

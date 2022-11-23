@@ -8,6 +8,7 @@ import moment from 'moment';
 import { Table, DefaultColumnFilter, TableRef } from '../../inputs';
 import { I18nContext, openFormModal } from '../../../core';
 import * as Services from '../../../services/index';
+import { ModalContext } from '../../../contexts';
 
 
 export function TeamApiPost({
@@ -18,6 +19,7 @@ export function TeamApiPost({
   const params = useParams();
   const dispatch = useDispatch();
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
   const table = useRef<TableRef>();
 
   const schema = {
@@ -98,19 +100,21 @@ export function TeamApiPost({
     });
   }
 
-  function removePost(postId: any) {
-    return (window.confirm(translate('team_api_post.delete.confirm')) as any).then((ok: any) => {
-      if (ok)
-        Services.removePost(api._id, team._id, postId).then((res) => {
-          if (res.error) {
-            toastr.error(translate('Error'), translate('team_api_post.failed'));
-          }
-          else {
-            toastr.success(translate('Success'), translate('team_api_post.saved'));
-            table.current?.update();
-          }
-        });
-    });
+  function removePost(postId: string) {
+    return confirm({ message: translate('team_api_post.delete.confirm') })
+      .then((ok) => {
+        if (ok)
+          Services.removePost(api._id, team._id, postId)
+            .then((res) => {
+              if (res.error) {
+                toastr.error(translate('Error'), translate('team_api_post.failed'));
+              }
+              else {
+                toastr.success(translate('Success'), translate('team_api_post.saved'));
+                table.current?.update();
+              }
+            });
+      });
   }
 
   const columns = [
@@ -135,7 +139,7 @@ export function TeamApiPost({
       }: any) => {
         const post = original;
         return moment(post.lastModificationAt).format(
-          translate({key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z'})
+          translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
         );
       },
     },

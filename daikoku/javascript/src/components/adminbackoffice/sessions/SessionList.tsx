@@ -7,13 +7,15 @@ import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { Can, manage, daikoku } from '../../utils';
 import { I18nContext } from '../../../locales/i18n-context';
-import { useDaikokuBackOffice } from '../../../contexts';
+import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
+import { IState, IUserSimple } from '../../../types';
 
 export const SessionList = () => {
-  const connectedUser = useSelector((s) => (s as any).context.connectedUser);
+  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
   useDaikokuBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   const tableRef = useRef<TableRef>()
 
@@ -67,31 +69,33 @@ export const SessionList = () => {
   ];
 
   const deleteSession = (session: any) => {
-    (window.confirm(translate('destroy.session.confirm')) as any).then((ok: any) => {
-      if (ok) {
-        Services.deleteSession(session._id).then(() => {
-          if (tableRef.current) {
-            tableRef.current.update();
-            if (connectedUser._id === session.userId) {
-              window.location.reload();
+    (confirm({ message: translate('destroy.session.confirm') }))
+      .then((ok) => {
+        if (ok) {
+          Services.deleteSession(session._id).then(() => {
+            if (tableRef.current) {
+              tableRef.current.update();
+              if (connectedUser._id === session.userId) {
+                window.location.reload();
+              }
             }
-          }
-        });
-      }
-    });
+          });
+        }
+      });
   };
 
   const deleteSessions = () => {
-    (window.confirm(translate('destroy.all.sessions.confirm')) as any).then((ok: any) => {
-      if (ok) {
-        Services.deleteSessions().then(() => {
-          if (tableRef.current) {
-            tableRef.current.update();
-            window.location.reload();
-          }
-        });
-      }
-    });
+    (confirm({ message: translate('destroy.all.sessions.confirm') }))
+      .then((ok) => {
+        if (ok) {
+          Services.deleteSessions().then(() => {
+            if (tableRef.current) {
+              tableRef.current.update();
+              window.location.reload();
+            }
+          });
+        }
+      });
   };
 
   return (

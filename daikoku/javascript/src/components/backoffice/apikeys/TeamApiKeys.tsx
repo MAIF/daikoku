@@ -6,7 +6,7 @@ import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
 import { I18nContext } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
+import { ModalContext, useTeamBackOffice } from '../../../contexts';
 
 export const TeamApiKeys = () => {
   const { currentTeam, connectedUser } = useSelector((state) => (state as any).context);
@@ -16,6 +16,7 @@ export const TeamApiKeys = () => {
   const [showApiKey, setShowApiKey] = useState(false);
 
   const { translate, Translation } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
     setShowApiKey(
@@ -70,8 +71,8 @@ export const TeamApiKeys = () => {
   ];
 
   const cleanSubs = () => {
-    window.confirm(translate('clean.archived.sub.confirm'))//@ts-ignore //FIXME when ts & monkey patch will be compatible
-      .then((ok: any) => {
+    confirm({ message: translate('clean.archived.sub.confirm') })
+      .then((ok) => {
         if (ok) {
           Services.cleanArchivedSubscriptions(currentTeam._id)
             .then(() => tableRef.current?.update());

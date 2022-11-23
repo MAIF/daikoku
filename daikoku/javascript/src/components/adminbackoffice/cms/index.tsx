@@ -8,7 +8,7 @@ import { Pages } from './Pages';
 import * as Services from '../../../services';
 import { Spinner } from '../..';
 import Revisions from './Revisions';
-import { useTenantBackOffice } from '../../../contexts';
+import { ModalContext, useTenantBackOffice } from '../../../contexts';
 
 interface IPage {
   id: string
@@ -36,9 +36,11 @@ export const CMSOffice = () => {
   useTenantBackOffice();
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   const { client } = useContext(getApolloContext());
   const { translate } = useContext(I18nContext);
+  const { prompt } = useContext(ModalContext);
 
   const [pages, setPages] = useState<Array<IPage>>([]);
   const [downloading, setDownloading] = useState(false);
@@ -50,7 +52,7 @@ export const CMSOffice = () => {
   }, []);
 
   useEffect(() => {
-      reload();
+    reload();
   }, [location]);
 
   const reload = () => {
@@ -67,9 +69,6 @@ export const CMSOffice = () => {
   };
 
   const Index = ({ }) => {
-    const navigation = useNavigate();
-    const location = useLocation();
-
     return (<div className="pt-2">
       <div className="d-flex flex-row align-items-center justify-content-between mb-2">
         <h1 className="mb-0">Pages</h1>
@@ -101,12 +100,17 @@ export const CMSOffice = () => {
               </li>
             </ul>
           </div>
-          <button onClick={() => { //@ts-ignore
-            window.prompt('Indiquer le nom de la nouvelle page', '', false, "Création d'une nouvelle page", 'Nom de la nouvelle page') //@ts-ignore //FIXME when monkey patch & ts will be compatible
-              .then((newPageName: string) => {
+          <button onClick={() => {
+            prompt({
+              message: translate('page.prompt.creation.message'),
+              title: translate('page.prompt.creation.title'),
+              placeholder: translate('page.prompt.creation.placeholder'),
+              okLabel: translate('Create')
+            })
+              .then((newPageName) => {
                 if (newPageName) {
                   Services.createCmsPageWithName(newPageName)
-                    .then((res) => navigation(`${location.pathname}/edit/${res._id}`));
+                    .then((res) => navigate(`${location.pathname}/edit/${res._id}`));
                 }
               });
           }} className="btn btn-sm btn-outline-success">
