@@ -7,14 +7,16 @@ import * as Services from '../../../services';
 import { Can, read, manage, api as API } from '../../utils';
 import { SwitchButton, Table, BooleanColumnFilter, TableRef } from '../../inputs';
 import { I18nContext, setError } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
+import { ModalContext, useTeamBackOffice } from '../../../contexts';
+import { IState, IStateContext } from '../../../types';
 
 export const TeamApis = () => {
-  const { currentTeam, tenant } = useSelector((state) => (state as any).context);
+  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
   const dispatch = useDispatch();
   useTeamBackOffice(currentTeam);
 
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate({key: 'API', plural: true})}`;
@@ -142,9 +144,8 @@ export const TeamApis = () => {
   };
 
   const deleteApi = (api: any) => {
-    (window
-      .confirm(translate('delete.api.confirm')))//@ts-ignore
-      .then((ok: any) => {
+    confirm({message: translate('delete.api.confirm'), okLabel: translate('Yes')})
+      .then((ok) => {
         if (ok) {
           Services.deleteTeamApi(currentTeam._id, api._id)
             .then(() => {

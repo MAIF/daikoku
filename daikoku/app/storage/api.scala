@@ -279,12 +279,10 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
     val o: OptionT[Future, Seq[Api]] = for {
       api <- OptionT(
         env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrIdNotDeleted(id))
-      test = AppLogger.info(api.name)
       apis <- OptionT.liftF(
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .find(Json.obj("_humanReadableId" -> api.humanReadableId)))
-      toto = AppLogger.info(apis.map(_.currentVersion.value).mkString(" -- "))
+          .findNotDeleted(Json.obj("_humanReadableId" -> api.humanReadableId)))
     } yield apis
 
     o.value.map(_.getOrElse(Seq.empty))

@@ -957,7 +957,7 @@ export const getAllApiVersions = (teamId: string, apiId: string): Promise<Array<
     .then((r) => r.json())
     .then((r) => (!r.error ? r.sort((a: any, b: any) => (a < b ? 1 : -1)) : []));
 
-export const getDefaultApiVersion = (apiId: any) =>
+export const getDefaultApiVersion = (apiId: string): Promise<{defaultVersion: string}> =>
   customFetch(`/api/apis/${apiId}/default_version`);
 
 export const getAllPlanOfApi = (teamId: any, apiId: any, version: any) =>

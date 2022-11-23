@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { I18nContext, logout, updateUser } from '../../../core';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
+import { IState, ITenant } from '../../../types';
 
 const TwoFactorAuthentication = ({
   user
@@ -293,13 +294,11 @@ export const MyProfile = () => {
   const [user, setUser] = useState();
   const [tab, setTab] = useState('infos');
 
-  const { tenant, connectedUser } = useSelector((state) => (state as any).context);
+  const tenant = useSelector<IState, ITenant>((state) => state.context.tenant);
   const dispatch = useDispatch();
 
-  const { translate, setLanguage, language, Translation, languages } =
-    useContext(I18nContext);
-
-  const navigate = useNavigate();
+  const { translate, setLanguage, language, Translation, languages } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   const formSchema = {
     name: {
@@ -395,9 +394,8 @@ export const MyProfile = () => {
   };
 
   const removeUser = () => {
-    (window
-      .confirm(translate('delete account')))//@ts-ignore
-      .then((ok: any) => {
+    confirm({message: translate('delete account'), okLabel: translate('Yes')})
+      .then((ok) => {
         if (ok) {
           Services.deleteSelfUserById()
         }

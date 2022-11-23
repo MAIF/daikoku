@@ -21,9 +21,10 @@ import {
 } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
+import { IState, IStateContext, ISubscription } from '../../../types';
 
 export const TeamApiKeysForApi = () => {
-  const { currentTeam, connectedUser } = useSelector((state) => (state as any).context);
+  const { currentTeam, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
   useTeamBackOffice(currentTeam);
 
   const [api, setApi] = useState<any>({ name: '--', possibleUsagePlans: [] });
@@ -112,10 +113,9 @@ export const TeamApiKeysForApi = () => {
       .then((subs) => setSubscriptions(subs));
   };
 
-  const regenerateApiKeySecret = (subscription: any) => {
-    return (window
-      .confirm(translate('reset.secret.confirm')))//@ts-ignore
-      .then((ok: any) => {
+  const regenerateApiKeySecret = (subscription: ISubscription) => {
+    return confirm({ message: translate('reset.secret.confirm') })
+      .then((ok) => {
         if (ok) {
           Services.regenerateApiKeySecret(currentTeam._id, subscription._id)
             .then(() => Services.getTeamSubscriptions(params.apiId, currentTeam._id, params.versionId))

@@ -3177,37 +3177,49 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner),
         apis = Seq(
-          defaultApi.copy(id = ApiId("123"), supportedVersions = Set(Version("1.0.0")), currentVersion = Version("1.0.0")),
-          defaultApi.copy(id = ApiId("345"), supportedVersions = Set(Version("2.0.0")), currentVersion = Version("2.0.0")),
-          defaultApi.copy(id = ApiId("678"), supportedVersions = Set(Version("3.0.0")), currentVersion = Version("3.0.0")),
+          defaultApi.copy(id = ApiId("123"), supportedVersions = Set(Version("1.0.0")), currentVersion = Version("1.0.0"), isDefault = false, parent = None),
+          defaultApi.copy(id = ApiId("345"), supportedVersions = Set(Version("2.0.0")), currentVersion = Version("2.0.0"), isDefault = false, parent = Some(ApiId("123"))),
+          defaultApi.copy(id = ApiId("678"), supportedVersions = Set(Version("3.0.0")), currentVersion = Version("3.0.0"), isDefault = true, parent = Some(ApiId("123"))),
         )
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
 
       val respVersionsBefore = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/versions"
+        path = s"/api/teams/${teamOwnerId.value}/apis/123/versions"
       )(tenant, session)
 
       respVersionsBefore.status mustBe 200
       val versionsBefore = respVersionsBefore.json.as[Seq[String]]
       versionsBefore.length mustBe 3
 
+      val respDefVersionBefore = httpJsonCallBlocking(
+        path = s"/api/apis/api-vdefault/default_version"
+      )(tenant, session)
+      respDefVersionBefore.status mustBe 200
+      (respDefVersionBefore.json \ "defaultVersion").as[String] mustBe "3.0.0"
+
 
       val respDelete = httpJsonCallBlocking(
-        path = s"/api/me/teams/${teamConsumerId.value}",
+        path = s"/api/teams/${teamOwnerId.value}/apis/678",
         method = "DELETE"
       )(tenant, session)
 
       respDelete.status mustBe 200
 
       val respVersionsAfter = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/versions ",
+        path = s"/api/teams/${teamOwnerId.value}/apis/123/versions",
       )(tenant, session)
 
       respVersionsAfter.status mustBe 200
       val versionsAfter = respVersionsAfter.json.as[Seq[String]]
       versionsAfter.length mustBe 2
+
+      val respDefVersionAfter = httpJsonCallBlocking(
+        path = s"/api/apis/api-vdefault/default_version"
+      )(tenant, session)
+      respDefVersionAfter.status mustBe 200
+      (respDefVersionAfter.json \ "defaultVersion").as[String] mustBe "1.0.0"
 
 
     }

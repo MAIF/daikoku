@@ -11,7 +11,7 @@ import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
-import { IApiWithAuthorization, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
+import { IApi, IApiWithAuthorization, IApiWithSimpleTeam, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
 import { ModalContext } from '../../../contexts';
 
 export const MyHome = () => {
@@ -101,23 +101,25 @@ export const MyHome = () => {
     navigate(`/${team._humanReadableId}`);
   };
 
-  const redirectToApiPage = (api: any) => {
+  const redirectToApiPage = (api: IApiWithSimpleTeam) => {
     const apiOwner = teamsRequest.data?.find((t) => (t as any)._id === api.team._id);
 
-    const route = (version: any) => api.apis
-      ? `/${apiOwner ? (apiOwner as any)._humanReadableId : api.team._id}/apigroups/${api._humanReadableId}/apis`
-      : `/${apiOwner ? (apiOwner as any)._humanReadableId : api.team._id}/${api._humanReadableId}/${version}/description`;
+    const route = (version: string) => api.apis
+      ? `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/apigroups/${api._humanReadableId}/apis`
+      : `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}/description`;
 
-    if (api.isDefault) navigate(route(api.currentVersion));
-    else
-      Services.getDefaultApiVersion(api._humanReadableId).then((res) =>
-        navigate(route(res.defaultVersion))
-      );
+    if (api.isDefault) {
+      navigate(route(api.currentVersion));
+    } else {
+      Services.getDefaultApiVersion(api._humanReadableId)
+        .then((res) =>
+          navigate(route(res.defaultVersion))
+        );
+    }
   };
 
   const redirectToEditPage = (api: IApiWithAuthorization, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => {
-    const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams) //@ts-ignore //FIXME: y'a vraiment team._id ???
-      .find((team) => api.team._id === team._id);
+    const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === team._id);
 
     if (adminTeam && CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
       updateTeamPromise(adminTeam)(dispatch)

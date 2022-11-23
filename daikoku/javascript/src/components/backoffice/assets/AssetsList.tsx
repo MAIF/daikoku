@@ -9,6 +9,7 @@ import { Table, TableRef } from '../../inputs';
 import { Can, manage, asset, tenant as TENANT } from '../../utils';
 import { openFormModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
+import { ModalContext } from '../../../contexts';
 
 
 const mimeTypes = [
@@ -147,9 +148,10 @@ export const AssetsList = ({
   const { currentTeam, tenant } = useSelector((state) => (state as any).context);
 
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
-    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translate({key: 'Asset', plural: true})}`;
+    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translate({ key: 'Asset', plural: true })}`;
   }, []);
 
   const acceptableMimeTypes = mimeTypes
@@ -388,8 +390,8 @@ export const AssetsList = ({
   };
 
   const deleteAsset = (asset: any) => {
-    (window
-      .confirm(translate('delete asset')) as any).then((ok: any) => {
+    confirm({message: translate('delete asset'), okLabel: translate('Yes')})
+      .then((ok) => {
         if (ok) {
           serviceDelete(asset.meta.asset)
             .then(() => tableRef.current?.update());

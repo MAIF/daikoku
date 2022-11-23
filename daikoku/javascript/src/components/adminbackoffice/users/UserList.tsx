@@ -14,7 +14,7 @@ export const UserList = () => {
   const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
   useDaikokuBackOffice();
 
-  const {alert} = useContext(ModalContext);
+  const { alert, confirm } = useContext(ModalContext);
 
   const [users, setUsers] = useState<Array<IUser>>([]);
   const [search, setSearch] = useState<string>();
@@ -32,8 +32,7 @@ export const UserList = () => {
   };
 
   const removeUser = (user: IUserSimple) => {
-    (window
-      .confirm(translate('remove.user.confirm')))//@ts-ignore
+    confirm({ message: translate('remove.user.confirm'), okLabel: translate('Yes') })
       .then((ok) => {
         if (ok) {
           Services.deleteUserById(user._id)
@@ -49,7 +48,7 @@ export const UserList = () => {
 
   const toggleAdmin = (member: IUserSimple) => {
     if (member._id === connectedUser._id) {
-      alert({message: translate('toggle.admin.alert')});
+      alert({ message: translate('toggle.admin.alert') });
     } else {
       Services.setAdminStatus(member, !member.isDaikokuAdmin).then(() => updateUsers());
     }
