@@ -4,7 +4,7 @@ import { BooleanInput } from '@maif/react-forms';
 
 import * as Services from '../../../services';
 import { Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import { useDaikokuBackOffice } from '../../../contexts';
 
 export const ImportExport = () => {

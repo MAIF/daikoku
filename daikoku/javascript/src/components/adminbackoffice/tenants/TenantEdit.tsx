@@ -4,7 +4,7 @@ import { toastr } from 'react-redux-toastr';
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import * as Services from '../../../services';
 import { ITenantFull } from '../../../types/tenant';
 import { Spinner } from '../../utils/Spinner';

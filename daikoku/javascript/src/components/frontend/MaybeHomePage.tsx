@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { I18nContext } from '../../locales/i18n-context';
+import { I18nContext } from '../../contexts/i18n-context';
 
 import { IState, ITenant, IUserSimple } from '../../types';
 

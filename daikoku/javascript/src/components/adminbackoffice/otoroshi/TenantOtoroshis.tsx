@@ -7,7 +7,7 @@ import * as Services from '../../../services';
 import { Table } from '../../inputs';
 import { Can, manage, tenant as TENANT } from '../../utils';
 import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 
 export const TenantOtoroshis = () => {

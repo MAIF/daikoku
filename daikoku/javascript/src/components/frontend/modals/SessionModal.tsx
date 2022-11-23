@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 
 export const SessionModal = ({
   session

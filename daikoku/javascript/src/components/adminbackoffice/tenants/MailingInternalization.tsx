@@ -8,7 +8,7 @@ import { constraints, Form, format, type } from '@maif/react-forms';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend/modals/AssetsChooserModal';
 import { Can, manage, Spinner, tenant as TENANT, Option } from '../../utils';
 import * as Services from '../../../services';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
 import { useTenantBackOffice } from '../../../contexts';
 import { BeautifulTitle } from '../../utils/BeautifulTitle';

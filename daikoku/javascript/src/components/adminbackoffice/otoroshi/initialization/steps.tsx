@@ -9,7 +9,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import { Table } from '../../../inputs';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan, BeautifulTitle, formatPlanType, Option } from '../../../utils';
-import { I18nContext } from '../../../../locales/i18n-context';
+import { I18nContext } from '../../../../contexts/i18n-context';
 import { ModalContext } from '../../../../contexts';
 
 export const SelectionStepStep = (props: any) => {

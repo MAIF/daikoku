@@ -6,7 +6,7 @@ import { Search, Plus, MessageSquare, Bell, ArrowLeft } from 'react-feather';
 
 import * as Services from '../../../services';
 import { updateNotifications } from '../../../core/context/actions';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import { MessagesContext } from '../../backoffice';
 
 import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';

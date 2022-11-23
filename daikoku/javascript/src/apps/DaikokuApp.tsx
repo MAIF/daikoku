@@ -53,7 +53,7 @@ import {
 
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
-import { I18nContext } from '../locales/i18n-context';
+import { I18nContext } from '../contexts/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { SessionModal } from '../components/frontend/modals/SessionModal';
 import { QueryClientProvider } from 'react-query';

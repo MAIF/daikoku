@@ -6,7 +6,7 @@ import { Provider } from 'react-redux';
 
 import { store } from './core/store'
 
-import { I18nProvider } from './locales/i18n-context';
+import { I18nProvider } from './contexts/i18n-context';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';

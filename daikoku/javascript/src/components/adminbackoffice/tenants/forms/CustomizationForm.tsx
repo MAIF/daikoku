@@ -6,7 +6,7 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { openSaveOrCancelModal } from '../../../../core';
-import { I18nContext } from '../../../../locales/i18n-context';
+import { I18nContext } from '../../../../contexts/i18n-context';
 import { ITenantFull } from '../../../../types';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../frontend/modals/AssetsChooserModal';
 

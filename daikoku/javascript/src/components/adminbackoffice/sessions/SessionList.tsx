@@ -6,7 +6,7 @@ import * as Services from '../../../services';
 
 import { Table, TableRef } from '../../inputs';
 import { Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import { IState, IUserSimple } from '../../../types';
 

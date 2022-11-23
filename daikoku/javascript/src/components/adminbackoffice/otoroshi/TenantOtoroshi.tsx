@@ -6,7 +6,7 @@ import { Form, type, constraints } from '@maif/react-forms'
 import * as Services from '../../../services';
 import { Can, manage, tenant as TENANT, Spinner } from '../../utils';
 import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
 
 export const TenantOtoroshi = () => {

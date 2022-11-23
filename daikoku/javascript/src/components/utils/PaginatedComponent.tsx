@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Pagination from 'react-paginate';
 import classNames from 'classnames';
-import { I18nContext } from '../../locales/i18n-context';
+import { I18nContext } from '../../contexts/i18n-context';
 
 type Props = {
   items: any[];

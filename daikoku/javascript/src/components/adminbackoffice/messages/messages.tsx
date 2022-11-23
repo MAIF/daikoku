@@ -14,7 +14,7 @@ import { MessagesContext } from '../../backoffice';
 import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
 import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
 import { IUserSimple } from '../../../types';
 

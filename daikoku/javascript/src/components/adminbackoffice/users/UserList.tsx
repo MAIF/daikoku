@@ -6,7 +6,7 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import { IState, IUser, IUserSimple } from '../../../types';
 

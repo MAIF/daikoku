@@ -20,7 +20,7 @@ import {
   registerContact,
 } from './components/utils/window';
 import { customizeFetch } from './services/customize';
-import { I18nProvider } from './locales/i18n-context';
+import { I18nProvider } from './contexts/i18n-context';
 
 import { DaikokuApp, DaikokuHomeApp } from './apps';
 

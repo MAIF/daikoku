@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { I18nContext } from '../../locales/i18n-context';
+import { I18nContext } from '../../contexts/i18n-context';
 import { setError, unsetError } from '../../core';
 
 const getErrorLabel = (status: any, error: any) => {

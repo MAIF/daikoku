@@ -5,7 +5,7 @@ import classNames from 'classnames';
 
 import { converter } from '../../../../services/showdown';
 import { Option } from '../../../utils';
-import { I18nContext } from '../../../../locales/i18n-context';
+import { I18nContext } from '../../../../contexts/i18n-context';
 import { MessagesContext } from '../../../backoffice';
 import * as MessageEvents from '../../../../services/messages';
 

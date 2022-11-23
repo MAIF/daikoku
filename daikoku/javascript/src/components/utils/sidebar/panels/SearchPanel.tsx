@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid';
 import debounce from 'lodash/debounce';
 
 import * as Services from '../../../../services';
-import { I18nContext } from '../../../../locales/i18n-context';
+import { I18nContext } from '../../../../contexts/i18n-context';
 
 export const SearchPanel = ({
   teams

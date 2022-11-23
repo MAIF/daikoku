@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 
 import { MessagesContext } from '../../backoffice';
-import { I18nContext } from '../../../locales/i18n-context';
+import { I18nContext } from '../../../contexts/i18n-context';
 
 export const MessagesTopBarTools = (_: any) => {
     const { totalUnread } = useContext(MessagesContext);

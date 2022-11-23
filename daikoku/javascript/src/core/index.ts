@@ -1,5 +1,5 @@
 export * from './modal';
-export * from '../locales/i18n-context';
+export * from '../contexts/i18n-context';
 export * from './error';
 export * from './reducers';
 export * from './store';

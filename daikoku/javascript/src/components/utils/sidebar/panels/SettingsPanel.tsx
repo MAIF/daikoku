@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import * as Services from '../../../../services';
 import { updateTenant } from '../../../../core/context/actions';
-import { I18nContext } from '../../../../locales/i18n-context';
+import { I18nContext } from '../../../../contexts/i18n-context';
 import { CanIDoAction, manage, team } from '../../..';
 
 const DarkModeActivator = ({

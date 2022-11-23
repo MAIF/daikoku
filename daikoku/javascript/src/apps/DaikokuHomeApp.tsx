@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Navigate, Route, Routes, useNavigate } from 'r
 
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 import * as Services from '../services';
-import { I18nContext } from '../locales/i18n-context';
+import { I18nContext } from '../contexts/i18n-context';
 
 const AvatarInput = ({
   rawValues,

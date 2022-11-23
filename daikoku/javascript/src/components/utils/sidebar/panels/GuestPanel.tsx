@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { Form, type, constraints, format } from '@maif/react-forms';
 
 import * as Services from '../../../../services';
-import { I18nContext } from '../../../../locales/i18n-context';
+import { I18nContext } from '../../../../contexts/i18n-context';
 import { NavContext } from '../../../../contexts';
 
 export const GuestPanel = () => {

@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import * as Services from '../../../../services';
 import { openFormModal, openTeamSelectorModal } from '../../../../core/modal';
 import { manage, CanIDoAction, api as API, Option } from '../..';
-import { I18nContext } from '../../../../locales/i18n-context';
+import { I18nContext } from '../../../../contexts/i18n-context';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit'
 import { toastr } from 'react-redux-toastr';
 import { useQueryClient } from 'react-query';
