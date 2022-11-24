@@ -2,15 +2,12 @@ package fr.maif.otoroshi.daikoku.domain
 
 import java.util.concurrent.TimeUnit
 import com.auth0.jwt.JWT
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
@@ -1860,7 +1857,8 @@ object json {
               (json \ "starredApis").asOpt(SetApiIdFormat).getOrElse(Set.empty),
             twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(
               TwoFactorAuthenticationFormat),
-            invitation = (json \ "invitation").asOpt(UserInvitationFormat)
+            invitation = (json \ "invitation").asOpt(UserInvitationFormat),
+            pendingDeletion = (json \ "pendingDeletion").asOpt[Boolean]
           )
         )
       } recover {
@@ -1897,6 +1895,10 @@ object json {
       "invitation" -> o.invitation
         .map(UserInvitationFormat.writes)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "pendingDeletion" -> o.pendingDeletion
+        .map(JsBoolean)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1932,6 +1934,8 @@ object json {
               .asOpt[String]
               .flatMap(TeamApiKeyVisibility.apply),
             apisCreationPermission = (json \ "apisCreationPermission")
+              .asOpt[Boolean],
+            pendingDeletion = (json \ "pendingDeletion")
               .asOpt[Boolean]
           )
         )
@@ -1960,6 +1964,10 @@ object json {
         .as[JsValue],
       "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
       "apisCreationPermission" -> o.apisCreationPermission
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "pendingDeletion" -> o.pendingDeletion
         .map(JsBoolean)
         .getOrElse(JsNull)
         .as[JsValue]
@@ -3486,6 +3494,64 @@ object json {
         case Success(page)      => JsSuccess(page)
       }
   }
+
+  val OperationActionFormat = new Format[OperationAction] {
+    override def reads(json: JsValue): JsResult[OperationAction] =
+      OperationAction.apply(json.as[String]) match {
+        case Some(action) => JsSuccess(action)
+        case None => JsError(s"Bad OperationAction value: ${Json.stringify(json)}")
+      }
+
+
+    override def writes(o: OperationAction): JsValue =  JsString(o.name)
+  }
+
+  val OperationStatusFormat = new Format[OperationStatus] {
+    override def reads(json: JsValue): JsResult[OperationStatus] =
+      OperationStatus.apply(json.as[String]) match {
+        case Some(action) => JsSuccess(action)
+        case None => JsError(s"Bad OperationStatus value: ${Json.stringify(json)}")
+      }
+
+    override def writes(o: OperationStatus): JsValue = JsString(o.name)
+  }
+
+  val ItemTypeFormat = new Format[ItemType] {
+    override def reads(json: JsValue): JsResult[ItemType] =
+      ItemType.apply(json.as[String]) match {
+        case Some(action) => JsSuccess(action)
+        case None => JsError(s"Bad ItemType value: ${Json.stringify(json)}")
+      }
+
+    override def writes(o: ItemType): JsValue = JsString(o.name)
+  }
+
+  val OperationFormat = new Format[Operation] {
+    override def reads(json: JsValue): JsResult[Operation] = Try {
+      Operation(
+        id = (json \ "_id").as(DatastoreIdFormat),
+        itemId = (json \ "itemId").as[String],
+        itemType = (json \ "itemType").as(ItemTypeFormat),
+        action = (json \ "action").as(OperationActionFormat),
+        payload = (json \ "payload").asOpt[JsObject],
+        status = (json \ "status").as(OperationStatusFormat)
+      )
+    } match {
+      case Failure(exception) => JsError(exception.getMessage)
+      case Success(operation) => JsSuccess(operation)
+    }
+
+    override def writes(o: Operation): JsValue = Json.obj(
+      "_id" -> o.id.asJson,
+      "itemId" -> o.itemId,
+      "itemType" -> ItemTypeFormat.writes(o.itemType),
+      "action" -> OperationActionFormat.writes(o.action),
+      "payload" -> o.payload.getOrElse(JsNull).as[JsValue],
+      "status" -> OperationStatusFormat.writes(o.status)
+    )
+  }
+
+
   val SetOtoroshiServicesIdFormat =
     Format(Reads.set(OtoroshiServiceIdFormat),
            Writes.set(OtoroshiServiceIdFormat))

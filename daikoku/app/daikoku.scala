@@ -20,7 +20,8 @@ import fr.maif.otoroshi.daikoku.utils.{
   ApiService,
   Errors,
   OtoroshiClient,
-  Translator
+  Translator,
+  DeletionService
 }
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -68,6 +69,7 @@ package object modules {
     lazy val otoroshiClient = wire[OtoroshiClient]
 
     lazy val apiService = wire[ApiService]
+    lazy val deletionService = wire[DeletionService]
 
     lazy val translator = wire[Translator]
 

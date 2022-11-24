@@ -272,6 +272,16 @@ case class MongoTenantCapableConsumptionRepo(
   ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
+case class MongoTenantCapableOperationRepo(
+    _repo: () => MongoRepo[Operation, DatastoreId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[Operation, DatastoreId]
+) extends MongoTenantCapableRepo[Operation, DatastoreId]
+  with OperationRepo {
+  override def repo(): MongoRepo[Operation, DatastoreId] = _repo()
+
+  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[Operation, DatastoreId] = _tenantRepo(tenant)
+}
+
 class MongoDataStore(context: Context, env: Env)
     extends ReactiveMongoApiFromContext(context)
     with DataStore {
@@ -349,11 +359,18 @@ class MongoDataStore(context: Context, env: Env)
       () => new MongoMessageRepo(env, reactiveMongoApi),
       t => new MongoTenantMessageRepo(env, reactiveMongoApi, t)
     )
-  private val _cmsRepo: CmsPageRepo =
+  private val _cmsRepo: CmsPageRepo = {
     MongoTenantCapableCmsPageRepo(
       () => new MongoCmsPageRepo(env, reactiveMongoApi),
       t => new MongoTenantCmsPageRepo(env, reactiveMongoApi, t)
     )
+  }
+  private val _operationRepo: OperationRepo = {
+    MongoTenantCapableOperationRepo(
+      () => new MongoOperationRepo(env, reactiveMongoApi),
+      t => new MongoTenantOperationRepo(env, reactiveMongoApi, t)
+    )
+  }
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -391,6 +408,8 @@ class MongoDataStore(context: Context, env: Env)
   override def messageRepo: MessageRepo = _messageRepo
 
   override def cmsRepo: CmsPageRepo = _cmsRepo
+
+  override def operationRepo: OperationRepo = _operationRepo
 
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
@@ -430,7 +449,8 @@ class MongoDataStore(context: Context, env: Env)
       notificationRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
       translationRepo.forAllTenant(),
-      messageRepo.forAllTenant()
+      messageRepo.forAllTenant(),
+      operationRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -471,6 +491,7 @@ class MongoDataStore(context: Context, env: Env)
       _ <- userSessionRepo.deleteAll()
       _ <- translationRepo.forAllTenant().deleteAll()
       - <- messageRepo.forAllTenant().deleteAll()
+      _ <- operationRepo.forAllTenant().deleteAll()
       _ <- source
         .via(Framing.delimiter(ByteString("\n"), 1000000000, true))
         .map(_.utf8String)
@@ -534,6 +555,10 @@ class MongoDataStore(context: Context, env: Env)
             messageRepo
               .forAllTenant()
               .save(MessageFormat.reads(payload).get)
+          case ("operations", payload) =>
+            operationRepo
+              .forAllTenant()
+              .save(OperationFormat.reads(payload).get)
           case (typ, _) =>
             logger.info(s"Unknown type: $typ")
             FastFuture.successful(false)
@@ -634,6 +659,18 @@ class MongoTenantCmsPageRepo(env: Env,
   override def format: Format[CmsPage] = json.CmsPageFormat
 
   override def extractId(value: CmsPage): String = value.id.value
+}
+class MongoTenantOperationRepo(env: Env,
+                             reactiveMongoApi: ReactiveMongoApi,
+                             tenant: TenantId)
+    extends MongoTenantAwareRepo[Operation, DatastoreId](env,
+                                                     reactiveMongoApi,
+                                                     tenant) {
+  override def collectionName: String = "Operations"
+
+  override def format: Format[Operation] = json.OperationFormat
+
+  override def extractId(value: Operation): String = value.id.value
 }
 
 class MongoTenantApiSubscriptionRepo(env: Env,
@@ -788,6 +825,15 @@ class MongoCmsPageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[CmsPage] = json.CmsPageFormat
 
   override def extractId(value: CmsPage): String = value.id.value
+}
+
+class MongoOperationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+  extends MongoRepo[Operation, DatastoreId](env, reactiveMongoApi) {
+  override def collectionName: String = "Operations"
+
+  override def format: Format[Operation] = json.OperationFormat
+
+  override def extractId(value: Operation): String = value.id.value
 }
 
 class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)

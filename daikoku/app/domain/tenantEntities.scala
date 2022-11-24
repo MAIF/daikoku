@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
+import cats.implicits.catsSyntaxOptionId
 import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError
 import controllers.AppError.toJson
@@ -97,6 +98,89 @@ case class DaikokuStyle(
     footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
   override def asJson: JsValue = json.DaikokuStyleFormat.writes(this)
+}
+sealed trait ItemType {
+  def name: String
+}
+object ItemType {
+  case object User extends ItemType {
+    def name: String = "User"
+  }
+  case object Team extends ItemType {
+    def name: String = "Team"
+  }
+  case object Api extends ItemType {
+    def name: String = "Api"
+  }
+  case object Subscription extends ItemType {
+    def name: String = "Subscription"
+  }
+  val values: Seq[ItemType] =
+    Seq(User, Team, Api, Subscription)
+  def apply(name: String): Option[ItemType] = name match {
+    case "User"           => User.some
+    case "Team"           => Team.some
+    case "Api"            => Api.some
+    case "Subscription"   => Subscription.some
+    case _                => None
+  }
+}
+
+sealed trait OperationAction {
+  def name: String
+}
+
+object OperationAction {
+  case object Delete extends OperationAction {
+    def name: String = "DELETE"
+  }
+
+  val values: Seq[OperationAction] = Seq(Delete)
+
+  def apply(name: String): Option[OperationAction] = name match {
+    case "DELETE" => Delete.some
+    case _        => None
+  }
+}
+
+sealed trait OperationStatus {
+  def name: String
+}
+
+object OperationStatus {
+  case object Idle extends OperationStatus {
+    def name: String = "IDLE"
+  }
+  case object InProgress extends OperationStatus {
+    def name: String = "IN_PROGRESS"
+  }
+  case object Success extends OperationStatus {
+    def name: String = "SUCCESS"
+  }
+  case object Error extends OperationStatus {
+    def name: String = "ERROR"
+  }
+
+  def values: Seq[OperationStatus] =
+    Seq(Idle, InProgress, Success, Error)
+
+  def apply(name: String): Option[OperationStatus] = name match {
+    case "IDLE"         => Idle.some
+    case "IN_PROGRESS"  => InProgress.some
+    case "SUCCESS"      => Success.some
+    case "ERROR"        => Error.some
+    case _              => None
+  }
+}
+case class Operation(
+    id: DatastoreId,
+    itemId: String,
+    itemType: ItemType,
+    action: OperationAction,
+    payload: Option[JsObject] = None,
+    status: OperationStatus = OperationStatus.Idle
+) extends CanJson[Operation] {
+  override def asJson: JsValue = json.OperationFormat.writes(this)
 }
 
 case class AuditTrailConfig(

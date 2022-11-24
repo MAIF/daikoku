@@ -312,6 +312,8 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId]
 
 trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 
+trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
+
 trait DataStore {
   def start(): Future[Unit]
 
@@ -352,6 +354,8 @@ trait DataStore {
   def messageRepo: MessageRepo
 
   def cmsRepo: CmsPageRepo
+
+  def operationRepo: OperationRepo
 
   def evolutionRepo: EvolutionRepo
 

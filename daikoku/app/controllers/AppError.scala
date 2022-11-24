@@ -11,6 +11,7 @@ sealed trait AppError {
   def render() = AppError.render(this)
   def renderF() = AppError.renderF(this)
   def toJson() = AppError.toJson(this)
+  def future() = FastFuture.successful(this)
 }
 
 object AppError {
