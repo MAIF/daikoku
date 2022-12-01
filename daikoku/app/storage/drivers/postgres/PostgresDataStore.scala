@@ -1396,6 +1396,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = {
     val (sql, params) = convertQuery(query)
+    logger.debug(s"$tableName.findeOne(${Json.prettyPrint(query)})")
+    logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
+    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
+
     reactivePg
       .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) {
         row =>

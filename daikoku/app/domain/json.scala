@@ -3530,6 +3530,7 @@ object json {
     override def reads(json: JsValue): JsResult[Operation] = Try {
       Operation(
         id = (json \ "_id").as(DatastoreIdFormat),
+        tenant = (json \ "_tenant").as(TenantIdFormat),
         itemId = (json \ "itemId").as[String],
         itemType = (json \ "itemType").as(ItemTypeFormat),
         action = (json \ "action").as(OperationActionFormat),
@@ -3543,6 +3544,7 @@ object json {
 
     override def writes(o: Operation): JsValue = Json.obj(
       "_id" -> o.id.asJson,
+      "_tenant" -> o.tenant.asJson,
       "itemId" -> o.itemId,
       "itemType" -> ItemTypeFormat.writes(o.itemType),
       "action" -> OperationActionFormat.writes(o.action),

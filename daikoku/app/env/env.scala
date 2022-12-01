@@ -230,6 +230,13 @@ class Config(val underlying: Configuration) {
     .getOptional[FiniteDuration]("daikoku.audit.purge.max.date")
     .getOrElse(60 day)
 
+  lazy val deletionByCron: Boolean = underlying
+    .getOptional[Boolean]("daikoku.deletion.cron")
+    .getOrElse(false)
+  lazy val deletionInterval: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.deletion.interval")
+    .getOrElse(30 second)
+
   lazy val init: InitConfig = InitConfig(underlying)
 
   lazy val adminApiConfig: AdminApiConfig = AdminApiConfig(underlying)

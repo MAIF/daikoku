@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.utils
 
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -17,10 +18,13 @@ class DeletionService(env: Env) {
   def deleteUser(user: User, tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val operation = Operation(
       DatastoreId(BSONObjectID.generate().stringify),
+      tenant = tenant.id,
       itemId = user.id.value,
       itemType = ItemType.User,
       action = OperationAction.Delete
     )
+
+    AppLogger.debug(s"add **user**[${user.name}] to deletion queue")
     for {
       _ <- EitherT.liftF(env.dataStore.userRepo.save(user.copy(pendingDeletion = Some(true))))
       _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).save(operation))
@@ -30,10 +34,13 @@ class DeletionService(env: Env) {
   def deleteTeam(team: Team, tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val operation = Operation(
       DatastoreId(BSONObjectID.generate().stringify),
+      tenant = tenant.id,
       itemId = team.id.value,
       itemType = ItemType.Team,
       action = OperationAction.Delete
     )
+
+    AppLogger.debug(s"[deletion service] :: add **team**[${team.name}] to deletion queue")
     for {
       _ <- EitherT.liftF(env.dataStore.teamRepo.forTenant(tenant).save(team.copy(pendingDeletion = Some(true))))
       _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).save(operation))
@@ -44,11 +51,13 @@ class DeletionService(env: Env) {
     val operations = subscriptions.distinct
       .map(s => Operation(
         DatastoreId(BSONObjectID.generate().stringify),
+        tenant = tenant.id,
         itemId = s.id.value,
         itemType = ItemType.Subscription,
         action = OperationAction.Delete
       ))
 
+    AppLogger.debug(s"[deletion service] :: add **subscriptions**[${subscriptions.map(_.id).mkString(",")}] to deletion queue")
     val r = for {
       _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant)
       .updateManyByQuery(Json.obj("_id" ->
@@ -64,11 +73,13 @@ class DeletionService(env: Env) {
     val operations = apis.distinct
       .map(s => Operation(
         DatastoreId(BSONObjectID.generate().stringify),
+        tenant = tenant.id,
         itemId = s.id.value,
         itemType = ItemType.Api,
         action = OperationAction.Delete
       ))
 
+    AppLogger.debug(s"[deletion service] :: add **apis**[${apis.map(_.name).mkString(",")}] to deletion queue")
     val r = for {
       _ <- env.dataStore.apiRepo.forTenant(tenant)
         .updateManyByQuery(Json.obj("_id" ->
@@ -80,18 +91,29 @@ class DeletionService(env: Env) {
     EitherT.liftF(r)
   }
 
+  /**
+   * Add a user and his personal team to deletion queue
+   * @param userId user to delete
+   * @param tenant t an either of Unit or AppError
+   */
   def deleteUserByQueue(userId: String, tenant: Tenant): EitherT[Future, AppError, Unit] = {
     for {
       user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(userId), AppError.UserNotFound)
       team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findOneNotDeleted(Json.obj(
         "type" -> TeamType.Personal.name,
         "users.userId" -> user.id.asJson)), AppError.TeamNotFound)
-      _ <- deleteTeamByQueue(team.id, tenant)
-      _ <- deleteUser(user, tenant)
+      otherTeams <- EitherT.liftF(env.dataStore.teamRepo.forAllTenant().find(Json.obj(
+        "type" -> TeamType.Personal.name,
+        "users.userId" -> user.id.asJson)))
+      _ <- deleteTeamByQueue(team.id, tenant, user.some)
+      _ <- if (otherTeams.length > 1) EitherT.rightT[Future, AppError](()) else deleteUser(user, tenant)
+      _ <- EitherT.liftF(env.dataStore.userSessionRepo.delete(Json.obj(
+        "userId" -> userId
+      )))
     } yield ()
   }
 
-  def deleteTeamByQueue(id: TeamId, tenant: Tenant): EitherT[Future, AppError, Unit] = {
+  def deleteTeamByQueue(id: TeamId, tenant: Tenant, user: Option[User]): EitherT[Future, AppError, Unit] = {
     for {
       team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(id), AppError.TeamNotFound)
       subscriptions <- EitherT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).find(Json.obj("team" -> team.id.asJson)))

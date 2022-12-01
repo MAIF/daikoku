@@ -174,6 +174,7 @@ object OperationStatus {
 }
 case class Operation(
     id: DatastoreId,
+    tenant: TenantId,
     itemId: String,
     itemType: ItemType,
     action: OperationAction,

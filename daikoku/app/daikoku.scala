@@ -4,31 +4,20 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.getSchema
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
-import fr.maif.otoroshi.daikoku.utils.{
-  ApiService,
-  Errors,
-  OtoroshiClient,
-  Translator,
-  DeletionService
-}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, DeletionService, Errors, OtoroshiClient, Translator}
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
 import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
 import io.vertx.sqlclient.PoolOptions
-import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, OtoroshiVerifierJob}
+import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, DeletionJob, OtoroshiVerifierJob}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
@@ -63,6 +52,7 @@ package object modules {
     implicit lazy val env: Env = wire[DaikokuEnv]
 
     lazy val verifier = wire[OtoroshiVerifierJob]
+    lazy val deletor = wire[DeletionJob]
     lazy val statsJob = wire[ApiKeyStatsJob]
     lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
 
@@ -225,12 +215,14 @@ package object modules {
     lazy val pgPool = PgPool.pool(Vertx.vertx, options, poolOptions)
 
 //    statsJob.start()
+    deletor.start()
     verifier.start()
     auditTrailPurgeJob.start()
 
     env.onStartup()
 
     applicationLifecycle.addStopHook { () =>
+      deletor.stop()
       verifier.stop()
       statsJob.stop()
       auditTrailPurgeJob.stop()

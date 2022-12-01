@@ -85,15 +85,16 @@ object TenantHelper {
     env.config.tenantProvider match {
       case TenantProvider.Header => {
         val tenantId = TenantHelper.extractTenantId(request)(env)
+        AppLogger.warn(tenantId.value)
         env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
           case None =>
-            Errors.craftResponseResult("Tenant does not exists",
+            Errors.craftResponseResult("Tenant does not exists (1)",
                                        Results.NotFound,
                                        request,
                                        None,
                                        env)
           case Some(tenant) if !tenant.enabled =>
-            Errors.craftResponseResult("Tenant does not exists",
+            Errors.craftResponseResult("Tenant does not exists (2)",
                                        Results.NotFound,
                                        request,
                                        None,
@@ -118,7 +119,7 @@ object TenantHelper {
             case None =>
               AppLogger.info(
                 s"Tenant does not exists - host $host - domain $domain - None")
-              Errors.craftResponseResult(s"Tenant does not exists",
+              Errors.craftResponseResult(s"Tenant does not exists (3)",
                                          Results.NotFound,
                                          request,
                                          None,
@@ -126,7 +127,7 @@ object TenantHelper {
             case Some(tenant) if !tenant.enabled =>
               AppLogger.info(
                 s"Tenant does not exists - host $host - domain $domain - tenant disabled")
-              Errors.craftResponseResult("Tenant does not exists",
+              Errors.craftResponseResult("Tenant does not exists (4)",
                                          Results.NotFound,
                                          request,
                                          None,
@@ -168,13 +169,13 @@ object TenantHelper {
           .flatMap(env.dataStore.tenantRepo.findByIdNotDeleted(_))
           .flatMap {
             case None =>
-              Errors.craftResponseResult("Tenant does not exists",
+              Errors.craftResponseResult("Tenant does not exists (5)",
                                          Results.NotFound,
                                          request,
                                          None,
                                          env)
             case Some(tenant) if !tenant.enabled =>
-              Errors.craftResponseResult("Tenant does not exists",
+              Errors.craftResponseResult("Tenant does not exists (6)",
                                          Results.NotFound,
                                          request,
                                          None,

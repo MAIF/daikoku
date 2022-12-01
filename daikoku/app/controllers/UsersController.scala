@@ -174,6 +174,8 @@ class UsersController(DaikokuAction: DaikokuAction,
         "@{user.name} has deleted user profile of user.id : @{u.id}"))(ctx) {
           ctx.setCtxValue("u.id", id)
 
+      //FIXME: delete user for all tenants ???
+
           deletionService.deleteUserByQueue(id, ctx.tenant)
             .leftMap(_.render())
             .map(_ => Ok(Json.obj("done" -> true)))
@@ -184,16 +186,9 @@ class UsersController(DaikokuAction: DaikokuAction,
   def deleteSelfUser() = DaikokuAction.async { ctx =>
     PublicUserAccess(
       AuditTrailEvent("@{user.name} has deleted his own profile)"))(ctx) {
-
-      (for {
-        _ <- deletionService.deleteUserByQueue(ctx.user.id.value, ctx.tenant)
-        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.userSessionRepo.delete(Json.obj(
-          "userId" -> ctx.user.id.value
-        )))
-      } yield {
-        Ok(Json.obj("done" -> true))
-      })
+      deletionService.deleteUserByQueue(ctx.user.id.value, ctx.tenant)
         .leftMap(_.render())
+        .map(_ => Ok(Json.obj("done" -> true)))
         .value.map(_.merge)
     }
   }
