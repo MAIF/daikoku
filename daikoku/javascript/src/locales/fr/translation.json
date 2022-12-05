@@ -1206,5 +1206,6 @@
   "Ok": "Ok",
   "page.prompt.creation.message": "Indiquez le nom de la nouvelle page",
   "page.prompt.creation.title": "Création d'une nouvelle page",
-  "page.prompt.creation.placeholder": "Nouvelle page"
+  "page.prompt.creation.placeholder": "Nouvelle page",
+  "Yes": "Oui"
 }
