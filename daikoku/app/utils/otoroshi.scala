@@ -103,6 +103,20 @@ class OtoroshiClient(env: Env) {
     }
   }
 
+  def getRoutes()(
+      implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
+    client(s"/api/routes").get().flatMap { resp =>
+      if (resp.status == 200) {
+        val res = resp.json.as[JsArray]
+        FastFuture.successful(JsArray(res.value))
+      } else {
+        Future
+          .failed(new RuntimeException(
+            s"Error while fetching otoroshi service routes: ${resp.status} - ${resp.body}"))
+      }
+    }
+  }
+
   def getApiKeys()(
       implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
     client(s"/api/apikeys").get().flatMap { resp =>
@@ -191,6 +205,8 @@ class OtoroshiClient(env: Env) {
   def updateApiKey(key: ActualOtoroshiApiKey)(
       implicit otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
+    println(key)
+    println(key.asJson)
     client(s"/api/apikeys/${key.clientId}")
       .put(key.asJson)
       .map { resp =>

@@ -438,6 +438,16 @@ object json {
 
     override def writes(o: OtoroshiServiceId): JsValue = JsString(o.value)
   }
+  val OtoroshiRouteIdFormat = new Format[OtoroshiRouteId] {
+    override def reads(json: JsValue): JsResult[OtoroshiRouteId] =
+      Try {
+        JsSuccess(OtoroshiRouteId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: OtoroshiRouteId): JsValue = JsString(o.value)
+  }
   val VersionFormat = new Format[Version] {
     override def reads(json: JsValue): JsResult[Version] =
       Try {
@@ -2202,7 +2212,8 @@ object json {
     new Format[AuthorizedEntities] {
       override def writes(o: AuthorizedEntities): JsValue = JsArray(
         o.groups.map(g => s"group_${g.value}").map(JsString.apply).toSeq ++
-          o.services.map(g => s"service_${g.value}").map(JsString.apply).toSeq
+          o.services.map(g => s"service_${g.value}").map(JsString.apply).toSeq ++
+            o.routes.map(g => s"route_${g.value}").map(JsString.apply).toSeq
       )
 
       override def reads(json: JsValue): JsResult[AuthorizedEntities] =
@@ -2219,6 +2230,10 @@ object json {
                       entities.copy(
                         groups = entities.groups + OtoroshiServiceGroupId(
                           value.replace("group_", "")))
+                    case r"route_.*" =>
+                      entities.copy(
+                        routes = entities.routes + OtoroshiRouteId(
+                          value.replace("route_", "")))
                     case r"service_.*" =>
                       entities.copy(
                         services = entities.services + OtoroshiServiceId(
@@ -2237,7 +2252,8 @@ object json {
       override def writes(o: AuthorizedEntities): JsValue =
         Json.obj(
           "groups" -> SetOtoroshiServiceGroupsIdFormat.writes(o.groups),
-          "services" -> SetOtoroshiServicesIdFormat.writes(o.services)
+          "services" -> SetOtoroshiServicesIdFormat.writes(o.services),
+          "routes" -> SetOtoroshiRoutesIdFormat.writes(o.routes)
         )
 
       override def reads(json: JsValue): JsResult[AuthorizedEntities] =
@@ -2246,6 +2262,7 @@ object json {
             AuthorizedEntities(
               groups = (json \ "groups").as(SetOtoroshiServiceGroupsIdFormat),
               services = (json \ "services").as(SetOtoroshiServicesIdFormat),
+              routes = (json \ "routes").as(SetOtoroshiRoutesIdFormat),
             )
           )
         } recover {
@@ -3546,6 +3563,9 @@ object json {
   val SetOtoroshiServicesIdFormat =
     Format(Reads.set(OtoroshiServiceIdFormat),
            Writes.set(OtoroshiServiceIdFormat))
+  val SetOtoroshiRoutesIdFormat =
+    Format(Reads.set(OtoroshiRouteIdFormat),
+           Writes.set(OtoroshiRouteIdFormat))
   val SetOtoroshiServiceGroupsIdFormat =
     Format(Reads.set(OtoroshiServiceGroupIdFormat),
            Writes.set(OtoroshiServiceGroupIdFormat))

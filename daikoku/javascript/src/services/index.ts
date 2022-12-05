@@ -237,8 +237,14 @@ export const getOtoroshiGroupsAsTeamAdmin = (teamId: any, otoId: any) =>
 export const getOtoroshiServicesAsTeamAdmin = (teamId: any, otoId: any) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/services`);
 
+export const getOtoroshiRoutesAsTeamAdmin = (teamId: any, otoId: any) =>
+  customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/routes`);
+
 export const getOtoroshiServices = (tenantId: any, otoId: any) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`);
+
+export const getOtoroshiRoutes = (tenantId: any, otoId: any) =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/routes`);
 
 export const getOtoroshiApiKeys = (tenantId: any, otoId: any) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`);

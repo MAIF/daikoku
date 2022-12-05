@@ -1415,6 +1415,18 @@ class MockController(DaikokuAction: DaikokuAction,
       "description" -> "A nice service (with prefix)"
     )
   )
+  val routes: Seq[JsObject] = Seq(
+    Json.obj(
+      "id" -> "s_123456",
+      "name" -> "nice-route",
+      "description" -> "A nice route"
+    ),
+    Json.obj(
+      "id" -> "s_12346",
+      "name" -> "daikoku_nice-route",
+      "description" -> "A nice route (with prefix)"
+    )
+  )
   var apikeys: Seq[JsObject] = Seq()
 
   def fakeOtoroshiGroups() = Action {
@@ -1422,6 +1434,9 @@ class MockController(DaikokuAction: DaikokuAction,
   }
   def fakeOtoroshiServices() = Action {
     Ok(JsArray(services))
+  }
+  def fakeOtoroshiRoutes() = Action {
+    Ok(JsArray(routes))
   }
 
   def fakeOtoroshiGroup(groupId: String) = Action {

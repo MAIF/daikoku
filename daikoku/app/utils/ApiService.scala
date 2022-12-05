@@ -208,7 +208,8 @@ class ApiService(env: Env,
                     otoApiKey.copy(
                       authorizedEntities = AuthorizedEntities(
                         groups = otoApiKey.authorizedEntities.groups ++ authorizedEntities.groups,
-                        services = otoApiKey.authorizedEntities.services ++ authorizedEntities.services),
+                        services = otoApiKey.authorizedEntities.services ++ authorizedEntities.services,
+                        routes = otoApiKey.authorizedEntities.routes ++ authorizedEntities.routes),
                       tags = Set.from(tunedApiKey.tags ++ otoApiKey.tags).toSeq, //todo: Set au lieu de de Seq
                       restrictions = ApiKeyRestrictions(
                         enabled = otoApiKey.restrictions.enabled && tunedApiKey.restrictions.enabled,
@@ -423,13 +424,15 @@ class ApiService(env: Env,
                     EitherT.liftF(
                       otoroshiClient.updateApiKey(apiKey.copy(authorizedEntities = apiKey.authorizedEntities.copy(
                         services = apiKey.authorizedEntities.services ++ target.authorizedEntities.get.services,
-                        groups = apiKey.authorizedEntities.groups ++ target.authorizedEntities.get.groups
+                        groups = apiKey.authorizedEntities.groups ++ target.authorizedEntities.get.groups,
+                        routes = apiKey.authorizedEntities.routes ++ target.authorizedEntities.get.routes
                       ))))
                 case Some(target) if target.authorizedEntities.isDefined =>
                     EitherT.liftF(
                       otoroshiClient.updateApiKey(apiKey.copy(authorizedEntities = apiKey.authorizedEntities.copy(
                         services = apiKey.authorizedEntities.services.filter(s => !target.authorizedEntities.get.services.contains(OtoroshiServiceId(s.value))),
-                        groups = apiKey.authorizedEntities.groups.filter(s => !target.authorizedEntities.get.groups.contains(OtoroshiServiceGroupId(s.value)))
+                        groups = apiKey.authorizedEntities.groups.filter(s => !target.authorizedEntities.get.groups.contains(OtoroshiServiceGroupId(s.value))),
+                        routes = apiKey.authorizedEntities.routes.filter(s => !target.authorizedEntities.get.routes.contains(OtoroshiRouteId(s.value)))
                       ))))
                 case _ => EitherT.leftT[Future, JsObject](OtoroshiSettingsNotFound)
               }
@@ -646,7 +649,8 @@ class ApiService(env: Env,
       newAggApiKey <- EitherT.rightT[Future, AppError](oldApiKey.copy(
         authorizedEntities = AuthorizedEntities(
           groups = newParentKey.authorizedEntities.groups ++ childsKeys.foldLeft(Set.empty[OtoroshiServiceGroupId])((acc, curr) => acc ++ curr.map(_.authorizedEntities.groups).getOrElse(Set.empty)),
-          services = newParentKey.authorizedEntities.services ++ childsKeys.foldLeft(Set.empty[OtoroshiServiceId])((acc, curr) => acc ++ curr.map(_.authorizedEntities.services).getOrElse(Set.empty))),
+          services = newParentKey.authorizedEntities.services ++ childsKeys.foldLeft(Set.empty[OtoroshiServiceId])((acc, curr) => acc ++ curr.map(_.authorizedEntities.services).getOrElse(Set.empty)),
+          routes = newParentKey.authorizedEntities.routes ++ childsKeys.foldLeft(Set.empty[OtoroshiRouteId])((acc, curr) => acc ++ curr.map(_.authorizedEntities.routes).getOrElse(Set.empty))),
         tags = Set.from(newParentKey.tags ++ childsKeys.foldLeft(Set.empty[String])((acc, curr) => acc ++ curr.map(_.tags).getOrElse(Set.empty))).toSeq,
         restrictions = ApiKeyRestrictions(
           enabled = newParentKey.restrictions.enabled && childsKeys.foldLeft(false)((acc, curr) => acc && curr.exists(_.restrictions.enabled)),

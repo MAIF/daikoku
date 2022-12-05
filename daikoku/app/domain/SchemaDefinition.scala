@@ -252,6 +252,9 @@ object SchemaDefinition {
       ),
       ReplaceField("groups",
         Field("groups", ListType(StringType), resolve = _.value.groups.toSeq.map(_.value))
+      ),
+      ReplaceField("routes",
+        Field("routes", ListType(StringType), resolve = _.value.routes.toSeq.map(_.value))
       )
     )
 

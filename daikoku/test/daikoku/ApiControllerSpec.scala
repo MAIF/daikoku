@@ -2136,6 +2136,8 @@ class ApiControllerSpec()
       subscription.by mustBe userApiEditorId
     }
 
+    "subscribe"
+
     "get his team visible apis" in {
       val planSubId = UsagePlanId("1")
       val sub = ApiSubscription(

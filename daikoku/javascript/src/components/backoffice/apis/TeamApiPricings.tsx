@@ -45,7 +45,7 @@ const SUBSCRIPTION_PLAN_TYPES = {
   PayPerUse: { defaultName: 'Pay per use', defaultDescription: 'Plan priced on usage' },
 };
 
-const OtoroshiServicesAndGroupSelector = ({
+const OtoroshiEntitiesSelector = ({
   rawValues,
   onChange,
   translate
@@ -53,6 +53,7 @@ const OtoroshiServicesAndGroupSelector = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [groups, setGroups] = useState<Array<any>>([]);
   const [services, setServices] = useState<Array<any>>([]);
+  const [routes, setRoutes] = useState<Array<any>>([]);
   const [disabled, setDisabled] = useState<boolean>(true);
   const [value, setValue] = useState<any>(undefined);
 
@@ -73,8 +74,12 @@ const OtoroshiServicesAndGroupSelector = ({
           params.teamId,
           rawValues.otoroshiTarget.otoroshiSettings
         ),
+        Services.getOtoroshiRoutesAsTeamAdmin(
+          params.teamId,
+          rawValues.otoroshiTarget.otoroshiSettings
+        )
       ])
-        .then(([groups, services]) => {
+        .then(([groups, services, routes]) => {
           if (!groups.error)
             setGroups(groups.map((g: any) => ({
               label: g.name,
@@ -89,29 +94,38 @@ const OtoroshiServicesAndGroupSelector = ({
               type: 'service'
             })));
           else setServices([]);
+          if (!routes.error)
+            setRoutes(routes.map((g: any) => ({
+              label: g.name,
+              value: g.id,
+              type: 'route'
+            })));
+          else setRoutes([]);
         })
         .catch(() => {
           setGroups([]);
           setServices([]);
+          setRoutes([]);
         });
     }
     setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
   }, [rawValues?.otoroshiTarget?.otoroshiSettings]);
 
   useEffect(() => {
-    if (groups && services) {
+    if (groups && services && routes) {
       setLoading(false);
     }
-  }, [services, groups]);
+  }, [services, groups, routes]);
 
   useEffect(() => {
-    if (!!groups && !!services && !!rawValues.otoroshiTarget.authorizedEntities) {
+    if (!!groups && !!services && !!routes && !!rawValues.otoroshiTarget.authorizedEntities) {
       setValue([
         ...rawValues.otoroshiTarget.authorizedEntities.groups.map((authGroup: any) => (groups as any).find((g: any) => g.value === authGroup)),
-        ...rawValues.otoroshiTarget.authorizedEntities.services.map((authService: any) => (services as any).find((g: any) => g.value === authService)),
+        ...(rawValues.otoroshiTarget.authorizedEntities.services || []).map((authService: any) => (services as any).find((g: any) => g.value === authService)),
+        ...(rawValues.otoroshiTarget.authorizedEntities.routes || []).map((authRoute: any) => (routes as any).find((g: any) => g.value === authRoute))
       ].filter((f) => f));
     }
-  }, [rawValues, groups, services]);
+  }, [rawValues, groups, services, routes]);
 
   const onValueChange = (v: any) => {
     if (!v) {
@@ -131,13 +145,19 @@ const OtoroshiServicesAndGroupSelector = ({
                 ...acc,
                 services: [...acc.services, services.find((s: any) => s.value === entitie.value).value],
               };
+            case 'route':
+              return {
+                ...acc,
+                routes: [...acc.routes, routes.find((s: any) => s.value === entitie.value).value],
+              };
           }
         },
-        { groups: [], services: [] }
+        { groups: [], services: [], routes: [] }
       );
       setValue([
         ...value.groups.map((authGroup: any) => groups.find((g: any) => g.value === authGroup)),
         ...value.services.map((authService: any) => services.find((g: any) => g.value === authService)),
+        ...value.routes.map((authRoute: any) => routes.find((g: any) => g.value === authRoute)),
       ]);
       onChange(value);
     }
@@ -155,6 +175,7 @@ const OtoroshiServicesAndGroupSelector = ({
       options={[
         { label: 'Service groups', options: groups },
         { label: 'Services', options: services },
+        { label: 'Routes', options: routes },
       ]} value={value} onChange={onValueChange} classNamePrefix="reactSelect" className="reactSelect" />
     <div className="col-12 d-flex flex-row mt-1">
       <div className="d-flex flex-column flex-grow-1">
@@ -532,7 +553,7 @@ export const TeamApiPricings = (props: Props) => {
         'trialPeriod',
         'billingDuration',
         'costPerMonth',
-        'costPerAdditionalRequest',
+        'costPerRequest',
         'currency',
       ],
     },
@@ -719,7 +740,7 @@ export const TeamApiPricings = (props: Props) => {
               type: type.object,
               visible: ({ rawValues }) => !!rawValues.otoroshiTarget.otoroshiSettings,
               deps: ['otoroshiTarget.otoroshiSettings'],
-              render: (props: any) => OtoroshiServicesAndGroupSelector({ ...props, translate }),
+              render: (props: any) => OtoroshiEntitiesSelector({ ...props, translate }),
               label: translate('Authorized entities'),
               placeholder: translate('Authorized.entities.placeholder'),
               help: translate('authorized.entities.help'),
@@ -907,6 +928,16 @@ export const TeamApiPricings = (props: Props) => {
           type: type.number,
           label: translate('Cost per add. req.'),
           placeholder: translate('Cost per additionnal request'),
+          props: {
+            step: 1,
+            min: 0,
+          },
+          constraints: [constraints.positive('constraints.positive')],
+        },
+        costPerRequest: {
+          type: type.number,
+          label: translate('Cost per req.'),
+          placeholder: translate('Cost per request'),
           props: {
             step: 1,
             min: 0,
