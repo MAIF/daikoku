@@ -173,13 +173,11 @@ class UsersController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(
         "@{user.name} has deleted user profile of user.id : @{u.id}"))(ctx) {
           ctx.setCtxValue("u.id", id)
-
-      //FIXME: delete user for all tenants ???
-
-          deletionService.deleteUserByQueue(id, ctx.tenant)
-            .leftMap(_.render())
-            .map(_ => Ok(Json.obj("done" -> true)))
-            .value.map(_.merge)
+      (for {
+        tenants <- env.dataStore.tenantRepo.findAllNotDeleted()
+        _       <- Future.sequence(tenants.map(t => deletionService.deleteUserByQueue(id, t).value))
+      } yield ())
+        .map(_ => Ok(Json.obj("done" -> true)))
       }
     }
 

@@ -26,7 +26,7 @@ class DeletionService(env: Env) {
 
     AppLogger.debug(s"add **user**[${user.name}] to deletion queue")
     for {
-      _ <- EitherT.liftF(env.dataStore.userRepo.save(user.copy(pendingDeletion = Some(true))))
+      _ <- EitherT.liftF(env.dataStore.userRepo.deleteByIdLogically(user.id))
       _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).save(operation))
     } yield ()
   }
@@ -42,7 +42,7 @@ class DeletionService(env: Env) {
 
     AppLogger.debug(s"[deletion service] :: add **team**[${team.name}] to deletion queue")
     for {
-      _ <- EitherT.liftF(env.dataStore.teamRepo.forTenant(tenant).save(team.copy(pendingDeletion = Some(true))))
+      _ <- EitherT.liftF(env.dataStore.teamRepo.forTenant(tenant).deleteByIdLogically(team.id))
       _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).save(operation))
     } yield ()
   }
@@ -60,9 +60,8 @@ class DeletionService(env: Env) {
     AppLogger.debug(s"[deletion service] :: add **subscriptions**[${subscriptions.map(_.id).mkString(",")}] to deletion queue")
     val r = for {
       _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-      .updateManyByQuery(Json.obj("_id" ->
-        Json.obj("$in" -> JsArray(subscriptions.map(_.id.asJson).distinct))),
-      Json.obj("$set" -> Json.obj("pendingDeletion" -> true)))
+        .deleteLogically(Json.obj("_id" ->
+          Json.obj("$in" -> JsArray(subscriptions.map(_.id.asJson).distinct))))
       _ <- env.dataStore.operationRepo.forTenant(tenant).insertMany(operations)
     } yield ()
 
@@ -82,9 +81,8 @@ class DeletionService(env: Env) {
     AppLogger.debug(s"[deletion service] :: add **apis**[${apis.map(_.name).mkString(",")}] to deletion queue")
     val r = for {
       _ <- env.dataStore.apiRepo.forTenant(tenant)
-        .updateManyByQuery(Json.obj("_id" ->
-          Json.obj("$in" -> JsArray(apis.map(_.id.asJson).distinct))),
-          Json.obj("$set" -> Json.obj("pendingDeletion" -> true)))
+        .deleteLogically(Json.obj("_id" ->
+          Json.obj("$in" -> JsArray(apis.map(_.id.asJson).distinct))))
       _ <- env.dataStore.operationRepo.forTenant(tenant).insertMany(operations)
     } yield ()
 
@@ -125,6 +123,4 @@ class DeletionService(env: Env) {
       _ <- deleteTeam(team, tenant)
     } yield ()
   }
-
-
 }

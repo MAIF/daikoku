@@ -16,7 +16,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
 class DeletionJob(
-    client: OtoroshiClient,
     env: Env,
     apiKeyStatsJob: ApiKeyStatsJob,
     apiService: ApiService
@@ -27,19 +26,6 @@ class DeletionJob(
   implicit val ev: Env = env
 
   private val ref = new AtomicReference[Cancellable]()
-
-  private val jobUser = User(
-    id = UserId("otoroshi-deletion-job"),
-    tenants = Set(),
-    origins = Set(),
-    name = "Otoroshi deletion Job",
-    email = "verifier@daikoku.io",
-    picture = "https://www.otoroshi.io/assets/images/svg/otoroshi_logo.svg",
-    password = None,
-    lastTenant = None,
-    personalToken = Some(IdGenerator.token(32)),
-    defaultLanguage = None
-  )
 
   def start(): Unit = {
     if (!env.config.deletionByCron && ref.get() == null) {
@@ -216,7 +202,10 @@ class DeletionJob(
   def deleteFirstOperation(): Future[Unit] = {
     env.dataStore.operationRepo
       .forAllTenant()
-      .findOne(Json.obj("status" -> Json.obj("$ne" -> OperationStatus.Error.name)))
+      .findOne(Json.obj( "$and" -> Json.arr(
+        Json.obj("status" -> Json.obj("$ne" -> OperationStatus.Error.name)),
+        Json.obj("status" -> OperationStatus.Idle.name)
+      )))
       .flatMap {
         case Some(operation) =>
           ((operation.itemType, operation.action) match {

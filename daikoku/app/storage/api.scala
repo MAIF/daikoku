@@ -112,7 +112,6 @@ trait Repo[Of, Id <: ValueType] {
       implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("_deleted" -> false,
-                "pendingDeletion" -> Json.obj("$ne" -> true),
                 "$or" -> Json.arr(Json.obj("_id" -> id),
                                  Json.obj("_humanReadableId" -> hrid))))
 
@@ -120,7 +119,6 @@ trait Repo[Of, Id <: ValueType] {
       implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("_deleted" -> false,
-               "pendingDeletion" -> Json.obj("$ne" -> true),
                "$or" -> Json.arr(Json.obj("_id" -> id.value),
                                  Json.obj("_humanReadableId" -> hrid))))
 
@@ -128,7 +126,6 @@ trait Repo[Of, Id <: ValueType] {
       implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("_deleted" -> false,
-               "pendingDeletion" -> Json.obj("$ne" -> true),
                "$or" -> Json.arr(Json.obj("_id" -> idOrHrid),
                                  Json.obj("_humanReadableId" -> idOrHrid))))
 
@@ -177,28 +174,21 @@ trait Repo[Of, Id <: ValueType] {
   def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean]
 
   def findAllNotDeleted()(implicit ec: ExecutionContext): Future[Seq[Of]] =
-    find(Json.obj(
-      "_deleted" -> false,
-      "pendingDeletion" -> Json.obj("$ne" -> true)))
+    find(Json.obj("_deleted" -> false))
 
   def findNotDeleted(query: JsObject, maxDocs: Int = -1)(
       implicit ec: ExecutionContext): Future[Seq[Of]] =
-    find(query ++ Json.obj(
-      "_deleted" -> false,
-      "pendingDeletion" -> Json.obj("$ne" -> true)),
+    find(query ++ Json.obj("_deleted" -> false),
       maxDocs = maxDocs)
 
   def findOneNotDeleted(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] =
-    findOne(query ++ Json.obj(
-      "_deleted" -> false,
-      "pendingDeletion" -> Json.obj("$ne" -> true)))
+    findOne(query ++ Json.obj("_deleted" -> false))
 
   def findByIdNotDeleted(id: String)(
       implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj(
       "_deleted" -> false,
-      "pendingDeletion" -> Json.obj("$ne" -> true),
       "_id" -> id))
 
   def findByIdNotDeleted(id: Id)(

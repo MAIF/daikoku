@@ -1857,8 +1857,7 @@ object json {
               (json \ "starredApis").asOpt(SetApiIdFormat).getOrElse(Set.empty),
             twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(
               TwoFactorAuthenticationFormat),
-            invitation = (json \ "invitation").asOpt(UserInvitationFormat),
-            pendingDeletion = (json \ "pendingDeletion").asOpt[Boolean]
+            invitation = (json \ "invitation").asOpt(UserInvitationFormat)
           )
         )
       } recover {
@@ -1895,10 +1894,6 @@ object json {
       "invitation" -> o.invitation
         .map(UserInvitationFormat.writes)
         .getOrElse(JsNull)
-        .as[JsValue],
-      "pendingDeletion" -> o.pendingDeletion
-        .map(JsBoolean)
-        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1934,8 +1929,6 @@ object json {
               .asOpt[String]
               .flatMap(TeamApiKeyVisibility.apply),
             apisCreationPermission = (json \ "apisCreationPermission")
-              .asOpt[Boolean],
-            pendingDeletion = (json \ "pendingDeletion")
               .asOpt[Boolean]
           )
         )
@@ -1964,10 +1957,6 @@ object json {
         .as[JsValue],
       "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
       "apisCreationPermission" -> o.apisCreationPermission
-        .map(JsBoolean)
-        .getOrElse(JsNull)
-        .as[JsValue],
-      "pendingDeletion" -> o.pendingDeletion
         .map(JsBoolean)
         .getOrElse(JsNull)
         .as[JsValue]
