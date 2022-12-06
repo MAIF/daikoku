@@ -214,7 +214,20 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                       s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"),
                     api.team,
                     api.tenant)
-            })
+            }) ++
+        entities.routes.map(
+          route =>
+            client
+              .getRoutes()(otoroshi)
+              .andThen {
+                case Failure(_) =>
+                  sendErrorNotification(
+                    NotificationAction.OtoroshiSyncApiError(
+                      api,
+                      s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore"),
+                    api.team,
+                    api.tenant)
+              })
     }
 
     env.dataStore.apiRepo.forAllTenant().findNotDeleted(query).map { apis =>
@@ -547,7 +560,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                         ),
                         authorizedEntities = AuthorizedEntities(
                           groups = apikey1.authorizedEntities.groups | apikey2.authorizedEntities.groups,
-                          services = apikey1.authorizedEntities.services | apikey2.authorizedEntities.services
+                          services = apikey1.authorizedEntities.services | apikey2.authorizedEntities.services,
+                          routes = apikey1.authorizedEntities.routes | apikey2.authorizedEntities.routes
                         )
                       ))
                     case (Left(_), Right(apikey)) => Right(apikey)

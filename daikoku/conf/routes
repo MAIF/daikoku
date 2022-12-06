@@ -170,7 +170,9 @@ POST    /api/teams/:teamId/testing/:apiId/call              fr.maif.otoroshi.dai
 GET     /api/teams/:teamId/tenant/otoroshis/:oto/groups     fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsFor(teamId, oto)
 GET     /api/tenants/:tenantId/otoroshis/:oto/groups        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsForTenant(tenantId, oto)
 GET     /api/tenants/:tenantId/otoroshis/:oto/services      fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesForTenant(tenantId, oto)
+GET     /api/tenants/:tenantId/otoroshis/:oto/routes        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiRoutesForTenant(tenantId, oto)
 GET     /api/teams/:teamId/tenant/otoroshis/:oto/services   fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesFor(teamId, oto)
+GET     /api/teams/:teamId/tenant/otoroshis/:oto/routes     fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiRoutesFor(teamId, oto)
 GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys       fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
 
 GET     /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.teams()
@@ -275,6 +277,7 @@ GET     /fakeotoroshi/api/apikeys                    fr.maif.otoroshi.daikoku.ct
 GET     /fakeotoroshi/api/groups/:groupId            fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroup(groupId)
 GET     /fakeotoroshi/api/groups                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroups()
 GET     /fakeotoroshi/api/services                   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiServices()
+GET     /fakeotoroshi/api/routes                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiRoutes()
 
 GET     /admin-api/swagger.json                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
 

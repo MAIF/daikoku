@@ -115,7 +115,7 @@ export const InitializeFromOtoroshi = () => {
       });
   };
 
-  const orderedServices = orderBy(state.context.services, ['groiupId', 'name']);
+  const orderedServices = orderBy([...state.context.services, ...state.context.routes], ['groupId', 'id', 'name']);
   const filterServices = (inputValue: any) => Promise.resolve(orderedServices
     .map(({ name }, index) => ({ label: name, value: index + 1 }))
     .filter((s) => (s.label as any).toLowerCase().includes(inputValue.toLowerCase())));
@@ -127,7 +127,7 @@ export const InitializeFromOtoroshi = () => {
       teams={teams}
       addNewTeam={(t: any) => setTeams([...teams, t])}
       addService={(s: any, team: any) => setCreatedApis([...createdApis, { ...s, team }])}
-      infos={{ index: idx, total: state.context.services.length }}
+      infos={{ index: idx, total: [...state.context.services, ...state.context.routes].length }}
       recap={() => send('RECAP')}
       maybeCreatedApi={Option(createdApis.find((a) => (a as any).id === (s as any).id))}
       updateService={(s: any, team: any) => setCreatedApis([...createdApis.filter((a) => (a as any).id !== s.id), { ...s, team }])}
@@ -192,12 +192,12 @@ export const InitializeFromOtoroshi = () => {
         state.matches('loadingServices') ||
         state.matches('loadingApikeys')) && <Spinner />}
       {state.value === 'stepSelection' && (<SelectionStepStep goToServices={() => send('LOAD_SERVICE', { up: true })} goToApikeys={() => send('LOAD_APIKEY')} />)}
-      {state.matches('completeServices') && (<StepWizard initialStep={step} isLazyMount={true} transitions={{}} onStepChange={(x) => setStep(x.activeStep)}>
+      {state.matches('completeServices') && <StepWizard initialStep={step} isLazyMount={true} transitions={{}} onStepChange={(x) => setStep(x.activeStep)}>
         {servicesSteps}
-      </StepWizard>)}
+      </StepWizard>}
       {state.matches('recap') && (<RecapServiceStep cancel={() => send('CANCEL')} createdApis={createdApis} groups={state.context.groups} teams={teams} goBackToServices={() => send('ROLLBACK')} create={() => send('CREATE_APIS', { createdApis, callBackCreation: () => afterCreation() })} />)}
       {state.matches('completeApikeys') && (<>
-        <ApiKeyStep otoroshi={state.context.otoroshi} teams={teams} apis={apis} groups={state.context.groups} services={state.context.services} addNewTeam={(t: any) => setTeams([...teams, t])} addSub={(apikey: any, team: any, api: any, plan: any) => setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])} infos={(idx: any) => ({
+        <ApiKeyStep otoroshi={state.context.otoroshi} teams={teams} apis={apis} groups={state.context.groups} services={state.context.services} routes={state.context.routes} addNewTeam={(t: any) => setTeams([...teams, t])} addSub={(apikey: any, team: any, api: any, plan: any) => setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])} infos={(idx: any) => ({
           index: idx,
           total: state.context.apikeys.length
         })} updateApi={(api: any) => updateApi(api)} recap={() => send('RECAP')} maybeCreatedSub={(apikey: any) => Option(createdSubs.find((s) => apikey.clientId === (s as any).clientId))} updateSub={(apikey: any, team: any, api: any, plan: any) => setCreatedSubs([

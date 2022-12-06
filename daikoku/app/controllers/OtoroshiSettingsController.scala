@@ -249,6 +249,27 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
   }
 
+  def otoroshiRoutesFor(teamId: String, oto: String) = DaikokuAction.async {
+    ctx =>
+      TeamApiEditorOnly(AuditTrailEvent(
+        s"@{user.name} has accessed routes of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(
+        teamId,
+        ctx) { _ =>
+        ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+          case Some(settings) =>
+            otoroshiClient
+              .getRoutes()(settings)
+              .map(Ok(_))
+              .recover {
+                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              }
+        }
+      }
+  }
+
   def otoroshiServicesForTenant(tenantId: String, oto: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(AuditTrailEvent(
@@ -262,6 +283,27 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
           case Some(settings) =>
             otoroshiClient
               .getServices()(settings)
+              .map(Ok(_))
+              .recover {
+                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              }
+        }
+      }
+    }
+
+  def otoroshiRoutesForTenant(tenantId: String, oto: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(AuditTrailEvent(
+        s"@{user.name} has accessed routes of one otoroshi settings ($oto)"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+          case Some(settings) =>
+            otoroshiClient
+              .getRoutes()(settings)
               .map(Ok(_))
               .recover {
                 case error => BadRequest(Json.obj("error" -> error.getMessage))

@@ -299,6 +299,8 @@ export const ServicesStep = (props: any) => {
         :{' '}
         {props.groups.find((g: any) => g.id === props.service.groupId)
           ? props.groups.find((g: any) => g.id === props.service.groupId).name
+          : props.groups.find((g: any) => props.service.groups.includes(g.id))
+          ? props.groups.find((g: any) => props.service.groups.includes(g.id)).name
           : ''}
       </div>
     </div>
@@ -472,6 +474,11 @@ export const ApiKeyStep = (props: any) => {
     label: g.name,
     prefix: 'service_'
   }));
+  const routes = (props.routes || []).map((g: any) => ({
+    value: g.id,
+    label: g.name,
+    prefix: 'route_'
+  }));
 
   const columns = [
     {
@@ -509,6 +516,7 @@ export const ApiKeyStep = (props: any) => {
           options={[
             { label: 'Services', options: orderBy(services, ['label']) },
             { label: 'Service groups', options: orderBy(groups, ['label']) },
+            { label: 'Routes', options: orderBy(routes, ['label']) }
           ]}
           onChange={setSelectedEntity}
           value={selectedEntity}

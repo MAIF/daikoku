@@ -695,15 +695,17 @@ case class Api(
 }
 
 case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
-                              groups: Set[OtoroshiServiceGroupId] = Set.empty)
+                              groups: Set[OtoroshiServiceGroupId] = Set.empty,
+                              routes: Set[OtoroshiRouteId] = Set.empty,
+                              )
     extends CanJson[AuthorizedEntities] {
   def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
   def asOtoroshiJson: JsValue =
     json.AuthorizedEntitiesOtoroshiFormat.writes(this)
-  def isEmpty: Boolean = services.isEmpty && groups.isEmpty
+  def isEmpty: Boolean = services.isEmpty && groups.isEmpty && routes.isEmpty
   def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
     services.forall(s => a.services.contains(s)) && groups.forall(g =>
-      a.groups.contains(g))
+      a.groups.contains(g)) && routes.forall(g => a.routes.contains(g))
 }
 
 case class ApiWithAuthorizations(api: Api,
