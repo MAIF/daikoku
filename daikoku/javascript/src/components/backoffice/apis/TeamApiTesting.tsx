@@ -33,7 +33,7 @@ export const TeamApiTesting = (props) => {
         };
 
     dispatch(openSubMetadataModal({
-      save: (metadata: any) => dispatch(openTestingApiKeyModal({
+      save: (metadata) => dispatch(openTestingApiKeyModal({
         metadata,
         teamId: currentTeam._id,
         config: newConfig,

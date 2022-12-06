@@ -117,20 +117,20 @@ class BasicUsageSpec()
         "emailField" -> "mail"
       )
 
-      setupEnvBlocking(
-        tenants = Seq(tenant.copy(authProviderSettings = authProviderSettings)),
+      setupEnv(
+        tenants = Seq(tenant.copy(authProvider = AuthProvider.LDAP, authProviderSettings = authProviderSettings)),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam)
-      )
+      ).map(_ => {
+        val session = loginWithBlocking(tenantAdmin, tenant)
 
-      val session = loginWithBlocking(tenantAdmin, tenant)
+        val resp =
+          httpJsonCallBlocking(path = "/api/auth/ldap/_check",
+                               method = "POST",
+                               body = Some(authProviderSettings))(tenant, session)
 
-      val resp =
-        httpJsonCallBlocking(path = "/api/auth/ldap/_check",
-                             method = "POST",
-                             body = Some(authProviderSettings))(tenant, session)
-
-      resp.status mustBe 200
+        resp.status mustBe 200
+      })
     }
 
     "check if email exists in ldap" in {
@@ -147,30 +147,30 @@ class BasicUsageSpec()
         "emailField" -> "mail"
       )
 
-      setupEnvBlocking(
-        tenants = Seq(tenant.copy(authProviderSettings = authProviderSettings)),
+      setupEnv(
+        tenants = Seq(tenant.copy(authProvider = AuthProvider.LDAP, authProviderSettings = authProviderSettings)),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam)
-      )
+      ).map(_ => {
+        val session = loginWithBlocking(tenantAdmin, tenant)
 
-      val session = loginWithBlocking(tenantAdmin, tenant)
+        val validEmail = "gauss@ldap.forumsys.com"
+        val unknownEmail = "toto@ldap.forumsys.com"
 
-      val validEmail = "gauss@ldap.forumsys.com"
-      val unknownEmail = "toto@ldap.forumsys.com"
+        var resp = httpJsonCallBlocking(
+          path =
+            s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/${validEmail}"
+        )(tenant, session)
 
-      var resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/${validEmail}"
-      )(tenant, session)
+        resp.status mustBe 200
 
-      resp.status mustBe 200
+        resp = httpJsonCallBlocking(
+          path =
+            s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/${unknownEmail}"
+        )(tenant, session)
 
-      resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/${unknownEmail}"
-      )(tenant, session)
-
-      resp.status mustBe 400
+        resp.status mustBe 400
+      })
     }
   }
 }

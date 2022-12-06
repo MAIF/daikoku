@@ -17,9 +17,10 @@ import { I18nContext, openFormModal, openSubMetadataModal } from '../../../core'
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { Form, format, type } from "@maif/react-forms";
-import { IApi, IState, ITeamSimple } from "../../../types";
+import { IApi, IState, ISubscription, ITeamSimple } from "../../../types";
 import { string } from "prop-types";
 import { ModalContext } from '../../../contexts';
+import { CustomSubscriptionData } from '../../frontend';
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -125,14 +126,16 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     }
   }, [tableRef.current]);
 
-  const updateMeta = (sub: any) => dispatch(openSubMetadataModal({
-    save: (updates: any) => {
-      Services.updateSubscription(currentTeam, { ...sub, ...updates }).then(() => tableRef.current?.update());
+  const updateMeta = (sub: ISubscription) => dispatch(openSubMetadataModal({
+    save: (updates: CustomSubscriptionData) => {
+      Services.updateSubscription(currentTeam, { ...sub, ...updates })
+        .then(() => tableRef.current?.update());
     },
     api: sub.api,
     plan: sub.plan,
     team: teams.find((t) => t._id === sub.team),
     subscription: sub,
+    creationMode: false
   }));
 
   const regenerateSecret = (sub: any) => {
@@ -162,10 +165,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
             <button className='btn btn-sm btn-outline-primary' onClick={() => dispatch(openFormModal({
               actionLabel: "filter",
               onSubmit: data => {
-                console.debug({ data })
-                //FIXME: understand why form is not working in DK
-                // setFilters({tags: [], metadata: [{key: "tenant", value: "recx"}]})
-                setFilters({ tags: ["contrat"], metadata: [] })
+                setFilters(data)
               },
               schema: {
                 metadata: {
@@ -177,7 +177,8 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                     key: {
                       type: type.string,
                       format: format.select,
-                      options: Array.from(new Set(options))
+                      options: Array.from(new Set(options)),
+                      createOption: true
                     },
                     value: {
                       type: type.string,
@@ -192,9 +193,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                   options: api.possibleUsagePlans.flatMap(pp => pp.otoroshiTarget?.apikeyCustomization.tags || [])
                 }
               },
-              title: "filter data",
+              title: translate("Filter data"),
               value: filters
-            }))}> filter </button>
+            }))}> {translate('Filter')} </button>
             {!!filters && (
               <div className="clear cursor-pointer ms-1" onClick={() => setFilters(undefined)}>
                 <i className="far fa-times-circle me-1" />

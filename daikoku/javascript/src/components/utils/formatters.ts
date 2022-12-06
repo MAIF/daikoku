@@ -1,6 +1,8 @@
 import moment from 'moment';
+import { TranslateParams } from '../../contexts/i18n-context';
 
 import { currencies } from '../../services/currencies';
+import { IUsagePlan } from '../../types';
 
 export const formatCurrency = (number: any) => {
   return new Intl.NumberFormat('fr-FR', {
@@ -14,19 +16,21 @@ export const getCurrencySymbol = (code: any) => {
   return currency ? currency.symbol : undefined;
 };
 
-export const formatPlanType = (plan: any, translate: any) => {
-  switch (plan.type) {
-    case 'FreeWithoutQuotas':
-      return translate('FreeWithoutQuotas');
-    case 'FreeWithQuotas':
-      return translate('FreeWithQuotas');
-    case 'QuotasWithLimits':
-      return translate('QuotasWithLimits');
-    case 'QuotasWithoutLimits':
-      return translate('Quotas / pay per use');
-    case 'PayPerUse':
-      return translate('Pay per use');
-  }
+export const formatPlanType = (plan: IUsagePlan, translate: (x: string | TranslateParams) => string) => {
+    switch (plan.type) {
+      case 'FreeWithoutQuotas':
+        return translate('FreeWithoutQuotas');
+      case 'FreeWithQuotas':
+        return translate('FreeWithQuotas');
+      case 'QuotasWithLimits':
+        return translate('QuotasWithLimits');
+      case 'QuotasWithoutLimits':
+        return translate('Quotas / pay per use');
+      case 'PayPerUse':
+        return translate('Pay per use');
+      default:
+        return '';
+    }
 };
 
 export const teamPermissions = {

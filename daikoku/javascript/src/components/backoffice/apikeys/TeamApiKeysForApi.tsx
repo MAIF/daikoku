@@ -21,15 +21,15 @@ import {
 } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
-import { IState, IStateContext, ISubscription } from '../../../types';
+import { IApi, IState, IStateContext, ISubscription, IUsagePlan } from '../../../types';
 
 export const TeamApiKeysForApi = () => {
   const { currentTeam, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
   useTeamBackOffice(currentTeam);
 
-  const [api, setApi] = useState<any>({ name: '--', possibleUsagePlans: [] });
+  const [api, setApi] = useState<IApi>();
   const [apiTeam, setApiTeam] = useState();
-  const [subscriptions, setSubscriptions] = useState([]);
+  const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [searched, setSearched] = useState('');
 
   const [subscribedApis, setSubscribedApis] = useState([]);
@@ -125,8 +125,8 @@ export const TeamApiKeysForApi = () => {
       });
   };
 
-  const currentPlan = (subscription: any) => {
-    return api.possibleUsagePlans.find((p: any) => (p as any)._id === subscription.plan);
+  const currentPlan = (subscription: ISubscription): IUsagePlan => {
+    return api!.possibleUsagePlans.find((p) => p._id === subscription.plan)!;
   };
 
   const showApiKey = CanIDoAction(connectedUser, read, apikey, currentTeam);
@@ -138,12 +138,12 @@ export const TeamApiKeysForApi = () => {
       : subscriptions.filter((subs) => {
         const plan = currentPlan(subs);
 
-        if (plan && (plan as any).customName && (plan as any).customName.toLowerCase().includes(search)) {
+        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
           return true;
-        } else if ((subs as any).customName && (subs as any).customName.toLowerCase().includes(search)) {
+        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
           return true;
         } else {
-          return formatPlanType(currentPlan(subs), translate)
+          return formatPlanType(plan, translate)
             .toLowerCase()
             .includes(search);
         }

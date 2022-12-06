@@ -1,9 +1,8 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.login.AuthProvider
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
@@ -18,21 +17,23 @@ class UserControllerSpec()
 
   "a daikoku admin" can {
     "list all tenant user" in {
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, user, userAdmin),
         teams = Seq(defaultAdminTeam)
-      )
+      ).map(_ => {
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
       val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
       resp.status mustBe 200
       val users = resp.json.as[JsArray]
+      println(Json.prettyPrint(users))
       users.value.length mustBe 3
       users.value.diff(
         Seq(daikokuAdmin.asSimpleJson,
             user.asSimpleJson,
             userAdmin.asSimpleJson)) mustBe Seq.empty
+      })
     }
 
     "find user by id" in {
@@ -78,10 +79,19 @@ class UserControllerSpec()
     "delete user" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(daikokuAdmin, user, userAdmin),
-        teams = Seq()
+        users = Seq(daikokuAdmin, user),
+        teams = Seq(Team(
+          id = TeamId("user-team"),
+          tenant = tenant.id,
+          `type` = TeamType.Personal,
+          name = "user team personal",
+          description = "",
+          contact = user.email,
+          users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
+        ))
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
+
       val respUpdate =
         httpJsonCallBlocking(path = s"/api/admin/users/${userTeamUserId.value}",
                              method = "DELETE")(tenant, session)
@@ -89,6 +99,10 @@ class UserControllerSpec()
 
       val resp = httpJsonCallBlocking(
         s"/api/admin/users/${userTeamUserId.value}")(tenant, session)
+      resp.status mustBe 404
+
+      val respTestTeam = httpJsonCallBlocking(
+        s"/api/teams/user-team")(tenant, session)
       resp.status mustBe 404
     }
 
@@ -321,9 +335,11 @@ class UserControllerSpec()
 
   "a teamAdmin" can {
     "create LDAP user" in {
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(
-          tenant.copy(authProviderSettings = Json.obj(
+          tenant.copy(
+            authProvider = AuthProvider.LDAP,
+            authProviderSettings = Json.obj(
             "serverUrls" -> Seq("ldap://ldap.forumsys.com:389"),
             "searchBase" -> "dc=example,dc=com",
             "adminUsername" -> "cn=read-only-admin,dc=example,dc=com",
@@ -337,19 +353,20 @@ class UserControllerSpec()
           ))),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam)
-      )
+      ).map(_ => {
+        val session = loginWithBlocking(tenantAdmin, tenant)
 
-      val session = loginWithBlocking(tenantAdmin, tenant)
+        val resp = httpJsonCallBlocking(
+          path = s"/api/teams/${defaultAdminTeam.id.value}/ldap/users",
+          method = "POST",
+          body = Some(
+            Json.obj("email" -> "gauss@ldap.forumsys.com",
+              "teamId" -> defaultAdminTeam.id.value))
+        )(tenant, session)
 
-      val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${defaultAdminTeam.id.value}/ldap/users",
-        method = "POST",
-        body = Some(
-          Json.obj("email" -> "gauss@ldap.forumsys.com",
-                   "teamId" -> defaultAdminTeam.id.value))
-      )(tenant, session)
-
-      resp.status mustBe 201
+        println(Json.prettyPrint(resp.json))
+        resp.status mustBe 201
+      })
     }
   }
 }

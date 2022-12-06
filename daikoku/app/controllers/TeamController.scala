@@ -50,7 +50,7 @@ class TeamController(DaikokuAction: DaikokuAction,
         s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(ctx) {
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
-          .findByIdOrHrId(teamId)
+          .findByIdOrHrIdNotDeleted(teamId)
           .map {
             case Some(team) =>
               Ok(team.asSimpleJson)

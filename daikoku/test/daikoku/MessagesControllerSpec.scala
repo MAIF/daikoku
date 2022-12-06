@@ -44,19 +44,20 @@ class MessagesControllerSpec()
 
   "a tenant admin" can {
     "close a chat" in {
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         teams = Seq(defaultAdminTeam),
         messages = Seq(adminMessage(user, user, "not closed", None))
-      )
+      ).map(_ => {
+        val session = loginWithBlocking(tenantAdmin, tenant)
 
-      val session = loginWithBlocking(tenantAdmin, tenant)
+        val resp = httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
+                                        method = "DELETE")(tenant, session)
 
-      val resp = httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
-                                      method = "DELETE")(tenant, session)
+        resp.status mustBe 200
+      })
 
-      resp.status mustBe 200
     }
   }
 

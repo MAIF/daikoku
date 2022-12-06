@@ -55,7 +55,7 @@ class UsersController(DaikokuAction: DaikokuAction,
   def findUserById(id: String) = DaikokuAction.async { ctx =>
     DaikokuAdminOnly(AuditTrailEvent(
       "@{user.name} has accessed user profile of @{u.email} (@{u.id})"))(ctx) {
-      env.dataStore.userRepo.findByIdOrHrId(id).map {
+      env.dataStore.userRepo.findByIdOrHrIdNotDeleted(id).map {
         case Some(user) =>
           ctx.setCtxValue("u.email", user.email)
           ctx.setCtxValue("u.id", user.id.value)
@@ -173,11 +173,11 @@ class UsersController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(
         "@{user.name} has deleted user profile of user.id : @{u.id}"))(ctx) {
           ctx.setCtxValue("u.id", id)
-      (for {
-        tenants <- env.dataStore.tenantRepo.findAllNotDeleted()
-        _       <- Future.sequence(tenants.map(t => deletionService.deleteUserByQueue(id, t).value))
-      } yield ())
+      deletionService.deleteCompleteUserByQueue(id, ctx.tenant)
+        .leftMap(_.render())
         .map(_ => Ok(Json.obj("done" -> true)))
+        .merge
+
       }
     }
 

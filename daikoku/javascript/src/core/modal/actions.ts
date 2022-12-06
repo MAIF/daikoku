@@ -5,6 +5,7 @@ import {
   ITeamInvitationModalProp,
   TeamSelectorModalProps,
 } from '../../components';
+import { SubscriptionMetadataModalProps } from '../../types/modal';
 import { CLOSE_MODAL, OPEN_MODAL } from './';
 
 export const openCreationTeamModal = (modalProps: any) => (dispatch: any) => {
@@ -47,7 +48,7 @@ export const openLoginOrRegisterModal = (modalProps: any) => (dispatch: any) => 
   });
 };
 
-export const openSubMetadataModal = (modalProps: any) => ({
+export const openSubMetadataModal = (modalProps: SubscriptionMetadataModalProps) => ({
   type: OPEN_MODAL,
   modalProps,
   modalType: 'subscriptionMetadataModal',

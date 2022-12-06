@@ -11,6 +11,7 @@ import com.themillhousegroup.scoup.Scoup
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -120,6 +121,7 @@ object utils {
         _ <- daikokuComponents.env.dataStore.messageRepo
           .forAllTenant()
           .deleteAll()
+        _ <- daikokuComponents.env.dataStore.operationRepo.forAllTenant().deleteAll()
       } yield ()
     }
 
@@ -138,7 +140,8 @@ object utils {
         messages: Seq[Message] = Seq.empty,
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
-        cmsPages: Seq[CmsPage] = Seq.empty
+        cmsPages: Seq[CmsPage] = Seq.empty,
+        operations: Seq[Operation] = Seq.empty
     ) = {
       Await.result(setupEnv(
         tenants,
@@ -155,7 +158,8 @@ object utils {
         messages,
         issues,
         posts,
-        cmsPages
+        cmsPages,
+        operations
       ), 1.second)
     }
 
@@ -174,7 +178,8 @@ object utils {
         messages: Seq[Message] = Seq.empty,
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
-        cmsPages: Seq[CmsPage] = Seq.empty
+        cmsPages: Seq[CmsPage] = Seq.empty,
+        operations: Seq[Operation] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -281,6 +286,22 @@ object utils {
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
           .run()
+        _ <- Source(pages.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.apiDocumentationPageRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(operations.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.operationRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
       } yield ()
     }
 
@@ -373,14 +394,14 @@ object utils {
                              port: Int = port)(
         implicit tenant: Tenant,
         session: UserSession): WSResponse =
-      httpJsonCall(
+      Await.result(httpJsonCall(
         path,
         method,
         headers,
         body,
         baseUrl,
         port
-      )(tenant, session).futureValue
+      )(tenant, session), 5.seconds)
 
     def httpJsonCall(_path: String,
                      method: String = "GET",

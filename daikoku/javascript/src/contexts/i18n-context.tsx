@@ -40,7 +40,7 @@ type TI18ncontext = {
   translations: TranslationConfig,
 }
 
-type TranslateParams = {
+export type TranslateParams = {
   key: string, 
   plural?: boolean, 
   defaultResponse?: string, 

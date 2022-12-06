@@ -1,3 +1,4 @@
+import { CustomSubscriptionData } from '../components/frontend/modals/SubscriptionMetadataModal';
 import { ITeamSimple, IUser } from './team';
 
 export interface INotification {
@@ -14,12 +15,11 @@ export interface INotification {
 
 export type SubscriptionMetadataModalProps = {
   api: string;
-  closeModal: () => void;
-  creationMode: boolean;
-  notification: INotification;
-  plan: string;
-  save: (...args: any[]) => any;
-  team: ITeamSimple;
+  creationMode?: boolean;
+  plan?: string;
+  save: ((sub: CustomSubscriptionData) => Promise<void>) | ((sub: CustomSubscriptionData) => void);
+  team?: ITeamSimple;
+  notification?: INotification;
   config?: any;
   subscription?: any;
   description?: any;

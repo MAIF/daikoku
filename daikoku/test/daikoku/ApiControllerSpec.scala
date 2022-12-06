@@ -4646,10 +4646,10 @@ class ApiControllerSpec()
           .clientSecret
       )
     }
-    "failed when aggregagted apikey has an otoroshi target different than parent" in {
+    "failed when aggregated apikey has an otoroshi target different than parent" in {
       val parentSubId = ApiSubscriptionId("parent")
       val parentApiKeyClientId = "clientId"
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(tenant.copy(aggregationApiKeysSecurity = Some(true))),
         users = Seq(user),
         teams = Seq(teamOwner, teamConsumer),
@@ -4686,27 +4686,27 @@ class ApiControllerSpec()
             integrationToken = "parent"
           )
         )
-      )
-
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/apis/${defaultApi.id.value}/subscriptions/${parentSubId.value}",
-        method = "PUT",
-        body = Some(
-          Json.obj(
-            "plan" -> defaultApi.possibleUsagePlans.head.id.value,
-            "teams" -> Seq(teamConsumerId.value)
+      ).map(_ => {
+        val resp = httpJsonCallBlocking(
+          path =
+            s"/api/apis/${defaultApi.id.value}/subscriptions/${parentSubId.value}",
+          method = "PUT",
+          body = Some(
+            Json.obj(
+              "plan" -> defaultApi.possibleUsagePlans.head.id.value,
+              "teams" -> Seq(teamConsumerId.value)
+            )
           )
-        )
-      )(tenant, loginWithBlocking(user, tenant))
+        )(tenant, loginWithBlocking(user, tenant))
 
-      resp.status mustBe Status.OK
-      logger.warn(Json.prettyPrint(resp.json))
+        resp.status mustBe Status.OK
+        logger.warn(Json.prettyPrint(resp.json))
 
-      (resp.json.as[JsArray].head \ "error")
-        .as[
-          String
-        ] mustBe "The subscribed plan has another otoroshi of the parent plan"
+        (resp.json.as[JsArray].head \ "error")
+          .as[
+            String
+          ] mustBe "The subscribed plan has another otoroshi of the parent plan"
+      })
     }
   }
 }

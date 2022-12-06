@@ -645,7 +645,7 @@ export const updateSubscriptionCustomName = (team: any, subscription: any, custo
     body: JSON.stringify({ customName }),
   });
 
-export const updateSubscription = (team: any, subscription: any) =>
+export const updateSubscription = (team: ITeamSimple, subscription: ISubscription) =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
     method: 'PUT',
     body: JSON.stringify(subscription),

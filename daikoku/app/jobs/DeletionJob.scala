@@ -113,7 +113,6 @@ class DeletionJob(
         _ <- OptionT.liftF(env.dataStore.operationRepo
           .forTenant(o.tenant)
           .save(o.copy(status = OperationStatus.InProgress)))
-        _ <- OptionT.liftF(env.dataStore.apiRepo.forTenant(o.tenant).deleteByIdLogically(o.itemId))
         _ <- OptionT.liftF(env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
         _ <- OptionT.liftF(env.dataStore.apiPostRepo.forTenant(o.tenant).deleteLogically(Json.obj("_id" -> Json.obj("$in"-> JsArray(api.posts.map(_.asJson))))))
         _ <- OptionT.liftF(env.dataStore.apiIssueRepo.forTenant(o.tenant).deleteLogically(Json.obj("_id" -> Json.obj("$in"-> JsArray(api.issues.map(_.asJson))))))
@@ -140,7 +139,6 @@ class DeletionJob(
       _ <- OptionT.liftF(env.dataStore.operationRepo
         .forTenant(o.tenant)
         .save(o.copy(status = OperationStatus.InProgress)))
-      _ <- OptionT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(o.tenant).deleteByIdLogically(o.itemId))
       //todo: send notification & mail ?
       _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant))
       _ <- OptionT.liftF(apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
@@ -164,7 +162,6 @@ class DeletionJob(
       _ <- OptionT.liftF(env.dataStore.operationRepo
         .forTenant(o.tenant)
         .save(o.copy(status = OperationStatus.InProgress)))
-      _ <- OptionT.liftF(env.dataStore.teamRepo.forTenant(o.tenant).deleteByIdLogically(o.itemId))
       _ <- OptionT.liftF(env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
       _ <- OptionT.liftF(deleteTeamNotifications(team))
     } yield ())
@@ -184,7 +181,6 @@ class DeletionJob(
       _ <- OptionT.liftF(env.dataStore.operationRepo
         .forTenant(o.tenant)
         .save(o.copy(status = OperationStatus.InProgress)))
-      _ <- OptionT.liftF(env.dataStore.userRepo.deleteByIdLogically(o.itemId))
       _ <- OptionT.liftF(env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
       _ <- OptionT.liftF(deleteUserNotifications(user, o.tenant))
       _ <- OptionT.liftF(deleteUserMessages(user, o.tenant))

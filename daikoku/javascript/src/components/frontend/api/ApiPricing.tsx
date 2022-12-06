@@ -44,7 +44,7 @@ const currency = (plan: any) => {
 type ApiPricingProps = {
   plan: IUsagePlan,
   api: IApi,
-  askForApikeys: (x: {teams: Array<string>, plan: string, apiKey?: ISubscription, motivation?: string}) => void,
+  askForApikeys: (x: {teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string}) => void,
   openApiKeySelectModal?: (props: any) => void, //FIXME: not an optional props ==> use useSelector to get it from hook instead
   myTeams: Array<ITeamSimple>,
   tenant: ITenant,
@@ -174,7 +174,7 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
 
     const askForApikeys = (teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription) => {
       if (plan.subscriptionProcess === "Automatic") {
-        props.askForApikeys({teams, plan: plan._id, apiKey})
+        props.askForApikeys({teams, plan: plan, apiKey})
       } else (
         dispatch(openFormModal<{motivation: string}>({
           title: translate('motivations.modal.title'),
@@ -188,7 +188,7 @@ const ApiPricingCardComponent = (props: ApiPricingProps) => {
               ]
             }
           },
-          onSubmit: ({motivation}) => props.askForApikeys({teams, plan: plan._id, apiKey, motivation}),
+          onSubmit: ({motivation}) => props.askForApikeys({teams, plan, apiKey, motivation}),
           actionLabel: translate('Send')
         }))
       )

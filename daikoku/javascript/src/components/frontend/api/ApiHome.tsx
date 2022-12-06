@@ -256,14 +256,14 @@ const ApiHomeComponent = ({
   };
 
 
-  const askForApikeys = ({teams, plan, apiKey, motivation}: {teams: Array<string>, plan: string, apiKey?: ISubscription, motivation?: string}) => {
+  const askForApikeys = ({teams, plan, apiKey, motivation}: {teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string}) => {
     const planName = formatPlanType(plan, translate);
 
     if (api) {
       return (
         apiKey
-          ? Services.extendApiKey(api!._id, apiKey._id, teams, plan, motivation)
-          : Services.askForApiKey(api!._id, teams, plan, motivation)
+          ? Services.extendApiKey(api!._id, apiKey._id, teams, plan._id, motivation)
+          : Services.askForApiKey(api!._id, teams, plan._id, motivation)
       ).then((results) => {
           if (results.error) {
             return toastr.error(translate('Error'), results.error);
@@ -273,6 +273,7 @@ const ApiHomeComponent = ({
               return toastr.error(translate('Error'), result.error);
             } else if (result.creation === 'done') {
               const team: any = myTeams.find((t) => t._id === result.subscription.team);
+
               return toastr.success(
                 translate('Done'),
                 translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
