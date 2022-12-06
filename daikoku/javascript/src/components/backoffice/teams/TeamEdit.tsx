@@ -132,6 +132,9 @@ export const TeamEditForm = ({
       schema={teamSchema(team, translate)}
       value={team}
       onSubmit={(team) => updateTeam(team)}
+      options={{
+        actions: { submit: { label: translate('Save') } }
+      }}
     />
   );
 };
