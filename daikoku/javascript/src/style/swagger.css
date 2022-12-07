@@ -43,12 +43,6 @@
   width: 80% !important;
 }
 
-#redoc-container {
-  width: 100vw;
-  /* position: absolute; */
-  left: 0px;
-}
-
 .Pane2 {
   height: calc(100vh - 51px) !important;
   overflow-y: scroll;
