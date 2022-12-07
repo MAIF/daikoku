@@ -128,7 +128,6 @@ class NotificationControllerSpec()
       val resp = httpJsonCallBlocking(
         s"/api/teams/${teamOwnerId.value}/notifications/unread-count")(tenant,
                                                                        session)
-      println(Json.prettyPrint(resp.json))
       resp.status mustBe 200
       (resp.json \ "count").as[Long] mustBe 1
 
@@ -227,7 +226,6 @@ class NotificationControllerSpec()
       )
 
       val userSession = loginWithBlocking(user, tenant)
-      println(s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.humanReadableId}/issues")
       val issue = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.humanReadableId}/issues",
         method = "POST",
@@ -299,7 +297,6 @@ class NotificationControllerSpec()
         ).asJson)
       )(tenant, userAdminSession )
 
-      println(Json.prettyPrint(post.json))
       post.status mustBe 200
       (post.json \ "created").as[Boolean] mustBe true
 

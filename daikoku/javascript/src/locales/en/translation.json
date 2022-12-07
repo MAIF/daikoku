@@ -565,6 +565,7 @@
     "Manual": "Manual",
     "team.created.success": "Team %s created successfully",
     "team.updated.success": "Team %s updated successfully",
+    "team.deleted.success": "Team %s deleted successfully",
     "user.created.success": "User %s created successfully",
     "user.updated.success": "User %s updated successfully",
     "unsaved.modifications.title": "Unsaved modifications",

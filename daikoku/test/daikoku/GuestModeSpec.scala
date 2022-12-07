@@ -175,7 +175,6 @@ class GuestModeSpec()
             |""".stripMargin
           ))
       )(publicTenant)
-      println(resp.json)
       resp.status mustBe 200
       val apis =
         (resp.json \ "data" \ "visibleApis")

@@ -558,6 +558,7 @@
   "Manual": "Manuelle",
   "team.created.success": "L'équipe %s a été créée avec succès",
   "team.updated.success": "L'équipe %s a été modifiée avec succès",
+  "team.deleted.success": "L'équipe %s a été supprimée avec succès",
   "user.created.success": "L'utilisateur %s a été créé avec succès",
   "user.updated.success": "L'utilisateur %s a été modifié avec succès",
   "unsaved.modifications.title": "Modifications en cours",

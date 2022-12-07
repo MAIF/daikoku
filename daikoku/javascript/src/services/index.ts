@@ -195,7 +195,7 @@ export const updateTeam = (team: ITeamSimple) =>
     body: JSON.stringify(team),
   });
 
-export const deleteTeam = (teamId: string) =>
+export const deleteTeam = (teamId: string): Promise<ResponseDone | ResponseError> =>
   customFetch(`/api/teams/${teamId}`, {
     method: 'DELETE',
   });

@@ -148,7 +148,7 @@ class DeletionJob(
       .value.map(_ => ())
       .map(_ => logger.debug(s"[deletion job] :: subscription ${o.itemId} successfully deleted"))
       .recover(e => {
-        logger.error(s"[deletion job] :: [id ${o.id}] :: error during deletion of subscription ${o.itemId}: $e")
+        logger.error(s"[deletion job] :: [id ${o.id}] :: error during deletion of subscription ${o.itemId}: $e", e)
         env.dataStore.operationRepo
           .forTenant(o.tenant)
           .save(o.copy(status = OperationStatus.Error))

@@ -1,3 +1,4 @@
+import { ITeamSimple } from '../../types';
 import {
   IMPERSONATE,
   LOGIN,
@@ -11,15 +12,15 @@ import {
 
 export const login =
   ({ user, team, tenant, language }: any) =>
-  (dispatch: any) => {
-    return dispatch({
-      type: LOGIN,
-      user,
-      team,
-      tenant,
-      language,
-    });
-  };
+    (dispatch: any) => {
+      return dispatch({
+        type: LOGIN,
+        user,
+        team,
+        tenant,
+        language,
+      });
+    };
 
 export const logout = () => {
   return {
@@ -29,21 +30,19 @@ export const logout = () => {
 
 export const impersonate =
   ({ impersonator }: any) =>
-  (dispatch: any) => {
-    return dispatch({
-      type: IMPERSONATE,
-      impersonator,
-    });
-  };
+    (dispatch: any) => {
+      return dispatch({
+        type: IMPERSONATE,
+        impersonator,
+      });
+    };
 
-export const updateTeam = (team: any) => (dispatch: any) => {
-  return dispatch({
-    type: UPDATE_TEAM,
-    team,
-  });
-};
+export const updateTeam = (team: ITeamSimple) => ({
+  type: UPDATE_TEAM,
+  team,
+});
 
-export const updateTeamPromise = (team: any) => (dispatch: any) => {
+export const updateTeamPromise = (team: ITeamSimple) => (dispatch: any) => {
   return Promise.resolve(
     dispatch({
       type: UPDATE_TEAM,

@@ -21,7 +21,7 @@ class DeletionService(env: Env) {
    * @param tenant the tenant where delete the user
    * @return an Either of Unit or AppError (actually Right[Unit])
    */
-  def deleteUser(user: User, tenant: Tenant): EitherT[Future, AppError, Unit] = {
+  private def deleteUser(user: User, tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val operation = Operation(
       DatastoreId(BSONObjectID.generate().stringify),
       tenant = tenant.id,
@@ -44,7 +44,7 @@ class DeletionService(env: Env) {
    * @param tenant the tenant where delete the team
    * @return an Either of Unit or AppError (actually Right[Unit])
    */
-  def deleteTeam(team: Team, tenant: Tenant): EitherT[Future, AppError, Unit] = {
+  private def deleteTeam(team: Team, tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val operation = Operation(
       DatastoreId(BSONObjectID.generate().stringify),
       tenant = tenant.id,

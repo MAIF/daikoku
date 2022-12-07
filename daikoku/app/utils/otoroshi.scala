@@ -205,8 +205,6 @@ class OtoroshiClient(env: Env) {
   def updateApiKey(key: ActualOtoroshiApiKey)(
       implicit otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
-    println(key)
-    println(key.asJson)
     client(s"/api/apikeys/${key.clientId}")
       .put(key.asJson)
       .map { resp =>

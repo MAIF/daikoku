@@ -27,7 +27,6 @@ class UserControllerSpec()
       val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
       resp.status mustBe 200
       val users = resp.json.as[JsArray]
-      println(Json.prettyPrint(users))
       users.value.length mustBe 3
       users.value.diff(
         Seq(daikokuAdmin.asSimpleJson,
@@ -364,7 +363,6 @@ class UserControllerSpec()
               "teamId" -> defaultAdminTeam.id.value))
         )(tenant, session)
 
-        println(Json.prettyPrint(resp.json))
         resp.status mustBe 201
       })
     }
