@@ -55,7 +55,7 @@ const Quotas = (props: QuotasProps) => {
           })}>
           <Progress
             strokeColor={colorDaily}
-            percent={percentDaily}
+            percent={Math.round(percentDaily)}
             status="active"
           />
         </BeautifulTitle>
@@ -69,7 +69,7 @@ const Quotas = (props: QuotasProps) => {
           })}>
           <Progress
             strokeColor={colorMonthly}
-            percent={percentMontly}
+            percent={Math.round(percentMontly)}
             status="active"
           />
         </BeautifulTitle>
