@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import merge from 'lodash/merge';
 import { useSelector, useDispatch } from 'react-redux';
-import { useParams, useNavigate, Link, useMatch } from 'react-router-dom';
+import { useParams, useNavigate, Link, useMatch, useMatches } from 'react-router-dom';
 
 import { I18nContext, openContactModal } from '../core';
 import { Can, manage, api as API } from '../components/utils';
@@ -577,7 +577,7 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
   const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const navigate = useNavigate();
-  const match = useMatch('/:teamId/settings/:tab'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
+  const match = useMatch('/:teamId/settings/:tab*'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
 
   const schema = (currentTab: string) => ({
     title: team.name,
@@ -655,7 +655,7 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
       setMode(navMode.team);
       setOffice(officeMode.back);
       setTeam(team);
-      setMenu(schema(match?.params?.tab || ''));
+      setMenu(schema( match?.params['tab']));
     }
   }, [team]);
 
