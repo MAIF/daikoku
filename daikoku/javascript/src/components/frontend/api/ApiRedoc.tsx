@@ -1,44 +1,53 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
+import { SwaggerUIBundle } from 'swagger-ui-dist';
+
 import { LoginOrRegisterModal } from '..';
 import { I18nContext } from '../../../core';
+import { IApi, IState, IStateContext } from '../../../types';
 
-export function ApiRedoc(props: any) {
-  const [error, setError] = useState<string | undefined>();
+type ApiRedocProps = {
+  teamId: string
+  api: IApi
+}
+export function ApiRedoc(props: ApiRedocProps) {
+  const [error, setError] = useState<string>();
   const params = useParams();
+
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
   const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    const { tenant, connectedUser } = props;
-    const showSwagger = !(connectedUser.isGuest && tenant.apiReferenceHideForGuest);
-
-    if (showSwagger) {
-      const url = `${window.location.origin}/api/teams/${props.teamId}/apis/${props.api._id}/${params.versionId}/swagger.json`;
-
-      fetch(url).then((res) => {
-        if (res.status > 300) {
-          setError(translate('api_redoc.failed_to_retrieve_doc'));
-        } else {
-          //@ts-ignore
-          // eslint-disable-next-line no-undef
-          Redoc.init(
-            url,
-            {
-              scrollYOffset: 50,
-              hideHostname: true,
-              suppressWarnings: true,
-            },
-            document.getElementById('redoc-container')
-          );
-        }
-      });
-    } else {
-      setError(translate('api_redoc.guest_user'));
-    }
+    fetch(
+      `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger.json`
+    ).then((res) => {
+      if (res.status > 300) {
+        setError(translate('api_swagger.failed_to_retrieve_swagger'));
+      } else {
+        drawSwaggerUi();
+      }
+      setTimeout(() => {
+        [...document.querySelectorAll('.scheme-container')].map((i) => ((i as any).style.display = 'none'));
+        [...document.querySelectorAll('.information-container')].map((i) => ((i as any).style.display = 'none'));
+      }, 500);
+    });
   }, []);
 
-  const { tenant, connectedUser } = props;
+  const drawSwaggerUi = () => {
+    if (props.api.swagger) {
+      (window as any).ui = SwaggerUIBundle({
+        url: `/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`,
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        docExpansion: 'list',
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+        plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+        supportedSubmitMethods: []
+      });
+    }
+  };
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
     return (
@@ -59,7 +68,7 @@ export function ApiRedoc(props: any) {
 
   const api = props.api;
   if (!api || !api.swagger)
-    return <div>{translate({key: 'api_data.missing', replacements: ['Api reference']})}</div>;
+    return <div>{translate({ key: 'api_data.missing', replacements: ['Api reference'] })}</div>;
 
-  return <div id="redoc-container" />;
+  return <div id="swagger-ui" />
 }

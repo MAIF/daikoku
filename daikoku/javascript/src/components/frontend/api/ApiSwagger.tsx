@@ -124,7 +124,6 @@ export function ApiSwagger(props: any) {
   else
     return (
       <div style={{ width: '100%' }}>
-        {/*<button type="button" className="btn btn-success" onClick={e => handleAuthorize(true)}>Use apikey (soon)</button>*/}
         <div id="swagger-ui" style={{ width: '100%' }} />
       </div>
     );

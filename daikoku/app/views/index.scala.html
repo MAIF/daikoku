@@ -31,11 +31,6 @@
   @if(env.config.mode == DaikokuMode.Prod) {
     <script type="text/javascript" src="/assets/react-app/daikoku.min.js"></script>
   }
-  <!--script src="https://cdn.jsdelivr.net/npm/redoc/bundles/redoc.standalone.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/redoc@@next/bundles/redoc.standalone.js"> </script-->
-  <script src="https://cdn.jsdelivr.net/npm/redoc@@next/bundles/redoc.standalone.js"></script>
-  <!--script src="https://unpkg.com/pdfjs-dist/build/pdf.min.js"></script>
-  <script src="https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js"></script-->
   <script>
     Daikoku.init(
       @Html(play.api.libs.json.Json.prettyPrint(user.toUiPayload())),
