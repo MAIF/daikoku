@@ -5,9 +5,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import StepWizard from 'react-step-wizard';
+import ReactDOMServer from 'react-dom/server';
+
 import { useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
-
 import * as Services from '../../../services';
 import { isError } from '../../../types';
 import { Can, manage, Spinner, tenant as TENANT, Option, BeautifulTitle } from '../../utils';
@@ -225,7 +226,7 @@ const Help = () => {
   return (
     <BeautifulTitle
       place="bottom"
-      title={
+      title={ReactDOMServer.renderToString(
         <div className="d-flex flex-column">
           <h4>
             <Translation i18nkey="Keyboard shortcuts">Keyboard shortcut</Translation>
@@ -246,7 +247,7 @@ const Help = () => {
             </li>
           </ul>
         </div>
-      }
+      )}
     >
       <i className="ms-4 far fa-question-circle" />
     </BeautifulTitle>

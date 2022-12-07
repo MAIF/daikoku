@@ -8,6 +8,8 @@ import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this
 
 import jQuery from 'jquery';
 
+
+import 'react-tooltip/dist/react-tooltip.css'
 import 'bootstrap/dist/css/bootstrap.css';
 import '@maif/react-forms/lib/index.css';
 import './style/main.scss';

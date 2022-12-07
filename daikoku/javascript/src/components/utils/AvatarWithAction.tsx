@@ -1,36 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import ReactToolTip from 'react-tooltip';
+import { Tooltip as ReactToolTip } from 'react-tooltip';
+import { nanoid } from 'nanoid';
+import { BeautifulTitle } from './BeautifulTitle';
 
 type Props = {
-    avatar: string;
-    infos?: string | React.ReactElement;
-    actions: {
-        action?: ((...args: any[]) => any) | any[];
-        redirect?: () => void,
-        link?: string;
-        iconClass: string;
-        tooltip?: string;
-    }[];
+  avatar: string;
+  infos?: string | React.ReactElement;
+  actions: {
+    action?: ((...args: any[]) => any) | any[];
+    redirect?: () => void,
+    link?: string;
+    iconClass: string;
+    tooltip?: string;
+  }[];
 };
 
 export const AvatarWithAction = (props: Props) => {
   const [secondaryActions, setSecondaryActions] = useState([]);
 
   useEffect(() => {
-    ReactToolTip.rebuild();
+    // ReactToolTip.rebuild();
   }, [secondaryActions]);
 
   const handleAction = (action: any) => {
     if (secondaryActions.length) {
-      ReactToolTip.hide();
+      // ReactToolTip.hide();
       setSecondaryActions([]);
     }
     action();
   };
 
   const getAction = (action: any, idx: any) => {
-    const uuid = uuidv4();
+    const uuid = nanoid();
     let ActionComponent;
 
     if (Array.isArray(action.action)) {
@@ -39,7 +40,7 @@ export const AvatarWithAction = (props: Props) => {
           <i
             className={action.iconClass}
             onClick={() => {
-              ReactToolTip.hide();
+              // ReactToolTip.hide();
               setSecondaryActions(action.action);
             }}
           />
@@ -65,9 +66,9 @@ export const AvatarWithAction = (props: Props) => {
 
     if (action.tooltip) {
       return (
-        <span className="avatar-with-action__action" key={uuid}>
-          <span data-tip={action.tooltip}>{ActionComponent}</span>
-        </span>
+        <BeautifulTitle variant={action.variant} title={action.tooltip} key={uuid} className='avatar-with-action__action'>
+          {ActionComponent}
+        </BeautifulTitle>
       );
     }
     return (
@@ -81,7 +82,6 @@ export const AvatarWithAction = (props: Props) => {
     <div className="avatar-with-action">
       <div className="container">
         <div className="overlay" />
-        <ReactToolTip place={'bottom'} />
         <div className="avatar__container">
           <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />
         </div>

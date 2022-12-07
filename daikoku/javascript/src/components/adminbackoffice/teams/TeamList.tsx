@@ -71,6 +71,7 @@ export const TeamList = () => {
       const basicActions = [
         {
           action: () => deleteTeam(team._id),
+          variant: 'error',
           iconClass: 'fas fa-trash delete-icon',
           tooltip: translate('Delete team'),
         },
@@ -103,7 +104,7 @@ export const TeamList = () => {
       return [
         ...basicActions,
         {
-          redirect: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
+          action: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
           iconClass: 'fas fa-users',
           tooltip: translate('Team members'),
         },
