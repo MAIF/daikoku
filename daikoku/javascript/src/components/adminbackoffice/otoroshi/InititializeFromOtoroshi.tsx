@@ -198,13 +198,31 @@ export const InitializeFromOtoroshi = () => {
       </StepWizard>}
       {state.matches('recap') && (<RecapServiceStep cancel={() => send('CANCEL')} createdApis={createdApis} groups={state.context.groups} teams={teams} goBackToServices={() => send('ROLLBACK')} create={() => send('CREATE_APIS', { createdApis, callBackCreation: () => afterCreation() })} />)}
       {state.matches('completeApikeys') && (<>
-        <ApiKeyStep otoroshi={state.context.otoroshi} teams={teams} apis={apis} groups={state.context.groups} services={state.context.services} routes={state.context.routes} addNewTeam={(t: any) => setTeams([...teams, t])} addSub={(apikey: any, team: any, api: any, plan: any) => setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])} infos={(idx: any) => ({
-          index: idx,
-          total: state.context.apikeys.length
-        })} updateApi={(api: any) => updateApi(api)} recap={() => send('RECAP')} maybeCreatedSub={(apikey: any) => Option(createdSubs.find((s) => apikey.clientId === (s as any).clientId))} updateSub={(apikey: any, team: any, api: any, plan: any) => setCreatedSubs([
-          ...createdSubs.filter((s) => (s as any).clientId !== apikey.clientId),
-          { ...apikey, team, api, plan },
-        ])} resetSub={(apikey: any) => setCreatedSubs([...createdSubs.filter((s) => (s as any).clientId !== apikey.clientId)])} getFilteredApikeys={filterApikeys} tenant={tenant} cancel={() => send('CANCEL')} createdSubs={createdSubs} />
+        <ApiKeyStep
+          otoroshi={state.context.otoroshi}
+          teams={teams}
+          apis={apis}
+          groups={state.context.groups}
+          services={state.context.services}
+          routes={state.context.routes}
+          addNewTeam={(t: any) => setTeams([...teams, t])}
+          addSub={(apikey: any, team: any, api: any, plan: any) => setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])}
+          infos={(idx: any) => ({
+            index: idx,
+            total: state.context.apikeys.length
+          })}
+          updateApi={(api: any) => updateApi(api)}
+          recap={() => send('RECAP')}
+          maybeCreatedSub={(apikey: any) => Option(createdSubs.find((s) => apikey.clientId === (s as any).clientId))}
+          updateSub={(apikey: any, team: any, api: any, plan: any) => setCreatedSubs([
+            ...createdSubs.filter((s) => (s as any).clientId !== apikey.clientId),
+            { ...apikey, team, api, plan },
+          ])}
+          resetSub={(apikey: any) => setCreatedSubs([...createdSubs.filter((s) => (s as any).clientId !== apikey.clientId)])}
+          getFilteredApikeys={filterApikeys}
+          tenant={tenant}
+          cancel={() => send('CANCEL')}
+          createdSubs={createdSubs} />
         {createdSubs.length > 0 && (<RecapSubsStep createdSubs={createdSubs} cancel={() => {
           setCreatedSubs([]);
           send('CANCEL');

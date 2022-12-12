@@ -11,6 +11,8 @@ import * as Services from '../../../../services';
 import { newPossibleUsagePlan, BeautifulTitle, formatPlanType, Option } from '../../../utils';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { ModalContext } from '../../../../contexts';
+import { createColumnHelper } from '@tanstack/react-table';
+import { IApiKey } from '../../../../types/api';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -480,28 +482,23 @@ export const ApiKeyStep = (props: any) => {
     prefix: 'route_'
   }));
 
+  const columnHelper = createColumnHelper<IApiKey>()
   const columns = [
-    {
-      id: 'oto.api.key',
-      Header: translate('initialize_from_otoroshi.otoroshi_api_key'),
-      style: { textAlign: 'left', width: '20%' },
-      accessor: (apikey: any) => apikey.clientName,
-      sortType: 'basic',
-    },
-    {
-      id: 'apikey.actions',
-      Header: translate('API.s'),
-      style: { textAlign: 'left' },
-      disableSortBy: true,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const apikey = original;
+    columnHelper.accessor('clientName', {
+      header: translate('initialize_from_otoroshi.otoroshi_api_key'),
+      meta: {style: { textAlign: 'left', width: '20%' }},
+      sortingFn: 'basic',
+    }),
+    columnHelper.display({
+      header: translate('API.s'),
+      meta: {style: { textAlign: 'left' }},
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const apikey = info.row.original;
         return <ApiKey apikey={apikey} key={apikey.clientId} {...props} />;
       },
-    },
+    }),
   ];
 
   return (

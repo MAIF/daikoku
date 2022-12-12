@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { Form, Schema, type } from '@maif/react-forms';
-import { UseMutationResult } from 'react-query';
+import { UseMutationResult } from '@tanstack/react-query';
 
 
 import { I18nContext } from '../../../../core';

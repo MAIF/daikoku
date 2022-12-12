@@ -16,6 +16,7 @@ import {
   TeamApiConsumption,
 } from '.';
 import { useDispatch } from 'react-redux';
+import { isError } from '../../../types';
 
 type LocationState = {
   newApiGroup?: any
@@ -168,8 +169,13 @@ export const TeamApiGroup = () => {
       label: translate({ key: 'API', plural: true }),
       format: format.select,
       isMulti: true,
-      optionsFrom: Services.teamApis(currentTeam._id).then((apis) => apis.filter((api: any) => api._id !== apiGroup?._id && !api.apis)),
-      transformer: (api: any) => ({
+      optionsFrom: Services.teamApis(currentTeam._id)
+        .then((apis) => {
+          if (!isError(apis)) {
+            return apis.filter((api) => api._id !== apiGroup?._id && !api.apis)
+          }
+        }),
+      transformer: (api) => ({
         label: `${api.name} - ${api.currentVersion}`,
         value: api._id
       }),
@@ -242,7 +248,7 @@ export const TeamApiGroup = () => {
                     links: { links: { plans: { childs: { menu: { component } } } } },
                   },
                 })}
-                openApiSelectModal={() => alert({message: 'oops'})} />
+                openApiSelectModal={() => alert({ message: 'oops' })} />
             </div>)}
             {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
             {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}

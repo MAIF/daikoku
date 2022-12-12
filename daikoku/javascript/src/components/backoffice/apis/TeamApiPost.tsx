@@ -9,6 +9,8 @@ import { Table, DefaultColumnFilter, TableRef } from '../../inputs';
 import { I18nContext, openFormModal } from '../../../core';
 import * as Services from '../../../services/index';
 import { ModalContext } from '../../../contexts';
+import { createColumnHelper } from '@tanstack/react-table';
+import { IApiPost, isError } from '../../../types';
 
 
 export function TeamApiPost({
@@ -117,42 +119,25 @@ export function TeamApiPost({
       });
   }
 
+  const columnHelper = createColumnHelper<IApiPost>()
   const columns = [
-    {
-      id: 'title',
-      Header: translate('Title'),
-      style: { textAlign: 'left' },
-      accessor: (post: any) => post.title
-    },
-    {
-      id: 'lastModificationAt',
-      Header: translate('Last modification'),
-      style: { textAlign: 'left' },
-      disableFilters: true,
-      Filter: DefaultColumnFilter,
-      accessor: (post: any) => post.lastModificationAt,
-      filter: 'equals',
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const post = original;
-        return moment(post.lastModificationAt).format(
-          translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
-        );
-      },
-    },
-    {
-      id: 'actions',
-      Header: translate('Actions'),
-      style: { textAlign: 'right' },
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const post = original;
+    columnHelper.accessor('title', {
+      header: translate('Title'),
+      meta: {style: { textAlign: 'left' }},
+    }),
+    columnHelper.accessor(row => {
+      return moment(row.lastModificationAt).format(
+        translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
+      );
+    }, {
+      header: translate('Last modification'),
+      meta: {style: { textAlign: 'left' }},
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: {style: { textAlign: 'right' }},
+      cell: (info) => {
+        const post = info.row.original;
         return (
           <div>
             <button
@@ -175,7 +160,7 @@ export function TeamApiPost({
           </div>
         )
       }
-    }
+    })
   ]
 
   return (
@@ -198,7 +183,8 @@ export function TeamApiPost({
           defaultSort="lastModificationAt"
           defaultSortDesc={true}
           columns={columns}
-          fetchItems={() => Services.getAllAPIPosts(api._humanReadableId, params.versionId).then(r => r.posts)}
+          fetchItems={() => Services.getAllAPIPosts(api._humanReadableId, params.versionId!)
+            .then(r => isError(r) ? r : r.posts)}
           injectTable={(t: any) => table.current = t}
         />
       </div>

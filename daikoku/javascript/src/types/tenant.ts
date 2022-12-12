@@ -1,3 +1,5 @@
+import { string } from 'prop-types';
+import { ITeamSimple, IUser, IUserSimple } from './team';
 import { Language } from './types';
 
 enum TenanMode {
@@ -103,7 +105,7 @@ interface IMailerSmtpClient extends IMailerSettings {
   fromEmail: string;
 }
 
-interface IOtoroshiSettings {
+export interface IOtoroshiSettings {
   _id: string;
   url: string;
   host: string;
@@ -172,15 +174,22 @@ export interface ITenantFull extends ITenant {
   translation: any;
 }
 
+export type TranslationItem = string | { s: string, p: string }
 export interface ITranslation {
   _id: string;
   _tenant: string;
-  default: string;
+  default?: TranslationItem;
   key: string;
   language: string;
   lastModificationAt?: number;
-  value: string;
+  value: TranslationItem;
 }
+
+export type IMailingTranslation = [
+  key: string,
+  translations: Array<ITranslation>,
+  defaultValue: string
+]
 
 export interface IAsset {
   label: string,
@@ -191,4 +200,60 @@ export interface IAsset {
   contentType: string,
   meta: { [key: string]: string },
   link: string
+}
+
+export interface ITenantAdministration {
+  team: ITeamSimple,
+  admins: Array<IUser>
+}
+
+export interface IAuditTrail {
+  size: number,
+  events: Array<IAuditTrailEvent>
+}
+
+enum AuditEventType {
+  AuditTrailEvent = "AuditTrailEvent",
+  AlertEvent = "AlertEvent",
+  JobEvent = "JobEvent",
+  ApiKeyRotationEvent = "ApiKeyRotationEvent"
+}
+export interface IAuditTrailEvent {
+  _id: string,
+  '@type': AuditEventType,
+  "@id": string,
+  "@timestamp": number | { '$long': number },
+  "@tenantId": string,
+  "@userId": string,
+  message: string,
+  url: string,
+  verb: string,
+  user: IUserSimple,
+  tenant: {
+    id: string,
+    name: string,
+  },
+  authorized: string,
+  impersonator?: {
+    id: string,
+    name: string,
+    email: string,
+    isDaikokuAdmin: boolean
+  },
+  details: object
+}
+
+export interface ISession {
+  _id: string
+  sessionId: string
+  userId: string
+  userName: string
+  userEmail: string
+  impersonatorId?: string
+  impersonatorName?: string
+  impersonatorEmail?: string
+  impersonatorSessionId?: string
+  created: number
+  expires: number
+  ttl: number
 }

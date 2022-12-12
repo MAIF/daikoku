@@ -10,7 +10,7 @@ import { I18nContext } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
 import { IApi, IDocDetail, IDocPage, IDocumentationPages, isError } from '../../../types';
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, Spinner } from '../../utils';
 import classNames from 'classnames';
 
@@ -30,7 +30,6 @@ export const ApiDocumentationCartidge = ({ api, currentPageId }: ApiDocumentatio
       return (
         <ul>
           {pages.map((page) => {
-            console.debug({page: page.id, currentPageId})
             return (
               <li className="api-doc-cartridge-link" key={page.id} style={{ marginLeft: level * 10 }}>
                 <Link className={classNames({active: page.id === currentPageId})} to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${page.id}`}>
@@ -75,7 +74,7 @@ const ApiDocPage = (props: ApiDocPageProps) => {
   }, [pageRequest.data]);
 
   useEffect(() => {
-    queryClient.invalidateQueries('page')
+    queryClient.invalidateQueries(['page'])
   }, [props.pageId])
 
 

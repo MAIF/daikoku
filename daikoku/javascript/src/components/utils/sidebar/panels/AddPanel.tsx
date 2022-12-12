@@ -8,7 +8,7 @@ import { manage, CanIDoAction, api as API, Option } from '../..';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit'
 import { toastr } from 'react-redux-toastr';
-import { useQueryClient } from 'react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { ITeamSimple } from '../../../../types';
 
 export const AddPanel = ({
@@ -34,8 +34,8 @@ export const AddPanel = ({
             if (r.error) {
               toastr.error(translate('Error'), r.error)
             } else {
-              queryClient.invalidateQueries('teams')
-              queryClient.invalidateQueries('myTeams')
+              queryClient.invalidateQueries(['teams'])
+              queryClient.invalidateQueries(['myTeams'])
               toastr.success(translate('Success'), translate({ key: "Team %s created successfully", replacements: [data.name] }))
             }
           }),

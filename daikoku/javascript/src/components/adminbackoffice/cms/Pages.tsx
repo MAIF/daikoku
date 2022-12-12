@@ -1,10 +1,12 @@
+import { createColumnHelper } from '@tanstack/react-table';
 import moment from 'moment';
-import React, { useContext } from 'react';
+import React, { useContext, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { IPage } from '..';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { Table } from '../../inputs';
+import { Table, TableRef } from '../../inputs';
 
 const CONTENT_TYPES = [
   { value: 'text/html', label: 'HTML' },
@@ -16,32 +18,34 @@ const CONTENT_TYPES = [
   { value: 'application/json', label: 'JSON' },
 ];
 
+type PagesProps = {
+  pages: Array<IPage>,
+  removePage: (page: string) => void
+}
 export const Pages = ({
   pages,
   removePage
-}: any) => {
+}: PagesProps) => {
+  const table = useRef<TableRef>()
   const { translate } = useContext(I18nContext);
   const { alert, confirm } = useContext(ModalContext);
 
   const navigate = useNavigate();
 
-  let table;
-
+  const columnHelper = createColumnHelper<IPage>();
   const columns = [
-    {
-      Header: ' ',
-      style: {
-        textAlign: 'center',
-        maxWidth: 60,
-      },
-      disableFilters: true,
-      accessor: (item: any) => item.contentType,
-      Cell: ({
-        cell: {
-          row: { original },
+    columnHelper.display({
+      header: ' ',
+      meta: {
+        style: {
+          textAlign: 'center',
+          maxWidth: 60,
         }
-      }: any) => {
-        const { contentType } = original;
+      },
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const { contentType } = info.row.original;
         const item = CONTENT_TYPES.find((f) => f.value === contentType);
         return (
           <img
@@ -52,63 +56,50 @@ export const Pages = ({
           />
         );
       },
-    },
-    {
-      Header: translate('cms.pages.name'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.name,
-    },
-    {
-      Header: translate('cms.pages.path'),
-      style: {
-        textAlign: 'left',
-        fontStyle: 'italic',
+    }),
+    columnHelper.accessor('name', {
+      header: translate('cms.pages.name'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.accessor('path', {
+      header: translate('cms.pages.path'),
+      meta: {
+        style: {
+          textAlign: 'left',
+          fontStyle: 'italic',
+        }
       },
-      accessor: (item: any) => item.path,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) =>
-        original.path || (
-          <span className="badge bg-dark">{translate('cms.pages.block')}</span>
-        ),
-    },
-    {
-      Header: translate('cms.pages.publish_date'),
-      style: { textAlign: 'left', maxWidth: 220 },
-      disableFilters: true,
-      accessor: (item: any) => item.lastPublishedDate ? moment(item.lastPublishedDate).format('DD MMM (HH:mm)') : '-',
-    },
-    {
-      Header: 'Actions',
-      style: { textAlign: 'center' },
-      disableSortBy: true,
-      disableFilters: true,
-      accessor: (item: any) => item._id,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const value = original;
+      cell: (info) =>
+        info.getValue() || <span className="badge bg-dark">{translate('cms.pages.block')}</span>
+    }),
+    columnHelper.accessor('lastPublishedDate', {
+      header: translate('cms.pages.publish_date'),
+      meta: { style: { textAlign: 'left', maxWidth: 220 } },
+      enableColumnFilter: false,
+      cell: (info) => info.getValue() ? moment(info.getValue()).format('DD MMM (HH:mm)') : '-',
+    }),
+    columnHelper.display({
+      header: 'Actions',
+      meta: { style: { textAlign: 'center' } },
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const value = info.row.original;
         return (
-          <div className="d-flex justify-content-center">
+          <div className="d-flex justify-content-center align-items-center">
             <Link
               to={`/_${value.path}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="m-1"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <i className="fas fa-eye" style={{ color: '#000' }} />
+              onClick={(e) => e.stopPropagation()}>
+              <button
+                className="btn btn-outline-primary me-1"
+              >
+                <i className="fas fa-eye" />
+              </button>
             </Link>
             <button
-              className="m-1"
-              style={{
-                border: 'none',
-                background: 'none',
-              }}
+              className="m-1 btn btn-outline-danger"
               onClick={(e) => {
                 e.stopPropagation();
                 (confirm({ message: translate('cms.pages.remove_confirm') }))
@@ -124,12 +115,12 @@ export const Pages = ({
                   });
               }}
             >
-              <i className="fas fa-trash" style={{ color: 'var(--danger-color, #dc3545)' }} />
+              <i className="fas fa-trash" />
             </button>
           </div>
         );
       },
-    },
+    }),
   ];
 
   return (
@@ -137,7 +128,7 @@ export const Pages = ({
       <Table
         fetchItems={() => pages}
         columns={columns}
-        injectTable={(t: any) => table = t}
+        ref={table}
         defaultSort="path"
         defaultSortDesc={true}
         header={false}

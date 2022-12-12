@@ -7,6 +7,8 @@ import { Table, TableRef } from '../../inputs';
 import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
+import { createColumnHelper } from '@tanstack/react-table';
+import { IApi } from '../../../types';
 
 export const TeamApiKeys = () => {
   const { currentTeam, connectedUser } = useSelector((state) => (state as any).context);
@@ -30,29 +32,23 @@ export const TeamApiKeys = () => {
     document.title = `${currentTeam.name} - ${translate('API key')}`;
   }, []);
 
+  const columnHelper = createColumnHelper<IApi>();
   const columns = [
-    {
-      Header: translate('Api Name'),
-      style: { textAlign: 'left' },
-      accessor: (api: any) => api.name,
-    },
-    {
-      Header: translate('Version'),
-      style: { textAlign: 'left' },
-      accessor: (api: any) => api.currentVersion,
-    },
-    {
-      Header: translate('Actions'),
-      style: { textAlign: 'center' },
-      disableSortBy: true,
-      disableFilters: true,
-      accessor: (item: any) => item._id,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const api = original;
+    columnHelper.accessor("name", {
+      header: translate('Api Name'),
+      meta: { style: { textAlign: 'left' } }
+    }),
+    columnHelper.accessor("currentVersion", {
+      header: translate('Version'),
+      meta: { style: { textAlign: 'left' } }
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center' } },
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const api = info.row.original;
         return (
           showApiKey && (
             <div style={{ minWidth: 100 }}>
@@ -67,7 +63,7 @@ export const TeamApiKeys = () => {
           )
         );
       },
-    },
+    }),
   ];
 
   const cleanSubs = () => {

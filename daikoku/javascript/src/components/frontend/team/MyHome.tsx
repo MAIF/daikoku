@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getApolloContext } from '@apollo/client';
 import { useSelector, useDispatch } from 'react-redux';
 

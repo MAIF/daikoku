@@ -10,7 +10,7 @@ import { Spinner } from '../..';
 import Revisions from './Revisions';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 
-interface IPage {
+export interface IPage {
   id: string
   name: string
   path: string

@@ -56,7 +56,7 @@ import { MessagesEvents } from '../services/messages';
 import { I18nContext } from '../contexts/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { SessionModal } from '../components/frontend/modals/SessionModal';
-import { QueryClientProvider } from 'react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { IState, IUserSimple } from '../types';
 
 type DaikokuAppProps = {

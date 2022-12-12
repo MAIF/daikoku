@@ -9,6 +9,8 @@ import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { ITranslation } from '../../../types/tenant';
 import { ModalContext } from '../../../contexts';
+import { createColumnHelper } from '@tanstack/react-table';
+import { isError, ResponseError } from '../../../types';
 
 
 export function EditFrontOfficeTranslations(props: any) {
@@ -27,74 +29,65 @@ export function EditFrontOfficeTranslations(props: any) {
     loadTranslations();
   }, []);
 
-  const loadTranslations = () => {
-    return Services.getTranslations('all').then((store) => {
-      const t = Object.entries({ ...globalTranslations })
-        .map(([language, { translations: t }]) =>
-          Object.entries(t)
-            .map(([key, value]) => {
-              const existingTranslation = store.translations.find(
-                (f: any) => f.key === key && f.language === language.toLowerCase()
-              );
-              return {
-                _id: nanoid(32),
-                key,
-                language: language.toLowerCase(),
-                value: existingTranslation ? existingTranslation.value : value,
-                _tenant: props.tenantId,
-                lastModificationAt: existingTranslation
-                  ? existingTranslation.lastModificationAt
-                  : undefined,
-                default: value,
-              };
-            }))
-        .flatMap((f) => f)
-        .filter((f) => typeof f.default === 'string' || f.default instanceof String)
-        .reduce(
-          (acc, current) => ({
-            ...acc,
-            [current.key]: acc[current.key] ? [...acc[current.key], current] : [current],
-          }),
-          {}
-        )
-      return Object.entries(t)
-        .map(([message, translations]) => ({ message, translations }))
-    });
+  type MessageWithTranslations = { message: string, translations: Array<ITranslation> }
+
+  const loadTranslations = (): Promise<ResponseError | Array<MessageWithTranslations>> => {
+    return Services.getTranslations()
+      .then((store) => {
+        if (isError(store)) {
+          return store
+        } else  {
+          const t = Object.entries({ ...globalTranslations })
+            .map(([language, { translations: t }]) =>
+              Object.entries(t)
+                .map(([key, value]) => {
+                  const existingTranslation = store.translations.find(
+                    (f) => f.key === key && f.language === language.toLowerCase()
+                  );
+                  const translation: ITranslation = {
+                    _id: nanoid(32),
+                    key,
+                    language: language.toLowerCase(),
+                    value: existingTranslation ? existingTranslation.value : value,
+                    _tenant: props.tenantId,
+                    lastModificationAt: existingTranslation
+                      ? existingTranslation.lastModificationAt
+                      : undefined,
+                    default: value,
+                  };
+                  return translation;
+                }))
+            .flatMap((f) => f)
+            .filter((f) => typeof f.default === 'string' || f.default instanceof String)
+            .reduce<{[key: string]: Array<ITranslation>}>(
+              (acc, current) => ({
+                ...acc,
+                [current.key]: acc[current.key] ? [...acc[current.key], current] : [current],
+              }),
+              {}
+            )
+          return Object.entries(t)
+            .map(([message, translations]) => ({ message, translations }))
+        }
+      });
   };
 
+  const columnHelper = createColumnHelper<MessageWithTranslations>()
   const columns = [
-    {
-      id: 'message',
-      Header: translate('mailing_internalization.message_text'),
-      style: { textAlign: 'left' },
-      accessor: (translation: any) => translate(translation.message),
-      sortType: 'basic',
-      Cell: ({
-        cell: {
-          row: { original }
-        }
-      }: any) => {
-        return (
-          <div>
-            {translate(original.message)}
-          </div>
-        )
-      }
-    },
-    {
-      id: 'actions',
-      style: { textAlign: 'center', width: '120px' },
-      Header: translate('Translate'),
-      disableSortBy: true,
-      disableFilters: true,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
+    columnHelper.accessor(row => translate(row.message), {
+      header: translate('mailing_internalization.message_text'),
+      meta: { style: { textAlign: 'left' } },
+      sortingFn: 'basic'
+    }),
+    columnHelper.display({
+      meta: { style: { textAlign: 'center', width: '120px' } },
+      header: translate('Translate'),
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
         return (
           <div className='d-flex flex-row flex-wrap justify-content-end'>
-            {original.translations.map((translation: any) => {
+            {info.row.original.translations.map((translation: any) => {
               return (
                 <button type='button' key={translation.language}
                   className='btn btn-outline-success me-2'
@@ -104,7 +97,7 @@ export function EditFrontOfficeTranslations(props: any) {
                       value: {
                         type: type.string,
                         format: format.markdown,
-                        label: translate(original.message),
+                        label: translate(info.row.original.message),
                         constraints: [
                           constraints.required(translate('constraints.required.value')),
                         ]
@@ -113,8 +106,8 @@ export function EditFrontOfficeTranslations(props: any) {
                     value: translation,
                     actionLabel: translate('Translate'),
                     onSubmit: (t: ITranslation) => {
-                      if(t.key === 'poumon' ) {
-                        alert({message: 'poumon n\'a pas de traduction..'}) //🤣 cc mozinor
+                      if (t.key === 'poumon') {
+                        alert({ message: 'poumon n\'a pas de traduction..' }) //🤣 cc mozinor
                       } else {
                         updateTranslation(t)
                           .then(() => {
@@ -131,7 +124,7 @@ export function EditFrontOfficeTranslations(props: any) {
           </div>
         );
       }
-    }
+    })
   ]
 
   return (

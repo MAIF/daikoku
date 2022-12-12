@@ -2050,9 +2050,7 @@ class ApiController(
   def apisOfTeam(teamId: String) =
     DaikokuAction.async { ctx =>
       TeamMemberOnly(
-        AuditTrailEvent(
-          s"@{user.name} has accessed apis of team @{team.name} - @{team.id}"
-        )
+        AuditTrailEvent(s"@{user.name} has accessed apis of team @{team.name} - @{team.id}")
       )(teamId, ctx) { team =>
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import { constraints, Form, format, type } from '@maif/react-forms';
+import { createColumnHelper } from '@tanstack/react-table';
 
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend/modals/AssetsChooserModal';
 import { Can, manage, Spinner, tenant as TENANT, Option } from '../../utils';
@@ -15,12 +16,24 @@ import { BeautifulTitle } from '../../utils/BeautifulTitle';
 import { useDispatch } from 'react-redux';
 import { openFormModal } from '../../../core';
 import { Table, TableRef } from '../../inputs';
+import { IMailingTranslation, isError, ITenantFull } from '../../../types';
+import { useQueries, useQuery } from '@tanstack/react-query';
 
 const EditMailtemplate = ({
   tenantId
-}: any) => {
-  const [tenant, setTenant] = useState<any>(undefined);
+}: { tenantId: string }) => {
+  const [tenant, setTenant] = useState<ITenantFull>();
   const [mailTemplateTranslations, setMailTemplateTranslations] = useState<Array<any>>([]);
+
+  const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
+
+  // const tenantRequest = useQuery(['tenant'], () => Services.oneTenant(tenantId))
+  // const translationsRequests = useQueries({
+  //   queries: [
+  //     {queryKey: [], queryFn: () => Services.getTranslationLanguages() },
+  //     {queryKey: [], queryFn: () => Services.getMailTranslations()},
+  //   ]
+  // })
 
   const { translate } = useContext(I18nContext);
 
@@ -29,24 +42,24 @@ const EditMailtemplate = ({
       .then((tenant) => {
         setTenant(tenant);
 
-        const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
-
         Promise.all([
           Services.getTranslationLanguages(),
-          Services.getTranslations(KEY_MAIL_TEMPLATE)
+          Services.getMailTranslations(KEY_MAIL_TEMPLATE)
         ])
           .then(([languages, data]) => {
-            const templates = languages.map((language: any) => {
-              return Option(data.translations.find((t: any) => t.language === language))
-                .getOrElse({
-                  _id: nanoid(),
-                  key: KEY_MAIL_TEMPLATE,
-                  language,
-                  value: '{{email}}',
-                  _tenant: tenant._id
-                });
-            })
-            setMailTemplateTranslations(templates)
+            if (!isError(languages) && !isError(data)) {
+              const templates = languages.map((language) => {
+                return Option(data.translations[0][1].find((t) => t.language === language))
+                  .getOrElse({
+                    _id: nanoid(),
+                    key: KEY_MAIL_TEMPLATE,
+                    language,
+                    value: '{{email}}',
+                    _tenant: tenant._id
+                  });
+              })
+              setMailTemplateTranslations(templates)
+            }
           });
       });
   }, []);
@@ -122,7 +135,7 @@ const EditMailtemplate = ({
       <span className="h5">{translate('Default mail template')}</span>
       <div className="mt-3">
         <Form
-          value={tenant?.mailerSettings?.template}
+          value={{ value: tenant?.mailerSettings?.template }}
           schema={translationSchema}
           onSubmit={t => {
             saveTenant({
@@ -157,7 +170,7 @@ export const MailingInternalization = () => {
 
   const { translate, Translation } = useContext(I18nContext);
 
-  function saveTranslation(translation: any) {
+  const saveTranslation = (translation: any) => {
     Services.saveTranslation(translation)
       .then((res) => {
         if (res.error)
@@ -169,7 +182,7 @@ export const MailingInternalization = () => {
       });
   }
 
-  function getRequiredVariables(str: string) {
+  const getRequiredVariables = (str: string) => {
     let dels: Array<number> = [];
     const words: Array<string> = [];
     for (let i = 0; i < str.length; i++) {
@@ -186,71 +199,44 @@ export const MailingInternalization = () => {
     return words;
   }
 
+  const columnHelper = createColumnHelper<IMailingTranslation>()
   const columns = [
-    {
+    columnHelper.accessor(row => translate(row[0]), {
       id: 'message',
-      Header: translate('mailing_internalization.message_text'),
-      style: { textAlign: 'left' },
-      accessor: (translation: any) => translate(translation[0]),
-      sortType: 'basic',
-      Cell: ({
-        cell: {
-          row: { original }
-        }
-      }: any) => {
+      header: translate('mailing_internalization.message_text'),
+      meta: { style: { textAlign: 'left' } },
+      sortingFn: 'basic',
+    }),
+    columnHelper.accessor(row => row[2], {
+      header: translate('mailing_internalization.required_variables'),
+      meta: { style: { textAlign: 'left' } },
+      enableSorting: false,
+      enableColumnFilter: false,
+      cell: (info) => {
         return (
           <div>
-            {translate(original[0])}
+            {getRequiredVariables(info.getValue())
+              .map((word, i) => (
+                <span className="badge bg-info me-2" key={`translationKey${i}`}>
+                  [{word}]
+                </span>
+              ))}
           </div>
         )
       }
-    },
-    {
-      id: 'variables',
-      Header: translate('mailing_internalization.required_variables'),
-      style: { textAlign: 'left' },
-      disableSortBy: true,
-      disableFilters: true,
-      accessor: (translation: any) => translation.defaultTranslation,
-      Cell: ({
-        cell: {
-          row: { original }
-        }
-      }: any) => {
-        return (
-          <div>
-            {
-              getRequiredVariables(original[2])
-                .map((word, i) => (
-                  <span className="badge bg-info me-2" key={`translationKey${i}`}>
-                    [{word}]
-                  </span>
-                ))
-            }
-          </div>
-        )
-      }
-    },
-    {
+    }),
+    columnHelper.display({
       id: 'actions',
-      style: { textAlign: 'center' },
-      Header: translate('Translate'),
-      disableSortBy: true,
-      disableFilters: true,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const requiredVariables = getRequiredVariables(original[2])
-          .map((word, i) => (
-            <span className="badge bg-info me-2" key={`translationKey${i}`}>
-              [{word}]
-            </span>
-          ))
+      meta: { style: { textAlign: 'center' } },
+      header: translate('Translate'),
+      enableSorting: false,
+      enableColumnFilter: false,
+      cell: (info) => {
+        
+        const requiredVariables = getRequiredVariables(info.row.original[2]);
         return (
           <div className='d-flex flex-row flex-wrap justify-content-around'>
-            {original[1].map((value: any) => {
+            {info.row.original[1].map((value: any) => {
               return (
                 <button type='button' key={value.language}
                   className='btn btn-outline-success'
@@ -260,10 +246,10 @@ export const MailingInternalization = () => {
                       value: {
                         type: type.string,
                         format: format.markdown,
-                        label: translate(original[0]),
+                        label: translate(info.row.original[0]),
                         constraints: [
                           constraints.required(translate('constraints.required.value')),
-                          constraints.test('variables', 'constraint.test.required.variables', (value) => {
+                          constraints.test('variables', translate('constraint.test.required.variables'), (value) => {
                             return !!value && requiredVariables.every(v => value.includes(v))
                           })
                         ]
@@ -280,7 +266,7 @@ export const MailingInternalization = () => {
           </div>
         );
       }
-    }
+    })
   ]
 
   return (
@@ -319,22 +305,13 @@ export const MailingInternalization = () => {
       </ul>
 
       {domain === 'mail' && (
-        <div className="col-12 pb-3">
-          <div className="d-flex justify-space-between py-3">
-            <span style={{ flex: 1 }} className="lead">
-              {translate('mailing_internalization.message_text')}
-            </span>
-            <span style={{ flex: 1 }} className="lead text-center">
-              {translate('mailing_internalization.required_variables')}
-            </span>
-          </div>
-          <Table
-            defaultSort="message"
-            columns={columns}
-            fetchItems={() => Services.getTranslations('mail').then(r => r.translations)}
-            injectTable={(t: any) => table.current = t}
-          />
-        </div>
+        <Table
+          defaultSort="message"
+          columns={columns}
+          fetchItems={() => Services.getMailTranslations()
+            .then(r => isError(r) ? r : r.translations)}
+          ref={table}
+        />
       )}
       {domain === 'mail-template' && <EditMailtemplate tenantId={tenant._id} />}
 

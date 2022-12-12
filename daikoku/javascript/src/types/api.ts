@@ -1,3 +1,4 @@
+import { isPromiseLike } from "xstate/lib/utils";
 import { TreeItem, TreeItems } from "../components/utils/dnd/types";
 import { ITeamSimple } from "./team";
 
@@ -211,7 +212,7 @@ export interface IDocPage {
   remoteContentHeaders: object;
 }
 
-interface IApiKey {
+export interface IApiKey {
   clientName: string;
   clientId: string;
   clientSecret: string;
@@ -269,6 +270,10 @@ export function isError(obj: any): obj is ResponseError {
   return (<ResponseError>obj).error !== undefined;
 }
 
+export function isPromise<T>(obj: any):obj is Promise<T> {
+  return (<Promise<T>>obj).then !== undefined && typeof (<Promise<T>>obj).then === 'function';
+}
+
 export interface ISafeSubscription extends IBaseSubscription{
   apiKey: {clientName: string};
 
@@ -296,4 +301,14 @@ export interface ISubscriptionInformation {
   simpleApi: IApi,
   simpleSubscription: ISubscription
   plan: IUsagePlan
+}
+
+export interface IApiPost {
+  _id: string
+  _humanReadableId: string
+  _tenant: string
+  _deleted: string
+  title: string
+  lastModificationAt: string
+  content: string
 }

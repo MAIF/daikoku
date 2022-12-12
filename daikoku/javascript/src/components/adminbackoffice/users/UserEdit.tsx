@@ -2,7 +2,7 @@ import { constraints, Form, format, FormRef, Schema, SchemaRenderType, type } fr
 import md5 from 'js-md5';
 import { nanoid } from 'nanoid';
 import React, { useContext, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -254,7 +254,7 @@ export const UserEdit = () => {
         if (u.email !== queryUser.data?.email) {
           navigate(`/settings/users/${updatedUser._humanReadableId}`)
         } else {
-          queryClient.invalidateQueries('user-infos')
+          queryClient.invalidateQueries(['user-infos'])
 
         }
       });

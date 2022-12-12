@@ -1,7 +1,7 @@
 import { constraints, Flow, format, Schema, SchemaRenderType, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import { Children, useContext, useState } from 'react';
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -90,8 +90,6 @@ const AssetButton = (props: AssetButtonProps) => {
           teamId={props.team._id}
           label={translate('Set from asset')}
           onSelect={(asset: IAsset) => {
-            console.debug(asset)
-
             dispatch(openFormModal({
               ...props.formModalProps,
               value: {
@@ -284,7 +282,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
           if (isError(resp)) {
             toastr.error(translate('Error'), resp.error);
           } else if (resp.title === original.title) {
-            queryClient.invalidateQueries('api')
+            queryClient.invalidateQueries(['api'])
             toastr.success(translate('Success'), translate("doc.page.save.successfull"))
           } else {
             const api = apiQuery.data as IApi;
@@ -305,7 +303,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     )
       .then(() => {
         toastr.success(translate('Success'), translate('doc.page.update.successfull'))
-        queryClient.invalidateQueries('api')
+        queryClient.invalidateQueries(['api'])
       })
   }
 
@@ -354,7 +352,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
           updatedApi.currentVersion
         )
       })
-      .then(() => queryClient.invalidateQueries('api'))
+      .then(() => queryClient.invalidateQueries(['api']))
   }
 
   const deletePage = (page: IDocumentationPage) => {
@@ -362,7 +360,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
       Services.deleteDocPage(team._id, page.id)
         .then(() => {
           toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
-          queryClient.invalidateQueries('details')
+          queryClient.invalidateQueries(['details'])
         })
     }
   }
@@ -374,8 +372,8 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
       teamId: team._id,
       onClose: () => {
         toastr.success(translate('Success'), translate('doc.page.import.successfull'))
-        queryClient.invalidateQueries('details')
-        queryClient.invalidateQueries('api')
+        queryClient.invalidateQueries(['details'])
+        queryClient.invalidateQueries(['api'])
       },
     }));
   }

@@ -1,7 +1,7 @@
 import { getApolloContext, gql } from '@apollo/client';
 import { Flow, Form, format, FormRef, Schema, SchemaEntry, type } from '@maif/react-forms';
 import { useContext, useRef } from 'react';
-import { UseMutationResult, useQuery } from 'react-query';
+import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 

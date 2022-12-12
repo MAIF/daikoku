@@ -17,10 +17,11 @@ import { I18nContext, openFormModal, openSubMetadataModal } from '../../../core'
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { Form, format, type } from "@maif/react-forms";
-import { IApi, IState, ISubscription, ITeamSimple } from "../../../types";
+import { IApi, ISafeSubscription, IState, ISubscription, ITeamSimple, IUsagePlan } from "../../../types";
 import { string } from "prop-types";
 import { ModalContext } from '../../../contexts';
 import { CustomSubscriptionData } from '../../frontend';
+import { createColumnHelper, sortingFns } from '@tanstack/react-table';
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -33,8 +34,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const dispatch = useDispatch();
 
-  const [teams, setTeams] = useState<Array<any>>([]);
-  const [columns, setColumns] = useState<Array<any>>([]);
+  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<SubriptionsFilter>()
   const tableRef = useRef<TableRef>()
@@ -50,83 +50,97 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
 
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
   }, []);
-  //TODO dans le use effect : rajouter une colonne metadata
-  useEffect(() => {
-    if (api && tableRef.current && teams.length) {
-      setColumns([
-        {
-          id: 'name',
-          Header: translate('Name'),
-          style: { textAlign: 'left' },
-          accessor: (sub: any) => sub.team === currentTeam._id
-            ? sub.customName || sub.apiKey.clientName
-            : sub.apiKey.clientName,
-          sortType: 'basic',
-        },
-        {
-          Header: translate('Plan'),
-          style: { textAlign: 'left' },
-          accessor: (sub: any) => Option(api.possibleUsagePlans.find((pp: any) => pp._id === sub.plan))
-            .map((p: any) => p.customName || formatPlanType(p, translate))
-            .getOrNull(),
-        },
-        {
-          Header: translate('Team'),
-          style: { textAlign: 'left' },
-          accessor: (sub: any) => Option(teams.find((t) => t._id === sub.team))
-            .map((t: any) => t.name)
-            .getOrElse('unknown team'),
-        },
-        {
-          Header: translate('Enabled'),
-          style: { textAlign: 'center' },
-          accessor: (api: any) => api.enabled,
-          disableSortBy: true,
-          Filter: BooleanColumnFilter,
-          filter: 'equals',
-          // eslint-disable-next-line react/display-name
-          Cell: ({ cell: { row: { original }, } }: any) => {
-            const sub = original;
-            return (
-              <SwitchButton
-                onSwitch={() => Services.archiveSubscriptionByOwner(currentTeam._id, sub._id, !sub.enabled)
-                  .then(() => tableRef.current?.update())}
-                checked={sub.enabled} />);
-          },
-        },
-        {
-          Header: translate('Created at'),
-          style: { textAlign: 'left' },
-          accessor: (sub: any) => formatDate(sub.createdAt, language),
-        },
-        {
-          Header: translate('Actions'),
-          style: { textAlign: 'center' },
-          disableSortBy: true,
-          disableFilters: true,
-          accessor: (item: any) => item._id,
-          // eslint-disable-next-line react/display-name
-          Cell: ({ cell: { row: { original }, } }: any) => {
-            const sub = original;
-            return (<div className="btn-group">
-              <BeautifulTitle title={translate('Update metadata')}>
-                <button key={`edit-meta-${sub._humanReadableId}`} type="button" className="btn btn-sm btn-access-negative" onClick={() => updateMeta(sub)}>
-                  <i className="fas fa-edit" />
-                </button>
-              </BeautifulTitle>
-              <BeautifulTitle title={translate('Refresh secret')}>
-                <button key={`edit-meta-${sub._humanReadableId}`} type="button" className="btn btn-sm btn-access-negative btn-danger" onClick={() => regenerateSecret(sub)}>
-                  <i className="fas fa-sync" />
-                </button>
-              </BeautifulTitle>
-            </div>);
-          },
-        },
-      ]);
-    }
-  }, [tableRef.current]);
 
-  const updateMeta = (sub: ISubscription) => dispatch(openSubMetadataModal({
+  const columnHelper = createColumnHelper<ISafeSubscription>()
+  const columns = [
+    columnHelper.accessor(row => row.team === currentTeam._id ? row.customName || row.apiKey.clientName : row.apiKey.clientName, {
+      id: 'name',
+      header: translate('Name'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => {
+        const sub = info.row.original
+        return sub.team === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
+      },
+      filterFn: (row, _, value) => {
+        const sub = row.original
+        const displayed: string = sub.team === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
+
+        return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
+      },
+      sortingFn: 'basic',
+    }),
+    columnHelper.accessor('plan', {
+      header: translate('Plan'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => Option(api.possibleUsagePlans.find((pp) => pp._id === info.getValue()))
+        .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+        .getOrNull(),
+      filterFn: (row, columnId, value) => {
+        const cell = row.getValue(columnId)
+        const displayed: string = Option(api.possibleUsagePlans.find((pp) => pp._id === cell))
+          .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+          .getOrElse("")
+
+        return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
+      }
+    }),
+    columnHelper.accessor('team', {
+      header: translate('Team'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => Option(teams.find((t) => t._id === info.getValue()))
+        .map((t: ITeamSimple) => t.name)
+        .getOrElse('unknown team'),
+      filterFn: (row, columnId, value) => {
+        const cell = row.getValue(columnId)
+        const displayed: string = Option(teams.find((t) => t._id === cell))
+          .map((t: ITeamSimple) => t.name)
+          .getOrElse('unknown team')
+
+        return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
+      }
+    }),
+    columnHelper.accessor('enabled', {
+      header: translate('Enabled'),
+      enableColumnFilter: false,
+      enableSorting: false,
+      meta: { style: { textAlign: 'center' } },
+      cell: (info) => {
+        const sub = info.row.original;
+        return (
+          <SwitchButton
+            onSwitch={() => Services.archiveSubscriptionByOwner(currentTeam._id, sub._id, !sub.enabled)
+              .then(() => tableRef.current?.update())}
+            checked={sub.enabled} />);
+      },
+    }),
+    columnHelper.accessor('createdAt', {
+      enableColumnFilter: false,
+      header: translate('Created at'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => formatDate(info.getValue(), language),
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center' } },
+      cell: (info) => {
+        const sub = info.row.original;
+        return (<div className="btn-group">
+          <BeautifulTitle title={translate('Update metadata')}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative me-1" onClick={() => updateMeta(sub)}>
+              <i className="fas fa-edit" />
+            </button>
+          </BeautifulTitle>
+          <BeautifulTitle title={translate('Refresh secret')}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-danger" onClick={() => regenerateSecret(sub)}>
+              <i className="fas fa-sync" />
+            </button>
+          </BeautifulTitle>
+        </div>);
+      },
+    }),
+  ]
+
+  const updateMeta = (sub: ISafeSubscription) => dispatch(openSubMetadataModal({
     save: (updates: CustomSubscriptionData) => {
       Services.updateSubscription(currentTeam, { ...sub, ...updates })
         .then(() => tableRef.current?.update());
@@ -207,8 +221,8 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
             <Table
               defaultSort="name"
               columns={columns}
-              fetchItems={() =>
-                Services.apiSubscriptions(api._id, currentTeam._id, api.currentVersion)
+              fetchItems={() => {
+                return Services.apiSubscriptions(api._id, currentTeam._id, api.currentVersion)
                   .then(subscriptions => {
                     if (!filters) {
                       return subscriptions
@@ -224,11 +238,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                           }) && filters.tags.every(tag => subscription.tags.includes(tag))
                         }
                       })
-
                     }
                   })
-              }
-              injectTable={(t: TableRef) => tableRef.current = t}
+              }}
+              ref={tableRef}
             />
           </div>
         </div>

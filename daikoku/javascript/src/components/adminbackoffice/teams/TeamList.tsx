@@ -10,7 +10,7 @@ import { I18nContext, openFormModal } from '../../../core';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
 import { ITeamSimple } from '../../../types';
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const TeamList = () => {
   const dispatch = useDispatch();
@@ -37,7 +37,7 @@ export const TeamList = () => {
               if (r.error) {
                 toastr.error(translate('Error'), r.error)
               } else {
-                queryClient.invalidateQueries('teams');
+                queryClient.invalidateQueries(['teams']);
                 toastr.success(translate('Success'), translate({ key: "team.created.success", replacements: [data.name] }))
               }
             }),
@@ -53,7 +53,7 @@ export const TeamList = () => {
         if (ok) {
           Services.deleteTeam(teamId)
             .then(() => {
-              queryClient.invalidateQueries('teams');
+              queryClient.invalidateQueries(['teams']);
             });
         }
       });
@@ -86,7 +86,7 @@ export const TeamList = () => {
                   toastr.error(translate('Error'), r.error)
                 } else {
                   toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [data.name] }))
-                  queryClient.invalidateQueries('teams');
+                  queryClient.invalidateQueries(['teams']);
                 }
               }),
             value: team

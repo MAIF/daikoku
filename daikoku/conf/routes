@@ -218,11 +218,12 @@ GET     /api/tenants/:tenantId/addable-admins           fr.maif.otoroshi.daikoku
 POST    /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku.ctrls.TenantController.addAdminsToTenant(tenantId)
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.otoroshi.daikoku.ctrls.TenantController.removeAdminFromTenant(tenantId, adminId)
 
-GET     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.getTranslations(domain: Option[String] ?= None)
+GET     /api/translations/_all                          fr.maif.otoroshi.daikoku.ctrls.TranslationController.getAllTranslations()
+GET     /api/translations/_mail                         fr.maif.otoroshi.daikoku.ctrls.TranslationController.getMailTranslations(domain: Option[String] ?= None)
 GET     /api/translations/_languages                    fr.maif.otoroshi.daikoku.ctrls.TranslationController.getLanguages()
 PUT     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTranslation()
 POST    /api/translations/:translationId/_reset         fr.maif.otoroshi.daikoku.ctrls.TranslationController.resetTranslation(translationId: String)
-DELETE /api/translations                                fr.maif.otoroshi.daikoku.ctrls.TranslationController.deleteTranslation()
+DELETE  /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.deleteTranslation()
 
 GET     /api/admin/users/:id/_impersonate               fr.maif.otoroshi.daikoku.ctrls.UsersController.impersonate(id)
 GET     /api/me/_deimpersonate                          fr.maif.otoroshi.daikoku.ctrls.UsersController.deImpersonate()

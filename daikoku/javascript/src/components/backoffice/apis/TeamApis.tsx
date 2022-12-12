@@ -8,7 +8,8 @@ import { Can, read, manage, api as API } from '../../utils';
 import { SwitchButton, Table, BooleanColumnFilter, TableRef } from '../../inputs';
 import { I18nContext, setError } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
-import { IState, IStateContext } from '../../../types';
+import { IApi, IState, IStateContext } from '../../../types';
+import { createColumnHelper } from '@tanstack/react-table';
 
 export const TeamApis = () => {
   const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
@@ -19,24 +20,19 @@ export const TeamApis = () => {
   const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate({key: 'API', plural: true})}`;
+    document.title = `${currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
   }, []);
 
   let table = useRef<TableRef>();
 
+  const columnHelper = createColumnHelper<IApi>();
+
   const columns = [
-    {
-      id: 'name',
-      Header: translate('Name'),
-      style: { textAlign: 'left' },
-      accessor: (api: any) => api.apis ? api.name : `${api.name} - (${api.currentVersion})`,
-      sortType: 'basic',
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const api = original;
+    columnHelper.accessor("name", {
+      header: translate('Name'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => {
+        const api = info.row.original;
         if (api.apis) {
           return (
             <div className="d-flex flex-row justify-content-between">
@@ -47,25 +43,16 @@ export const TeamApis = () => {
         }
         return <div>{`${api.name} - (${api.currentVersion})`}</div>;
       },
-    },
-    {
-      Header: translate('Description'),
-      style: { textAlign: 'left' },
-      accessor: (api: any) => api.smallDescription,
-    },
-    {
-      Header: translate('Published'),
-      style: { textAlign: 'center' },
-      accessor: (api: any) => api.published,
-      disableSortBy: true,
-      Filter: BooleanColumnFilter,
-      filter: 'equals',
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const api = original;
+    }),
+    columnHelper.accessor("smallDescription", {
+      header: translate('Description'),
+      meta: { style: { textAlign: 'left' } }
+    }),
+    columnHelper.accessor('published', {
+      header: translate('Published'),
+      meta: { style: { textAlign: 'center' } },
+      cell: (info) => {
+        const api = info.row.original;
         return (
           <Can I={manage} a={API} team={currentTeam}>
             <SwitchButton
@@ -76,19 +63,12 @@ export const TeamApis = () => {
           </Can>
         );
       },
-    },
-    {
-      Header: translate('Actions'),
-      style: { textAlign: 'center' },
-      disableSortBy: true,
-      disableFilters: true,
-      accessor: (item: any) => item._id,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const api = original;
+    }),
+    columnHelper.accessor('published', {
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center' } },
+      cell: (info) => {
+        const api = info.row.original;
         const viewUrl = api.apis
           ? `/${currentTeam._humanReadableId}/apigroups/${api._humanReadableId}/apis`
           : `/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`;
@@ -129,10 +109,10 @@ export const TeamApis = () => {
           </div>
         );
       },
-    },
+    }),
   ];
 
-  const togglePublish = (api: any) => {
+  const togglePublish = (api: IApi) => {
     Services.saveTeamApi(
       currentTeam._id,
       {
@@ -143,8 +123,8 @@ export const TeamApis = () => {
     ).then(() => table.current?.update());
   };
 
-  const deleteApi = (api: any) => {
-    confirm({message: translate('delete.api.confirm'), okLabel: translate('Yes')})
+  const deleteApi = (api: IApi) => {
+    confirm({ message: translate('delete.api.confirm'), okLabel: translate('Yes') })
       .then((ok) => {
         if (ok) {
           Services.deleteTeamApi(currentTeam._id, api._id)
@@ -168,7 +148,7 @@ export const TeamApis = () => {
               defaultSort="name"
               columns={columns}
               fetchItems={() => Services.teamApis(currentTeam._id)}
-              injectTable={(t: any) => table.current = t}
+              ref={table}
             />
           </div>
         </div>

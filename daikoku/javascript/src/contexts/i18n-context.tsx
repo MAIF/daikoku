@@ -5,6 +5,8 @@ import translationEng from '../locales/en/translation.json';
 import translationFr from '../locales/fr/translation.json';
 import { TOptions } from '../types/types';
 import { string } from 'prop-types';
+import { TranslationItem } from '../types/tenant';
+import { isError } from '../types';
 
 const initI8nContext: TI18ncontext = {
   language: 'en',
@@ -23,7 +25,7 @@ type TranslationConfig = {
   [lang: string]: {
     label: string,
     translations: {
-      [key: string]: string | { s: string, p: string }
+      [key: string]: TranslationItem
     }
   }
 }
@@ -74,13 +76,15 @@ export const I18nProvider = ({
   const [translations, setTranslations] = useState<TranslationConfig>(configuration);
 
   useEffect(() => {
-    Services.getTranslations('all')
+    Services.getTranslations()
       .then((store) => {
-        const tmp = translations;
-        store.translations.forEach((translation: any) => {
-          tmp[capitalize(translation.language)].translations[translation.key] = translation.value;
-        });
-        setTranslations(tmp);
+        if (!isError(store)) {
+          const tmp = translations;
+          store.translations.forEach((translation: any) => {
+            tmp[capitalize(translation.language)].translations[translation.key] = translation.value;
+          });
+          setTranslations(tmp);
+        }
       });
   });
 
@@ -149,16 +153,6 @@ export const I18nProvider = ({
 
     return translateBase(params.key, language, params.plural, params.defaultResponse, undefined, params.replacements);
   }
-
-
-
-
-
-
-
-
-
-
 
   const Translation = ({
     i18nkey,

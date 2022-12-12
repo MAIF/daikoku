@@ -1,64 +1,61 @@
-import React, { useContext, useEffect, useState } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
+import { Row } from 'antd';
 import moment from 'moment';
+import { useContext, useEffect, useRef, useState } from 'react';
 
-import { Table } from '../../inputs';
-import { OtoDatePicker } from '../../inputs/datepicker';
-import * as Services from '../../../services';
-import { Can, manage, tenant } from '../../utils';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
+import * as Services from '../../../services';
+import { IAuditTrailEvent, isError } from '../../../types';
+import { Table, TableRef } from '../../inputs';
+import { OtoDatePicker } from '../../inputs/datepicker';
+import { Can, manage, tenant } from '../../utils';
 
 export const AuditTrailList = () => {
   useTenantBackOffice();
+
+  const table = useRef<TableRef>();
 
   const { alert } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
 
   const [from, setFrom] = useState(moment().subtract(1, 'hour'));
   const [to, setTo] = useState(moment());
-  const [table, setTable] = useState();
   const page = 1;
   const size = 500;
 
+  const columnHelper = createColumnHelper<IAuditTrailEvent>();
   const columns = [
-    {
-      Header: 'Date',
-      id: 'date',
-      accessor: (item: any) => item['@timestamp']['$long'] ? item['@timestamp']['$long'] : item['@timestamp'], //todo: try to remove this $long prop from reactivemongo
-      style: { textAlign: 'left' },
-      Cell: ({
-        value
-      }: any) => {
+    columnHelper.accessor('@timestamp', {
+      header: translate('Date'),
+      enableColumnFilter: false,
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => {
+        const item = info.getValue;
+        const value = info.getValue['$long'] ? item['@timestamp']['$long'] : item['@timestamp']
         return moment(value).format('YYYY-MM-DD HH:mm:ss.SSS');
       },
-    },
-    {
-      Header: 'Name',
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.user.name,
-    },
-    {
-      Header: 'Impersonator',
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.impersonator ? item.impersonator.name : '',
-    },
-    {
-      Header: 'Message',
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.message,
-    },
-    {
-      Header: 'Actions',
-      style: { textAlign: 'center' },
-      disableSortBy: true,
-      disableFilters: true,
-      accessor: (item: any) => item._id,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const value = original;
+    }),
+    columnHelper.accessor(row => row.user.name, {
+      header: translate('User'),
+      meta: { style: { textAlign: 'left' } }
+    }),
+    columnHelper.accessor(row => row.impersonator?.name, {
+      header: translate('Impersonator'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => info.getValue() || ''
+    }),
+    columnHelper.accessor('message', {
+      header: translate('Message'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center' } },
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const value = info.row.original;
         return (
           <button
             type="button"
@@ -74,20 +71,14 @@ export const AuditTrailList = () => {
           </button>
         );
       },
-    },
+    }),
   ];
 
   useEffect(() => {
-    update();
+    table.current?.update();
   }, [from, to, page]);
 
-  const update = () => {
-    if (table) {
-      (table as any).update();
-    }
-  };
-
-  const updateDateRange = (from: any, to: any) => {
+  const updateDateRange = (from: moment.Moment, to: moment.Moment) => {
     setFrom(from);
     setTo(to);
   };
@@ -97,9 +88,13 @@ export const AuditTrailList = () => {
   };
 
   const fetchItems = () => {
-    return Services.fetchAuditTrail(from.valueOf(), to.valueOf(), page, size).then(
-      (resp) => resp.events
-    );
+    return Services.fetchAuditTrail(from.valueOf(), to.valueOf(), page, size)
+      .then((resp) => {
+        if (!isError(resp)) {
+          return resp.events
+        }
+        return resp
+      });
   };
 
   return (
@@ -112,7 +107,7 @@ export const AuditTrailList = () => {
               <Table
                 columns={columns}
                 fetchItems={fetchItems}
-                injectTable={setTable}
+                ref={table}
                 defaultSort="date"
                 defaultSortDesc={true}
                 injectTopBar={topBar}

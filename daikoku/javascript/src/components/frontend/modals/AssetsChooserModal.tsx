@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { useContext, useState } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 
 import { I18nContext } from '../../../core';
@@ -171,7 +171,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
     return fetchAssets()
   };
 
-  if (assetsRequest.isLoading || assetsRequest.isIdle) {
+  if (assetsRequest.isLoading) {
     return (
       <button type="button" className="btn btn-outline-success ms-1" disabled>
         <Translation i18nkey="loading">loading...</Translation>
