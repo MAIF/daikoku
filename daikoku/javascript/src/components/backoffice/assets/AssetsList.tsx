@@ -210,15 +210,15 @@ export const AssetsList = ({
 
   const columnHelper = createColumnHelper<IAsset>()
   const columns = [
-    columnHelper.accessor(row => row.filename || '--', {
+    columnHelper.accessor(row => row.meta.filename || '--', {
       header: translate('Filename'),
       meta: { style: { textAlign: 'left' } },
     }),
-    columnHelper.accessor(row => row.title || '--', {
+    columnHelper.accessor(row => row.meta.title || '--', {
       header: translate('Title'),
       meta: { style: { textAlign: 'left' } },
     }),
-    columnHelper.accessor(row => row.desc || '--', {
+    columnHelper.accessor(row => row.meta.desc || '--', {
       header: translate('Description'),
       meta: { style: { textAlign: 'left' } },
     }),
@@ -257,7 +257,7 @@ export const AssetsList = ({
     }),
     columnHelper.display({
       header: translate('Actions'),
-      meta: { style: { textAlign: 'right' } },
+      meta: { style: { textAlign: 'center', width: '180px' } },
       enableSorting: false,
       enableColumnFilter: false,
       cell: (info) => {

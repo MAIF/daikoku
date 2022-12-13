@@ -44,7 +44,7 @@ export const TeamApiKeys = () => {
     }),
     columnHelper.display({
       header: translate('Actions'),
-      meta: { style: { textAlign: 'center' } },
+      meta: { style: { textAlign: 'center', width: '120px' } },
       enableColumnFilter: false,
       enableSorting: false,
       cell: (info) => {

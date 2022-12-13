@@ -28,7 +28,7 @@ export const TeamApis = () => {
   const columnHelper = createColumnHelper<IApi>();
 
   const columns = [
-    columnHelper.accessor("name", {
+    columnHelper.accessor(api => api.apis ? api.name : `${api.name} - (${api.currentVersion})`, {
       header: translate('Name'),
       meta: { style: { textAlign: 'left' } },
       cell: (info) => {
@@ -36,12 +36,12 @@ export const TeamApis = () => {
         if (api.apis) {
           return (
             <div className="d-flex flex-row justify-content-between">
-              <span>{api.name}</span>
+              <span>{info.getValue()}</span>
               <div className="iconized">G</div>
             </div>
           );
         }
-        return <div>{`${api.name} - (${api.currentVersion})`}</div>;
+        return <div>{info.getValue()}</div>;
       },
     }),
     columnHelper.accessor("smallDescription", {
@@ -50,7 +50,7 @@ export const TeamApis = () => {
     }),
     columnHelper.accessor('published', {
       header: translate('Published'),
-      meta: { style: { textAlign: 'center' } },
+      meta: { style: { textAlign: 'center', width: '60px' } },
       cell: (info) => {
         const api = info.row.original;
         return (
@@ -66,7 +66,7 @@ export const TeamApis = () => {
     }),
     columnHelper.accessor('published', {
       header: translate('Actions'),
-      meta: { style: { textAlign: 'center' } },
+      meta: { style: { textAlign: 'center', width: '120px' } },
       cell: (info) => {
         const api = info.row.original;
         const viewUrl = api.apis
@@ -76,11 +76,11 @@ export const TeamApis = () => {
           ? `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
           : `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
         return (
-          <div className="btn-group">
+          <div>
             <Link
               rel="noopener"
               to={viewUrl}
-              className="btn btn-sm btn-access-negative"
+              className="btn btn-sm btn-outline-primary me-1"
               title="View this Api"
             >
               <i className="fas fa-eye" />
@@ -89,7 +89,7 @@ export const TeamApis = () => {
               <Link
                 key={`edit-${api._humanReadableId}`}
                 to={editUrl}
-                className="btn btn-sm btn-access-negative"
+                className="btn btn-sm btn-outline-primary me-1"
                 title="Edit this Api"
               >
                 <i className="fas fa-edit" />
@@ -98,7 +98,7 @@ export const TeamApis = () => {
                 <button
                   key={`delete-${api._humanReadableId}`}
                   type="button"
-                  className="btn btn-sm btn-access-negative"
+                  className="btn btn-sm btn-outline-danger"
                   title="Delete this Api"
                   onClick={() => deleteApi(api)}
                 >

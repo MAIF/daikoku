@@ -31,6 +31,13 @@ export function useForceUpdate() {
 }
 export type TableRef = { update: () => void }
 
+type MetaStyle = {
+  style: {
+    textAlign?: 'left' | 'center' | 'right'
+    width?: string
+  }
+}
+
 type TableProps<T> = {
   columns: ColumnDef<T, any>[];
   fetchItems: () => Array<T> | Promise<Array<T> | ResponseError>;
@@ -203,9 +210,12 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={`${headerGroup.id}`}>
-                  {headerGroup.headers.map((header) => (
-                    <th
+                  {headerGroup.headers.map((header) => {
+                    const style = (header.column.columnDef.meta as MetaStyle)?.style
+
+                    return (<th
                       key={header.id}
+                      style={{ textAlign: style?.textAlign || 'left', width: style?.width || 'auto' }}
                       className={classNames({
                         '--sort-asc': header.column.getIsSorted() === 'asc',
                         '--sort-desc': header.column.getIsSorted() === 'desc',
@@ -226,18 +236,23 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
                         </div>
                       ) : null}
                     </th>
-                  ))}
+                    )
+                  })}
                 </tr>
               ))}
             </thead>
             <tbody>
               {table.getRowModel().rows.map((row) => (
                 <tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const style = (cell.column.columnDef.meta as MetaStyle)?.style
+                    return (
+                      <td key={cell.id}
+                        style={{ textAlign: style?.textAlign || 'left', width: style?.width || 'auto' }}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>

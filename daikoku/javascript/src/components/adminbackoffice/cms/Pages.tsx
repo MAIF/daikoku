@@ -39,7 +39,7 @@ export const Pages = ({
       meta: {
         style: {
           textAlign: 'center',
-          maxWidth: 60,
+          width: '60px',
         }
       },
       enableColumnFilter: false,
@@ -66,21 +66,19 @@ export const Pages = ({
       meta: {
         style: {
           textAlign: 'left',
-          fontStyle: 'italic',
         }
       },
       cell: (info) =>
         info.getValue() || <span className="badge bg-dark">{translate('cms.pages.block')}</span>
     }),
-    columnHelper.accessor('lastPublishedDate', {
+    columnHelper.accessor(row => row.lastPublishedDate ? moment(row.lastPublishedDate).format(translate('moment.date.format')) : '-', {
       header: translate('cms.pages.publish_date'),
-      meta: { style: { textAlign: 'left', maxWidth: 220 } },
+      meta: { style: { textAlign: 'left', width: '200px' } },
       enableColumnFilter: false,
-      cell: (info) => info.getValue() ? moment(info.getValue()).format('DD MMM (HH:mm)') : '-',
     }),
     columnHelper.display({
       header: 'Actions',
-      meta: { style: { textAlign: 'center' } },
+      meta: { style: { textAlign: 'center', width: '120px' } },
       enableColumnFilter: false,
       enableSorting: false,
       cell: (info) => {

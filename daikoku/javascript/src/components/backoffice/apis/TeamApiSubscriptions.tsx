@@ -121,7 +121,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     }),
     columnHelper.display({
       header: translate('Actions'),
-      meta: { style: { textAlign: 'center' } },
+      meta: { style: { textAlign: 'center', width: '120px' } },
       cell: (info) => {
         const sub = info.row.original;
         return (<div className="btn-group">

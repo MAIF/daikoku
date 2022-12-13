@@ -123,7 +123,7 @@ export function TeamApiPost({
   const columns = [
     columnHelper.accessor('title', {
       header: translate('Title'),
-      meta: {style: { textAlign: 'left' }},
+      meta: { style: { textAlign: 'left' } },
     }),
     columnHelper.accessor(row => {
       return moment(row.lastModificationAt).format(
@@ -131,11 +131,11 @@ export function TeamApiPost({
       );
     }, {
       header: translate('Last modification'),
-      meta: {style: { textAlign: 'left' }},
+      meta: { style: { textAlign: 'left' } },
     }),
     columnHelper.display({
       header: translate('Actions'),
-      meta: {style: { textAlign: 'right' }},
+      meta: { style: { textAlign: 'center', width: '120px' } },
       cell: (info) => {
         const post = info.row.original;
         return (
@@ -185,7 +185,7 @@ export function TeamApiPost({
           columns={columns}
           fetchItems={() => Services.getAllAPIPosts(api._humanReadableId, params.versionId!)
             .then(r => isError(r) ? r : r.posts)}
-          injectTable={(t: any) => table.current = t}
+          ref={table}
         />
       </div>
     </div>
