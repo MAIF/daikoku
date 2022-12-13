@@ -228,7 +228,7 @@ export const ApiGroupHome = ({ }) => {
             <ApiGroupApis apiGroup={apiGroup} ownerTeam={ownerTeam} subscriptions={subscriptions} />
           )}
           {params.tab === 'apis' && match && <ApiHome groupView />}
-          {params.tab === 'description' && <ApiDescription api={apiGroup} ownerTeam={ownerTeam} />}
+          {params.tab === 'description' && <ApiDescription api={apiGroup} />}
           {params.tab === 'pricing' && (
             <ApiPricing
               connectedUser={connectedUser}

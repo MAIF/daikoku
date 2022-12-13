@@ -153,6 +153,7 @@ export const theMachine = createMachine({
       invoke: {
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
+          console.debug("hello services")
           return (callBack, _event) =>
             Promise.all([
               Services.getOtoroshiServices(context.tenant, context.otoroshi),
@@ -286,7 +287,8 @@ export const theMachine = createMachine({
       invoke: {
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
-          return (callBack, _onEvent) => {
+          console.debug("hello apikeys")
+          return (callBack, _event) =>
             Services.getOtoroshiApiKeys(context.tenant, context.otoroshi)
               .then((newApikeys) => {
                 if (newApikeys.error) callBack({ type: 'FAILURE', error: { ...newApikeys } });
@@ -304,7 +306,6 @@ export const theMachine = createMachine({
                 }
               })
               .catch((error) => callBack({ type: 'FAILURE', error }));
-          };
         },
       },
       on: {

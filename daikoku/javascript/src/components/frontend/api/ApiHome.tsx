@@ -23,7 +23,7 @@ import { IApi, ISubscription, IUsagePlan } from '../../../types';
 
 export const ApiDescription = ({
   api
-}: any) => {
+}: { api: IApi }) => {
   useEffect(() => {
     (window as any).$('pre code').each((i: any, block: any) => {
       hljs.highlightElement(block);
@@ -256,7 +256,7 @@ const ApiHomeComponent = ({
   };
 
 
-  const askForApikeys = ({teams, plan, apiKey, motivation}: {teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string}) => {
+  const askForApikeys = ({ teams, plan, apiKey, motivation }: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => {
     const planName = formatPlanType(plan, translate);
 
     if (api) {
@@ -265,28 +265,28 @@ const ApiHomeComponent = ({
           ? Services.extendApiKey(api!._id, apiKey._id, teams, plan._id, motivation)
           : Services.askForApiKey(api!._id, teams, plan._id, motivation)
       ).then((results) => {
-          if (results.error) {
-            return toastr.error(translate('Error'), results.error);
-          }
-          return results.forEach((result: any) => {
-            if (result.error) {
-              return toastr.error(translate('Error'), result.error);
-            } else if (result.creation === 'done') {
-              const team: any = myTeams.find((t) => t._id === result.subscription.team);
+        if (results.error) {
+          return toastr.error(translate('Error'), results.error);
+        }
+        return results.forEach((result: any) => {
+          if (result.error) {
+            return toastr.error(translate('Error'), result.error);
+          } else if (result.creation === 'done') {
+            const team: any = myTeams.find((t) => t._id === result.subscription.team);
 
-              return toastr.success(
-                translate('Done'),
-                translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
-              );
-            } else if (result.creation === 'waiting') {
-              const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
-              return toastr.info(
-                translate('Pending request'),
-                translate({ key: 'subscription.plan.waiting', replacements: [planName, team.name] })
-              );
-            }
-          });
-        })
+            return toastr.success(
+              translate('Done'),
+              translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
+            );
+          } else if (result.creation === 'waiting') {
+            const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
+            return toastr.info(
+              translate('Pending request'),
+              translate({ key: 'subscription.plan.waiting', replacements: [planName, team.name] })
+            );
+          }
+        });
+      })
         .then(() => updateSubscriptions(api._id));
     }
   };
@@ -298,7 +298,7 @@ const ApiHomeComponent = ({
           const alreadyStarred = connectedUser.starredApis.includes(api._id);
           api.stars += alreadyStarred ? -1 : 1;
           setApi(api);
-  
+
           //FIXME: remove line after use readuc hooks
           //@ts-ignore
           updateUser({
@@ -377,11 +377,11 @@ const ApiHomeComponent = ({
     <div className="album py-2 col-12 min-vh-100">
       <div className="container">
         <div className="row pt-3">
-          {params.tab === 'description' && (<ApiDescription api={api} ownerTeam={ownerTeam} subscriptions={subscriptions} />)}
+          {params.tab === 'description' && (<ApiDescription api={api} />)}
           {params.tab === 'pricing' && (<ApiPricing connectedUser={connectedUser} api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} pendingSubscriptions={pendingSubscriptions} updateSubscriptions={updateSubscriptions} tenant={tenant} />)}
           {params.tab === 'documentation' && <ApiDocumentation api={api} />}
           {params.tab === 'testing' && (<ApiSwagger api={api} teamId={teamId} ownerTeam={ownerTeam} testing={(api as any).testing} tenant={tenant} connectedUser={connectedUser} />)}
-          {params.tab === 'swagger' && (<ApiRedoc api={api} teamId={teamId}/>)}
+          {params.tab === 'swagger' && (<ApiRedoc api={api} teamId={teamId} />)}
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
           {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} onChange={(editedApi: any) => setApi(editedApi)} ownerTeam={ownerTeam} connectedUser={connectedUser} />)}
         </div>

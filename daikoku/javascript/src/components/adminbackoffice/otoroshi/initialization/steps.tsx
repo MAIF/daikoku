@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import Select, { components } from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
@@ -6,13 +6,14 @@ import classNames from 'classnames';
 import orderBy from 'lodash/orderBy';
 import cloneDeep from 'lodash/cloneDeep';
 
-import { Table } from '../../../inputs';
+import { Table, TableRef } from '../../../inputs';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan, BeautifulTitle, formatPlanType, Option } from '../../../utils';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { ModalContext } from '../../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
-import { IApiKey } from '../../../../types/api';
+import { IApiKey, ISubscription } from '../../../../types/api';
+import { TOption } from '../../../../types';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -461,10 +462,26 @@ const SelectTeam = ({
   ) : null;
 };
 
-export const ApiKeyStep = (props: any) => {
-  const [selectedEntity, setSelectedEntity] = useState<any>();
+type ApiKeyStepProps = {
+  groups: Array<{id: string, name: string}>,
+  services: Array<{id: string, name: string}>,
+  routes: Array<{id: string, name: string}>,
+  getFilteredApikeys: (entity: {value: string, prefix: string, label: string}) => Array<IApiKey>
+  createdSubs: Array<ISubscription>
+  cancel: () => void
+}
+export const ApiKeyStep = (props: ApiKeyStepProps) => {
+  const table = useRef<TableRef>()
+  const [selectedEntity, setSelectedEntity] = useState<{value: string, prefix: string, label: string} | null>();
 
   const { translate, Translation } = useContext(I18nContext);
+
+  useEffect(() => {
+    if (table.current) {
+      table.current.update()
+    }
+  }, [selectedEntity])
+  
 
   const groups = props.groups.map((g: any) => ({
     value: g.id,
@@ -526,7 +543,11 @@ export const ApiKeyStep = (props: any) => {
           <Table
             defaultSort="name"
             columns={columns}
-            fetchItems={() => props.getFilteredApikeys(selectedEntity)}
+            fetchItems={() => {
+              console.debug({selectedEntity})
+              return props.getFilteredApikeys(selectedEntity)
+            }}
+            ref={table}
           />
         </div>
       )}

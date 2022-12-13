@@ -20,7 +20,6 @@ import {
   user,
 } from '../../utils';
 
-import 'antd/lib/tooltip/style/index.css';
 import { useSelector } from 'react-redux';
 import { IState, IStateContext, ITeamSimple, IUser, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
 import { useDispatch } from 'react-redux';
