@@ -175,7 +175,7 @@ export const teamApi = (teamId: string, apiId: string, version: string): Promise
 export const teamApiGroup = (teamId: string, apiGroupId: string) =>
   customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`);
 
-export const teamApis = (teamId: string) => customFetch(`/api/teams/${teamId}/apis`);
+export const teamApis = (teamId: string): Promise<Array<IApi>> => customFetch(`/api/teams/${teamId}/apis`);
 export const team = (teamId: string) => customFetch(`/api/teams/${teamId}`);
 export const teamFull = (teamId: string): Promise<ITeamFull> =>
   customFetch(`/api/teams/${teamId}/_full`);
@@ -1165,6 +1165,46 @@ export const graphql = {
           team
           authorized
           pending
+        }
+      }
+    }`),
+  getApisWithSubscription: gql(`
+    query AccessibleApis ($teamId: String!) {
+      accessibleApis (teamId: $teamId) {
+        api {
+          name
+          _humanReadableId
+          _id
+          isDefault
+          visibility
+          parent {
+            _id
+            currentVersion
+          }
+          possibleUsagePlans {
+            _id
+            customName
+            currency
+            type
+            subscriptionProcess
+            allowMultipleKeys
+          }
+          currentVersion
+          team {
+            _id
+            _humanReadableId
+            name
+          }
+          apis {
+            api {
+              _id
+            }
+          }
+        }
+        subscriptionsWithPlan {
+          planId
+          isPending
+          havesubscriptions
         }
       }
     }`),

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames';
-import { Search, Plus, MessageSquare, Bell, ArrowLeft } from 'react-feather';
+import {Search, Plus, MessageSquare, Bell, ArrowLeft, ShieldOff} from 'react-feather';
 
 import * as Services from '../../../services';
 import { updateNotifications } from '../../../core/context/actions';
@@ -110,6 +110,17 @@ export const SideBar = () => {
         </div>
 
         <div className="navbar_bottom">
+          {!connectedUser.isGuest && (
+            <Link
+              to="/apis/fast"
+              className={classNames(
+                'nav-item mb-3 notification-link messages-link cursor-pointer'
+              )}
+              title={translate('expertMode.access')}
+            >
+              <ShieldOff />
+            </Link>
+          )}
           {isAdmin && (
             <Link
               to="/settings/messages"

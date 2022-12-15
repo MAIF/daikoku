@@ -1,11 +1,12 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
+import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
@@ -86,6 +87,34 @@ object CommonServices {
           .map(res => res._2.head)
           .toSeq
       }
+    }
+  }
+  def getApisWithSubscriptions(teamId: String)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Seq[ApiWithSubscriptions]] = {
+    for {
+      allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("$or" -> Json.arr(
+        Json.obj("visibility" -> "Public"),
+        Json.obj("authorizedTeams" -> teamId ),
+        Json.obj("team" -> teamId))))
+
+      //subs <- Future.sequence(allApis.map(api => {
+      //    env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+      //      "api" -> api.id.value))
+      //}))
+      subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
+      notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
+        "action.type" -> "ApiSubscription",
+        "status.status" -> "Pending"
+      ))
+
+    } yield {
+       allApis.map(api => {
+        ApiWithSubscriptions(api,
+        api.possibleUsagePlans.map(plan => {
+          SubscriptionsWithPlan(plan.id.value,
+            isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value),
+            havesubscriptions = subs.exists(sub => sub.plan.value == plan.id.value && sub.api == api.id))
+        }))
+      })
     }
   }
 

@@ -1204,5 +1204,11 @@
     "Ok": "Ok",
     "page.prompt.creation.message": "Specify the name of the new page",
     "page.prompt.creation.title": "New page creation",
-    "page.prompt.creation.placeholder": "New page"
+    "page.prompt.creation.placeholder": "New page",
+    "expertMode.access": "Access to the expert mode",
+    "expertMode.title.page": "%s - Expert Mode",
+    "expertMode.title.chooseTeam": "Choose a team to start",
+    "expertMode.error.searching.team": "An error has occurred while searching your teams",
+    "expertMode.input.reasonSubscription": "Put the reason why you want an API key",
+    "expertMode.subscription.resume": "summary of your subscription request"
 }

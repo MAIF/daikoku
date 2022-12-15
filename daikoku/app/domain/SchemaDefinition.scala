@@ -7,7 +7,7 @@ import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{NotificationTypeFormat, TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
 import org.joda.time.format.ISODateTimeFormat
@@ -758,6 +758,14 @@ object SchemaDefinition {
       ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations))
     )
 
+    lazy val subscriptionsWithPlanType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionsWithPlan]()
+
+    lazy val GraphQLAccessibleApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithSubscriptions](
+      ObjectTypeDescription("A Daikoku api with the list of plans and his state of subscription"),
+      ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
+      ReplaceField("subscriptionsWithPlan", Field("subscriptionsWithPlan", ListType(subscriptionsWithPlanType), resolve = _.value.subscriptionsWithPlan))
+    )
+
     lazy val  NotificationStatusType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus] = InterfaceType(
       "NotificationStatus",
       "The status of a notification",
@@ -1172,7 +1180,7 @@ object SchemaDefinition {
     val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
-
+    val TEAM_ID_NOT_OPT = Argument("teamId", StringType, description = "The id of the team")
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
@@ -1192,6 +1200,16 @@ object SchemaDefinition {
     def apiQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("visibleApis", ListType(GraphQLApiType), arguments = TEAM_ID :: Nil, resolve = ctx => {
         getVisibleApis(ctx, ctx.arg(TEAM_ID))
+      })
+    )
+
+    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String) = {
+      CommonServices.getApisWithSubscriptions(teamId)(ctx.ctx._2, env, e)
+    }
+
+    def apiWithSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("accessibleApis", ListType(GraphQLAccessibleApiType), arguments = TEAM_ID_NOT_OPT :: Nil, resolve = ctx => {
+        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT))
       })
     )
 
@@ -1273,7 +1291,7 @@ object SchemaDefinition {
 
     (
       Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields() ++ cmsPageFields():_*)
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ apiWithSubscriptionsQueryFields() ++ cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher)
     )

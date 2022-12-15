@@ -47,3 +47,9 @@ interface I2FA {
   token: string;
   backupCodes: string;
 }
+
+export interface IAccessibleTeam {
+  _id: string;
+  _humanReadableId: string;
+  name: string;
+}

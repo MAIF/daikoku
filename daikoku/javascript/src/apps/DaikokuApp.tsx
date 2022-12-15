@@ -58,6 +58,7 @@ import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets
 import { SessionModal } from '../components/frontend/modals/SessionModal';
 import { QueryClientProvider } from 'react-query';
 import { IState, IUserSimple } from '../types';
+import {ExpertMode} from "../components/frontend/team/ExpertMode";
 
 type DaikokuAppProps = {
   session: any,
@@ -330,6 +331,18 @@ const DaikokuAppComponent = ({
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate('Init')}`}>
                         <InitializeFromOtoroshi />
+                      </RouteWithTitle>
+                    }
+                  />
+                  <Route
+                    path="/apis/fast"
+                    element={
+                      <RouteWithTitle title={
+                        translate({
+                          key: "expertMode.title.page",
+                          replacements: [tenant.title]
+                        })}>
+                        <ExpertMode/>
                       </RouteWithTitle>
                     }
                   />
