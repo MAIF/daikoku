@@ -5,7 +5,6 @@ export * from './TeamApiInfo';
 export * from './TeamApiSwagger';
 export * from './TeamApiTesting';
 export * from './TeamApis';
-export * from './utils';
 export * from './TeamApiConsumption';
 export * from './TeamPlanConsumption';
 export * from './TeamApiSubscriptions';

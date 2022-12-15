@@ -4,6 +4,7 @@ import { useContext, useRef } from 'react';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { Settings } from 'react-feather'
 
 import { openSaveOrCancelModal } from '../../../../core';
 import { I18nContext } from '../../../../contexts/i18n-context';
@@ -119,8 +120,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
         help: translate('tenant_edit.cms_history_length.help'),
       },
     },
-    logo: urlWithAssetButton(translate('Logo'), translate('Set Logo from asset'), MimeTypeFilter.image), //todo: translation
-    cssUrl: urlWithAssetButton(translate('CSS URL'), translate('Set CSS from asset'), MimeTypeFilter.css), //todo: trabslation
+    logo: urlWithAssetButton(translate('Logo'), translate({key: 'set.from.assets', replacements: [translate('set.logo')]}), MimeTypeFilter.image),
+    cssUrl: urlWithAssetButton(translate('CSS URL'), translate({key: 'set.from.assets', replacements: [translate('set.css')]}), MimeTypeFilter.css),
     css: {
       type: type.string,
       format: format.code,
@@ -131,7 +132,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       format: format.code,
       label: () => <div className='d-flex flex-row align-items-center'>
         <div>{translate('CSS color theme')}</div>
-        <button type="button" className="btn btn-access-negative ms-1" onClick={() => {
+        <button type="button" className="btn btn-outline-primary ms-1" onClick={() => {
           const RedirectToUI = () => navigate(`/settings/tenants/${tenant?._id}/style`);
           if (Object.keys(formRef.current?.methods.formState.dirtyFields || {})) {
             dispatch(openSaveOrCancelModal({
@@ -143,21 +144,22 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
               },
               title: translate('unsaved.modifications.title'),
               message: translate('unsaved.modifications.message'),
+              
             }));
           } else {
             RedirectToUI();
           }
-        }}>set them from UI</button>
+        }}><Settings /></button>
       </div>,
     },
-    jsUrl: urlWithAssetButton(translate('Js URL'), translate('Set JS from asset'), MimeTypeFilter.javascript), //todo: translate
+    jsUrl: urlWithAssetButton(translate('Js URL'), translate({key: 'set.from.assets', replacements: [translate('set.js')]}), MimeTypeFilter.javascript),
     js: {
       type: type.string,
       format: format.code,
       label: translate('Javascript')
     },
-    faviconUrl: urlWithAssetButton(translate('Favicon URL'), translate('Set Favicon from asset'), MimeTypeFilter.image),//todo: translate
-    fontFamilyUrl: urlWithAssetButton(translate('Font family'), translate('Set Font Family from asset'), MimeTypeFilter.font),//todo: translate
+    faviconUrl: urlWithAssetButton(translate('Favicon URL'), translate({key: 'set.from.assets', replacements: [translate('set.favicon')]}), MimeTypeFilter.image),
+    fontFamilyUrl: urlWithAssetButton(translate('Font family'), translate({key: 'set.from.assets', replacements: [translate('set.font.family')]}), MimeTypeFilter.font),
     footer: {
       type: type.string,
       format: format.markdown,

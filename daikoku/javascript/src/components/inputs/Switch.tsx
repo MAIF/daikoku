@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import classNames from 'classnames';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 
 type Props = {
   className?: string;
@@ -32,7 +32,7 @@ export function SwitchButton(props: Props) {
   };
 
   const { label } = props;
-  const id = label ? label.replace(/\s/gi, '') : uuidv4();
+  const id = label ? label.replace(/\s/gi, '') : nanoid();
   return (
     <div
       className={classNames('d-flex justify-content-center ', {

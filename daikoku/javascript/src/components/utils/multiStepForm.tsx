@@ -1,6 +1,6 @@
 import { Form, FormRef, Schema } from '@maif/react-forms';
 import { useMachine } from '@xstate/react';
-import { Popover, Steps } from 'antd';
+import { Popover, Steps, ConfigProvider } from 'antd';
 import omit from 'lodash/omit';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { assign, createMachine } from 'xstate';
@@ -346,18 +346,28 @@ const Breadcrumb = <T,>({
   };
 
   return (
-    <Steps
-      direction={direction}
-      current={currentIdx}
-      progressDot={customDot}
-      onChange={(idx) => handleChooseStep(idx)}
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: 'var(--success-color, red)',
+          colorInfo: 'var(--success-color, red)',
+          colorTextBase: 'var(--success-color, red)',
+        }
+      }}
     >
-      {steps.map((step, idx: number) => {
-        const disabled = Option(step.disabled)
-          .map((d: boolean | ((p: any) => boolean)) => typeof d === 'function' ? d(context) : d)
-          .getOrElse(false);
-        return <Step key={idx} title={step.label} disabled={disabled || (creation && idx > currentIdx)} />;
-      })}
-    </Steps>
+      <Steps
+        direction={direction}
+        current={currentIdx}
+        progressDot={customDot}
+        onChange={(idx) => handleChooseStep(idx)}
+      >
+        {steps.map((step, idx: number) => {
+          const disabled = Option(step.disabled)
+            .map((d: boolean | ((p: any) => boolean)) => typeof d === 'function' ? d(context) : d)
+            .getOrElse(false);
+          return <Step key={idx} title={step.label} disabled={disabled || (creation && idx > currentIdx)} />;
+        })}
+      </Steps>
+    </ConfigProvider>
   );
 };

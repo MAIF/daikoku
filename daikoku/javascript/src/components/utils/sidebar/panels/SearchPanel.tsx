@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { v4 as uuid } from 'uuid';
 import debounce from 'lodash/debounce';
 
 import * as Services from '../../../../services';

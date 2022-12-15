@@ -62,3 +62,7 @@ $pagination-border-color:#{"var(--pagination-border-color, #586069)"};//paginati
 $table-bg-color:#{"var(--table-bg-color, #f8f9fa)"};//components
 
 $modal-selection-bg-color: #{"var(--modal-selection-bg-color, #4F5657)"};//components
+
+:export {
+  successColor: $success-color;
+}

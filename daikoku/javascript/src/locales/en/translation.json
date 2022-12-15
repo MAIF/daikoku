@@ -1210,5 +1210,11 @@
     "Filter": "Filter",
     "Filter data": "Filter data",
     "Filter metadata": "Filter metadata",
-    "Filter tags": "Filter tags"
+    "Filter tags": "Filter tags",
+    "Don't save": "Don't save",
+    "set.from.assets": "Set %s from asset",
+    "set.logo": "logo",
+    "JS": "JS",
+    "set.favicon": "favicon",
+    "set.font.family": "font family"
 }

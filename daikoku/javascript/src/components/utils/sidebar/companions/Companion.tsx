@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 
 import { state } from '..';
 import { NavContext, navMode } from '../../../../contexts';
+import { nanoid } from 'nanoid';
 
 export const Companion = () => {
   const [companionState, setCompanionState] = useState(state.closed);
@@ -34,7 +35,7 @@ export const Companion = () => {
       </div>
       <div className="blocks d-flex flex-column justify-content-between">
         {Object.values(menu?.blocks || {})
-          .sort((a, b) => (a as any).order - (b as any).order)
+          .sort((a: any, b: any) => a.order - b.order)
           .map((block: any, idx) => {
             return (<div key={`${performance.now()}${idx}`} className="block">
               <div className="d-flex flex-column block__entries">
@@ -43,41 +44,39 @@ export const Companion = () => {
                     .sort((a: any, b: any) => a.order - b.order)
                     .filter((x: any) => x.visible || x.visible === undefined)
                     .map((entry: any, linkidx) => {
-                      let link: React.ReactNode = null;
+                      let link: React.ReactNode = <></>;
                       if (entry.action) {
-                        link = (<span key={`${performance.now()}-link-${idx}-${linkidx}`} className={classNames(entry.className, 'block__entry__link')} onClick={() => entry.action()}>
+                        link = (<span key={`${entry.label}-link-${idx}-${linkidx}`} className={classNames(entry.className, 'block__entry__link')} onClick={() => entry.action()}>
                           {entry.label}
                         </span>);
                       }
                       else if (entry.link) {
-                        link = (<Link key={`${performance.now()}-link-${idx}-${linkidx}`} className={classNames(entry.className, 'block__entry__link')} to={entry.link}>
+                        link = (<Link key={`${entry.label}-link-${idx}-${linkidx}`} className={classNames(entry.className, 'block__entry__link')} to={entry.link}>
                           {entry.label}
                         </Link>);
                       }
                       else if (entry.component) {
                         link = React.cloneElement(entry.component, {
-                          key: `${performance.now()}-link-${idx}-${linkidx}`,
+                          key: `${nanoid()}-link-${idx}-${linkidx}`,
                         });
                       }
                       return (<>
                         {link}
-                        {entry.childs && (<div className="entry__submenu d-flex flex-column" key={`${performance.now()}-submenu-${idx}`}>
+                        {entry.childs && (<div className="entry__submenu d-flex flex-column" key={`${nanoid()}-submenu-${idx}`}>
                           {Object.values(entry.childs)
                             .filter((x: any) => x.visible || x.visible === undefined)
                             .map((entry: any, idx) => {
                               if (entry.action) {
-                                return (<span key={`${performance.now()}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} onClick={() => entry.action()}>
+                                return (<span key={`${entry.label}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} onClick={() => entry.action()}>
                                   {entry.label}
                                 </span>);
-                              }
-                              else if (entry.link) {
-                                return (<Link key={`${performance.now()}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} to={entry.link}>
+                              } else if (entry.link) {
+                                return (<Link key={`${entry.label}-child-${idx}`} className={classNames('submenu__entry__link', entry.className)} to={entry.link}>
                                   {entry.label}
                                 </Link>);
-                              }
-                              else if (entry.component) {
+                              } else if (entry.component) {
                                 return React.cloneElement(entry.component, {
-                                  key: `${performance.now()}-child-${idx}`,
+                                  key: `${nanoid()}-child-${idx}`,
                                 });
                               }
                             })}

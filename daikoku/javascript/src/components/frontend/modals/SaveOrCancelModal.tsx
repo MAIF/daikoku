@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { I18nContext } from '../../../core';
 
 type Props = {
   closeModal: (...args: any[]) => any;
@@ -9,6 +10,8 @@ type Props = {
 };
 
 export const SaverOrCancelModal = (props: Props) => {
+  const { translate } = useContext(I18nContext);
+
   const actionAndClose = (action: (() => void | Promise<void>)) => {
     const res = action()
     if (res instanceof Promise) {
@@ -29,21 +32,21 @@ export const SaverOrCancelModal = (props: Props) => {
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-          Cancel
+          {translate('Cancel')}
         </button>
         <button
           type="button"
           className="btn btn-outline-danger"
           onClick={() => actionAndClose(props.dontsave)}
         >
-          don't save
+          {translate("Don't save")}
         </button>
         <button
           type="button"
           className="btn btn-outline-success"
           onClick={() => actionAndClose(props.save)}
         >
-          Save
+          {translate('Save')}
         </button>
       </div>
     </div>

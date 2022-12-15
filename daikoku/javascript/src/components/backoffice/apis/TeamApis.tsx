@@ -51,6 +51,7 @@ export const TeamApis = () => {
     columnHelper.accessor('published', {
       header: translate('Published'),
       meta: { style: { textAlign: 'center', width: '60px' } },
+      enableColumnFilter: false,
       cell: (info) => {
         const api = info.row.original;
         return (
@@ -64,9 +65,11 @@ export const TeamApis = () => {
         );
       },
     }),
-    columnHelper.accessor('published', {
+    columnHelper.display({
       header: translate('Actions'),
       meta: { style: { textAlign: 'center', width: '120px' } },
+      enableColumnFilter: false,
+      enableSorting: false,
       cell: (info) => {
         const api = info.row.original;
         const viewUrl = api.apis
@@ -145,7 +148,6 @@ export const TeamApis = () => {
         <div className="col">
           <div className="p-2">
             <Table
-              defaultSort="name"
               columns={columns}
               fetchItems={() => Services.teamApis(currentTeam._id)}
               ref={table}

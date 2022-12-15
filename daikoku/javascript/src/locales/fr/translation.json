@@ -1212,5 +1212,12 @@
   "Filter": "Filtrer",
   "Filter data": "Filtrer les données",
   "Filter metadata": "Filtrer les métadonnées",
-  "Filter tags": "Filtrer les tags"
+  "Filter tags": "Filtrer les tags",
+  "Don't save": "Ne pas enregistrer",
+  "set.from.assets": "définir %s depuis un asset",
+  "set.logo": "le logo",
+  "set.css": "un fichier CSS",
+  "set.js": "un fichier JS",
+  "set.favicon": "le favicon",
+  "set.font.family": "la police de style"
 }

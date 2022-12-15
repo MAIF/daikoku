@@ -71,7 +71,6 @@
     "showdown": "2.1.0",
     "swagger-editor": "4.6.0",
     "swagger-ui-dist": "4.15.5",
-    "uuid": "9.0.0",
     "xstate": "^4.35.0"
   },
   "devDependencies": {
