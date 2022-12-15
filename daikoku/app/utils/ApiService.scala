@@ -226,14 +226,6 @@ class ApiService(env: Env,
               .flatMap(_ => EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo
                 .forTenant(tenant.id)
                 .save(apiSubscription)))
-              .flatMap(_ => EitherT.liftF[Future, AppError, Future[Boolean]](env.dataStore.teamRepo
-                .forTenant(tenant.id)
-                .findById(team.id)
-                .map ( upToDateTeam => env.dataStore.teamRepo
-                    .forTenant(tenant.id)
-                    .save(upToDateTeam.getOrElse(team).copy(
-                      subscriptions = team.subscriptions :+ apiSubscription.id))
-              )))
             .map(_ => Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson))
         }.value
     }
@@ -269,12 +261,6 @@ class ApiService(env: Env,
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
             .save(apiSubscription))
-        _ <- EitherT.liftF(
-          env.dataStore.teamRepo
-            .forTenant(tenant.id)
-            .save(team.copy(
-              subscriptions = team.subscriptions :+ apiSubscription.id))
-        )
         _ <- EitherT.liftF(
           env.dataStore.tenantRepo.save(tenant.copy(adminSubscriptions = tenant.adminSubscriptions :+ apiSubscription.id))
         )
@@ -374,12 +360,6 @@ class ApiService(env: Env,
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
             .deleteByIdLogically(subscription.id))
-        _ <- EitherT.liftF(
-          env.dataStore.teamRepo
-            .forTenant(tenant.id)
-            .save(team.copy(subscriptions =
-              team.subscriptions.filterNot(_ == subscription.id)))
-        )
       } yield {
         Json.obj("archive" -> "done",
           "subscriptionId" -> subscription.id.asJson)
@@ -700,9 +680,6 @@ class ApiService(env: Env,
               case Some(_)                    => for {
                 _ <- extractSubscriptionFromAggregation(subscription, tenant, user)
                 _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteByIdLogically(subscription.id)
-                _ <- env.dataStore.teamRepo
-                  .forTenant(tenant.id)
-                  .save(subscriberTeam.copy(subscriptions = subscriberTeam.subscriptions.filterNot(_ == subscription.id)))
               } yield ()
               case None if childs.nonEmpty    =>
                 childs match {
@@ -713,9 +690,6 @@ class ApiService(env: Env,
                       Json.obj("_id" -> Json.obj("$in" -> JsArray(newChilds.map(_.id.asJson)))),
                       Json.obj("$set" -> Json.obj("parent" -> newParent.id.asJson)))
                     _ <- subRepo.deleteByIdLogically(subscription.id)
-                    _ <- env.dataStore.teamRepo
-                      .forTenant(tenant.id)
-                      .save(subscriberTeam.copy(subscriptions = subscriberTeam.subscriptions.filterNot(_ == subscription.id)))
                     _ <- otoroshiSynchronisator.verify(Json.obj("_id" -> newParent.id.asJson))
 
                   } yield ()

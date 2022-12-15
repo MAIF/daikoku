@@ -229,7 +229,6 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
         name = s"${user.name}",
         description = s"The personal team of ${user.name}",
         users = Set(UserWithPermission(user.id, Administrator)),
-        subscriptions = Seq.empty,
         authorizedOtoroshiGroups = Set.empty,
         contact = user.email,
         avatar = Some(user.picture)

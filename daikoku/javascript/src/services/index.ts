@@ -32,7 +32,7 @@ const HEADERS = {
   'Content-Type': 'application/json',
 };
 
-const customFetch = (url: any, { headers = HEADERS, method = 'GET', body, ...props }: any = {}) =>
+const customFetch = (url: string, { headers = HEADERS, method = 'GET', body, ...props }: any = {}) =>
   fetch(url, { headers, method, body, ...props }).then((r) => r.json());
 
 export const me = () => customFetch('/api/me');
@@ -498,7 +498,7 @@ export const apiConsumption = (apiId: any, planId: any, teamId: any, from: any, 
 export const apiGlobalConsumption = (apiId: any, teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`);
 
-export const apiSubscriptions = (apiId: string, teamId: string, version: string): Promise<ISafeSubscription[]> =>
+export const apiSubscriptions = (apiId: string, teamId: string, version: string): Promise<Array<ISafeSubscription>> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/subscriptions`);
 
 export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, enabled: any) =>
@@ -944,7 +944,7 @@ export const validateInvitationToken = (token: any) =>
 
 export const removeTeamInvitation = () => customFetch('/api/me/invitation', { method: 'DELETE' });
 
-export const createNewApiVersion = (apiId: any, teamId: any, version: any) =>
+export const createNewApiVersion = (apiId: string, teamId: string, version: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
     method: 'POST',
     body: JSON.stringify({ version }),

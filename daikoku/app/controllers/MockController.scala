@@ -445,7 +445,6 @@ class MockController(DaikokuAction: DaikokuAction,
       avatar = Some(
         s"https://www.gravatar.com/avatar/${email.md5}?size=128&d=robohash"),
       users = Set(userWithPermission),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
     val user = User(
@@ -700,7 +699,6 @@ class MockController(DaikokuAction: DaikokuAction,
         UserWithPermission(user3.id, TeamPermission.Administrator),
         UserWithPermission(user4.id, TeamPermission.Administrator)
       ),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
     val tenant2adminTeam = defaultAdminTeam.copy(
@@ -1072,13 +1070,7 @@ class MockController(DaikokuAction: DaikokuAction,
             UserWithPermission(user3.id, TeamUser),
             UserWithPermission(user4.id, TeamUser),
             UserWithPermission(user5.id, Administrator)
-          ),
-          subscriptions = Seq(ApiSubscriptionId("1"),
-                              ApiSubscriptionId("2"),
-                              ApiSubscriptionId("3"),
-                              ApiSubscriptionId("4"),
-                              ApiSubscriptionId("5")) ++ (1 to 10).map(
-            version => ApiSubscriptionId(s"sub-$version"))
+          )
         )
       )
       _ <- teamRepo1.save(

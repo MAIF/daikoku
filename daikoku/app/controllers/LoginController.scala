@@ -491,7 +491,6 @@ class LoginController(DaikokuAction: DaikokuAction,
                       name = s"${accountCreation.name}",
                       description = s"Team of ${accountCreation.name}",
                       users = Set(UserWithPermission(userId, Administrator)),
-                      subscriptions = Seq.empty,
                       authorizedOtoroshiGroups = Set.empty
                     )
                     def getUser() = User(

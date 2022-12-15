@@ -51,6 +51,13 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
   }, []);
 
+  useEffect(() => {
+    if (api) {
+      tableRef.current?.update()
+    }
+  }, [api])
+  
+
   const columnHelper = createColumnHelper<ISafeSubscription>()
   const columns = [
     columnHelper.accessor(row => row.team === currentTeam._id ? row.customName || row.apiKey.clientName : row.apiKey.clientName, {

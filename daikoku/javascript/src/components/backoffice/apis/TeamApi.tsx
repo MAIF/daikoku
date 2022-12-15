@@ -26,15 +26,23 @@ import {
 } from '../../../core';
 import { TOptions } from '../../../types/types';
 import { IApi, isError } from '../../../types/api';
+import { IState, IStateContext, ITeamSimple } from '../../../types';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
+type ButtonProps = {
+  apiId: string,
+  versionId: string,
+  teamId: string,
+  currentTeam: ITeamSimple,
+  tab: string
+}
 const CreateNewVersionButton = ({
   apiId,
   versionId,
   teamId,
   currentTeam,
   tab
-}: any) => {
+}: ButtonProps) => {
   const { translate } = useContext(I18nContext);
   const { prompt } = useContext(ModalContext);
 
@@ -49,7 +57,7 @@ const CreateNewVersionButton = ({
     })
       .then((newVersion) => {
         if (newVersion) {
-          if ((newVersion || '').split('').find((c: any) => reservedCharacters.includes(c)))
+          if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
             toastr.error(translate('Error'), "Can't create version with special characters : " + reservedCharacters.join(' | '));
           else
             createNewVersion(newVersion);
@@ -57,7 +65,7 @@ const CreateNewVersionButton = ({
       });
   };
 
-  const createNewVersion = (newVersion: any) => {
+  const createNewVersion = (newVersion: string) => {
     Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
       if (res.error) toastr.error(translate('Error'), res.error);
       else {
@@ -73,18 +81,22 @@ const CreateNewVersionButton = ({
     </button>
   );
 };
-interface LocationState {
-  newApi?: IApi
-}
 
+type TeamApiParams = {
+  apiId: string
+  versionId: string
+  teamId: string
+  tab: string
+} 
 export const TeamApi = (props: { creation: boolean }) => {
-  const params = useParams();
+  const params = useParams<TeamApiParams>();
+
   const location = useLocation();
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId');
 
   const dispatch = useDispatch();
-  const { currentTeam, tenant, expertMode } = useSelector((s: any) => s.context);
+  const { currentTeam, tenant, expertMode } = useSelector<IState, IStateContext>((s) => s.context);
 
   const [api, setApi] = useState<IApi>();
   const [apiVersion, setApiVersion] = useState({
@@ -98,6 +110,7 @@ export const TeamApi = (props: { creation: boolean }) => {
 
 
   useEffect(() => {
+    console.debug(`new version detetced : ${params.versionId}`)
     if (location && location.state && location.state.newApi) {
       setApi(location.state.newApi);
     } else {
@@ -106,7 +119,7 @@ export const TeamApi = (props: { creation: boolean }) => {
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${api ? (api as any).name : translate('API')}`;
+    document.title = `${currentTeam.name} - ${api ? api.name : translate('API')}`;
 
     if (!props.creation) {
       methods.addMenu({
@@ -131,7 +144,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                       menuPlacement="auto"
                       menuPosition="fixed"
                     />
-                    <CreateNewVersionButton {...params} currentTeam={currentTeam} />
+                    <CreateNewVersionButton apiId={params.apiId!} teamId={params.teamId!} versionId={params.versionId!} tab={params.tab!} currentTeam={currentTeam} />
                   </div>
                 ),
               },
@@ -264,8 +277,8 @@ export const TeamApi = (props: { creation: boolean }) => {
     {!api && <Spinner />}
     {api && (<>
       <div className="d-flex flex-row justify-content-between align-items-center">
-        {props.creation ? (<h2>{(api as any).name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-          <h2 className="me-2">{(api as any).name}</h2>
+        {props.creation ? (<h2>{api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+          <h2 className="me-2">{api.name}</h2>
         </div>)}
         <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
           {expertMode && translate('Standard mode')}

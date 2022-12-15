@@ -253,44 +253,24 @@ class ApiController(
 
   def subscribedApis(teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamMemberOnly(
-        AuditTrailEvent(
-          s"@{user.name} has accessed the subscribed api list of team @{team.name} - @{team.id}"
-        )
-      )(teamId, ctx) { team =>
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(ctx.tenant.id)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(team.subscriptions.map(_.asJson)))
-            )
-          )
-          .flatMap { subscriptions =>
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant.id)
-              .find(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
-                  )
-                )
-              )
-              .flatMap { s =>
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant.id)
-                  .findNotDeleted(
-                    Json.obj(
-                      "_id" -> Json.obj(
-                        "$in" -> JsArray((s ++ subscriptions).map(_.api.asJson))
-                      )
-                    )
-                  )
-                  .flatMap(apis =>
-                    FastFuture.successful(Left(Ok(JsArray(apis.map(_.asJson)))))
-                  )
-              }
-          }
+      TeamMemberOnly(AuditTrailEvent(s"@{user.name} has accessed the subscribed api list of team @{team.name} - @{team.id}"))(teamId, ctx) { team =>
+        for {
+          subscriptions <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
+            .findNotDeleted(Json.obj("team" -> team.id.asJson))
+          parentSubs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+            .findNotDeleted(Json.obj(
+              "_id" -> Json.obj(
+                "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
+              )))
+          apis <- env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findNotDeleted(
+              Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> JsArray((parentSubs ++ subscriptions).map(_.api.asJson))
+                )))
+        } yield {
+          Left(Ok(JsArray(apis.map(_.asJson))))
+        }
       }
     }
 
@@ -763,47 +743,6 @@ class ApiController(
             )
           )
 
-        val UpdateTeamsFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] =
-          Flow[ApiSubscription]
-            .mapAsync(1)(sub => {
-              for {
-                team <-
-                  env.dataStore.teamRepo.forTenant(tenant.id).findById(sub.team)
-                if team.isDefined
-                _ <-
-                  env.dataStore.teamRepo
-                    .forTenant(tenant.id)
-                    .save(
-                      team.get
-                        .copy(subscriptions = team.get.subscriptions :+ sub.id)
-                    )
-              } yield {
-                sub
-              }
-            })
-        val updateTeamConcurrentFlow
-            : Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow.fromGraph(
-          GraphDSL.create() { implicit b: GraphDSL.Builder[NotUsed] =>
-            import GraphDSL.Implicits._
-
-            val merge = b.add(Merge[ApiSubscription](parallelism))
-            val partition = b.add(
-              Partition[ApiSubscription](
-                parallelism,
-                sub => {
-                  Math.abs(MurmurHash3.stringHash(sub.team.value)) % parallelism
-                }
-              )
-            )
-
-            for (i <- 0 until parallelism) {
-              partition.out(i) ~> UpdateTeamsFlow.async ~> merge.in(i)
-            }
-
-            FlowShape(partition.in, merge.out)
-          }
-        )
-
         val createSubFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] =
           Flow[ApiSubscription]
             .mapAsync(10)(sub =>
@@ -817,7 +756,6 @@ class ApiController(
 
         val source = subSource
           .via(createSubFlow)
-          .via(updateTeamConcurrentFlow)
 
         val transformFlow = Flow[ApiSubscription]
           .map(_.apiKey.clientName)
@@ -1475,43 +1413,31 @@ class ApiController(
         }
 
         def findSubscriptions(api: Api, team: Team): Future[Result] = {
-          repo
-            .findNotDeleted(
-              Json.obj("api" -> api.id.value, "team" -> team.id.value)
-            )
+          repo.findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
             .flatMap { subscriptions =>
-              repo
-                .find(
-                  Json.obj(
-                    "parent" -> Json
-                      .obj("$in" -> subscriptions.map(s => s.id.value))
-                  )
-                )
+              repo.findNotDeleted(Json.obj(
+                "parent" -> Json.obj("$in" -> subscriptions.map(s => s.id.value))))
                 .flatMap { subs =>
-                  Future
-                    .sequence(
-                      (subscriptions ++ subs)
-                        .filter(s => team.subscriptions.contains(s.id))
-                        .map(sub => {
-                          (sub.parent match {
-                            case Some(_) =>
-                              env.dataStore.apiRepo
-                                .forTenant(ctx.tenant.id)
-                                .findById(sub.api.value)
-                            case None => FastFuture.successful(Some(api))
-                          }).flatMap {
-                              case Some(api) =>
-                                subscriptionToJson(
-                                  api,
-                                  sub,
-                                  sub.parent.flatMap(p =>
-                                    subscriptions.find(s => s.id == p)
-                                  )
-                                )
-                              case None => FastFuture.successful(Json.obj())
-                            }
-                        })
-                    )
+                  Future.sequence(
+                    (subscriptions ++ subs)
+                      .map(sub => {
+                        (sub.parent match {
+                          case Some(_) => env.dataStore.apiRepo
+                            .forTenant(ctx.tenant.id)
+                            .findByIdNotDeleted(sub.api.value)
+                          case None => FastFuture.successful(Some(api))
+                        }).flatMap {
+                          case Some(api) => subscriptionToJson(
+                            api,
+                            sub,
+                            sub.parent.flatMap(p =>
+                              subscriptions.find(s => s.id == p)
+                            )
+                          )
+                          case None => FastFuture.successful(Json.obj())
+                        }
+                      })
+                  )
                     .map(values => Ok(JsArray(values)))
                 }
             }
@@ -1553,80 +1479,46 @@ class ApiController(
           s"@{user.name} has accessed subscriptions of team : - $teamId"
         )
       )(teamId, ctx) { team =>
-        def findSubscriptions(api: Api, team: Team) =
-          env.dataStore.apiSubscriptionRepo
+        val teamPermission = team.users
+          .find(u => u.userId == ctx.user.id)
+          .map(_.teamPermission)
+          .getOrElse(TeamPermission.TeamUser)
+
+        for {
+          subscriptions <- env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant.id)
-            .findNotDeleted(
-              Json.obj("api" -> api.id.value, "team" -> team.id.value)
-            )
-            .flatMap { subscriptions =>
-              val teamPermission = team.users
-                .find(u => u.userId == ctx.user.id)
-                .map(_.teamPermission)
-                .getOrElse(TeamPermission.TeamUser)
+            .findNotDeleted(Json.obj("team" -> team.id.value))
+          parentSubs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+            .findNotDeleted(Json.obj(
+              "_id" -> Json.obj(
+                "$in" -> JsArray(subscriptions.flatMap(s => s.parent).map(_.asJson))
+              )))
+          apis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+            "_id" -> Json.obj(
+              "in" -> JsArray((subscriptions ++ parentSubs).map(_.api.asJson))
+            )))
+        } yield {
+          Ok(JsArray((subscriptions ++ subscriptions)
+            .map(sub => {
+              val api = apis.find(a => a.id == sub.api)
+              val planIntegrationProcess = api.map(_.possibleUsagePlans)
+                .flatMap(_.find(p => p.id == sub.plan))
+                .map(_.integrationProcess)
+                .getOrElse(IntegrationProcess.Automatic)
 
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "parent" -> Json
-                      .obj("$in" -> subscriptions.map(s => s.id.value))
-                  )
-                )
-                .flatMap { subs =>
-                  FastFuture.successful(
-                    (subscriptions ++ subs)
-                      .filter(s =>
-                        team.subscriptions.contains(s.id) && s.parent.isEmpty
-                      )
-                      .map(sub => {
-                        val planIntegrationProcess = api.possibleUsagePlans
-                          .find(p => p.id == sub.plan)
-                          .map(_.integrationProcess)
-                          .getOrElse(IntegrationProcess.Automatic)
-
-                        sub
-                          .asAuthorizedJson(
-                            teamPermission,
-                            planIntegrationProcess,
-                            ctx.user.isDaikokuAdmin
-                          )
-                          .as[JsObject] ++
-                          api.possibleUsagePlans
-                            .find(p => p.id == sub.plan)
-                            .map { plan =>
-                              Json.obj("planType" -> plan.typeName)
-                            }
-                            .getOrElse(Json.obj("planType" -> "")) ++
-                          Json.obj("apiName" -> api.name)
-                      })
-                  )
-                }
-            }
-
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findAll()
-          .flatMap { apis =>
-            Future.sequence(apis.map { api =>
-              env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .findByIdOrHrId(api.id.value)
-                .flatMap {
-                  case Some(api) if api.visibility == ApiVisibility.Public =>
-                    findSubscriptions(api, team)
-                  case Some(api) if api.team == team.id =>
-                    findSubscriptions(api, team)
-                  case Some(api)
-                      if api.visibility != ApiVisibility.Public && api.authorizedTeams
-                        .contains(team.id) =>
-                    findSubscriptions(api, team)
-                  case _ => FastFuture.successful(Seq.empty)
-                }
-            })
-          }
-          .map(_.flatten)
-          .map(subs => Ok(JsArray(subs)))
+              val apiName: String = api.map(_.name).getOrElse("")
+              sub.asAuthorizedJson(
+                teamPermission,
+                planIntegrationProcess,
+                ctx.user.isDaikokuAdmin
+              )
+                .as[JsObject] ++
+                api.map(_.possibleUsagePlans)
+                  .flatMap(_.find(p => p.id == sub.plan))
+                  .map(plan => Json.obj("planType" -> plan.typeName))
+                  .getOrElse(Json.obj("planType" -> "")) ++ Json.obj("apiName" -> apiName)
+            })))
+        }
       }
     }
 
@@ -2007,30 +1899,15 @@ class ApiController(
       )(teamId, ctx) { team =>
         for {
           subRepo <- env.dataStore.apiSubscriptionRepo.forTenantF(ctx.tenant)
-          archivedSubs <- subRepo.findNotDeleted(
-            Json.obj("team" -> team.id.asJson, "enabled" -> false)
-          )
-          _ <-
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant)
-              .deleteLogically(
-                Json.obj("team" -> team.id.asJson, "enabled" -> false)
-              )
-          done <-
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant)
-              .save(
-                team.copy(subscriptions =
-                  team.subscriptions.diff(archivedSubs.map(_.id))
-                )
-              )
+          archivedSubs <- subRepo.findNotDeleted(Json.obj("team" -> team.id.asJson, "enabled" -> false))
+          _ <- env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant)
+            .deleteLogically(Json.obj("team" -> team.id.asJson, "enabled" -> false))
         } yield {
-          Ok(
-            Json.obj(
-              "done" -> done,
-              "apiSubscriptions" -> JsArray(archivedSubs.map(_.id.asJson))
-            )
-          )
+          Ok(Json.obj(
+            "done" -> true,
+            "apiSubscriptions" -> JsArray(archivedSubs.map(_.id.asJson))
+          ))
         }
       }
     }

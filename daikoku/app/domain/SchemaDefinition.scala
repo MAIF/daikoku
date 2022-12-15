@@ -323,11 +323,6 @@ object SchemaDefinition {
         Field("contact", StringType, resolve = _.value.contact),
         Field("avatar", OptionType(StringType), resolve = _.value.avatar),
         Field("users", ListType(UserWithPermissionType), resolve = _.value.users.toSeq),
-        Field("subscriptions", ListType(ApiSubscriptionType),
-          resolve = ctx => ctx.ctx._1.apiSubscriptionRepo.forTenant(ctx.ctx._2.tenant)
-            .find(Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(ctx.value.subscriptions.map(_.asJson)))
-            ))),
         Field("authorizedOtoroshiGroups", ListType(StringType), resolve = _.value.authorizedOtoroshiGroups.toSeq.map(_.value)),
         Field("apiKeyVisibility", OptionType(StringType), resolve = _.value.apiKeyVisibility.map(_.name)),
         Field("metadata", MapType, resolve = _.value.metadata),

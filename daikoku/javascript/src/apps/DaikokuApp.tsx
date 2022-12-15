@@ -56,17 +56,16 @@ import { MessagesEvents } from '../services/messages';
 import { I18nContext } from '../contexts/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { SessionModal } from '../components/frontend/modals/SessionModal';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { IState, IUserSimple } from '../types';
+import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
 
 type DaikokuAppProps = {
-  session: any,
-  user?: any,
-  tenant: any,
+  session: ISession,
+  user: IUserSimple,
+  tenant: ITenant,
   loginProvider: string,
   loginAction: string
 }
-const DaikokuAppComponent = ({
+export const DaikokuApp = ({
   user,
   tenant,
   loginProvider,
@@ -114,7 +113,6 @@ const DaikokuAppComponent = ({
     );
   }
 
-  //FIXME: verify that removing history prop didn't break anything
   return (
     <BrowserRouter>
       <MessagesProvider>
@@ -371,7 +369,7 @@ const DaikokuAppComponent = ({
 
                   <Route
                     path="/:teamId/settings*"
-                    element={<TeamBackOfficeRouter tenant={tenant} />}
+                    element={<TeamBackOfficeRouter />}
                   />
 
                   <Route
@@ -387,8 +385,7 @@ const DaikokuAppComponent = ({
                     path="/:teamId/:apiId/:versionId/:tab/*"
                     element={
                       <FrontOfficeRoute>
-                        {' '}
-                        <ApiHome />{' '}
+                        <ApiHome />
                       </FrontOfficeRoute>
                     }
                   />
@@ -406,7 +403,6 @@ const DaikokuAppComponent = ({
               </div>
             </div>
             <ModalRoot />
-            {/* @ts-ignore */}{/* FIXME */}
             <ReduxToastr
               timeOut={4000}
               newestOnTop={false}
@@ -429,19 +425,10 @@ const DaikokuAppComponent = ({
   );
 };
 
-const mapStateToProps = (state: any) => ({
-  ...state.context,
-  error: state.error
-});
-
-export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
-
 //custom component route to get team object if it's not present in  redux store...
 
-const TeamBackOfficeRouter = ({
-  tenant
-}: any) => {
-  const { currentTeam } = useSelector((state) => (state as any).context);
+const TeamBackOfficeRouter = () => {
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const dispatch = useDispatch();
   const params = useParams();
@@ -469,10 +456,10 @@ const TeamBackOfficeRouter = ({
   }
 
   if (!currentTeam || loading) return <Spinner />;
-  else return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />;
+  else return <TeamBackOffice isLoading={loading} />;
 };
 
-const FrontOfficeRoute = (props: any) => {
+const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
   return (
     <RouteWithTitle {...props}>
       <FrontOffice>{props.children}</FrontOffice>
@@ -480,7 +467,7 @@ const FrontOfficeRoute = (props: any) => {
   );
 };
 
-const RouteWithTitle = (props: { title: string, children: JSX.Element }) => {
+const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
   useEffect(() => {
     if (props.title) {
       document.title = props.title;

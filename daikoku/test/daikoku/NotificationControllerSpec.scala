@@ -277,7 +277,7 @@ class NotificationControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
-        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id), users = Set(UserWithPermission(user.id, Administrator)))),
+        teams = Seq(teamOwner, teamConsumer.copy(users = Set(UserWithPermission(user.id, Administrator)))),
         apis = Seq(
           defaultApi),
         subscriptions = Seq(
@@ -850,7 +850,7 @@ class NotificationControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
-        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
+        teams = Seq(teamOwner, teamConsumer),
         issues = issues,
         apis = Seq(defaultApi),
         subscriptions = Seq(sub)

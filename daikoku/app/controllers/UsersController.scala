@@ -143,7 +143,6 @@ class UsersController(DaikokuAction: DaikokuAction,
                               s"The personal team of ${userToSave.name}",
                             users =
                               Set(UserWithPermission(user.id, Administrator)),
-                            subscriptions = Seq.empty,
                             authorizedOtoroshiGroups = Set.empty,
                             contact = userToSave.email,
                             avatar = Some(userToSave.picture)

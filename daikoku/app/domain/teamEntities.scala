@@ -101,7 +101,6 @@ case class Team(
     contact: String = "contact@foo.bar",
     avatar: Option[String] = Some("/assets/images/daikoku.svg"),
     users: Set[UserWithPermission] = Set.empty,
-    subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     authorizedOtoroshiGroups: Set[OtoroshiGroup] = Set.empty,
     apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
       TeamApiKeyVisibility.User),

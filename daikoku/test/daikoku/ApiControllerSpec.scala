@@ -947,7 +947,7 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(
           teamOwner,
-          teamConsumer.copy(subscriptions = Seq(sub1.id, sub2.id))
+          teamConsumer
         ),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub1, sub2)
@@ -1006,7 +1006,7 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
+        teams = Seq(teamOwner, teamConsumer),
         apis = Seq(
           defaultApi.copy(
             possibleUsagePlans = Seq(
@@ -1073,7 +1073,6 @@ class ApiControllerSpec()
         teams = Seq(
           teamOwner,
           teamConsumer.copy(
-            subscriptions = Seq(sub.id),
             users = Set(UserWithPermission(user.id, Administrator))
           )
         ),
@@ -1210,7 +1209,7 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
+        teams = Seq(teamOwner, teamConsumer),
         apis = Seq(
           defaultApi.copy(
             possibleUsagePlans = Seq(
@@ -2136,8 +2135,6 @@ class ApiControllerSpec()
       subscription.by mustBe userApiEditorId
     }
 
-    "subscribe"
-
     "get his team visible apis" in {
       val planSubId = UsagePlanId("1")
       val sub = ApiSubscription(
@@ -2156,7 +2153,7 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
+        teams = Seq(teamOwner, teamConsumer),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub),
         notifications = Seq(
@@ -2218,7 +2215,6 @@ class ApiControllerSpec()
         teams = Seq(
           teamOwner,
           teamConsumer.copy(
-            subscriptions = Seq(sub.id),
             users = Set(UserWithPermission(userApiEditor.id, Administrator))
           )
         ),
@@ -2267,7 +2263,7 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
+        teams = Seq(teamOwner, teamConsumer),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub),
         notifications = Seq(
@@ -2782,7 +2778,7 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         users = Seq(user, userAdmin),
         teams =
-          Seq(teamOwner.copy(subscriptions = Seq(parentSub.id, childSub.id))),
+          Seq(teamOwner),
         apis = Seq(defaultApi, secondApi),
         subscriptions = Seq(parentSub, childSub)
       )
@@ -3013,7 +3009,7 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(
           teamOwner,
-          teamConsumer.copy(subscriptions = Seq(payperUseSub.id))
+          teamConsumer
         ),
         apis = Seq(
           defaultApi.copy(
@@ -3102,7 +3098,7 @@ class ApiControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(
           teamOwner,
-          teamConsumer.copy(subscriptions = Seq(payperUseSub.id))
+          teamConsumer
         ),
         apis = Seq(
           defaultApi.copy(
@@ -3162,15 +3158,11 @@ class ApiControllerSpec()
         session)
       respGetSubs.status mustBe 404
 
-      val respGetTeam = httpJsonCallBlocking(
-        path = s"/api/me/teams/${teamConsumerId.value}"
+      val respGetTeamSubs = httpJsonCallBlocking(
+        path = s"/api/subscriptions/teams/${teamConsumerId.value}"
       )(tenant, session)
-      respGetTeam.status mustBe 200
-
-      val result =
-        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGetTeam.json)
-      result.isSuccess mustBe true
-      result.get.subscriptions.length mustBe 0
+      respGetTeamSubs.status mustBe 200
+      respGetTeamSubs.json.as[JsArray].value.length mustBe 0
     }
 
     "clean other versions of the deleted version" in {
@@ -3579,13 +3571,12 @@ class ApiControllerSpec()
         rotation = None,
         integrationToken = "test"
       )
-      val team = teamConsumer.copy(subscriptions = Seq(sub.id))
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, userApiEditor, user),
         teams = Seq(
           teamOwner,
-          team
+          teamConsumer
         ),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub)
@@ -3618,7 +3609,7 @@ class ApiControllerSpec()
           httpJsonCallBlocking(
             path = s"/api/teams/${teamOwnerId.value}",
             method = "PUT",
-            body = Some(team.copy(apiKeyVisibility = maybeVisibility).asJson)
+            body = Some(teamConsumer.copy(apiKeyVisibility = maybeVisibility).asJson)
           )(tenant, sessionAdmin)
         }
         resp.status mustBe 200
@@ -3647,13 +3638,12 @@ class ApiControllerSpec()
         rotation = None,
         integrationToken = "test"
       )
-      val team = teamConsumer.copy(subscriptions = Seq(sub.id))
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, userApiEditor, user),
         teams = Seq(
           teamOwner,
-          team
+          teamConsumer
         ),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub)
@@ -3740,7 +3730,7 @@ class ApiControllerSpec()
           httpJsonCallBlocking(
             path = s"/api/teams/${teamOwnerId.value}",
             method = "PUT",
-            body = Some(team.copy(apiKeyVisibility = maybeVisibility).asJson)
+            body = Some(teamConsumer.copy(apiKeyVisibility = maybeVisibility).asJson)
           )(tenant, sessionAdmin)
         }
         resp.status mustBe 200
@@ -3778,13 +3768,12 @@ class ApiControllerSpec()
         rotation = None,
         integrationToken = "test"
       )
-      val team = teamConsumer.copy(subscriptions = Seq(sub.id))
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, userApiEditor, user),
         teams = Seq(
           teamOwner,
-          team
+          teamConsumer
         ),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub)
@@ -3817,7 +3806,7 @@ class ApiControllerSpec()
           httpJsonCallBlocking(
             path = s"/api/teams/${teamOwnerId.value}",
             method = "PUT",
-            body = Some(team.copy(apiKeyVisibility = maybeVisibility).asJson)
+            body = Some(teamConsumer.copy(apiKeyVisibility = maybeVisibility).asJson)
           )(tenant, sessionAdmin)
         }
         resp.status mustBe 200
@@ -3864,13 +3853,12 @@ class ApiControllerSpec()
         rotation = None,
         integrationToken = "test"
       )
-      val team = teamConsumer.copy(subscriptions = Seq(sub.id))
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, userApiEditor, user),
         teams = Seq(
           teamOwner,
-          team
+          teamConsumer
         ),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub)
@@ -3994,7 +3982,7 @@ class ApiControllerSpec()
           httpJsonCallBlocking(
             path = s"/api/teams/${teamOwnerId.value}",
             method = "PUT",
-            body = Some(team.copy(apiKeyVisibility = maybeVisibility).asJson)
+            body = Some(teamConsumer.copy(apiKeyVisibility = maybeVisibility).asJson)
           )(tenant, sessionAdmin)
         }
         resp.status mustBe 200
@@ -4027,13 +4015,12 @@ class ApiControllerSpec()
         rotation = None,
         integrationToken = "test"
       )
-      val team = teamConsumer.copy(subscriptions = Seq(sub.id))
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, userApiEditor, user),
         teams = Seq(
           teamOwner,
-          team
+          teamConsumer
         ),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub)
@@ -4120,7 +4107,7 @@ class ApiControllerSpec()
           httpJsonCallBlocking(
             path = s"/api/teams/${teamOwnerId.value}",
             method = "PUT",
-            body = Some(team.copy(apiKeyVisibility = maybeVisibility).asJson)
+            body = Some(teamConsumer.copy(apiKeyVisibility = maybeVisibility).asJson)
           )(tenant, sessionAdmin)
         }
         resp.status mustBe 200
@@ -4447,9 +4434,7 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(user),
-        teams = Seq(
-          teamConsumer.copy(subscriptions = Seq(parentSub.id, childSub.id))
-        ),
+        teams = Seq(teamConsumer),
         apis = Seq(defaultApi),
         subscriptions = Seq(parentSub, childSub)
       )

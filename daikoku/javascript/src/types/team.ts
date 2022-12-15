@@ -19,7 +19,6 @@ export interface ITeamSimple {
 
 export interface ITeamFull extends ITeamSimple {
   _deleted: boolean;
-  subscriptions: Array<string>;
   metadata: object;
 }
 

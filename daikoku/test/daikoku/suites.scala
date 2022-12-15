@@ -351,7 +351,6 @@ object utils {
                     name = user.name,
                     description = s"The personal team of ${user.name}",
                     users = Set(UserWithPermission(user.id, Administrator)),
-                    subscriptions = Seq.empty,
                     authorizedOtoroshiGroups = Set.empty
                   )
                 case Some(team) => team
@@ -703,7 +702,6 @@ object utils {
       description = s"The admin team for the default tenant",
       avatar = None,
       users = Set(UserWithPermission(tenantAdminId, Administrator)),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
     val tenant2AdminTeam = Team(
@@ -714,7 +712,6 @@ object utils {
       description = s"The admin team for the tenant II",
       avatar = None,
       users = Set(UserWithPermission(user.id, Administrator)),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
     val adminApi = Api(

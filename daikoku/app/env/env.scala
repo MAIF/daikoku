@@ -407,7 +407,6 @@ class DaikokuEnv(ws: WSClient,
                   avatar = Some(
                     s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
                   users = Set(UserWithPermission(userId, Administrator)),
-                  subscriptions = Seq.empty,
                   authorizedOtoroshiGroups = Set.empty
                 )
                 val adminApiDefaultTenant = Api(
@@ -472,7 +471,6 @@ class DaikokuEnv(ws: WSClient,
                   name = s"${config.init.admin.name}",
                   description = s"${config.init.admin.name}'s team",
                   users = Set(UserWithPermission(userId, Administrator)),
-                  subscriptions = Seq.empty,
                   authorizedOtoroshiGroups = Set.empty
                 )
                 val user = User(

@@ -21,7 +21,7 @@ import { currencies } from '../../../services/currencies';
 import * as Services from '../../../services';
 import { useDispatch } from 'react-redux';
 import { IApi, IUsagePlan } from '../../../types/api';
-import { ITenantFull } from '../../../types/tenant';
+import { ITenant, ITenantFull } from '../../../types/tenant';
 import { ITeamSimple } from '../../../types';
 import { ModalContext } from '../../../contexts';
 
@@ -449,7 +449,7 @@ const PRIVATE = 'Private';
 type Props = {
   value: IApi
   team: ITeamSimple
-  tenant: ITenantFull
+  tenant: ITenant
   save: (api: IApi) => Promise<any>
   creation: boolean
   expertMode: boolean

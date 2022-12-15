@@ -201,7 +201,6 @@ object LdapSupport {
       name = s"$name",
       description = s"The personal team of $name",
       users = Set(UserWithPermission(userId, Administrator)),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
 

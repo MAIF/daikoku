@@ -1925,9 +1925,6 @@ object json {
               .asOpt(SetUserWithPermissionFormat)
               .map(_.toSet)
               .getOrElse(Set.empty[UserWithPermission]),
-            subscriptions = (json \ "subscriptions")
-              .asOpt(SeqApiSubscriptionIdFormat)
-              .getOrElse(Seq.empty[ApiSubscriptionId]),
             authorizedOtoroshiGroups = (json \ "authorizedOtoroshiGroups")
               .asOpt(SeqOtoroshiGroupFormat)
               .map(_.toSet)
@@ -1957,8 +1954,6 @@ object json {
       "contact" -> o.contact,
       "avatar" -> o.avatar.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "users" -> JsArray(o.users.map(UserWithPermissionFormat.writes).toSeq),
-      "subscriptions" -> JsArray(
-        o.subscriptions.map(ApiSubscriptionIdFormat.writes)),
       "authorizedOtoroshiGroups" -> JsArray(
         o.authorizedOtoroshiGroups.map(OtoroshiGroupFormat.writes).toSeq),
       "apiKeyVisibility" -> o.apiKeyVisibility

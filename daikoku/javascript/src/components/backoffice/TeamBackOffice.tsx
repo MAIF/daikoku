@@ -19,24 +19,30 @@ import {
   TeamIncome,
   TeamMembers,
 } from '../backoffice';
+import { IState, IStateError, ITeamSimple } from '../../types';
 
-const BackOfficeContent = (props: any) => {
+const BackOfficeContent = (props) => {
   return (
     <div className="" style={{ height: '100%' }}>
       {!props.error.status && props.children}
     </div>
   );
 };
-
+type TeamHome = ITeamSimple & {
+  apisCount: number
+  subscriptionsCount: number
+  notificationCount: number
+}
 const TeamBackOfficeHome = () => {
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   useTeamBackOffice(currentTeam);
 
   const { Translation } = useContext(I18nContext);
-  const [team, setTeam] = useState();
+  const [team, setTeam] = useState<TeamHome>();
 
   useEffect(() => {
-    Services.teamHome(currentTeam._id).then(setTeam);
+    Services.teamHome(currentTeam._id)
+      .then(setTeam);
 
     document.title = `${currentTeam.name}`;
   }, []);
@@ -56,17 +62,17 @@ const TeamBackOfficeHome = () => {
       <div className="d-flex justify-content-center align-items-center col-12 mt-5">
         <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
           <Link to={`/${currentTeam._humanReadableId}/settings/apis`} className="home-tile">
-            <span className="home-tile-number">{(team as any).apisCount}</span>
+            <span className="home-tile-number">{team.apisCount}</span>
             <span className="home-tile-text">
-              <Translation i18nkey="apis published" count={(team as any).apisCount}>
+              <Translation i18nkey="apis published" count={team.apisCount}>
                 apis published
               </Translation>
             </span>
           </Link>
           <Link to={`/${currentTeam._humanReadableId}/settings/apikeys`} className="home-tile">
-            <span className="home-tile-number">{(team as any).subscriptionsCount}</span>
+            <span className="home-tile-number">{team.subscriptionsCount}</span>
             <span className="home-tile-text">
-              <Translation i18nkey="apis subcriptions" count={(team as any).subscriptionsCount}>
+              <Translation i18nkey="apis subcriptions" count={team.subscriptionsCount}>
                 apis subcriptions
               </Translation>
             </span>
@@ -75,9 +81,9 @@ const TeamBackOfficeHome = () => {
             to={currentTeam.type === 'Personal' ? '#' : `/${currentTeam._humanReadableId}/settings/members`}
             className="home-tile">
             {currentTeam.type !== 'Personal' ? (<>
-              <span className="home-tile-number">{(team as any).users.length}</span>
+              <span className="home-tile-number">{team.users.length}</span>
               <span className="home-tile-text">
-                <Translation i18nkey="members" count={(team as any).users.length}>
+                <Translation i18nkey="members" count={team.users.length}>
                   members
                 </Translation>
               </span>
@@ -91,9 +97,9 @@ const TeamBackOfficeHome = () => {
             </>)}
           </Link>
           <Link to={'/notifications'} className="home-tile">
-            <span className="home-tile-number">{(team as any).notificationCount}</span>
+            <span className="home-tile-number">{team.notificationCount}</span>
             <span className="home-tile-text">
-              <Translation i18nkey="unread notifications" count={(team as any).notificationCount}>
+              <Translation i18nkey="unread notifications" count={team.notificationCount}>
                 unread notifications
               </Translation>
             </span>
@@ -104,18 +110,18 @@ const TeamBackOfficeHome = () => {
   </div>);
 };
 
+type TeamBackOfficeProps = {
+  isLoading: boolean
+}
 export const TeamBackOffice = ({
   isLoading,
-  title
-}: any) => {
-  const { currentTeam } = useSelector((s) => (s as any).context);
-  const error = useSelector((s) => (s as any).error);
+}: TeamBackOfficeProps) => {
+  const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
+  const error = useSelector<IState, IStateError>((s) => s.error);
 
   useEffect(() => {
-    if (title) {
-      document.title = title;
-    }
-  }, [title]);
+    document.title = currentTeam.name;
+  }, []);
 
   if (!currentTeam) {
     return null;
@@ -144,7 +150,7 @@ export const TeamBackOffice = ({
             <Route path={`/apikeys/:apiId/:versionId`} element={<TeamApiKeysForApi />} />
             <Route path={`/apikeys`} element={<TeamApiKeys />} />
             <Route path={`/members`} element={<TeamMembers />} />
-            <Route path={`/apis/:apiId/:versionId/:tab/*`} element={<TeamApi creation={false}/>} />
+            <Route path={`/apis/:apiId/:versionId/:tab/*`} element={<TeamApi creation={false} />} />
             <Route path={`/apis/:apiId/:tab`} element={<TeamApi creation={true} />} />
             <Route path={`/apigroups/:apiGroupId/:tab/*`} element={<TeamApiGroup />} />
             <Route path={`/apis`} element={<TeamApis />} />
