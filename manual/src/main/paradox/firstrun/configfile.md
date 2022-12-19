@@ -65,7 +65,7 @@ or
 
 | name | type | default value  | description |
 | ---- |:----:| -------------- | ----- |
-|`daikoku.storage` | string | "mongo" | You can use mongo or postgres database |
+|`daikoku.storage` | string | "postgres" | You can use mongo or postgres database. mongoDb is deprecated and will be no longer supported in the next major release |
 
 
 > Mongo configuration

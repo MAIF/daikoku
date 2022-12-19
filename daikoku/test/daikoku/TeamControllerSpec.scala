@@ -170,7 +170,7 @@ class TeamControllerSpec()
       updatedTeam.get.apisCreationPermission mustBe Some(true)
     }
 
-    "not delete a teannt team" in {
+    "not delete a tenant team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),

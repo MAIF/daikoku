@@ -445,9 +445,36 @@ object evolution_157_b extends EvolutionScript {
     }
 }
 
+object evolution_157_c extends EvolutionScript {
+  override def version: String = "1.5.7_c"
+
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext, OtoroshiClient) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(s"Begin evolution $version - remove all team.subscriptions")
+
+      implicit val execContext: ExecutionContext = ec
+
+      val eventualLong = dataStore.teamRepo.forAllTenant().updateManyByQuery(
+        Json.obj(),
+        Json.obj("$unset" -> Json.obj(
+          "subscriptions" -> "",
+        )))
+
+      Source.future(eventualLong)
+        .runWith(Sink.ignore)(mat)
+
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
-    List(evolution_102, evolution_150, evolution_151, evolution_155, evolution_157, evolution_157_b)
+    List(evolution_102, evolution_150, evolution_151, evolution_155, evolution_157, evolution_157_b, evolution_157_c)
   def run(
       dataStore: DataStore,
       otoroshiClient: OtoroshiClient

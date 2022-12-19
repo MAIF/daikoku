@@ -1483,9 +1483,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)})")
 
     val (sql1, params1) = convertQuery(queryUpdate)
-    val (sql2, params2) = convertQuery(query, params1)
+    val (sql2, params2) = if (query.values.isEmpty) {
+      ("", params1)
+    } else {
+      val tuple = convertQuery(query, params1)
+      (s"WHERE ${tuple._1}", tuple._2)
+    }
 
-    var out: String = s"UPDATE $tableName SET $sql1 WHERE $sql2 RETURNING _id"
+    var out: String = s"UPDATE $tableName SET $sql1 $sql2 RETURNING _id"
     params2.zipWithIndex.reverse.foreach {
       case (param, i) =>
         out = out.replace("$" + (i + 1), s"'$param'")
