@@ -63,23 +63,24 @@ class MessagesControllerSpec()
 
   "a user" can {
     "get his message to admin team" in {
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         messages = Seq(adminMessage(user, user, "1", None))
-      )
+      ).map(_ => {
+        val session = loginWithBlocking(user, tenant)
 
-      val session = loginWithBlocking(user, tenant)
+        val respGet =
+          httpJsonCallBlocking("/api/me/messages/admin")(tenant, session)
+        AppLogger.info(Json.prettyPrint(respGet.json))
+        respGet.status mustBe 200
+        val messages =
+          json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
+        messages.isSuccess mustBe true
+        messages.get.length mustBe 1
+        messages.get.head.message mustBe "1"
+      })
 
-      val respGet =
-        httpJsonCallBlocking("/api/me/messages/admin")(tenant, session)
-      AppLogger.info(Json.stringify(respGet.json))
-      respGet.status mustBe 200
-      val messages =
-        json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
-      messages.isSuccess mustBe true
-      messages.get.length mustBe 1
-      messages.get.head.message mustBe "1"
     }
 
     "get his previous messages" in {
