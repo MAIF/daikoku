@@ -33,6 +33,8 @@ type ExpertApiListProps = {
   setTeam: Function
   nbOfApis: number
   setNbOfApis: Function
+  input: string
+  setInput: Function
 
 }
 type ExpertApiCardProps = {
@@ -61,7 +63,6 @@ const Curreny = ({
   );
 };
 const ExpertApiList = (props: ExpertApiListProps) => {
-  const [input, setInput] = useState<string>('');
   const {translate} = useContext(I18nContext);
   const [planInfo, setPlanInfo] = useState<IAccessiblePlan>();
   const [subscription, setSubscription] = useState<IApiSubscription | undefined>()
@@ -69,11 +70,6 @@ const ExpertApiList = (props: ExpertApiListProps) => {
   const [isPlan, setIsPlan] = useState<boolean | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<string>('apikey');
   const [hide, setHide] = useState(true);
-
-  const checker = (type: any) => {
-    console.log(type)
-    return true
-  }
 
   const renderPricing = (type: string) => {
     let pricing = translate('Free');
@@ -193,15 +189,10 @@ const ExpertApiList = (props: ExpertApiListProps) => {
               const tmp = props.apiWithAuthorizations.filter((temp) => temp.api.name == api.name)
               return (
                 <div className="section border-bottom" key={api._id}>
-                  {tmp.length > 1 &&
+                  {tmp.length >= 1 &&
                       <ExpertApiCard apiWithAuthorization={tmp} team={props.team}
-                                     subscriptions={tmp.map((tmpApi) => tmpApi.subscriptionsWithPlan)} input={input} showPlan={showPlan} showApiKey={showApiKey}/>
+                                     subscriptions={tmp.map((tmpApi) => tmpApi.subscriptionsWithPlan)} input={props.input} showPlan={showPlan} showApiKey={showApiKey}/>
                   }
-                  {tmp.length == 1 &&
-                      <ExpertApiCard apiWithAuthorization={tmp} team={props.team}
-                                     subscriptions={tmp.map((tmpApi) => tmpApi.subscriptionsWithPlan)} input={input} showPlan={showPlan} showApiKey={showApiKey}/>
-                  }
-
                 </div>
 
               )
@@ -233,9 +224,9 @@ const ExpertApiList = (props: ExpertApiListProps) => {
             className="form-control"
             placeholder={translate('expertMode.input.reasonSubscription')}
             aria-label=""
-            value={input}
+            value={props.input}
             onChange={(e) => {
-              setInput(e.target.value);
+              props.setInput(e.target.value);
             }}
           />
           </div>
@@ -254,13 +245,13 @@ const ExpertApiList = (props: ExpertApiListProps) => {
                     <div className="d-flex flex-column mb-2">
                       <span className="plan-quotas">
                         {(planInfo!.maxPerSecond === undefined ) && translate('plan.limits.unlimited')}
-                        {(planInfo!.maxPerSecond !== undefined ) && checker(planInfo) && (
+                        {(planInfo!.maxPerSecond !== undefined ) &&
                           <div>
                             <div>
                               {translate({key: 'plan.limits', replacements: [planInfo.maxPerSecond.toString(), planInfo.maxPerMonth!.toString()]})}
                             </div>
                           </div>
-                        )}
+                        }
                       </span>
                       <span className="plan-pricing">
                         {translate({key: 'plan.pricing', replacements: [renderPricing(planInfo.type)]})}
@@ -547,18 +538,20 @@ export const ExpertMode = () => {
   const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(maybeTeam ? JSON.parse(maybeTeam) : undefined);
   const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const {client} = useContext(getApolloContext());
-  const [nbOfApis, setNbOfApis] = useState<number>(5);
+  const [nbOfApis, setNbOfApis] = useState<number>(1);
   const [page, setPage] = useState<number>(0);
   const [research, setResearch] = useState<string>("");
+  const [reasonSub, setReasonSub] = useState<string>("")
   const [offset, setOffset] = useState<number>(0);
   const [seeApiSubscribed, setSeeApiSubscribed] = useState<boolean>(false)
   const handleChange = (e) => {
+    setPage(0)
     setResearch(e.target.value);
 
   };
 
   const debouncedResults = useMemo(() => {
-    return debounce(handleChange, 300);
+    return debounce(handleChange, 500);
   }, []);
   useEffect(() => {
     return () => {
@@ -570,9 +563,15 @@ export const ExpertMode = () => {
     setPage(data.selected );
     setOffset(data.selected * nbOfApis)
   };
+
   const changeNbOfApis = (data) => {
     setNbOfApis(data)
     setPage(0)
+  }
+  const changeSeeOnlySubscribedApis = (data) => {
+    setSeeApiSubscribed(data)
+    setPage(0)
+
   }
 
   const dataRequest = useQuery<{apis: Array<IAccessibleApi>, nb: number}>({
@@ -589,7 +588,7 @@ export const ExpertMode = () => {
     enabled: !!selectedTeam && !!client
   })
 
-  if (myTeamsRequest.isLoading || dataRequest.isLoading) {
+  if (myTeamsRequest.isLoading ) {
     return <Spinner/>
 
   } else if (myTeamsRequest.data) {
@@ -615,7 +614,7 @@ export const ExpertMode = () => {
                 }}
                 classNamePrefix="reactSelect"
               />}
-              {selectedTeam && dataRequest.data &&
+              {selectedTeam &&
                   <div>
                     <div className="col justify-content-between d-flex">
                       <div className="col-8">
@@ -629,12 +628,16 @@ export const ExpertMode = () => {
                       <div className="col-3">
                         See only subscribed APIs :
                         <SwitchButton
-                            onSwitch={() => setSeeApiSubscribed(!seeApiSubscribed)}
+                            onSwitch={() => changeSeeOnlySubscribedApis(!seeApiSubscribed)}
                             checked={seeApiSubscribed}
                         />
                       </div>
                     </div>
-
+                    { dataRequest.isLoading &&
+                      <Spinner/>
+                    }
+                    { dataRequest.data &&
+                        <>
                     <ExpertApiList
                         team={selectedTeam}
                         apiWithAuthorizations={dataRequest.data.apis}
@@ -642,6 +645,8 @@ export const ExpertMode = () => {
                         teamList={myTeamsRequest.data}
                         nbOfApis={nbOfApis}
                         setNbOfApis={changeNbOfApis}
+                        input={reasonSub}
+                        setInput={setReasonSub}
 
                     />
                     <div className="d-flex justify-content-between col-6 align-items-center">
@@ -660,6 +665,8 @@ export const ExpertMode = () => {
                           activeClassName={'active'}
                       />
                     </div>
+                          </>
+                    }
                   </div>
               }
               {!selectedTeam &&
