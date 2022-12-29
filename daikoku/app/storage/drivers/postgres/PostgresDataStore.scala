@@ -1143,9 +1143,9 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
       .map(_.size() > 0)
   }
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
+  override def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
-    super.findWithPagination(query, page, pageSize)
+    super.findWithPagination(query, page, pageSize, sort)
 }
 
 abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
@@ -1291,11 +1291,12 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     super.findOneWithProjection(query ++ Json.obj("_tenant" -> tenant.value),
                                 projection)
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
+  override def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
     super.findWithPagination(query ++ Json.obj("_tenant" -> tenant.value),
                              page,
-                             pageSize)
+                             pageSize,
+                             sort)
 }
 
 abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
@@ -1538,7 +1539,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     }
   }
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
+  override def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext
   ): Future[(Seq[Of], Long)] = {
     logger.debug(
@@ -1568,17 +1569,21 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
         }
       }
       queryRes <- {
+        val sortedKeys = sort
+          .map(obj => obj.fields.sortWith((a, b) => a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+          .map(r => r.map(x => s"content->'${x._1}'"))
+          .getOrElse(Seq("_id"))
+
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName ORDER BY _id DESC LIMIT $$1 OFFSET $$2",
-            Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize))) {
-            row =>
-              rowToJson(row, format)
+            s"SELECT * FROM $tableName ORDER BY ${sortedKeys.mkString(",")} ASC LIMIT $$1 OFFSET $$2",
+            Seq(Integer.valueOf(pageSize), Integer.valueOf(page*pageSize))) {
+            row => rowToJson(row, format)
           } else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY _id DESC LIMIT ${Integer
-              .valueOf(pageSize)} OFFSET ${Integer.valueOf(page * pageSize)}",
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC LIMIT ${Integer
+              .valueOf(pageSize)} OFFSET ${Integer.valueOf(page*pageSize)}",
             params
           ) { row =>
             rowToJson(row, format)

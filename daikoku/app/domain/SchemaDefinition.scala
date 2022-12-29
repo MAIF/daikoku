@@ -766,6 +766,12 @@ object SchemaDefinition {
       ReplaceField("subscriptionsWithPlan", Field("subscriptionsWithPlan", ListType(subscriptionsWithPlanType), resolve = _.value.subscriptionsWithPlan))
     )
 
+    lazy val GraphQlAccessibleApisWithNumberOfApis = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AccessibleApisWithNumberOfApis](
+      ObjectTypeDescription("A limited list of Daikoku apis with the count of all the apis for pagination"),
+      ReplaceField("apis", Field("apis", ListType(GraphQLAccessibleApiType), resolve = _.value.apis)),
+      ReplaceField("nb", Field("nb", LongType, resolve = _.value.nb))
+    )
+
     lazy val  NotificationStatusType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus] = InterfaceType(
       "NotificationStatus",
       "The status of a notification",
@@ -1177,10 +1183,16 @@ object SchemaDefinition {
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
+    val APISUBONLY: Argument[Int] = Argument("apisubonly", IntType,
+      description = "The condition if you want to see only subscribed Apis.",
+      defaultValue = 0)
+    val RESEARCH: Argument[String] = Argument("research", StringType,
+      description ="This his a the string of a research", defaultValue = "")
     val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
     val TEAM_ID_NOT_OPT = Argument("teamId", StringType, description = "The id of the team")
+  //todo: add 2 new const as search & onlySubApis with default value
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
@@ -1203,13 +1215,13 @@ object SchemaDefinition {
       })
     )
 
-    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String) = {
-      CommonServices.getApisWithSubscriptions(teamId)(ctx.ctx._2, env, e)
+    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, apiSubOnly: Int, limit: Int, offset: Int) = {
+      CommonServices.getApisWithSubscriptions(teamId, research, limit, offset, apiSubOnly)(ctx.ctx._2, env, e)
     }
 
     def apiWithSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("accessibleApis", ListType(GraphQLAccessibleApiType), arguments = TEAM_ID_NOT_OPT :: Nil, resolve = ctx => {
-        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT))
+      Field("accessibleApis", GraphQlAccessibleApisWithNumberOfApis, arguments = TEAM_ID_NOT_OPT :: RESEARCH :: APISUBONLY :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
+        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT),ctx.arg(RESEARCH), ctx.arg(APISUBONLY),ctx.arg(LIMIT), ctx.arg(OFFSET))
       })
     )
 

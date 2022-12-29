@@ -1,15 +1,16 @@
 import { gql } from '@apollo/client';
 import {
-    IAsset,
-    IQuotas,
-    ISafeSubscription,
-    ISubscriptionInformation,
-    ITeamFull,
-    ITeamSimple,
-    ITenant,
-    ITenantFull,
-    IUser,
-    IUserSimple
+  IApiSubscription,
+  IAsset,
+  IQuotas,
+  ISafeSubscription,
+  ISubscriptionInformation,
+  ITeamFull,
+  ITeamSimple,
+  ITenant,
+  ITenantFull,
+  IUser,
+  IUserSimple
 } from '../types';
 import {
   ResponseError,
@@ -86,6 +87,9 @@ export const getDocDetails = (api: string, version: string): Promise<IDocDetail>
 
 export const getTeamSubscriptions = (api: any, team: any, version: any) =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
+
+export const getTeamSubscriptionsWithPlan = (api: string, team: string, version: string, planId: string):Promise<Array<IApiSubscription>> =>
+  customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}?planId=${planId}`);
 
 export const getMySubscriptions = (apiId: any, version: any) =>
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
@@ -1169,44 +1173,70 @@ export const graphql = {
       }
     }`),
   getApisWithSubscription: gql(`
-    query AccessibleApis ($teamId: String!) {
-      accessibleApis (teamId: $teamId) {
-        api {
-          name
-          _humanReadableId
-          _id
-          isDefault
-          visibility
-          parent {
-            _id
-            currentVersion
-          }
-          possibleUsagePlans {
-            _id
-            customName
-            currency
-            type
-            subscriptionProcess
-            allowMultipleKeys
-          }
-          currentVersion
-          team {
-            _id
-            _humanReadableId
+    query AccessibleApis ($teamId: String!, $research: String, $apisubonly: Int $limit: Int, $offset: Int) {
+      accessibleApis (teamId: $teamId, research: $research, apisubonly: $apisubonly , limit: $limit, offset: $offset) {
+        apis {
+          api {
             name
-          }
-          apis {
-            api {
+            _humanReadableId
+            _id
+            isDefault
+            visibility
+            parent {
               _id
+              currentVersion
+            }
+            possibleUsagePlans {
+              _id
+              customName
+              customDescription
+              currency
+              type
+              subscriptionProcess
+              allowMultipleKeys
+              ... on QuotasWithLimits {
+                costPerMonth
+                maxPerSecond
+                maxPerDay
+                maxPerMonth
+              }
+              ... on FreeWithQuotas {
+                maxPerSecond
+                maxPerDay
+                maxPerMonth
+              }
+              ... on QuotasWithoutLimits {
+                costPerMonth
+                costPerAdditionalRequest
+                maxPerSecond
+                maxPerDay
+                maxPerMonth
+              }
+              ... on PayPerUse {
+                costPerRequest
+              }
+             }
+            currentVersion
+            team {
+              _id
+              _humanReadableId
+              name
+            }
+            apis {
+              api {
+                _id
+              }
             }
           }
+          subscriptionsWithPlan {
+            planId
+            isPending
+            havesubscriptions
+          }
         }
-        subscriptionsWithPlan {
-          planId
-          isPending
-          havesubscriptions
-        }
+        nb
       }
+
     }`),
   getCmsPage: (id: any) => gql`
     query GetCmsPage {

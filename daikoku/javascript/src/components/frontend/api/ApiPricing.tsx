@@ -19,8 +19,7 @@ import {
 import { openLoginOrRegisterModal, openApiKeySelectModal, I18nContext, openFormModal } from '../../../core';
 import { connect, useDispatch } from 'react-redux';
 import * as Services from '../../../services';
-import { any } from 'cypress/types/bluebird';
-import { placements } from '@popperjs/core';
+
 import { IApi, isMiniFreeWithQuotas, isPayPerUse, isQuotasWitoutLimit, ISubscription, ITeamSimple, ITenant, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit, IUserSimple } from '../../../types';
 import { INotification } from '../../../types/modal';
 

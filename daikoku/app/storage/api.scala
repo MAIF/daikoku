@@ -63,7 +63,7 @@ trait Repo[Of, Id <: ValueType] {
       implicit ec: ExecutionContext
   ): Future[Option[JsObject]]
 
-  def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
+  def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext
   ): Future[(Seq[Of], Long)]
 

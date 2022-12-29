@@ -1,47 +1,235 @@
-import React, {useContext, useState} from "react";
+import React, { useContext, useEffect, useMemo, useState} from "react";
 import {useQuery, useQueryClient} from "react-query";
 import Select from 'react-select';
 import {getApolloContext} from "@apollo/client";
-import classNames from "classnames";
-import {useDispatch, useSelector} from "react-redux";
+import {useDispatch} from "react-redux";
 import {toastr} from "react-redux-toastr"
 import {constraints, format, type as formType} from "@maif/react-forms";
 import "../../../style/components/fastApiCard.scss";
 
 import * as Services from "../../../services";
-import {Spinner} from "../../utils";
+import {BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option, Spinner} from "../../utils";
 import {
-  IAccessibleApi, IAccessiblePlan, IAccessibleSubscription, IState,
-  ITeamSimple, ITenant,
+  IAccessibleApi,
+  IAccessiblePlan,
+  IAccessibleSubscription, IApiSubscription,
+  ITeamSimple,
+
+
 } from "../../../types";
 import {I18nContext, openFormModal} from '../../../core';
-import {converter} from "../../../services/showdown";
-import {useNavigate} from "react-router-dom";
+import debounce from "lodash/debounce";
+import Pagination from "react-paginate";
+import {SwitchButton} from "../../inputs";
+import find from "lodash/find";
+import {currencies} from "../../../services/currencies";
+import classNames from "classnames";
 
-
-const GRID = 'GRID';
-const LIST = 'LIST';
 
 type ExpertApiListProps = {
-  team: ITeamSimple,
+  teamList: Array<ITeamSimple>
+  team: ITeamSimple
   apiWithAuthorizations: Array<IAccessibleApi>
+  setTeam: Function
+  nbOfApis: number
+  setNbOfApis: Function
+
 }
 type ExpertApiCardProps = {
   team: ITeamSimple,
   apiWithAuthorization: Array<IAccessibleApi>,
   subscriptions: Array<Array<IAccessibleSubscription>>,
   input: string
+  showPlan: Function
+  showApiKey: Function
 }
 
+
+const currency = (plan: any) => {
+  const cur = find(currencies, (c) => c.code === plan.currency.code);
+  return `${cur?.name}(${cur?.symbol})`;
+};
+const Curreny = ({
+                   plan
+                 }: any) => {
+  const cur = find(currencies, (c) => c.code === plan.currency.code);
+  return (
+    <span>
+      {' '}
+      {cur?.name}({cur?.symbol})
+    </span>
+  );
+};
 const ExpertApiList = (props: ExpertApiListProps) => {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState<string>('');
   const {translate} = useContext(I18nContext);
+  const [planInfo, setPlanInfo] = useState<IAccessiblePlan>();
+  const [subscription, setSubscription] = useState<IApiSubscription | undefined>()
+  const [apiKeyValue, setApiKeyValue] = useState<string>();
+  const [isPlan, setIsPlan] = useState<boolean | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<string>('apikey');
+  const [hide, setHide] = useState(true);
+
+  const checker = (type: any) => {
+    console.log(type)
+    return true
+  }
+
+  const renderPricing = (type: string) => {
+    let pricing = translate('Free');
+    const req = translate('req.');
+
+    const month = translate('month');
+    if(type === 'QuotasWithoutLimits') {
+      pricing = `${formatCurrency(planInfo!.costPerMonth)} ${getCurrencySymbol(
+        planInfo!.currency
+      )}/${month} + ${formatCurrency(planInfo!.costPerAdditionalRequest)} ${getCurrencySymbol(
+        planInfo!.currency
+      )}/${req}`
+    } else if (type === 'PayPerUse') {
+      pricing = `${formatCurrency(planInfo!.costPerRequest)} ${getCurrencySymbol(
+        planInfo!.currency
+      )}/${req}`;
+    } else if(planInfo!.costPerMonth) {
+      pricing = `${formatCurrency(planInfo!.costPerMonth)} ${getCurrencySymbol(
+        planInfo!.currency
+      )}/${month}`;
+    }
+    return pricing;
+  }
+  const renderPlanInfo = (type: string) => {
+    return(
+      <span>
+        {type === 'FreeWithoutQuotas' &&
+          <>
+            {translate('free.without.quotas.desc')}
+          </>
+        } {type === 'FreeWithQuotas' &&
+          <>
+            {translate({key: 'free.with.quotas.desc', replacements: [planInfo!.maxPerMonth!.toString()]})}
+          </>
+        } {type === 'QuotasWithLimits' &&
+          <>
+            {translate({key: 'quotas.with.limits.desc', replacements: [planInfo!.costPerMonth!.toString(), currency(planInfo), planInfo!.maxPerMonth!.toString()]})}
+            You'll pay {planInfo!.costPerMonth}
+            <Curreny plan={planInfo} /> and you'll have {planInfo!.maxPerMonth} authorized requests
+            per month
+          </>
+      } {type === 'QuotasWithoutLimits' &&
+          <>
+            {translate({key: 'quotas.without.limits.desc', replacements:
+                [planInfo!.costPerMonth!.toString(), currency(planInfo), planInfo!.maxPerMonth!.toString(),planInfo!.costPerAdditionalRequest!.toString(), currency(planInfo)]
+            })}
+            You'll pay {planInfo!.costPerMonth}
+            <Curreny plan={planInfo} /> for {planInfo!.maxPerMonth} authorized requests per month and
+            you'll be charged {planInfo!.costPerAdditionalRequest}
+            <Curreny plan={planInfo} /> per additional request
+          </>
+      } {type === 'PayPerUse' &&
+          <>
+            {translate({key: 'pay.per.use.desc.default', replacements:
+                [planInfo!.costPerMonth!.toString(), currency(planInfo), planInfo!.costPerRequest!.toString(), currency(planInfo)]
+            })}
+            {planInfo!.costPerMonth === 0.0 &&
+                <>
+                  You'll pay {planInfo!.costPerMonth}
+                  <Curreny plan={planInfo} /> per month and you'll be charged{' '}
+                  {planInfo!.costPerRequest}
+                  <Curreny plan={planInfo} /> per request
+                </>
+            }
+            {planInfo!.costPerMonth !== 0.0 &&
+                <>
+                  You'll be charged {planInfo!.costPerRequest}
+                  <Curreny plan={planInfo} /> per request
+                </>
+            } </>
+      }
+      </span>
+    )
+  }
+
+  function showPlan(plan: IAccessiblePlan) {
+    if(plan._id == planInfo?._id && isPlan) {
+      setIsPlan(undefined)
+    } else {
+      setIsPlan(true)
+      setPlanInfo(plan)
+    }
+  }
+  function showApiKey(apiId: string, teamId: string, version: string, planInfo: IAccessiblePlan) {
+    if(planInfo._id == apiKeyValue && isPlan == false) {
+      setIsPlan(undefined)
+
+    } else {
+      setIsPlan(false)
+      setPlanInfo(planInfo)
+      setApiKeyValue(planInfo._id)
+      const tmp = Services.getTeamSubscriptionsWithPlan(apiId, teamId,version,planInfo._id)
+      tmp.then((apikey) => setSubscription(apikey[0]))
+    }
+  }
 
   return (
-      <div className="row">
-        <div className="col-12 col-sm mb-2">
-          <input
-            type="text"
+    <div className="container">
+      <div className="row" style={{position: "relative"}}>
+        <div className="col-9" style={{height: 600, overflow: "scroll"}}>
+          <div className="col-3 mb-2">
+            <Select
+              name="nb-api-selector"
+              isClearable={false}
+              value={{
+                label: translate({key: 'Show.results', replacements: [props.nbOfApis.toString()]}),
+                value: props.nbOfApis,
+              }}
+              isSearchable={false}
+              options={[5,10, 20].map((x) => ({ label: `Show ${x}`, value: x }))}
+              onChange={(e: any) => props.setNbOfApis(Number(e.value))}
+              classNamePrefix="reactSelect"
+            />
+          </div>
+          {props.apiWithAuthorizations.map(({api}) => {
+            if (!api.parent) {
+              const tmp = props.apiWithAuthorizations.filter((temp) => temp.api.name == api.name)
+              return (
+                <div className="section border-bottom" key={api._id}>
+                  {tmp.length > 1 &&
+                      <ExpertApiCard apiWithAuthorization={tmp} team={props.team}
+                                     subscriptions={tmp.map((tmpApi) => tmpApi.subscriptionsWithPlan)} input={input} showPlan={showPlan} showApiKey={showApiKey}/>
+                  }
+                  {tmp.length == 1 &&
+                      <ExpertApiCard apiWithAuthorization={tmp} team={props.team}
+                                     subscriptions={tmp.map((tmpApi) => tmpApi.subscriptionsWithPlan)} input={input} showPlan={showPlan} showApiKey={showApiKey}/>
+                  }
+
+                </div>
+
+              )
+            }
+          })}
+        </div>
+        <div className="col-3" style={{position: "fixed", right:0}}>
+          <div className="section p-3 mb-2">
+            Change Team :
+            <Select
+              name="team-selector"
+              className="tag__selector filter__select reactSelect  "
+              value={{value: props.team, label: props.team.name}}
+              isClearable={false}
+              options={props.teamList.map((team) => {
+                return {value: team, label: team.name}
+              })}
+              onChange={(e) => {
+                props.setTeam(e!.value)
+                setIsPlan(undefined)
+                localStorage.setItem('selectedTeam', JSON.stringify(e!.value));
+              }}
+              classNamePrefix="reactSelect"
+            />
+          </div>
+          <div className="section p-3 mb-2">
+            Reason for subscription
+          <textarea
             className="form-control"
             placeholder={translate('expertMode.input.reasonSubscription')}
             aria-label=""
@@ -50,45 +238,176 @@ const ExpertApiList = (props: ExpertApiListProps) => {
               setInput(e.target.value);
             }}
           />
-        </div>
-        {props.apiWithAuthorizations.map((api) => {
-          if (!api.parent) {
-            const tmp = props.apiWithAuthorizations.filter((temp) => temp.name == api.name)
-            if (tmp.length > 1) {
-              return (
-                <div >
-                  <div className="card mb-4 shadow-sm api-card ">
-                    <ExpertApiCard apiWithAuthorization={tmp} team={props.team}
-                                   subscriptions={tmp.map((tmpapi) => tmpapi.subscriptionsWithPlan)} input={input}/>
+          </div>
+          {planInfo && isPlan &&
+              <div className='p-3 mb-2 section'>
+                Plan :
+                <div className="card shadow-sm">
+                  <div className="card-img-top card-link card-skin" data-holder-rendered="true">
+                    <span>{planInfo.customName || formatPlanType(planInfo, translate)}</span>
+                  </div>
+                  <div className="card-body plan-body d-flex flex-column">
+                    <p className="card-text text-justify">
+                      {planInfo.customDescription && <span>{planInfo.customDescription}</span>}
+                      {!planInfo.customDescription && planInfo.type === 'FreeWithoutQuotas' && renderPlanInfo(planInfo.type)}
+                    </p>
+                    <div className="d-flex flex-column mb-2">
+                      <span className="plan-quotas">
+                        {(planInfo!.maxPerSecond === undefined ) && translate('plan.limits.unlimited')}
+                        {(planInfo!.maxPerSecond !== undefined ) && checker(planInfo) && (
+                          <div>
+                            <div>
+                              {translate({key: 'plan.limits', replacements: [planInfo.maxPerSecond.toString(), planInfo.maxPerMonth!.toString()]})}
+                            </div>
+                          </div>
+                        )}
+                      </span>
+                      <span className="plan-pricing">
+                        {translate({key: 'plan.pricing', replacements: [renderPricing(planInfo.type)]})}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )
-            } else {
-              return (
-                <div >
-                  <div className="card mb-4 shadow-sm api-card ">
-                    <ExpertApiCard apiWithAuthorization={[api]} team={props.team}
-                                   subscriptions={[api.subscriptionsWithPlan]} input={input}/>
-                  </div>
-                </div>
-              )
-            }
+              </div>
           }
-        })}
+          {apiKeyValue && planInfo && subscription !== undefined && isPlan === false &&
+              <div className="section p-3 mb-2">
+                API Key :
+                <div className="card">
+                  <div className="card-header" style={{ position: 'relative' }}>
+                    <div className="d-flex align-items-center justify-content-between">
+
+                      <BeautifulTitle
+                          title={planInfo.customName}
+                          style={{
+                            wordBreak: 'break-all',
+                            marginBlockEnd: '0',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '85%',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                          className="plan-name"
+                      >
+                        {planInfo.customName}
+                      </BeautifulTitle>
+                    </div>
+                    <span
+                        className="badge bg-secondary"
+                        style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
+                    >
+                      {Option(planInfo.customName).getOrElse(formatPlanType(planInfo, translate))}
+                    </span>
+                  </div>
+                  <div className="card-body" style={{ margin: 0 }}>
+                    <div className="row">
+                      <ul className="nav nav-tabs flex-column flex-sm-row mb-2 col-12">
+                        <li className="nav-item cursor-pointer">
+                      <span
+                          className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
+                          onClick={() => setActiveTab('apikey')}
+                      >
+                        ApiKey
+                      </span>
+                        </li>
+                          <li className="nav-item  cursor-pointer">
+                        <span
+                          className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
+                          onClick={() => setActiveTab('token')}
+                        >
+                          Integration token
+                        </span>
+                          </li>
+
+                      </ul>
+                    </div>
+                    {activeTab == 'apikey' && (
+                      <>
+                        <div className="mb-3">
+                          <label htmlFor={`client-id`} className="">
+                            Client Id
+                          </label>
+                          <div className="">
+                            <input
+                              style={{color: "#ffffff"}}
+                              readOnly
+                              disabled={true}
+                              className="form-control input-sm"
+                              value={subscription.apiKey.clientId}
+                            />
+                          </div>
+                        </div>
+                        <div className="mb-3">
+                          <label htmlFor={`client-secret`} className="">
+                            Client secret
+                          </label>
+                          <div className="input-group">
+                            <input
+                              style={{color: "#ffffff"}}
+                              readOnly
+                              disabled={true}
+                              type={hide ? 'password' : ''}
+                              className="form-control input-sm"
+                              id={`client-secret`}
+                              value={subscription.apiKey.clientSecret}
+                              aria-describedby={`client-secret-addon`}
+                            />
+                            <div className="input-group-append">
+                        <span
+                          onClick={() => {
+                              setHide(!hide);
+                          }}
+                          className={classNames('input-group-text')}
+                          id={`client-secret-addon`}
+                        >
+                          {hide ? <i className="fas fa-eye" /> : <i className="fas fa-eye-slash" />}
+                        </span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    {activeTab == 'token' && (
+                      <>
+                        <div className="mb-3">
+                          <label htmlFor={`token`} className="">
+                            Integration token
+                          </label>
+                          <div className="">
+                      <textarea
+                        readOnly
+                        rows={4}
+                        className="form-control input-sm"
+                        id={`token`}
+                        value={subscription.integrationToken}
+                      />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+          }
+          {isPlan === undefined &&
+              <div className="section p-3 mb-2">
+                Click on a plan or on a button "see the API key" for see more details
+              </div>
+          }
+        </div>
       </div>
+    </div>
   )
 }
 
 
 const ExpertApiCard = (props: ExpertApiCardProps) => {
   const dispatch = useDispatch()
-  const navigate = useNavigate();
 
   const queryClient = useQueryClient();
 
-  const [view] = useState<'LIST' | 'GRID'>(LIST);
   const {translate} = useContext(I18nContext);
-  const [selectedApiV, setSelectedApiV] = useState(props.apiWithAuthorization.find(a => a.isDefault)?.currentVersion || props.apiWithAuthorization[0].currentVersion);
+  const [selectedApiV, setSelectedApiV] = useState(props.apiWithAuthorization.find(a => a.api.isDefault)?.api.currentVersion || props.apiWithAuthorization[0].api.currentVersion);
 
   function subscribe(input: string, apiId: string, team: ITeamSimple, plan: IAccessiblePlan) {
     const teamsSubscriber = new Array(team._id)
@@ -112,6 +431,7 @@ const ExpertApiCard = (props: ExpertApiCardProps) => {
                     team.name
                   ]
                 }))
+
             queryClient.invalidateQueries(['data'])
           }
         })
@@ -161,79 +481,108 @@ const ExpertApiCard = (props: ExpertApiCardProps) => {
   }
 
 
-    return (
-      <div className="row py-2">
-        <div className="col-12">
-        <span className="d-flex flex-row ms-3 me-3 justify-content-between border-bottom" >
-          <h3>{props.apiWithAuthorization[0].name}</h3>
+  return (
+    <div className="row py-2">
+      <div className="col-12">
+        <span className="d-flex flex-row mx-3 justify-content-between">
+          <h3>{props.apiWithAuthorization[0].api.name}</h3>
           {props.apiWithAuthorization.length > 1 &&
-          <Select
-            name="versions-selector"
-            classNamePrefix="reactSelect"
-            className="me-2"
-            menuPlacement="auto"
-            menuPosition="fixed"
-            value={{value: selectedApiV, label: selectedApiV}}
-          isClearable={false}
-          options={props.apiWithAuthorization.map((api) => {
-            return {value: api.currentVersion, label: api.currentVersion}
-          })}
-          onChange={(e) => {
-            setSelectedApiV(props.apiWithAuthorization.find((api) => api.currentVersion == e?.value)!.currentVersion)
-          }}
-        />}
-          {props.apiWithAuthorization.length == 1 &&
-            <h3>version : {selectedApiV}</h3>
-          }
+              <Select
+                  name="versions-selector"
+                  classNamePrefix="reactSelect"
+                  className="me-2"
+                  menuPlacement="auto"
+                  menuPosition="fixed"
+                  value={{value: selectedApiV, label: selectedApiV}}
+                  isClearable={false}
+                  options={props.apiWithAuthorization.map((api) => {
+                    return {value: api.api.currentVersion, label: api.api.currentVersion}
+                  })}
+                  onChange={(e) => {
+                    setSelectedApiV(props.apiWithAuthorization.find((api) => api.api.currentVersion == e?.value)!.api.currentVersion)
+
+                  }}
+              />}
         </span>
 
-        <div className=" d-flex flex-column">
-          {props.apiWithAuthorization.find((api) => api.currentVersion === selectedApiV)!.subscriptionsWithPlan
+        <div className="d-flex flex-column fast_api">
+          {props.apiWithAuthorization
+            .find((api) => api.api.currentVersion === selectedApiV)!.subscriptionsWithPlan
             .map((subPlan) => {
-              const plan = props.apiWithAuthorization.find((api) => api.currentVersion === selectedApiV)!.possibleUsagePlans.find((pPlan) => pPlan._id == subPlan.planId)!
+              const plan = props.apiWithAuthorization
+                .find((api) => api.api.currentVersion === selectedApiV)!.api.possibleUsagePlans
+                .find((pPlan) => pPlan._id == subPlan.planId)!
               return (
-                <div className="fast__hover">
-                <div className="ms-2 me-2 d-flex justify-content-between my-1">
-                  {props.apiWithAuthorization.find((api) => api.currentVersion === selectedApiV)!.possibleUsagePlans.find((pPlan) => pPlan._id == subPlan.planId)!.customName}
-                  {subPlan.havesubscriptions && <button className={"btn btn-outline-success me-1"} onClick={() => navigate(`/${props.team._humanReadableId}/settings/apikeys/${props.apiWithAuthorization[0]._humanReadableId}/${selectedApiV}`)}>
-                    See the api key
-                  </button>}
-                  {subPlan.isPending && <button disabled={true} className={"btn btn-outline-primary disabled me-1"}> Pending </button>}
-                  {(!subPlan.havesubscriptions || plan.allowMultipleKeys ) && !subPlan.isPending && <button
-                    className={"btn btn-sm btn-outline-primary me-1"}
-                    onClick={() => subscribe(props.input, props.apiWithAuthorization.find((api) => api.currentVersion === selectedApiV)!._id, props.team, props.apiWithAuthorization.find((api) => api.currentVersion === selectedApiV)!.possibleUsagePlans.find((pPlan) => pPlan._id == subPlan.planId)!)}>
-                    {translate(props.apiWithAuthorization.find((api) => api.currentVersion === selectedApiV)!.possibleUsagePlans.find((pPlan) => pPlan._id == subPlan.planId)!.subscriptionProcess === 'Automatic' ? ('Get API key') : ('Request API key'))}
-                  </button>}
-                </div>
+                <div className="fast__hover plan cursor-pointer" key={subPlan.planId}>
+                  <div className="mx-3 d-flex justify-content-between my-1">
+                    <div className="flex-grow-1" onClick={() => props.showPlan(plan)} style={{overflow: "hidden", textOverflow: "ellipsis"}}>
+                      {props.apiWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!.api.possibleUsagePlans.find((pPlan) => pPlan._id == subPlan.planId)!.customName}
+                    </div>
+                    {subPlan.havesubscriptions && <button className={"btn btn-outline-success me-1"}
+                                                          onClick={() => props.showApiKey(props.apiWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!.api._id,props.team._id, selectedApiV, plan)}
+                                                          style={{whiteSpace: "nowrap"}}
+                    >See the api key</button>}
+                    {subPlan.isPending &&
+                        <button style={{whiteSpace: "nowrap"}} disabled={true} className={"btn btn-outline-primary disabled me-1"}> Pending </button>}
+                    {(!subPlan.havesubscriptions || plan.allowMultipleKeys) && !subPlan.isPending && <button
+                        style={{whiteSpace: "nowrap"}}
+                        className={"btn btn-sm btn-outline-primary me-1"}
+                        onClick={() => subscribe(props.input, props.apiWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!.api._id, props.team, props.apiWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!.api.possibleUsagePlans.find((pPlan) => pPlan._id == subPlan.planId)!)}>
+                      {translate(props.apiWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!.api.possibleUsagePlans.find((pPlan) => pPlan._id == subPlan.planId)!.subscriptionProcess === 'Automatic' ? ('Get API key') : ('Request API key'))}
+                    </button>}
+                  </div>
                 </div>
               )
-          })}
-        </div>
+            })}
         </div>
       </div>
-    )
+    </div>
+  )
 }
 
 
 export const ExpertMode = () => {
   const {translate} = useContext(I18nContext);
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
-  const maybeTeam = localStorage.getItem('selectedteam')
+  const maybeTeam = localStorage.getItem('selectedTeam')
   const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(maybeTeam ? JSON.parse(maybeTeam) : undefined);
   const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const {client} = useContext(getApolloContext());
-  const dataRequest = useQuery<IAccessibleApi[]>({
-    queryKey: ["data", selectedTeam?._id],
-    queryFn: ({queryKey}) => {
-      return client!.query<{ accessibleApis: Array<{ api: IAccessibleApi, subscriptionsWithPlan: any }> }>({
-        query: Services.graphql.getApisWithSubscription,
-        variables: {teamId: queryKey[1]}
-      }).then(({data: {accessibleApis}}) => {
+  const [nbOfApis, setNbOfApis] = useState<number>(5);
+  const [page, setPage] = useState<number>(0);
+  const [research, setResearch] = useState<string>("");
+  const [offset, setOffset] = useState<number>(0);
+  const [seeApiSubscribed, setSeeApiSubscribed] = useState<boolean>(false)
+  const handleChange = (e) => {
+    setResearch(e.target.value);
 
-        return accessibleApis.map(({
-                                       api,
-                                       subscriptionsWithPlan
-                                     }) => ({...api, subscriptionsWithPlan}))
+  };
+
+  const debouncedResults = useMemo(() => {
+    return debounce(handleChange, 300);
+  }, []);
+  useEffect(() => {
+    return () => {
+      debouncedResults.cancel();
+
+    };
+  });
+  const handlePageClick = (data) => {
+    setPage(data.selected );
+    setOffset(data.selected * nbOfApis)
+  };
+  const changeNbOfApis = (data) => {
+    setNbOfApis(data)
+    setPage(0)
+  }
+
+  const dataRequest = useQuery<{apis: Array<IAccessibleApi>, nb: number}>({
+    queryKey: ["data", selectedTeam?._id, offset,seeApiSubscribed, nbOfApis, research ],
+    queryFn: ({queryKey}) => {
+      return client!.query<{ accessibleApis: {apis: Array<IAccessibleApi>, nb: number} }>({
+        query: Services.graphql.getApisWithSubscription,
+        variables: {teamId: queryKey[1], limit: nbOfApis, apisubonly: seeApiSubscribed ? 1 : 0, offset: page, research: research}
+      }).then(({data: {accessibleApis}}) => {
+        return accessibleApis
         }
       )
     },
@@ -243,54 +592,80 @@ export const ExpertMode = () => {
   if (myTeamsRequest.isLoading || dataRequest.isLoading) {
     return <Spinner/>
 
-  } else if (myTeamsRequest.data){
+  } else if (myTeamsRequest.data) {
     return (
       <main role="main">
-        <section className="organisation__header col-12 mb-4 p-3">
-          <div className="container">
-            <div className="row text-center">
-              <div className="col-sm-4">
-                <img
-                  className="organisation__avatar"
-                  src={tenant.logo ? tenant.logo : '/assets/images/daikoku.svg'}
-                  alt="avatar"
-                />
-              </div>
-              <div className="col-sm-7 d-flex flex-column justify-content-center">
-                <h1 className="jumbotron-heading">
-                  {tenant.title ? tenant.title : translate('Your APIs center')}
-                </h1>
-                <Description description={tenant.description} />
-              </div>
-            </div>
-          </div>
-        </section>
+        <h1 className={"ms-3"}>{translate('expertMode.title')}</h1>
         <section className="container">
           <div className="row mb-2">
             <div className="col-12 col-sm mb-2">
-            <Select
-              name="team-selector"
-              className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
-              value={{value: selectedTeam, label: selectedTeam?.name}}
-              isClearable={false}
-              options={myTeamsRequest.data.map((team) => {
-                return {value: team, label: team.name}
-              })}
-              onChange={(e) => {
-                setSelectedTeam(e!.value)
-                localStorage.setItem('selectedteam', JSON.stringify(e!.value));
+              {selectedTeam == undefined &&
+              <Select
+                name="team-selector"
+                className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
+                isClearable={false}
+                options={myTeamsRequest.data.map((team) => {
 
-              }}
-              classNamePrefix="reactSelect"
-            />
-            {selectedTeam && dataRequest.data &&
-                <div>
-                  <ExpertApiList team={selectedTeam} apiWithAuthorizations={dataRequest.data}/>
-                </div>
-            }
-            {!selectedTeam &&
-                <div> {translate('expertMode.title.chooseTeam')}</div>
-            }
+                  return {value: team, label: team.name}
+                })}
+                onChange={(e) => {
+                  setSelectedTeam(e!.value)
+                  localStorage.setItem('selectedTeam', JSON.stringify(e!.value));
+
+                }}
+                classNamePrefix="reactSelect"
+              />}
+              {selectedTeam && dataRequest.data &&
+                  <div>
+                    <div className="col justify-content-between d-flex">
+                      <div className="col-8">
+                        <input
+                            type="text"
+                            className="form-control mb-2"
+                            placeholder={translate('expertMode.input.research.api')}
+                            onChange={debouncedResults}
+                        />
+                      </div>
+                      <div className="col-3">
+                        See only subscribed APIs :
+                        <SwitchButton
+                            onSwitch={() => setSeeApiSubscribed(!seeApiSubscribed)}
+                            checked={seeApiSubscribed}
+                        />
+                      </div>
+                    </div>
+
+                    <ExpertApiList
+                        team={selectedTeam}
+                        apiWithAuthorizations={dataRequest.data.apis}
+                        setTeam={setSelectedTeam}
+                        teamList={myTeamsRequest.data}
+                        nbOfApis={nbOfApis}
+                        setNbOfApis={changeNbOfApis}
+
+                    />
+                    <div className="d-flex justify-content-between col-6 align-items-center">
+                    <Pagination
+                          previousLabel={translate('Previous')}
+                          nextLabel={translate('Next')}
+                          breakLabel="..."
+                          breakClassName={'break'}
+                          pageCount={Math.ceil(dataRequest.data.nb / nbOfApis)}
+                          marginPagesDisplayed={1}
+                          pageRangeDisplayed={5}
+                          onPageChange={ handlePageClick}
+                          containerClassName={'pagination'}
+                          pageClassName={'page-selector'}
+                          forcePage={page}
+                          activeClassName={'active'}
+                      />
+                    </div>
+                  </div>
+              }
+              {!selectedTeam &&
+                  <div> {translate('expertMode.title.chooseTeam')}</div>
+              }
+
             </div>
           </div>
         </section>
@@ -303,23 +678,3 @@ export const ExpertMode = () => {
   }
 
 }
-const Description = (props: any) => {
-  const { Translation } = useContext(I18nContext);
-
-  if (!props.description) {
-    return (
-      <p className="lead">
-        <Translation i18nkey="Daikoku description start">Daikoku is the perfect</Translation>
-        <a href="https://www.otoroshi.io">Otoroshi</a>
-        <Translation i18nkey="Daikoku description end">
-          companion to manage, document, and expose your beloved APIs to your developpers community.
-          Publish a new API in a few seconds
-        </Translation>
-      </p>
-    );
-  }
-
-  return (
-    <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(props.description || '') }}></div>
-  );
-};

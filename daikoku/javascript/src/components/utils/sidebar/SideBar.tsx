@@ -2,10 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames';
-import {Search, Plus, MessageSquare, Bell, ArrowLeft, ShieldOff} from 'react-feather';
+import {Search, Plus, MessageSquare, Bell, ArrowLeft, Zap} from 'react-feather';
 
 import * as Services from '../../../services';
-import { updateNotifications } from '../../../core/context/actions';
+import { updateNotifications } from '../../../core';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { MessagesContext } from '../../backoffice';
 
@@ -107,9 +107,6 @@ export const SideBar = () => {
               </div>
             </>
           )}
-        </div>
-
-        <div className="navbar_bottom">
           {!connectedUser.isGuest && (
             <Link
               to="/apis/fast"
@@ -118,9 +115,12 @@ export const SideBar = () => {
               )}
               title={translate('expertMode.access')}
             >
-              <ShieldOff />
+              <Zap/>
             </Link>
           )}
+        </div>
+
+        <div className="navbar_bottom">
           {isAdmin && (
             <Link
               to="/settings/messages"

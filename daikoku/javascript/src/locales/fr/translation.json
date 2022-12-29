@@ -1207,10 +1207,12 @@
   "page.prompt.creation.message": "Indiquez le nom de la nouvelle page",
   "page.prompt.creation.title": "Création d'une nouvelle page",
   "page.prompt.creation.placeholder": "Nouvelle page",
-  "expertMode.access": "Accéder au mode expert",
-  "expertMode.title.page": "%s - Mode Expert",
+  "expertMode.access": "Accéder au mode rapide",
+  "expertMode.title": "Mode rapide",
+  "expertMode.title.page": "%s - Mode rapide",
   "expertMode.title.chooseTeam": "Choisir une team pour commencer",
   "expertMode.error.searching.team": "Une erreur s'est produite lors de la recherche de vos équipes",
   "expertMode.input.reasonSubscription":"Mettez la raison de votre demande de clé d'API",
+  "expertMode.input.research.api": "Chercher votre API...",
   "expertMode.subscription.resume": "résumé de votre demande de souscription"
 }

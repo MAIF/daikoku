@@ -301,7 +301,14 @@ export interface ISubscriptionInformation {
 export interface IAccessiblePlan {
   _id: string
   customName: string
-  currency: ICurrency
+  customDescription?: string;
+  maxPerSecond?: number
+  maxPerMonth?: number
+  costPerMonth?: number
+  costPerAdditionalRequest?: number
+  costPerRequest?: number
+
+  currency: string
   type: string
   subscriptionProcess: 'Automatic' | 'manual'
   allowMultipleKeys: boolean
@@ -323,17 +330,19 @@ export interface IAccessibleParent {
 export interface ISubAccessibleApi {
   _id: string
 }
-export interface IAccessibleApi {
-  name: string,
-  _humanReadableId: string,
-  _id: string,
-  isDefault: boolean,
-  visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly',
-  possibleUsagePlans: Array<IAccessiblePlan>,
-  currentVersion: string,
-  team: IAccessibleTeam,
-  subscriptionsWithPlan: Array<IAccessibleSubscription>,
 
-  parent: IAccessibleParent,
-  apis: Array<ISubAccessibleApi>
+
+export interface IAccessibleApi {
+  api: {
+    name: string,
+    _humanReadableId: string,
+    _id: string,
+    isDefault: boolean,
+    visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly',
+    possibleUsagePlans: Array<IAccessiblePlan>,
+    currentVersion: string,
+    team: IAccessibleTeam,
+    parent: IAccessibleParent
+  }
+  subscriptionsWithPlan: Array<IAccessibleSubscription>,
 }

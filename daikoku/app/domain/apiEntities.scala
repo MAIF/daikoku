@@ -711,4 +711,7 @@ case class ApiWithAuthorizations(api: Api,
                                    Seq.empty)
 case class SubscriptionsWithPlan(planId: String, isPending: Boolean, havesubscriptions: Boolean)
 case class ApiWithSubscriptions(api: Api, subscriptionsWithPlan: Seq[SubscriptionsWithPlan])
+
+case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions], nb: Long)
+
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)

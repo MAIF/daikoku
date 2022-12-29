@@ -1412,7 +1412,8 @@ class ApiController(
   def getApiSubscriptionsForTeam(
       apiId: String,
       teamId: String,
-      version: String
+      version: String,
+      plan: Option[String]
   ) =
     DaikokuAction.async { ctx =>
       TeamApiKeyAction(
@@ -1474,10 +1475,20 @@ class ApiController(
           }
         }
 
-        def findSubscriptions(api: Api, team: Team): Future[Result] = {
+        def findSubscriptions(api: Api, team: Team, planId: Option[String]): Future[Result] = {
+
+          var jsonResearch = {planId match {
+            case Some(_) =>
+              System.out.println("here")
+              Json.obj("api" -> api.id.value, "team" -> team.id.value,"plan" -> planId)
+            case None =>
+              System.out.println("not here" + planId)
+              Json.obj("api" -> api.id.value, "team" -> team.id.value)
+          }}
+
           repo
             .findNotDeleted(
-              Json.obj("api" -> api.id.value, "team" -> team.id.value)
+              jsonResearch
             )
             .flatMap { subscriptions =>
               repo
@@ -1501,11 +1512,11 @@ class ApiController(
                             case None => FastFuture.successful(Some(api))
                           }).flatMap {
                               case Some(api) =>
-                                subscriptionToJson(
+                                  subscriptionToJson(
                                   api,
                                   sub,
                                   sub.parent.flatMap(p =>
-                                    subscriptions.find(s => s.id == p)
+                                  subscriptions.find(s => s.id == p)
                                   )
                                 )
                               case None => FastFuture.successful(Json.obj())
@@ -1526,13 +1537,13 @@ class ApiController(
               )
             case Some(api)
                 if ctx.user.isDaikokuAdmin || api.visibility == ApiVisibility.Public =>
-              findSubscriptions(api, team)
+              findSubscriptions(api, team, plan)
             case Some(api) if api.team == team.id =>
-              findSubscriptions(api, team)
+              findSubscriptions(api, team, plan)
             case Some(api)
                 if api.visibility != ApiVisibility.Public && api.authorizedTeams
                   .contains(team.id) =>
-              findSubscriptions(api, team)
+              findSubscriptions(api, team, plan)
             case _ =>
               FastFuture.successful(
                 Unauthorized(

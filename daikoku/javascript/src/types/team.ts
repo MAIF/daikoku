@@ -53,3 +53,16 @@ export interface IAccessibleTeam {
   _humanReadableId: string;
   name: string;
 }
+
+export interface IApiSubscription {
+  integrationToken: string
+  apiKey: IApiKey;
+
+
+}
+
+export interface IApiKey {
+  clientId: string;
+  clientName: string;
+  clientSecret: string;
+}
