@@ -117,19 +117,20 @@ class NotificationControllerSpec()
 
   "a team admin" can {
     "read the count of untreated notifications of his team" in {
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(defaultApi),
         notifications = Seq(treatedNotification, untreatedNotification)
-      )
-      val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications/unread-count")(tenant,
-                                                                       session)
-      resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
+      ).map(_ => {
+        val session = loginWithBlocking(userAdmin, tenant)
+        val resp = httpJsonCallBlocking(
+          s"/api/teams/${teamOwnerId.value}/notifications/unread-count")(tenant,
+                                                                         session)
+        resp.status mustBe 200
+        (resp.json \ "count").as[Long] mustBe 1
+      })
 
     }
     "read notifications of his team" in {
