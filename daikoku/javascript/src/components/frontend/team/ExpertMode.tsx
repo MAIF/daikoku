@@ -538,7 +538,7 @@ export const ExpertMode = () => {
   const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(maybeTeam ? JSON.parse(maybeTeam) : undefined);
   const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const {client} = useContext(getApolloContext());
-  const [nbOfApis, setNbOfApis] = useState<number>(1);
+  const [nbOfApis, setNbOfApis] = useState<number>(5);
   const [page, setPage] = useState<number>(0);
   const [research, setResearch] = useState<string>("");
   const [reasonSub, setReasonSub] = useState<string>("")
