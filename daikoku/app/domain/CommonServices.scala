@@ -114,6 +114,12 @@ object CommonServices {
               )
             publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
             almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(Json.obj("visibility" -> "PublicWithAuthorizations"))
+            logger = AppLogger.warn(Json.prettyPrint(Json.obj(
+              "visibility" -> "Private",
+              "$or" -> Json.arr(
+                Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
+                teamFilter
+              )) ++ teamFilter))
             privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
               Json.obj(
                 "visibility" -> "Private",

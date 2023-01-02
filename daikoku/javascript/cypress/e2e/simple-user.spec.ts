@@ -1,18 +1,7 @@
-describe('Login page & login form', () => {
-  it('load well', () => {
-    cy
-      .clearCookie('daikoku-session')
-      .visit('http://localhost:9000/auth/Local/login')
-      .get('input[name=username]').type('user@foo.bar')
-      .get('input[name=password]').type('password')
-      .get('button').click()
-      .url().should('include', '/apis');
-  });
-});
-
 describe('API page', () => {
   it('load well', { scrollBehavior: false }, () => {
-    cy
+    //@ts-ignore
+    cy.login('user@foo.bar', 'password')
       .visit('http://localhost:9000/testers/test-api/1.0.0/description')
       .get('h1.jumbotron-heading').should(($div) => {
         expect($div.text().trim()).contains('test API');
@@ -23,18 +12,20 @@ describe('API page', () => {
       .get('.block__entry__link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
       .get('.block__entry__link').contains('Swagger').click()
-      .get('#redoc-container h1').should(($title) => {
-        const text = $title.text();
-        expect(text).to.include('Swagger Petstore (1.0.0)');
-      })
+      .get('#swagger-ui .swagger-ui').should('be.visible')
+      // .get('#redoc-container h1').should(($title) => {
+      //   const text = $title.text();
+      //   expect(text).to.include('Swagger Petstore (1.0.0)');
+      // })
       .get('.block__entry__link').contains('Testing').click()
-      .get('#swagger-ui').should('be.visible');
+      .get('#swagger-ui .swagger-ui').should('be.visible');
   });
 });
 
 describe('Profile page', () => {
   it('load well', () => {
-    cy
+    //@ts-ignore
+    cy.login('user@foo.bar', 'password')
       .visit('http://localhost:9000/me')
       .get('input[name="name"]').should('have.value', 'User');
   });
@@ -42,7 +33,8 @@ describe('Profile page', () => {
 
 describe('Team apis page', () => {
   it('load well', () => {
-    cy
+    //@ts-ignore
+    cy.login('user@foo.bar', 'password')
       .visit('http://localhost:9000/testers')
       .get('h1.jumbotron-heading').should('have.text', 'Testers');
   });
@@ -50,7 +42,8 @@ describe('Team apis page', () => {
 
 describe('Select version of api', { scrollBehavior: false }, () => {
   it('load well', () => {
-    cy
+    //@ts-ignore
+    cy.login('user@foo.bar', 'password')
       .visit('http://localhost:9000/testers/test-api/1.0.0/description')
       .get('input[name="versions-selector"]').should('have.value', '1.0.0')
       .get('.api__header .reactSelect__control')

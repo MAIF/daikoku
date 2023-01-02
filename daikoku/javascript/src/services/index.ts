@@ -361,7 +361,7 @@ export const askForApiAccess = (teams: string[], apiId: string) =>
 export const fetchAuditTrail = (from: number, to: number, page: number, size: number): Promise<ResponseError | IAuditTrail> =>
   customFetch(`/api/admin/auditTrail?from=${from}&to=${to}&page=${page}&size=${size}`);
 
-export const fetchAllUsers = () => customFetch('/api/admin/users');
+export const fetchAllUsers = (): Promise<ResponseError | Array<IUserSimple>> => customFetch('/api/admin/users');
 export const findUserById = (id: string): Promise<IUser> => customFetch(`/api/admin/users/${id}`);
 
 export const deleteUserById = (id: any) =>

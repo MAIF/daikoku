@@ -675,7 +675,10 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();
-  const match = useMatch('/settings/:tab/:subtab');
+  const matchParent = useMatch('/settings/:tab');
+  const matchSub = useMatch('/settings/:tab/:subtab');
+
+  const match = matchParent || matchSub
 
   const currentTenant = useSelector<IStoreState, ITenant>((state) => state.context.tenant);
   const tenant = maybeTenant || currentTenant;
@@ -784,6 +787,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   };
 
   useEffect(() => {
+    console.debug({match}) //@ts-ignore
     setMenu(schema(match?.params.tab, match?.params.subtab));
     setMode(navMode.tenant);
     setOffice(officeMode.back);

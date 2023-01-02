@@ -196,7 +196,12 @@ object Helper {
             orParams = res._2
           }
 
-          ("(" + l.mkString(" OR ") + ")", orParams)
+          if (l.count(_.nonEmpty) == 1) {
+            (l.head, orParams)
+          } else {
+            ("(" + l.mkString(" OR ") + ")", orParams)
+          }
+
 
         case value: JsArray if field._1 == "$in" =>
           try {

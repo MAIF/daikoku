@@ -4544,10 +4544,10 @@
   "resolved" "https://registry.npmjs.org/cypress-waitfor/-/cypress-waitfor-1.1.0.tgz"
   "version" "1.1.0"
 
-"cypress@^12.1.0":
-  "integrity" "sha512-7fz8N84uhN1+ePNDsfQvoWEl4P3/VGKKmAg+bJQFY4onhA37Ys+6oBkGbNdwGeC7n2QqibNVPhk8x3YuQLwzfw=="
-  "resolved" "https://registry.npmjs.org/cypress/-/cypress-12.1.0.tgz"
-  "version" "12.1.0"
+"cypress@^12.2.0":
+  "integrity" "sha512-kvl95ri95KK8mAy++tEU/wUgzAOMiIciZSL97LQvnOinb532m7dGvwN0mDSIGbOd71RREtmT9o4h088RjK5pKw=="
+  "resolved" "https://registry.npmjs.org/cypress/-/cypress-12.2.0.tgz"
+  "version" "12.2.0"
   dependencies:
     "@cypress/request" "^2.88.10"
     "@cypress/xvfb" "^1.2.4"

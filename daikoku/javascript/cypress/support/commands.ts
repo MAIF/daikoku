@@ -24,4 +24,19 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite("visit", (originalFn, url, options) => { ... })
 
-import 'cypress-waitfor';
+// import 'cypress-waitfor';
+
+//@ts-ignore
+Cypress.Commands.add('login', (username: string, password: string) => {
+  cy.session([username, password], () => {
+    cy.clearAllCookies()
+    cy.visit('http://localhost:9000/auth/Local/login')
+      .get('input[name=username]').type(username)
+      .get('input[name=password]').type(password)
+      .get('button').click()
+      .url().should('include', '/apis')
+  })
+})
+
+
+
