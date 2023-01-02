@@ -85,30 +85,31 @@ class MessagesControllerSpec()
 
     "get his previous messages" in {
       val closedDate = DateTime.now().minusHours(1)
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         messages = Seq(adminMessage(user, user, "1", Some(closedDate)))
-      )
+      ).map(_ => {
+        val session = loginWithBlocking(user, tenant)
 
-      val session = loginWithBlocking(user, tenant)
+        val respGetClosedDate = httpJsonCallBlocking(
+          s"/api/messages/${user.id.value}/last-date")(tenant, session)
+        respGetClosedDate.status mustBe 200
+        val lastClosedDate = respGetClosedDate.json.as[Long]
+        lastClosedDate mustBe closedDate.toDate.getTime
 
-      val respGetClosedDate = httpJsonCallBlocking(
-        s"/api/messages/${user.id.value}/last-date")(tenant, session)
-      respGetClosedDate.status mustBe 200
-      val lastClosedDate = (respGetClosedDate.json).as[Long]
-      lastClosedDate mustBe closedDate.toDate.getTime
+        val respGet = httpJsonCallBlocking(
+          s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant,
+                                                                          session)
+        respGet.status mustBe 200
+        val messages =
+          json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
+        messages.isSuccess mustBe true
 
-      val respGet = httpJsonCallBlocking(
-        s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant,
-                                                                        session)
-      respGet.status mustBe 200
-      val messages =
-        json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
-      messages.isSuccess mustBe true
+        messages.get.length mustBe 1
+        messages.get.head.message mustBe "1"
+      })
 
-      messages.get.length mustBe 1
-      messages.get.head.message mustBe "1"
     }
 
     "read his messages" in {
