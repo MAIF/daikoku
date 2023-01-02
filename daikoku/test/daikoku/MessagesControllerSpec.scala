@@ -145,35 +145,36 @@ class MessagesControllerSpec()
     }
 
     "send a message to admin team" in {
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user)
-      )
+      ).map(_ => {
+        val session = loginWithBlocking(user, tenant)
 
-      val session = loginWithBlocking(user, tenant)
+        val respSend = httpJsonCallBlocking(
+          path = "/api/messages/_send",
+          method = "POST",
+          body = Some(
+            Json.obj(
+              "message" -> "1",
+              "participants" -> JsArray(
+                (Set(user.id.asJson) ++ defaultAdminTeam.users.map(
+                  _.userId.asJson)).toSeq),
+              "chat" -> user.id.asJson
+            ))
+        )(tenant, session)
 
-      val respSend = httpJsonCallBlocking(
-        path = "/api/messages/_send",
-        method = "POST",
-        body = Some(
-          Json.obj(
-            "message" -> "1",
-            "participants" -> JsArray(
-              (Set(user.id.asJson) ++ defaultAdminTeam.users.map(
-                _.userId.asJson)).toSeq),
-            "chat" -> user.id.asJson
-          ))
-      )(tenant, session)
+        respSend.status mustBe 200
 
-      respSend.status mustBe 200
+        val respGet = httpJsonCallBlocking("/api/me/messages")(tenant, session)
+        respGet.status mustBe 200
+        val messages =
+          json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
+        messages.isSuccess mustBe true
+        messages.get.length mustBe 1
+        messages.get.head.message mustBe "1"
+      })
 
-      val respGet = httpJsonCallBlocking("/api/me/messages")(tenant, session)
-      respGet.status mustBe 200
-      val messages =
-        json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
-      messages.isSuccess mustBe true
-      messages.get.length mustBe 1
-      messages.get.head.message mustBe "1"
 
     }
 
