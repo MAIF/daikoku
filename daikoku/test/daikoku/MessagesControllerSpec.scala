@@ -113,34 +113,35 @@ class MessagesControllerSpec()
     }
 
     "read his messages" in {
-      setupEnvBlocking(
+      setupEnv(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         messages = Seq(
           adminMessage(user, user, "1", None).copy(
             date = DateTime.now().minusHours(1)))
-      )
+      ).map(_ => {
+        val session = loginWithBlocking(tenantAdmin, tenant)
 
-      val session = loginWithBlocking(tenantAdmin, tenant)
+        val respGet = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
+        respGet.status mustBe 200
+        val messages = (respGet.json \ "messages").as(json.SeqMessagesFormat)
+        messages.length mustBe 1
+        messages.count(_.readBy.contains(tenantAdminId)) mustBe 0
 
-      val respGet = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
-      respGet.status mustBe 200
-      val messages = (respGet.json \ "messages").as(json.SeqMessagesFormat)
-      messages.length mustBe 1
-      messages.count(_.readBy.contains(tenantAdminId)) mustBe 0
+        val respRead =
+          httpJsonCallBlocking(path = s"/api/messages/${user.id.value}/_read",
+                               method = "PUT")(tenant, session)
+        respRead.status mustBe 200
 
-      val respRead =
-        httpJsonCallBlocking(path = s"/api/messages/${user.id.value}/_read",
-                             method = "PUT")(tenant, session)
-      respRead.status mustBe 200
+        val respVerif = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
+        respVerif.status mustBe 200
+        val messagesVerif =
+          (respVerif.json \ "messages").as(json.SeqMessagesFormat)
 
-      val respVerif = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
-      respVerif.status mustBe 200
-      val messagesVerif =
-        (respVerif.json \ "messages").as(json.SeqMessagesFormat)
+        messagesVerif.length mustBe 1
+        messagesVerif.count(_.readBy.contains(tenantAdminId)) mustBe 1
+      })
 
-      messagesVerif.length mustBe 1
-      messagesVerif.count(_.readBy.contains(tenantAdminId)) mustBe 1
     }
 
     "send a message to admin team" in {
