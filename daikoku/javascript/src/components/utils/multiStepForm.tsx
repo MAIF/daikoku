@@ -360,13 +360,15 @@ const Breadcrumb = <T,>({
         current={currentIdx}
         progressDot={customDot}
         onChange={(idx) => handleChooseStep(idx)}
-      >
-        {steps.map((step, idx: number) => {
+        items={steps.map((step, idx: number) => {
           const disabled = Option(step.disabled)
             .map((d: boolean | ((p: any) => boolean)) => typeof d === 'function' ? d(context) : d)
             .getOrElse(false);
-          return <Step key={idx} title={step.label} disabled={disabled || (creation && idx > currentIdx)} />;
+
+          return { title: step.label, disabled: disabled || (creation && idx > currentIdx) }
         })}
+      >
+
       </Steps>
     </ConfigProvider>
   );

@@ -94,7 +94,12 @@ export const TeamPlanConsumption = ({
   };
 
   useEffect(() => {
-    Services.teams().then(setTeams);
+    Services.teams()
+      .then(res => {
+        if (!isError(res)) {
+          setTeams(res)
+        }
+      });
 
     document.title = `${currentTeam.name} - ${translate('Plan consumption')}`;
   }, []);

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { ITeamSimple } from '../../../types';
+import { isError, IState, IStateContext, ITeamSimple } from '../../../types';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage } from '../../utils';
 
@@ -15,7 +15,7 @@ export const ApiGroupApis = ({
 }: any) => {
   const navigate = useNavigate();
 
-  const { connectedUser, apiCreationPermitted } = useSelector((s) => (s as any).context);
+  const { connectedUser, apiCreationPermitted } = useSelector<IState, IStateContext>((s) => s.context);
   const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,9 @@ export const ApiGroupApis = ({
         query: Services.graphql.myTeams,
       }),
     ]).then(([t, { data }]) => {
-      setTeams(t);
+      if (!isError(t)) {
+        setTeams(t);
+      }
       setMyTeams(
         data.myTeams.map(({
           users,

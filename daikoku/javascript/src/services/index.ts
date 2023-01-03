@@ -183,11 +183,11 @@ export const teamApiGroup = (teamId: string, apiGroupId: string) =>
   customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`);
 
 export const teamApis = (teamId: string): Promise<ResponseError | Array<IApi>> => customFetch(`/api/teams/${teamId}/apis`);
-export const team = (teamId: string) => customFetch(`/api/teams/${teamId}`);
-export const teamFull = (teamId: string): Promise<ITeamFull> =>
+export const team = (teamId: string): Promise<ResponseError | ITeamSimple> => customFetch(`/api/teams/${teamId}`);
+export const teamFull = (teamId: string): Promise<ResponseError | ITeamFull> =>
   customFetch(`/api/teams/${teamId}/_full`);
 
-export const teams = (): Promise<Array<ITeamSimple>> => customFetch('/api/teams');
+export const teams = (): Promise<ResponseError | Array<ITeamSimple>> => customFetch('/api/teams');
 export const isMaintenanceMode = () => customFetch('/api/state/lock');
 
 export const createTeam = (team: ITeamSimple) =>
@@ -796,7 +796,7 @@ export const setMessagesRead = (chatId: any) =>
     method: 'PUT',
   });
 
-export const closeMessageChat = (chatId: any) =>
+export const closeMessageChat = (chatId: string) =>
   customFetch(`/api/messages/${chatId}`, {
     method: 'DELETE',
   });
@@ -842,7 +842,7 @@ export const login = (username: any, password: any, action: any) => {
   });
 };
 
-export const toggleStar = (apiId: any) =>
+export const toggleStar = (apiId: string): Promise<ResponseDone | ResponseError> =>
   customFetch(`/api/apis/${apiId}/stars`, {
     method: 'PUT',
   });

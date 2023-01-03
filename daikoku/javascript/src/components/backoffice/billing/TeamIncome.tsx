@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getApolloContext } from '@apollo/client';
-import moment from 'moment';
 import maxBy from 'lodash/maxBy';
 
 import * as Services from '../../../services';
@@ -10,6 +9,7 @@ import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './compo
 import { formatCurrency, formatPlanType, Spinner, Can, read, api } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
+import dayjs from 'dayjs';
 
 export const TeamIncome = () => {
   const { currentTeam } = useSelector((state) => (state as any).context);
@@ -24,33 +24,32 @@ export const TeamIncome = () => {
     selectedPlan: undefined,
     teams: [],
     loading: false,
-    date: moment(),
     apis: [],
   });
 
-  useEffect(() => {
-    getBillingData(currentTeam);
+  const [date, setDate] = useState(dayjs())
 
+  useEffect(() => {
+    getBillingData(date);
     document.title = `${currentTeam.name} - ${translate('Income')}`;
   }, []);
 
   const { client } = useContext(getApolloContext());
 
-  const getBillingData = (team: any) => {
-    //FIXME: handle case if client is not setted
+  const getBillingData = (date: dayjs.Dayjs) => {
     if (!client) {
       return;
     }
     setState({ ...state, loading: true });
     Promise.all([
       Services.getTeamIncome(
-        team._id,
-        state.date.startOf('month').valueOf(),
-        state.date.endOf('month').valueOf()
+        currentTeam._id,
+        date.startOf('month').valueOf(),
+        date.endOf('month').valueOf()
       ),
       client.query({
         query: Services.graphql.myVisibleApis,
-        variables: { teamId: team._id },
+        variables: { teamId: currentTeam._id },
       }),
       Services.teams(),
     ]).then(
@@ -90,13 +89,13 @@ export const TeamIncome = () => {
 
   const sync = () => {
     setState({ ...state, loading: true });
-    Services.syncTeamIncome(currentTeam._id).then(() => getBillingData(currentTeam));
+    Services.syncTeamIncome(currentTeam._id).then(() => getBillingData(date));
   };
 
   const total = state.consumptions
     .reduce((acc: number, curr: any) => acc + curr.billing.total, 0);
   const mostRecentConsumption = maxBy(state.consumptions, (c) => (c as any).to);
-  const lastDate = mostRecentConsumption && moment((mostRecentConsumption as any).to).format('DD/MM/YYYY HH:mm');
+  const lastDate = mostRecentConsumption && dayjs((mostRecentConsumption as any).to).format('DD/MM/YYYY HH:mm');
 
   return (<Can I={read} a={api} team={currentTeam} dispatchError={true}>
     <div className="row">
@@ -109,10 +108,11 @@ export const TeamIncome = () => {
           <div className="col apis">
             <div className="row month__and__total">
               <div className="col-12 month__selector d-flex align-items-center">
-                <MonthPicker updateDate={(date: any) => {
-                  setState({ ...state, date });
-                  getBillingData(currentTeam);
-                }} value={state.date} />
+                <MonthPicker updateDate={(date: dayjs.Dayjs) => {
+                  console.debug({date})
+                  setDate(date);
+                  getBillingData(date);
+                }} value={date} />
                 <button className="btn btn-sm btn-access-negative" onClick={sync}>
                   <i className="fas fa-sync-alt" />
                 </button>

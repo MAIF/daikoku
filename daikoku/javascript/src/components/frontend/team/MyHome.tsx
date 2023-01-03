@@ -13,6 +13,7 @@ import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
 import { IApi, IApiWithAuthorization, IApiWithSimpleTeam, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
 import { ModalContext } from '../../../contexts';
+import { isError } from 'lodash';
 
 export const MyHome = () => {
   const [loading, setLoading] = useState(false)
@@ -77,7 +78,7 @@ export const MyHome = () => {
 
   const toggleStar = (api: any) => {
     Services.toggleStar(api._id).then((res) => {
-      if (!res.error) {
+      if (!isError(res)) {
         const alreadyStarred = connectedUser.starredApis.includes(api._id);
 
         setApis(
@@ -102,7 +103,7 @@ export const MyHome = () => {
   };
 
   const redirectToApiPage = (api: IApiWithSimpleTeam) => {
-    const apiOwner = teamsRequest.data?.find((t) => (t as any)._id === api.team._id);
+    const apiOwner = (teamsRequest.data as ITeamSimple[]).find((t) => (t as any)._id === api.team._id);
 
     const route = (version: string) => api.apis
       ? `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/apigroups/${api._humanReadableId}/apis`
@@ -158,9 +159,9 @@ export const MyHome = () => {
             </div>
           </div>
         </section>
-        <ApiList
+        {!isError(myTeamsRequest.data) && !isError(teamsRequest.data) && <ApiList
           apis={apis}
-          teams={teamsRequest.data}
+          teams={teamsRequest.data as ITeamSimple[]}
           myTeams={myTeamsRequest.data}
           teamVisible={true}
           askForApiAccess={askForApiAccess}
@@ -169,7 +170,7 @@ export const MyHome = () => {
           redirectToEditPage={redirectToEditPage}
           redirectToTeamPage={redirectToTeamPage}
           showTeam={true}
-        />
+        />}
       </main>
     );
   } else {

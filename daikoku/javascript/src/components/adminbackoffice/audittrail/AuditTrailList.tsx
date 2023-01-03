@@ -1,5 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Row } from 'antd';
+import dayjs from 'dayjs';
 import moment from 'moment';
 import { useContext, useEffect, useRef, useState } from 'react';
 
@@ -19,8 +20,8 @@ export const AuditTrailList = () => {
   const { alert } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
 
-  const [from, setFrom] = useState(moment().subtract(1, 'hour'));
-  const [to, setTo] = useState(moment());
+  const [from, setFrom] = useState(dayjs().subtract(1, 'hour'));
+  const [to, setTo] = useState(dayjs());
   const page = 1;
   const size = 500;
 
@@ -33,7 +34,7 @@ export const AuditTrailList = () => {
       cell: (info) => {
         const item = info.getValue;
         const value = info.getValue['$long'] ? item['@timestamp']['$long'] : item['@timestamp']
-        return moment(value).format('YYYY-MM-DD HH:mm:ss.SSS');
+        return dayjs(value).format('YYYY-MM-DD HH:mm:ss.SSS');
       },
     }),
     columnHelper.accessor(row => row.user.name, {
@@ -78,7 +79,7 @@ export const AuditTrailList = () => {
     table.current?.update();
   }, [from, to, page]);
 
-  const updateDateRange = (from: moment.Moment, to: moment.Moment) => {
+  const updateDateRange = (from: dayjs.Dayjs, to: dayjs.Dayjs) => {
     setFrom(from);
     setTo(to);
   };

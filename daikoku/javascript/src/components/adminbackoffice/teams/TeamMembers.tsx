@@ -6,7 +6,7 @@ import { useTenantBackOffice } from '../../../contexts';
 import { openInvitationTeamModal } from '../../../core';
 
 import * as Services from '../../../services';
-import { IState, ITeamFull, ITeamSimple } from '../../../types';
+import { isError, IState, ITeamFull, ITeamSimple } from '../../../types';
 import { TeamMembersSimpleComponent } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 import {updateTeam} from '../../../core/';
@@ -23,7 +23,7 @@ export const TeamMembersForAdmin = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if(queryTeam.data) {
+    if(queryTeam.data && !isError(queryTeam.data)) {
       dispatch(updateTeam(queryTeam.data))
     }
   }, [queryTeam]);

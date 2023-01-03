@@ -21,14 +21,14 @@ import {
 } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
-import { IApi, IState, IStateContext, ISubscription, IUsagePlan } from '../../../types';
+import { IApi, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
 
 export const TeamApiKeysForApi = () => {
   const { currentTeam, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
   useTeamBackOffice(currentTeam);
 
   const [api, setApi] = useState<IApi>();
-  const [apiTeam, setApiTeam] = useState();
+  const [apiTeam, setApiTeam] = useState<ITeamSimple>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [searched, setSearched] = useState('');
 
@@ -58,8 +58,10 @@ export const TeamApiKeysForApi = () => {
           Promise.resolve({ api, subscriptions }),
         ])
           .then(([{ data }, apiTeam, { api, subscriptions }]) => {
+            if (!isError(apiTeam)) {
+              setApiTeam(apiTeam);
+            }
             setSubscribedApis(data.apis);
-            setApiTeam(apiTeam);
             setSubscriptions(subscriptions);
             setApi(api);
           });

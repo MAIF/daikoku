@@ -59,7 +59,9 @@ export const InitializeFromOtoroshi = () => {
     Promise.all([Services.teams(), Services.allSimpleOtoroshis(tenant._id), getVisibleApis()])
       .then(
         ([teams, otoroshis, apis]) => {
-          setTeams(teams);
+          if (!isError(teams)) {
+            setTeams(teams);
+          }
           setOtoroshis(otoroshis);
           setApis(apis);
         }

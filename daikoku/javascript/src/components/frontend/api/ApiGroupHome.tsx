@@ -18,13 +18,14 @@ import { useApiGroupFrontOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 import { formatPlanType } from '../../utils/formatters';
+import { isError, ITeamSimple } from '../../../types';
 
 export const ApiGroupHome = ({ }) => {
   const [apiGroup, setApiGroup] = useState<any>();
   const [subscriptions, setSubscriptions] = useState([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
   const [myTeams, setMyTeams] = useState([]);
-  const [ownerTeam, setOwnerTeam] = useState();
+  const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
 
   const params = useParams();
   const navigate = useNavigate();
@@ -152,8 +153,10 @@ export const ApiGroupHome = ({ }) => {
         ]);
       })
       .then(([team, t]) => {
+        if (!isError(team)) {
+          setOwnerTeam(team);
+        }
         setMyTeams(t.data.myTeams);
-        setOwnerTeam(team);
       });
   }, [params.apiGroupId]);
 

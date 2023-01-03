@@ -17,7 +17,9 @@ import { LoginOrRegisterModal } from '../modals';
 import { useApiFrontOffice } from '../../../contexts';
 
 import 'highlight.js/styles/monokai.css';
-import { IApi, ISubscription, IUsagePlan } from '../../../types';
+import { IApi, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
+import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 (window as any).hljs = hljs;
 
@@ -121,26 +123,21 @@ export const ApiHeader = ({
 };
 
 type ApiHomeProps = {
-  setError?: (error: { error: { status: number, message: string } }) => void, //FIXME: get it from useSelector hook instead inject props by redux
-  connectedUser?: any, //FIXME: get it from useSelector hook instead inject props by redux
-  updateUser?: (user: any) => void, //FIXME: get it from useSelector hook instead inject props by redux
-  tenant?: any, //FIXME: get it from useSelector hook instead inject props by redux
   groupView?: boolean
 }
-const ApiHomeComponent = ({
-  setError,
-  connectedUser,
-  updateUser,
-  tenant,
+export const ApiHome = ({
   groupView
 }: ApiHomeProps) => {
   const [api, setApi] = useState<IApi>();
-  const [subscriptions, setSubscriptions] = useState([]);
+  const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
-  const [ownerTeam, setOwnerTeam] = useState(undefined);
+  const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
   const [myTeams, setMyTeams] = useState<Array<any>>([]);
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
+
+  const dispatch = useDispatch();
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
   const navigate = useNavigate();
   const defaultParams = useParams();
@@ -150,7 +147,6 @@ const ApiHomeComponent = ({
     .getOrElse(defaultParams);
 
   const { translate, Translation } = useContext(I18nContext);
-
   const { client } = useContext(getApolloContext());
 
   const { addMenu } = groupView ? { addMenu: () => { } } : useApiFrontOffice(api, ownerTeam);
@@ -161,8 +157,12 @@ const ApiHomeComponent = ({
 
   useEffect(() => {
     if (api) {
-      Services.team((api as any).team)
-        .then((ownerTeam) => setOwnerTeam(ownerTeam));
+      Services.team(api.team)
+        .then((ownerTeam) => {
+          if (!isError(ownerTeam)) {
+            setOwnerTeam(ownerTeam)
+          }
+        });
     }
   }, [api, params.versionId]);
 
@@ -232,9 +232,7 @@ const ApiHomeComponent = ({
                 });
             });
           } else {
-            //FIXME: remove line after using redux hook
-            //@ts-ignore
-            setError({ error: { status: api.status || 404, message: api.error } });
+            setError({ error: { status: api.status || 404, message: api.error } })(dispatch);
           }
         } else {
           setApi(api);
@@ -293,22 +291,21 @@ const ApiHomeComponent = ({
 
   const toggleStar = () => {
     if (api) {
-      Services.toggleStar(api._id).then((res) => {
-        if (!res.error) {
-          const alreadyStarred = connectedUser.starredApis.includes(api._id);
-          api.stars += alreadyStarred ? -1 : 1;
-          setApi(api);
+      Services.toggleStar(api._id)
+        .then((res) => {
+          if (!isError(res)) {
+            const alreadyStarred = connectedUser.starredApis.includes(api._id);
+            api.stars += alreadyStarred ? -1 : 1;
+            setApi(api);
 
-          //FIXME: remove line after use readuc hooks
-          //@ts-ignore
-          updateUser({
-            ...connectedUser,
-            starredApis: alreadyStarred
-              ? connectedUser.starredApis.filter((id: any) => id !== api._id)
-              : [...connectedUser.starredApis, api._id],
-          });
-        }
-      });
+            updateUser({
+              ...connectedUser,
+              starredApis: alreadyStarred
+                ? connectedUser.starredApis.filter((id: any) => id !== api._id)
+                : [...connectedUser.starredApis, api._id],
+            })(dispatch);
+          }
+        });
     }
   };
 
@@ -389,14 +386,3 @@ const ApiHomeComponent = ({
     </div>
   </main>);
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-const mapDispatchToProps = {
-  setError: (e: any) => setError(e),
-  updateUser: (u: any) => updateUser(u),
-};
-
-export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);

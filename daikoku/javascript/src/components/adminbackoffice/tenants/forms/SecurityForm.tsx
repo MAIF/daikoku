@@ -30,9 +30,9 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       type: type.bool,
       label: translate('aggregation api keys security'),
       onChange: (value) => {
-        const security = (value as {value: any}).value
+        const security = (value as { value: any }).value
         if (security) {
-          alert({message: translate('aggregation.api_key.security.notification')});
+          alert({ message: translate('aggregation.api_key.security.notification') });
         }
       }
     },
@@ -53,6 +53,11 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       schema={schema}
       onSubmit={(updatedTenant) => props.updateTenant.mutateAsync(updatedTenant)}
       value={props.tenant}
+      options={{
+        actions: {
+          submit: { label: translate('Save') }
+        }
+      }}
     />
   )
 

@@ -11,7 +11,7 @@ import { MessagesContext } from '../../backoffice';
 
 import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';
 import { Companion } from './companions';
-import { ITeamSimple } from '../../../types';
+import { isError, ITeamSimple } from '../../../types';
 
 export const state = {
   opened: 'OPENED',
@@ -39,7 +39,9 @@ export const SideBar = () => {
       .then(
         ([notifCount, teams]) => {
           updateNotifications(notifCount.count)(dispatch);
-          setTeams(teams);
+          if (!isError(teams)) {
+            setTeams(teams);
+          }
         }
       );
   }, []);

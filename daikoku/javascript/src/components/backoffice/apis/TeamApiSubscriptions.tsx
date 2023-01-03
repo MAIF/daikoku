@@ -17,7 +17,7 @@ import { I18nContext, openFormModal, openSubMetadataModal } from '../../../core'
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { Form, format, type } from "@maif/react-forms";
-import { IApi, ISafeSubscription, IState, ISubscription, ITeamSimple, IUsagePlan } from "../../../types";
+import { IApi, ISafeSubscription, isError, IState, ISubscription, ITeamSimple, IUsagePlan } from "../../../types";
 import { string } from "prop-types";
 import { ModalContext } from '../../../contexts';
 import { CustomSubscriptionData } from '../../frontend';
@@ -43,10 +43,13 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
-    Services.teams().then((teams) => {
-      setTeams(teams);
-      setLoading(false);
-    });
+    Services.teams()
+      .then((teams) => {
+        if (!isError(teams)) {
+          setTeams(teams);
+        }
+        setLoading(false);
+      });
 
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
   }, []);
@@ -56,7 +59,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       tableRef.current?.update()
     }
   }, [api])
-  
+
 
   const columnHelper = createColumnHelper<ISafeSubscription>()
   const columns = [

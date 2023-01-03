@@ -110,7 +110,6 @@ export const TeamApi = (props: { creation: boolean }) => {
 
 
   useEffect(() => {
-    console.debug(`new version detetced : ${params.versionId}`)
     if (location && location.state && location.state.newApi) {
       setApi(location.state.newApi);
     } else {

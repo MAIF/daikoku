@@ -6,6 +6,7 @@ import moment from 'moment';
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
 import { partition, Option } from '../../utils';
+import { isError, ITeamSimple } from '../../../types';
 
 const initMessageContext = {
   messages: [],
@@ -39,7 +40,7 @@ const MessagesProviderComponent = ({
   connectedUser
 }: { children: JSX.Element, connectedUser?: any }) => {
   const [messages, setMessages] = useState<Array<any>>([]);
-  const [adminTeam, setAdminTeam] = useState<any>(undefined);
+  const [adminTeam, setAdminTeam] = useState<ITeamSimple>();
   const [receivedMessage, setReceivedMessage] = useState<any>(undefined);
   const [totalUnread, setTotalUnread] = useState<number>(0);
   const [lastClosedDates, setLastClosedDates] = useState<Array<any>>([]);
@@ -52,9 +53,11 @@ const MessagesProviderComponent = ({
       setLoading(true);
       Services.team('admin')
         .then((team) => {
-          setAdminTeam(team);
-          if (team.users.some((u: any) => u.userId === connectedUser._id)) {
-            return Services.myMessages();
+          if (!isError(team)) {
+            setAdminTeam(team);
+            if (team.users.some((u: any) => u.userId === connectedUser._id)) {
+              return Services.myMessages();
+            }
           }
           return Services.myAdminMessages();
         })
@@ -116,11 +119,11 @@ const MessagesProviderComponent = ({
       });
   };
 
-  const closeChat = (chatid: any) => {
+  const closeChat = (chatid: string) => {
     setLoading(true);
     return Services.closeMessageChat(chatid)
       .then(() => {
-        if (adminTeam.users.some((u: any) => u.userId === connectedUser._id)) {
+        if (adminTeam?.users.some((u) => u.userId === connectedUser._id)) {
           return Services.myMessages();
         }
         return Services.myAdminMessages();

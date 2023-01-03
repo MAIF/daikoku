@@ -54,10 +54,15 @@ export const BucketForm = (props: { tenant?: ITenantFull, updateTenant: UseMutat
 
 
     return (
-        <Form<IBucketSettings> 
+        <Form<IBucketSettings>
             schema={schema}
-            onSubmit={(r) => props.updateTenant.mutateAsync({...props.tenant, bucketSettings: r} as ITenantFull)}
+            onSubmit={(r) => props.updateTenant.mutateAsync({ ...props.tenant, bucketSettings: r } as ITenantFull)}
             value={props.tenant?.bucketSettings}
+            options={{
+                actions: {
+                    submit: { label: translate('Save') }
+                }
+            }}
         />
     )
 

@@ -9,7 +9,7 @@ import { PaginatedComponent, AvatarWithAction, Can, manage, tenant, Spinner } fr
 import { I18nContext, openFormModal } from '../../../core';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
-import { ITeamSimple } from '../../../types';
+import { isError, ITeamSimple } from '../../../types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const TeamList = () => {
@@ -63,6 +63,11 @@ export const TeamList = () => {
   if (teamRequest.isLoading) {
     return <Spinner />
   } else if (teamRequest.data) {
+
+    if (isError(teamRequest.data)) {
+      return <p>{teamRequest.data.error}</p>;
+    }
+
     const filteredTeams = search
       ? teamRequest.data.filter(({ name }) => name.toLowerCase().includes(search))
       : teamRequest.data;
