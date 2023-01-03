@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.tests
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, NewPostPublished, TeamAccess, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -1065,6 +1065,100 @@ class NotificationControllerSpec()
       maybeUsers.isSuccess mustBe true
       maybeUsers.get.size mustBe 1
       maybeUsers.get.exists(value => value.userId == user.id) mustBe false
+    }
+
+    "receive a return notification of a subscription request acceptation" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(user, userAdmin),
+        teams = Seq(
+          teamConsumer.copy(
+            users = Set(UserWithPermission(user.id, Administrator))),
+          teamOwner.copy(
+            users = Set(UserWithPermission(userAdmin.id, Administrator)))
+        ),
+        apis = Seq(defaultApi),
+        notifications = Seq(
+          Notification(
+            id = NotificationId("untreated-subscription"),
+            tenant = tenant.id,
+            team = teamOwner.id.some,
+            sender = user,
+            notificationType = AcceptOrReject,
+            action = ApiSubscriptionDemand(defaultApi.id, defaultApi.defaultUsagePlan, teamConsumerId, None, Some("please"))
+          )
+        )
+      )
+      val sessionAdmin = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/notifications/untreated-subscription/accept",
+        method = "PUT",
+        body = Json.obj().some
+      )(tenant, sessionAdmin)
+      resp.status mustBe 200
+
+      val sessionUser = loginWithBlocking(user, tenant)
+      val respNotifs = httpJsonCallBlocking(
+        path = s"/api/me/notifications"
+      )(tenant, sessionUser)
+      respNotifs.status mustBe 200
+
+      val maybeNotifs =
+        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
+          .reads((respNotifs.json \ "notifications").as[JsArray])
+
+      maybeNotifs.isSuccess mustBe true
+      val notifs: Seq[Notification] = maybeNotifs.get
+      notifs.size mustBe 1
+      notifs.head.action.isInstanceOf[ApiSubscriptionAccept] mustBe true
+      notifs.head.team.get mustBe teamConsumerId
+    }
+
+    "receive a return notification of a subscription request rejection" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(user, userAdmin),
+        teams = Seq(
+          teamConsumer.copy(
+            users = Set(UserWithPermission(user.id, Administrator))),
+          teamOwner.copy(
+            users = Set(UserWithPermission(userAdmin.id, Administrator)))
+        ),
+        apis = Seq(defaultApi),
+        notifications = Seq(
+          Notification(
+            id = NotificationId("untreated-subscription"),
+            tenant = tenant.id,
+            team = teamOwner.id.some,
+            sender = user,
+            notificationType = AcceptOrReject,
+            action = ApiSubscriptionDemand(defaultApi.id, defaultApi.defaultUsagePlan, teamConsumerId, None, Some("please"))
+          )
+        )
+      )
+        val sessionAdmin = loginWithBlocking(userAdmin, tenant)
+        val resp = httpJsonCallBlocking(
+          path = s"/api/notifications/untreated-subscription/reject",
+          method = "PUT",
+          body = Json.obj("message" -> "no reason").some
+        )(tenant, sessionAdmin)
+        resp.status mustBe 200
+
+        val sessionUser = loginWithBlocking(user, tenant)
+        val respNotifs = httpJsonCallBlocking(
+          path = s"/api/me/notifications"
+        )(tenant, sessionUser)
+        respNotifs.status mustBe 200
+
+      val maybeNotifs =
+        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
+          .reads((respNotifs.json \ "notifications").as[JsArray])
+
+      maybeNotifs.isSuccess mustBe true
+      val notifs: Seq[Notification] = maybeNotifs.get
+      notifs.size mustBe 1
+      notifs.head.action.isInstanceOf[ApiSubscriptionReject] mustBe true
+      notifs.head.team.get mustBe teamConsumerId
     }
 
   }
