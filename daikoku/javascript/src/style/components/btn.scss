@@ -6,17 +6,19 @@ button {
   color: $btn-bg-color;
   background-color: $btn-text-color;
   border-color: $btn-bg-color;
-}
-
-.btn-access:hover {
-  color: $btn-bg-color;
-  background-color: $btn-text-color;
-}
-
-.btn-access-negative {
-  color: $btn-text-color;
-  border-color: $btn-border-color;
-  background-color: $btn-bg-color;
+  &:hover {
+    color: $btn-bg-color;
+    background-color: $btn-text-color;
+  }
+  &-negative {
+    color: $btn-text-color;
+    border-color: $btn-border-color;
+    background-color: $btn-bg-color;
+    &:hover {
+      color: $btn-bg-color;
+      background-color: $btn-border-color;
+    }
+  }
 }
 
 .btn-danger {
@@ -41,63 +43,75 @@ button {
   }
 }
 
-.btn-group-xs > .btn, .btn-xs {
-  padding: .25rem .4rem;
-  font-size: .875rem;
-  line-height: .5;
-  border-radius: .2rem;
+.btn-group-xs > .btn,
+.btn-xs {
+  padding: 0.25rem 0.4rem;
+  font-size: 0.875rem;
+  line-height: 0.5;
+  border-radius: 0.2rem;
 }
 
-
-.btn-outline-primary:hover, .btn-outline-danger:hover,  .btn-outline-success:hover, .btn.btn-danger:hover {
+.btn-outline-primary:hover,
+.btn-outline-danger:hover,
+.btn-outline-success:hover,
+.btn.btn-danger:hover {
   color: #fff;
 }
 
-.btn-outline-success.disabled,.btn-outline-success:disabled,.btn-outline-primary.disabled, .btn-outline-primary:disabled{
-  border-color:#9e9e9e;
-  color:#9e9e9e;
-  &:hover, &.active{
-    color:#9e9e9e !important;
+.btn-outline-success.disabled,
+.btn-outline-success:disabled,
+.btn-outline-primary.disabled,
+.btn-outline-primary:disabled {
+  border-color: #9e9e9e;
+  color: #9e9e9e;
+  &:hover,
+  &.active {
+    color: #9e9e9e !important;
   }
 }
 
-.btn-outline-success{
-  color:$success-color;
+.btn-outline-success {
+  color: $success-color;
   border-color: $success-color;
-  &:hover,&.active{
+  &:hover,
+  &.active {
     color: #fff;
     background-color: $success-color;
     border-color: $success-color;
   }
 }
 
-.btn-outline-danger{
-  color:$danger-color;
+.btn-outline-danger {
+  color: $danger-color;
   border-color: $danger-color;
-  &:hover, &.active{
+  &:hover,
+  &.active {
     color: #fff;
     background-color: $danger-color;
     border-color: $danger-color;
   }
 }
 
-.btn-outline-primary{
-  color:$info-color;
+.btn-outline-primary {
+  color: $info-color;
   border-color: $info-color;
-  &:hover, &.active{
+  &:hover,
+  &.active {
     color: #fff;
     background-color: $info-color;
     border-color: $info-color;
   }
 }
 
-.btn-outline-primary:not(:disabled):not(.disabled):active, .btn-outline-primary:not(:disabled):not(.disabled).active, .show > .btn-outline-primary.dropdown-toggle {
+.btn-outline-primary:not(:disabled):not(.disabled):active,
+.btn-outline-primary:not(:disabled):not(.disabled).active,
+.show > .btn-outline-primary.dropdown-toggle {
   color: #fff;
   border-color: $info-color;
   background-color: $info-color;
 }
 
-.btn-for-descriptionToolbar{
+.btn-for-descriptionToolbar {
   text-align: left;
   cursor: pointer;
   height: 22px;
@@ -109,7 +123,6 @@ button {
   margin-left: 5px;
 }
 
-
 .multi-button-container {
   position: relative;
   width: 40px;
@@ -119,30 +132,28 @@ button {
   }
 
   .multi-button {
-    transition: all .2s ease-in-out;
+    transition: all 0.2s ease-in-out;
     position: absolute;
-    
+
     &.hidden {
       z-index: -1;
       left: 0;
       right: 0;
       bottom: 0;
       top: 0;
-
     }
   }
 
   .multi-button-right {
-    right: -30px
+    right: -30px;
   }
   .multi-button-left {
-    left: -30px
+    left: -30px;
   }
   .multi-button-down {
     bottom: -30px;
   }
   .multi-button-up {
-    top: -30px
+    top: -30px;
   }
-
 }
