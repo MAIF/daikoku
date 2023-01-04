@@ -59,7 +59,6 @@ jobs:
         sbt "release with-defaults release-version ${{ github.event.inputs.releaseversion }}"
         cd ..
         sh ./scripts/build.sh manual
-        echo "::set-output name=diff::$(git diff --numstat | wc -l)"
         cd ..
     - id: get-diff-manual
       uses: technote-space/get-diff-action@v6
@@ -96,7 +95,7 @@ jobs:
     - name: Get yarn cache directory path
       id: yarn-cache-dir-path
       run: |
-          echo "::set-output name=dir::$(yarn cache dir)"
+          echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
     - name: CACHE ACTION
       uses: actions/cache@v2
       env:
