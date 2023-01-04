@@ -19,9 +19,10 @@ jobs:
     - uses: actions/checkout@v2.2.0
     # setup java to use sbt (?)
     - name: Set up JDK 11
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v3
       with:
-        java-version: 11
+        distribution: 'temurin'
+        java-version: '11'
     - uses: coursier/cache-action@v5
     # install node 16
     - name: setup node
