@@ -36,6 +36,8 @@ jobs:
         sh ./scripts/build.sh fmt
     - id: get-diff-format-sources
       uses: technote-space/get-diff-action@v6
+      with:
+        PATTERNS: +daikoku/**/*.*
     - name: Commit formatted sources
       if: env.GIT_DIFF
       run: |
