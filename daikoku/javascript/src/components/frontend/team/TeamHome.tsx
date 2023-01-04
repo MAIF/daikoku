@@ -8,7 +8,6 @@ import { ApiList } from './ApiList';
 import { connect } from 'react-redux';
 import { Can, read, Spinner, team as TEAM } from '../../utils';
 import { updateUser } from '../../../core';
-import { setError, updateTeamPromise } from '../../../core';
 import { IApiWithAuthorization, isError, IState, IStateContext, ITeamSimple } from '../../../types';
 import { useSelector, useDispatch } from 'react-redux';
 
@@ -97,12 +96,12 @@ export const TeamHome = () => {
           const alreadyStarred = connectedUser.starredApis.includes(api._id);
           queryClient.invalidateQueries(['apis'])
 
-          updateUser({
+          dispatch(updateUser({
             ...connectedUser,
             starredApis: alreadyStarred
               ? connectedUser.starredApis.filter((id) => id !== api._id)
               : [...connectedUser.starredApis, api._id],
-          })(dispatch);
+          }));
         }
       });
   };

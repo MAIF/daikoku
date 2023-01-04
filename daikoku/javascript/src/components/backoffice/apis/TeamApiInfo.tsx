@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { type, constraints, format, Schema } from '@maif/react-forms';
 import * as Services from '../../../services';
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { I18nContext } from '../../../core';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 
 const Image = ({
   setValue,
@@ -13,23 +13,23 @@ const Image = ({
   tenant,
   team
 }: any) => {
-    const { translate } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const domain = tenant?.domain || window.location.origin;
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
 
   return (
-        <div className="d-flex flex-row align-items-center">
-            <div className="d-flex flex-column flex-grow-1">
-                <input
+    <div className="d-flex flex-row align-items-center">
+      <div className="d-flex flex-column flex-grow-1">
+        <input
           type="text"
           className="form-control"
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
         />
-                <div className="d-flex mt-1 justify-content-end">
-                    <AssetChooserByModal
-                        typeFilter={MimeTypeFilter.image}
+        <div className="d-flex mt-1 justify-content-end">
+          <AssetChooserByModal
+            typeFilter={MimeTypeFilter.image}
             onlyPreview
             team={team}
             teamId={team._id}
@@ -165,7 +165,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       format: format.select,
       isMulti: true,
       defaultValue: [],
-      visible: ({rawValues}) => rawValues['visibility'] !== 'Public' ,
+      visible: ({ rawValues }) => rawValues['visibility'] !== 'Public',
       label: translate('Authorized teams'),
       optionsFrom: '/api/teams',
       transformer: (t: any) => ({
@@ -176,7 +176,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
   };
 
   const simpleOrExpertMode = (entry: any, expert: any) => {//@ts-ignore
-        return !!expert || !schema[entry]?.expert;
+    return !!expert || !schema[entry]?.expert;
   };
 
   const flow = (expert: any) => [

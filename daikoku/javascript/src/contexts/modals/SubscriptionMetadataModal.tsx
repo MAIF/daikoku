@@ -4,11 +4,12 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
-import { closeModal, I18nContext } from '../../../core';
-import * as Services from '../../../services';
-import { IApi, IUsagePlan } from '../../../types';
-import { SubscriptionMetadataModalProps } from '../../../types/modal';
-import { formatPlanType, Option, Spinner } from '../../utils';
+import { I18nContext } from '../../core';
+import * as Services from '../../services';
+import { IApi, IUsagePlan } from '../../types';
+import { formatPlanType, Option, Spinner } from '../../components/utils';
+import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';
+import { ModalContext } from '../modalContext';
 
 export type OverwriteSubscriptionData = {
   metadata: { [key: string]: string },
@@ -29,15 +30,13 @@ export type CustomSubscriptionData = {
   customReadOnly: boolean
 }
 
-export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps) => {
+export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps & IBaseModalProps) => {
   const [loading, setLoading] = useState(true);
   const [api, setApi] = useState<IApi>();
   const [plan, setPlan] = useState<IUsagePlan>();
   const [value, setValue] = useState<OverwriteSubscriptionData>();
 
   const { translate, Translation } = useContext(I18nContext);
-
-  const dispatch = useDispatch();
 
   const formRef = useRef<FormRef>()
 
@@ -103,7 +102,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       Services.getVisibleApiWithId(props.api).then((api) => {
         if (api.error) {
           toastr.error(translate('Error'), api.error);
-          dispatch(closeModal());
+          props.close();
         }
         else {
           setApi(api);
@@ -127,9 +126,9 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
 
     const res = props.save(subProps)
     if (res instanceof Promise) {
-      res.then(() => dispatch(closeModal()));
+      res.then(() => props.close());
     } else {
-      dispatch(closeModal());
+      props.close();
     }
   };
 
@@ -206,7 +205,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
           Subscription metadata - {api.name}
         </Translation>
       </h5>)}
-      <button type="button" className="btn-close" aria-label="Close" onClick={() => dispatch(closeModal())} />
+      <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
     </div>
     <div className="modal-body">
       {loading || !plan && <Spinner />}
@@ -243,7 +242,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       )}
 
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => dispatch(closeModal())}>
+        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
           <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
         <button

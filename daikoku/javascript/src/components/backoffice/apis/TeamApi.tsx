@@ -215,7 +215,7 @@ export const TeamApi = (props: { creation: boolean }) => {
   const tab: string = params.tab || 'infos';
 
   if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
-    setError({ error: { status: 403, message: 'Creation security enabled' } })(dispatch);
+    dispatch(setError({ error: { status: 403, message: 'Creation security enabled' } }));
   }
 
   useEffect(() => {
@@ -322,7 +322,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                     links: { links: { informations: { childs: { menu: { component } } } } },
                   },
                 })} />)}
-            {tab === 'news' && (<TeamApiPost value={api} team={currentTeam} api={api} params={params} />)}
+            {tab === 'news' && (<TeamApiPost team={currentTeam} api={api} />)}
             {tab === 'settings' && <TeamApiSettings api={api} />}
             {tab === 'stats' && !match && <TeamApiConsumption api={api} />}
             {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={api} />)}

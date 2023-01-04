@@ -6,7 +6,7 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant, Spinner } from '../../utils';
-import { I18nContext, openFormModal } from '../../../core';
+import { I18nContext } from '../../../core';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
 import { isError, ITeamSimple } from '../../../types';
@@ -17,7 +17,7 @@ export const TeamList = () => {
   useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
   const teamRequest = useQuery(['teams'], () => Services.teams());
 
@@ -28,7 +28,7 @@ export const TeamList = () => {
   const createNewTeam = () => {
     Services.fetchNewTeam()
       .then((newTeam) => {
-        dispatch(openFormModal({
+        openFormModal({
           title: translate('Create a new team'),
           actionLabel: translate('Create'),
           schema: teamSchema(newTeam, translate),
@@ -42,7 +42,7 @@ export const TeamList = () => {
               }
             }),
           value: newTeam
-        }))
+        })
       });
   };
 
@@ -72,7 +72,7 @@ export const TeamList = () => {
       ? teamRequest.data.filter(({ name }) => name.toLowerCase().includes(search))
       : teamRequest.data;
 
-    const actions = (team: any) => {
+    const actions = (team: ITeamSimple) => {
       const basicActions = [
         {
           action: () => deleteTeam(team._id),
@@ -81,7 +81,7 @@ export const TeamList = () => {
           tooltip: translate('Delete team'),
         },
         {
-          redirect: () => dispatch(openFormModal({
+          redirect: () => openFormModal({
             title: translate('Update team'),
             actionLabel: translate('Update'),
             schema: teamSchema(team, translate),
@@ -95,7 +95,7 @@ export const TeamList = () => {
                 }
               }),
             value: team
-          })),
+          }),
           iconClass: 'fas fa-pen',
           tooltip: translate('Edit team'),
           actionLabel: translate('Create')
@@ -135,7 +135,7 @@ export const TeamList = () => {
               onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
-        <PaginatedComponent items={sortBy(filteredTeams, [(team) => (team as any).name.toLowerCase()])} count={8} formatter={(team) => {
+        <PaginatedComponent items={sortBy(filteredTeams, [(team) => team.name.toLowerCase()])} count={8} formatter={(team: ITeamSimple) => {
           return (<AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
             <span className="team__name text-truncate">{team.name}</span>
           </>} actions={actions(team)} />);

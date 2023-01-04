@@ -216,65 +216,6 @@ class TeamController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def allJoinableTeams() = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(
-      s"@{user.name} has accessed list of joinable teams"))(ctx) {
-      for {
-        teams <- env.dataStore.teamRepo
-          .forTenant(ctx.tenant.id)
-          .findNotDeleted(Json.obj("type" -> TeamType.Organization.name))
-        translations <- env.dataStore.translationRepo
-          .forTenant(ctx.tenant)
-          .find(Json.obj(
-            "element.id" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))))
-        myCurrentRequests <- env.dataStore.notificationRepo
-          .forTenant(ctx.tenant.id)
-          .findNotDeleted(
-            Json.obj("sender._id" -> ctx.user.id.asJson,
-                     "action.type" -> "TeamAccess",
-                     "status.status" -> "Pending")
-          )
-      } yield {
-        def translationAsJsObject(team: Team): JsObject = {
-          val translationAsJsObject = translations
-            .groupBy(t => t.language)
-            .map {
-              case (k, v) =>
-                Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
-            }
-            .fold(Json.obj())(_ deepMerge _)
-          Json.obj("translation" -> translationAsJsObject)
-        }
-
-        if (ctx.user.isDaikokuAdmin) {
-          Ok(JsArray(teams.map(team =>
-            team.asJson.as[JsObject] ++ translationAsJsObject(team))))
-        } else {
-          val allOrga = teams.filter { team =>
-            if (team.`type` == TeamType.Personal && team.includeUser(
-                  ctx.user.id)) {
-              true
-            } else {
-              team.`type` == TeamType.Organization
-            }
-          }
-          val betterTeams = allOrga
-            .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-            .map { t =>
-              val json = TeamFormat.writes(t).as[JsObject]
-              val canJoin = !t.includeUser(ctx.user.id)
-              val alreadyJoin = myCurrentRequests
-                .map(notif => notif.action.asInstanceOf[TeamAccess].team)
-                .contains(t.id)
-              json ++ Json.obj("canJoin" -> canJoin,
-                               "alreadyJoin" -> alreadyJoin)
-            }
-          Ok(JsArray(betterTeams))
-        }
-      }
-    }
-  }
-
   def askForJoinTeam(teamId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has asked to join team @{team.name} - @{team.id}"))(ctx) {

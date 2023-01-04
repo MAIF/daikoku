@@ -11,9 +11,9 @@ import { useTenantBackOffice } from '../../../contexts';
 
 export const TenantOtoroshi = () => {
   const { tenant } = useSelector((s) => (s as any).context);
-    useTenantBackOffice();
+  useTenantBackOffice();
 
-    const { translate, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
@@ -77,22 +77,22 @@ export const TenantOtoroshi = () => {
   };
 
   return (
-        <Can I={manage} a={TENANT} dispatchError>
-            <div className="row">
+    <Can I={manage} a={TENANT} dispatchError>
+      <div className="row">
         {!create && (
-                    <h1>
-                        <Translation i18nkey="Otoroshi settings">Otoroshi settings</Translation>
+          <h1>
+            <Translation i18nkey="Otoroshi settings">Otoroshi settings</Translation>
           </h1>
         )}
         {create && (
-                    <h1>
-                        <Translation i18nkey="New otoroshi settings">New otoroshi settings</Translation>
+          <h1>
+            <Translation i18nkey="New otoroshi settings">New otoroshi settings</Translation>
           </h1>
         )}
       </div>
-            <div className="row">
+      <div className="row">
         {otoroshi && (
-                    <Form
+          <Form
             schema={formSchema}
             value={otoroshi}
             onSubmit={save}

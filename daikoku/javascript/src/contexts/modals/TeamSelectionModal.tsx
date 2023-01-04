@@ -1,26 +1,14 @@
-import React, { useContext, useState } from 'react';
-import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
-import { closeModal, I18nContext } from '../../../core';
-import { useDispatch } from 'react-redux';
+import { useContext, useState } from 'react';
+import { CheckSquare, Square } from 'react-feather';
 
-export type TeamSelectorModalProps = {
-  title: string;
-  description?: string;
-  teams: any[];
-  pendingTeams?: any[];
-  acceptedTeams?: any[];
-  action: (...args: any[]) => any;
-  allTeamSelector?: boolean;
-  allowMultipleDemand?: boolean;
-  actionLabel: string
-};
+import { I18nContext } from '../../core';
+import { ITeamSimple } from '../../types';
+import { IBaseModalProps, TeamSelectorModalProps } from './types';
 
-export const TeamSelectorModal = ({ title, description, teams, pendingTeams = [], acceptedTeams = [], action, allTeamSelector, allowMultipleDemand, actionLabel }: TeamSelectorModalProps) => {
-  const [selectedTeams, setSelectedTeams] = useState<Array<any>>([]);
+export const TeamSelectorModal = ({ title, description, teams, pendingTeams = [], acceptedTeams = [], action, allTeamSelector, allowMultipleDemand, actionLabel, close }: TeamSelectorModalProps & IBaseModalProps) => {
+  const [selectedTeams, setSelectedTeams] = useState<Array<string>>([]);
 
-
-  const dispatch = useDispatch();
 
   const allTeams = teams.filter(
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
@@ -42,7 +30,7 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
     }
   };
 
-  const getButton = (team: any) => {
+  const getButton = (team: ITeamSimple) => {
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
         <button type="button" className="btn btn-sm btn-access disabled">
@@ -60,11 +48,11 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
     }
   };
 
-  const getTeamLabel = (team: any) => {
+  const getTeamLabel = (team: ITeamSimple) => {
     return team.name;
   };
 
-  const doTeamAction = (team: any) => {
+  const doTeamAction = (team: ITeamSimple) => {
     if (
       allowMultipleDemand ||
       (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
@@ -81,13 +69,13 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
     }
   };
 
-  const actionAndClose = (teams: any) => {
-    if (action instanceof Promise) {
-      action(teams)
-        .then(() => dispatch(closeModal()));
+  const actionAndClose = (teams: Array<string>) => {
+    const res = action(teams);
+    if (res instanceof Promise) {
+      res
+        .then(() => close());
     } else {
-      dispatch(closeModal());
-      action(teams);
+      close();
     }
   };
 
@@ -95,7 +83,7 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={() => dispatch(closeModal())} />
+        <button type="button" className="btn-close" aria-label="Close" onClick={close} />
       </div>
       <div className="modal-body">
         <div className="modal-description">{description}</div>
@@ -135,7 +123,7 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => dispatch(closeModal())}>
+        <button type="button" className="btn btn-outline-danger" onClick={close}>
           {translate('Close')}
         </button>
         {!!allTeamSelector && (

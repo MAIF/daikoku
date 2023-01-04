@@ -140,7 +140,7 @@ export const TeamApis = () => {
   };
 
   if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
-    setError({ error: { status: 403, message: 'Creation security enabled' } })(dispatch);
+    dispatch(setError({ error: { status: 403, message: 'Creation security enabled' } }));
   }
   return (
     <Can I={read} a={API} dispatchError={true} team={currentTeam}>

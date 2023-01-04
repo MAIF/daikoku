@@ -7,7 +7,7 @@ import * as Services from '../../../services';
 import { Spinner } from '../../utils/Spinner';
 import { SwitchButton } from '../../inputs';
 import { I18nContext } from '../../../core';
-import { ModalContext } from '../../../contexts';
+import { ModalContext } from '../../../contexts/modalContext';
 
 const CURRENT_VERSION_ITEM = {
   value: {

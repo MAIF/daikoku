@@ -1,33 +1,20 @@
+import { useContext, useEffect, useState } from 'react';
 import Select from 'react-select';
-import React, { useContext, useEffect, useState } from 'react';
-import * as Services from '../../../services';
-import { closeModal, I18nContext } from '../../../core';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
-import { IApi } from '../../../types/api';
 
-export interface IApiDocumentationSelectModalProps {
-  teamId: string
-  api: IApi,
-  onClose: () => void
-}
+import { I18nContext } from '../../core';
+import * as Services from '../../services';
+import { IApiDocumentationSelectModalProps, IBaseModalProps } from './types';
 
 type TPage = {label: string, value: Array<{apiId: string, pageId: string, version: string}>}
 
-export const ApiDocumentationSelectModal = ({
-  teamId,
-  api,
-  onClose
-}: IApiDocumentationSelectModalProps) => {
+export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalProps & IBaseModalProps) => {
   const [apis, setApis] = useState<Array<{label: string, options: TPage}>>([]);
   const [pages, setPages] = useState<Array<TPage>>([]);
 
   const { translate } = useContext(I18nContext);
 
-  const dispatch = useDispatch();
-
   useEffect(() => {
-    Services.getAllApiDocumentation(teamId, api._humanReadableId, api.currentVersion)
+    Services.getAllApiDocumentation(props.teamId, props.api._humanReadableId, props.api.currentVersion)
       .then((apis) => {
         setApis(
           apis.map(({
@@ -52,16 +39,16 @@ export const ApiDocumentationSelectModal = ({
   }, []);
 
   const importPages = () => {
-    Services.importApiPages(teamId, api._id, pages.map((p) => p.value), api.currentVersion)
-      .then(() => onClose())
-      .then(() => dispatch(closeModal()));
+    Services.importApiPages(props.teamId, props.api._id, pages.map((p) => p.value), props.api.currentVersion)
+      .then(() => props.onClose())
+      .then(() => props.close());
   }
 
   return (
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{translate('api_select_modal.title')}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={() => dispatch(closeModal())} />
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
       </div>
       <div className="modal-body">
         <Select
@@ -74,7 +61,7 @@ export const ApiDocumentationSelectModal = ({
         />
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => dispatch(closeModal())}>
+        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
           {translate('Cancel')}
         </button>
         <button type="button" className="btn btn-outline-success" onClick={importPages}>

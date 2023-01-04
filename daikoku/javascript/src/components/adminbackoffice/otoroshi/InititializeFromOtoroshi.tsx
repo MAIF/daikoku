@@ -141,7 +141,7 @@ export const InitializeFromOtoroshi = () => {
 
   const orderedApikeys = orderBy(state.context.apikeys, ['clientName']);
 
-  const filterApikeys = (entity: {label: string, prefix: string, value: string}) => {
+  const filterApikeys = (entity: { label: string, prefix: string, value: string }) => {
     console.debug(entity, orderedApikeys)
     return orderedApikeys.filter((apikey) => (apikey.authorizedEntities || '').includes(`${entity.prefix}${entity.value}`));
   };
@@ -178,50 +178,52 @@ export const InitializeFromOtoroshi = () => {
     }
   };
 
-  return (<Can I={manage} a={TENANT} dispatchError>
-    <div className="d-flex flex-row align-items-center">
-      <h1>
-        <Translation i18nkey="Daikoku initialization">Daikoku initialization</Translation>
-      </h1>
-      {state.matches('completeServices') && <Help />}
-    </div>
-    <div className="section py-3 px-2">
-      {state.value === 'otoroshiSelection' && (
-        <SelectOtoStep
-          tenant={tenant}
-          loadPreviousState={() => loadPreviousState()}
-          setOtoInstance={(oto: any) => send('LOAD', { otoroshi: oto.value, tenant: tenant._id })}
-          otoroshis={otoroshis} />)}
-      {(state.matches('loadingOtoroshiGroups') ||
-        state.matches('loadingServices') ||
-        state.matches('loadingApikeys')) && <Spinner />}
-      {state.value === 'stepSelection' && (<SelectionStepStep goToServices={() => send('LOAD_SERVICE', { up: true })} goToApikeys={() => send('LOAD_APIKEY')} />)}
-      {state.matches('completeServices') && <StepWizard initialStep={step} isLazyMount={true} transitions={{}} onStepChange={(x) => setStep(x.activeStep)}>
-        {servicesSteps}
-      </StepWizard>}
-      {state.matches('recap') && (<RecapServiceStep cancel={() => send('CANCEL')} createdApis={createdApis} groups={state.context.groups} teams={teams} goBackToServices={() => send('ROLLBACK')} create={() => send('CREATE_APIS', { createdApis, callBackCreation: () => afterCreation() })} />)}
-      {state.matches('completeApikeys') && (<>
-        <ApiKeyStep
-          groups={state.context.groups}
-          services={state.context.services}
-          routes={state.context.routes}
-          getFilteredApikeys={filterApikeys}
-          cancel={() => send('CANCEL')}
-          createdSubs={createdSubs} />
-        {createdSubs.length > 0 && (<RecapSubsStep createdSubs={createdSubs} cancel={() => {
-          setCreatedSubs([]);
-          send('CANCEL');
-        }} apis={apis} teams={teams} goBackToServices={() => send('CANCEL')} create={() => send('CREATE_APIKEYS', {
-          createdSubs,
-          callBackCreation: () => afterSubCreation(),
-        })} />)}
-      </>)}
-      {state.matches('recapSubs') && (<RecapSubsStep createdSubs={createdSubs} cancel={() => send('CANCEL')} apis={apis} teams={teams} goBackToServices={() => send('ROLLBACK')} create={() => send('CREATE_APIKEYS', { createdSubs, callBackCreation: () => afterSubCreation() })} />)}
-      {state.matches('complete') && <Translation i18nkey="Done">Done</Translation>}
+  return (
+    <Can I={manage} a={TENANT} dispatchError>
+        <div className="d-flex flex-row align-items-center">
+          <h1>
+            <Translation i18nkey="Daikoku initialization">Daikoku initialization</Translation>
+          </h1>
+          {state.matches('completeServices') && <Help />}
+        </div>
+        <div className="section py-3 px-2">
+          {state.value === 'otoroshiSelection' && (
+            <SelectOtoStep
+              tenant={tenant}
+              loadPreviousState={() => loadPreviousState()}
+              setOtoInstance={(oto: any) => send('LOAD', { otoroshi: oto.value, tenant: tenant._id })}
+              otoroshis={otoroshis} />)}
+          {(state.matches('loadingOtoroshiGroups') ||
+            state.matches('loadingServices') ||
+            state.matches('loadingApikeys')) && <Spinner />}
+          {state.value === 'stepSelection' && (<SelectionStepStep goToServices={() => send('LOAD_SERVICE', { up: true })} goToApikeys={() => send('LOAD_APIKEY')} />)}
+          {state.matches('completeServices') && <StepWizard initialStep={step} isLazyMount={true} transitions={{}} onStepChange={(x) => setStep(x.activeStep)}>
+            {servicesSteps}
+          </StepWizard>}
+          {state.matches('recap') && (<RecapServiceStep cancel={() => send('CANCEL')} createdApis={createdApis} groups={state.context.groups} teams={teams} goBackToServices={() => send('ROLLBACK')} create={() => send('CREATE_APIS', { createdApis, callBackCreation: () => afterCreation() })} />)}
+          {state.matches('completeApikeys') && (<>
+            <ApiKeyStep
+              groups={state.context.groups}
+              services={state.context.services}
+              routes={state.context.routes}
+              getFilteredApikeys={filterApikeys}
+              cancel={() => send('CANCEL')}
+              createdSubs={createdSubs} />
+            {createdSubs.length > 0 && (<RecapSubsStep createdSubs={createdSubs} cancel={() => {
+              setCreatedSubs([]);
+              send('CANCEL');
+            }} apis={apis} teams={teams} goBackToServices={() => send('CANCEL')} create={() => send('CREATE_APIKEYS', {
+              createdSubs,
+              callBackCreation: () => afterSubCreation(),
+            })} />)}
+          </>)}
+          {state.matches('recapSubs') && (<RecapSubsStep createdSubs={createdSubs} cancel={() => send('CANCEL')} apis={apis} teams={teams} goBackToServices={() => send('ROLLBACK')} create={() => send('CREATE_APIKEYS', { createdSubs, callBackCreation: () => afterSubCreation() })} />)}
+          {state.matches('complete') && <Translation i18nkey="Done">Done</Translation>}
 
-      {state.matches('failure') && (<div className="alert alert-danger">{state.context.error.error}</div>)}
-    </div>
-  </Can>);
+          {state.matches('failure') && (<div className="alert alert-danger">{state.context.error.error}</div>)}
+        </div>
+    </Can>
+  );
 };
 
 const Help = () => {

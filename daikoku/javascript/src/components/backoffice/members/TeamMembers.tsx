@@ -6,7 +6,7 @@ import { toastr } from 'react-redux-toastr';
 import classnames from 'classnames';
 
 import * as Services from '../../../services';
-import { openInvitationTeamModal, updateTeamPromise, I18nContext } from '../../../core';
+import { updateTeam, I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import {
   Option,
@@ -51,7 +51,7 @@ export const TeamMembersSimpleComponent = () => {
   });
 
   const { translate, Translation } = useContext(I18nContext);
-  const { alert } = useContext(ModalContext);
+  const { alert, openInvitationTeamModal } = useContext(ModalContext);
 
   useEffect(() => {
     updateMembers(currentTeam);
@@ -103,7 +103,7 @@ export const TeamMembersSimpleComponent = () => {
       isAdmin(member) &&
       currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
     ) {
-      alert({message: translate('remove.member.alert')});
+      alert({ message: translate('remove.member.alert') });
     } else {
       (window
         .confirm(translate('remove.member.confirm')))//@ts-ignore
@@ -115,7 +115,7 @@ export const TeamMembersSimpleComponent = () => {
                 done
                   ? toastr.success(translate('Success'), translate({ key: 'remove.member.success', replacements: [member.name] }))
                   : toastr.error(translate('Error'), translate('Failure'));
-                updateTeamPromise(team)(dispatch)
+                Promise.resolve(dispatch(updateTeam(team)))
                   .then(() => updateMembers(currentTeam));
               });
           }
@@ -169,7 +169,7 @@ export const TeamMembersSimpleComponent = () => {
                 translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] })
               )
               : toastr.error(translate('Error'), translate('Failure'));
-            updateTeamPromise(team)(dispatch)
+            Promise.resolve(dispatch(updateTeam(team)))
               .then(() => updateMembers(currentTeam));
           }
         );
@@ -220,13 +220,13 @@ export const TeamMembersSimpleComponent = () => {
   return <>
     <div className="container-fluid" style={{ position: 'relative' }}>
       <button className="btn btn-success" type="button" onClick={() => {
-        dispatch(openInvitationTeamModal({
+        openInvitationTeamModal({
           team: currentTeam,
           searchLdapMember: searchLdapMember,
           members: filteredMembers,
           invitUser: invitUser,
           pendingUsers: filteredPending,
-        }));
+        });
       }}>
         {translate('team_member.invit_user')}
       </button>

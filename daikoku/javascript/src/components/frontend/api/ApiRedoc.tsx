@@ -2,8 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
+import { ModalContext } from '../../../contexts';
 
-import { LoginOrRegisterModal } from '..';
 import { I18nContext } from '../../../core';
 import { IApi, IState, IStateContext } from '../../../types';
 
@@ -18,6 +18,7 @@ export function ApiRedoc(props: ApiRedocProps) {
   const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
   const { translate } = useContext(I18nContext);
+  const { openLoginOrRegisterModal } = useContext(ModalContext);
 
   useEffect(() => {
     fetch(
@@ -50,14 +51,11 @@ export function ApiRedoc(props: ApiRedocProps) {
   };
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
-    return (
-      <LoginOrRegisterModal
-        {...props}
-        showOnlyMessage={true}
-        asFlatFormat
-        message={translate('api_redoc.guest_user')}
-      />
-    );
+    openLoginOrRegisterModal({
+      tenant,
+      showOnlyMessage: true,
+      message: translate('api_redoc.guest_user')
+    })
 
   if (error)
     return (

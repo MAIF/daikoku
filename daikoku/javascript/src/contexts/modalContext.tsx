@@ -1,55 +1,58 @@
-import React, { useContext, useEffect, useState } from "react";
+import { TBaseObject } from "@maif/react-forms";
+import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import isFunction from 'lodash/isFunction';
-import isString from 'lodash/isString';
-import { I18nContext } from "../core";
 
-type TModalContext = {
-  alert: (p: AlertModalProps) => Promise<void>,
-  confirm: (p: ConfirmModalProps) => Promise<boolean>,
-  prompt: (p: PromptModalProps) => Promise<string | undefined >,
-}
-export type ConfirmModalProps = {
-  message: JSX.Element | string | ((ok: () => void, cancel: () => void) => JSX.Element | string)
-  title?: string
-  okLabel?: string
-  cancelLabel?: string
-}
-
-export type ConfirmProps = ConfirmModalProps & {
-  cancel: () => void;
-  ok: () => void;
-};
-
-export type PromptModalProps = {
-  isPassword?: boolean;
-  title?: string;
-  value?: string;
-  placeholder?: string;
-  message?: string;
-  cancelLabel?: string
-  okLabel?: string
-}
-export type PromptProps = PromptModalProps & {
-  ok: (value: string) => void;
-  cancel: () => void;
-};
-
-export type AlertModalProps = {
-  message: JSX.Element | string | ((close: () => void) => JSX.Element | string);
-  title?: string;
-  closeMessage?: string
-}
-
-export type AlertProps = AlertModalProps & {
-  close: () => void;
-};
+import { Alert } from "./modals/Alert";
+import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
+import { ApiKeySelectModal, IApiKeySelectModalProps } from "./modals/ApiKeySelectModal";
+import { ApiSelectModal, IApiSelectModalProps } from "./modals/ApiSelectModal";
+import { AssetSelectorModal } from "./modals/AssetsChooserModal";
+import { Confirm } from "./modals/Confirm";
+import { ContactModal } from "./modals/ContactModal";
+import { FormModal } from "./modals/FormModal";
+import { JoinTeamInvitationModal } from "./modals/JoinTeamInvitationModal";
+import { LoginOrRegisterModal } from "./modals/LoginOrRegisterModal";
+import { Prompt } from "./modals/Prompt";
+import { SaveOrCancelModal } from "./modals/SaveOrCancelModal";
+import { SubscriptionMetadataModal } from "./modals/SubscriptionMetadataModal";
+import { TeamInvitationModal } from "./modals/TeamInvitationModal";
+import { TeamSelectorModal } from "./modals/TeamSelectionModal";
+import { TestingApiKeyModal } from "./modals/TestingApiKeyModal";
+import {
+  AlertModalProps,
+  ConfirmModalProps,
+  IApiDocumentationSelectModalProps,
+  IAssetSelectorModalProps,
+  IContactModalComponentProps,
+  IFormModalProps,
+  ILoginOrRegisterModalProps,
+  ISaverOrCancelModalProps,
+  ITeamInvitationModalProps,
+  PromptModalProps,
+  SubscriptionMetadataModalProps,
+  TeamSelectorModalProps,
+  TestingApiKeyModalProps,
+  TModalContext
+} from "./modals/types";
 
 
 const init: TModalContext = {
   alert: () => Promise.resolve(),
   confirm: () => Promise.resolve(true),
   prompt: () => Promise.resolve("toto"),
+  openFormModal: () => { },
+  openTestingApikeyModal: () => { },
+  openSubMetadataModal: () => { },
+  openApiDocumentationSelectModal: () => { },
+  openTeamSelectorModal: () => { },
+  openInvitationTeamModal: () => { },
+  openSaveOrCancelModal: () => { },
+  openLoginOrRegisterModal: () => { },
+  openJoinTeamModal: () => { },
+  openContactModal: () => { },
+  openAssetSelectorModal: () => { },
+  openApiSelectModal: () => { },
+  openApiKeySelectModal: () => { },
 }
 
 export const ModalContext = React.createContext<TModalContext>(init);
@@ -96,19 +99,63 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
     />)
   });
 
+  const openFormModal = <T extends TBaseObject>(props: IFormModalProps<T>) => open(<FormModal
+    {...props}
+    close={close} />)
+
+  const openTestingApikeyModal = (props: TestingApiKeyModalProps) => open(<TestingApiKeyModal {...props} close={close} />)
+  const openSubMetadataModal = (props: SubscriptionMetadataModalProps) => open(<SubscriptionMetadataModal {...props} close={close} />)
+  const openApiDocumentationSelectModal = (props: IApiDocumentationSelectModalProps) => open(<ApiDocumentationSelectModal {...props} close={close} />)
+  const openTeamSelectorModal = (props: TeamSelectorModalProps) => open(<TeamSelectorModal {...props} close={close} />)
+  const openInvitationTeamModal = (props: ITeamInvitationModalProps) => open(<TeamInvitationModal {...props} close={close} />)
+  const openSaveOrCancelModal = (props: ISaverOrCancelModalProps) => open(<SaveOrCancelModal {...props} close={close} />)
+  const openLoginOrRegisterModal = (props: ILoginOrRegisterModalProps) => open(<LoginOrRegisterModal {...props} close={close} />)
+  const openJoinTeamModal = () => open(<JoinTeamInvitationModal close={close} />)
+  const openContactModal = (props: IContactModalComponentProps) => open(<ContactModal {...props} close={close} />)
+  const openAssetSelectorModal = (props: IAssetSelectorModalProps) => open(<AssetSelectorModal {...props} close={close} />)
+  const openApiSelectModal = (props: IApiSelectModalProps) => open(<ApiSelectModal {...props} close={close} />)
+  const openApiKeySelectModal = (props: IApiKeySelectModalProps) => open(<ApiKeySelectModal {...props} close={close} />)
+
+
   return (
     <ModalContext.Provider value={{
       alert,
       confirm,
-      prompt
+      prompt,
+      openFormModal,
+      openTestingApikeyModal,
+      openSubMetadataModal,
+      openApiDocumentationSelectModal,
+      openTeamSelectorModal,
+      openInvitationTeamModal,
+      openSaveOrCancelModal,
+      openLoginOrRegisterModal,
+      openJoinTeamModal,
+      openContactModal,
+      openAssetSelectorModal,
+      openApiSelectModal,
+      openApiKeySelectModal
     }}>
       <Modal modal={modal} modalContent={modalContent} />
       {props.children}
     </ModalContext.Provider>
-  )
+  );
 }
 
 // ######### Helpers ###############
+
+const ModalWrapper = (props: { children: JSX.Element }) => {
+  return (
+    <div>
+      <div className="modal show" style={{ display: 'block' }} tabIndex={-1} role="dialog">
+        <div className="modal-dialog modal-lg" role="document">
+          {props.children}
+        </div>
+      </div>
+      <div className="modal-backdrop show" />
+    </div>
+  )
+}
 
 const Modal = ({ modal, modalContent }) => {
 
@@ -123,12 +170,12 @@ const Modal = ({ modal, modalContent }) => {
 };
 
 const useModal = () => {
-  let [modal, setModal] = useState(false);
-  let [modalContent, setModalContent] = useState<JSX.Element>();
+  const [modal, setModal] = useState(false);
+  const [modalContent, setModalContent] = useState<JSX.Element>();
 
   const open = (content: JSX.Element) => {
     setModal(true)
-    setModalContent(content)
+    setModalContent(<ModalWrapper>{content}</ModalWrapper>)
   };
   const close = () => {
     setModal(false)
@@ -137,155 +184,3 @@ const useModal = () => {
 
   return { modal, modalContent, setModalContent, open, close };
 };
-
-
-// ########## MODAL #################
-
-const Alert = (props: AlertProps) => {
-  const { translate } = useContext(I18nContext);
-
-  const defaultButton = (e: any) => {
-    if (e.keyCode === 13) {
-      props.close();
-    }
-  };
-
-  useEffect(() => {
-    document.body.addEventListener('keydown', defaultButton);
-    return document.body.removeEventListener('keydown', defaultButton);
-  }, []);
-
-  const res = isFunction(props.message) ? props.message(props.close) : props.message;
-
-  return (
-    <div>
-      <div className="modal show" style={{ display: 'block' }} tabIndex={-1} role="dialog">
-        <div className="modal-dialog modal-lg" role="document">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">{props.title ? props.title : translate('Alert')}</h5>
-              <button type="button" className="btn-close" onClick={props.close} />
-            </div>
-            <div className="modal-body">
-              <div className="modal-description">
-                {isString(res) && <p>{res}</p>}
-                {!isString(res) && !isFunction(res) && res}
-                {!isString(res) && isFunction(res) && res(props.close)}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-outline-primary" onClick={props.close}>
-                {props?.closeMessage || translate('Close')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="modal-backdrop show" />
-    </div>);
-}
-
-const Confirm = (props: ConfirmProps) => {
-  const { translate } = useContext(I18nContext);
-
-  const defaultButton = (e: any) => {
-    if (e.keyCode === 13) {
-      props.ok();
-    }
-  };
-  useEffect(() => {
-    document.body.addEventListener('keydown', defaultButton);
-
-    return () => document.body.removeEventListener('keydown', defaultButton);
-  }, []);
-
-  const res = isFunction(props.message) ? props.message(props.ok, props.cancel) : props.message;
-
-  return (
-    <div>
-      <div className="modal show" style={{ display: 'block' }} tabIndex={-1} role="dialog">
-        <div className="modal-dialog modal-lg" role="document">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">{props.title || translate("Confirm")}</h5>
-              <button type="button" className="btn-close" onClick={props.cancel} />
-            </div>
-            <div className="modal-body">
-              <div className="modal-description">
-                {isString(res) && <p>{res}</p>}
-                {!isString(res) && !isFunction(res) && res}
-                {!isString(res) && isFunction(res) && res(props.ok, props.cancel)}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
-                {props.cancelLabel || translate('Cancel')}
-              </button>
-              <button type="button" className="btn btn-outline-success" onClick={props.ok}>
-                {props.okLabel || translate('Ok')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="modal-backdrop show" />
-    </div>
-  );
-}
-
-const Prompt = (props: PromptProps) => {
-  const { translate } = useContext(I18nContext);
-
-  const [text, setText] = useState(props.value || '');
-
-  let ref: any;
-
-  const defaultButton = (e: KeyboardEvent) => {
-    if (e.code === "Enter") {
-      props.ok(text);
-    }
-  };
-
-  useEffect(() => {
-    document.body.addEventListener('keydown', defaultButton);
-    if (ref) {
-      ref.focus();
-    }
-
-    return () => document.body.removeEventListener('keydown', defaultButton);
-  }, []);
-
-  return (<div>
-    <div className="modal show" style={{ display: 'block' }} tabIndex={-1} role="dialog">
-      <div className="modal-dialog modal-lg" role="document">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">{props.title || translate('Confirm')}</h5>
-            <button type="button" className="btn-close" onClick={props.cancel} />
-          </div>
-          <div className="modal-body">
-            <div className="modal-description">
-              <p>{props.message}</p>
-              <input
-                type={props.isPassword ? 'password' : 'text'}
-                className="form-control"
-                value={text}
-                placeholder={props.placeholder || ''}
-                ref={(r) => (ref = r)}
-                onChange={(e) => setText(e.target.value)} />
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
-              {props.cancelLabel || translate('Cancel')}
-            </button>
-            <button type="button" className="btn btn-outline-success" onClick={() => props.ok(text)}>
-              {props.okLabel || translate('Ok')}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div className="modal-backdrop show" />
-  </div>);
-}

@@ -7,7 +7,6 @@ import { constraints, format, type } from '@maif/react-forms';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { Can, manage, asset, tenant as TENANT } from '../../utils';
-import { openFormModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -146,11 +145,10 @@ export const AssetsList = ({
   tenantMode
 }: { tenantMode: boolean }) => {
   const tableRef = useRef<TableRef>();
-  const dispatch = useDispatch();
   const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
 
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
 
   useEffect(() => {
     document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translate({ key: 'Asset', plural: true })}`;
@@ -323,7 +321,7 @@ export const AssetsList = ({
     })
       .then((response) => response.text())
       .then((content) =>
-        dispatch(openFormModal({
+        openFormModal({
           title: translate('asset.update'),
           schema: {
             content: {
@@ -332,7 +330,7 @@ export const AssetsList = ({
               label: null,
             }
           },
-          onSubmit: (data: any) => {
+          onSubmit: (data) => {
             const textFileAsBlob = new Blob([data.content], { type: 'text/plain' });
             const file = new File([textFileAsBlob], asset.filename);
 
@@ -358,7 +356,7 @@ export const AssetsList = ({
           },
           value: { content },
           actionLabel: translate('Update')
-        }))
+        })
       );
   };
 
@@ -430,12 +428,12 @@ export const AssetsList = ({
         <div className="col-12 mb-3 d-flex justify-content-end">
           <button
             className='btn btn-outline-success'
-            onClick={() => dispatch(openFormModal({
+            onClick={() => openFormModal({
               title: translate("Add asset"),
               schema,
               onSubmit: addAsset,
               actionLabel: translate('Add asset')
-            }))}>
+            })}>
 
             {translate("add asset")}
           </button>

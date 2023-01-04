@@ -7,11 +7,11 @@ import md5 from 'js-md5';
 
 import { I18nContext, TranslateParams, updateTeam } from '../../../core';
 import * as Services from '../../../services';
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend'
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import { isError, IState, ITeamSimple } from '../../../types';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 
 
 type AvatarProps = {

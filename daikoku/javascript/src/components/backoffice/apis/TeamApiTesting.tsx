@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 
 import { Option } from '../../utils';
 import * as Services from '../../../services';
-import { I18nContext, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
+import { I18nContext } from '../../../core';
 import { useDispatch } from 'react-redux';
 import { IState, ITeamSimple } from '../../../types';
 import { ModalContext } from '../../../contexts';
@@ -16,7 +16,7 @@ export const TeamApiTesting = (props) => {
   const testing = props.value.testing;
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openTestingApikeyModal, openSubMetadataModal } = useContext(ModalContext);
 
   const handleOtoroshiUsage = () => {
     const random = nanoid(16);
@@ -32,8 +32,8 @@ export const TeamApiTesting = (props) => {
           metadata: props.metadata,
         };
 
-    dispatch(openSubMetadataModal({
-      save: (metadata) => dispatch(openTestingApiKeyModal({
+    openSubMetadataModal({
+      save: (metadata) => openTestingApikeyModal({
         metadata,
         teamId: currentTeam._id,
         config: newConfig,
@@ -52,11 +52,11 @@ export const TeamApiTesting = (props) => {
             },
           });
         },
-      })),
+      }),
       config: testing.config,
       api: props.value,
       description: <div>Description</div>,
-    }));
+    });
   };
 
   const deleteOtoroshiKey = () => {

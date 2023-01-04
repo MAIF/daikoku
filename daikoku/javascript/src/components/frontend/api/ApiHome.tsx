@@ -13,8 +13,7 @@ import { Can, manage, apikey, ActionWithTeamSelector, CanIDoAction, Option } fro
 import { formatPlanType } from '../../utils/formatters';
 import { setError, updateUser, I18nContext } from '../../../core';
 import StarsButton from './StarsButton';
-import { LoginOrRegisterModal } from '../modals';
-import { useApiFrontOffice } from '../../../contexts';
+import { ModalContext, useApiFrontOffice } from '../../../contexts';
 
 import 'highlight.js/styles/monokai.css';
 import { IApi, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
@@ -147,6 +146,7 @@ export const ApiHome = ({
     .getOrElse(defaultParams);
 
   const { translate, Translation } = useContext(I18nContext);
+  const { openLoginOrRegisterModal } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const { addMenu } = groupView ? { addMenu: () => { } } : useApiFrontOffice(api, ownerTeam);
@@ -185,7 +185,7 @@ export const ApiHome = ({
               );
             }}
             actionLabel={translate('View your api keys')}
-            withAllTeamSelector={false}
+            allTeamSelector={false}
           >
             <span className="block__entry__link">
               <Translation i18nkey="View your api keys">View your api keys</Translation>
@@ -223,16 +223,19 @@ export const ApiHome = ({
       ]) => {
         if (api.error) {
           if (api.visibility && api.visibility === 'PublicWithAuthorizations') {
-            Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId).then((res) => {
-              if (res.error) setGuestModal(true);
-              else
-                setAccessModalError({
-                  error: api.error,
-                  api: res,
-                });
-            });
+            Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId)
+              .then((res) => {
+                if (res.error) {
+                  setGuestModal(true);
+                } else {
+                  setAccessModalError({
+                    error: api.error,
+                    api: res,
+                  });
+                }
+              });
           } else {
-            setError({ error: { status: api.status || 404, message: api.error } })(dispatch);
+            dispatch(setError({ error: { status: api.status || 404, message: api.error } }));
           }
         } else {
           setApi(api);
@@ -286,6 +289,8 @@ export const ApiHome = ({
         });
       })
         .then(() => updateSubscriptions(api._id));
+    } else {
+      return Promise.reject(false)
     }
   };
 
@@ -298,28 +303,24 @@ export const ApiHome = ({
             api.stars += alreadyStarred ? -1 : 1;
             setApi(api);
 
-            updateUser({
+            dispatch(updateUser({
               ...connectedUser,
               starredApis: alreadyStarred
                 ? connectedUser.starredApis.filter((id: any) => id !== api._id)
                 : [...connectedUser.starredApis, api._id],
-            })(dispatch);
+            }));
           }
         });
     }
   };
 
-  if (showGuestModal)
-    return (
-      <div className="m-3">
-        <LoginOrRegisterModal
-          tenant={tenant}
-          showOnlyMessage={true}
-          asFlatFormat
-          message={translate('guest_user_not_allowed')}
-        />
-      </div>
-    );
+  if (showGuestModal) {
+    openLoginOrRegisterModal({
+      tenant,
+      showOnlyMessage: true,
+      message: translate('guest_user_not_allowed')
+    })
+  }
 
   if (showAccessModal) {
     const teams = showAccessModal.api.myTeams.filter((t: any) => t.type !== 'Admin');
@@ -345,7 +346,7 @@ export const ApiHome = ({
             title="Api access"
             description={translate({ key: 'api.access.request', replacements: [params.apIid] })}
             pendingTeams={pendingTeams}
-            authorizedTeams={authorizedTeams}
+            acceptedTeams={authorizedTeams}
             teams={teams}
             actionLabel={translate('Ask access to API')}
             action={(teams) => {
@@ -375,7 +376,7 @@ export const ApiHome = ({
       <div className="container">
         <div className="row pt-3">
           {params.tab === 'description' && (<ApiDescription api={api} />)}
-          {params.tab === 'pricing' && (<ApiPricing connectedUser={connectedUser} api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} pendingSubscriptions={pendingSubscriptions} updateSubscriptions={updateSubscriptions} tenant={tenant} />)}
+          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} pendingSubscriptions={pendingSubscriptions} />)}
           {params.tab === 'documentation' && <ApiDocumentation api={api} />}
           {params.tab === 'testing' && (<ApiSwagger api={api} teamId={teamId} ownerTeam={ownerTeam} testing={(api as any).testing} tenant={tenant} connectedUser={connectedUser} />)}
           {params.tab === 'swagger' && (<ApiRedoc api={api} teamId={teamId} />)}

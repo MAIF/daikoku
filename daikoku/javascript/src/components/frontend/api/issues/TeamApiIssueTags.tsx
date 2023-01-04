@@ -2,12 +2,12 @@ import React, { useContext, useEffect, useState } from 'react';
 import { constraints, type } from '@maif/react-forms';
 import uniq from 'lodash/uniq';
 import { SketchPicker } from 'react-color';
-//@ts-ignore
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 import { useDispatch } from 'react-redux';
 
-import { I18nContext, openFormModal } from '../../../../core';
+import { I18nContext } from '../../../../core';
 import { randomColor } from '../../../utils';
+import { ModalContext } from '../../../../contexts';
 
 export function TeamApiIssueTags({
   value,
@@ -17,6 +17,7 @@ export function TeamApiIssueTags({
   const [updated, setUpdated] = useState(false);
 
   const { translate } = useContext(I18nContext);
+  const { openFormModal } = useContext(ModalContext);
 
   const dispatch = useDispatch();
 
@@ -31,7 +32,7 @@ export function TeamApiIssueTags({
     <div style={{ paddingBottom: '250px' }}>
       <div className="mb-3 row">
         <div className="col-sm-10">
-          <button className='btn btn-outline-success' onClick={() => dispatch(openFormModal({
+          <button className='btn btn-outline-success' onClick={() => openFormModal({
             title: translate('issues.create_tag'),
             schema: {
               name: {
@@ -72,7 +73,7 @@ export function TeamApiIssueTags({
             },
             value: { color: randomColor() },
             actionLabel: translate('Create')
-          }))}>{translate('issues.new_tag')}</button>
+          })}>{translate('issues.new_tag')}</button>
         </div>
       </div>
       <div className="mb-3 row pt-3">

@@ -48,7 +48,6 @@ export const getVisibleApiGroup = (id: any) => customFetch(`/api/me/visible-grou
 export const getTeamVisibleApi = (teamId: any, apiId: any, version: any) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = (): Promise<Array<ITeamSimple>> => customFetch('/api/me/teams');
-export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 
 export const teamAllNotifications = (teamId: any, page = 0) =>
   customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`);

@@ -6,15 +6,16 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Settings } from 'react-feather'
 
-import { openSaveOrCancelModal } from '../../../../core';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { ITenantFull } from '../../../../types';
-import { AssetChooserByModal, MimeTypeFilter } from '../../../frontend/modals/AssetsChooserModal';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../../contexts/modals/AssetsChooserModal';
+import { ModalContext } from '../../../../contexts';
 
 
 export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
 
-  const { translate } = useContext(I18nContext)
+  const { translate } = useContext(I18nContext);
+  const { openSaveOrCancelModal } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const formRef = useRef<FormRef>()
@@ -134,9 +135,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
         <div>{translate('CSS color theme')}</div>
         <button type="button" className="btn btn-outline-primary ms-1" onClick={() => {
           const RedirectToUI = () => navigate(`/settings/tenants/${tenant?._id}/style`);
-          if (Object.keys(formRef.current?.methods.formState.dirtyFields || {})) {
-            dispatch(openSaveOrCancelModal({
-              open: true,
+          if (Object.keys(formRef.current?.methods.formState.dirtyFields || {}).length) {
+            openSaveOrCancelModal({
               dontsave: () => RedirectToUI(),
               save: () => {
                 formRef.current?.handleSubmit();
@@ -145,7 +145,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
               title: translate('unsaved.modifications.title'),
               message: translate('unsaved.modifications.message'),
               
-            }));
+            });
           } else {
             RedirectToUI();
           }
