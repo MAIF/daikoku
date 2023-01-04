@@ -342,3 +342,51 @@ We'd like to thank all the contributors who worked on this release!
 
 - Daikoku 1.5.5 - Icon for plan edition not show [#428](https://github.com/MAIF/daikoku/issues/428)
 
+## [v16.0.0] - 2023-01-04
+
+## :star: New Features
+
+- notification for API subscription demand accepted [#467](https://github.com/MAIF/daikoku/issues/467)
+- Add a way to filter apikey [#466](https://github.com/MAIF/daikoku/issues/466)
+- Add an input to explain subscription refusal [#465](https://github.com/MAIF/daikoku/issues/465)
+- cutomise label of custom metadata [#464](https://github.com/MAIF/daikoku/issues/464)
+- Display an input to explain apikey demand [#462](https://github.com/MAIF/daikoku/issues/462)
+- Send mail on api posts creation to subscribers [#456](https://github.com/MAIF/daikoku/issues/456)
+- Send mail on issues creation to api admin team admins [#455](https://github.com/MAIF/daikoku/issues/455)
+- Clean job after team deletion [#426](https://github.com/MAIF/daikoku/issues/426)
+- Remove usage of team.subscriptions [#401](https://github.com/MAIF/daikoku/issues/401)
+- Add a view of actual consumpted quotas in apikeys stats [#322](https://github.com/MAIF/daikoku/issues/322)
+- Better feedback on form errors [#25](https://github.com/MAIF/daikoku/issues/25)
+
+## :beetle: Bug Fixes
+
+- Give a way to team admin to delete his team [#493](https://github.com/MAIF/daikoku/issues/493)
+- 404 error in api page after a deletion of the current version af the api [#488](https://github.com/MAIF/daikoku/issues/488)
+- When an api with version is deleted, versions of another version is not cleaned up [#487](https://github.com/MAIF/daikoku/issues/487)
+- Free without quotas plan has not no quotas [#479](https://github.com/MAIF/daikoku/issues/479)
+- wrong redirection from notification new issue created [#471](https://github.com/MAIF/daikoku/issues/471)
+- bug with subscription synchro when otoroshi target is fake otoroshi provided by Daikoku [#470](https://github.com/MAIF/daikoku/issues/470)
+- subscription page : table is empty if page is refreshed [#469](https://github.com/MAIF/daikoku/issues/469)
+- css issue with custom metadata modal  [#463](https://github.com/MAIF/daikoku/issues/463)
+- Probleme with redoc with long descriptions (css) [#459](https://github.com/MAIF/daikoku/issues/459)
+- Anomalie partie Documentation [#453](https://github.com/MAIF/daikoku/issues/453)
+- Click on Settings of api => white page [#442](https://github.com/MAIF/daikoku/issues/442)
+- Plan Edit crash on Otoroshi settings [#440](https://github.com/MAIF/daikoku/issues/440)
+- Change member setting to APi error [#439](https://github.com/MAIF/daikoku/issues/439)
+- Restrict Invite a collaborator [#438](https://github.com/MAIF/daikoku/issues/438)
+- Problem of refresh on New pages [#437](https://github.com/MAIF/daikoku/issues/437)
+- Translate apikey visibility [#435](https://github.com/MAIF/daikoku/issues/435)
+- Improve this tooltip ? [#434](https://github.com/MAIF/daikoku/issues/434)
+- The Toggle admin status stay displayed after click [#433](https://github.com/MAIF/daikoku/issues/433)
+- align items center on object input btns ? [#432](https://github.com/MAIF/daikoku/issues/432)
+- Navigation probllem after Cancel on Edit User [#431](https://github.com/MAIF/daikoku/issues/431)
+- Feedback is red without reason [#430](https://github.com/MAIF/daikoku/issues/430)
+- CMS pages import don't setup tenant [#429](https://github.com/MAIF/daikoku/issues/429)
+- Delete personal team after user deletion [#427](https://github.com/MAIF/daikoku/issues/427)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@quentinovega](https://github.com/quentinovega)
+
