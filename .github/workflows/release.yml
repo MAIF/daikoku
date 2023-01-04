@@ -34,19 +34,16 @@ jobs:
       id: fmt
       run: |
         sh ./scripts/build.sh fmt
-    - id: get-diff-format-sources
-      uses: technote-space/get-diff-action@v6
-      with:
-        PATTERNS: +daikoku/**/*.*
+        echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
     - name: Commit formatted sources
-      if: env.GIT_DIFF
+      if: steps.fmt.outputs.diff != '0'
       run: |
         git config --local user.email "daikoku-github-actions@users.noreply.github.com"
         git config --local user.name "daikoku-github-actions"
         git add --all
         git commit -am "Format sources before release"
     - name: Push formatted sources
-      if: env.GIT_DIFF
+      if: steps.fmt.outputs.diff != '0'
       uses: ad-m/github-push-action@master
       with:
         branch: ${{ github.ref }}
@@ -61,11 +58,10 @@ jobs:
         sbt "release with-defaults release-version ${{ github.event.inputs.releaseversion }}"
         cd ..
         sh ./scripts/build.sh manual
+        echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
         cd ..
-    - id: get-diff-manual
-      uses: technote-space/get-diff-action@v6
     - name: Commit manual
-      if: env.GIT_DIFF
+      if: steps.manual.outputs.diff != '0'
       run: |
         git config --local user.email "daikoku-github-actions@users.noreply.github.com"
         git config --local user.name "daikoku-github-actions"
@@ -73,7 +69,7 @@ jobs:
         git commit -am "Update documentation before release"
     - name: Push manual
       uses: ad-m/github-push-action@master
-      if: env.GIT_DIFF
+      if: steps.manual.outputs.diff != '0'
       with:
         branch: ${{ github.ref }}
         github_token: ${{ secrets.GITHUB_TOKEN}}
