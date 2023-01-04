@@ -2,7 +2,10 @@ package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
@@ -22,16 +25,16 @@ class UserControllerSpec()
         users = Seq(daikokuAdmin, user, userAdmin),
         teams = Seq(defaultAdminTeam)
       ).map(_ => {
-      val session = loginWithBlocking(daikokuAdmin, tenant)
+        val session = loginWithBlocking(daikokuAdmin, tenant)
 
-      val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
-      resp.status mustBe 200
-      val users = resp.json.as[JsArray]
-      users.value.length mustBe 3
-      users.value.diff(
-        Seq(daikokuAdmin.asSimpleJson,
-            user.asSimpleJson,
-            userAdmin.asSimpleJson)) mustBe Seq.empty
+        val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
+        resp.status mustBe 200
+        val users = resp.json.as[JsArray]
+        users.value.length mustBe 3
+        users.value.diff(
+          Seq(daikokuAdmin.asSimpleJson,
+              user.asSimpleJson,
+              userAdmin.asSimpleJson)) mustBe Seq.empty
       })
     }
 
@@ -79,15 +82,17 @@ class UserControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, user),
-        teams = Seq(Team(
-          id = TeamId("user-team"),
-          tenant = tenant.id,
-          `type` = TeamType.Personal,
-          name = "user team personal",
-          description = "",
-          contact = user.email,
-          users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
-        ))
+        teams = Seq(
+          Team(
+            id = TeamId("user-team"),
+            tenant = tenant.id,
+            `type` = TeamType.Personal,
+            name = "user team personal",
+            description = "",
+            contact = user.email,
+            users =
+              Set(UserWithPermission(user.id, TeamPermission.Administrator))
+          ))
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
@@ -100,8 +105,8 @@ class UserControllerSpec()
         s"/api/admin/users/${userTeamUserId.value}")(tenant, session)
       resp.status mustBe 404
 
-      val respTestTeam = httpJsonCallBlocking(
-        s"/api/teams/user-team")(tenant, session)
+      val respTestTeam =
+        httpJsonCallBlocking(s"/api/teams/user-team")(tenant, session)
       resp.status mustBe 404
     }
 
@@ -339,17 +344,18 @@ class UserControllerSpec()
           tenant.copy(
             authProvider = AuthProvider.LDAP,
             authProviderSettings = Json.obj(
-            "serverUrls" -> Seq("ldap://ldap.forumsys.com:389"),
-            "searchBase" -> "dc=example,dc=com",
-            "adminUsername" -> "cn=read-only-admin,dc=example,dc=com",
-            "adminPassword" -> "password",
-            "userBase" -> "",
-            "searchFilter" -> "(mail=${username})",
-            "groupFilter" -> "ou=mathematicians",
-            "adminGroupFilter" -> "ou=scientists",
-            "nameField" -> "cn",
-            "emailField" -> "mail"
-          ))),
+              "serverUrls" -> Seq("ldap://ldap.forumsys.com:389"),
+              "searchBase" -> "dc=example,dc=com",
+              "adminUsername" -> "cn=read-only-admin,dc=example,dc=com",
+              "adminPassword" -> "password",
+              "userBase" -> "",
+              "searchFilter" -> "(mail=${username})",
+              "groupFilter" -> "ou=mathematicians",
+              "adminGroupFilter" -> "ou=scientists",
+              "nameField" -> "cn",
+              "emailField" -> "mail"
+            )
+          )),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam)
       ).map(_ => {
@@ -360,7 +366,7 @@ class UserControllerSpec()
           method = "POST",
           body = Some(
             Json.obj("email" -> "gauss@ldap.forumsys.com",
-              "teamId" -> defaultAdminTeam.id.value))
+                     "teamId" -> defaultAdminTeam.id.value))
         )(tenant, session)
 
         resp.status mustBe 201

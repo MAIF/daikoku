@@ -45,7 +45,8 @@ class MockController(DaikokuAction: DaikokuAction,
       |```
     """.stripMargin
 
-  def saveApiDocPages(tenant: TenantId): Future[Seq[ApiDocumentationDetailPage]] = {
+  def saveApiDocPages(
+      tenant: TenantId): Future[Seq[ApiDocumentationDetailPage]] = {
     val id1 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
     val id2 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
     val id21 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
@@ -110,12 +111,24 @@ class MockController(DaikokuAction: DaikokuAction,
       )
     } yield {
       Seq(
-        ApiDocumentationDetailPage(id = id1, title = "Introduction", children = Seq.empty),
-        ApiDocumentationDetailPage(id = id2, title = "Do This", children = Seq(
-          ApiDocumentationDetailPage(id = id1, title = "and do it well", children = Seq.empty),
-        )),
-        ApiDocumentationDetailPage(id = id3, title = "Do That ", children = Seq.empty),
-        ApiDocumentationDetailPage(id = id4, title = "FAQ", children = Seq.empty))
+        ApiDocumentationDetailPage(id = id1,
+                                   title = "Introduction",
+                                   children = Seq.empty),
+        ApiDocumentationDetailPage(
+          id = id2,
+          title = "Do This",
+          children = Seq(
+            ApiDocumentationDetailPage(id = id1,
+                                       title = "and do it well",
+                                       children = Seq.empty),
+          )),
+        ApiDocumentationDetailPage(id = id3,
+                                   title = "Do That ",
+                                   children = Seq.empty),
+        ApiDocumentationDetailPage(id = id4,
+                                   title = "FAQ",
+                                   children = Seq.empty)
+      )
     }
   }
 

@@ -17,8 +17,8 @@ export const isUserIsTeamAdmin = (user: any, team: any) =>
 export type TPermission = {
   action: number;
   what: string;
-  condition?: (team: ITeamSimple) => boolean
-}
+  condition?: (team: ITeamSimple) => boolean;
+};
 export type TPermissions = Array<TPermission>;
 export const permissions: {
   [key: string]: TPermissions;

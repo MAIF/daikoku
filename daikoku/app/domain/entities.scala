@@ -17,7 +17,7 @@ case class OtoroshiServiceId(value: String)
 }
 case class OtoroshiRouteId(value: String)
     extends ValueType
-      with CanJson[OtoroshiRouteId] {
+    with CanJson[OtoroshiRouteId] {
   def asJson: JsValue = JsString(value)
 }
 case class OtoroshiSettingsId(value: String)

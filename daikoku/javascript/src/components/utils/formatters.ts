@@ -16,21 +16,24 @@ export const getCurrencySymbol = (code: any) => {
   return currency ? currency.symbol : undefined;
 };
 
-export const formatPlanType = (plan: IUsagePlan, translate: (x: string | TranslateParams) => string) => {
-    switch (plan.type) {
-      case 'FreeWithoutQuotas':
-        return translate('FreeWithoutQuotas');
-      case 'FreeWithQuotas':
-        return translate('FreeWithQuotas');
-      case 'QuotasWithLimits':
-        return translate('QuotasWithLimits');
-      case 'QuotasWithoutLimits':
-        return translate('Quotas / pay per use');
-      case 'PayPerUse':
-        return translate('Pay per use');
-      default:
-        return '';
-    }
+export const formatPlanType = (
+  plan: IUsagePlan,
+  translate: (x: string | TranslateParams) => string
+) => {
+  switch (plan.type) {
+    case 'FreeWithoutQuotas':
+      return translate('FreeWithoutQuotas');
+    case 'FreeWithQuotas':
+      return translate('FreeWithQuotas');
+    case 'QuotasWithLimits':
+      return translate('QuotasWithLimits');
+    case 'QuotasWithoutLimits':
+      return translate('Quotas / pay per use');
+    case 'PayPerUse':
+      return translate('Pay per use');
+    default:
+      return '';
+  }
 };
 
 export const teamPermissions = {

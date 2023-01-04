@@ -9,12 +9,30 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{Format, JsArray, JsBoolean, JsError, JsNull, JsNumber, JsObject, JsResult, JsString, JsSuccess, JsValue, Json, Reads, Writes}
+import play.api.libs.json.{
+  Format,
+  JsArray,
+  JsBoolean,
+  JsError,
+  JsNull,
+  JsNumber,
+  JsObject,
+  JsResult,
+  JsString,
+  JsSuccess,
+  JsValue,
+  Json,
+  Reads,
+  Writes
+}
 import reactivemongo.bson.BSONObjectID
 
 import scala.util.Try
@@ -126,8 +144,9 @@ class NotificationControllerSpec()
       ).map(_ => {
         val session = loginWithBlocking(userAdmin, tenant)
         val resp = httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/notifications/unread-count")(tenant,
-                                                                         session)
+          s"/api/teams/${teamOwnerId.value}/notifications/unread-count")(
+          tenant,
+          session)
         resp.status mustBe 200
         (resp.json \ "count").as[Long] mustBe 1
       })
@@ -217,45 +236,48 @@ class NotificationControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
-        teams = Seq(
-          teamOwner,
-          teamConsumer.copy(users = Set(UserWithPermission(userId = user.id, teamPermission = TeamPermission.Administrator)))),
-        apis = Seq(
-          defaultApi),
-
-
+        teams = Seq(teamOwner,
+                    teamConsumer.copy(
+                      users = Set(
+                        UserWithPermission(userId = user.id,
+                                           teamPermission =
+                                             TeamPermission.Administrator)))),
+        apis = Seq(defaultApi),
       )
 
       val userSession = loginWithBlocking(user, tenant)
       val issue = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.humanReadableId}/issues",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.humanReadableId}/issues",
         method = "POST",
-        body = Some(ApiIssue(
-          id = ApiIssueId(BSONObjectID.generate().stringify),
-          seqId = 0,
-          tenant = tenant.id,
-          title = "",
-          tags = Set.empty,
-          open = true,
-          createdAt = DateTime.now(),
-          closedAt = None,
-          by = user.id,
-          comments = Seq(
-            ApiIssueComment(
-              by = user.id,
-              createdAt = DateTime.now(),
-              lastModificationAt = DateTime.now(),
-              content = ""
-            )),
-          lastModificationAt = DateTime.now(),
-          apiVersion = defaultApi.currentVersion.value.some,
-        ).asJson)
-      )(tenant, userSession )
+        body = Some(
+          ApiIssue(
+            id = ApiIssueId(BSONObjectID.generate().stringify),
+            seqId = 0,
+            tenant = tenant.id,
+            title = "",
+            tags = Set.empty,
+            open = true,
+            createdAt = DateTime.now(),
+            closedAt = None,
+            by = user.id,
+            comments = Seq(
+              ApiIssueComment(
+                by = user.id,
+                createdAt = DateTime.now(),
+                lastModificationAt = DateTime.now(),
+                content = ""
+              )),
+            lastModificationAt = DateTime.now(),
+            apiVersion = defaultApi.currentVersion.value.some,
+          ).asJson)
+      )(tenant, userSession)
       issue.status mustBe 201
       (issue.json \ "created").as[Boolean] mustBe true
       val adminSession = loginWithBlocking(userAdmin, tenant)
       val countNotification =
-        httpJsonCallBlocking(s"/api/me/notifications/unread-count")(tenant,
+        httpJsonCallBlocking(s"/api/me/notifications/unread-count")(
+          tenant,
           adminSession)
       countNotification.status mustBe 200
       (countNotification.json \ "count").as[Long] mustBe 1
@@ -278,25 +300,28 @@ class NotificationControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
-        teams = Seq(teamOwner, teamConsumer.copy(users = Set(UserWithPermission(user.id, Administrator)))),
-        apis = Seq(
-          defaultApi),
+        teams = Seq(teamOwner,
+                    teamConsumer.copy(
+                      users = Set(UserWithPermission(user.id, Administrator)))),
+        apis = Seq(defaultApi),
         subscriptions = Seq(
           sub
         ),
       )
       val userAdminSession = loginWithBlocking(userAdmin, tenant)
       val post = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/posts",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/posts",
         method = "POST",
-        body = Some(ApiPost(
-          id = ApiPostId(BSONObjectID.generate().stringify),
-          tenant = tenant.id,
-          title = "",
-          lastModificationAt = DateTime.now(),
-          content = ""
-        ).asJson)
-      )(tenant, userAdminSession )
+        body = Some(
+          ApiPost(
+            id = ApiPostId(BSONObjectID.generate().stringify),
+            tenant = tenant.id,
+            title = "",
+            lastModificationAt = DateTime.now(),
+            content = ""
+          ).asJson)
+      )(tenant, userAdminSession)
 
       post.status mustBe 200
       (post.json \ "created").as[Boolean] mustBe true
@@ -304,7 +329,7 @@ class NotificationControllerSpec()
       val userSession = loginWithBlocking(user, tenant)
       val countNotification =
         httpJsonCallBlocking(s"/api/me/notifications/unread-count")(tenant,
-          userSession)
+                                                                    userSession)
       countNotification.status mustBe 200
       (countNotification.json \ "count").as[Long] mustBe 1
     }
@@ -1085,7 +1110,11 @@ class NotificationControllerSpec()
             team = teamOwner.id.some,
             sender = user,
             notificationType = AcceptOrReject,
-            action = ApiSubscriptionDemand(defaultApi.id, defaultApi.defaultUsagePlan, teamConsumerId, None, Some("please"))
+            action = ApiSubscriptionDemand(defaultApi.id,
+                                           defaultApi.defaultUsagePlan,
+                                           teamConsumerId,
+                                           None,
+                                           Some("please"))
           )
         )
       )
@@ -1132,23 +1161,27 @@ class NotificationControllerSpec()
             team = teamOwner.id.some,
             sender = user,
             notificationType = AcceptOrReject,
-            action = ApiSubscriptionDemand(defaultApi.id, defaultApi.defaultUsagePlan, teamConsumerId, None, Some("please"))
+            action = ApiSubscriptionDemand(defaultApi.id,
+                                           defaultApi.defaultUsagePlan,
+                                           teamConsumerId,
+                                           None,
+                                           Some("please"))
           )
         )
       )
-        val sessionAdmin = loginWithBlocking(userAdmin, tenant)
-        val resp = httpJsonCallBlocking(
-          path = s"/api/notifications/untreated-subscription/reject",
-          method = "PUT",
-          body = Json.obj("message" -> "no reason").some
-        )(tenant, sessionAdmin)
-        resp.status mustBe 200
+      val sessionAdmin = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/notifications/untreated-subscription/reject",
+        method = "PUT",
+        body = Json.obj("message" -> "no reason").some
+      )(tenant, sessionAdmin)
+      resp.status mustBe 200
 
-        val sessionUser = loginWithBlocking(user, tenant)
-        val respNotifs = httpJsonCallBlocking(
-          path = s"/api/me/notifications"
-        )(tenant, sessionUser)
-        respNotifs.status mustBe 200
+      val sessionUser = loginWithBlocking(user, tenant)
+      val respNotifs = httpJsonCallBlocking(
+        path = s"/api/me/notifications"
+      )(tenant, sessionUser)
+      respNotifs.status mustBe 200
 
       val maybeNotifs =
         fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat

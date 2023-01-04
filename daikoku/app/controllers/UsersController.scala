@@ -4,7 +4,10 @@ import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -16,7 +19,13 @@ import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Result}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents,
+  Result
+}
 import reactivemongo.bson.BSONObjectID
 
 import java.time.Instant
@@ -171,22 +180,25 @@ class UsersController(DaikokuAction: DaikokuAction,
     DaikokuAdminOnly(
       AuditTrailEvent(
         "@{user.name} has deleted user profile of user.id : @{u.id}"))(ctx) {
-          ctx.setCtxValue("u.id", id)
-      deletionService.deleteCompleteUserByQueue(id, ctx.tenant)
+      ctx.setCtxValue("u.id", id)
+      deletionService
+        .deleteCompleteUserByQueue(id, ctx.tenant)
         .leftMap(_.render())
         .map(_ => Ok(Json.obj("done" -> true)))
         .merge
 
-      }
     }
+  }
 
   def deleteSelfUser() = DaikokuAction.async { ctx =>
     PublicUserAccess(
       AuditTrailEvent("@{user.name} has deleted his own profile)"))(ctx) {
-      deletionService.deleteUserByQueue(ctx.user.id.value, ctx.tenant)
+      deletionService
+        .deleteUserByQueue(ctx.user.id.value, ctx.tenant)
         .leftMap(_.render())
         .map(_ => Ok(Json.obj("done" -> true)))
-        .value.map(_.merge)
+        .value
+        .map(_.merge)
     }
   }
 

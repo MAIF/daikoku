@@ -56,13 +56,13 @@ export const openSubMetadataModal = (modalProps: SubscriptionMetadataModalProps)
 
 export const openContactModal =
   (name = undefined, email = undefined, tenant: any, team = undefined, api = undefined) =>
-    (dispatch: any) => {
-      return dispatch({
-        type: OPEN_MODAL,
-        modalProps: { name, email, tenant, team, api },
-        modalType: 'contactModal',
-      });
-    };
+  (dispatch: any) => {
+    return dispatch({
+      type: OPEN_MODAL,
+      modalProps: { name, email, tenant, team, api },
+      modalType: 'contactModal',
+    });
+  };
 
 export const openTestingApiKeyModal = (modalProps: any) => ({
   type: OPEN_MODAL,

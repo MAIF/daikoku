@@ -7,7 +7,11 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
+  Accepted,
+  Pending,
+  Rejected
+}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
@@ -1486,28 +1490,29 @@ object json {
     override def writes(o: ApiIssueTagId): JsValue = JsString(o.value)
   }
 
-  val ApiDocumentationDetailPageFormat = new Format[ApiDocumentationDetailPage] {
-    override def reads(json: JsValue): JsResult[ApiDocumentationDetailPage] =
-      Try {
-        JsSuccess(
-          ApiDocumentationDetailPage(
-            id = (json \ "id").as(ApiDocumentationPageIdFormat),
-            title = (json \ "title").as[String],
-            children = (json \ "children").as(SeqApiDocumentationDetailPageFormat)
+  val ApiDocumentationDetailPageFormat =
+    new Format[ApiDocumentationDetailPage] {
+      override def reads(json: JsValue): JsResult[ApiDocumentationDetailPage] =
+        Try {
+          JsSuccess(
+            ApiDocumentationDetailPage(
+              id = (json \ "id").as(ApiDocumentationPageIdFormat),
+              title = (json \ "title").as[String],
+              children =
+                (json \ "children").as(SeqApiDocumentationDetailPageFormat)
+            )
           )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
 
+      override def writes(o: ApiDocumentationDetailPage): JsValue = Json.obj(
+        "id" -> o.id.asJson,
+        "title" -> o.title,
+        "children" -> SeqApiDocumentationDetailPageFormat.writes(o.children)
+      )
 
-    override def writes(o: ApiDocumentationDetailPage): JsValue = Json.obj(
-      "id" -> o.id.asJson,
-      "title" -> o.title,
-      "children" -> SeqApiDocumentationDetailPageFormat.writes(o.children)
-    )
-
-  }
+    }
 
   val ApiDocumentationFormat = new Format[ApiDocumentation] {
     override def reads(json: JsValue): JsResult[ApiDocumentation] =
@@ -2207,8 +2212,11 @@ object json {
     new Format[AuthorizedEntities] {
       override def writes(o: AuthorizedEntities): JsValue = JsArray(
         o.groups.map(g => s"group_${g.value}").map(JsString.apply).toSeq ++
-          o.services.map(g => s"service_${g.value}").map(JsString.apply).toSeq ++
-            o.routes.map(g => s"route_${g.value}").map(JsString.apply).toSeq
+          o.services
+            .map(g => s"service_${g.value}")
+            .map(JsString.apply)
+            .toSeq ++
+          o.routes.map(g => s"route_${g.value}").map(JsString.apply).toSeq
       )
 
       override def reads(json: JsValue): JsResult[AuthorizedEntities] =
@@ -2226,9 +2234,8 @@ object json {
                         groups = entities.groups + OtoroshiServiceGroupId(
                           value.replace("group_", "")))
                     case r"route_.*" =>
-                      entities.copy(
-                        routes = entities.routes + OtoroshiRouteId(
-                          value.replace("route_", "")))
+                      entities.copy(routes = entities.routes + OtoroshiRouteId(
+                        value.replace("route_", "")))
                     case r"service_.*" =>
                       entities.copy(
                         services = entities.services + OtoroshiServiceId(
@@ -3500,18 +3507,19 @@ object json {
     override def reads(json: JsValue): JsResult[OperationAction] =
       OperationAction.apply(json.as[String]) match {
         case Some(action) => JsSuccess(action)
-        case None => JsError(s"Bad OperationAction value: ${Json.stringify(json)}")
+        case None =>
+          JsError(s"Bad OperationAction value: ${Json.stringify(json)}")
       }
 
-
-    override def writes(o: OperationAction): JsValue =  JsString(o.name)
+    override def writes(o: OperationAction): JsValue = JsString(o.name)
   }
 
   val OperationStatusFormat = new Format[OperationStatus] {
     override def reads(json: JsValue): JsResult[OperationStatus] =
       OperationStatus.apply(json.as[String]) match {
         case Some(action) => JsSuccess(action)
-        case None => JsError(s"Bad OperationStatus value: ${Json.stringify(json)}")
+        case None =>
+          JsError(s"Bad OperationStatus value: ${Json.stringify(json)}")
       }
 
     override def writes(o: OperationStatus): JsValue = JsString(o.name)
@@ -3521,27 +3529,28 @@ object json {
     override def reads(json: JsValue): JsResult[ItemType] =
       ItemType.apply(json.as[String]) match {
         case Some(action) => JsSuccess(action)
-        case None => JsError(s"Bad ItemType value: ${Json.stringify(json)}")
+        case None         => JsError(s"Bad ItemType value: ${Json.stringify(json)}")
       }
 
     override def writes(o: ItemType): JsValue = JsString(o.name)
   }
 
   val OperationFormat = new Format[Operation] {
-    override def reads(json: JsValue): JsResult[Operation] = Try {
-      Operation(
-        id = (json \ "_id").as(DatastoreIdFormat),
-        tenant = (json \ "_tenant").as(TenantIdFormat),
-        itemId = (json \ "itemId").as[String],
-        itemType = (json \ "itemType").as(ItemTypeFormat),
-        action = (json \ "action").as(OperationActionFormat),
-        payload = (json \ "payload").asOpt[JsObject],
-        status = (json \ "status").as(OperationStatusFormat)
-      )
-    } match {
-      case Failure(exception) => JsError(exception.getMessage)
-      case Success(operation) => JsSuccess(operation)
-    }
+    override def reads(json: JsValue): JsResult[Operation] =
+      Try {
+        Operation(
+          id = (json \ "_id").as(DatastoreIdFormat),
+          tenant = (json \ "_tenant").as(TenantIdFormat),
+          itemId = (json \ "itemId").as[String],
+          itemType = (json \ "itemType").as(ItemTypeFormat),
+          action = (json \ "action").as(OperationActionFormat),
+          payload = (json \ "payload").asOpt[JsObject],
+          status = (json \ "status").as(OperationStatusFormat)
+        )
+      } match {
+        case Failure(exception) => JsError(exception.getMessage)
+        case Success(operation) => JsSuccess(operation)
+      }
 
     override def writes(o: Operation): JsValue = Json.obj(
       "_id" -> o.id.asJson,
@@ -3554,18 +3563,18 @@ object json {
     )
   }
 
-
   val SetOtoroshiServicesIdFormat =
     Format(Reads.set(OtoroshiServiceIdFormat),
            Writes.set(OtoroshiServiceIdFormat))
   val SetOtoroshiRoutesIdFormat =
-    Format(Reads.set(OtoroshiRouteIdFormat),
-           Writes.set(OtoroshiRouteIdFormat))
+    Format(Reads.set(OtoroshiRouteIdFormat), Writes.set(OtoroshiRouteIdFormat))
   val SetOtoroshiServiceGroupsIdFormat =
     Format(Reads.set(OtoroshiServiceGroupIdFormat),
            Writes.set(OtoroshiServiceGroupIdFormat))
   val SeqCmsHistoryFormat =
     Format(Reads.seq(CmsHistoryFormat), Writes.seq(CmsHistoryFormat))
-  val SeqApiDocumentationDetailPageFormat: Format[Seq[ApiDocumentationDetailPage]] =
-    Format(Reads.seq(ApiDocumentationDetailPageFormat), Writes.seq(ApiDocumentationDetailPageFormat))
+  val SeqApiDocumentationDetailPageFormat
+    : Format[Seq[ApiDocumentationDetailPage]] =
+    Format(Reads.seq(ApiDocumentationDetailPageFormat),
+           Writes.seq(ApiDocumentationDetailPageFormat))
 }

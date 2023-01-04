@@ -52,8 +52,9 @@ class MessagesControllerSpec()
       ).map(_ => {
         val session = loginWithBlocking(tenantAdmin, tenant)
 
-        val resp = httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
-                                        method = "DELETE")(tenant, session)
+        val resp =
+          httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
+                               method = "DELETE")(tenant, session)
 
         resp.status mustBe 200
       })
@@ -99,8 +100,9 @@ class MessagesControllerSpec()
         lastClosedDate mustBe closedDate.toDate.getTime
 
         val respGet = httpJsonCallBlocking(
-          s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant,
-                                                                          session)
+          s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(
+          tenant,
+          session)
         respGet.status mustBe 200
         val messages =
           json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
@@ -133,7 +135,8 @@ class MessagesControllerSpec()
                                method = "PUT")(tenant, session)
         respRead.status mustBe 200
 
-        val respVerif = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
+        val respVerif =
+          httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
         respVerif.status mustBe 200
         val messagesVerif =
           (respVerif.json \ "messages").as(json.SeqMessagesFormat)
@@ -174,7 +177,6 @@ class MessagesControllerSpec()
         messages.get.length mustBe 1
         messages.get.head.message mustBe "1"
       })
-
 
     }
 

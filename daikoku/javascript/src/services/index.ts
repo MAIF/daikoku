@@ -15,7 +15,7 @@ import {
   ITenantFull,
   ITranslation,
   IUser,
-  IUserSimple
+  IUserSimple,
 } from '../types';
 import {
   ResponseError,
@@ -32,8 +32,10 @@ const HEADERS = {
   'Content-Type': 'application/json',
 };
 
-const customFetch = (url: string, { headers = HEADERS, method = 'GET', body, ...props }: any = {}) =>
-  fetch(url, { headers, method, body, ...props }).then((r) => r.json());
+const customFetch = (
+  url: string,
+  { headers = HEADERS, method = 'GET', body, ...props }: any = {}
+) => fetch(url, { headers, method, body, ...props }).then((r) => r.json());
 
 export const me = () => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
@@ -85,7 +87,8 @@ export const rejectNotificationOfTeam = (
     body: JSON.stringify({ message }),
   });
 
-export const subscribedApis = (teamId: string): Promise<ResponseError | Array<IApi>> => customFetch(`/api/teams/${teamId}/subscribed-apis`);
+export const subscribedApis = (teamId: string): Promise<ResponseError | Array<IApi>> =>
+  customFetch(`/api/teams/${teamId}/subscribed-apis`);
 export const getDocPage = (api: string, id: string): Promise<IDocPage | ResponseError> =>
   customFetch(`/api/apis/${api}/pages/${id}`);
 export const getDocDetails = (api: string, version: string): Promise<IDocDetail> =>
@@ -176,14 +179,19 @@ export const members = (teamId: string): Promise<Array<IUserSimple>> =>
   customFetch(`/api/teams/${teamId}/members`);
 export const teamHome = (teamId: string) => customFetch(`/api/teams/${teamId}/home`);
 
-export const teamApi = (teamId: string, apiId: string, version: string): Promise<ResponseError | IApi> =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
+export const teamApi = (
+  teamId: string,
+  apiId: string,
+  version: string
+): Promise<ResponseError | IApi> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
 
 export const teamApiGroup = (teamId: string, apiGroupId: string) =>
   customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`);
 
-export const teamApis = (teamId: string): Promise<ResponseError | Array<IApi>> => customFetch(`/api/teams/${teamId}/apis`);
-export const team = (teamId: string): Promise<ResponseError | ITeamSimple> => customFetch(`/api/teams/${teamId}`);
+export const teamApis = (teamId: string): Promise<ResponseError | Array<IApi>> =>
+  customFetch(`/api/teams/${teamId}/apis`);
+export const team = (teamId: string): Promise<ResponseError | ITeamSimple> =>
+  customFetch(`/api/teams/${teamId}`);
 export const teamFull = (teamId: string): Promise<ResponseError | ITeamFull> =>
   customFetch(`/api/teams/${teamId}/_full`);
 
@@ -210,7 +218,8 @@ export const deleteTeam = (teamId: string): Promise<ResponseDone | ResponseError
 export const pendingMembers = (teamId: string) =>
   customFetch(`/api/teams/${teamId}/pending-members`);
 
-export const allOtoroshis = (tenantId: string): Promise<ResponseError | Array<IOtoroshiSettings>> => customFetch(`/api/tenants/${tenantId}/otoroshis`);
+export const allOtoroshis = (tenantId: string): Promise<ResponseError | Array<IOtoroshiSettings>> =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis`);
 
 export const allSimpleOtoroshis = (tenantId: any) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/simplified`);
@@ -325,10 +334,10 @@ export const allTenants = () => customFetch('/api/tenants');
 export const oneTenant = (tenantId: string): Promise<ITenantFull> =>
   customFetch(`/api/tenants/${tenantId}`);
 
-export const getConsummedQuotasWithSubscriptionId = (teamId: string, subscriptionId: string): Promise<IQuotas> => customFetch(
-  `/api/teams/${teamId}/subscription/${subscriptionId}/quotas`
-
-)
+export const getConsummedQuotasWithSubscriptionId = (
+  teamId: string,
+  subscriptionId: string
+): Promise<IQuotas> => customFetch(`/api/teams/${teamId}/subscription/${subscriptionId}/quotas`);
 
 export const createTenant = (tenant: ITenant) =>
   customFetch('/api/tenants', {
@@ -358,10 +367,16 @@ export const askForApiAccess = (teams: string[], apiId: string) =>
     body: JSON.stringify({ teams }),
   });
 
-export const fetchAuditTrail = (from: number, to: number, page: number, size: number): Promise<ResponseError | IAuditTrail> =>
+export const fetchAuditTrail = (
+  from: number,
+  to: number,
+  page: number,
+  size: number
+): Promise<ResponseError | IAuditTrail> =>
   customFetch(`/api/admin/auditTrail?from=${from}&to=${to}&page=${page}&size=${size}`);
 
-export const fetchAllUsers = (): Promise<ResponseError | Array<IUserSimple>> => customFetch('/api/admin/users');
+export const fetchAllUsers = (): Promise<ResponseError | Array<IUserSimple>> =>
+  customFetch('/api/admin/users');
 export const findUserById = (id: string): Promise<IUser> => customFetch(`/api/admin/users/${id}`);
 
 export const deleteUserById = (id: any) =>
@@ -433,7 +448,8 @@ export const checkIfApiGroupNameIsUnique = (name: any) =>
     body: JSON.stringify({ name }),
   });
 
-export const getSessions = (): Promise<ResponseError | Array<ISession>> => customFetch('/api/admin/sessions');
+export const getSessions = (): Promise<ResponseError | Array<ISession>> =>
+  customFetch('/api/admin/sessions');
 
 export const deleteSession = (id: any) =>
   customFetch(`/api/admin/sessions/${id}`, {
@@ -498,7 +514,11 @@ export const apiConsumption = (apiId: any, planId: any, teamId: any, from: any, 
 export const apiGlobalConsumption = (apiId: any, teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`);
 
-export const apiSubscriptions = (apiId: string, teamId: string, version: string): Promise<Array<ISafeSubscription>> =>
+export const apiSubscriptions = (
+  apiId: string,
+  teamId: string,
+  version: string
+): Promise<Array<ISafeSubscription>> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/subscriptions`);
 
 export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, enabled: any) =>
@@ -514,7 +534,10 @@ export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, en
     }
   );
 
-export const getSubscriptionInformations = (subscription: string, teamId: string): Promise<ISubscriptionInformation> =>
+export const getSubscriptionInformations = (
+  subscription: string,
+  teamId: string
+): Promise<ISubscriptionInformation> =>
   customFetch(`/api/teams/${teamId}/subscription/${subscription}/informations`);
 
 export const getTeamConsumptions = (teamId: any, from: any, to: any) =>
@@ -539,7 +562,8 @@ export const deleteAsset = (teamId: any, assetId: any) =>
     method: 'DELETE',
   });
 
-export const listAssets = (teamId: string): Promise<Array<IAsset> | ResponseError> => customFetch(`/api/teams/${teamId}/assets`);
+export const listAssets = (teamId: string): Promise<Array<IAsset> | ResponseError> =>
+  customFetch(`/api/teams/${teamId}/assets`);
 
 export const storeAsset = (
   teamId: any,
@@ -701,10 +725,13 @@ export const testingCall = (teamId: any, apiId: any, body: any) =>
 
 export const getTranslations = (): Promise<ResponseError | { translations: Array<ITranslation> }> =>
   customFetch(`/api/translations/_all`);
-export const getMailTranslations = (domain?: string): Promise<ResponseError | {translations : Array<IMailingTranslation>}> => 
+export const getMailTranslations = (
+  domain?: string
+): Promise<ResponseError | { translations: Array<IMailingTranslation> }> =>
   customFetch(`/api/translations/_mail?domain=${domain || 'mail'}`);
 
-export const getTranslationLanguages = (): Promise<ResponseError | string[]> => customFetch('/api/translations/_languages');
+export const getTranslationLanguages = (): Promise<ResponseError | string[]> =>
+  customFetch('/api/translations/_languages');
 
 export const saveTranslation = (translation: any) =>
   customFetch('/api/translations', {
@@ -756,7 +783,8 @@ export const sendEmails = (
     }),
   });
 
-export const tenantAdmins = (tenantId: string): Promise<ResponseError | ITenantAdministration> => customFetch(`/api/tenants/${tenantId}/admins`);
+export const tenantAdmins = (tenantId: string): Promise<ResponseError | ITenantAdministration> =>
+  customFetch(`/api/tenants/${tenantId}/admins`);
 
 export const addableAdminsForTenant = (tenantId: any) =>
   customFetch(`/api/tenants/${tenantId}/addable-admins`);
@@ -872,7 +900,10 @@ export const createUserFromLDAP = (teamId: any, email: any) =>
 export const getAPIPosts = (apiId: any, version: any, offset = 0, limit = -1) =>
   customFetch(`/api/apis/${apiId}/${version}/posts?offset=${offset}&limit=${limit}`);
 
-export const getAllAPIPosts = (apiId: string, version: string): Promise<ResponseError | {total: number, posts: Array<IApiPost>}> =>
+export const getAllAPIPosts = (
+  apiId: string,
+  version: string
+): Promise<ResponseError | { total: number; posts: Array<IApiPost> }> =>
   customFetch(`/api/apis/${apiId}/${version}/posts`);
 
 export const publishNewPost = (apiId: string, teamId: string, post: IApiPost) =>

@@ -46,23 +46,26 @@ class TranslationController(
 
   def getMailTranslations(domain: Option[String]) = DaikokuAction.async { ctx =>
     TenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} has reset translations - @{tenant._id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
-
+      AuditTrailEvent(s"@{user.name} has reset translations - @{tenant._id}"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
       env.dataStore.translationRepo
         .forTenant(ctx.tenant.id)
-        .find(Json.obj("key" -> Json.obj("$regex" -> s".*${domain.getOrElse("mail")}",
-          "$options" -> "-i")))
+        .find(
+          Json.obj(
+            "key" -> Json.obj("$regex" -> s".*${domain.getOrElse("mail")}",
+                              "$options" -> "-i")))
         .map(translations => {
           val defaultTranslations = messagesApi.messages
             .map(v =>
-              (v._1, v._2.filter(k => k._1.startsWith(domain.getOrElse("mail")))))
+              (v._1,
+               v._2.filter(k => k._1.startsWith(domain.getOrElse("mail")))))
             .flatMap { v =>
               v._2
                 .map {
                   case (key, value) =>
                     Translation(
-                      id = DatastoreId(
-                        BSONObjectID.generate().stringify),
+                      id = DatastoreId(BSONObjectID.generate().stringify),
                       tenant = ctx.tenant.id,
                       language = v._1,
                       key = key,
@@ -72,25 +75,26 @@ class TranslationController(
                 .filter(t => languages.contains(t.language))
             }
 
-          Ok(Json.obj(
-            "translations" -> defaultTranslations
-              .map { translation =>
-                translations.find(t =>
-                  t.key == translation.key && t.language == translation.language) match {
-                  case None => translation
-                  case Some(t) => t
+          Ok(
+            Json.obj(
+              "translations" -> defaultTranslations
+                .map { translation =>
+                  translations.find(t =>
+                    t.key == translation.key && t.language == translation.language) match {
+                    case None    => translation
+                    case Some(t) => t
+                  }
                 }
-              }
-              .groupBy(_.key)
-              .map(
-                v =>
-                  (v._1,
-                    v._2.map(TranslationFormat.writes),
-                    defaultTranslations
-                      .find(p => p.key == v._1)
-                      .map(_.value)
-                      .getOrElse("")))
-          ))
+                .groupBy(_.key)
+                .map(
+                  v =>
+                    (v._1,
+                     v._2.map(TranslationFormat.writes),
+                     defaultTranslations
+                       .find(p => p.key == v._1)
+                       .map(_.value)
+                       .getOrElse("")))
+            ))
         })
     }
   }
@@ -103,9 +107,9 @@ class TranslationController(
           .forTenant(ctx.tenant.id)
           .findAll()
           .map(translations => {
-            Ok(Json.obj(
-              "translations" -> translations.map(
-                TranslationFormat.writes)))
+            Ok(
+              Json.obj(
+                "translations" -> translations.map(TranslationFormat.writes)))
           })
       }
     }

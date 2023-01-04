@@ -121,7 +121,9 @@ object utils {
         _ <- daikokuComponents.env.dataStore.messageRepo
           .forAllTenant()
           .deleteAll()
-        _ <- daikokuComponents.env.dataStore.operationRepo.forAllTenant().deleteAll()
+        _ <- daikokuComponents.env.dataStore.operationRepo
+          .forAllTenant()
+          .deleteAll()
       } yield ()
     }
 
@@ -143,24 +145,27 @@ object utils {
         cmsPages: Seq[CmsPage] = Seq.empty,
         operations: Seq[Operation] = Seq.empty
     ) = {
-      Await.result(setupEnv(
-        tenants,
-        users,
-        teams,
-        apis,
-        subscriptions,
-        pages,
-        notifications,
-        consumptions,
-        sessions,
-        resets,
-        creations,
-        messages,
-        issues,
-        posts,
-        cmsPages,
-        operations
-      ), 1.second)
+      Await.result(
+        setupEnv(
+          tenants,
+          users,
+          teams,
+          apis,
+          subscriptions,
+          pages,
+          notifications,
+          consumptions,
+          sessions,
+          resets,
+          creations,
+          messages,
+          issues,
+          posts,
+          cmsPages,
+          operations
+        ),
+        1.second
+      )
     }
 
     def setupEnv(
@@ -394,13 +399,14 @@ object utils {
         implicit tenant: Tenant,
         session: UserSession): WSResponse =
       Await.result(httpJsonCall(
-        path,
-        method,
-        headers,
-        body,
-        baseUrl,
-        port
-      )(tenant, session), 5.seconds)
+                     path,
+                     method,
+                     headers,
+                     body,
+                     baseUrl,
+                     port
+                   )(tenant, session),
+                   5.seconds)
 
     def httpJsonCall(_path: String,
                      method: String = "GET",
@@ -464,13 +470,13 @@ object utils {
         port
       )(tenant).futureValue
 
-    def httpJsonCallWithoutSession(path: String,
-                                   method: String = "GET",
-                                   headers: Map[String, String] = Map.empty,
-                                   body: Option[JsValue] = None,
-                                   baseUrl: String = "http://127.0.0.1",
-                                   port: Int = port)(
-        implicit tenant: Tenant): Future[WSResponse] = {
+    def httpJsonCallWithoutSession(
+        path: String,
+        method: String = "GET",
+        headers: Map[String, String] = Map.empty,
+        body: Option[JsValue] = None,
+        baseUrl: String = "http://127.0.0.1",
+        port: Int = port)(implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
         .withHttpHeaders((headers ++ Map("Host" -> tenant.domain)).toSeq: _*)

@@ -276,10 +276,12 @@ case class MongoTenantCapableOperationRepo(
     _repo: () => MongoRepo[Operation, DatastoreId],
     _tenantRepo: TenantId => MongoTenantAwareRepo[Operation, DatastoreId]
 ) extends MongoTenantCapableRepo[Operation, DatastoreId]
-  with OperationRepo {
+    with OperationRepo {
   override def repo(): MongoRepo[Operation, DatastoreId] = _repo()
 
-  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[Operation, DatastoreId] = _tenantRepo(tenant)
+  override def tenantRepo(
+      tenant: TenantId): MongoTenantAwareRepo[Operation, DatastoreId] =
+    _tenantRepo(tenant)
 }
 
 class MongoDataStore(context: Context, env: Env)
@@ -661,11 +663,11 @@ class MongoTenantCmsPageRepo(env: Env,
   override def extractId(value: CmsPage): String = value.id.value
 }
 class MongoTenantOperationRepo(env: Env,
-                             reactiveMongoApi: ReactiveMongoApi,
-                             tenant: TenantId)
+                               reactiveMongoApi: ReactiveMongoApi,
+                               tenant: TenantId)
     extends MongoTenantAwareRepo[Operation, DatastoreId](env,
-                                                     reactiveMongoApi,
-                                                     tenant) {
+                                                         reactiveMongoApi,
+                                                         tenant) {
   override def collectionName: String = "Operations"
 
   override def format: Format[Operation] = json.OperationFormat
@@ -828,7 +830,7 @@ class MongoCmsPageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoOperationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[Operation, DatastoreId](env, reactiveMongoApi) {
+    extends MongoRepo[Operation, DatastoreId](env, reactiveMongoApi) {
   override def collectionName: String = "Operations"
 
   override def format: Format[Operation] = json.OperationFormat

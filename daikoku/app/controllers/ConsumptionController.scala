@@ -170,7 +170,9 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getApiKeyQuotasWithSubscriptionId(teamId: String, subscriptionId: String): Action[AnyContent] =
+  def getApiKeyQuotasWithSubscriptionId(
+      teamId: String,
+      subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(AuditTrailEvent(
         s"@{user.name} has accessed to apikey quotas for clientId @{clientId}"))(
@@ -178,7 +180,8 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
         ctx) { _ =>
         ctx.setCtxValue("subscriptionId", subscriptionId)
         env.dataStore.apiSubscriptionRepo
-          .forTenant(ctx.tenant.id).findByIdNotDeleted(subscriptionId)
+          .forTenant(ctx.tenant.id)
+          .findByIdNotDeleted(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(NotFound(Json.obj(
@@ -207,11 +210,11 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                                   Future.successful(NotFound(Json.obj(
                                     "error" -> "Otoroshi settings not found")))
                                 case Some(otoSettings) =>
-
                                   implicit val otoroshiSettings
                                     : OtoroshiSettings = otoSettings
                                   otoroshiClient
-                                    .getApiKeyQuotas(subscription.apiKey.clientId)
+                                    .getApiKeyQuotas(
+                                      subscription.apiKey.clientId)
                                     .map(result => Ok(result))
 
                               }

@@ -4,7 +4,11 @@ import akka.http.scaladsl.util.FastFuture
 import akka.util.ByteString
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -15,7 +19,13 @@ import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
 import play.api.i18n.I18nSupport
 import play.api.libs.streams.Accumulator
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import play.api.mvc.{AbstractController, AnyContent, BodyParser, ControllerComponents, Result}
+import play.api.mvc.{
+  AbstractController,
+  AnyContent,
+  BodyParser,
+  ControllerComponents,
+  Result
+}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -571,7 +581,6 @@ class NotificationController(
 
       implicit val context: DaikokuActionContext[AnyContent] = ctx
 
-
       env.dataStore.notificationRepo
         .forTenant(ctx.tenant.id)
         .findByIdNotDeleted(notificationId)
@@ -745,13 +754,13 @@ class NotificationController(
                           customMaxPerDay,
                           customMaxPerMonth,
                           customReadOnly))
-        newNotification = Notification(
-          id = NotificationId(BSONObjectID.generate().stringify),
-          tenant = tenant.id,
-          team = Some(team.id),
-          sender = user,
-          notificationType = NotificationType.AcceptOnly,
-          action = NotificationAction.ApiSubscriptionAccept( apiId, plan, team.id )
+      newNotification = Notification(
+        id = NotificationId(BSONObjectID.generate().stringify),
+        tenant = tenant.id,
+        team = Some(team.id),
+        sender = user,
+        notificationType = NotificationType.AcceptOnly,
+        action = NotificationAction.ApiSubscriptionAccept(apiId, plan, team.id)
       )
       _ <- EitherT.liftF(
         env.dataStore.notificationRepo.forTenant(tenant).save(newNotification)

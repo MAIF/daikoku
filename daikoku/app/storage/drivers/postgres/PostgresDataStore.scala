@@ -203,8 +203,9 @@ case class PostgresTenantCapableOperationRepo(
     _repo: () => PostgresRepo[Operation, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[Operation, DatastoreId]
 ) extends PostgresTenantCapableRepo[Operation, DatastoreId]
-  with OperationRepo {
-  override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[Operation, DatastoreId] =
+    with OperationRepo {
+  override def tenantRepo(
+      tenant: TenantId): PostgresTenantAwareRepo[Operation, DatastoreId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[Operation, DatastoreId] = _repo()
@@ -805,9 +806,11 @@ class PostgresTenantMessageRepo(env: Env,
   override def extractId(value: Message): String = value.id.value
 }
 class PostgresTenantOperationRepo(env: Env,
-                                reactivePg: ReactivePg,
-                                tenant: TenantId)
-  extends PostgresTenantAwareRepo[Operation, DatastoreId](env, reactivePg, tenant) {
+                                  reactivePg: ReactivePg,
+                                  tenant: TenantId)
+    extends PostgresTenantAwareRepo[Operation, DatastoreId](env,
+                                                            reactivePg,
+                                                            tenant) {
   override def tableName: String = "operations"
 
   override def format: Format[Operation] = json.OperationFormat
@@ -984,7 +987,7 @@ class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
 }
 
 class PostgresOperationRepo(env: Env, reactivePg: ReactivePg)
-  extends PostgresRepo[Operation, DatastoreId](env, reactivePg) {
+    extends PostgresRepo[Operation, DatastoreId](env, reactivePg) {
   override def tableName: String = "operations"
 
   override def format: Format[Operation] = json.OperationFormat

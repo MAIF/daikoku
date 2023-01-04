@@ -118,16 +118,19 @@ class BasicUsageSpec()
       )
 
       setupEnv(
-        tenants = Seq(tenant.copy(authProvider = AuthProvider.LDAP, authProviderSettings = authProviderSettings)),
+        tenants = Seq(
+          tenant.copy(authProvider = AuthProvider.LDAP,
+                      authProviderSettings = authProviderSettings)),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam)
       ).map(_ => {
         val session = loginWithBlocking(tenantAdmin, tenant)
 
         val resp =
-          httpJsonCallBlocking(path = "/api/auth/ldap/_check",
-                               method = "POST",
-                               body = Some(authProviderSettings))(tenant, session)
+          httpJsonCallBlocking(
+            path = "/api/auth/ldap/_check",
+            method = "POST",
+            body = Some(authProviderSettings))(tenant, session)
 
         resp.status mustBe 200
       })
@@ -148,7 +151,9 @@ class BasicUsageSpec()
       )
 
       setupEnv(
-        tenants = Seq(tenant.copy(authProvider = AuthProvider.LDAP, authProviderSettings = authProviderSettings)),
+        tenants = Seq(
+          tenant.copy(authProvider = AuthProvider.LDAP,
+                      authProviderSettings = authProviderSettings)),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam)
       ).map(_ => {

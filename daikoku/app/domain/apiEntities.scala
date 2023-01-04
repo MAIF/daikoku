@@ -464,9 +464,9 @@ case class SwaggerAccess(url: String,
 }
 
 case class ApiDocumentationDetailPage(id: ApiDocumentationPageId,
-                                title: String,
-                                children: Seq[ApiDocumentationDetailPage])
-  extends CanJson[ApiDocumentationDetailPage] {
+                                      title: String,
+                                      children: Seq[ApiDocumentationDetailPage])
+    extends CanJson[ApiDocumentationDetailPage] {
   override def asJson: JsValue = ???
 }
 case class ApiDocumentation(id: ApiDocumentationId,
@@ -476,7 +476,8 @@ case class ApiDocumentation(id: ApiDocumentationId,
     extends CanJson[ApiDocumentation] {
   override def asJson: JsValue = json.ApiDocumentationFormat.writes(this)
 
-  private def flatDocIds(pages: Seq[ApiDocumentationDetailPage]): Seq[String] = {
+  private def flatDocIds(
+      pages: Seq[ApiDocumentationDetailPage]): Seq[String] = {
     pages.flatMap(page => Seq(page.id.value) ++ flatDocIds(page.children))
   }
 
@@ -487,8 +488,7 @@ case class ApiDocumentation(id: ApiDocumentationId,
       .findWithProjection(
         Json.obj(
           "_deleted" -> false,
-          "_id" -> Json.obj(
-            "$in" -> JsArray(docIds().map(JsString.apply)))),
+          "_id" -> Json.obj("$in" -> JsArray(docIds().map(JsString.apply)))),
         Json.obj(
           "_id" -> true,
           "_humanReadableId" -> true,
@@ -502,7 +502,8 @@ case class ApiDocumentation(id: ApiDocumentationId,
       .map { list =>
         // TODO: fetch remote content
         pages
-          .map(page => list.find(o => (o \ "_id").as[String] == page.id.toString))
+          .map(page =>
+            list.find(o => (o \ "_id").as[String] == page.id.toString))
           .collect { case Some(e) => e }
       }
   }
@@ -697,8 +698,7 @@ case class Api(
 case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
                               groups: Set[OtoroshiServiceGroupId] = Set.empty,
                               routes: Set[OtoroshiRouteId] = Set.empty,
-                              )
-    extends CanJson[AuthorizedEntities] {
+) extends CanJson[AuthorizedEntities] {
   def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
   def asOtoroshiJson: JsValue =
     json.AuthorizedEntitiesOtoroshiFormat.writes(this)

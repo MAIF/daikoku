@@ -12,15 +12,15 @@ import {
 
 export const login =
   ({ user, team, tenant, language }: any) =>
-    (dispatch: any) => {
-      return dispatch({
-        type: LOGIN,
-        user,
-        team,
-        tenant,
-        language,
-      });
-    };
+  (dispatch: any) => {
+    return dispatch({
+      type: LOGIN,
+      user,
+      team,
+      tenant,
+      language,
+    });
+  };
 
 export const logout = () => {
   return {
@@ -30,12 +30,12 @@ export const logout = () => {
 
 export const impersonate =
   ({ impersonator }: any) =>
-    (dispatch: any) => {
-      return dispatch({
-        type: IMPERSONATE,
-        impersonator,
-      });
-    };
+  (dispatch: any) => {
+    return dispatch({
+      type: IMPERSONATE,
+      impersonator,
+    });
+  };
 
 export const updateTeam = (team: ITeamSimple) => ({
   type: UPDATE_TEAM,

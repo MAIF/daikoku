@@ -170,10 +170,7 @@ object NotificationAction {
   case class TeamInvitation(team: TeamId, user: UserId)
       extends NotificationAction
 
-
-  case class ApiSubscriptionAccept(api: ApiId,
-                                    plan: UsagePlanId,
-                                    team: TeamId)
+  case class ApiSubscriptionAccept(api: ApiId, plan: UsagePlanId, team: TeamId)
       extends NotificationAction
 
   case class ApiSubscriptionReject(message: Option[String],
@@ -181,7 +178,7 @@ object NotificationAction {
                                    plan: UsagePlanId,
                                    team: TeamId)
       extends NotificationAction
-      
+
   case class ApiSubscriptionDemand(
       api: ApiId,
       plan: UsagePlanId,

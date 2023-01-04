@@ -212,7 +212,10 @@ class TeamControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner.copy(users = Set(UserWithPermission(user.id, TeamPermission.Administrator))), defaultAdminTeam)
+        teams =
+          Seq(teamOwner.copy(users =
+                Set(UserWithPermission(user.id, TeamPermission.Administrator))),
+              defaultAdminTeam)
       )
       val session = loginWithBlocking(userAdmin, tenant)
 

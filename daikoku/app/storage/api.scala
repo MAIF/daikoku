@@ -112,7 +112,7 @@ trait Repo[Of, Id <: ValueType] {
       implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("_deleted" -> false,
-                "$or" -> Json.arr(Json.obj("_id" -> id),
+               "$or" -> Json.arr(Json.obj("_id" -> id),
                                  Json.obj("_humanReadableId" -> hrid))))
 
   def findByIdOrHrIdNotDeleted(id: Id, hrid: String)(
@@ -178,8 +178,7 @@ trait Repo[Of, Id <: ValueType] {
 
   def findNotDeleted(query: JsObject, maxDocs: Int = -1)(
       implicit ec: ExecutionContext): Future[Seq[Of]] =
-    find(query ++ Json.obj("_deleted" -> false),
-      maxDocs = maxDocs)
+    find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs)
 
   def findOneNotDeleted(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] =
@@ -187,9 +186,7 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdNotDeleted(id: String)(
       implicit ec: ExecutionContext): Future[Option[Of]] =
-    findOne(Json.obj(
-      "_deleted" -> false,
-      "_id" -> id))
+    findOne(Json.obj("_deleted" -> false, "_id" -> id))
 
   def findByIdNotDeleted(id: Id)(
       implicit ec: ExecutionContext): Future[Option[Of]] = {

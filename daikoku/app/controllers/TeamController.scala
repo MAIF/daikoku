@@ -6,7 +6,11 @@ import akka.stream.scaladsl.{Sink, Source}
 import cats.Id
 import cats.data.EitherT
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
@@ -14,12 +18,23 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
-import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator, OtoroshiClient, Translator}
+import fr.maif.otoroshi.daikoku.utils.{
+  DeletionService,
+  IdGenerator,
+  OtoroshiClient,
+  Translator
+}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Result}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents,
+  Result
+}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -95,8 +110,9 @@ class TeamController(DaikokuAction: DaikokuAction,
   def teams() = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(
       s"@{user.name} has accessed the list of teams for current tenant"))(ctx) {
-      env.dataStore.teamRepo.forTenant(ctx.tenant.id).findAllNotDeleted() map { teams =>
-        Ok(JsArray(teams.map(_.toUiPayload())))
+      env.dataStore.teamRepo.forTenant(ctx.tenant.id).findAllNotDeleted() map {
+        teams =>
+          Ok(JsArray(teams.map(_.toUiPayload())))
       }
     }
   }
@@ -183,20 +199,20 @@ class TeamController(DaikokuAction: DaikokuAction,
   def deleteTeam(teamId: String) = DaikokuAction.async { ctx =>
     TeamAdminOrTenantAdminOnly(
       AuditTrailEvent(
-        s"@{user.name} has deleted team @{team.name} - @{team.id}"))(
-      teamId,
-      ctx) { team =>
-      implicit val ec: ExecutionContext = env.defaultExecutionContext
+        s"@{user.name} has deleted team @{team.name} - @{team.id}"))(teamId,
+                                                                     ctx) {
+      team =>
+        implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-      val value: EitherT[Future, AppError, Unit] = team.`type` match {
-        case TeamType.Admin => EitherT.leftT(AppError.ForbiddenAction)
-        case _              => deletionService.deleteTeamByQueue(team.id, ctx.tenant.id)
-      }
+        val value: EitherT[Future, AppError, Unit] = team.`type` match {
+          case TeamType.Admin => EitherT.leftT(AppError.ForbiddenAction)
+          case _              => deletionService.deleteTeamByQueue(team.id, ctx.tenant.id)
+        }
 
-      value
-        .leftMap(_.render())
-        .map(_ => Ok(Json.obj("done" -> true)))
-        .merge
+        value
+          .leftMap(_.render())
+          .map(_ => Ok(Json.obj("done" -> true)))
+          .merge
     }
   }
 

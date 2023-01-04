@@ -48,7 +48,7 @@ export const theMachine = createMachine({
               Promise.all([
                 Services.getOtoroshiGroups(tenant, otoroshi),
                 Services.getOtoroshiServices(tenant, otoroshi),
-                Services.getOtoroshiRoutes(tenant, otoroshi)
+                Services.getOtoroshiRoutes(tenant, otoroshi),
               ]).then(([groups, services, routes]) => {
                 callBack({ type: 'DONE_SERVICES', tenant, otoroshi, groups, services, routes });
               });
@@ -59,7 +59,15 @@ export const theMachine = createMachine({
                 Services.getOtoroshiRoutes(tenant, otoroshi),
                 Services.getOtoroshiApiKeys(tenant, otoroshi),
               ]).then(([groups, services, routes, apikeys]) => {
-                callBack({ type: 'DONE_APIKEYS', tenant, otoroshi, groups, services, apikeys, routes });
+                callBack({
+                  type: 'DONE_APIKEYS',
+                  tenant,
+                  otoroshi,
+                  groups,
+                  services,
+                  apikeys,
+                  routes,
+                });
               });
             } else {
               callBack({ type: 'DONE' });
@@ -75,7 +83,7 @@ export const theMachine = createMachine({
             otoroshi: (_context, { otoroshi }) => otoroshi,
             groups: (_context, { groups = [] }) => groups,
             services: (_context, { services = [] }) => services,
-            routes: (_context, { routes = [] }) => routes
+            routes: (_context, { routes = [] }) => routes,
           }),
         },
         DONE_APIKEYS: {
@@ -86,7 +94,7 @@ export const theMachine = createMachine({
             groups: (_context, { groups = [] }) => groups,
             services: (_context, { services = [] }) => services,
             apikeys: (_context, { apikeys = [] }) => apikeys,
-            routes: (_context, { routes = [] }) => routes
+            routes: (_context, { routes = [] }) => routes,
           }),
         },
         DONE: 'otoroshiSelection',
@@ -100,13 +108,14 @@ export const theMachine = createMachine({
             Promise.all([
               Services.getOtoroshiGroups(tenant, otoroshi),
               Services.getOtoroshiServices(tenant, otoroshi),
-              Services.getOtoroshiRoutes(tenant, otoroshi)
+              Services.getOtoroshiRoutes(tenant, otoroshi),
             ])
               .then(([groups, services, routes]) => {
                 if (groups.error) callBack({ type: 'FAILURE', error: { ...groups } });
                 if (services.error) callBack({ type: 'FAILURE', error: { ...services } });
                 if (routes.error) callBack({ type: 'FAILURE', error: { ...routes } });
-                else callBack({ type: 'DONE_COMPLETE', groups, services, tenant, otoroshi, routes });
+                else
+                  callBack({ type: 'DONE_COMPLETE', groups, services, tenant, otoroshi, routes });
               })
               .catch((error) => callBack({ type: 'FAILURE', error }));
           };
@@ -120,7 +129,7 @@ export const theMachine = createMachine({
             otoroshi: (_context, { otoroshi }) => otoroshi,
             groups: (_context, { groups = [] }) => groups,
             services: (_context, { services = [] }) => services,
-            routes: (_context, { routes = [] }) => routes
+            routes: (_context, { routes = [] }) => routes,
           }),
         },
         FAILURE: {
@@ -153,17 +162,16 @@ export const theMachine = createMachine({
       invoke: {
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
-          console.debug("hello services")
+          console.debug('hello services');
           return (callBack, _event) =>
             Promise.all([
               Services.getOtoroshiServices(context.tenant, context.otoroshi),
-              Services.getOtoroshiRoutes(context.tenant, context.otoroshi)
+              Services.getOtoroshiRoutes(context.tenant, context.otoroshi),
             ])
               .then(([newServices, newRoutes]) => {
                 if (newServices.error || newRoutes.error) {
                   callBack({ type: 'FAILURE', error: { ...(newServices || newRoutes) } });
-                }
-                else {
+                } else {
                   callBack({ type: 'DONE_COMPLETE', newServices, newRoutes });
                 }
               })
@@ -177,7 +185,7 @@ export const theMachine = createMachine({
             // services: ({ services }, { newServices = [] }) => [...services, ...newServices],
             // routes: ({ routes }, { newRoutes = [] }) => [...routes, ...newRoutes]
             services: ({ services }, { newServices = [] }) => newServices,
-            routes: ({ routes }, { newRoutes = [] }) => newRoutes
+            routes: ({ routes }, { newRoutes = [] }) => newRoutes,
           }),
         },
         FAILURE: {
@@ -230,41 +238,43 @@ export const theMachine = createMachine({
         src: (context, { createdApis, callBackCreation }) => {
           return (callBack, _onEvent) => {
             Services.fetchNewApi()
-              .then((newApi) => createdApis.map((api: any) => {
-                // let authorizedEntities = {
-                //   groups: [],
-                // }
-                // if (api.plugins) {
-                //   authorizedEntities = {
-                //     ...authorizedEntities,
-                //     routes: [api.id]
-                //   }
-                // }
-                // else {
-                //   authorizedEntities = {
-                //     ...authorizedEntities,
-                //     services: [api.id]
-                //   }
-                // }
+              .then((newApi) =>
+                createdApis.map((api: any) => {
+                  // let authorizedEntities = {
+                  //   groups: [],
+                  // }
+                  // if (api.plugins) {
+                  //   authorizedEntities = {
+                  //     ...authorizedEntities,
+                  //     routes: [api.id]
+                  //   }
+                  // }
+                  // else {
+                  //   authorizedEntities = {
+                  //     ...authorizedEntities,
+                  //     services: [api.id]
+                  //   }
+                  // }
 
-                return {
-                  ...newApi,
-                  _id: nanoid(32),
-                  name: api.name,
-                  team: api.team,
-                  published: true,
+                  return {
+                    ...newApi,
+                    _id: nanoid(32),
+                    name: api.name,
+                    team: api.team,
+                    published: true,
 
-                  // possibleUsagePlans: newApi.possibleUsagePlans.map((pp: any) => ({
-                  //   ...pp,
+                    // possibleUsagePlans: newApi.possibleUsagePlans.map((pp: any) => ({
+                    //   ...pp,
 
-                  //   otoroshiTarget: {
-                  //     otoroshiSettings: context.otoroshi,
-                  //     authorizedEntities,
-                  //     apikeyCustomization,
-                  //   },
-                  // })),
-                }
-              }))
+                    //   otoroshiTarget: {
+                    //     otoroshiSettings: context.otoroshi,
+                    //     authorizedEntities,
+                    //     apikeyCustomization,
+                    //   },
+                    // })),
+                  };
+                })
+              )
               .then(Services.apisInit)
               .then(() => localStorage.removeItem(`daikoku-initialization-${context.tenant}`))
               .then(() => callBackCreation())
@@ -287,7 +297,7 @@ export const theMachine = createMachine({
       invoke: {
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
-          console.debug("hello apikeys")
+          console.debug('hello apikeys');
           return (callBack, _event) =>
             Services.getOtoroshiApiKeys(context.tenant, context.otoroshi)
               .then((newApikeys) => {

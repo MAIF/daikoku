@@ -25,5 +25,5 @@ export interface IStateContext {
 }
 
 export interface IStateError {
-  status: number
+  status: number;
 }

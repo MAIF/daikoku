@@ -4,20 +4,36 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuTenantAction
+}
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.getSchema
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
-import fr.maif.otoroshi.daikoku.utils.{ApiService, DeletionService, Errors, OtoroshiClient, Translator}
+import fr.maif.otoroshi.daikoku.utils.{
+  ApiService,
+  DeletionService,
+  Errors,
+  OtoroshiClient,
+  Translator
+}
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
 import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
 import io.vertx.sqlclient.PoolOptions
-import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, DeletionJob, OtoroshiVerifierJob}
+import jobs.{
+  ApiKeyStatsJob,
+  AuditTrailPurgeJob,
+  DeletionJob,
+  OtoroshiVerifierJob
+}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}

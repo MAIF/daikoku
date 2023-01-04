@@ -8,7 +8,6 @@ import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './s
 import { permissions, TPermission, TPermissions } from './permissions';
 import { ITeamSimple, IUserSimple, TeamPermission, TeamUser } from '../../../types';
 
-
 export const CanIDoAction = (
   user: IUserSimple,
   action: number,
@@ -24,10 +23,7 @@ export const CanIDoAction = (
   // else if (what === api && !apiCreationPermitted)
   //   return false
   else {
-
-    Option(isTenantAdmin)
-      .map(x => x)
-
+    Option(isTenantAdmin).map((x) => x);
 
     const realPerm: number = Option(team)
       .map((t: ITeamSimple) => t.users)
@@ -50,15 +46,8 @@ export const CanIDoAction = (
   }
 };
 
-export const CanIDoActionForOneOfTeams = (
-  user: any,
-  action: any,
-  what: any,
-  teams: any
-) => {
-  return teams.some((team: any) =>
-    CanIDoAction(user, action, what, team, false)
-  );
+export const CanIDoActionForOneOfTeams = (user: any, action: any, what: any, teams: any) => {
+  return teams.some((team: any) => CanIDoAction(user, action, what, team, false));
 };
 
 const CanComponent = ({
@@ -92,15 +81,7 @@ const CanComponent = ({
 }) => {
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams)
-    : CanIDoAction(
-        connectedUser,
-        I,
-        a,
-        team,
-        isTenantAdmin,
-        whichOne,
-        tenant
-      );
+    : CanIDoAction(connectedUser, I, a, team, isTenantAdmin, whichOne, tenant);
   if (!authorized) {
     if (dispatchError) {
       setError({ error: { status: 401, message: 'unauthorized', from: 'CAN component' } });

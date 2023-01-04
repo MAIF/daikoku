@@ -174,7 +174,7 @@ export interface ITenantFull extends ITenant {
   translation: any;
 }
 
-export type TranslationItem = string | { s: string, p: string }
+export type TranslationItem = string | { s: string; p: string };
 export interface ITranslation {
   _id: string;
   _tenant: string;
@@ -189,71 +189,71 @@ export type IMailingTranslation = [
   key: string,
   translations: Array<ITranslation>,
   defaultValue: string
-]
+];
 
 export interface IAsset {
-  label: string,
-  value: string,
-  filename: string,
-  title: string,
-  desc: string,
-  contentType: string,
-  meta: { [key: string]: string },
-  link: string
+  label: string;
+  value: string;
+  filename: string;
+  title: string;
+  desc: string;
+  contentType: string;
+  meta: { [key: string]: string };
+  link: string;
 }
 
 export interface ITenantAdministration {
-  team: ITeamSimple,
-  admins: Array<IUser>
+  team: ITeamSimple;
+  admins: Array<IUser>;
 }
 
 export interface IAuditTrail {
-  size: number,
-  events: Array<IAuditTrailEvent>
+  size: number;
+  events: Array<IAuditTrailEvent>;
 }
 
 enum AuditEventType {
-  AuditTrailEvent = "AuditTrailEvent",
-  AlertEvent = "AlertEvent",
-  JobEvent = "JobEvent",
-  ApiKeyRotationEvent = "ApiKeyRotationEvent"
+  AuditTrailEvent = 'AuditTrailEvent',
+  AlertEvent = 'AlertEvent',
+  JobEvent = 'JobEvent',
+  ApiKeyRotationEvent = 'ApiKeyRotationEvent',
 }
 export interface IAuditTrailEvent {
-  _id: string,
-  '@type': AuditEventType,
-  "@id": string,
-  "@timestamp": number | { '$long': number },
-  "@tenantId": string,
-  "@userId": string,
-  message: string,
-  url: string,
-  verb: string,
-  user: IUserSimple,
+  _id: string;
+  '@type': AuditEventType;
+  '@id': string;
+  '@timestamp': number | { $long: number };
+  '@tenantId': string;
+  '@userId': string;
+  message: string;
+  url: string;
+  verb: string;
+  user: IUserSimple;
   tenant: {
-    id: string,
-    name: string,
-  },
-  authorized: string,
+    id: string;
+    name: string;
+  };
+  authorized: string;
   impersonator?: {
-    id: string,
-    name: string,
-    email: string,
-    isDaikokuAdmin: boolean
-  },
-  details: object
+    id: string;
+    name: string;
+    email: string;
+    isDaikokuAdmin: boolean;
+  };
+  details: object;
 }
 
 export interface ISession {
-  _id: string
-  sessionId: string
-  userId: string
-  userName: string
-  userEmail: string
-  impersonatorId?: string
-  impersonatorName?: string
-  impersonatorEmail?: string
-  impersonatorSessionId?: string
-  created: number
-  expires: number
-  ttl: number
+  _id: string;
+  sessionId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  impersonatorId?: string;
+  impersonatorName?: string;
+  impersonatorEmail?: string;
+  impersonatorSessionId?: string;
+  created: number;
+  expires: number;
+  ttl: number;
 }
