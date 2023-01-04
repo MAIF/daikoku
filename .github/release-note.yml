@@ -7,5 +7,6 @@ changelog:
     emoji: ":bug:"
     labels: ["fix", "bug"]
 
-  exclude:
+  issues:
+    exclude:
       labels: ["wontfix", "question", "duplicate", "can't reproduce"]
