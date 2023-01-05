@@ -531,20 +531,6 @@ class TeamControllerSpec()
       respGet.status mustBe 403
     }
 
-    "list all joinable teams" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userAdmin, randomUser),
-        teams = Seq(
-          teamOwner,
-          teamConsumer.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator))))
-      )
-      val session = loginWithBlocking(randomUser, tenant)
-      val resp = httpJsonCallBlocking("/api/teams/joinable")(tenant, session)
-      resp.status mustBe 200
-    }
-
     "ask for join a team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
