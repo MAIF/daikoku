@@ -131,12 +131,12 @@ object CommonServices {
               .map(api => api
                 .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))
               .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
-                val authorizations = teams
+                val authorizations = myTeams
                   .filter(t => t.`type` != TeamType.Admin)
                   .foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
                     acc :+ AuthorizationApi(
                       team = team.id.value,
-                      authorized = (api.authorizedTeams.contains(team.id) || api.team == team.id),
+                      authorized = api.authorizedTeams.contains(team.id) || api.team == team.id,
                       pending = myCurrentRequests.exists(notif =>
                         notif.action.asInstanceOf[ApiAccess].team == team.id && notif.action.asInstanceOf[ApiAccess].api == api.id)
                     )
@@ -151,7 +151,7 @@ object CommonServices {
             val apis: Seq[ApiWithAuthorizations] = (if (user.isDaikokuAdmin)
                   adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) => acc :+ ApiWithAuthorizations(
                     api = api,
-                    authorizations = teams.foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
+                    authorizations = myTeams.foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
                       acc :+ AuthorizationApi(
                         team = team.id.value,
                         authorized = user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id),

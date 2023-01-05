@@ -15,14 +15,14 @@ export const TeamHome = () => {
   const params = useParams();
 
   const dispatch = useDispatch();
-  const {connectedUser, tenant} = useSelector<IState, IStateContext>(s => s.context);
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context);
 
   const { client } = useContext(getApolloContext());
 
   const queryClient = useQueryClient();
 
   const queryTeam = useQuery(['team'], () => Services.team(params.teamId!));
-  const queryMyTeams = useQuery(['my-team'], () => client!.query({
+  const queryMyTeams = useQuery(['my-team'], () => client!.query<{myTeams: Array<ITeamSimple>}>({
     query: Services.graphql.myTeams,
   }));
   const queryTeams = useQuery(['teams'], () => Services.teams());
@@ -107,6 +107,7 @@ export const TeamHome = () => {
 
   const redirectToApiPage = (api: IApiWithAuthorization) => {
     if (queryTeams.data && !isError(queryTeams.data)) {
+      console.debug({auth: api})
       if (api.visibility === 'Public' || api.authorizations.some(a => a.authorized)) {
         const apiOwner = queryTeams.data.find((t) => t._id === api.team._id);
 
@@ -130,13 +131,13 @@ export const TeamHome = () => {
   };
 
   if (queryApis.isLoading || queryMyTeams.isLoading || queryTeam.isLoading || queryTeams.isLoading) {
-    return <Spinner /> ;
+    return <Spinner />;
   } else if (queryApis.data && queryMyTeams.data && queryTeam.data && queryTeams.data) {
     if (isError(queryTeam.data) || isError(queryTeams.data)) {
       return <></> //FIXME
     }
 
-    const team =queryTeam.data
+    const team = queryTeam.data
     document.title = `${tenant.title} - ${team.name}`;
 
     return (
@@ -164,9 +165,21 @@ export const TeamHome = () => {
           </div>
         </section>
         <ApiList
-          apis={queryApis.data.data}
+          apis={queryApis.data.data.visibleApis.map(({
+            api,
+            authorizations
+          }) => ({ ...api, authorizations }))}
           teams={queryTeams.data}
-          myTeams={queryMyTeams.data.data}
+          myTeams={queryMyTeams.data.data.myTeams.map(({
+            users,
+            ...data
+          }: any) => ({
+            ...data,
+            users: users.map(({
+              teamPermission,
+              user
+            }: any) => ({ ...user, teamPermission })),
+          }))}
           teamVisible={false}
           askForApiAccess={askForApiAccess}
           toggleStar={toggleStar}
