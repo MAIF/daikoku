@@ -1,16 +1,14 @@
-import React, { Component, useContext, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { getApolloContext } from '@apollo/client';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useContext } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 
-import * as Services from '../../../services';
-import { ApiList } from './ApiList';
-import { connect } from 'react-redux';
-import { Can, read, Spinner, team as TEAM } from '../../utils';
 import { updateUser } from '../../../core';
-import { setError, updateTeamPromise } from '../../../core';
+import * as Services from '../../../services';
 import { IApiWithAuthorization, isError, IState, IStateContext, ITeamSimple } from '../../../types';
-import { useSelector, useDispatch } from 'react-redux';
+import { Can, read, Spinner, team as TEAM } from '../../utils';
+import { ApiList } from './ApiList';
 
 export const TeamHome = () => {
   const navigate = useNavigate();
@@ -97,12 +95,12 @@ export const TeamHome = () => {
           const alreadyStarred = connectedUser.starredApis.includes(api._id);
           queryClient.invalidateQueries(['apis'])
 
-          updateUser({
+          dispatch(updateUser({
             ...connectedUser,
             starredApis: alreadyStarred
               ? connectedUser.starredApis.filter((id) => id !== api._id)
               : [...connectedUser.starredApis, api._id],
-          })(dispatch);
+          }));
         }
       });
   };

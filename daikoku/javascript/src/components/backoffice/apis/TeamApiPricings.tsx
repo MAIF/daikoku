@@ -1,29 +1,22 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { constraints, format, type } from '@maif/react-forms';
+import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
-import { constraints, type, format, Informations } from '@maif/react-forms';
+import { useContext, useEffect, useState } from 'react';
+import { toastr } from 'react-redux-toastr';
+import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import { toastr } from 'react-redux-toastr';
-import cloneDeep from 'lodash/cloneDeep';
 
-import { I18nContext, openApiSelectModal } from '../../../core';
-import {
-  formatCurrency,
-  getCurrencySymbol,
-  newPossibleUsagePlan,
-  formatPlanType,
-  MultiStepForm,
-  Option,
-  IMultistepsformStep,
-} from '../../utils';
-import { currencies } from '../../../services/currencies';
-import * as Services from '../../../services';
-import { useDispatch } from 'react-redux';
-import { IApi, IUsagePlan } from '../../../types/api';
-import { ITenant, ITenantFull } from '../../../types/tenant';
-import { ITeamSimple } from '../../../types';
 import { ModalContext } from '../../../contexts';
+import { I18nContext } from '../../../core';
+import * as Services from '../../../services';
+import { currencies } from '../../../services/currencies';
+import { ITeamSimple } from '../../../types';
+import { IApi, IUsagePlan } from '../../../types/api';
+import { ITenant } from '../../../types/tenant';
+import {
+  formatCurrency, formatPlanType, getCurrencySymbol, IMultistepsformStep, MultiStepForm, newPossibleUsagePlan, Option
+} from '../../utils';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -461,9 +454,9 @@ export const TeamApiPricings = (props: Props) => {
   const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
-  const { translate } = useContext(I18nContext);
 
-  const dispatch = useDispatch();
+  const { translate } = useContext(I18nContext);
+  const { openApiSelectModal, confirm } = useContext(ModalContext);
 
   useEffect(() => {
     return () => {
@@ -643,7 +636,7 @@ export const TeamApiPricings = (props: Props) => {
   };
 
   const importPlan = () => {
-    dispatch(openApiSelectModal({
+    openApiSelectModal({
       api: props.value,
       teamId: props.team._id,
       onClose: (plan: any) => {
@@ -656,7 +649,7 @@ export const TeamApiPricings = (props: Props) => {
         setMode(possibleMode.creation);
         setCreation(true);
       },
-    }));
+    });
   };
 
   const cancelEdition = () => {
@@ -1053,9 +1046,8 @@ export const TeamApiPricings = (props: Props) => {
           help: translate('aggregation_apikeys.security.help'),
           onChange: ({ value, setValue }: any) => {
             if (value)
-              window
-                .confirm(translate('aggregation.api_key.security.notification')) //@ts-ignore //FIXME when type & monkey patch compatibility will be ok
-                .then((ok: any) => {
+              confirm({message: translate('aggregation.api_key.security.notification')})
+                .then((ok) => {
                   if (ok) {
                     setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
                     setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false);
@@ -1063,7 +1055,7 @@ export const TeamApiPricings = (props: Props) => {
                 });
           },
         },
-        allowMutlipleApiKeys: {
+        allowMultipleKeys: {
           type: type.bool,
           label: translate('Allow multiple apiKey demands'),
         },
@@ -1103,7 +1095,7 @@ export const TeamApiPricings = (props: Props) => {
       flow: [
         {
           label: translate('Security'),
-          flow: ['autoRotation', 'allowMutlipleApiKeys', 'aggregationApiKeysSecurity'],
+          flow: ['autoRotation', 'allowMultipleKeys', 'aggregationApiKeysSecurity'],
           inline: true,
         },
         'subscriptionProcess',

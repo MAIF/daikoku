@@ -149,7 +149,6 @@ export interface ITenant {
   subscriptionSecurity: boolean;
   aggregationApiKeysSecurity: boolean;
   apiReferenceHideForGuest: boolean;
-  hideTeamsPage: boolean;
   authProvider: AuthProvider;
   defaultMessage?: string;
   homePageVisible: boolean;

@@ -1,14 +1,13 @@
 import { constraints, Form, format, FormRef, type } from '@maif/react-forms';
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
-import { closeModal, I18nContext } from '../../../core';
-import * as Services from '../../../services';
-import { IApi, IUsagePlan } from '../../../types';
-import { SubscriptionMetadataModalProps } from '../../../types/modal';
-import { formatPlanType, Option, Spinner } from '../../utils';
+import { formatPlanType, Option, Spinner } from '../../components/utils';
+import { I18nContext } from '../../core';
+import * as Services from '../../services';
+import { IApi, IUsagePlan } from '../../types';
+import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';
 
 export type OverwriteSubscriptionData = {
   metadata: { [key: string]: string },
@@ -29,7 +28,7 @@ export type CustomSubscriptionData = {
   customReadOnly: boolean
 }
 
-export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps) => {
+export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps & IBaseModalProps) => {
   const [loading, setLoading] = useState(true);
   const [api, setApi] = useState<IApi>();
   const [plan, setPlan] = useState<IUsagePlan>();
@@ -37,18 +36,11 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
 
   const { translate, Translation } = useContext(I18nContext);
 
-  const dispatch = useDispatch();
-
   const formRef = useRef<FormRef>()
 
   useEffect(() => {
     if (api) {
       setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    if (api) {
       setPlan(api.possibleUsagePlans.find((pp) => pp._id === props.plan));
     }
   }, [api]);
@@ -94,7 +86,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
           .getOrNull()
       })
     }
-  }, [plan]);
+  }, [plan, props.config]);
 
   useEffect(() => {
     if (!!props.api && typeof props.api === 'object') {
@@ -103,7 +95,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       Services.getVisibleApiWithId(props.api).then((api) => {
         if (api.error) {
           toastr.error(translate('Error'), api.error);
-          dispatch(closeModal());
+          props.close();
         }
         else {
           setApi(api);
@@ -127,9 +119,9 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
 
     const res = props.save(subProps)
     if (res instanceof Promise) {
-      res.then(() => dispatch(closeModal()));
-    } else {
-      dispatch(closeModal());
+      res.then(() => !props.noClose && props.close());
+    } else if(!props.noClose) {
+      props.close();
     }
   };
 
@@ -138,8 +130,8 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       type: type.object,
       format: format.form,
       visible: !!plan,
-      label: translate({ key: 'mandatory.metadata.label', replacements: [plan!.otoroshiTarget!.apikeyCustomization.customMetadata.length.toString()] }),
-      schema: sortBy(plan!.otoroshiTarget?.apikeyCustomization.customMetadata, ['key'])
+      label: translate({ key: 'mandatory.metadata.label', replacements: [plan?.otoroshiTarget?.apikeyCustomization.customMetadata.length.toString() || ''] }),
+      schema: sortBy(plan?.otoroshiTarget?.apikeyCustomization.customMetadata, ['key'])
         .map((meta: { key: string, possibleValues: Array<string> }) => {
           return {
             key: meta.key,
@@ -206,10 +198,10 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
           Subscription metadata - {api.name}
         </Translation>
       </h5>)}
-      <button type="button" className="btn-close" aria-label="Close" onClick={() => dispatch(closeModal())} />
+      <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
     </div>
     <div className="modal-body">
-      {loading || !plan && <Spinner />}
+      {loading && <Spinner />}
       {!loading && plan && (
         <>
           {!props.description && props.creationMode && (<div className="modal-description">
@@ -232,18 +224,18 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
           </div>)}
           {props.description && <div className="modal-description">{props.description}</div>}
 
-          <Form
+        </>
+      )}
+      {!loading && <Form
             schema={schema()}
             onSubmit={actionAndClose}
             ref={formRef}
             value={value}
             footer={() => <></>}
-          />
-        </>
-      )}
+          />}
 
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => dispatch(closeModal())}>
+        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
           <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
         <button

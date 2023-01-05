@@ -6,15 +6,14 @@ import { nanoid } from 'nanoid';
 import { constraints, Form, format, type } from '@maif/react-forms';
 import { createColumnHelper } from '@tanstack/react-table';
 
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend/modals/AssetsChooserModal';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { Can, manage, Spinner, tenant as TENANT, Option } from '../../utils';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
-import { useTenantBackOffice } from '../../../contexts';
+import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { BeautifulTitle } from '../../utils/BeautifulTitle';
 import { useDispatch } from 'react-redux';
-import { openFormModal } from '../../../core';
 import { Table, TableRef } from '../../inputs';
 import { IMailingTranslation, isError, ITenantFull } from '../../../types';
 import { useQueries, useQuery } from '@tanstack/react-query';
@@ -169,6 +168,7 @@ export const MailingInternalization = () => {
   const dispatch = useDispatch();
 
   const { translate, Translation } = useContext(I18nContext);
+  const { openFormModal } = useContext(ModalContext);
 
   const saveTranslation = (translation: any) => {
     Services.saveTranslation(translation)
@@ -232,7 +232,7 @@ export const MailingInternalization = () => {
       enableSorting: false,
       enableColumnFilter: false,
       cell: (info) => {
-        
+
         const requiredVariables = getRequiredVariables(info.row.original[2]);
         return (
           <div className='d-flex flex-row flex-wrap justify-content-around'>
@@ -240,7 +240,7 @@ export const MailingInternalization = () => {
               return (
                 <button type='button' key={value.language}
                   className='btn btn-outline-success'
-                  onClick={() => dispatch(openFormModal({
+                  onClick={() => openFormModal({
                     title: `${translate('Translation')} : [${value.language}]`,
                     schema: {
                       value: {
@@ -258,7 +258,7 @@ export const MailingInternalization = () => {
                     value,
                     actionLabel: translate('Translate'),
                     onSubmit: saveTranslation
-                  }))}>
+                  })}>
                   {value.language}
                 </button>
               )

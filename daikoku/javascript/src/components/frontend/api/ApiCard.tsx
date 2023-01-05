@@ -48,13 +48,13 @@ export const ApiCard = (props: {
           title="Api access"
           description={translate({ key: 'api.access.request', replacements: [api.name] })}
           pendingTeams={api.authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
-          authorizedTeams={api.authorizations
+          acceptedTeams={api.authorizations
             .filter((auth) => auth.authorized)
             .map((auth) => auth.team)}
           teams={props.myTeams?.filter((t: any) => t.type !== 'Admin')}
           action={(teams) => props.askForApiAccess(teams)}
           actionLabel={translate("Ask access to API")}
-          withAllTeamSelector={true}
+          allTeamSelector={true}
         >
           {isPending ? (
             <button className="btn btn-sm btn-access-negative me-1">

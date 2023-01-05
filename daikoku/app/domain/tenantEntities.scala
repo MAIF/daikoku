@@ -240,7 +240,6 @@ case class Tenant(
     creationSecurity: Option[Boolean] = None,
     subscriptionSecurity: Option[Boolean] = None,
     apiReferenceHideForGuest: Option[Boolean] = Some(true),
-    hideTeamsPage: Option[Boolean] = None,
     defaultMessage: Option[String] = None,
     tenantMode: Option[TenantMode] = None,
     aggregationApiKeysSecurity: Option[Boolean] = None,
@@ -294,10 +293,6 @@ case class Tenant(
       "apiReferenceHideForGuest" -> apiReferenceHideForGuest
         .map(JsBoolean)
         .getOrElse(JsBoolean(true))
-        .as[JsValue],
-      "hideTeamsPage" -> hideTeamsPage
-        .map(JsBoolean)
-        .getOrElse(JsBoolean(false))
         .as[JsValue],
       "defaultMessage" -> defaultMessage
         .map(JsString.apply)

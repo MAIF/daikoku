@@ -1,12 +1,12 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
+import { useNavigate } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
-import { ITeamSimple } from '../../../types';
+import { I18nContext } from '../../core';
+import * as Services from '../../services';
+import { IBaseModalProps } from './types';
 
-export const JoinTeamInvitationModal = (props: any) => {
+export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
   const [error, setError] = useState<string>();
   const [team, setTeam] = useState<string>();
   const [notificationId, setNotificationId] = useState('');
@@ -48,7 +48,7 @@ export const JoinTeamInvitationModal = (props: any) => {
   }
 
   function goToHome() {
-    props.closeModal();
+    props.close();
     navigate('/apis');
   }
 
@@ -72,7 +72,7 @@ export const JoinTeamInvitationModal = (props: any) => {
             className="btn btn-info btn-block btn-lg"
             type="button"
             onClick={() => {
-              props.closeModal();
+              props.close();
               navigate('/apis');
             }}
           >

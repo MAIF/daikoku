@@ -4,7 +4,7 @@ import { toastr } from 'react-redux-toastr';
 import { nanoid } from 'nanoid';
 import { type, format, constraints } from '@maif/react-forms';
 
-import { I18nContext, openFormModal } from '../../../core';
+import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { ITranslation } from '../../../types/tenant';
@@ -24,6 +24,7 @@ export function EditFrontOfficeTranslations(props: any) {
     translations: globalTranslations,
     translate,
   } = useContext(I18nContext);
+  const { openFormModal } = useContext(ModalContext);
 
   useEffect(() => {
     loadTranslations();
@@ -91,7 +92,7 @@ export function EditFrontOfficeTranslations(props: any) {
               return (
                 <button type='button' key={translation.language}
                   className='btn btn-outline-success me-2'
-                  onClick={() => dispatch(openFormModal({
+                  onClick={() => openFormModal({
                     title: `${translate('Translation')} : [${translation.language}]`,
                     schema: {
                       value: {
@@ -116,7 +117,7 @@ export function EditFrontOfficeTranslations(props: any) {
                           })
                       }
                     }
-                  }))}>
+                  })}>
                   {translation.language}
                 </button>
               );

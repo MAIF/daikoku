@@ -382,7 +382,7 @@ export const MyProfile = () => {
   const save = (data: any) => {
     Services.updateUserById(data).then((user) => {
       setUser(user);
-      updateUser(user)(dispatch);
+      dispatch(updateUser(user));
 
       if (language !== user.defaultLanguage) setLanguage(user.defaultLanguage);
 
@@ -411,7 +411,7 @@ export const MyProfile = () => {
         toastr.error(translate('Error'), translate(user.error));
       } else {
         setUser(user);
-        updateUser(user)(dispatch);
+        dispatch(updateUser(user));
 
         toastr.success(
           translate('Success'),

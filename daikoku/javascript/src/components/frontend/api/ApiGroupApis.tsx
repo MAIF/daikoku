@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import { updateTeamPromise } from '../../../core';
+import { updateTeam } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { isError, IState, IStateContext, ITeamSimple } from '../../../types';
@@ -31,7 +31,7 @@ export const ApiGroupApis = ({
     setLoading(true);
     Promise.all([
       Services.teams(),
-      client.query<{myTeams: Array<ITeamSimple>}>({
+      client.query<{ myTeams: Array<ITeamSimple> }>({
         query: Services.graphql.myTeams,
       }),
     ]).then(([t, { data }]) => {
@@ -66,12 +66,13 @@ export const ApiGroupApis = ({
     const adminTeam: any = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === (team as any)._id);
 
     if (CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
-      updateTeamPromise(adminTeam)(dispatch).then(() => {
-        const url = api.apis
-          ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-          : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
-        navigate(url);
-      });
+      Promise.resolve(dispatch(updateTeam(adminTeam)))
+        .then(() => {
+          const url = api.apis
+            ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+            : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+          navigate(url);
+        });
     }
   };
 

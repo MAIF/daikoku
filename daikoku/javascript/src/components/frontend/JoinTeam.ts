@@ -1,23 +1,12 @@
-import { useEffect } from 'react';
-import { connect } from 'react-redux';
-import { openJoinTeamModal } from '../../core';
+import { useContext, useEffect } from 'react';
+import { ModalContext } from '../../contexts';
 
-const JoinTeamComponent = (props: any) => {
+export const JoinTeam = () => {
+  const { openJoinTeamModal } = useContext(ModalContext);
+
   useEffect(() => {
-    props.openJoinTeamModal({
-      currentLanguage: props.currentLanguage,
-    });
+    openJoinTeamModal();
   }, []);
 
   return null;
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context,
-});
-
-const mapDispatchToProps = {
-  openJoinTeamModal: (modalProps: any) => openJoinTeamModal(modalProps),
-};
-
-export const JoinTeam = connect(mapStateToProps, mapDispatchToProps)(JoinTeamComponent);

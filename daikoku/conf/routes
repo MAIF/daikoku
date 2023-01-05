@@ -178,7 +178,6 @@ GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys       fr.maif.otoroshi.dai
 GET     /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.teams()
 POST    /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.createTeam()
 GET     /api/teams/admin                                fr.maif.otoroshi.daikoku.ctrls.TeamController.tenantAdminTeam()
-GET     /api/teams/joinable                             fr.maif.otoroshi.daikoku.ctrls.TeamController.allJoinableTeams()
 GET     /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.team(teamId)
 PUT     /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.updateTeam(teamId)
 DELETE  /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.deleteTeam(teamId)

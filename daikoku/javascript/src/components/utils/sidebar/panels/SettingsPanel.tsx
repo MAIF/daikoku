@@ -66,7 +66,7 @@ export const SettingsPanel = ({ }) => {
 
     toggleApi().then((maybeTenant) => {
       if (maybeTenant._id) {
-        updateTenant(maybeTenant)(dispatch);
+        dispatch(updateTenant(maybeTenant));
       }
     });
   };

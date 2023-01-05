@@ -38,7 +38,7 @@ export const SideBar = () => {
     Promise.all([Services.myUnreadNotificationsCount(), Services.teams()])
       .then(
         ([notifCount, teams]) => {
-          updateNotifications(notifCount.count)(dispatch);
+          dispatch(updateNotifications(notifCount.count));
           if (!isError(teams)) {
             setTeams(teams);
           }

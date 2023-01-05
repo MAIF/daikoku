@@ -6,7 +6,7 @@ import { getApolloContext } from '@apollo/client';
 import { useSelector, useDispatch } from 'react-redux';
 
 
-import { I18nContext, updateTeamPromise, updateUser } from '../../../core';
+import { I18nContext, updateTeam, updateUser } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { ApiList } from '../../frontend';
@@ -88,12 +88,12 @@ export const MyHome = () => {
           }),
         );
 
-        updateUser({
+        dispatch(updateUser({
           ...connectedUser,
           starredApis: alreadyStarred
             ? connectedUser.starredApis.filter((id: any) => id !== api._id)
             : [...connectedUser.starredApis, api._id],
-        })(dispatch);
+        }));
       }
     });
   };
@@ -123,7 +123,7 @@ export const MyHome = () => {
     const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === team._id);
 
     if (adminTeam && CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
-      updateTeamPromise(adminTeam)(dispatch)
+      Promise.resolve(dispatch(updateTeam(adminTeam)))
         .then(() => {
           const url = api.apis
             ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`

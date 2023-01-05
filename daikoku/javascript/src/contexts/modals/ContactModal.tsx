@@ -1,20 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { connect } from 'react-redux';
+import { useContext, useEffect, useState } from 'react';
 
-import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
-import { IApi, IState, ITeamSimple, ITenant } from '../../../types';
 import { useSelector } from 'react-redux';
+import { I18nContext } from '../../core';
+import * as Services from '../../services';
+import { IState, ITenant } from '../../types';
+import { IBaseModalProps, IContactModalComponentProps } from './types';
 
-type ContactModalComponentProps = {
-  closeModal: () => void;
-  team?: string
-  api?: string
-  email?: string
-  name?: string
-};
-
-export const ContactModal = (props: ContactModalComponentProps) => {
+export const ContactModal = (props: IContactModalComponentProps & IBaseModalProps) => {
   const [email, setEmail] = useState(props.email);
   const [name, setName] = useState(props.name);
   const [honeyName, setHoneyName] = useState('');
@@ -36,7 +28,7 @@ export const ContactModal = (props: ContactModalComponentProps) => {
   const sendEmail = () => {
     if (!honeyName && validity) {
       Services.sendEmails(name!, email!, subject, body, tenant._id, props.team, props.api, language)
-        .then(() => props.closeModal());
+        .then(() => props.close());
     }
   };
 
@@ -45,7 +37,7 @@ export const ContactModal = (props: ContactModalComponentProps) => {
       <h5 className="modal-title">
         <Translation i18nkey="Contact request">Contact request</Translation>
       </h5>
-      <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
+      <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
     </div>
 
     <div className="modal-body">
@@ -87,7 +79,7 @@ export const ContactModal = (props: ContactModalComponentProps) => {
     </div>
 
     <div className="modal-footer">
-      <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
+      <button type="button" className="btn btn-outline-danger" onClick={() => props.close()}>
         <Translation i18nkey="Cancel">Cancel</Translation>
       </button>
 

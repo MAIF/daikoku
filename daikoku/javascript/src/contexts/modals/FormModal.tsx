@@ -1,18 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useContext, useRef } from 'react';
 import { Flow, Form, FormRef, Schema, Option, TBaseObject } from '@maif/react-forms';
-import { useDispatch } from 'react-redux';
 
-import {closeModal} from '../../../core';
-
-export interface IFormModalProps<T> {
-  title: string,
-  value?: T,
-  schema: Schema,
-  flow?: Flow,
-  onSubmit: (x: T) => void,
-  options?: Option,
-  actionLabel: string
-}
+import { I18nContext } from '../../core';
+import { IBaseModalProps, IFormModalProps } from './types';
 
 export const FormModal = <T extends TBaseObject>({
   title,
@@ -21,17 +11,18 @@ export const FormModal = <T extends TBaseObject>({
   flow,
   onSubmit,
   options,
-  actionLabel
-}: IFormModalProps<T>) => {
-  const dispatch = useDispatch();
+  actionLabel,
+  close
+}: IFormModalProps<T> & IBaseModalProps) => {
   const ref = useRef<FormRef>();
 
-  
+  const { translate } = useContext(I18nContext);
+
   return (
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">{title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={() => dispatch(closeModal())} />
+        <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
       </div>
       <div className="modal-body">
         <Form
@@ -41,7 +32,7 @@ export const FormModal = <T extends TBaseObject>({
           value={value}
           onSubmit={(data) => {
             onSubmit(data)
-            dispatch(closeModal())
+            close()
           }}
           options={{
             ...(options || {}),
@@ -52,6 +43,9 @@ export const FormModal = <T extends TBaseObject>({
         />
       </div>
       <div className="modal-footer">
+        <button type="button" className="btn btn-outline-danger" onClick={() => close()}>
+          {translate('Cancel')}
+        </button>
         <button type="button" className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
           {actionLabel}
         </button>

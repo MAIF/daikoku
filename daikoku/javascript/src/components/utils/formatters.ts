@@ -18,7 +18,7 @@ export const getCurrencySymbol = (code: any) => {
 
 export const formatPlanType = (
   plan: IUsagePlan,
-  translate: (x: string | TranslateParams) => string
+  translate: (x: string | TranslateParams) => string,
 ) => {
   switch (plan.type) {
     case 'FreeWithoutQuotas':
@@ -34,6 +34,7 @@ export const formatPlanType = (
     default:
       return '';
   }
+
 };
 
 export const teamPermissions = {

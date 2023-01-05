@@ -1,21 +1,22 @@
 import React, { useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { I18nContext } from '../../../contexts/i18n-context';
+import { ISession } from '../../types';
+import { I18nContext } from '../i18n-context';
+import { ModalContext } from '../modalContext';
 
-export const SessionModal = ({
-  session
-}: any) => {
+export const SessionModal = (props: {session: ISession}) => {
   const { translate } = useContext(I18nContext);
+  const { alert } = useContext(ModalContext);
   const navigate = useNavigate();
 
   useEffect(() => {
     const sessionExpires = translate('session.expire.info');
     const extendMySession = translate('session.extend');
 
-    if (session) {
-      let reloadTimeout: any = null;
+    if (props.session) {
+      let reloadTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
-      const extendSession = (close: any) => {
+      const extendSession = (close: () => void) => {
         return fetch('/api/session/_renew', {
           method: 'POST',
           credentials: 'include',
@@ -33,12 +34,12 @@ export const SessionModal = ({
           });
       };
 
-      const setupTimeouts = (_session: any) => {
+      const setupTimeouts = (_session: ISession) => {
         const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
         const secondPing = _session.expires - Date.now() + 2000;
         setTimeout(() => {
           alert({
-            message: (close: any) => <div style={{ width: '100%' }}>
+            message: (close: () => void) => <div style={{ width: '100%' }}>
               <p>{sessionExpires}</p>
               <div
                 style={{
@@ -62,7 +63,7 @@ export const SessionModal = ({
         }, firstPing);
         reloadTimeout = setTimeout(() => { navigate('/') }, secondPing);
       };
-      setupTimeouts(session);
+      setupTimeouts(props.session);
     }
   }, []);
 

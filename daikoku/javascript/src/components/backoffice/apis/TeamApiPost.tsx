@@ -1,27 +1,28 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { useDispatch } from 'react-redux';
 import { useLocation, useParams } from 'react-router-dom';
 import { constraints, type, format } from "@maif/react-forms";
 import moment from 'moment';
 
-import { Table, DefaultColumnFilter, TableRef } from '../../inputs';
-import { I18nContext, openFormModal } from '../../../core';
+import { Table, TableRef } from '../../inputs';
+import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
-import { IApiPost, isError } from '../../../types';
+import { IApi, IApiPost, isError, ITeamSimple } from '../../../types';
 
-
+type TeamApiPostProps = {
+  team: ITeamSimple,
+  api: IApi
+}
 export function TeamApiPost({
   team,
   api
-}: any) {
+}: TeamApiPostProps) {
   const location = useLocation();
   const params = useParams();
-  const dispatch = useDispatch();
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
   const table = useRef<TableRef>();
 
   const schema = {
@@ -142,13 +143,13 @@ export function TeamApiPost({
           <div>
             <button
               className='btn btn-sm btn-outline-primary me-2'
-              onClick={() => dispatch(openFormModal({
+              onClick={() => openFormModal({
                 title: translate('team_api_post.update'),
                 schema,
                 onSubmit: savePost,
                 value: post,
                 actionLabel: translate('team_api_post.publish')
-              }))}><i className="fas fa-pen" /></button>
+              })}><i className="fas fa-pen" /></button>
             <button
               className="btn btn-sm btn-outline-danger me-1"
               onClick={() => {
@@ -169,12 +170,12 @@ export function TeamApiPost({
         <div className="d-flex align-items-center justify-content-end">
           <button
             className="btn btn-outline-success"
-            onClick={() => dispatch(openFormModal({
+            onClick={() => openFormModal({
               title: translate('team_api_post.new'),
               schema,
               onSubmit: publishPost,
               actionLabel: translate('team_api_post.publish')
-            }))}
+            })}
           >
             {translate('team_api_post.new')}
           </button>

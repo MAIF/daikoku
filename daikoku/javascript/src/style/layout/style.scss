@@ -311,3 +311,8 @@ img:hover+.changePicture,
 a {
   text-decoration: none;
 }
+
+.link__disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}

@@ -138,7 +138,6 @@ object SchemaDefinition {
         Field("creationSecurity", OptionType(BooleanType), resolve = _.value.creationSecurity),
         Field("subscriptionSecurity", OptionType(BooleanType), resolve = _.value.subscriptionSecurity),
         Field("apiReferenceHideForGuest", OptionType(BooleanType), resolve = _.value.apiReferenceHideForGuest),
-        Field("hideTeamsPage", OptionType(BooleanType), resolve = _.value.hideTeamsPage),
         Field("defaultMessage", OptionType(StringType), resolve = _.value.defaultMessage),
         Field("tenantMode", OptionType(StringType), resolve = _.value.tenantMode.map(_.name)),
         Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity)

@@ -1,20 +1,18 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter, BrowserRouter as Router, Route, Routes, useParams } from 'react-router-dom';
 import { Navigate } from 'react-router';
-import { connect, useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
-import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { SideBar, Spinner, Error, Footer } from '../components/utils';
 import * as Services from '../services';
-import { updateTeamPromise, setError } from '../core';
+import { updateTeam, setError } from '../core';
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
 import {
-  TeamChooser,
   TeamHome,
   MyHome,
   MaybeHomePage,
@@ -55,7 +53,7 @@ import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp
 import { MessagesEvents } from '../services/messages';
 import { I18nContext } from '../contexts/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
-import { SessionModal } from '../components/frontend/modals/SessionModal';
+import { SessionModal } from '../contexts/modals/SessionModal';
 import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
 
 type DaikokuAppProps = {
@@ -356,16 +354,6 @@ export const DaikokuApp = ({
                       />
                     )
                   )}
-                  {!tenant.hideTeamsPage && (
-                    <Route
-                      path="/teams"
-                      element={
-                        <FrontOfficeRoute title={`${tenant.title} - ${translate('Teams')}`}>
-                          <TeamChooser />
-                        </FrontOfficeRoute>
-                      }
-                    />
-                  )}
 
                   <Route
                     path="/:teamId/settings*"
@@ -402,7 +390,6 @@ export const DaikokuApp = ({
                 <Error />
               </div>
             </div>
-            <ModalRoot />
             <ReduxToastr
               timeOut={4000}
               newestOnTop={false}
@@ -446,10 +433,10 @@ const TeamBackOfficeRouter = () => {
     Services.oneOfMyTeam(params.teamId)
       .then((team) => {
         if (team.error) {
-          setError(team.error)(dispatch);
+          dispatch(setError(team.error));
         }
         else {
-          updateTeamPromise(team)(dispatch);
+          dispatch(updateTeam(team));
         }
         setLoading(false);
       });

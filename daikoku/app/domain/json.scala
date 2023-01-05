@@ -1682,8 +1682,6 @@ object json {
               .asOpt[Boolean],
             apiReferenceHideForGuest = (json \ "apiReferenceHideForGuest")
               .asOpt[Boolean],
-            hideTeamsPage = (json \ "hideTeamsPage")
-              .asOpt[Boolean],
             defaultMessage = (json \ "defaultMessage")
               .asOpt[String],
             tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat),
@@ -1739,10 +1737,6 @@ object json {
       "apiReferenceHideForGuest" -> o.apiReferenceHideForGuest
         .map(JsBoolean)
         .getOrElse(JsBoolean(true))
-        .as[JsValue],
-      "hideTeamsPage" -> o.hideTeamsPage
-        .map(JsBoolean)
-        .getOrElse(JsBoolean(false))
         .as[JsValue],
       "defaultMessage" -> o.defaultMessage
         .map(JsString.apply)

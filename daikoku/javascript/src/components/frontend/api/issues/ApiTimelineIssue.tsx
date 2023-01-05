@@ -11,7 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
 
 import { api as API, manage } from '../../..';
-import { I18nContext, openFormModal } from '../../../../core';
+import { I18nContext } from '../../../../core';
 import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
 import { Can, getColorByBgColor, randomColor } from '../../../utils';
@@ -75,10 +75,9 @@ export function ApiTimelineIssue({
   const navigate = useNavigate();
   const id = issueId || useParams().issueId;
 
-  const dispatch = useDispatch();
 
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
 
   useEffect(() => {
     Services.getAPIIssue(api._humanReadableId, id)
@@ -180,7 +179,7 @@ export function ApiTimelineIssue({
   }
 
   const handleTagCreation = (name: any) => {
-    dispatch(openFormModal({
+    openFormModal({
       title: translate('issues.create_tag'),
       schema: {
         name: {
@@ -220,7 +219,7 @@ export function ApiTimelineIssue({
       },
       value: { name, color: randomColor() },
       actionLabel: translate('Create')
-    }))
+    })
   }
 
   return (<div className="container">
@@ -440,18 +439,20 @@ function NewComment({
               return (
                 <div className="d-flex mt-3 justify-content-end">
                   <Can I={manage} a={API} team={team}>
-                    {open && (
-                      <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
-                        <i className="fa fa-exclamation-circle me-2" />
-                        {translate('issues.actions.close')}
-                      </button>
-                    )}
-                    {!open && (
-                      <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
-                        <i className="fa fa-exclamation-circle me-2" />
-                        {translate('issues.actions.reopen')}
-                      </button>
-                    )}
+                    <>
+                      {open && (
+                        <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
+                          <i className="fa fa-exclamation-circle me-2" />
+                          {translate('issues.actions.close')}
+                        </button>
+                      )}
+                      {!open && (
+                        <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
+                          <i className="fa fa-exclamation-circle me-2" />
+                          {translate('issues.actions.reopen')}
+                        </button>
+                      )}
+                    </>
                   </Can>
                   <button type="button" className="btn btn-success" onClick={valid}>
                     {translate('issues.actions.comment')}

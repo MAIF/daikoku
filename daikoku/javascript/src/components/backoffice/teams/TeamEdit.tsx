@@ -1,17 +1,15 @@
-import React, { useContext, useEffect } from 'react';
-import { connect } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { Form, type, format, constraints } from '@maif/react-forms';
+import { constraints, Form, format, type } from '@maif/react-forms';
 import md5 from 'js-md5';
+import { useContext, useEffect } from 'react';
+import { toastr } from 'react-redux-toastr';
+import { useNavigate } from 'react-router-dom';
 
+import { useDispatch, useSelector } from 'react-redux';
+import { ModalContext, useTeamBackOffice } from '../../../contexts';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { I18nContext, TranslateParams, updateTeam } from '../../../core';
 import * as Services from '../../../services';
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend'
-import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import { isError, IState, ITeamSimple } from '../../../types';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
 
 
 type AvatarProps = {

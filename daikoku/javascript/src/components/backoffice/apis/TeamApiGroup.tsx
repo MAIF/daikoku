@@ -213,50 +213,52 @@ export const TeamApiGroup = () => {
   ];
 
   const { tab } = params;
-  return (<Can I={manage} a={API} team={currentTeam} dispatchError>
-    {!apiGroup && <Spinner />}
-    {apiGroup && (<>
-      <div className="d-flex flex-row justify-content-between align-items-center">
-        {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-          <h2 className="me-2">{apiGroup.name}</h2>
-        </div>)}
-        <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
-          {expertMode && translate('Standard mode')}
-          {!expertMode && translate('Expert mode')}
-        </button>
-      </div>
-      <div className="row">
-        <div className="section col container-api">
-          <div className="mt-2">
-            {params.tab === 'infos' && (<div>
-              <Form
-                schema={schema}
-                flow={flow}
-                onSubmit={save}
-                value={apiGroup} />
-            </div>)}
-            {params.tab === 'plans' && (<div>
-              <TeamApiPricings
-                value={apiGroup}
-                team={currentTeam}
-                tenant={tenant}
-                save={save}
-                creation={creation}
-                expertMode={expertMode}
-                injectSubMenu={(component: any) => methods.addMenu({
-                  blocks: {
-                    links: { links: { plans: { childs: { menu: { component } } } } },
-                  },
-                })}
-                openApiSelectModal={() => alert({ message: 'oops' })} />
-            </div>)}
-            {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
-            {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
-            {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={apiGroup} apiGroup />)}
-            {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
+  return (
+    <Can I={manage} a={API} team={currentTeam} dispatchError>
+      {!apiGroup && <Spinner />}
+      {apiGroup && (<>
+        <div className="d-flex flex-row justify-content-between align-items-center">
+          {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+            <h2 className="me-2">{apiGroup.name}</h2>
+          </div>)}
+          <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+            {expertMode && translate('Standard mode')}
+            {!expertMode && translate('Expert mode')}
+          </button>
+        </div>
+        <div className="row">
+          <div className="section col container-api">
+            <div className="mt-2">
+              {params.tab === 'infos' && (<div>
+                <Form
+                  schema={schema}
+                  flow={flow}
+                  onSubmit={save}
+                  value={apiGroup} />
+              </div>)}
+              {params.tab === 'plans' && (<div>
+                <TeamApiPricings
+                  value={apiGroup}
+                  team={currentTeam}
+                  tenant={tenant}
+                  save={save}
+                  creation={creation}
+                  expertMode={expertMode}
+                  injectSubMenu={(component: any) => methods.addMenu({
+                    blocks: {
+                      links: { links: { plans: { childs: { menu: { component } } } } },
+                    },
+                  })}
+                  openApiSelectModal={() => alert({ message: 'oops' })} />
+              </div>)}
+              {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
+              {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
+              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={apiGroup} apiGroup />)}
+              {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
+            </div>
           </div>
         </div>
-      </div>
-    </>)}
-  </Can>);
+      </>)}
+    </Can>
+  );
 };

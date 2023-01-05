@@ -1,18 +1,19 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
+import { ReactNode } from 'react';
+import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+
 import { Option } from '..';
 import { setError } from '../../../core';
-import { doNothing, read, manage } from './actions';
-import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './subjects';
+import { IState, IStateContext, ITeamSimple, ITenant, IUserSimple, TeamPermission, TeamUser } from '../../../types';
+import { doNothing } from './actions';
 import { permissions, TPermission, TPermissions } from './permissions';
-import { ITeamSimple, IUserSimple, TeamPermission, TeamUser } from '../../../types';
+import { tenant } from './subjects';
 
 export const CanIDoAction = (
   user: IUserSimple,
   action: number,
   what: string,
-  team: ITeamSimple,
+  team?: ITeamSimple,
   isTenantAdmin?: boolean,
   whichOne?: any,
   currentTenant?: any
@@ -34,7 +35,7 @@ export const CanIDoAction = (
       .map((perm: TPermission) =>
         Option(perm.condition).fold(
           () => perm.action,
-          (condition: (t: ITeamSimple) => boolean) => (condition(team) ? perm.action : doNothing)
+          (condition: (t?: ITeamSimple) => boolean) => (condition(team) ? perm.action : doNothing)
         )
       )
       .fold(
@@ -50,53 +51,37 @@ export const CanIDoActionForOneOfTeams = (user: any, action: any, what: any, tea
   return teams.some((team: any) => CanIDoAction(user, action, what, team, false));
 };
 
-const CanComponent = ({
+export const Can = ({
   I,
   a,
   team,
   teams,
-  connectedUser,
   dispatchError,
   children,
-  setError,
-  orElse = null,
-  isTenantAdmin,
-  tenant,
-  whichOne = tenant,
-  apiCreationPermitted,
+  orElse = <></>,
+  whichOne,
 }: {
-  I: any;
-  a: any;
-  team?: any;
-  teams?: any;
-  connectedUser?: any;
-  dispatchError?: any;
-  children: any;
-  setError?: any;
-  orElse?: any;
-  isTenantAdmin?: any;
-  tenant?: any;
-  whichOne?: any;
-  apiCreationPermitted?: any;
-}) => {
+  I: number;
+  a: string;
+  team?: ITeamSimple;
+  teams?: Array<ITeamSimple>;
+  dispatchError?: boolean;
+  children: ReactNode;
+  orElse?: JSX.Element;
+  whichOne?: ITenant;
+}): JSX.Element => {
+  const dispatch = useDispatch();
+  const {connectedUser, isTenantAdmin, tenant} = useSelector<IState, IStateContext>(s => s.context)
+
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams)
-    : CanIDoAction(connectedUser, I, a, team, isTenantAdmin, whichOne, tenant);
+    : CanIDoAction(connectedUser, I, a, team, isTenantAdmin, whichOne || tenant, tenant);
   if (!authorized) {
     if (dispatchError) {
-      setError({ error: { status: 401, message: 'unauthorized', from: 'CAN component' } });
+      dispatch(setError({ error: { status: 401, message: 'unauthorized', from: 'CAN component' } }));
     }
     return orElse;
   }
 
-  return children;
+  return <>{children}</>;
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context,
-});
-const mapDispatchToProps = {
-  setError: (error: any) => setError(error),
-};
-
-export const Can = connect(mapStateToProps, mapDispatchToProps)(CanComponent);

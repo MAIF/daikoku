@@ -3,6 +3,7 @@ import {
   IAsset,
   IAuditTrail,
   IMailingTranslation,
+  INotification,
   IOtoroshiSettings,
   IQuotas,
   ISafeSubscription,
@@ -25,6 +26,8 @@ import {
   ISubscription,
   ResponseDone,
   IApiPost,
+  IApiDoc,
+  ISubscriptionWithApiInfo,
 } from '../types/api';
 
 const HEADERS = {
@@ -48,7 +51,6 @@ export const getVisibleApiGroup = (id: any) => customFetch(`/api/me/visible-grou
 export const getTeamVisibleApi = (teamId: any, apiId: any, version: any) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = (): Promise<Array<ITeamSimple>> => customFetch('/api/me/teams');
-export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 
 export const teamAllNotifications = (teamId: any, page = 0) =>
   customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`);
@@ -97,7 +99,7 @@ export const getDocDetails = (api: string, version: string): Promise<IDocDetail>
 export const getTeamSubscriptions = (api: any, team: any, version: any) =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
 
-export const getMySubscriptions = (apiId: any, version: any) =>
+export const getMySubscriptions = (apiId: string, version: string): Promise<{subscriptions: Array<ISubscription>, requests: Array<INotification>}> =>
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
 export const askForApiKey = (
@@ -993,7 +995,7 @@ export const extendApiKey = (
     body: JSON.stringify({ plan, teams, motivation }),
   });
 
-export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscription>> =>
+export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscriptionWithApiInfo>> =>
   customFetch(`/api/subscriptions/teams/${teamId}`);
 
 export const getAllApiVersions = (teamId: string, apiId: string): Promise<Array<string>> =>
@@ -1006,7 +1008,7 @@ export const getAllApiVersions = (teamId: string, apiId: string): Promise<Array<
 export const getDefaultApiVersion = (apiId: string): Promise<{ defaultVersion: string }> =>
   customFetch(`/api/apis/${apiId}/default_version`);
 
-export const getAllPlanOfApi = (teamId: any, apiId: any, version: any) =>
+export const getAllPlanOfApi = (teamId: string, apiId: string, version: string): Promise<Array<IApi>> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
 
 export const getRootApi = (apiId: any) => customFetch(`/api/apis/${apiId}/_root`);
@@ -1019,7 +1021,7 @@ export const importApiPages = (teamId: any, apiId: any, pages: any, version: any
     }),
   });
 
-export const getAllApiDocumentation = (teamId: any, apiId: any, version: any) =>
+export const getAllApiDocumentation = (teamId: string, apiId: string, version: string): Promise<any> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`);
 
 export const getMyTeamsStatusAccess = (teamId: any, apiId: any, version: any) =>

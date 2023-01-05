@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import {
@@ -12,16 +11,16 @@ import {
   formatDate,
 } from '../../utils';
 import * as Services from '../../../services';
-import { Table, BooleanColumnFilter, SwitchButton, TableRef } from '../../inputs';
-import { I18nContext, openFormModal, openSubMetadataModal } from '../../../core';
+import { Table, SwitchButton, TableRef } from '../../inputs';
+import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { Form, format, type } from "@maif/react-forms";
-import { IApi, ISafeSubscription, isError, IState, ISubscription, ITeamSimple, IUsagePlan } from "../../../types";
+import { IApi, ISafeSubscription, isError, IState, ITeamSimple, IUsagePlan } from "../../../types";
 import { string } from "prop-types";
 import { ModalContext } from '../../../contexts';
-import { CustomSubscriptionData } from '../../frontend';
 import { createColumnHelper, sortingFns } from '@tanstack/react-table';
+import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -40,7 +39,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const tableRef = useRef<TableRef>()
 
   const { translate, language, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal, openSubMetadataModal, } = useContext(ModalContext);
 
   useEffect(() => {
     Services.teams()
@@ -150,7 +149,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     }),
   ]
 
-  const updateMeta = (sub: ISafeSubscription) => dispatch(openSubMetadataModal({
+  const updateMeta = (sub: ISafeSubscription) => openSubMetadataModal({
     save: (updates: CustomSubscriptionData) => {
       Services.updateSubscription(currentTeam, { ...sub, ...updates })
         .then(() => tableRef.current?.update());
@@ -160,7 +159,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     team: teams.find((t) => t._id === sub.team),
     subscription: sub,
     creationMode: false
-  }));
+  });
 
   const regenerateSecret = (sub: any) => {
     confirm({ message: translate('secret.refresh.confirm') })
@@ -186,7 +185,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       {!loading && (
         <div className="row">
           <div className='d-flex flex-row justify-content-start align-items-center'>
-            <button className='btn btn-sm btn-outline-primary' onClick={() => dispatch(openFormModal({
+            <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
               actionLabel: "filter",
               onSubmit: data => {
                 setFilters(data)
@@ -219,7 +218,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
               },
               title: translate("Filter data"),
               value: filters
-            }))}> {translate('Filter')} </button>
+            })}> {translate('Filter')} </button>
             {!!filters && (
               <div className="clear cursor-pointer ms-1" onClick={() => setFilters(undefined)}>
                 <i className="far fa-times-circle me-1" />

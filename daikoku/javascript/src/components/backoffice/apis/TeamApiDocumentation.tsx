@@ -1,27 +1,19 @@
-import { constraints, Flow, format, Schema, SchemaRenderType, type } from '@maif/react-forms';
-import { nanoid } from 'nanoid';
-import { Children, useContext, useState } from 'react';
+import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { nanoid } from 'nanoid';
+import { useContext } from 'react';
 import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
-import classNames from 'classnames';
-import { DndContext, DragEndEvent, UniqueIdentifier, useDraggable, useDroppable } from '@dnd-kit/core';
-import get from 'lodash/get'
-import set from 'lodash/set'
 
-import { I18nContext, openApiDocumentationSelectModal, openFormModal } from '../../../core';
+import { IFormModalProps, ModalContext } from '../../../contexts';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
+import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { IApi, IAsset, IDocDetail, IDocPage, IDocTitle, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, IStateContext, ITeamSimple } from '../../../types';
-import { AssetChooserByModal, IFormModalProps, MimeTypeFilter } from '../../frontend';
+import { IApi, IAsset, IDocPage, IDocumentationPage, IDocumentationPages, isError, IState, IStateContext, ITeamSimple } from '../../../types';
 import { BeautifulTitle, Spinner } from '../../utils';
-import { removeArrayIndex, moveArrayIndex } from '../../utils/array';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
-import { TreeItem, TreeItems } from '../../utils/dnd/types';
-import { spawn } from 'xstate';
-import { ModalContext } from '../../../contexts';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -75,8 +67,7 @@ type AssetButtonProps = {
 }
 const AssetButton = (props: AssetButtonProps) => {
   const { translate } = useContext(I18nContext);
-
-  const dispatch = useDispatch();
+  const { openFormModal } = useContext(ModalContext)
 
   return (
     <div className="mb-3 row">
@@ -90,14 +81,14 @@ const AssetButton = (props: AssetButtonProps) => {
           teamId={props.team._id}
           label={translate('Set from asset')}
           onSelect={(asset: IAsset) => {
-            dispatch(openFormModal({
+            openFormModal({
               ...props.formModalProps,
               value: {
                 ...props.rawValues,
                 contentType: asset.contentType,
                 remoteContentUrl: asset.link
               }
-            }))
+            })
           }}
           noClose
         />
@@ -121,8 +112,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   const params = useParams();
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
-  const dispatch = useDispatch();
+  const { confirm, openFormModal, openApiDocumentationSelectModal } = useContext(ModalContext);
 
   const { currentTeam, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
@@ -253,14 +243,14 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         if (isError(page)) {
           toastr.error(translate('Error'), page.error);
         } else {
-          dispatch(openFormModal({
+          openFormModal({
             title: translate('doc.page.update.modal.title'),
             flow: flow,
             schema: schema(updatedPage => savePage(updatedPage, page)),
             value: page,
             onSubmit: updatedPage => savePage(updatedPage, page),
             actionLabel: translate('Save')
-          }))
+          })
         }
       });
   }
@@ -322,14 +312,14 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
       remoteContentHeaders: {}
     }
 
-    dispatch(openFormModal({
+    openFormModal({
       title: translate('doc.page.create.modal.title'),
       flow: flow,
       schema: schema(saveNewPage),
       value: newPage,
       onSubmit: saveNewPage,
       actionLabel: translate('Save')
-    }))
+    })
   }
 
   const saveNewPage = (page: IDocPage) => {
@@ -367,7 +357,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   const importPage = () => {
     const api = apiQuery.data as IApi
-    dispatch(openApiDocumentationSelectModal({
+    openApiDocumentationSelectModal({
       api,
       teamId: team._id,
       onClose: () => {
@@ -375,7 +365,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         queryClient.invalidateQueries(['details'])
         queryClient.invalidateQueries(['api'])
       },
-    }));
+    });
   }
 
   if (apiQuery.isLoading) {
@@ -405,7 +395,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                 items={apiQuery.data.documentation.pages}
                 deletePage={deletePage}
                 updatePages={updatePages}
-                confirmRemoveItem={() => (confirm({message: translate('delete.documentation.page.confirm')}))}
+                confirmRemoveItem={() => (confirm({ message: translate('delete.documentation.page.confirm') }))}
                 updateItem={updatePage} />
             </div>
           </div>

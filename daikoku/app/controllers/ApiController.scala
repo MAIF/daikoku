@@ -1492,7 +1492,7 @@ class ApiController(
               )))
         } yield {
           Ok(
-            JsArray((subscriptions ++ subscriptions)
+            JsArray(subscriptions
               .map(sub => {
                 val api = apis.find(a => a.id == sub.api)
                 val planIntegrationProcess = api

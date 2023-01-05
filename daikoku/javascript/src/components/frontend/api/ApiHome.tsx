@@ -1,25 +1,22 @@
-import React, { useState, useEffect, useContext } from 'react';
 import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
-import { connect } from 'react-redux';
+import { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { useParams, useNavigate, useMatch } from 'react-router-dom';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
 
+import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
+import { ModalContext, useApiFrontOffice } from '../../../contexts';
+import { I18nContext, setError, updateUser } from '../../../core';
 import * as Services from '../../../services';
-import { ApiDocumentation, ApiPricing, ApiSwagger, ApiRedoc, ApiPost, ApiIssue } from '.';
 import { converter } from '../../../services/showdown';
-import { Can, manage, apikey, ActionWithTeamSelector, CanIDoAction, Option } from '../../utils';
+import { ActionWithTeamSelector, apikey, Can, CanIDoAction, manage, Option } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
-import { setError, updateUser, I18nContext } from '../../../core';
 import StarsButton from './StarsButton';
-import { LoginOrRegisterModal } from '../modals';
-import { useApiFrontOffice } from '../../../contexts';
 
 import 'highlight.js/styles/monokai.css';
-import { IApi, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
-import { useDispatch } from 'react-redux';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { IApi, INotification, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
 
 (window as any).hljs = hljs;
 
@@ -130,7 +127,7 @@ export const ApiHome = ({
 }: ApiHomeProps) => {
   const [api, setApi] = useState<IApi>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
   const [myTeams, setMyTeams] = useState<Array<any>>([]);
   const [showAccessModal, setAccessModalError] = useState<any>();
@@ -147,6 +144,7 @@ export const ApiHome = ({
     .getOrElse(defaultParams);
 
   const { translate, Translation } = useContext(I18nContext);
+  const { openLoginOrRegisterModal } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const { addMenu } = groupView ? { addMenu: () => { } } : useApiFrontOffice(api, ownerTeam);
@@ -185,7 +183,7 @@ export const ApiHome = ({
               );
             }}
             actionLabel={translate('View your api keys')}
-            withAllTeamSelector={false}
+            allTeamSelector={false}
           >
             <span className="block__entry__link">
               <Translation i18nkey="View your api keys">View your api keys</Translation>
@@ -223,16 +221,19 @@ export const ApiHome = ({
       ]) => {
         if (api.error) {
           if (api.visibility && api.visibility === 'PublicWithAuthorizations') {
-            Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId).then((res) => {
-              if (res.error) setGuestModal(true);
-              else
-                setAccessModalError({
-                  error: api.error,
-                  api: res,
-                });
-            });
+            Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId)
+              .then((res) => {
+                if (res.error) {
+                  setGuestModal(true);
+                } else {
+                  setAccessModalError({
+                    error: api.error,
+                    api: res,
+                  });
+                }
+              });
           } else {
-            setError({ error: { status: api.status || 404, message: api.error } })(dispatch);
+            dispatch(setError({ error: { status: api.status || 404, message: api.error } }));
           }
         } else {
           setApi(api);
@@ -286,6 +287,8 @@ export const ApiHome = ({
         });
       })
         .then(() => updateSubscriptions(api._id));
+    } else {
+      return Promise.reject(false)
     }
   };
 
@@ -298,28 +301,24 @@ export const ApiHome = ({
             api.stars += alreadyStarred ? -1 : 1;
             setApi(api);
 
-            updateUser({
+            dispatch(updateUser({
               ...connectedUser,
               starredApis: alreadyStarred
                 ? connectedUser.starredApis.filter((id: any) => id !== api._id)
                 : [...connectedUser.starredApis, api._id],
-            })(dispatch);
+            }));
           }
         });
     }
   };
 
-  if (showGuestModal)
-    return (
-      <div className="m-3">
-        <LoginOrRegisterModal
-          tenant={tenant}
-          showOnlyMessage={true}
-          asFlatFormat
-          message={translate('guest_user_not_allowed')}
-        />
-      </div>
-    );
+  if (showGuestModal) {
+    openLoginOrRegisterModal({
+      tenant,
+      showOnlyMessage: true,
+      message: translate('guest_user_not_allowed')
+    })
+  }
 
   if (showAccessModal) {
     const teams = showAccessModal.api.myTeams.filter((t: any) => t.type !== 'Admin');
@@ -345,7 +344,7 @@ export const ApiHome = ({
             title="Api access"
             description={translate({ key: 'api.access.request', replacements: [params.apIid] })}
             pendingTeams={pendingTeams}
-            authorizedTeams={authorizedTeams}
+            acceptedTeams={authorizedTeams}
             teams={teams}
             actionLabel={translate('Ask access to API')}
             action={(teams) => {
@@ -375,7 +374,7 @@ export const ApiHome = ({
       <div className="container">
         <div className="row pt-3">
           {params.tab === 'description' && (<ApiDescription api={api} />)}
-          {params.tab === 'pricing' && (<ApiPricing connectedUser={connectedUser} api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} pendingSubscriptions={pendingSubscriptions} updateSubscriptions={updateSubscriptions} tenant={tenant} />)}
+          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} pendingSubscriptions={pendingSubscriptions} />)}
           {params.tab === 'documentation' && <ApiDocumentation api={api} />}
           {params.tab === 'testing' && (<ApiSwagger api={api} teamId={teamId} ownerTeam={ownerTeam} testing={(api as any).testing} tenant={tenant} connectedUser={connectedUser} />)}
           {params.tab === 'swagger' && (<ApiRedoc api={api} teamId={teamId} />)}

@@ -3,12 +3,13 @@ import { useContext, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 
-import { I18nContext } from '../../../core';
-import { closeModal, openAssetSelectorModal } from '../../../core/modal/actions';
-import * as Services from '../../../services';
-import { IAsset, ITeamSimple } from '../../../types';
-import { isError, ResponseError } from '../../../types/api';
-import { BeautifulTitle } from '../../utils';
+import { I18nContext } from '../../core';
+import * as Services from '../../services';
+import { IAsset, ITeamSimple } from '../../types';
+import { isError, ResponseError } from '../../types/api';
+import { BeautifulTitle } from '../../components/utils';
+import { IAssetSelectorModalProps, IBaseModalProps } from './types';
+import { ModalContext } from '../modalContext';
 
 export const MimeTypeFilter = {
   image: (value: string) => value.startsWith('image'),
@@ -17,18 +18,7 @@ export const MimeTypeFilter = {
   font: (value: string) => value.indexOf('font') > -1,
 };
 
-export type AssetSelectorModalProps = {
-  assets: Array<IAsset>,
-  onSelect: (asset: IAsset) => void,
-  onlyPreview: boolean,
-  noClose: boolean
-}
-export const AssetSelectorModal = ({
-  assets,
-  onSelect,
-  onlyPreview,
-  noClose
-}: AssetSelectorModalProps) => {
+export const AssetSelectorModal = (props: IAssetSelectorModalProps & IBaseModalProps) => {
   const [selectedAsset, setSelectedAsset] = useState<IAsset>();
   const [search, setSearch] = useState<string>();
 
@@ -38,14 +28,14 @@ export const AssetSelectorModal = ({
 
   const selectAssetAndCloseModal = () => {
     if (selectedAsset) {
-      onSelect(selectedAsset);
-      if (!noClose) {
-        dispatch(closeModal());
+      props.onSelect(selectedAsset);
+      if (!props.noClose) {
+        props.close();
       }
     }
   };
 
-  const filteredAssets = assets.filter(
+  const filteredAssets = props.assets.filter(
     (asset) => !search || asset.title.toLowerCase().includes(search)
   );
 
@@ -54,18 +44,18 @@ export const AssetSelectorModal = ({
       <h5 className="modal-title">
         <Translation i18nkey="Select an asset">Select an asset</Translation>
       </h5>
-      <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
+      <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
     </div>
     <div className="modal-body">
       <div className="asset-selection-body">
         <input placeholder={translate('Find an assets')} className="form-control" onChange={(e) => setSearch(e.target.value)} />
         <div className={classNames({
-          'asset-selection__container--column': !onlyPreview,
-          'asset-selection__container--row': onlyPreview,
-          tiles: onlyPreview,
+          'asset-selection__container--column': !props.onlyPreview,
+          'asset-selection__container--row': props.onlyPreview,
+          tiles: props.onlyPreview,
         })}>
           {filteredAssets.map((asset, idx) => {
-            if (onlyPreview) {
+            if (props.onlyPreview) {
               return (<div className={classNames('tile', {
                 selected: asset.value === selectedAsset?.value,
               })} key={idx}>
@@ -94,7 +84,7 @@ export const AssetSelectorModal = ({
       </div>
     </div>
     <div className="modal-footer">
-      <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
+      <button type="button" className="btn btn-outline-danger" onClick={props.close}>
         <Translation i18nkey="Close">Close</Translation>
       </button>
       <button type="button" className="btn btn-outline-success" onClick={() => selectAssetAndCloseModal()}>
@@ -119,7 +109,7 @@ type AssetChooserProps = {
 
 export const AssetChooserByModal = (props: AssetChooserProps) => {
   const { Translation } = useContext(I18nContext);
-  const dispatch = useDispatch()
+  const { openAssetSelectorModal } = useContext(ModalContext);
 
   const assetsRequest = useQuery(['assets'], () => getAssets(props.team))
 
@@ -184,12 +174,12 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
         type="button"
         className={props.classNames ? props.classNames : classNames('btn btn-access-negative ms-1', { disabled: !assets.length })}
         onClick={() => assets.length &&
-          dispatch(openAssetSelectorModal({
+          openAssetSelectorModal({
             assets,
             onSelect: (asset) => props.onSelect(asset),
             onlyPreview: !!props.onlyPreview,
             noClose: !!props.noClose
-          }))
+          })
         }
       >
         <i

@@ -8,8 +8,9 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../../services';
 import { Can, manage, CanIDoAction, api as API } from '../../../utils';
-import { I18nContext, openFormModal } from '../../../../core';
+import { I18nContext } from '../../../../core';
 import { IState, ITeamSimple } from '../../../../types';
+import { ModalContext } from '../../../../contexts';
 
 export function ApiFilter({
   handleFilter,
@@ -25,7 +26,8 @@ export function ApiFilter({
 }: any) {
   const [availableApiVersions, setApiVersions] = useState<Array<string>>([]);
   const { translate } = useContext(I18nContext);
-  const dispatch = useDispatch();
+  const { openFormModal } = useContext(ModalContext);
+
   const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const schema = {
@@ -144,13 +146,13 @@ export function ApiFilter({
             className="btn btn-outline-success ms-1"
             onClick={() =>
               Services.fetchNewIssue()
-                .then((newIssue) => dispatch(openFormModal({
+                .then((newIssue) => openFormModal({
                   title: translate('issues.new_issue'),
                   schema,
                   onSubmit: createIssue,
                   value: newIssue,
                   actionLabel: translate('Create')
-                })))}>
+                }))}>
             {translate('issues.new_issue')}
           </button>
         </div>
