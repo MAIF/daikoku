@@ -8,11 +8,12 @@ import { ConfirmProps } from "./types";
 export const Confirm = (props: ConfirmProps) => {
   const { translate } = useContext(I18nContext);
 
-  const defaultButton = (e: any) => {
-    if (e.keyCode === 13) {
+  const defaultButton = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
       props.ok();
     }
   };
+
   useEffect(() => {
     document.body.addEventListener('keydown', defaultButton);
 

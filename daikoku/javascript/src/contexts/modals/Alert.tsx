@@ -8,8 +8,8 @@ import { AlertProps } from "./types";
 export const Alert = (props: AlertProps) => {
   const { translate } = useContext(I18nContext);
 
-  const defaultButton = (e: any) => {
-    if (e.keyCode === 13) {
+  const defaultButton = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
       props.close();
     }
   };

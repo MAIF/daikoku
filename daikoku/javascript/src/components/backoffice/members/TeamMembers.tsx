@@ -1,28 +1,22 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { connect } from 'react-redux';
-import sortBy from 'lodash/sortBy';
-import { toastr } from 'react-redux-toastr';
 import classnames from 'classnames';
+import sortBy from 'lodash/sortBy';
+import { useContext, useEffect, useState } from 'react';
+import { toastr } from 'react-redux-toastr';
+import { Navigate } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { updateTeam, I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
+import { I18nContext, updateTeam } from '../../../core';
+import * as Services from '../../../services';
 import {
-  Option,
-  PaginatedComponent,
-  AvatarWithAction,
-  Can,
-  manage,
-  team,
   administrator,
-  apiEditor,
-  user,
+  apiEditor, AvatarWithAction,
+  Can,
+  manage, Option,
+  PaginatedComponent, team, user
 } from '../../utils';
 
-import { useSelector } from 'react-redux';
-import { IState, IStateContext, ITeamSimple, IUser, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { IState, IStateContext, ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
 
 type Tabs = 'MEMBERS' | 'PENDING'
 const TABS: { [key: string]: Tabs } = {

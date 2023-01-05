@@ -1,5 +1,5 @@
 import { Flow, Schema, TBaseObject, Option } from "@maif/react-forms"
-import { IApi, IApiKey, IAsset, INotification, ITeamSimple, ITenant, IUserSimple, ResponseError } from "../../types";
+import { IApi, IApiKey, IAsset, INotification, ISafeSubscription, ISubscription, ITeamSimple, ITenant, IUserSimple, ResponseError } from "../../types";
 import { IApiKeySelectModalProps } from "./ApiKeySelectModal";
 import { IApiSelectModalProps } from "./ApiSelectModal";
 import { CustomSubscriptionData } from "./SubscriptionMetadataModal";
@@ -90,7 +90,7 @@ export type SubscriptionMetadataModalProps = {
   team?: ITeamSimple;
   notification?: INotification;
   config?: any;
-  subscription?: any;
+  subscription?: ISafeSubscription;
   description?: any;
 };
 

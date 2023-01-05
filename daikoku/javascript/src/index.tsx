@@ -18,9 +18,6 @@ import 'bootstrap';
 
 import { store } from './core';
 import { LoginPage, queryClient } from './components';
-import {
-  registerContact,
-} from './components/utils/window';
 import { customizeFetch } from './services/customize';
 import { I18nProvider } from './contexts/i18n-context';
 
@@ -83,9 +80,6 @@ export function init(
     </Provider>,
     
   );
-  if (session) {
-    registerContact(storeInst);
-  }
 }
 
 export function login(provider: any, callback: any, tenant: any) {
@@ -98,7 +92,6 @@ export function login(provider: any, callback: any, tenant: any) {
     </Provider>,
     document.getElementById('app')
   );
-  registerContact(storeInst);
 }
 
 export function initNotLogged(tenant: any) {
@@ -114,5 +107,4 @@ export function initNotLogged(tenant: any) {
       </I18nProvider>
     </Provider>
   );
-  registerContact(storeInst);
 }

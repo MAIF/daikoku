@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { connect } from 'react-redux';
-import Select, { SingleValue } from 'react-select';
-import Pagination from 'react-paginate';
-import find from 'lodash/find';
-import sortBy from 'lodash/sortBy';
-import groupBy from 'lodash/groupBy';
-import { Grid, List } from 'react-feather';
 import classNames from 'classnames';
+import find from 'lodash/find';
+import groupBy from 'lodash/groupBy';
+import sortBy from 'lodash/sortBy';
+import { useContext, useEffect, useState } from 'react';
+import { Grid, List } from 'react-feather';
+import Pagination from 'react-paginate';
 import { useNavigate } from 'react-router-dom';
+import Select, { SingleValue } from 'react-select';
 
-import { ApiCard } from '../api';
-import { I18nContext } from '../../../core';
-import { IApi, IApiWithAuthorization, IApiWithSimpleTeam, ITeamSimple, IUserSimple, TOption, TOptions } from '../../../types';
 import { useSelector } from 'react-redux';
-import { IState, IStateContext } from '../../../types/context';
+import { I18nContext } from '../../../core';
+import { IApiWithAuthorization, IApiWithSimpleTeam, ITeamSimple, IUserSimple, TOption, TOptions } from '../../../types';
+import { IState } from '../../../types/context';
+import { ApiCard } from '../api';
 
 const all = { value: 'All', label: 'All' };
 const GRID = 'GRID';

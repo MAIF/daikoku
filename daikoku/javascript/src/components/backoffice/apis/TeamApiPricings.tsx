@@ -456,7 +456,7 @@ export const TeamApiPricings = (props: Props) => {
   const [creation, setCreation] = useState(false);
 
   const { translate } = useContext(I18nContext);
-  const { openApiSelectModal } = useContext(ModalContext);
+  const { openApiSelectModal, confirm } = useContext(ModalContext);
 
   useEffect(() => {
     return () => {
@@ -1046,9 +1046,8 @@ export const TeamApiPricings = (props: Props) => {
           help: translate('aggregation_apikeys.security.help'),
           onChange: ({ value, setValue }: any) => {
             if (value)
-              window
-                .confirm(translate('aggregation.api_key.security.notification')) //@ts-ignore //FIXME when type & monkey patch compatibility will be ok
-                .then((ok: any) => {
+              confirm({message: translate('aggregation.api_key.security.notification')})
+                .then((ok) => {
                   if (ok) {
                     setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
                     setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false);
@@ -1056,7 +1055,7 @@ export const TeamApiPricings = (props: Props) => {
                 });
           },
         },
-        allowMutlipleApiKeys: {
+        allowMultipleKeys: {
           type: type.bool,
           label: translate('Allow multiple apiKey demands'),
         },
@@ -1096,7 +1095,7 @@ export const TeamApiPricings = (props: Props) => {
       flow: [
         {
           label: translate('Security'),
-          flow: ['autoRotation', 'allowMutlipleApiKeys', 'aggregationApiKeysSecurity'],
+          flow: ['autoRotation', 'allowMultipleKeys', 'aggregationApiKeysSecurity'],
           inline: true,
         },
         'subscriptionProcess',

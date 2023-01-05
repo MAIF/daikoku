@@ -3,6 +3,7 @@ import Select from 'react-select';
 
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
+import { isError } from '../../types';
 import { IApiDocumentationSelectModalProps, IBaseModalProps } from './types';
 
 type TPage = {label: string, value: Array<{apiId: string, pageId: string, version: string}>}
@@ -16,24 +17,26 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
   useEffect(() => {
     Services.getAllApiDocumentation(props.teamId, props.api._humanReadableId, props.api.currentVersion)
       .then((apis) => {
-        setApis(
-          apis.map(({
-            apiId,
-            currentVersion,
-            pages
-          }) => ({
-            label: `From version : ${currentVersion}`,
-            options: pages.map((page: any) => ({
-              label: page.title,
-
-              value: {
-                apiId,
-                pageId: page._id,
-                version: currentVersion,
-              }
-            })),
-          }))
-        );
+        if (!isError(apis)) {
+          setApis(
+            apis.map(({
+              apiId,
+              currentVersion,
+              pages
+            }) => ({
+              label: `From version : ${currentVersion}`,
+              options: pages.map((page) => ({
+                label: page.title,
+  
+                value: {
+                  apiId,
+                  pageId: page._id,
+                  version: currentVersion,
+                }
+              })),
+            }))
+          );
+        }
       }
       );
   }, []);

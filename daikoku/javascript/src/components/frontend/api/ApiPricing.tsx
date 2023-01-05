@@ -5,13 +5,12 @@ import find from 'lodash/find';
 import { useContext } from 'react';
 import { useSelector } from 'react-redux';
 
-import { connect } from 'react-redux';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, isMiniFreeWithQuotas, isPayPerUse, isQuotasWitoutLimit, IState, IStateContext, ISubscription, ITeamSimple, ITenant, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit, IUserSimple } from '../../../types';
-import { INotification } from '../../../types/modal';
+import { IApi, isMiniFreeWithQuotas, isPayPerUse, isQuotasWitoutLimit, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
+import { INotification } from '../../../types';
 import {
   access,
   apikey, Can, formatCurrency, getCurrencySymbol, manage,
@@ -20,10 +19,8 @@ import {
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
 
-const Curreny = ({
-  plan
-}: any) => {
-  const cur = find(currencies, (c) => c.code === plan.currency.code);
+const Curreny = (props: {plan: IUsagePlan}) => {
+  const cur = find(currencies, (c) => c.code === props.plan.currency.code);
   return (
     <span>
       {' '}
@@ -32,7 +29,7 @@ const Curreny = ({
   );
 };
 
-const currency = (plan: any) => {
+const currency = (plan: IUsagePlan) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
   return `${cur?.name}(${cur?.symbol})`;
 };
@@ -40,7 +37,7 @@ const currency = (plan: any) => {
 type ApiPricingCardProps = {
   plan: IUsagePlan,
   api: IApi,
-  askForApikeys: (x: {teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string}) => Promise<void>,
+  askForApikeys: (x: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
   myTeams: Array<ITeamSimple>,
   ownerTeam: ITeamSimple,
   subscriptions: Array<ISubscription>,
@@ -52,7 +49,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { openFormModal, openLoginOrRegisterModal, openApiKeySelectModal } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
-  const {connectedUser, tenant} = useSelector<IState, IStateContext>(s => s.context)
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
 
   const renderFreeWithoutQuotas = () => (
@@ -167,9 +164,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
     const askForApikeys = (teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription) => {
       if (plan.subscriptionProcess === "Automatic") {
-        props.askForApikeys({teams, plan: plan, apiKey})
+        props.askForApikeys({ teams, plan: plan, apiKey })
       } else (
-        openFormModal<{motivation: string}>({
+        openFormModal<{ motivation: string }>({
           title: translate('motivations.modal.title'),
           schema: {
             motivation: {
@@ -181,32 +178,33 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               ]
             }
           },
-          onSubmit: ({motivation}) => props.askForApikeys({teams, plan, apiKey, motivation}),
+          onSubmit: ({ motivation }) => props.askForApikeys({ teams, plan, apiKey, motivation }),
           actionLabel: translate('Send')
         })
       )
     }
 
     Services.getAllTeamSubscriptions(teams[0])
-      .then((subscriptions) => client
-        .query({
-          query: Services.graphql.apisByIdsWithPlans,
-          variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
-        })
+      .then((subscriptions) => client.query({
+        query: Services.graphql.apisByIdsWithPlans,
+        variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
+      })
         .then(({ data }) => ({ apis: data.apis, subscriptions }))
-      ).then(({ apis, subscriptions }) => {
-        const filteredApiKeys = subscriptions
+      )
+      .then(({ apis, subscriptions }: { apis: Array<IApi>, subscriptions: Array<ISubscriptionWithApiInfo> }) => {
+        const int = subscriptions
           .map((subscription) => {
             const api = apis.find((a) => a._id === subscription.api);
-            const plan = Option(api?.possibleUsagePlans)
-              .flatMap((plans: any) => Option(plans.find((plan: any) => plan._id === subscription.plan)))
+            const plan: IUsagePlan = Option(api?.possibleUsagePlans)
+              .flatMap((plans: Array<IUsagePlan>) => Option(plans.find((plan) => plan._id === subscription.plan)))
               .getOrNull();
             return { subscription, api, plan };
           })
-          .filter(
-            (infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
-              plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
-          )
+
+        const filteredApiKeys = int.filter(
+          (infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
+            plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
+        )
           .map((infos) => infos.subscription);
 
         if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
@@ -216,7 +214,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             plan,
             apiKeys: filteredApiKeys,
             onSubscribe: () => askForApikeys(teams, plan),
-            extendApiKey: (apiKey: any) => askForApikeys(teams, plan, apiKey),
+            extendApiKey: (apiKey: ISubscription) => askForApikeys(teams, plan, apiKey),
           });
         }
       });
@@ -234,16 +232,16 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     );
 
   const allPossibleTeams = difference(
-    authorizedTeams.map((t: any) => t._id),
+    authorizedTeams.map((t) => t._id),
     props.subscriptions
-      .filter((_: any) => !plan.allowMultipleKeys)
-      .filter((f: any) => !f._deleted)
-      .map((s: any) => s.team)
+      .filter((_) => !plan.allowMultipleKeys)
+      .filter((f) => !f._deleted)
+      .map((s) => s.team)
   );
 
   const isPending = !difference(
     allPossibleTeams,
-    props.pendingSubscriptions.map((s: any) => s.action.team)
+    props.pendingSubscriptions.map((s) => s.action.team)
   ).length;
 
   const isAccepted = !allPossibleTeams.length;
@@ -368,9 +366,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             <button
               type="button"
               className="btn btn-sm btn-access-negative mx-auto mt-3"
-              onClick={() => openLoginOrRegisterModal({ 
+              onClick={() => openLoginOrRegisterModal({
                 tenant
-               })}
+              })}
             >
               <Translation i18nkey="Get API key">Get API key</Translation>
             </button>
@@ -386,15 +384,15 @@ type ApiPricingProps = {
   myTeams: Array<ITeamSimple>
   ownerTeam: ITeamSimple
   subscriptions: Array<ISubscription>,
-  pendingSubscriptions: any,
-  askForApikeys:  (x: {teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string}) => Promise<void>,
+  pendingSubscriptions: Array<INotification>,
+  askForApikeys: (x: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
 }
 export function ApiPricing(props: ApiPricingProps) {
   if (!props.api) {
     return null;
   }
 
-  const possibleUsagePlans = props.api.possibleUsagePlans.filter((plan: any) => {
+  const possibleUsagePlans = props.api.possibleUsagePlans.filter((plan) => {
     return plan.visibility === 'Public' ||
       props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
       props.myTeams.some((team) => plan.authorizedTeams.includes(team._id));

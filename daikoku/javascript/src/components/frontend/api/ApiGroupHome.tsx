@@ -18,12 +18,12 @@ import { useApiGroupFrontOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 import { formatPlanType } from '../../utils/formatters';
-import { isError, ITeamSimple, IUsagePlan } from '../../../types';
+import { INotification, isError, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
 
 export const ApiGroupHome = ({ }) => {
   const [apiGroup, setApiGroup] = useState<any>();
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
+  const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
   const [myTeams, setMyTeams] = useState([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
 

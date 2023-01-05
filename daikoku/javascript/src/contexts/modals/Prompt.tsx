@@ -10,7 +10,7 @@ export const Prompt = (props: PromptProps) => {
   let ref: any;
 
   const defaultButton = (e: KeyboardEvent) => {
-    if (e.code === "Enter") {
+    if (e.key === "Enter") {
       props.ok(text);
     }
   };

@@ -1,13 +1,13 @@
 import React, { useContext, useState } from 'react';
 import { I18nContext } from '../../core';
-import { IApiKey, ISubscription, IUsagePlan } from '../../types';
+import { IApiKey, ISubscription, ISubscriptionWithApiInfo, IUsagePlan } from '../../types';
 import { IBaseModalProps } from './types';
 
 export interface IApiKeySelectModalProps {
   onSubscribe: () => void,
   plan: IUsagePlan,
-  apiKeys: any,
-  extendApiKey: (key: IApiKey) => void
+  apiKeys: Array<ISubscriptionWithApiInfo>,
+  extendApiKey: (key: ISubscription) => void
 }
 
 export const ApiKeySelectModal = (props: IApiKeySelectModalProps & IBaseModalProps) => {
@@ -21,7 +21,7 @@ export const ApiKeySelectModal = (props: IApiKeySelectModalProps & IBaseModalPro
     props.onSubscribe();
   };
 
-  const extendApiKey = (apiKey: any) => {
+  const extendApiKey = (apiKey: ISubscription) => {
     props.close();
     props.extendApiKey(apiKey);
   };
@@ -36,7 +36,7 @@ export const ApiKeySelectModal = (props: IApiKeySelectModalProps & IBaseModalPro
         {showSelectOrCreateApiKey && (
           <SelectOrCreateApiKey
             disableExtendButton={props.apiKeys.length <= 0}
-            create={(o: any) => {
+            create={(o: boolean) => {
               if (o) finalAction();
               else {
                 toggleSelectOrCreateApiKey(false);
@@ -58,8 +58,8 @@ export const ApiKeySelectModal = (props: IApiKeySelectModalProps & IBaseModalPro
 };
 
 type ApiKeysViewProps = {
-  apiKeys: any,
-  extendApiKey: (key: ISubscription) => void
+  apiKeys: Array<ISubscriptionWithApiInfo>,
+  extendApiKey: (key: ISubscriptionWithApiInfo) => void
 }
 
 const ApiKeysView = (props: ApiKeysViewProps) => {

@@ -1,12 +1,9 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { IState, IStateError } from '../../types';
 
-const FrontOfficeComponent = (props: any) => {
-    return <>{!props.error.status && props.children}</>;
+export const FrontOffice = (props: { children: JSX.Element }) => {
+  const error = useSelector<IState, IStateError>(s => s.error)
+
+  return <>{!error.status && props.children}</>;
 };
-
-const mapStateToProps = (state: any) => ({
-  error: state.error
-});
-
-export const FrontOffice = connect(mapStateToProps)(FrontOfficeComponent);

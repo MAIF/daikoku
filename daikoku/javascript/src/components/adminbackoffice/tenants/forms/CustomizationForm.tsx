@@ -82,7 +82,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       visible: ({ rawValues }) => rawValues?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
       label: translate('tenant_edit.home_page'),
-      disabled: tenant?.style?.homePageVisible,
+      disabled: !tenant?.style?.homePageVisible,
 
     },
     notFoundCmsPage: {
@@ -90,7 +90,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       format: format.select,
       visible: ({ rawValues }) => rawValues?.homePageVisible,
       label: translate('tenant_edit.404_page'),
-      disabled: tenant?.style?.homePageVisible,
+      disabled: !tenant?.style?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
 
     },
@@ -100,7 +100,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       visible: ({ rawValues }) => rawValues?.homePageVisible,
       label: translate('tenant_edit.authenticated_cmspage'),
       help: translate('tenant_edit.authenticated_cmspage_help'),
-      disabled: tenant?.style?.homePageVisible,
+      disabled: !tenant?.style?.homePageVisible,
       options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
 
     },
@@ -110,7 +110,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       props: {
         label: translate('tenant_edit.cache'),
         help: translate('tenant_edit.cache_help'),
-        disabled: tenant?.style?.homePageVisible,
+        disabled: !tenant?.style?.homePageVisible,
       },
     },
     cmsHistoryLength: {

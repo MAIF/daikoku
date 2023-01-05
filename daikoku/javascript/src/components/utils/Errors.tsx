@@ -1,8 +1,11 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { connect } from 'react-redux';
+import { useContext, useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../contexts/i18n-context';
-import { setError, unsetError } from '../../core';
+import { unsetError } from '../../core';
+
+import { IState, IStateError, ITenant } from '../../types';
 
 const getErrorLabel = (status: any, error: any) => {
   // if (status) console.log(status, error);
@@ -23,16 +26,16 @@ const getErrorLabel = (status: any, error: any) => {
   }
 };
 
-const ErrorComponent = ({
-  error,
-  tenant,
-  unsetError
-}: any) => {
+export const Error = () => {
   const navigate = useNavigate();
+  const { translate } = useContext(I18nContext);
 
   const [label, setLabel] = useState();
 
-    const { translate } = useContext(I18nContext);
+
+  const error = useSelector<IState, IStateError>(s => s.error);
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     setLabel(getErrorLabel(error.status, error));
@@ -46,31 +49,31 @@ const ErrorComponent = ({
   }
 
   return (
-        <div className="row">
-            <div className="col-12">
-                <div className="error-page d-flex flex-column">
-                    <div>
-                        <h1 data-h1={error.status}>{error.status}</h1>
-                        <p data-p={label}>{label}</p>
+    <div className="row">
+      <div className="col-12">
+        <div className="error-page d-flex flex-column">
+          <div>
+            <h1 data-h1={error.status}>{error.status}</h1>
+            <p data-p={label}>{label}</p>
           </div>
-                    <div>
-                        <Link
+          <div>
+            <Link
               className="btn btn-access-negative me-1"
               to="/apis"
               onClick={() => {
-                unsetError();
+                dispatch(unsetError());
               }}
             >
-                            <i className="fas fa-home" /> {translate('Go home')}
+              <i className="fas fa-home" /> {translate('Go home')}
             </Link>
-                        <button
+            <button
               className="btn btn-access-negative"
               onClick={() => {
-                navigate(-1);
-                setTimeout(unsetError, 300);
+                Promise.resolve(dispatch(unsetError()))
+                  .then(() => navigate(-1));
               }}
             >
-                            <i className="fas fa-angle-double-left" /> {translate('go_back')}
+              <i className="fas fa-angle-double-left" /> {translate('go_back')}
             </button>
           </div>
         </div>
@@ -78,15 +81,3 @@ const ErrorComponent = ({
     </div>
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  tenant: state.context.tenant,
-  error: state.error
-});
-
-const mapDispatchToProps = {
-  setError: (error: any) => setError(error),
-  unsetError: () => unsetError(),
-};
-
-export const Error = connect(mapStateToProps, mapDispatchToProps)(ErrorComponent);

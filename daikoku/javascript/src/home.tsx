@@ -15,9 +15,6 @@ import 'bootstrap';
 import '@fortawesome/fontawesome-free/css/all.css';
 
 import { DaikokuHomeApp } from './apps/DaikokuHomeApp';
-import {
-  registerContact,
-} from './components/utils/window';
 
 (window as any).$ = jQuery;
 (window as any).jQuery = jQuery;
@@ -33,6 +30,4 @@ export function initNotLogged(tenant: any) {
     </Provider>,
     document.getElementById('app')
   );
-
-  registerContact(storeInst);
 }

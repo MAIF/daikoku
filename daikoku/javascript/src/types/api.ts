@@ -194,6 +194,12 @@ export interface IDocTitle {
   title: string;
   level: string;
 }
+
+export interface IApiDoc {
+  currentVersion: string,
+  apiId: string,
+  pages: Array<IDocTitle>
+}
 export interface IDocDetail {
   pages: Array<string>;
   titles: Array<IDocTitle>;
@@ -281,6 +287,11 @@ export interface ISafeSubscription extends IBaseSubscription {
 export interface ISubscription extends IBaseSubscription {
   apiKey?: IApiKey;
   integrationToken: string;
+}
+
+export interface ISubscriptionWithApiInfo extends ISubscription {
+  apiName: string;
+  planType: string
 }
 
 export interface IQuotas {

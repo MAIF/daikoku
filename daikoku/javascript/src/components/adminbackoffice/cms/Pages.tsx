@@ -1,4 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
+import classNames from 'classnames';
 import moment from 'moment';
 import React, { useContext, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -86,12 +87,21 @@ export const Pages = ({
         return (
           <div className="d-flex justify-content-center align-items-center">
             <Link
-              to={`/_${value.path}`}
+              to={`/settings/pages/edit/${value.id}`}
+              onClick={(e) => e.stopPropagation()}>
+              <button className="btn btn-outline-primary me-1" >
+                <i className="fas fa-edit" />
+              </button>
+            </Link>
+            <Link
+              className={classNames({link__disabled: !value.path})}
+              to={value.path ? `/_${value.path}` : '#'}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}>
               <button
                 className="btn btn-outline-primary me-1"
+                disabled={!value.path}
               >
                 <i className="fas fa-eye" />
               </button>

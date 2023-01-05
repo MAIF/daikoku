@@ -40,12 +40,7 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       type: type.bool,
       label: translate('API reference visibility'),
       help: translate('api.reference.visibility.help'),
-    },
-    hideTeamsPage: {
-      type: type.bool,
-      label: translate('Hide teams page'),
-      help: translate('hide.teams.page.help'),
-    },
+    }
   }
 
   return (

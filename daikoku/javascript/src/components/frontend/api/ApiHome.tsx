@@ -1,24 +1,22 @@
-import React, { useState, useEffect, useContext } from 'react';
 import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
-import { connect } from 'react-redux';
+import { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { useParams, useNavigate, useMatch } from 'react-router-dom';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
 
-import * as Services from '../../../services';
-import { ApiDocumentation, ApiPricing, ApiSwagger, ApiRedoc, ApiPost, ApiIssue } from '.';
-import { converter } from '../../../services/showdown';
-import { Can, manage, apikey, ActionWithTeamSelector, CanIDoAction, Option } from '../../utils';
-import { formatPlanType } from '../../utils/formatters';
-import { setError, updateUser, I18nContext } from '../../../core';
-import StarsButton from './StarsButton';
+import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
 import { ModalContext, useApiFrontOffice } from '../../../contexts';
+import { I18nContext, setError, updateUser } from '../../../core';
+import * as Services from '../../../services';
+import { converter } from '../../../services/showdown';
+import { ActionWithTeamSelector, apikey, Can, CanIDoAction, manage, Option } from '../../utils';
+import { formatPlanType } from '../../utils/formatters';
+import StarsButton from './StarsButton';
 
 import 'highlight.js/styles/monokai.css';
-import { IApi, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
-import { useDispatch } from 'react-redux';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { IApi, INotification, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
 
 (window as any).hljs = hljs;
 
@@ -129,7 +127,7 @@ export const ApiHome = ({
 }: ApiHomeProps) => {
   const [api, setApi] = useState<IApi>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
   const [myTeams, setMyTeams] = useState<Array<any>>([]);
   const [showAccessModal, setAccessModalError] = useState<any>();
