@@ -9,29 +9,17 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  AuthorizedEntitiesFormat,
-  OtoroshiSettingsFormat,
-  OtoroshiSettingsIdFormat
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  ActualOtoroshiApiKey,
-  ApiKeyRestrictions,
-  TestingAuth
-}
+import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, ApiKeyRestrictions, TestingAuth}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.commons.codec.binary.Base64
 import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  BodyParser,
-  ControllerComponents,
-  Request
-}
+import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request}
 
 class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                                  env: Env,
@@ -341,21 +329,18 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         s"@{user.name} create a testing apikey for team @{team.name} - @{team.id}"))(
         teamId,
         ctx) { team =>
-        val otoroshiSettingsOpt =
-          (ctx.request.body \ "otoroshiSettings").asOpt[String]
-        val authorizedEntitiesOpt = (ctx.request.body \ "authorizedEntities")
-          .asOpt(AuthorizedEntitiesFormat)
+        val otoroshiSettingsOpt = (ctx.request.body \ "otoroshiSettings").asOpt[String]
+        val authorizedEntitiesOpt = (ctx.request.body \ "authorizedEntities").asOpt(AuthorizedEntitiesFormat)
         val clientNameOpt = (ctx.request.body \ "clientName").asOpt[String]
         val tagOpt = (ctx.request.body \ "tag").asOpt[String]
         val apiOpt = (ctx.request.body \ "api").asOpt[String]
         val metadataOpt = (ctx.request.body \ "customMetadata").asOpt[JsObject]
         val readOnlyOpt = (ctx.request.body \ "customReadOnly").asOpt[Boolean]
-        val maxPerSecondOpt =
-          (ctx.request.body \ "customMaxPerSecond").asOpt[Long]
+        val maxPerSecondOpt = (ctx.request.body \ "customMaxPerSecond").asOpt[Long]
         val maxPerDayOpt = (ctx.request.body \ "customMaxPerDay").asOpt[Long]
-        val maxPerMonthOpt =
-          (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
+        val maxPerMonthOpt = (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
 
+        AppLogger.warn(s"$otoroshiSettingsOpt - $authorizedEntitiesOpt - $clientNameOpt - $tagOpt - $apiOpt")
         (otoroshiSettingsOpt,
          authorizedEntitiesOpt,
          clientNameOpt,

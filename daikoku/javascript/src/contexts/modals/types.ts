@@ -92,6 +92,7 @@ export type SubscriptionMetadataModalProps = {
   config?: any;
   subscription?: ISafeSubscription;
   description?: any;
+  noClose?: boolean
 };
 
 export interface IApiDocumentationSelectModalProps {

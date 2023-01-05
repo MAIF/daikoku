@@ -103,7 +103,10 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
     {...props}
     close={close} />)
 
-  const openTestingApikeyModal = (props: TestingApiKeyModalProps) => open(<TestingApiKeyModal {...props} close={close} />)
+  const openTestingApikeyModal = (props: TestingApiKeyModalProps) => {
+    console.debug("on ouvre ???")
+    open(<TestingApiKeyModal {...props} close={close} />)
+  }
   const openSubMetadataModal = (props: SubscriptionMetadataModalProps) => open(<SubscriptionMetadataModal {...props} close={close} />)
   const openApiDocumentationSelectModal = (props: IApiDocumentationSelectModalProps) => open(<ApiDocumentationSelectModal {...props} close={close} />)
   const openTeamSelectorModal = (props: TeamSelectorModalProps) => open(<TeamSelectorModal {...props} close={close} />)

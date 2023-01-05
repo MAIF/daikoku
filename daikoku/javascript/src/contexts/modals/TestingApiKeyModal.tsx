@@ -81,11 +81,31 @@ export const TestingApiKeyModal = (props: TestingApiKeyModalProps & IBaseModalPr
             label: g.name,
             value: g.id
           })
+        },
+        routes: {
+          type: type.string,
+          format: format.select,
+          isMulti: true,
+          disabled: ({
+            rawValues
+          }: any) => !rawValues.otoroshiSettings,
+          optionsFrom: ({
+            rawValues
+          }: any) => {
+            if (!rawValues.otoroshiSettings) {
+              return Promise.resolve([])
+            }
+            return Services.getOtoroshiRoutesAsTeamAdmin(props.teamId, rawValues.otoroshiSettings)
+          },
+          transformer: (g: any) => ({
+            label: g.name,
+            value: g.id
+          })
         }
       },
       constraints: [
         constraints.required(translate('constraints.required.authorizedEntities')),
-        constraints.test('test', translate('constraint.min.authorizedEntities'), v => v.services.length || v.groups.length)
+        constraints.test('test', translate('constraint.min.authorizedEntities'), v => v.services.length || v.groups.length || v.routes.length)
       ]
     },
   };

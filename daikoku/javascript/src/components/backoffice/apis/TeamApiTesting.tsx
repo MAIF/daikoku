@@ -33,29 +33,32 @@ export const TeamApiTesting = (props) => {
         };
 
     openSubMetadataModal({
-      save: (metadata) => openTestingApikeyModal({
-        metadata,
-        teamId: currentTeam._id,
-        config: newConfig,
-        update: testing.config && testing.config.otoroshiSettings,
-        title: translate('Otoroshi settings'),
-        onChange: (apiKey: any, config: any) => {
-          props.onChange({
-            ...props.value,
-            testing: {
-              config,
-              enabled: true,
-              name: 'Otoroshi auth',
-              auth: 'Basic',
-              username: apiKey.clientId,
-              password: apiKey.clientSecret,
-            },
-          });
-        },
-      }),
+      save: (metadata) => {
+        openTestingApikeyModal({
+          metadata,
+          teamId: currentTeam._id,
+          config: newConfig,
+          update: testing.config && testing.config.otoroshiSettings,
+          title: translate('Otoroshi settings'),
+          onChange: (apiKey: any, config: any) => {
+            props.onChange({
+              ...props.value,
+              testing: {
+                config,
+                enabled: true,
+                name: 'Otoroshi auth',
+                auth: 'Basic',
+                username: apiKey.clientId,
+                password: apiKey.clientSecret,
+              },
+            });
+          },
+        })
+      },
       config: testing.config,
       api: props.value,
       description: <div>Description</div>,
+      noClose: true
     });
   };
 
