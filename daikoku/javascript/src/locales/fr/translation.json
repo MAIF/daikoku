@@ -1214,5 +1214,7 @@
   "expertMode.error.searching.team": "Une erreur s'est produite lors de la recherche de vos équipes",
   "expertMode.input.reasonSubscription":"Mettez la raison de votre demande de clé d'API",
   "expertMode.input.research.api": "Chercher votre API...",
-  "expertMode.subscription.resume": "résumé de votre demande de souscription"
+  "expertMode.subscription.resume": "résumé de votre demande de souscription",
+  "expertMode.show.information": "Cliquez sur un plan ou sur un des boutons \"voir la clé d'API\" pour plus d'informations",
+  "expertMode.apiKey.title": "Clé d'API :"
 }

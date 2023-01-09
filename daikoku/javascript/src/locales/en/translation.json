@@ -1212,5 +1212,7 @@
     "expertMode.error.searching.team": "An error has occurred while searching your teams",
     "expertMode.input.reasonSubscription": "Put the reason why you want an API key",
     "expertMode.input.research.api": "Search your API...",
-    "expertMode.subscription.resume": "summary of your subscription request"
+    "expertMode.subscription.resume": "summary of your subscription request",
+    "expertMode.show.information": "Click on a plan or on a button \"see the API key\" for see more details\n",
+    "expertMode.apiKey.title": "API Key :"
 }

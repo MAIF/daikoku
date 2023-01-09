@@ -323,7 +323,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
                           className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
                           onClick={() => setActiveTab('token')}
                         >
-                          Integration token
+                          {translate('Integration token')}
                         </span>
                           </li>
 
@@ -347,7 +347,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
                         </div>
                         <div className="mb-3">
                           <label htmlFor={`client-secret`} className="">
-                            Client secret
+                            {translate("Client secret")}
                           </label>
                           <div className="input-group">
                             <input
@@ -379,7 +379,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
                       <>
                         <div className="mb-3">
                           <label htmlFor={`token`} className="">
-                            Integration token
+                            {translate('Integration token')}
                           </label>
                           <div className="">
                       <textarea
@@ -399,7 +399,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
           }
           {isPlan === undefined &&
               <div className="section p-3 mb-2">
-                Click on a plan or on a button "see the API key" for see more details
+                {translate('expertMode.show.information')}
               </div>
           }
         </div>
