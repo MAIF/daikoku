@@ -136,7 +136,7 @@ export const MyHome = () => {
     return (
       <Spinner />
     )
-  } else if (myTeamsRequest.data && teamsRequest.data && !isError(teamsRequest.data)) {
+  } else if (myTeamsRequest.data && teamsRequest.data && !isError(teamsRequest.data) && !isError(myTeamsRequest.data)) {
     return (
       <main role="main">
         <section className="organisation__header col-12 mb-4 p-3">

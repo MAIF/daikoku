@@ -11,7 +11,9 @@ import { MessagesContext } from '../../backoffice';
 
 import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';
 import { Companion } from './companions';
-import { isError, ITeamSimple } from '../../../types';
+import { isError, IState, IStateContext, ITeamSimple } from '../../../types';
+import { useQuery } from '@tanstack/react-query';
+import { Spinner } from '../Spinner';
 
 export const state = {
   opened: 'OPENED',
@@ -19,11 +21,10 @@ export const state = {
 };
 
 export const SideBar = () => {
-  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
   const [panelState, setPanelState] = useState(state.closed);
   const [panelContent, setPanelContent] = useState<JSX.Element>();
 
-  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useSelector((state) => (state as any).context);
+  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useSelector<IState, IStateContext>((state) => state.context);
   const dispatch = useDispatch();
   const location = useLocation();
 
@@ -35,13 +36,9 @@ export const SideBar = () => {
   }, [location]);
 
   useEffect(() => {
-    Promise.all([Services.myUnreadNotificationsCount(), Services.teams()])
-      .then(
-        ([notifCount, teams]) => {
+    Services.myUnreadNotificationsCount()
+      .then( (notifCount) => {
           dispatch(updateNotifications(notifCount.count));
-          if (!isError(teams)) {
-            setTeams(teams);
-          }
         }
       );
   }, []);
@@ -67,145 +64,146 @@ export const SideBar = () => {
 
   const isAdmin = connectedUser.isDaikokuAdmin || isTenantAdmin;
 
-  return (
-    <div className="navbar-container d-flex flex-row">
-      <div className="navbar d-flex flex-column p-2 align-items-center justify-content-between">
-        <div className="navbar_top d-flex flex-column align-items-center">
-          <Link
-            to="/apis"
-            title="Daikoku home"
-            className="mb-3"
-            style={{
-              width: '40px',
-            }}
-          >
-            <img
+  
+    return (
+      <div className="navbar-container d-flex flex-row">
+        <div className="navbar d-flex flex-column p-2 align-items-center justify-content-between">
+          <div className="navbar_top d-flex flex-column align-items-center">
+            <Link
+              to="/apis"
+              title="Daikoku home"
+              className="mb-3"
               style={{
                 width: '40px',
               }}
-              src={tenant.logo}
-            />
-          </Link>
-
-          {!connectedUser.isGuest && (
-            <>
-              <div className="nav_item mb-3 cursor-pointer">
-                <Search
-                  className="notification-link"
-                  onClick={() => {
-                    setPanelState(state.opened);
-                    setPanelContent(<SearchPanel teams={teams} />);
-                  }}
-                />
-              </div>
-              <div className="nav_item mb-3 cursor-pointer">
-                <Plus
-                  className="notification-link"
-                  onClick={() => {
-                    setPanelState(state.opened);
-                    setPanelContent(<AddPanel teams={teams} />);
-                  }}
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="navbar_bottom">
-          {isAdmin && (
-            <Link
-              to="/settings/messages"
-              className={classNames(
-                'nav-item mb-3 notification-link messages-link cursor-pointer',
-                {
-                  'unread-notifications': totalUnread > 0,
-                }
-              )}
-              title={translate('Access to the messages')}
             >
-              <MessageSquare />
-            </Link>
-          )}
-          {!connectedUser.isGuest && !isAdmin && (
-            <div
-              className={classNames(
-                'nav-item mb-3 notification-link messages-link cursor-pointer',
-                {
-                  'unread-notifications': totalUnread > 0,
-                }
-              )}
-            >
-              <MessageSquare
-                onClick={() => {
-                  setPanelState(state.opened);
-                  setPanelContent(<MessagePanel />);
+              <img
+                style={{
+                  width: '40px',
                 }}
+                src={tenant.logo}
+              />
+            </Link>
+  
+            {!connectedUser.isGuest && (
+              <>
+                <div className="nav_item mb-3 cursor-pointer">
+                  <Search
+                    className="notification-link"
+                    onClick={() => {
+                      setPanelState(state.opened);
+                      setPanelContent(<SearchPanel />);
+                    }}
+                  />
+                </div>
+                <div className="nav_item mb-3 cursor-pointer">
+                  <Plus
+                    className="notification-link"
+                    onClick={() => {
+                      setPanelState(state.opened);
+                      setPanelContent(<AddPanel />);
+                    }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+  
+          <div className="navbar_bottom">
+            {isAdmin && (
+              <Link
+                to="/settings/messages"
+                className={classNames(
+                  'nav-item mb-3 notification-link messages-link cursor-pointer',
+                  {
+                    'unread-notifications': totalUnread > 0,
+                  }
+                )}
+                title={translate('Access to the messages')}
+              >
+                <MessageSquare />
+              </Link>
+            )}
+            {!connectedUser.isGuest && !isAdmin && (
+              <div
+                className={classNames(
+                  'nav-item mb-3 notification-link messages-link cursor-pointer',
+                  {
+                    'unread-notifications': totalUnread > 0,
+                  }
+                )}
+              >
+                <MessageSquare
+                  onClick={() => {
+                    setPanelState(state.opened);
+                    setPanelContent(<MessagePanel />);
+                  }}
+                />
+              </div>
+            )}
+            {!connectedUser.isGuest && (
+              <>
+                <div className="nav_item mb-3">
+                  <Link
+                    className={classNames({
+                      'notification-link': true,
+                      'unread-notifications': !!unreadNotificationsCount,
+                    })}
+                    to="/notifications"
+                    title={translate('Access to the notifications')}
+                  >
+                    <Bell />
+                  </Link>
+                </div>
+              </>
+            )}
+            <div className="nav_item mb-3" style={{ color: '#fff' }}>
+              <img
+                style={{ width: '35px', ...impersonatorStyle }}
+                src={connectedUser.picture}
+                className="logo-anonymous user-logo"
+                onClick={() => {
+                  if (!connectedUser.isGuest) {
+                    setPanelState(state.opened);
+                    setPanelContent(<SettingsPanel />);
+                  } else {
+                    setPanelState(state.opened);
+                    setPanelContent(<GuestPanel />);
+                  }
+                }}
+                title={
+                  impersonator
+                    ? `${connectedUser.name} (${connectedUser.email}) ${translate(
+                      'Impersonated by'
+                    )} ${impersonator.name} (${impersonator.email})`
+                    : connectedUser.name
+                }
+                alt="user menu"
               />
             </div>
-          )}
-          {!connectedUser.isGuest && (
-            <>
-              <div className="nav_item mb-3">
-                <Link
-                  className={classNames({
-                    'notification-link': true,
-                    'unread-notifications': !!unreadNotificationsCount,
-                  })}
-                  to="/notifications"
-                  title={translate('Access to the notifications')}
-                >
-                  <Bell />
-                </Link>
-              </div>
-            </>
-          )}
-          <div className="nav_item mb-3" style={{ color: '#fff' }}>
-            <img
-              style={{ width: '35px', ...impersonatorStyle }}
-              src={connectedUser.picture}
-              className="logo-anonymous user-logo"
-              onClick={() => {
-                if (!connectedUser.isGuest) {
-                  setPanelState(state.opened);
-                  setPanelContent(<SettingsPanel />);
-                } else {
-                  setPanelState(state.opened);
-                  setPanelContent(<GuestPanel />);
-                }
-              }}
-              title={
-                impersonator
-                  ? `${connectedUser.name} (${connectedUser.email}) ${translate(
-                    'Impersonated by'
-                  )} ${impersonator.name} (${impersonator.email})`
-                  : connectedUser.name
-              }
-              alt="user menu"
-            />
           </div>
         </div>
-      </div>
-      <Companion />
-      <div
-        className={classNames('navbar-panel d-flex flex-row', {
-          opened: panelState === state.opened,
-          closed: panelState === state.closed,
-        })}
-      >
-        <div className="mt-2 ms-2 ">
-          <div className="cursor-pointer navbar-panel__back d-flex align-items-center justify-content-center">
-            <ArrowLeft className="" onClick={() => setPanelState(state.closed)} />
+        <Companion />
+        <div
+          className={classNames('navbar-panel d-flex flex-row', {
+            opened: panelState === state.opened,
+            closed: panelState === state.closed,
+          })}
+        >
+          <div className="mt-2 ms-2 ">
+            <div className="cursor-pointer navbar-panel__back d-flex align-items-center justify-content-center">
+              <ArrowLeft className="" onClick={() => setPanelState(state.closed)} />
+            </div>
           </div>
+          {panelContent}
         </div>
-        {panelContent}
+        <div
+          className={classNames('navbar-panel-background', {
+            opened: panelState === state.opened,
+            closed: panelState === state.closed,
+          })}
+          onClick={() => setPanelState(state.closed)}
+        />
       </div>
-      <div
-        className={classNames('navbar-panel-background', {
-          opened: panelState === state.opened,
-          closed: panelState === state.closed,
-        })}
-        onClick={() => setPanelState(state.closed)}
-      />
-    </div>
-  );
+    );
 };

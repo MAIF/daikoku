@@ -50,7 +50,7 @@ export const getVisibleApi = (id: any, version: any) =>
 export const getVisibleApiGroup = (id: any) => customFetch(`/api/me/visible-groups/${id}`);
 export const getTeamVisibleApi = (teamId: any, apiId: any, version: any) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
-export const myTeams = (): Promise<Array<ITeamSimple>> => customFetch('/api/me/teams');
+export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> => customFetch('/api/me/teams');
 
 export const teamAllNotifications = (teamId: any, page = 0) =>
   customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`);
