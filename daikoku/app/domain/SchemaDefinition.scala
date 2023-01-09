@@ -1216,7 +1216,10 @@ object SchemaDefinition {
     )
 
     def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, apiSubOnly: Int, limit: Int, offset: Int) = {
-      CommonServices.getApisWithSubscriptions(teamId, research, limit, offset, apiSubOnly)(ctx.ctx._2, env, e)
+      CommonServices.getApisWithSubscriptions(teamId, research, limit, offset, apiSubOnly)(ctx.ctx._2, env, e).map {
+        case Left(value) => value
+        case Right(r) => throw NotAuthorizedError(r.toString)
+      }
     }
 
     def apiWithSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(

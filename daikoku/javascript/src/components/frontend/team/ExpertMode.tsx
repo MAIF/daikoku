@@ -10,9 +10,9 @@ import "../../../style/components/fastApiCard.scss";
 import * as Services from "../../../services";
 import {BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option, Spinner} from "../../utils";
 import {
-  IAccessibleApi,
-  IAccessiblePlan,
-  IAccessibleSubscription, IApiSubscription,
+  IFastApi,
+  IFastPlan,
+  IFastSubscription, IFastApiSubscription,
   ITeamSimple,
 
 
@@ -29,18 +29,21 @@ import classNames from "classnames";
 type ExpertApiListProps = {
   teamList: Array<ITeamSimple>
   team: ITeamSimple
-  apiWithAuthorizations: Array<IAccessibleApi>
+  apiWithAuthorizations: Array<IFastApi>
   setTeam: Function
   nbOfApis: number
+  nb:number
+  page: number
   setNbOfApis: Function
   input: string
   setInput: Function
+  handlePageClick: Function
 
 }
 type ExpertApiCardProps = {
   team: ITeamSimple,
-  apiWithAuthorization: Array<IAccessibleApi>,
-  subscriptions: Array<Array<IAccessibleSubscription>>,
+  apiWithAuthorization: Array<IFastApi>,
+  subscriptions: Array<Array<IFastSubscription>>,
   input: string
   showPlan: Function
   showApiKey: Function
@@ -64,8 +67,8 @@ const Curreny = ({
 };
 const ExpertApiList = (props: ExpertApiListProps) => {
   const {translate} = useContext(I18nContext);
-  const [planInfo, setPlanInfo] = useState<IAccessiblePlan>();
-  const [subscription, setSubscription] = useState<IApiSubscription | undefined>()
+  const [planInfo, setPlanInfo] = useState<IFastPlan>();
+  const [subscription, setSubscription] = useState<IFastApiSubscription | undefined>()
   const [apiKeyValue, setApiKeyValue] = useState<string>();
   const [isPlan, setIsPlan] = useState<boolean | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<string>('apikey');
@@ -145,7 +148,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
     )
   }
 
-  function showPlan(plan: IAccessiblePlan) {
+  function showPlan(plan: IFastPlan) {
     if(plan._id == planInfo?._id && isPlan) {
       setIsPlan(undefined)
     } else {
@@ -153,7 +156,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
       setPlanInfo(plan)
     }
   }
-  function showApiKey(apiId: string, teamId: string, version: string, planInfo: IAccessiblePlan) {
+  function showApiKey(apiId: string, teamId: string, version: string, planInfo: IFastPlan) {
     if(planInfo._id == apiKeyValue && isPlan == false) {
       setIsPlan(undefined)
 
@@ -198,6 +201,20 @@ const ExpertApiList = (props: ExpertApiListProps) => {
               )
             }
           })}
+          <Pagination
+            previousLabel={translate('Previous')}
+            nextLabel={translate('Next')}
+            breakLabel="..."
+            breakClassName={'break'}
+            pageCount={Math.ceil(props.nb / props.nbOfApis)}
+            marginPagesDisplayed={1}
+            pageRangeDisplayed={5}
+            onPageChange={(data) => props.handlePageClick(data)}
+            containerClassName={'pagination'}
+            pageClassName={'page-selector'}
+            forcePage={props.page}
+            activeClassName={'active'}
+          />
         </div>
         <div className="col-3" style={{position: "fixed", right:0}}>
           <div className="section p-3 mb-2">
@@ -400,7 +417,7 @@ const ExpertApiCard = (props: ExpertApiCardProps) => {
   const {translate} = useContext(I18nContext);
   const [selectedApiV, setSelectedApiV] = useState(props.apiWithAuthorization.find(a => a.api.isDefault)?.api.currentVersion || props.apiWithAuthorization[0].api.currentVersion);
 
-  function subscribe(input: string, apiId: string, team: ITeamSimple, plan: IAccessiblePlan) {
+  function subscribe(input: string, apiId: string, team: ITeamSimple, plan: IFastPlan) {
     const teamsSubscriber = new Array(team._id)
 
     if (plan.subscriptionProcess === 'Automatic') {
@@ -538,7 +555,7 @@ export const ExpertMode = () => {
   const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(maybeTeam ? JSON.parse(maybeTeam) : undefined);
   const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const {client} = useContext(getApolloContext());
-  const [nbOfApis, setNbOfApis] = useState<number>(5);
+  const [nbOfApis, setNbOfApis] = useState<number>(1);
   const [page, setPage] = useState<number>(0);
   const [research, setResearch] = useState<string>("");
   const [reasonSub, setReasonSub] = useState<string>("")
@@ -574,10 +591,10 @@ export const ExpertMode = () => {
 
   }
 
-  const dataRequest = useQuery<{apis: Array<IAccessibleApi>, nb: number}>({
+  const dataRequest = useQuery<{apis: Array<IFastApi>, nb: number}>({
     queryKey: ["data", selectedTeam?._id, offset,seeApiSubscribed, nbOfApis, research ],
     queryFn: ({queryKey}) => {
-      return client!.query<{ accessibleApis: {apis: Array<IAccessibleApi>, nb: number} }>({
+      return client!.query<{ accessibleApis: {apis: Array<IFastApi>, nb: number} }>({
         query: Services.graphql.getApisWithSubscription,
         variables: {teamId: queryKey[1], limit: nbOfApis, apisubonly: seeApiSubscribed ? 1 : 0, offset: page, research: research}
       }).then(({data: {accessibleApis}}) => {
@@ -638,34 +655,20 @@ export const ExpertMode = () => {
                     }
                     { dataRequest.data &&
                         <>
-                    <ExpertApiList
-                        team={selectedTeam}
-                        apiWithAuthorizations={dataRequest.data.apis}
-                        setTeam={setSelectedTeam}
-                        teamList={myTeamsRequest.data}
-                        nbOfApis={nbOfApis}
-                        setNbOfApis={changeNbOfApis}
-                        input={reasonSub}
-                        setInput={setReasonSub}
-
-                    />
-                    <div className="d-flex justify-content-between col-6 align-items-center">
-                    <Pagination
-                          previousLabel={translate('Previous')}
-                          nextLabel={translate('Next')}
-                          breakLabel="..."
-                          breakClassName={'break'}
-                          pageCount={Math.ceil(dataRequest.data.nb / nbOfApis)}
-                          marginPagesDisplayed={1}
-                          pageRangeDisplayed={5}
-                          onPageChange={ handlePageClick}
-                          containerClassName={'pagination'}
-                          pageClassName={'page-selector'}
-                          forcePage={page}
-                          activeClassName={'active'}
-                      />
-                    </div>
-                          </>
+                          <ExpertApiList
+                          team={selectedTeam}
+                          apiWithAuthorizations={dataRequest.data.apis}
+                          setTeam={setSelectedTeam}
+                          teamList={myTeamsRequest.data}
+                          nbOfApis={nbOfApis}
+                          setNbOfApis={changeNbOfApis}
+                          input={reasonSub}
+                          setInput={setReasonSub}
+                          nb={dataRequest.data.nb}
+                          handlePageClick={handlePageClick}
+                          page={page}
+                          />
+                        </>
                     }
                   </div>
               }

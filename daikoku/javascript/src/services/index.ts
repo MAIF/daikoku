@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
 import {
-  IApiSubscription,
+  IFastApiSubscription,
   IAsset,
   IQuotas,
   ISafeSubscription,
@@ -88,7 +88,7 @@ export const getDocDetails = (api: string, version: string): Promise<IDocDetail>
 export const getTeamSubscriptions = (api: any, team: any, version: any) =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
 
-export const getTeamSubscriptionsWithPlan = (api: string, team: string, version: string, planId: string):Promise<Array<IApiSubscription>> =>
+export const getTeamSubscriptionsWithPlan = (api: string, team: string, version: string, planId: string):Promise<Array<IFastApiSubscription>> =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}?planId=${planId}`);
 
 export const getMySubscriptions = (apiId: any, version: any) =>

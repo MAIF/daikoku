@@ -1479,10 +1479,8 @@ class ApiController(
 
           var jsonResearch = {planId match {
             case Some(_) =>
-              System.out.println("here")
               Json.obj("api" -> api.id.value, "team" -> team.id.value,"plan" -> planId)
             case None =>
-              System.out.println("not here" + planId)
               Json.obj("api" -> api.id.value, "team" -> team.id.value)
           }}
 
@@ -2295,7 +2293,6 @@ class ApiController(
       sender = ctx.user,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
-    //TODO s'inspirer de ça
     val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
 
     for {

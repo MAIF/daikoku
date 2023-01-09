@@ -1,5 +1,5 @@
 import { TreeItem, TreeItems } from "../components/utils/dnd/types";
-import {IAccessibleTeam, ITeamSimple} from "./team";
+import {IFastTeam, ITeamSimple} from "./team";
 
 interface IBaseApi {
   _id: string;
@@ -298,7 +298,7 @@ export interface ISubscriptionInformation {
   plan: IUsagePlan
 }
 
-export interface IAccessiblePlan {
+export interface IFastPlan {
   _id: string
   customName: string
   customDescription?: string;
@@ -315,34 +315,30 @@ export interface IAccessiblePlan {
 }
 
 
-export interface IAccessibleSubscription {
+export interface IFastSubscription {
   planId: string,
   isPending: boolean,
   havesubscriptions: boolean,
 
 }
 
-export interface IAccessibleParent {
+export interface IFastApiParent {
   _id: string,
   currentVersion: string,
 }
 
-export interface ISubAccessibleApi {
-  _id: string
-}
 
-
-export interface IAccessibleApi {
+export interface IFastApi {
   api: {
     name: string,
     _humanReadableId: string,
     _id: string,
     isDefault: boolean,
     visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly',
-    possibleUsagePlans: Array<IAccessiblePlan>,
+    possibleUsagePlans: Array<IFastPlan>,
     currentVersion: string,
-    team: IAccessibleTeam,
-    parent: IAccessibleParent
+    team: IFastTeam,
+    parent: IFastApiParent
   }
-  subscriptionsWithPlan: Array<IAccessibleSubscription>,
+  subscriptionsWithPlan: Array<IFastSubscription>,
 }
