@@ -339,7 +339,7 @@ const DaikokuAppComponent = ({
                     element={
                       <RouteWithTitle title={
                         translate({
-                          key: "expertMode.title.page",
+                          key: "fastMode.title.page",
                           replacements: [tenant.title]
                         })}>
                         <ExpertMode/>

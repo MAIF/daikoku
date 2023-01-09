@@ -113,7 +113,7 @@ export const SideBar = () => {
               className={classNames(
                 'nav-item mb-3 notification-link messages-link cursor-pointer'
               )}
-              title={translate('expertMode.access')}
+              title={translate('fastMode.access')}
             >
               <Zap/>
             </Link>

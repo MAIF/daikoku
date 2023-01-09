@@ -239,7 +239,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
             Reason for subscription
           <textarea
             className="form-control"
-            placeholder={translate('expertMode.input.reasonSubscription')}
+            placeholder={translate('fastMode.input.reasonSubscription')}
             aria-label=""
             value={props.input}
             onChange={(e) => {
@@ -280,7 +280,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
           }
           {apiKeyValue && planInfo && subscription !== undefined && isPlan === false &&
               <div className="section p-3 mb-2">
-                API Key :
+                {translate('fastMode.apiKey.title')}
                 <div className="card">
                   <div className="card-header" style={{ position: 'relative' }}>
                     <div className="d-flex align-items-center justify-content-between">
@@ -399,7 +399,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
           }
           {isPlan === undefined &&
               <div className="section p-3 mb-2">
-                {translate('expertMode.show.information')}
+                {translate('fastMode.show.information')}
               </div>
           }
         </div>
@@ -445,7 +445,7 @@ const ExpertApiCard = (props: ExpertApiCardProps) => {
         })
     } else {
       dispatch(openFormModal<{ motivation: string }>({
-        title: translate(input === '' ? 'motivations.modal.title' : 'expertMode.subscription.resume'),
+        title: translate(input === '' ? 'motivations.modal.title' : 'fastMode.subscription.resume'),
         schema: {
           motivation: {
             defaultValue: input,
@@ -611,7 +611,7 @@ export const ExpertMode = () => {
   } else if (myTeamsRequest.data) {
     return (
       <main role="main">
-        <h1 className={"ms-3"}>{translate('expertMode.title')}</h1>
+        <h1 className={"ms-3"}>{translate('fastMode.title')}</h1>
         <section className="container">
           <div className="row mb-2">
             <div className="col-12 col-sm mb-2">
@@ -638,7 +638,7 @@ export const ExpertMode = () => {
                         <input
                             type="text"
                             className="form-control mb-2"
-                            placeholder={translate('expertMode.input.research.api')}
+                            placeholder={translate('fastMode.input.research.api')}
                             onChange={debouncedResults}
                         />
                       </div>
@@ -673,7 +673,7 @@ export const ExpertMode = () => {
                   </div>
               }
               {!selectedTeam &&
-                  <div> {translate('expertMode.title.chooseTeam')}</div>
+                  <div> {translate('fastMode.title.chooseTeam')}</div>
               }
 
             </div>
@@ -683,7 +683,7 @@ export const ExpertMode = () => {
     )
   } else {
     return (
-      <div>{translate('expertMode.error.searching.team')}</div>
+      <div>{translate('fastMode.error.searching.team')}</div>
     )
   }
 
