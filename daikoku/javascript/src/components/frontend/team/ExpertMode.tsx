@@ -236,7 +236,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
             />
           </div>
           <div className="section p-3 mb-2">
-            Reason for subscription
+            {translate('fastMode.reasonSubscription.title')}
           <textarea
             className="form-control"
             placeholder={translate('fastMode.input.reasonSubscription')}
@@ -315,7 +315,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
                           className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
                           onClick={() => setActiveTab('apikey')}
                       >
-                        ApiKey
+                        {translate('ApiKey')}
                       </span>
                         </li>
                           <li className="nav-item  cursor-pointer">
@@ -333,7 +333,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
                       <>
                         <div className="mb-3">
                           <label htmlFor={`client-id`} className="">
-                            Client Id
+                            {translate('Client Id')}
                           </label>
                           <div className="">
                             <input
@@ -529,9 +529,9 @@ const ExpertApiCard = (props: ExpertApiCardProps) => {
                     {subPlan.havesubscriptions && <button className={"btn btn-outline-success me-1"}
                                                           onClick={() => props.showApiKey(props.apiWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!.api._id,props.team._id, selectedApiV, plan)}
                                                           style={{whiteSpace: "nowrap"}}
-                    >See the api key</button>}
+                    >{translate('fastMode.button.seeApiKey')}</button>}
                     {subPlan.isPending &&
-                        <button style={{whiteSpace: "nowrap"}} disabled={true} className={"btn btn-outline-primary disabled me-1"}> Pending </button>}
+                        <button style={{whiteSpace: "nowrap"}} disabled={true} className={"btn btn-outline-primary disabled me-1"}> {translate('fastMode.button.pending')} </button>}
                     {(!subPlan.havesubscriptions || plan.allowMultipleKeys) && !subPlan.isPending && <button
                         style={{whiteSpace: "nowrap"}}
                         className={"btn btn-sm btn-outline-primary me-1"}

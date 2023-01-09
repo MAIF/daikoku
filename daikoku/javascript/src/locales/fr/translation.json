@@ -1216,5 +1216,8 @@
   "fastMode.input.research.api": "Chercher votre API...",
   "fastMode.subscription.resume": "résumé de votre demande de souscription",
   "fastMode.show.information": "Cliquez sur un plan ou sur un des boutons \"voir la clé d'API\" pour plus d'informations",
-  "fastMode.apiKey.title": "Clé d'API :"
+  "fastMode.apiKey.title": "Clé d'API :",
+  "fastMode.reasonSubscription.title": "La raison de votre souscription",
+  "fastMode.button.seeApiKey": "Voir la clé d'API",
+  "fastMode.button.pending": "En attente"
 }

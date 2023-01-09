@@ -1214,5 +1214,8 @@
     "fastMode.input.research.api": "Search your API...",
     "fastMode.subscription.resume": "summary of your subscription request",
     "fastMode.show.information": "Click on a plan or on a button \"see the API key\" for see more details\n",
-    "fastMode.apiKey.title": "API Key :"
+    "fastMode.apiKey.title": "API Key :",
+    "fastMode.reasonSubscription.title": "Reason for subscription",
+    "fastMode.button.seeApiKey": "See the api key",
+    "fastMode.button.pending": "Pending"
 }
