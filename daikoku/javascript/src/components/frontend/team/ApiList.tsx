@@ -50,7 +50,6 @@ type TApiList = {
 }
 
 export const ApiList = (props: TApiList) => {
-  console.debug({props})
   const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 

@@ -1,19 +1,17 @@
+import { getApolloContext } from '@apollo/client';
+import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getApolloContext } from '@apollo/client';
-import { useSelector, useDispatch } from 'react-redux';
 
 
 import { I18nContext, updateTeam, updateUser } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
+import { IApiWithAuthorization, IApiWithSimpleTeam, isError, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
-import { IApi, IApiWithAuthorization, IApiWithSimpleTeam, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
-import { ModalContext } from '../../../contexts';
-import { isError } from 'lodash';
 
 export const MyHome = () => {
   const [loading, setLoading] = useState(false)
@@ -71,10 +69,11 @@ export const MyHome = () => {
   }, [connectedUser._id, location.pathname]);
 
   const askForApiAccess = (api: any, teams: any) =>
-    Services.askForApiAccess(teams, api._id).then(() => {
-      toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [api.name] }));
-      fetchData();
-    });
+    Services.askForApiAccess(teams, api._id)
+      .then(() => {
+        toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [api.name] }));
+        fetchData();
+      });
 
   const toggleStar = (api: any) => {
     Services.toggleStar(api._id).then((res) => {
@@ -137,7 +136,7 @@ export const MyHome = () => {
     return (
       <Spinner />
     )
-  } else if (myTeamsRequest.isSuccess && teamsRequest.isSuccess) {
+  } else if (myTeamsRequest.data && teamsRequest.data && !isError(teamsRequest.data)) {
     return (
       <main role="main">
         <section className="organisation__header col-12 mb-4 p-3">
@@ -159,9 +158,9 @@ export const MyHome = () => {
             </div>
           </div>
         </section>
-        {!isError(myTeamsRequest.data) && !isError(teamsRequest.data) && <ApiList
+        <ApiList
           apis={apis}
-          teams={teamsRequest.data as ITeamSimple[]}
+          teams={teamsRequest.data}
           myTeams={myTeamsRequest.data}
           teamVisible={true}
           askForApiAccess={askForApiAccess}
@@ -170,7 +169,7 @@ export const MyHome = () => {
           redirectToEditPage={redirectToEditPage}
           redirectToTeamPage={redirectToTeamPage}
           showTeam={true}
-        />}
+        />
       </main>
     );
   } else {

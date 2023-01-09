@@ -31,58 +31,6 @@ export const TeamHome = () => {
     variables: { teamId: params.teamId },
   }));
 
-  // const fetchData = (teamId: any) => {
-  //   if (!client) {
-  //     return;
-  //   }
-  //   Promise.all([
-  //     client.query({
-  //       query: Services.graphql.myVisibleApis,
-  //       variables: { teamId },
-  //     }),
-  //     Services.team(teamId),
-  //     Services.teams(),
-  //     client.query({
-  //       query: Services.graphql.myTeams,
-  //     }),
-  //   ]).then(
-  //     ([
-  //       {
-  //         data: { visibleApis },
-  //       },
-  //       team,
-  //       teams,
-  //       {
-  //         data: { myTeams },
-  //       },
-  //     ]) => {
-  //       if (visibleApis.error || team.error) {
-  //         props.setError({ error: { status: 404, message: visibleApis.error } });
-  //       } else {
-  //         setState({
-  //           ...state,
-  //           apis: visibleApis.map(({
-  //             api,
-  //             authorizations
-  //           }: any) => ({ ...api, authorizations })),
-  //           team,
-  //           teams,
-  //           myTeams: myTeams.map(({
-  //             users,
-  //             ...data
-  //           }: any) => ({
-  //             ...data,
-  //             users: users.map(({
-  //               teamPermission,
-  //               user
-  //             }: any) => ({ ...user, teamPermission })),
-  //           })),
-  //         });
-  //       }
-  //     }
-  //   );
-  // };
-
   const askForApiAccess = (api: IApiWithAuthorization, teams: Array<string>) => {
     return Services.askForApiAccess(teams, api._id)
       .then(() => queryClient.invalidateQueries(['apis']));
