@@ -2,65 +2,35 @@ import React, { useContext, useEffect, useMemo, useState} from "react";
 import {useQuery} from "react-query";
 import Select from 'react-select';
 import {getApolloContext} from "@apollo/client";
-import "../../../style/components/fastApiCard.scss";
+import debounce from "lodash/debounce";
 
+import "../../../style/components/fastApiCard.scss";
 import * as Services from "../../../services";
 import {Spinner} from "../../utils";
-import {
-  IFastApi,
-  ITeamSimple,
-
-
-} from "../../../types";
+import { IFastApi, ITeamSimple} from "../../../types";
 import {I18nContext} from '../../../core';
-import debounce from "lodash/debounce";
 
 import {ExpertApiList} from "./FastApiList";
 
 
 export const FastMode = () => {
   const {translate} = useContext(I18nContext);
-  const [planResearch, setPlanResearch] = useState<string>("")
-  const maybeTeam = localStorage.getItem('selectedTeam')
-  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(maybeTeam ? JSON.parse(maybeTeam) : undefined);
-  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const {client} = useContext(getApolloContext());
+  const maybeTeam = localStorage.getItem('selectedTeam')
+
+  const [seeApiSubscribed, setSeeApiSubscribed] = useState<boolean>(false)
+
   const [nbOfApis, setNbOfApis] = useState<number>(5);
   const [page, setPage] = useState<number>(0);
+  const [offset, setOffset] = useState<number>(0);
+
+  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(maybeTeam ? JSON.parse(maybeTeam) : undefined);
+
+  const [planResearch, setPlanResearch] = useState<string>("")
   const [research, setResearch] = useState<string>("");
   const [reasonSub, setReasonSub] = useState<string>("");
-  const [offset, setOffset] = useState<number>(0);
-  const [seeApiSubscribed, setSeeApiSubscribed] = useState<boolean>(false)
-  const handleChange = (e) => {
-    setPage(0)
-    setResearch(e.target.value);
 
-  };
-
-  const debouncedResults = useMemo(() => {
-    return debounce(handleChange, 500);
-  }, []);
-  useEffect(() => {
-    return () => {
-      debouncedResults.cancel();
-
-    };
-  });
-  const handlePageClick = (data) => {
-    setPage(data.selected );
-    setOffset(data.selected * nbOfApis)
-  };
-
-  const changeNbOfApis = (data) => {
-    setNbOfApis(data)
-    setPage(0)
-  }
-  const changeSeeOnlySubscribedApis = (data) => {
-    setSeeApiSubscribed(data)
-    setPage(0)
-
-  }
-
+  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const dataRequest = useQuery<{apis: Array<IFastApi>, nb: number}>({
     queryKey: ["data", selectedTeam?._id, offset,seeApiSubscribed, nbOfApis, research ],
     queryFn: ({queryKey}) => {
@@ -77,6 +47,35 @@ export const FastMode = () => {
     cacheTime: 0
 
   })
+
+  const handleChange = (e) => {
+    setPage(0)
+    setResearch(e.target.value);
+  };
+
+  const debouncedResults = useMemo(() => {
+    return debounce(handleChange, 500);
+  }, []);
+  useEffect(() => {
+    return () => {
+      debouncedResults.cancel();
+
+    };
+  });
+  const handlePageClick = (data) => {
+    setPage(data.selected );
+    setOffset(data.selected * nbOfApis)
+  };
+  const changeNbOfApis = (data) => {
+    setNbOfApis(data)
+    setPage(0)
+  }
+  const changeSeeOnlySubscribedApis = (data) => {
+    setSeeApiSubscribed(data)
+    setPage(0)
+
+  }
+
 
   if (myTeamsRequest.isLoading ) {
     return <Spinner/>

@@ -1,13 +1,15 @@
 import React, {useContext, useState} from "react";
-import {I18nContext} from "../../../contexts/i18n-context";
-import {IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple} from "../../../types";
-import {BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option} from "../../utils";
-import * as Services from "../../../services";
 import Select from "react-select";
 import Pagination from "react-paginate";
 import classNames from "classnames";
 import find from "lodash/find";
+
+import {I18nContext} from "../../../contexts/i18n-context";
+import {IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple} from "../../../types";
+import {BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option} from "../../utils";
+import * as Services from "../../../services";
 import {currencies} from "../../../services/currencies";
+
 import {ExpertApiCard} from "./FastApiCard";
 
 type ExpertApiListProps = {
@@ -42,11 +44,14 @@ const Currency = ({
 };
 export const ExpertApiList = (props: ExpertApiListProps) => {
   const {translate} = useContext(I18nContext);
+
   const [planInfo, setPlanInfo] = useState<IFastPlan>();
   const [subscription, setSubscription] = useState<IFastApiSubscription | undefined>()
+
   const [apiKeyValue, setApiKeyValue] = useState<string>();
-  const [isPlan, setIsPlan] = useState<boolean | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<string>('apikey');
+
+  const [isPlan, setIsPlan] = useState<boolean | undefined>(undefined);
   const [hide, setHide] = useState(true);
 
   const renderPricing = (type: string) => {
@@ -246,9 +251,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                         {(planInfo!.maxPerSecond === undefined ) && translate('plan.limits.unlimited')}
                         {(planInfo!.maxPerSecond !== undefined ) &&
                             <div>
-                              <div>
-                                {translate({key: 'plan.limits', replacements: [planInfo.maxPerSecond.toString(), planInfo.maxPerMonth!.toString()]})}
-                              </div>
+                              {translate({key: 'plan.limits', replacements: [planInfo.maxPerSecond.toString(), planInfo.maxPerMonth!.toString()]})}
                             </div>
                         }
                       </span>
@@ -266,7 +269,6 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                 <div className="card">
                   <div className="card-header" style={{ position: 'relative' }}>
                     <div className="d-flex align-items-center justify-content-between">
-
                       <BeautifulTitle
                           title={planInfo.customName}
                           style={{
