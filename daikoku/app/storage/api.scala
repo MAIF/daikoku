@@ -8,7 +8,6 @@ import akka.util.ByteString
 import cats.data.OptionT
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
 import reactivemongo.api.indexes.Index
 import reactivemongo.play.json.collection.JSONCollection
@@ -190,8 +189,9 @@ trait Repo[Of, Id <: ValueType] {
     findOne(Json.obj("_deleted" -> false, "_id" -> id))
 
   def findByIdNotDeleted(id: Id)(
-      implicit ec: ExecutionContext): Future[Option[Of]] =
-    findOne(Json.obj("_deleted" -> false, "_id" -> id.value))
+      implicit ec: ExecutionContext): Future[Option[Of]] = {
+    findByIdNotDeleted(id.value)
+  }
 
   def findById(id: String)(implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id))
@@ -312,6 +312,8 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId]
 
 trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 
+trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
+
 trait DataStore {
   def start(): Future[Unit]
 
@@ -352,6 +354,8 @@ trait DataStore {
   def messageRepo: MessageRepo
 
   def cmsRepo: CmsPageRepo
+
+  def operationRepo: OperationRepo
 
   def evolutionRepo: EvolutionRepo
 

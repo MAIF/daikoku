@@ -169,6 +169,21 @@ class TeamControllerSpec()
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.apisCreationPermission mustBe Some(true)
     }
+
+    "not delete a tenant team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+
+      val respDelete = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}",
+        method = "DELETE"
+      )(tenant, session)
+      respDelete.status mustBe 403
+    }
   }
 
   "a team administrator" can {
@@ -186,20 +201,21 @@ class TeamControllerSpec()
       )(tenant, session)
       respCreation.status mustBe 201
 
-      //todo: verifier  qu'il en est l'administrateur
-
       val respDelete = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}",
         method = "DELETE"
       )(tenant, session)
-      respDelete.status mustBe 403
+      respDelete.status mustBe 200
     }
 
-    "not delete a team" in {
+    "not delete an another team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner, defaultAdminTeam)
+        teams =
+          Seq(teamOwner.copy(users =
+                Set(UserWithPermission(user.id, TeamPermission.Administrator))),
+              defaultAdminTeam)
       )
       val session = loginWithBlocking(userAdmin, tenant)
 
@@ -513,20 +529,6 @@ class TeamControllerSpec()
       val respGet = httpJsonCallBlocking(
         s"/api/teams/${teamOwnerId.value}/_full")(tenant, session)
       respGet.status mustBe 403
-    }
-
-    "list all joinable teams" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userAdmin, randomUser),
-        teams = Seq(
-          teamOwner,
-          teamConsumer.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator))))
-      )
-      val session = loginWithBlocking(randomUser, tenant)
-      val resp = httpJsonCallBlocking("/api/teams/joinable")(tenant, session)
-      resp.status mustBe 200
     }
 
     "ask for join a team" in {

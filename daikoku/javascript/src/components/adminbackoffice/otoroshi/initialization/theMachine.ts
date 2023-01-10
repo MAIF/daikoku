@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { nanoid } from 'nanoid';
 import { assign, createMachine } from 'xstate';
 
 import * as Services from '../../../../services';
@@ -27,6 +28,7 @@ export const theMachine = createMachine({
     otoroshi: undefined,
     groups: [],
     services: [],
+    routes: [],
     apikeys: [],
     error: undefined,
   },
@@ -46,16 +48,26 @@ export const theMachine = createMachine({
               Promise.all([
                 Services.getOtoroshiGroups(tenant, otoroshi),
                 Services.getOtoroshiServices(tenant, otoroshi),
-              ]).then(([groups, services]) => {
-                callBack({ type: 'DONE_SERVICES', tenant, otoroshi, groups, services });
+                Services.getOtoroshiRoutes(tenant, otoroshi),
+              ]).then(([groups, services, routes]) => {
+                callBack({ type: 'DONE_SERVICES', tenant, otoroshi, groups, services, routes });
               });
             } else if (goto === 'apikeys') {
               Promise.all([
                 Services.getOtoroshiGroups(tenant, otoroshi),
                 Services.getOtoroshiServices(tenant, otoroshi),
+                Services.getOtoroshiRoutes(tenant, otoroshi),
                 Services.getOtoroshiApiKeys(tenant, otoroshi),
-              ]).then(([groups, services, apikeys]) => {
-                callBack({ type: 'DONE_APIKEYS', tenant, otoroshi, groups, services, apikeys });
+              ]).then(([groups, services, routes, apikeys]) => {
+                callBack({
+                  type: 'DONE_APIKEYS',
+                  tenant,
+                  otoroshi,
+                  groups,
+                  services,
+                  apikeys,
+                  routes,
+                });
               });
             } else {
               callBack({ type: 'DONE' });
@@ -71,6 +83,7 @@ export const theMachine = createMachine({
             otoroshi: (_context, { otoroshi }) => otoroshi,
             groups: (_context, { groups = [] }) => groups,
             services: (_context, { services = [] }) => services,
+            routes: (_context, { routes = [] }) => routes,
           }),
         },
         DONE_APIKEYS: {
@@ -81,6 +94,7 @@ export const theMachine = createMachine({
             groups: (_context, { groups = [] }) => groups,
             services: (_context, { services = [] }) => services,
             apikeys: (_context, { apikeys = [] }) => apikeys,
+            routes: (_context, { routes = [] }) => routes,
           }),
         },
         DONE: 'otoroshiSelection',
@@ -94,11 +108,14 @@ export const theMachine = createMachine({
             Promise.all([
               Services.getOtoroshiGroups(tenant, otoroshi),
               Services.getOtoroshiServices(tenant, otoroshi),
+              Services.getOtoroshiRoutes(tenant, otoroshi),
             ])
-              .then(([groups, services]) => {
+              .then(([groups, services, routes]) => {
                 if (groups.error) callBack({ type: 'FAILURE', error: { ...groups } });
                 if (services.error) callBack({ type: 'FAILURE', error: { ...services } });
-                else callBack({ type: 'DONE_COMPLETE', groups, services, tenant, otoroshi });
+                if (routes.error) callBack({ type: 'FAILURE', error: { ...routes } });
+                else
+                  callBack({ type: 'DONE_COMPLETE', groups, services, tenant, otoroshi, routes });
               })
               .catch((error) => callBack({ type: 'FAILURE', error }));
           };
@@ -112,6 +129,7 @@ export const theMachine = createMachine({
             otoroshi: (_context, { otoroshi }) => otoroshi,
             groups: (_context, { groups = [] }) => groups,
             services: (_context, { services = [] }) => services,
+            routes: (_context, { routes = [] }) => routes,
           }),
         },
         FAILURE: {
@@ -133,6 +151,7 @@ export const theMachine = createMachine({
             otoroshi: undefined,
             groups: [],
             services: [],
+            routes: [],
             apikeys: [],
             error: undefined,
           }),
@@ -143,11 +162,18 @@ export const theMachine = createMachine({
       invoke: {
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
+          console.debug('hello services');
           return (callBack, _event) =>
-            Services.getOtoroshiServices(context.tenant, context.otoroshi)
-              .then((newServices) => {
-                if (newServices.error) callBack({ type: 'FAILURE', error: { ...newServices } });
-                else callBack({ type: 'DONE_COMPLETE', newServices });
+            Promise.all([
+              Services.getOtoroshiServices(context.tenant, context.otoroshi),
+              Services.getOtoroshiRoutes(context.tenant, context.otoroshi),
+            ])
+              .then(([newServices, newRoutes]) => {
+                if (newServices.error || newRoutes.error) {
+                  callBack({ type: 'FAILURE', error: { ...(newServices || newRoutes) } });
+                } else {
+                  callBack({ type: 'DONE_COMPLETE', newServices, newRoutes });
+                }
               })
               .catch((error) => callBack({ type: 'FAILURE', error }));
         },
@@ -156,7 +182,10 @@ export const theMachine = createMachine({
         DONE_COMPLETE: {
           target: 'completeServices',
           actions: assign({
-            services: ({ services }, { newServices = [] }) => [...services, ...newServices],
+            // services: ({ services }, { newServices = [] }) => [...services, ...newServices],
+            // routes: ({ routes }, { newRoutes = [] }) => [...routes, ...newRoutes]
+            services: ({ services }, { newServices = [] }) => newServices,
+            routes: ({ routes }, { newRoutes = [] }) => newRoutes,
           }),
         },
         FAILURE: {
@@ -178,6 +207,7 @@ export const theMachine = createMachine({
             otoroshi: undefined,
             groups: [],
             services: [],
+            routes: [],
             apikeys: [],
             error: undefined,
           }),
@@ -195,6 +225,7 @@ export const theMachine = createMachine({
             otoroshi: undefined,
             groups: [],
             services: [],
+            routes: [],
             apikeys: [],
             error: undefined,
           }),
@@ -208,25 +239,43 @@ export const theMachine = createMachine({
           return (callBack, _onEvent) => {
             Services.fetchNewApi()
               .then((newApi) =>
-                createdApis.map((api: any) => ({
-                  ...newApi,
-                  _id: nanoi(32),
-                  name: api.name,
-                  team: api.team,
-                  published: true,
+                createdApis.map((api: any) => {
+                  // let authorizedEntities = {
+                  //   groups: [],
+                  // }
+                  // if (api.plugins) {
+                  //   authorizedEntities = {
+                  //     ...authorizedEntities,
+                  //     routes: [api.id]
+                  //   }
+                  // }
+                  // else {
+                  //   authorizedEntities = {
+                  //     ...authorizedEntities,
+                  //     services: [api.id]
+                  //   }
+                  // }
 
-                  possibleUsagePlans: newApi.possibleUsagePlans.map((pp: any) => ({
-                    ...pp,
+                  return {
+                    ...newApi,
+                    _id: nanoid(32),
+                    name: api.name,
+                    team: api.team,
+                    published: true,
 
-                    otoroshiTarget: {
-                      otoroshiSettings: context.otoroshi,
-                      authorizedEntities: { groups: [], services: [api.id] },
-                      apikeyCustomization,
-                    },
-                  })),
-                }))
+                    // possibleUsagePlans: newApi.possibleUsagePlans.map((pp: any) => ({
+                    //   ...pp,
+
+                    //   otoroshiTarget: {
+                    //     otoroshiSettings: context.otoroshi,
+                    //     authorizedEntities,
+                    //     apikeyCustomization,
+                    //   },
+                    // })),
+                  };
+                })
               )
-              .then((apis) => Services.apisInit(apis))
+              .then(Services.apisInit)
               .then(() => localStorage.removeItem(`daikoku-initialization-${context.tenant}`))
               .then(() => callBackCreation())
               .then(() => callBack({ type: 'CREATION_DONE' }))
@@ -248,7 +297,8 @@ export const theMachine = createMachine({
       invoke: {
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
-          return (callBack, _onEvent) => {
+          console.debug('hello apikeys');
+          return (callBack, _event) =>
             Services.getOtoroshiApiKeys(context.tenant, context.otoroshi)
               .then((newApikeys) => {
                 if (newApikeys.error) callBack({ type: 'FAILURE', error: { ...newApikeys } });
@@ -266,14 +316,14 @@ export const theMachine = createMachine({
                 }
               })
               .catch((error) => callBack({ type: 'FAILURE', error }));
-          };
         },
       },
       on: {
         DONE_COMPLETE: {
           target: 'completeApikeys',
           actions: assign({
-            apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys],
+            //apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys],
+            apikeys: ({ apikeys }, { newApikeys = [] }) => newApikeys,
           }),
         },
         FAILURE: {
@@ -295,6 +345,7 @@ export const theMachine = createMachine({
             otoroshi: undefined,
             groups: [],
             services: [],
+            routes: [],
             apikeys: [],
             error: undefined,
           }),
@@ -312,6 +363,7 @@ export const theMachine = createMachine({
             otoroshi: undefined,
             groups: [],
             services: [],
+            routes: [],
             apikeys: [],
             error: undefined,
           }),

@@ -3,11 +3,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client'
 import { Provider } from 'react-redux';
-import { QueryClientProvider, QueryClient } from "react-query";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
 
 import jQuery from 'jquery';
 
+
+import 'react-tooltip/dist/react-tooltip.css'
 import 'bootstrap/dist/css/bootstrap.css';
 import '@maif/react-forms/lib/index.css';
 import './style/main.scss';
@@ -16,9 +18,6 @@ import 'bootstrap';
 
 import { store } from './core';
 import { LoginPage, queryClient } from './components';
-import {
-  registerContact,
-} from './components/utils/window';
 import { customizeFetch } from './services/customize';
 import { I18nProvider } from './contexts/i18n-context';
 
@@ -81,9 +80,6 @@ export function init(
     </Provider>,
     
   );
-  if (session) {
-    registerContact(storeInst);
-  }
 }
 
 export function login(provider: any, callback: any, tenant: any) {
@@ -96,7 +92,6 @@ export function login(provider: any, callback: any, tenant: any) {
     </Provider>,
     document.getElementById('app')
   );
-  registerContact(storeInst);
 }
 
 export function initNotLogged(tenant: any) {
@@ -112,5 +107,4 @@ export function initNotLogged(tenant: any) {
       </I18nProvider>
     </Provider>
   );
-  registerContact(storeInst);
 }

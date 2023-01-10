@@ -1,25 +1,28 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { useDispatch } from 'react-redux';
 import { useLocation, useParams } from 'react-router-dom';
 import { constraints, type, format } from "@maif/react-forms";
 import moment from 'moment';
 
-import { Table, DefaultColumnFilter, TableRef } from '../../inputs';
-import { I18nContext, openFormModal } from '../../../core';
+import { Table, TableRef } from '../../inputs';
+import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
 import { ModalContext } from '../../../contexts';
+import { createColumnHelper } from '@tanstack/react-table';
+import { IApi, IApiPost, isError, ITeamSimple } from '../../../types';
 
-
+type TeamApiPostProps = {
+  team: ITeamSimple,
+  api: IApi
+}
 export function TeamApiPost({
   team,
   api
-}: any) {
+}: TeamApiPostProps) {
   const location = useLocation();
   const params = useParams();
-  const dispatch = useDispatch();
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
   const table = useRef<TableRef>();
 
   const schema = {
@@ -117,53 +120,36 @@ export function TeamApiPost({
       });
   }
 
+  const columnHelper = createColumnHelper<IApiPost>()
   const columns = [
-    {
-      id: 'title',
-      Header: translate('Title'),
-      style: { textAlign: 'left' },
-      accessor: (post: any) => post.title
-    },
-    {
-      id: 'lastModificationAt',
-      Header: translate('Last modification'),
-      style: { textAlign: 'left' },
-      disableFilters: true,
-      Filter: DefaultColumnFilter,
-      accessor: (post: any) => post.lastModificationAt,
-      filter: 'equals',
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const post = original;
-        return moment(post.lastModificationAt).format(
-          translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
-        );
-      },
-    },
-    {
-      id: 'actions',
-      Header: translate('Actions'),
-      style: { textAlign: 'right' },
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const post = original;
+    columnHelper.accessor('title', {
+      header: translate('Title'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.accessor(row => {
+      return moment(row.lastModificationAt).format(
+        translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
+      );
+    }, {
+      header: translate('Last modification'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center', width: '120px' } },
+      cell: (info) => {
+        const post = info.row.original;
         return (
           <div>
             <button
               className='btn btn-sm btn-outline-primary me-2'
-              onClick={() => dispatch(openFormModal({
+              onClick={() => openFormModal({
                 title: translate('team_api_post.update'),
                 schema,
                 onSubmit: savePost,
                 value: post,
                 actionLabel: translate('team_api_post.publish')
-              }))}><i className="fas fa-pen" /></button>
+              })}><i className="fas fa-pen" /></button>
             <button
               className="btn btn-sm btn-outline-danger me-1"
               onClick={() => {
@@ -175,7 +161,7 @@ export function TeamApiPost({
           </div>
         )
       }
-    }
+    })
   ]
 
   return (
@@ -184,12 +170,12 @@ export function TeamApiPost({
         <div className="d-flex align-items-center justify-content-end">
           <button
             className="btn btn-outline-success"
-            onClick={() => dispatch(openFormModal({
+            onClick={() => openFormModal({
               title: translate('team_api_post.new'),
               schema,
               onSubmit: publishPost,
               actionLabel: translate('team_api_post.publish')
-            }))}
+            })}
           >
             {translate('team_api_post.new')}
           </button>
@@ -198,8 +184,9 @@ export function TeamApiPost({
           defaultSort="lastModificationAt"
           defaultSortDesc={true}
           columns={columns}
-          fetchItems={() => Services.getAllAPIPosts(api._humanReadableId, params.versionId).then(r => r.posts)}
-          injectTable={(t: any) => table.current = t}
+          fetchItems={() => Services.getAllAPIPosts(api._humanReadableId, params.versionId!)
+            .then(r => isError(r) ? r : r.posts)}
+          ref={table}
         />
       </div>
     </div>

@@ -9,8 +9,9 @@ import * as Services from '../../../services';
 import { Spinner } from '../..';
 import Revisions from './Revisions';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
+import { constraints, type } from '@maif/react-forms';
 
-interface IPage {
+export interface IPage {
   id: string
   name: string
   path: string
@@ -40,7 +41,7 @@ export const CMSOffice = () => {
 
   const { client } = useContext(getApolloContext());
   const { translate } = useContext(I18nContext);
-  const { prompt } = useContext(ModalContext);
+  const { prompt, openFormModal } = useContext(ModalContext);
 
   const [pages, setPages] = useState<Array<IPage>>([]);
   const [downloading, setDownloading] = useState(false);

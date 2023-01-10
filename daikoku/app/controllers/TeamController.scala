@@ -3,6 +3,9 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
+import cats.Id
+import cats.data.EitherT
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{
   DaikokuAction,
   DaikokuActionContext,
@@ -15,7 +18,12 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient, Translator}
+import fr.maif.otoroshi.daikoku.utils.{
+  DeletionService,
+  IdGenerator,
+  OtoroshiClient,
+  Translator
+}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.{I18nSupport, Lang}
@@ -35,7 +43,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                      DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                      env: Env,
                      cc: ControllerComponents,
-                     translator: Translator)
+                     translator: Translator,
+                     deletionService: DeletionService)
     extends AbstractController(cc)
     with I18nSupport {
 
@@ -50,7 +59,7 @@ class TeamController(DaikokuAction: DaikokuAction,
         s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(ctx) {
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
-          .findByIdOrHrId(teamId)
+          .findByIdOrHrIdNotDeleted(teamId)
           .map {
             case Some(team) =>
               Ok(team.asSimpleJson)
@@ -101,8 +110,9 @@ class TeamController(DaikokuAction: DaikokuAction,
   def teams() = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(
       s"@{user.name} has accessed the list of teams for current tenant"))(ctx) {
-      env.dataStore.teamRepo.forTenant(ctx.tenant.id).findAll() map { teams =>
-        Ok(JsArray(teams.map(_.toUiPayload())))
+      env.dataStore.teamRepo.forTenant(ctx.tenant.id).findAllNotDeleted() map {
+        teams =>
+          Ok(JsArray(teams.map(_.toUiPayload())))
       }
     }
   }
@@ -187,88 +197,22 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def deleteTeam(teamId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(
+    TeamAdminOrTenantAdminOnly(
       AuditTrailEvent(
-        s"@{user.name} has deleted team @{team.name} - @{team.id}"))(
-      ctx.tenant.id.value,
-      ctx) { (tenant, team) =>
-      env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId) flatMap {
-        case Some(team) if team.`type` == TeamType.Admin =>
-          FastFuture.successful(
-            Forbidden(
-              Json.obj("error" -> "You're not authorized to delete this team")))
-        case Some(team) =>
-          ctx.setCtxValue("team.id", team.id)
-          ctx.setCtxValue("team.name", team.name)
-          // TODO: logical delete
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant.id)
-            .deleteById(teamId)
-            .map { _ =>
-              Ok(Json.obj("done" -> true))
-            }
-        case None =>
-          FastFuture.successful(NotFound(Json.obj("error" -> "Team not found")))
-      }
-    }
-  }
+        s"@{user.name} has deleted team @{team.name} - @{team.id}"))(teamId,
+                                                                     ctx) {
+      team =>
+        implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-  def allJoinableTeams() = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(
-      s"@{user.name} has accessed list of joinable teams"))(ctx) {
-      for {
-        teams <- env.dataStore.teamRepo
-          .forTenant(ctx.tenant.id)
-          .findNotDeleted(Json.obj("type" -> TeamType.Organization.name))
-        translations <- env.dataStore.translationRepo
-          .forTenant(ctx.tenant)
-          .find(Json.obj(
-            "element.id" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))))
-        myCurrentRequests <- env.dataStore.notificationRepo
-          .forTenant(ctx.tenant.id)
-          .findNotDeleted(
-            Json.obj("sender._id" -> ctx.user.id.asJson,
-                     "action.type" -> "TeamAccess",
-                     "status.status" -> "Pending")
-          )
-      } yield {
-        def translationAsJsObject(team: Team): JsObject = {
-          val translationAsJsObject = translations
-            .groupBy(t => t.language)
-            .map {
-              case (k, v) =>
-                Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
-            }
-            .fold(Json.obj())(_ deepMerge _)
-          Json.obj("translation" -> translationAsJsObject)
+        val value: EitherT[Future, AppError, Unit] = team.`type` match {
+          case TeamType.Admin => EitherT.leftT(AppError.ForbiddenAction)
+          case _              => deletionService.deleteTeamByQueue(team.id, ctx.tenant.id)
         }
 
-        if (ctx.user.isDaikokuAdmin) {
-          Ok(JsArray(teams.map(team =>
-            team.asJson.as[JsObject] ++ translationAsJsObject(team))))
-        } else {
-          val allOrga = teams.filter { team =>
-            if (team.`type` == TeamType.Personal && team.includeUser(
-                  ctx.user.id)) {
-              true
-            } else {
-              team.`type` == TeamType.Organization
-            }
-          }
-          val betterTeams = allOrga
-            .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-            .map { t =>
-              val json = TeamFormat.writes(t).as[JsObject]
-              val canJoin = !t.includeUser(ctx.user.id)
-              val alreadyJoin = myCurrentRequests
-                .map(notif => notif.action.asInstanceOf[TeamAccess].team)
-                .contains(t.id)
-              json ++ Json.obj("canJoin" -> canJoin,
-                               "alreadyJoin" -> alreadyJoin)
-            }
-          Ok(JsArray(betterTeams))
-        }
-      }
+        value
+          .leftMap(_.render())
+          .map(_ => Ok(Json.obj("done" -> true)))
+          .merge
     }
   }
 

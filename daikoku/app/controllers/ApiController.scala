@@ -253,44 +253,29 @@ class ApiController(
 
   def subscribedApis(teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamMemberOnly(
-        AuditTrailEvent(
-          s"@{user.name} has accessed the subscribed api list of team @{team.name} - @{team.id}"
-        )
-      )(teamId, ctx) { team =>
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(ctx.tenant.id)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(team.subscriptions.map(_.asJson)))
-            )
-          )
-          .flatMap { subscriptions =>
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant.id)
-              .find(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
-                  )
-                )
-              )
-              .flatMap { s =>
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant.id)
-                  .findNotDeleted(
-                    Json.obj(
-                      "_id" -> Json.obj(
-                        "$in" -> JsArray((s ++ subscriptions).map(_.api.asJson))
-                      )
-                    )
-                  )
-                  .flatMap(apis =>
-                    FastFuture.successful(Left(Ok(JsArray(apis.map(_.asJson)))))
-                  )
-              }
-          }
+      TeamMemberOnly(AuditTrailEvent(
+        s"@{user.name} has accessed the subscribed api list of team @{team.name} - @{team.id}"))(
+        teamId,
+        ctx) { team =>
+        for {
+          subscriptions <- env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant.id)
+            .findNotDeleted(Json.obj("team" -> team.id.asJson))
+          parentSubs <- env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(
+              Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
+                )))
+          apis <- env.dataStore.apiRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(Json.obj("_id" -> Json.obj(
+              "$in" -> JsArray((parentSubs ++ subscriptions).map(_.api.asJson))
+            )))
+        } yield {
+          Left(Ok(JsArray(apis.map(_.asJson))))
+        }
       }
     }
 
@@ -308,34 +293,31 @@ class ApiController(
             env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
             NotFound(Json.obj("error" -> "Api not found"))
           )
-          pendingRequests <-
-            if (api.team == team.id)
-              EitherT.liftF(FastFuture.successful(Seq.empty[Notification]))
-            else if (
-              !ctx.user.isDaikokuAdmin && api.visibility != ApiVisibility.Public && !api.authorizedTeams
-                .contains(team.id)
-            )
-              EitherT.leftT[Future, Seq[Notification]](
-                Unauthorized(
-                  Json.obj(
-                    "error" -> "You're not authorized on this api",
-                    "status" -> 403
-                  )
+          pendingRequests <- if (api.team == team.id)
+            EitherT.liftF(FastFuture.successful(Seq.empty[Notification]))
+          else if (!ctx.user.isDaikokuAdmin && api.visibility != ApiVisibility.Public && !api.authorizedTeams
+                     .contains(team.id))
+            EitherT.leftT[Future, Seq[Notification]](
+              Unauthorized(
+                Json.obj(
+                  "error" -> "You're not authorized on this api",
+                  "status" -> 403
                 )
               )
-            else
-              EitherT.liftF(
-                env.dataStore.notificationRepo
-                  .forTenant(ctx.tenant.id)
-                  .findNotDeleted(
-                    Json.obj(
-                      "action.type" -> "ApiSubscription",
-                      "status.status" -> "Pending",
-                      "action.api" -> api.id.asJson,
-                      "action.team" -> team.id.value
-                    )
+            )
+          else
+            EitherT.liftF(
+              env.dataStore.notificationRepo
+                .forTenant(ctx.tenant.id)
+                .findNotDeleted(
+                  Json.obj(
+                    "action.type" -> "ApiSubscription",
+                    "status.status" -> "Pending",
+                    "action.api" -> api.id.asJson,
+                    "action.team" -> team.id.value
                   )
-              )
+                )
+            )
           subscriptions <- EitherT.liftF(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
@@ -347,17 +329,16 @@ class ApiController(
           val betterApis = api.asSimpleJson.as[JsObject] ++ Json.obj(
             "possibleUsagePlans" -> JsArray(
               api.possibleUsagePlans
-                .map(p =>
-                  p.asJson.as[JsObject] ++ Json.obj(
-                    "otoroshiTarget" -> p.otoroshiTarget.isDefined
-                  )
-                )
+                .map(
+                  p =>
+                    p.asJson.as[JsObject] ++ Json.obj(
+                      "otoroshiTarget" -> p.otoroshiTarget.isDefined
+                  ))
             )
           ) ++ Json.obj(
             "pendingRequestPlan" -> JsArray(
               pendingRequests.map(r =>
-                r.action.asInstanceOf[ApiSubscriptionDemand].plan.asJson
-              )
+                r.action.asInstanceOf[ApiSubscriptionDemand].plan.asJson)
             )
           ) ++ Json.obj(
             "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
@@ -375,10 +356,10 @@ class ApiController(
     import cats.implicits._
 
     val r: EitherT[Future, Result, Result] = for {
-      myTeams <-
-        EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
-      error: EitherT[Future, Result, Seq[Notification]] =
-        EitherT.leftT[Future, Seq[Notification]](AppError.render(ApiNotFound))
+      myTeams <- EitherT.liftF(
+        env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
+      error: EitherT[Future, Result, Seq[Notification]] = EitherT
+        .leftT[Future, Seq[Notification]](AppError.render(ApiNotFound))
       value: EitherT[Future, Result, Seq[Notification]] = EitherT.liftF(
         env.dataStore.notificationRepo
           .forTenant(ctx.tenant.id)
@@ -404,18 +385,13 @@ class ApiController(
           )
       )
     } yield {
-      if (
-        (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
-          .intersect(myTeams.map(_.id))
-          .nonEmpty) && (api.published || myTeams.exists(_.id == api.team))
-      ) {
+      if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
+            .intersect(myTeams.map(_.id))
+            .nonEmpty) && (api.published || myTeams.exists(_.id == api.team))) {
         val betterApi = api
-          .copy(possibleUsagePlans =
-            api.possibleUsagePlans.filter(p =>
-              p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams
-                .exists(_.id == api.team)
-            )
-          )
+          .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p =>
+            p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams
+              .exists(_.id == api.team)))
           .asJson
           .as[JsObject] ++ Json.obj(
           "pendingRequests" -> JsArray(
@@ -426,10 +402,8 @@ class ApiController(
         )
         ctx.setCtxValue("api.name", api.name)
         Ok(
-          if (
-            ctx.tenant.apiReferenceHideForGuest
-              .getOrElse(true) && ctx.user.isGuest
-          ) betterApi - "swagger"
+          if (ctx.tenant.apiReferenceHideForGuest
+                .getOrElse(true) && ctx.user.isGuest) betterApi - "swagger"
           else betterApi
         )
       } else {
@@ -722,11 +696,10 @@ class ApiController(
           plan = (value \ "plan").as(UsagePlanIdFormat),
           team = (value \ "team").as(TeamIdFormat),
           api = (value \ "api").as(ApiIdFormat)
-        )
-      )
+      ))
 
   val sourceApiSubscriptionsDataBodyParser
-      : BodyParser[Source[subscriptionData, _]] =
+    : BodyParser[Source[subscriptionData, _]] =
     BodyParser("Streaming BodyParser") { req =>
       req.contentType match {
         case Some("application/json") =>
@@ -747,77 +720,35 @@ class ApiController(
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
         val parallelism = 10;
         val subSource = ctx.request.body
-          .map(data =>
-            ApiSubscription(
-              id = ApiSubscriptionId(BSONObjectID.generate().stringify),
-              tenant = tenant.id,
-              apiKey = data.apiKey,
-              plan = data.plan,
-              createdAt = DateTime.now(),
-              team = data.team,
-              api = data.api,
-              by = ctx.user.id,
-              customName = Some(data.apiKey.clientName),
-              rotation = None,
-              integrationToken = IdGenerator.token(64)
-            )
-          )
-
-        val UpdateTeamsFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] =
-          Flow[ApiSubscription]
-            .mapAsync(1)(sub => {
-              for {
-                team <-
-                  env.dataStore.teamRepo.forTenant(tenant.id).findById(sub.team)
-                if team.isDefined
-                _ <-
-                  env.dataStore.teamRepo
-                    .forTenant(tenant.id)
-                    .save(
-                      team.get
-                        .copy(subscriptions = team.get.subscriptions :+ sub.id)
-                    )
-              } yield {
-                sub
-              }
-            })
-        val updateTeamConcurrentFlow
-            : Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow.fromGraph(
-          GraphDSL.create() { implicit b: GraphDSL.Builder[NotUsed] =>
-            import GraphDSL.Implicits._
-
-            val merge = b.add(Merge[ApiSubscription](parallelism))
-            val partition = b.add(
-              Partition[ApiSubscription](
-                parallelism,
-                sub => {
-                  Math.abs(MurmurHash3.stringHash(sub.team.value)) % parallelism
-                }
-              )
-            )
-
-            for (i <- 0 until parallelism) {
-              partition.out(i) ~> UpdateTeamsFlow.async ~> merge.in(i)
-            }
-
-            FlowShape(partition.in, merge.out)
-          }
-        )
+          .map(
+            data =>
+              ApiSubscription(
+                id = ApiSubscriptionId(BSONObjectID.generate().stringify),
+                tenant = tenant.id,
+                apiKey = data.apiKey,
+                plan = data.plan,
+                createdAt = DateTime.now(),
+                team = data.team,
+                api = data.api,
+                by = ctx.user.id,
+                customName = Some(data.apiKey.clientName),
+                rotation = None,
+                integrationToken = IdGenerator.token(64)
+            ))
 
         val createSubFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] =
           Flow[ApiSubscription]
-            .mapAsync(10)(sub =>
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant.id)
-                .save(sub)
-                .map(done => sub -> done)
-            )
+            .mapAsync(10)(
+              sub =>
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(tenant.id)
+                  .save(sub)
+                  .map(done => sub -> done))
             .filter(_._2)
             .map(_._1)
 
         val source = subSource
           .via(createSubFlow)
-          .via(updateTeamConcurrentFlow)
 
         val transformFlow = Flow[ApiSubscription]
           .map(_.apiKey.clientName)
@@ -879,8 +810,7 @@ class ApiController(
             .grouped(10)
             .alsoTo(
               Sink.foreach(seq =>
-                AppLogger.debug(s"${seq.length} apis process")
-              )
+                AppLogger.debug(s"${seq.length} apis process"))
             )
             .flatMapConcat(seq => {
               Source(seq)
@@ -952,167 +882,159 @@ class ApiController(
           api.possibleUsagePlans.find(pp => pp.id.value == planId),
           NotFound(Json.obj("error" -> "plan not found"))
         )
-        unpublishedError: EitherT[Future, Result, Result] =
-          EitherT.leftT[Future, Result](
+        unpublishedError: EitherT[Future, Result, Result] = EitherT
+          .leftT[Future, Result](
             Forbidden(
               Json.obj(
                 "error" -> "You're not authorized to subscribed to an unpublished api"
               )
             )
           )
-        adminError: EitherT[Future, Result, Result] =
-          EitherT.leftT[Future, Result](
+        adminError: EitherT[Future, Result, Result] = EitherT
+          .leftT[Future, Result](
             Forbidden(
               Json.obj(
                 "error" -> "You're not authorized to subscribed to an admin api"
               )
             )
           )
-        value: EitherT[Future, Result, Result] =
-          EitherT
-            .liftF(
-              Future
-                .sequence(
-                  teams
-                    .map(teamId =>
-                      env.dataStore.teamRepo
-                        .forTenant(ctx.tenant.id)
-                        .findByIdNotDeleted(teamId)
-                        .flatMap {
-                          case Some(team)
-                              if !ctx.user.isDaikokuAdmin && !team
-                                .includeUser(ctx.user.id) =>
-                            Future.successful(
+        value: EitherT[Future, Result, Result] = EitherT
+          .liftF(
+            Future
+              .sequence(
+                teams
+                  .map(teamId =>
+                    env.dataStore.teamRepo
+                      .forTenant(ctx.tenant.id)
+                      .findByIdNotDeleted(teamId)
+                      .flatMap {
+                        case Some(team)
+                            if !ctx.user.isDaikokuAdmin && !team
+                              .includeUser(ctx.user.id) =>
+                          Future.successful(
+                            Json.obj(
+                              "error" -> s"You're not authorized on the team ${team.name}"
+                            )
+                          )
+                        case Some(team)
+                            if plan.visibility == Private && team.id != api.team =>
+                          Future.successful(
+                            Json.obj(
+                              "error" -> s"${team.name} is not authorized on this plan"
+                            )
+                          )
+                        case Some(team)
+                            if ctx.tenant.subscriptionSecurity
+                              .forall(t => t) && team.`type` == TeamType.Personal =>
+                          Future.successful(
+                            Json.obj(
+                              "error" -> s"${team.name} is not authorized to subscribe to an api"
+                            )
+                          )
+                        case Some(team) =>
+                          env.dataStore.apiSubscriptionRepo
+                            .forTenant(ctx.tenant)
+                            .findOneNotDeleted(
                               Json.obj(
-                                "error" -> s"You're not authorized on the team ${team.name}"
+                                "team" -> team.id.asJson,
+                                "api" -> api.id.asJson,
+                                "plan" -> plan.id.asJson
                               )
                             )
-                          case Some(team)
-                              if plan.visibility == Private && team.id != api.team =>
-                            Future.successful(
-                              Json.obj(
-                                "error" -> s"${team.name} is not authorized on this plan"
-                              )
-                            )
-                          case Some(team)
-                              if ctx.tenant.subscriptionSecurity.forall(t =>
-                                t
-                              ) && team.`type` == TeamType.Personal =>
-                            Future.successful(
-                              Json.obj(
-                                "error" -> s"${team.name} is not authorized to subscribe to an api"
-                              )
-                            )
-                          case Some(team) =>
-                            env.dataStore.apiSubscriptionRepo
-                              .forTenant(ctx.tenant)
-                              .findOneNotDeleted(
-                                Json.obj(
-                                  "team" -> team.id.asJson,
-                                  "api" -> api.id.asJson,
-                                  "plan" -> plan.id.asJson
+                            .flatMap {
+                              case Some(_)
+                                  if !plan.allowMultipleKeys
+                                    .getOrElse(false) =>
+                                Future.successful(
+                                  AppError.toJson(SubscriptionConflict)
                                 )
-                              )
-                              .flatMap {
-                                case Some(_)
-                                    if !plan.allowMultipleKeys
-                                      .getOrElse(false) =>
-                                  Future.successful(
-                                    AppError.toJson(SubscriptionConflict)
-                                  )
-                                case _ =>
-                                  def process() =
-                                    applyProcessForApiSubscription(
-                                      ctx.tenant,
-                                      ctx.user,
-                                      api,
-                                      plan.id.value,
-                                      team,
-                                      parentSubscriptionId,
-                                      motivation
-                                    ).leftMap(AppError.toJson).merge
+                              case _ =>
+                                def process() =
+                                  applyProcessForApiSubscription(
+                                    ctx.tenant,
+                                    ctx.user,
+                                    api,
+                                    plan.id.value,
+                                    team,
+                                    parentSubscriptionId,
+                                    motivation
+                                  ).leftMap(AppError.toJson).merge
 
-                                  parentSubscriptionId match {
-                                    case Some(apiKey) =>
-                                      env.dataStore.apiSubscriptionRepo
-                                        .forTenant(ctx.tenant)
-                                        .findByIdNotDeleted(apiKey.value)
-                                        .flatMap {
-                                          case Some(sub)
-                                              if sub.parent.isDefined =>
-                                            FastFuture.successful(
-                                              AppError.toJson(
-                                                SubscriptionParentExisted
-                                              )
+                                parentSubscriptionId match {
+                                  case Some(apiKey) =>
+                                    env.dataStore.apiSubscriptionRepo
+                                      .forTenant(ctx.tenant)
+                                      .findByIdNotDeleted(apiKey.value)
+                                      .flatMap {
+                                        case Some(sub)
+                                            if sub.parent.isDefined =>
+                                          FastFuture.successful(
+                                            AppError.toJson(
+                                              SubscriptionParentExisted
                                             )
-                                          case Some(_)
-                                              if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity
-                                                .exists(a => !a) =>
-                                            FastFuture.successful(
-                                              AppError.toJson(
-                                                SubscriptionAggregationDisabled
-                                              )
+                                          )
+                                        case Some(_)
+                                            if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity
+                                              .exists(a => !a) =>
+                                          FastFuture.successful(
+                                            AppError.toJson(
+                                              SubscriptionAggregationDisabled
                                             )
-                                          case Some(sub)
-                                              if sub.team != team.id =>
-                                            FastFuture.successful(
-                                              AppError.toJson(
-                                                SubscriptionAggregationTeamConflict
-                                              )
+                                          )
+                                        case Some(sub) if sub.team != team.id =>
+                                          FastFuture.successful(
+                                            AppError.toJson(
+                                              SubscriptionAggregationTeamConflict
                                             )
-                                          case Some(sub) =>
-                                            env.dataStore.apiRepo
-                                              .forTenant(ctx.tenant)
-                                              .findByIdNotDeleted(sub.api)
-                                              .flatMap {
-                                                case Some(parentApi) =>
-                                                  parentApi.possibleUsagePlans
-                                                    .find(p =>
-                                                      p.id == sub.plan
-                                                    ) match {
-                                                    case Some(parentPlan)
-                                                        if parentPlan.otoroshiTarget
-                                                          .map(
-                                                            _.otoroshiSettings
-                                                          ) != plan.otoroshiTarget
-                                                          .map(
-                                                            _.otoroshiSettings
-                                                          ) =>
-                                                      FastFuture.successful(
-                                                        AppError.toJson(
-                                                          SubscriptionAggregationOtoroshiConflict
-                                                        )
+                                          )
+                                        case Some(sub) =>
+                                          env.dataStore.apiRepo
+                                            .forTenant(ctx.tenant)
+                                            .findByIdNotDeleted(sub.api)
+                                            .flatMap {
+                                              case Some(parentApi) =>
+                                                parentApi.possibleUsagePlans
+                                                  .find(p => p.id == sub.plan) match {
+                                                  case Some(parentPlan)
+                                                      if parentPlan.otoroshiTarget
+                                                        .map(
+                                                          _.otoroshiSettings
+                                                        ) != plan.otoroshiTarget
+                                                        .map(
+                                                          _.otoroshiSettings
+                                                        ) =>
+                                                    FastFuture.successful(
+                                                      AppError.toJson(
+                                                        SubscriptionAggregationOtoroshiConflict
                                                       )
-                                                    case _ => process()
-                                                  }
-                                                case None =>
-                                                  FastFuture.successful(
-                                                    AppError.toJson(ApiNotFound)
-                                                  )
-                                              }
-                                          case None =>
-                                            FastFuture.successful(
-                                              AppError
-                                                .toJson(SubscriptionNotFound)
-                                            )
-                                        }
-                                    case _ => process()
-                                  }
-                              }
-                          case None =>
-                            Future
-                              .successful(Json.obj(teamId -> "team not found"))
-                        }
-                    )
-                )
-                .map(objs => Ok(JsArray(objs)))
-            )
-        result <-
-          if (!api.published) unpublishedError
-          else if (
-            api.visibility == ApiVisibility.AdminOnly && !ctx.user.isDaikokuAdmin
-          ) adminError
-          else value
+                                                    )
+                                                  case _ => process()
+                                                }
+                                              case None =>
+                                                FastFuture.successful(
+                                                  AppError.toJson(ApiNotFound)
+                                                )
+                                            }
+                                        case None =>
+                                          FastFuture.successful(
+                                            AppError
+                                              .toJson(SubscriptionNotFound)
+                                          )
+                                      }
+                                  case _ => process()
+                                }
+                            }
+                        case None =>
+                          Future
+                            .successful(Json.obj(teamId -> "team not found"))
+                    })
+              )
+              .map(objs => Ok(JsArray(objs)))
+          )
+        result <- if (!api.published) unpublishedError
+        else if (api.visibility == ApiVisibility.AdminOnly && !ctx.user.isDaikokuAdmin)
+          adminError
+        else value
       } yield result
 
       results.value
@@ -1129,8 +1051,7 @@ class ApiController(
       apiKeyId: Option[ApiSubscriptionId],
       motivation: Option[String]
   )(implicit
-      ctx: DaikokuActionContext[JsValue]
-  ): EitherT[Future, AppError, JsObject] = {
+    ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
     import cats.implicits._
 
     api.possibleUsagePlans.find(_.id.value == planId) match {
@@ -1177,8 +1098,7 @@ class ApiController(
       apiKeyId: Option[ApiSubscriptionId],
       motivation: Option[String]
   )(implicit
-      ctx: DaikokuActionContext[JsValue]
-  ): Future[Either[AppError, JsObject]] = {
+    ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     val defaultPlanOpt =
@@ -1200,21 +1120,23 @@ class ApiController(
     val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
     val notificationUrl = env.getDaikokuUrl(tenant, "/notifications")
     for {
-      _ <-
-        env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
-      maybeApiTeam <-
-        env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
-      maybeAdmins <- maybeApiTeam.traverse(apiTeam =>
-        env.dataStore.userRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj(
-                "$in" -> JsArray(apiTeam.admins().map(_.asJson).toSeq)
+      _ <- env.dataStore.notificationRepo
+        .forTenant(tenant.id)
+        .save(notification)
+      maybeApiTeam <- env.dataStore.teamRepo
+        .forTenant(tenant.id)
+        .findByIdNotDeleted(api.team)
+      maybeAdmins <- maybeApiTeam.traverse(
+        apiTeam =>
+          env.dataStore.userRepo
+            .find(
+              Json.obj(
+                "_deleted" -> false,
+                "_id" -> Json.obj(
+                  "$in" -> JsArray(apiTeam.admins().map(_.asJson).toSeq)
+                )
               )
-            )
-          )
-      )
+          ))
       _ <- maybeAdmins.traverse(admins =>
         Future.sequence(admins.map(admin => {
           implicit val language: String =
@@ -1233,8 +1155,7 @@ class ApiController(
           } yield {
             tenant.mailer.send(title, Seq(admin.email), body, tenant)
           }).flatten
-        }))
-      )
+        })))
     } yield {
       Right(
         Json.obj(
@@ -1256,27 +1177,25 @@ class ApiController(
 
         def findSubscriptions(api: Api, teams: Seq[Team]): Future[Result] = {
           for {
-            subscriptions <-
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.tenant.id)
-                .findNotDeleted(
-                  Json.obj(
-                    "api" -> api.id.value,
-                    "team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))
-                  )
+            subscriptions <- env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant.id)
+              .findNotDeleted(
+                Json.obj(
+                  "api" -> api.id.value,
+                  "team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))
                 )
-            pendingRequests <-
-              env.dataStore.notificationRepo
-                .forTenant(ctx.tenant.id)
-                .findNotDeleted(
-                  Json.obj(
-                    "action.type" -> "ApiSubscription",
-                    "status.status" -> "Pending",
-                    "action.api" -> api.id.value,
-                    "action.team" -> Json
-                      .obj("$in" -> JsArray(teams.map(_.id.asJson)))
-                  )
+              )
+            pendingRequests <- env.dataStore.notificationRepo
+              .forTenant(ctx.tenant.id)
+              .findNotDeleted(
+                Json.obj(
+                  "action.type" -> "ApiSubscription",
+                  "status.status" -> "Pending",
+                  "action.api" -> api.id.value,
+                  "action.team" -> Json
+                    .obj("$in" -> JsArray(teams.map(_.id.asJson)))
                 )
+              )
           } yield {
             Ok(
               Json.obj(
@@ -1389,8 +1308,7 @@ class ApiController(
                   case Some(api) =>
                     val body = ctx.request.body.as[JsObject]
                     val subToSave = sub.copy(
-                      customMetadata =
-                        (body \ "customMetadata").asOpt[JsObject],
+                      customMetadata = (body \ "customMetadata").asOpt[JsObject],
                       customMaxPerSecond =
                         (body \ "customMaxPerSecond").asOpt[Long],
                       customMaxPerDay = (body \ "customMaxPerDay").asOpt[Long],
@@ -1448,7 +1366,9 @@ class ApiController(
             .as[JsObject] ++
             api.possibleUsagePlans
               .find(p => p.id == sub.plan)
-              .map { plan => Json.obj("planType" -> plan.typeName) }
+              .map { plan =>
+                Json.obj("planType" -> plan.typeName)
+              }
               .getOrElse(Json.obj("planType" -> "")) ++
             Json.obj("apiName" -> api.name) ++
             Json.obj("_humanReadableId" -> api.humanReadableId) ++
@@ -1490,23 +1410,19 @@ class ApiController(
             )
             .flatMap { subscriptions =>
               repo
-                .find(
-                  Json.obj(
-                    "parent" -> Json
-                      .obj("$in" -> subscriptions.map(s => s.id.value))
-                  )
-                )
+                .findNotDeleted(
+                  Json.obj("parent" -> Json.obj("$in" -> subscriptions.map(s =>
+                    s.id.value))))
                 .flatMap { subs =>
                   Future
                     .sequence(
                       (subscriptions ++ subs)
-                        .filter(s => team.subscriptions.contains(s.id))
                         .map(sub => {
                           (sub.parent match {
                             case Some(_) =>
                               env.dataStore.apiRepo
                                 .forTenant(ctx.tenant.id)
-                                .findById(sub.api.value)
+                                .findByIdNotDeleted(sub.api.value)
                             case None => FastFuture.successful(Some(api))
                           }).flatMap {
                               case Some(api) =>
@@ -1562,80 +1478,56 @@ class ApiController(
           s"@{user.name} has accessed subscriptions of team : - $teamId"
         )
       )(teamId, ctx) { team =>
-        def findSubscriptions(api: Api, team: Team) =
-          env.dataStore.apiSubscriptionRepo
+        val teamPermission = team.users
+          .find(u => u.userId == ctx.user.id)
+          .map(_.teamPermission)
+          .getOrElse(TeamPermission.TeamUser)
+
+        for {
+          subscriptions <- env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant.id)
+            .findNotDeleted(Json.obj("team" -> team.id.value))
+          parentSubs <- env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant)
             .findNotDeleted(
-              Json.obj("api" -> api.id.value, "team" -> team.id.value)
-            )
-            .flatMap { subscriptions =>
-              val teamPermission = team.users
-                .find(u => u.userId == ctx.user.id)
-                .map(_.teamPermission)
-                .getOrElse(TeamPermission.TeamUser)
+              Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> JsArray(
+                    subscriptions.flatMap(s => s.parent).map(_.asJson))
+                )))
+          apis <- env.dataStore.apiRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(
+              Json.obj("_id" -> Json.obj(
+                "in" -> JsArray((subscriptions ++ parentSubs).map(_.api.asJson))
+              )))
+        } yield {
+          Ok(
+            JsArray(subscriptions
+              .map(sub => {
+                val api = apis.find(a => a.id == sub.api)
+                val planIntegrationProcess = api
+                  .map(_.possibleUsagePlans)
+                  .flatMap(_.find(p => p.id == sub.plan))
+                  .map(_.integrationProcess)
+                  .getOrElse(IntegrationProcess.Automatic)
 
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "parent" -> Json
-                      .obj("$in" -> subscriptions.map(s => s.id.value))
+                val apiName: String = api.map(_.name).getOrElse("")
+                sub
+                  .asAuthorizedJson(
+                    teamPermission,
+                    planIntegrationProcess,
+                    ctx.user.isDaikokuAdmin
                   )
-                )
-                .flatMap { subs =>
-                  FastFuture.successful(
-                    (subscriptions ++ subs)
-                      .filter(s =>
-                        team.subscriptions.contains(s.id) && s.parent.isEmpty
-                      )
-                      .map(sub => {
-                        val planIntegrationProcess = api.possibleUsagePlans
-                          .find(p => p.id == sub.plan)
-                          .map(_.integrationProcess)
-                          .getOrElse(IntegrationProcess.Automatic)
-
-                        sub
-                          .asAuthorizedJson(
-                            teamPermission,
-                            planIntegrationProcess,
-                            ctx.user.isDaikokuAdmin
-                          )
-                          .as[JsObject] ++
-                          api.possibleUsagePlans
-                            .find(p => p.id == sub.plan)
-                            .map { plan =>
-                              Json.obj("planType" -> plan.typeName)
-                            }
-                            .getOrElse(Json.obj("planType" -> "")) ++
-                          Json.obj("apiName" -> api.name)
-                      })
-                  )
-                }
-            }
-
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findAll()
-          .flatMap { apis =>
-            Future.sequence(apis.map { api =>
-              env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .findByIdOrHrId(api.id.value)
-                .flatMap {
-                  case Some(api) if api.visibility == ApiVisibility.Public =>
-                    findSubscriptions(api, team)
-                  case Some(api) if api.team == team.id =>
-                    findSubscriptions(api, team)
-                  case Some(api)
-                      if api.visibility != ApiVisibility.Public && api.authorizedTeams
-                        .contains(team.id) =>
-                    findSubscriptions(api, team)
-                  case _ => FastFuture.successful(Seq.empty)
-                }
-            })
-          }
-          .map(_.flatten)
-          .map(subs => Ok(JsArray(subs)))
+                  .as[JsObject] ++
+                  api
+                    .map(_.possibleUsagePlans)
+                    .flatMap(_.find(p => p.id == sub.plan))
+                    .map(plan => Json.obj("planType" -> plan.typeName))
+                    .getOrElse(Json.obj("planType" -> "")) ++ Json.obj(
+                  "apiName" -> apiName)
+              })))
+        }
       }
     }
 
@@ -1754,8 +1646,8 @@ class ApiController(
                           ctx.user
                         )
                       )
-                      createdApiKey <-
-                        EitherT(otoroshiClient.createApiKey(apikey)(o))
+                      createdApiKey <- EitherT(
+                        otoroshiClient.createApiKey(apikey)(o))
                       _ <- EitherT.right[AppError](
                         env.dataStore.apiSubscriptionRepo
                           .forTenant(ctx.tenant.id)
@@ -1919,24 +1811,23 @@ class ApiController(
 
             for {
               _ <- apiKeyStatsJob.syncForSubscription(subscription, ctx.tenant)
-              delete <-
-                apiService
-                  .deleteApiKey(ctx.tenant, subscription, plan, team)
-                  .flatMap(delete => {
-                    if (plan.visibility == Private) {
-                      env.dataStore.apiRepo
-                        .forTenant(ctx.tenant)
-                        .save(
-                          api.copy(possibleUsagePlans =
+              delete <- apiService
+                .deleteApiKey(ctx.tenant, subscription, plan, team)
+                .flatMap(delete => {
+                  if (plan.visibility == Private) {
+                    env.dataStore.apiRepo
+                      .forTenant(ctx.tenant)
+                      .save(
+                        api.copy(
+                          possibleUsagePlans =
                             api.possibleUsagePlans.diff(Seq(plan)) :+ plan
-                              .removeAuthorizedTeam(team.id)
-                          )
-                        )
-                        .map(_ => delete)
-                    } else {
-                      FastFuture.successful(delete)
-                    }
-                  })
+                              .removeAuthorizedTeam(team.id))
+                      )
+                      .map(_ => delete)
+                  } else {
+                    FastFuture.successful(delete)
+                  }
+                })
             } yield delete
           }
         )
@@ -2017,29 +1908,17 @@ class ApiController(
         for {
           subRepo <- env.dataStore.apiSubscriptionRepo.forTenantF(ctx.tenant)
           archivedSubs <- subRepo.findNotDeleted(
-            Json.obj("team" -> team.id.asJson, "enabled" -> false)
-          )
-          _ <-
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant)
-              .deleteLogically(
-                Json.obj("team" -> team.id.asJson, "enabled" -> false)
-              )
-          done <-
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant)
-              .save(
-                team.copy(subscriptions =
-                  team.subscriptions.diff(archivedSubs.map(_.id))
-                )
-              )
+            Json.obj("team" -> team.id.asJson, "enabled" -> false))
+          _ <- env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant)
+            .deleteLogically(
+              Json.obj("team" -> team.id.asJson, "enabled" -> false))
         } yield {
           Ok(
             Json.obj(
-              "done" -> done,
+              "done" -> true,
               "apiSubscriptions" -> JsArray(archivedSubs.map(_.id.asJson))
-            )
-          )
+            ))
         }
       }
     }
@@ -2060,8 +1939,7 @@ class ApiController(
     DaikokuAction.async { ctx =>
       TeamMemberOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed apis of team @{team.name} - @{team.id}"
-        )
+          s"@{user.name} has accessed apis of team @{team.name} - @{team.id}")
       )(teamId, ctx) { team =>
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
@@ -2170,16 +2048,15 @@ class ApiController(
                     Json.obj(
                       "currentVersion" -> api.currentVersion.value,
                       "apiId" -> api.id.asJson,
-                      "pages" -> pages.map(page =>
-                        Json.obj(
-                          "_id" -> page.id.asJson,
-                          "title" -> JsString(page.title)
-                        )
-                      )
+                      "pages" -> pages.map(
+                        page =>
+                          Json.obj(
+                            "_id" -> page.id.asJson,
+                            "title" -> JsString(page.title)
+                        ))
                     )
                   }
-              })
-            )
+              }))
             .map(v => Ok(JsArray(v)))
         }
       }
@@ -2196,18 +2073,17 @@ class ApiController(
           val pages = (ctx.request.body \ "pages").as[Seq[JsObject]]
 
           (for {
-            fromPages <-
-              env.dataStore.apiDocumentationPageRepo
-                .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "_id" -> Json.obj(
-                      "$in" -> JsArray(
-                        pages.map(page => (page \ "pageId").as[JsString])
-                      )
+            fromPages <- env.dataStore.apiDocumentationPageRepo
+              .forTenant(ctx.tenant.id)
+              .find(
+                Json.obj(
+                  "_id" -> Json.obj(
+                    "$in" -> JsArray(
+                      pages.map(page => (page \ "pageId").as[JsString])
                     )
                   )
                 )
+              )
             createdPages <- Future.sequence(fromPages.map(page => {
               val generatedId = BSONObjectID.generate().stringify
               env.dataStore.apiDocumentationPageRepo
@@ -2216,11 +2092,11 @@ class ApiController(
                 .flatMap(_ =>
                   FastFuture.successful(
                     ApiDocumentationDetailPage(page.id, page.title, Seq.empty)
-                  )
-                )
+                ))
             }))
-            api <-
-              env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version)
+            api <- env.dataStore.apiRepo.findByVersion(ctx.tenant,
+                                                       apiId,
+                                                       version)
           } yield {
             api match {
               case None => FastFuture.successful(AppError.render(ApiNotFound))
@@ -2228,10 +2104,8 @@ class ApiController(
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant.id)
                   .save(
-                    api.copy(documentation =
-                      api.documentation
-                        .copy(pages = api.documentation.pages ++ createdPages)
-                    )
+                    api.copy(documentation = api.documentation
+                      .copy(pages = api.documentation.pages ++ createdPages))
                   )
                   .map(_ => Ok(Json.obj("cloned" -> true)))
             }
@@ -2266,8 +2140,7 @@ class ApiController(
                         case None =>
                           FastFuture
                             .successful(Json.obj(teamId -> "Team not found"))
-                      }
-                  )
+                    })
                 )
                 .map(jsResults => Right(Ok(Json.arr(jsResults))))
             case None =>
@@ -2296,13 +2169,12 @@ class ApiController(
     val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
 
     for {
-      notificationRepo <-
-        env.dataStore.notificationRepo.forTenantF(ctx.tenant.id)
+      notificationRepo <- env.dataStore.notificationRepo
+        .forTenantF(ctx.tenant.id)
       saved <- notificationRepo.save(notification)
-      maybeOwnerteam <-
-        env.dataStore.teamRepo
-          .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(api.team)
+      maybeOwnerteam <- env.dataStore.teamRepo
+        .forTenant(ctx.tenant.id)
+        .findByIdNotDeleted(api.team)
       maybeAdmins <- maybeOwnerteam.traverse { ownerTeam =>
         env.dataStore.userRepo
           .find(
@@ -2381,8 +2253,7 @@ class ApiController(
               .flatMap(_ =>
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant.id)
-                  .deleteByIdLogically(apiId)
-              )
+                  .deleteByIdLogically(apiId))
               .map(_ => Ok(Json.obj("done" -> true)))
           case None =>
             FastFuture.successful(
@@ -2483,8 +2354,7 @@ class ApiController(
               case JsSuccess(api, _)
                   if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&
                     api.possibleUsagePlans.exists(plan =>
-                      plan.aggregationApiKeysSecurity.exists(identity)
-                    ) =>
+                      plan.aggregationApiKeysSecurity.exists(identity)) =>
                 FastFuture.successful(
                   AppError.render(SubscriptionAggregationDisabled)
                 )
@@ -2506,10 +2376,9 @@ class ApiController(
                       issuesTags = api.issuesTags
                     )
                     for {
-                      _ <-
-                        env.dataStore.apiRepo
-                          .forTenant(ctx.tenant.id)
-                          .save(apiToSave)
+                      _ <- env.dataStore.apiRepo
+                        .forTenant(ctx.tenant.id)
+                        .save(apiToSave)
                       _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
                     } yield {
                       Ok(apiToSave.asJson)
@@ -2521,93 +2390,87 @@ class ApiController(
                   api.name,
                   ctx.tenant.id
                 ).flatMap {
-                    case true =>
-                      FastFuture.successful(
-                        Conflict(
-                          Json.obj(
-                            "error" -> "Resource with same name already exists"
-                          )
+                  case true =>
+                    FastFuture.successful(
+                      Conflict(
+                        Json.obj(
+                          "error" -> "Resource with same name already exists"
                         )
                       )
-                    //it's forbidden to update otoroshi target, must use migration API instead
-                    case false
-                        if api.possibleUsagePlans.exists(pp =>
-                          oldApi.possibleUsagePlans.exists(oldPp =>
-                            pp.id == oldPp.id && oldPp.otoroshiTarget.isDefined && oldPp.otoroshiTarget
-                              .map(_.otoroshiSettings) != pp.otoroshiTarget
-                              .map(_.otoroshiSettings)
-                          )
-                        ) =>
-                      AppError.renderF(AppError.ForbiddenAction)
-                    case false =>
-                      val flippedPlans = api.possibleUsagePlans.filter(pp =>
+                    )
+                  //it's forbidden to update otoroshi target, must use migration API instead
+                  case false
+                      if api.possibleUsagePlans.exists(pp =>
                         oldApi.possibleUsagePlans.exists(oldPp =>
-                          pp.id == oldPp.id && oldPp.visibility != pp.visibility
+                          pp.id == oldPp.id && oldPp.otoroshiTarget.isDefined && oldPp.otoroshiTarget
+                            .map(_.otoroshiSettings) != pp.otoroshiTarget
+                            .map(_.otoroshiSettings))) =>
+                    AppError.renderF(AppError.ForbiddenAction)
+                  case false =>
+                    val flippedPlans = api.possibleUsagePlans.filter(pp =>
+                      oldApi.possibleUsagePlans.exists(oldPp =>
+                        pp.id == oldPp.id && oldPp.visibility != pp.visibility))
+                    val untouchedPlans =
+                      api.possibleUsagePlans.diff(flippedPlans)
+
+                    val newPlans = api.possibleUsagePlans.map(_.id)
+                    val oldPlans = oldApi.possibleUsagePlans.map(_.id)
+                    val deletedPlansId = oldPlans.diff(newPlans)
+                    val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
+                      deletedPlansId.contains(pp.id))
+
+                    env.dataStore.apiRepo
+                      .forTenant(ctx.tenant.id)
+                      .exists(
+                        Json.obj(
+                          "_humanReadableId" -> api.humanReadableId,
+                          "currentVersion" -> api.currentVersion.asJson,
+                          "_id" -> Json.obj("$ne" -> api.id.value)
                         )
                       )
-                      val untouchedPlans =
-                        api.possibleUsagePlans.diff(flippedPlans)
+                      .flatMap {
+                        case true => AppError.renderF(ApiVersionConflict)
+                        case false =>
+                          for {
+                            plans <- changePlansVisibility(
+                              flippedPlans,
+                              api,
+                              ctx.tenant
+                            )
+                            _ <- deleteApiPlansSubscriptions(
+                              deletedPlans,
+                              oldApi,
+                              ctx.tenant,
+                              ctx.user
+                            )
+                            apiToSave = api.copy(possibleUsagePlans =
+                              untouchedPlans ++ plans)
+                            _ <- env.dataStore.apiRepo
+                              .forTenant(ctx.tenant.id)
+                              .save(apiToSave)
+                            _ <- otoroshiSynchronisator.verify(
+                              Json.obj("api" -> api.id.value)
+                            ) //launch synhro to maybe update customeMetadata & authorizedEntities
+                            _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                            _ <- updateAllHumanReadableId(ctx,
+                                                          apiToSave,
+                                                          oldApi)
+                            _ <- turnOffDefaultVersion(
+                              ctx,
+                              apiToSave,
+                              oldApi,
+                              apiToSave.humanReadableId,
+                              apiToSave.currentVersion.value
+                            )
+                            _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
+                          } yield {
+                            ctx.setCtxValue("api.name", api.name)
+                            ctx.setCtxValue("api.id", api.id)
 
-                      val newPlans = api.possibleUsagePlans.map(_.id)
-                      val oldPlans = oldApi.possibleUsagePlans.map(_.id)
-                      val deletedPlansId = oldPlans.diff(newPlans)
-                      val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
-                        deletedPlansId.contains(pp.id)
-                      )
-
-                      env.dataStore.apiRepo
-                        .forTenant(ctx.tenant.id)
-                        .exists(
-                          Json.obj(
-                            "_humanReadableId" -> api.humanReadableId,
-                            "currentVersion" -> api.currentVersion.asJson,
-                            "_id" -> Json.obj("$ne" -> api.id.value)
-                          )
-                        )
-                        .flatMap {
-                          case true => AppError.renderF(ApiVersionConflict)
-                          case false =>
-                            for {
-                              plans <- changePlansVisibility(
-                                flippedPlans,
-                                api,
-                                ctx.tenant
-                              )
-                              _ <- deleteApiPlansSubscriptions(
-                                deletedPlans,
-                                oldApi,
-                                ctx.tenant,
-                                ctx.user
-                              )
-                              apiToSave = api.copy(possibleUsagePlans =
-                                untouchedPlans ++ plans
-                              )
-                              _ <-
-                                env.dataStore.apiRepo
-                                  .forTenant(ctx.tenant.id)
-                                  .save(apiToSave)
-                              _ <- otoroshiSynchronisator.verify(
-                                Json.obj("api" -> api.id.value)
-                              ) //launch synhro to maybe update customeMetadata & authorizedEntities
-                              _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
-                              _ <-
-                                updateAllHumanReadableId(ctx, apiToSave, oldApi)
-                              _ <- turnOffDefaultVersion(
-                                ctx,
-                                apiToSave,
-                                oldApi,
-                                apiToSave.humanReadableId,
-                                apiToSave.currentVersion.value
-                              )
-                              _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
-                            } yield {
-                              ctx.setCtxValue("api.name", api.name)
-                              ctx.setCtxValue("api.id", api.id)
-
-                              Ok(apiToSave.asJson)
-                            }
-                        }
-                  }
+                            Ok(apiToSave.asJson)
+                          }
+                      }
+                }
 
             }
         }
@@ -2633,16 +2496,15 @@ class ApiController(
                   case None => true
                   case Some(version) =>
                     version == apiToSave.currentVersion.value
-                }
-              )
-              .map(issue =>
-                env.dataStore.apiIssueRepo
-                  .forTenant(ctx.tenant.id)
-                  .save(
-                    issue
-                      .copy(apiVersion = Some(apiToSave.currentVersion.value))
-                  )
-              )
+              })
+              .map(
+                issue =>
+                  env.dataStore.apiIssueRepo
+                    .forTenant(ctx.tenant.id)
+                    .save(
+                      issue
+                        .copy(apiVersion = Some(apiToSave.currentVersion.value))
+                  ))
           )
         }
     } else
@@ -2661,11 +2523,11 @@ class ApiController(
         .flatMap { apis =>
           Future
             .sequence(
-              apis.map(api =>
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant.id)
-                  .save(api.copy(name = apiToSave.name))
-              )
+              apis.map(
+                api =>
+                  env.dataStore.apiRepo
+                    .forTenant(ctx.tenant.id)
+                    .save(api.copy(name = apiToSave.name)))
             )
         }
     } else
@@ -2690,14 +2552,13 @@ class ApiController(
         )
         .map { apis =>
           Future.sequence(
-            apis.map(api =>
-              env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .save(api.copy(isDefault = false))
-            )
+            apis.map(
+              api =>
+                env.dataStore.apiRepo
+                  .forTenant(ctx.tenant.id)
+                  .save(api.copy(isDefault = false)))
           )
-        }
-    else
+        } else
       FastFuture.successful(())
   }
 
@@ -2710,10 +2571,8 @@ class ApiController(
           env.dataStore.apiIssueRepo
             .forTenant(tenantId)
             .save(
-              issue.copy(tags =
-                issue.tags
-                  .filter(tag => api.issuesTags.exists(t => t.id == tag))
-              )
+              issue.copy(tags = issue.tags
+                .filter(tag => api.issuesTags.exists(t => t.id == tag)))
             )
         }))
       }
@@ -2836,64 +2695,62 @@ class ApiController(
 
         for {
           myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-          teams <-
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj("name" -> searchAsRegex) ++ teamUsersFilter,
-                5
-              )
-          apis <-
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "name" -> searchAsRegex,
-                  "$or" -> Json.arr(
-                    Json.obj("visibility" -> "Public"),
-                    Json.obj(
-                      "$or" -> Json.arr(
-                        Json.obj(
-                          "authorizedTeams" -> Json
-                            .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                        ),
-                        Json.obj(
-                          "team" -> Json
-                            .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                        )
+          teams <- env.dataStore.teamRepo
+            .forTenant(ctx.tenant.id)
+            .findNotDeleted(
+              Json.obj("name" -> searchAsRegex) ++ teamUsersFilter,
+              5
+            )
+          apis <- env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .findNotDeleted(
+              Json.obj(
+                "name" -> searchAsRegex,
+                "$or" -> Json.arr(
+                  Json.obj("visibility" -> "Public"),
+                  Json.obj(
+                    "$or" -> Json.arr(
+                      Json.obj(
+                        "authorizedTeams" -> Json
+                          .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
+                      ),
+                      Json.obj(
+                        "team" -> Json
+                          .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
                       )
                     )
                   )
-                ),
-                5
-              )
+                )
+              ),
+              5
+            )
         } yield {
           Ok(
             Json.arr(
               Json.obj(
                 "label" -> "Teams",
                 "options" -> JsArray(
-                  teams.map(t =>
-                    Json.obj(
-                      "value" -> t.humanReadableId,
-                      "label" -> t.name,
-                      "type" -> "team"
-                    )
-                  )
+                  teams.map(
+                    t =>
+                      Json.obj(
+                        "value" -> t.humanReadableId,
+                        "label" -> t.name,
+                        "type" -> "team"
+                    ))
                 )
               ),
               Json.obj(
                 "label" -> "Apis",
                 "options" -> JsArray(
-                  apis.map(a =>
-                    Json.obj(
-                      "value" -> a.humanReadableId,
-                      "team" -> a.team.value,
-                      "label" -> a.name,
-                      "version" -> a.currentVersion.asJson,
-                      "type" -> "api"
-                    )
-                  )
+                  apis.map(
+                    a =>
+                      Json.obj(
+                        "value" -> a.humanReadableId,
+                        "team" -> a.team.value,
+                        "label" -> a.name,
+                        "version" -> a.currentVersion.asJson,
+                        "type" -> "api"
+                    ))
                 )
               )
             )
@@ -2908,14 +2765,14 @@ class ApiController(
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .findWithProjection(Json.obj(), Json.obj("categories" -> true))
-          .map(tags =>
-            tags.map(tag =>
-              (tag \ "categories")
-                .asOpt[Seq[String]]
-                .map(_.toSet)
-                .getOrElse(Set.empty)
-            )
-          )
+          .map(
+            tags =>
+              tags.map(
+                tag =>
+                  (tag \ "categories")
+                    .asOpt[Seq[String]]
+                    .map(_.toSet)
+                    .getOrElse(Set.empty)))
           .map(_.toSet)
           .map(_.flatten)
           .map(categories => Ok(JsArray(categories.map(JsString.apply).toSeq)))
@@ -2932,12 +2789,11 @@ class ApiController(
         case Public => FastFuture.successful(plan.removeAllAuthorizedTeams())
         case Private =>
           for {
-            subs <-
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant)
-                .findNotDeleted(
-                  Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
-                )
+            subs <- env.dataStore.apiSubscriptionRepo
+              .forTenant(tenant)
+              .findNotDeleted(
+                Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
+              )
           } yield {
             plan.addAutorizedTeams(subs.map(_.team).distinct)
           }
@@ -2954,18 +2810,18 @@ class ApiController(
     implicit val mat: Materializer = env.defaultMaterializer
 
     Source(plans.toList)
-      .mapAsync(1)(plan =>
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> api.id.asJson,
-              "plan" -> Json
-                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
+      .mapAsync(1)(
+        plan =>
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findNotDeleted(
+              Json.obj(
+                "api" -> api.id.asJson,
+                "plan" -> Json
+                  .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
+              )
             )
-          )
-          .map(seq => (plan, seq))
-      )
+            .map(seq => (plan, seq)))
       .via(apiService.deleteApiSubscriptionsAsFlow(tenant, api.name, user))
       .runWith(Sink.ignore)
       .recover {
@@ -3051,14 +2907,14 @@ class ApiController(
             offset,
             limit
           )
-          .map(data =>
-            Right(
-              Json.obj(
-                "posts" -> JsArray(data._1.map(_.asJson)),
-                "total" -> data._2
-              )
-            )
-          )
+          .map(
+            data =>
+              Right(
+                Json.obj(
+                  "posts" -> JsArray(data._1.map(_.asJson)),
+                  "total" -> data._2
+                )
+            ))
     }
   }
 
@@ -3095,38 +2951,36 @@ class ApiController(
                           val tenantLanguage: String =
                             ctx.tenant.defaultLanguage.getOrElse("en")
                           for {
-                            subs <-
-                              env.dataStore.apiSubscriptionRepo
-                                .forTenant(ctx.tenant.id)
-                                .find(Json.obj("api" -> apiId))
-                            api <-
-                              env.dataStore.apiRepo
-                                .forTenant(ctx.tenant.id)
-                                .findByIdNotDeleted(apiId)
+                            subs <- env.dataStore.apiSubscriptionRepo
+                              .forTenant(ctx.tenant.id)
+                              .find(Json.obj("api" -> apiId))
+                            api <- env.dataStore.apiRepo
+                              .forTenant(ctx.tenant.id)
+                              .findByIdNotDeleted(apiId)
                             _ <- Future.sequence(
                               subs
                                 .toSet[ApiSubscription]
-                                .map(sub =>
-                                  env.dataStore.notificationRepo
-                                    .forTenant(ctx.tenant.id)
-                                    .save(
-                                      Notification(
-                                        id = NotificationId(
-                                          BSONObjectID.generate().stringify
-                                        ),
-                                        tenant = ctx.tenant.id,
-                                        sender = ctx.user,
-                                        action =
-                                          NotificationAction.NewPostPublished(
-                                            teamId,
-                                            api.map(_.name).getOrElse("")
+                                .map(
+                                  sub =>
+                                    env.dataStore.notificationRepo
+                                      .forTenant(ctx.tenant.id)
+                                      .save(
+                                        Notification(
+                                          id = NotificationId(
+                                            BSONObjectID.generate().stringify
                                           ),
-                                        notificationType =
-                                          NotificationType.AcceptOnly,
-                                        team = Some(sub.team)
-                                      )
-                                    )
-                                )
+                                          tenant = ctx.tenant.id,
+                                          sender = ctx.user,
+                                          action =
+                                            NotificationAction.NewPostPublished(
+                                              teamId,
+                                              api.map(_.name).getOrElse("")
+                                            ),
+                                          notificationType =
+                                            NotificationType.AcceptOnly,
+                                          team = Some(sub.team)
+                                        )
+                                    ))
                             )
                             subTeams <- {
                               val teamIds = subs
@@ -3144,28 +2998,27 @@ class ApiController(
                                   )
                                 )
                             }
-                            members <-
-                              subTeams
-                                .traverse { t =>
-                                  env.dataStore.userRepo
-                                    .find(
-                                      Json
-                                        .obj(
-                                          "_id" -> Json.obj(
-                                            "$in" -> JsArray(
-                                              t.users
-                                                .filter(
-                                                  _.teamPermission == TeamPermission.Administrator
-                                                )
-                                                .map(_.userId.asJson)
-                                                .toList
-                                            )
-                                          ),
-                                          "_deleted" -> false
-                                        )
-                                    )
-                                }
-                                .map(_.flatten)
+                            members <- subTeams
+                              .traverse { t =>
+                                env.dataStore.userRepo
+                                  .find(
+                                    Json
+                                      .obj(
+                                        "_id" -> Json.obj(
+                                          "$in" -> JsArray(
+                                            t.users
+                                              .filter(
+                                                _.teamPermission == TeamPermission.Administrator
+                                              )
+                                              .map(_.userId.asJson)
+                                              .toList
+                                          )
+                                        ),
+                                        "_deleted" -> false
+                                      )
+                                  )
+                              }
+                              .map(_.flatten)
                             _ <- Future.sequence(members.map { member =>
                               implicit val language: String =
                                 member.defaultLanguage.getOrElse(tenantLanguage)
@@ -3295,13 +3148,11 @@ class ApiController(
                 _ <- env.dataStore.userRepo.save(
                   ctx.user.copy(starredApis =
                     if (starred) ctx.user.starredApis.filter(id => id != api.id)
-                    else ctx.user.starredApis ++ Seq(api.id)
-                  )
+                    else ctx.user.starredApis ++ Seq(api.id))
                 )
-                _ <-
-                  env.dataStore.apiRepo
-                    .forTenant(ctx.tenant.id)
-                    .save(api.copy(stars = newStars))
+                _ <- env.dataStore.apiRepo
+                  .forTenant(ctx.tenant.id)
+                  .save(api.copy(stars = newStars))
               } yield {
                 Ok(Json.obj("done" -> true))
               }
@@ -3336,19 +3187,17 @@ class ApiController(
               for {
                 creators <- Future.sequence(
                   issue.comments.map(comment =>
-                    env.dataStore.userRepo.findById(comment.by.value)
-                  )
+                    env.dataStore.userRepo.findById(comment.by.value))
                 )
                 issueCreator <- env.dataStore.userRepo.findById(issue.by.value)
-                api <-
-                  env.dataStore.apiRepo
-                    .forTenant(ctx.tenant.id)
-                    .findOne(
-                      Json.obj(
-                        "_humanReadableId" -> apiId,
-                        "parent" -> JsNull
-                      )
+                api <- env.dataStore.apiRepo
+                  .forTenant(ctx.tenant.id)
+                  .findOne(
+                    Json.obj(
+                      "_humanReadableId" -> apiId,
+                      "parent" -> JsNull
                     )
+                  )
               } yield {
                 issueCreator
                   .map { creator =>
@@ -3362,8 +3211,7 @@ class ApiController(
                               .map(tagId =>
                                 issuesTags
                                   .find(_.id == tagId)
-                                  .map(tag => ApiTagFormat.writes(tag))
-                              )
+                                  .map(tag => ApiTagFormat.writes(tag)))
                           ),
                           "comments" -> Json.toJson(
                             issue.comments.zipWithIndex
@@ -3422,8 +3270,7 @@ class ApiController(
                   for {
                     creators <- Future.sequence(
                       issues.map(issue =>
-                        env.dataStore.userRepo.findById(issue.by.value)
-                      )
+                        env.dataStore.userRepo.findById(issue.by.value))
                     )
                   } yield {
                     Ok(
@@ -3437,18 +3284,17 @@ class ApiController(
                                   .getOrElse(Json.obj())) +
                                 ("tags" -> Json.toJson(
                                   issue.tags
-                                    .map(tagId =>
-                                      api.issuesTags
-                                        .find(_.id == tagId)
-                                        .map(tag => ApiTagFormat.writes(tag))
-                                        .getOrElse(Json.obj())
-                                    )
+                                    .map(
+                                      tagId =>
+                                        api.issuesTags
+                                          .find(_.id == tagId)
+                                          .map(tag => ApiTagFormat.writes(tag))
+                                          .getOrElse(Json.obj()))
                                 ))
                           }
                       )
                     )
-                  }
-                )
+                })
           }
       }
     }
@@ -3517,52 +3363,50 @@ class ApiController(
                                     val tenantLanguage: String =
                                       ctx.tenant.defaultLanguage.getOrElse("en")
                                     for {
-                                      subs <-
-                                        env.dataStore.apiSubscriptionRepo
-                                          .forTenant(ctx.tenant.id)
-                                          .find(
-                                            Json.obj(
-                                              "api" -> api.id.value
-                                            )
+                                      subs <- env.dataStore.apiSubscriptionRepo
+                                        .forTenant(ctx.tenant.id)
+                                        .find(
+                                          Json.obj(
+                                            "api" -> api.id.value
                                           )
-                                      optTeam <-
-                                        env.dataStore.teamRepo
-                                          .forTenant(ctx.tenant.id)
-                                          .findById(teamId)
+                                        )
+                                      optTeam <- env.dataStore.teamRepo
+                                        .forTenant(ctx.tenant.id)
+                                        .findById(teamId)
                                       _ <- {
                                         Future.sequence(
                                           subs
                                             .distinctBy(_.team)
-                                            .map(sub =>
-                                              env.dataStore.notificationRepo
-                                                .forTenant(ctx.tenant.id)
-                                                .save(
-                                                  Notification(
-                                                    id = NotificationId(
-                                                      BSONObjectID
-                                                        .generate()
-                                                        .stringify
-                                                    ),
-                                                    tenant = ctx.tenant.id,
-                                                    sender = ctx.user,
-                                                    action = NotificationAction
-                                                      .NewIssueOpen(
-                                                        teamId,
-                                                        api.name,
-                                                        s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
+                                            .map(
+                                              sub =>
+                                                env.dataStore.notificationRepo
+                                                  .forTenant(ctx.tenant.id)
+                                                  .save(
+                                                    Notification(
+                                                      id = NotificationId(
+                                                        BSONObjectID
+                                                          .generate()
+                                                          .stringify
                                                       ),
-                                                    notificationType =
-                                                      NotificationType.AcceptOnly,
-                                                    team = Some(sub.team)
-                                                  )
-                                                )
-                                            )
+                                                      tenant = ctx.tenant.id,
+                                                      sender = ctx.user,
+                                                      action =
+                                                        NotificationAction
+                                                          .NewIssueOpen(
+                                                            teamId,
+                                                            api.name,
+                                                            s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
+                                                          ),
+                                                      notificationType =
+                                                        NotificationType.AcceptOnly,
+                                                      team = Some(sub.team)
+                                                    )
+                                                ))
                                         )
                                       }
-                                      maybeOwnerteam <-
-                                        env.dataStore.teamRepo
-                                          .forTenant(ctx.tenant.id)
-                                          .findByIdNotDeleted(api.team)
+                                      maybeOwnerteam <- env.dataStore.teamRepo
+                                        .forTenant(ctx.tenant.id)
+                                        .findByIdNotDeleted(api.team)
                                       maybeAdmins <- maybeOwnerteam.traverse {
                                         ownerTeam =>
                                           env.dataStore.userRepo
@@ -3614,29 +3458,28 @@ class ApiController(
                                           }).flatten
                                         })
                                       }
-                                      _ <-
-                                        env.dataStore.notificationRepo
-                                          .forTenant(ctx.tenant.id)
-                                          .save(
-                                            Notification(
-                                              id = NotificationId(
-                                                BSONObjectID
-                                                  .generate()
-                                                  .stringify
+                                      _ <- env.dataStore.notificationRepo
+                                        .forTenant(ctx.tenant.id)
+                                        .save(
+                                          Notification(
+                                            id = NotificationId(
+                                              BSONObjectID
+                                                .generate()
+                                                .stringify
+                                            ),
+                                            tenant = ctx.tenant.id,
+                                            sender = ctx.user,
+                                            action =
+                                              NotificationAction.NewIssueOpen(
+                                                teamId,
+                                                api.name,
+                                                s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
                                               ),
-                                              tenant = ctx.tenant.id,
-                                              sender = ctx.user,
-                                              action =
-                                                NotificationAction.NewIssueOpen(
-                                                  teamId,
-                                                  api.name,
-                                                  s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
-                                                ),
-                                              notificationType =
-                                                NotificationType.AcceptOnly,
-                                              team = Some(maybeOwnerteam.get.id)
-                                            )
+                                            notificationType =
+                                              NotificationType.AcceptOnly,
+                                            team = Some(maybeOwnerteam.get.id)
                                           )
+                                        )
 
                                     } yield {
                                       Created(Json.obj("created" -> true))
@@ -3664,8 +3507,7 @@ class ApiController(
             a.size < b.size &&
             b.filterNot { comment =>
                 a.exists(c =>
-                  c.createdAt.getMillis == comment.createdAt.getMillis
-                )
+                  c.createdAt.getMillis == comment.createdAt.getMillis)
               }
               .exists(comment => comment.by != ctx.user.id)
 
@@ -3703,12 +3545,12 @@ class ApiController(
             )
           case JsSuccess(issue, _) =>
             (for {
-              optIssue <-
-                env.dataStore.apiIssueRepo
-                  .forTenant(ctx.tenant.id)
-                  .findOne(Json.obj("_id" -> issueId))
-              optTeam <-
-                env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
+              optIssue <- env.dataStore.apiIssueRepo
+                .forTenant(ctx.tenant.id)
+                .findOne(Json.obj("_id" -> issueId))
+              optTeam <- env.dataStore.teamRepo
+                .forTenant(ctx.tenant.id)
+                .findById(teamId)
             } yield {
               (optIssue, optTeam) match {
                 case (Some(existingIssue), Some(team)) =>
@@ -3720,24 +3562,20 @@ class ApiController(
                   val sortedEntryComments =
                     issue.comments.sortBy(_.createdAt.getMillis)
 
-                  if (
-                    !existingIssue.tags.equals(
-                      issue.tags
-                    ) && isTeamMember.isEmpty && !isDaikokuAdmin
-                  )
+                  if (!existingIssue.tags.equals(
+                        issue.tags
+                      ) && isTeamMember.isEmpty && !isDaikokuAdmin)
                     FastFuture.successful(
                       Unauthorized(
                         Json
                           .obj("error" -> "You're not authorized to edit tags")
                       )
                     )
-                  else if (
-                    commentsHasBeenRemovedWithoutRights(
-                      isDaikokuAdmin,
-                      sortedEntryComments,
-                      sortedExistingComments
-                    )
-                  )
+                  else if (commentsHasBeenRemovedWithoutRights(
+                             isDaikokuAdmin,
+                             sortedEntryComments,
+                             sortedExistingComments
+                           ))
                     FastFuture.successful(
                       Unauthorized(
                         Json.obj(
@@ -3745,13 +3583,11 @@ class ApiController(
                         )
                       )
                     )
-                  else if (
-                    commentsHasBeenUpdatedWithoutRights(
-                      isDaikokuAdmin,
-                      sortedEntryComments,
-                      sortedExistingComments
-                    )
-                  )
+                  else if (commentsHasBeenUpdatedWithoutRights(
+                             isDaikokuAdmin,
+                             sortedEntryComments,
+                             sortedExistingComments
+                           ))
                     FastFuture.successful(
                       Unauthorized(
                         Json.obj(
@@ -3759,9 +3595,7 @@ class ApiController(
                         )
                       )
                     )
-                  else if (
-                    existingIssue.open != issue.open && isTeamMember.isEmpty && !isDaikokuAdmin
-                  )
+                  else if (existingIssue.open != issue.open && isTeamMember.isEmpty && !isDaikokuAdmin)
                     FastFuture.successful(
                       Unauthorized(
                         Json.obj(
@@ -3769,9 +3603,7 @@ class ApiController(
                         )
                       )
                     )
-                  else if (
-                    existingIssue.title != issue.title && !isDaikokuAdmin && (issue.by != ctx.user.id || (issue.by != ctx.user.id && isTeamMember.isEmpty))
-                  )
+                  else if (existingIssue.title != issue.title && !isDaikokuAdmin && (issue.by != ctx.user.id || (issue.by != ctx.user.id && isTeamMember.isEmpty)))
                     FastFuture.successful(
                       Unauthorized(
                         Json
@@ -3786,23 +3618,21 @@ class ApiController(
                         if (updated) {
                           if (existingIssue.comments.size < issue.comments.size)
                             for {
-                              subs <-
-                                env.dataStore.apiSubscriptionRepo
-                                  .forTenant(ctx.tenant.id)
-                                  .find(
-                                    Json.obj(
-                                      "_humanReadableId" -> apiId
-                                    )
+                              subs <- env.dataStore.apiSubscriptionRepo
+                                .forTenant(ctx.tenant.id)
+                                .find(
+                                  Json.obj(
+                                    "_humanReadableId" -> apiId
                                   )
-                              api <-
-                                env.dataStore.apiRepo
-                                  .forTenant(ctx.tenant.id)
-                                  .findOne(
-                                    Json.obj(
-                                      "_humanReadableId" -> apiId,
-                                      "parent" -> JsNull
-                                    )
+                                )
+                              api <- env.dataStore.apiRepo
+                                .forTenant(ctx.tenant.id)
+                                .findOne(
+                                  Json.obj(
+                                    "_humanReadableId" -> apiId,
+                                    "parent" -> JsNull
                                   )
+                                )
                               _ <- {
                                 Future.sequence(
                                   subs
@@ -3814,8 +3644,7 @@ class ApiController(
                                           .map(_.currentVersion.value)
                                           .getOrElse("1.0.0")}/issues/${issue.id.value}",
                                         sub.team
-                                      )
-                                    )
+                                    ))
                                 )
                               }
                             } yield Ok(Json.obj("message" -> "Issue saved"))
@@ -3864,18 +3693,18 @@ class ApiController(
               env.dataStore.apiIssueRepo
                 .forTenant(ctx.tenant.id)
                 .findById(issueId)
-                .flatMap(issue =>
-                  FastFuture.successful(
-                    Ok(
-                      JsArray(
-                        issue
-                          .map(_.comments)
-                          .getOrElse(Seq.empty[ApiIssueComment])
-                          .map(ApiIssueCommentFormat.writes)
+                .flatMap(
+                  issue =>
+                    FastFuture.successful(
+                      Ok(
+                        JsArray(
+                          issue
+                            .map(_.comments)
+                            .getOrElse(Seq.empty[ApiIssueComment])
+                            .map(ApiIssueCommentFormat.writes)
+                        )
                       )
-                    )
-                  )
-                )
+                  ))
           }
       }
     }
@@ -3949,9 +3778,8 @@ class ApiController(
                                 pages = Seq.empty
                               ),
                               swagger = Some(
-                                SwaggerAccess(url =
-                                  "/assets/swaggers/petstore.json"
-                                )
+                                SwaggerAccess(
+                                  url = "/assets/swaggers/petstore.json")
                               ),
                               possibleUsagePlans = Seq.empty,
                               defaultUsagePlan = UsagePlanId(""),
@@ -4005,8 +3833,7 @@ class ApiController(
               SeqVersionFormat.writes(
                 apis
                   .filter(api =>
-                    !ctx.user.isGuest || api.visibility.name == ApiVisibility.Public.name
-                  )
+                    !ctx.user.isGuest || api.visibility.name == ApiVisibility.Public.name)
                   .map(_.currentVersion)
                   .sortWith((a, b) => a.value.compareToIgnoreCase(b.value) < 0)
               )
@@ -4024,22 +3851,22 @@ class ApiController(
       )(ctx) {
         for {
           myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-          apis <-
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .find(
-                Json.obj(
-                  "_deleted" -> false,
-                  "_humanReadableId" -> apiId
-                )
+          apis <- env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .find(
+              Json.obj(
+                "_deleted" -> false,
+                "_humanReadableId" -> apiId
               )
-        } yield {
-          val filteredApis = apis
-            .filter(api =>
-              api.authorizedTeams.exists(t =>
-                myTeams.exists(a => a.id == t)
-              ) || myTeams.exists(a => a.id == api.team)
             )
+        } yield {
+          val filteredApis =
+            apis
+              .filter(
+                api =>
+                  api.authorizedTeams.exists(t =>
+                    myTeams.exists(a => a.id == t)) || myTeams.exists(a =>
+                    a.id == api.team))
 
           filteredApis.find(api => api.isDefault) match {
             case None =>
@@ -4149,28 +3976,26 @@ class ApiController(
 
               (for {
                 myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-                pendingRequests <-
-                  env.dataStore.notificationRepo
-                    .forTenant(ctx.tenant.id)
-                    .findNotDeleted(
-                      Json.obj(
-                        "action.type" -> "ApiAccess",
-                        "status.status" -> "Pending",
-                        "action.api" -> api.id.asJson,
-                        "action.team" -> Json
-                          .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                      )
+                pendingRequests <- env.dataStore.notificationRepo
+                  .forTenant(ctx.tenant.id)
+                  .findNotDeleted(
+                    Json.obj(
+                      "action.type" -> "ApiAccess",
+                      "status.status" -> "Pending",
+                      "action.api" -> api.id.asJson,
+                      "action.team" -> Json
+                        .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
                     )
-                subscriptions <-
-                  env.dataStore.apiSubscriptionRepo
-                    .forTenant(ctx.tenant.id)
-                    .findNotDeleted(
-                      Json.obj(
-                        "api" -> api.id.value,
-                        "team" -> Json
-                          .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                      )
+                  )
+                subscriptions <- env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.tenant.id)
+                  .findNotDeleted(
+                    Json.obj(
+                      "api" -> api.id.value,
+                      "team" -> Json
+                        .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
                     )
+                  )
               } yield {
                 api
                   .asPublicWithAuthorizationsJson()
@@ -4190,8 +4015,7 @@ class ApiController(
                             val accessApi = notif.action.asInstanceOf[ApiAccess]
                             accessApi.team == team.id && accessApi.api == api.id
                           })
-                        )
-                      )
+                      ))
                   )
                 )
               }).map(p => Ok(p))

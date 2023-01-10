@@ -1,5 +1,6 @@
-import { TreeItem, TreeItems } from "../components/utils/dnd/types";
-import {IFastTeam, ITeamSimple} from "./team";
+import { isPromiseLike } from 'xstate/lib/utils';
+import { TreeItem, TreeItems } from '../components/utils/dnd/types';
+import { IFastTeam, ITeamSimple } from './team';
 
 interface IBaseApi {
   _id: string;
@@ -34,21 +35,21 @@ interface IBaseApi {
 }
 
 export interface IIssuesTag {
-  id: string
-  name: string
-  color: string
+  id: string;
+  name: string;
+  color: string;
 }
 
 export interface IApiWithSimpleTeam extends IBaseApi {
   team: {
-    _humanReadableId: string
-    _id: string
-    avatar: string
-    name: string
+    _humanReadableId: string;
+    _id: string;
+    avatar: string;
+    name: string;
   };
 }
 export interface IApi extends IBaseApi {
-  team: string
+  team: string;
 }
 
 export interface IApiWithAuthorization extends IApiWithSimpleTeam {
@@ -83,11 +84,11 @@ export interface ITestingConfig {
   customReadOnly?: boolean;
 }
 
-export type IDocumentationPages =  IDocumentationPage[]
+export type IDocumentationPages = IDocumentationPage[];
 export interface IDocumentationPage {
   id: string;
   title: string;
-  children: IDocumentationPages
+  children: IDocumentationPages;
 }
 export interface IDocumentation {
   _id: string;
@@ -193,6 +194,12 @@ export interface IDocTitle {
   title: string;
   level: string;
 }
+
+export interface IApiDoc {
+  currentVersion: string;
+  apiId: string;
+  pages: Array<IDocTitle>;
+}
 export interface IDocDetail {
   pages: Array<string>;
   titles: Array<IDocTitle>;
@@ -211,7 +218,7 @@ export interface IDocPage {
   remoteContentHeaders: object;
 }
 
-interface IApiKey {
+export interface IApiKey {
   clientName: string;
   clientId: string;
   clientSecret: string;
@@ -269,33 +276,40 @@ export function isError(obj: any): obj is ResponseError {
   return (<ResponseError>obj).error !== undefined;
 }
 
-export interface ISafeSubscription extends IBaseSubscription{
-  apiKey: {clientName: string};
-
+export function isPromise<T>(obj: any): obj is Promise<T> {
+  return (<Promise<T>>obj).then !== undefined && typeof (<Promise<T>>obj).then === 'function';
 }
 
-export interface ISubscription extends IBaseSubscription{
+export interface ISafeSubscription extends IBaseSubscription {
+  apiKey: { clientName: string };
+}
+
+export interface ISubscription extends IBaseSubscription {
   apiKey?: IApiKey;
   integrationToken: string;
+}
 
+export interface ISubscriptionWithApiInfo extends ISubscription {
+  apiName: string;
+  planType: string;
 }
 
 export interface IQuotas {
-  currentCallsPerSec:number,
-  remainingCallsPerSec: number,
-  currentCallsPerDay: number,
-  authorizedCallsPerDay: number,
-  currentCallsPerMonth: number,
-  remainingCallsPerMonth: number,
-  authorizedCallsPerSec: number,
-  authorizedCallsPerMonth: number,
-  remainingCallsPerDay: number
+  currentCallsPerSec: number;
+  remainingCallsPerSec: number;
+  currentCallsPerDay: number;
+  authorizedCallsPerDay: number;
+  currentCallsPerMonth: number;
+  remainingCallsPerMonth: number;
+  authorizedCallsPerSec: number;
+  authorizedCallsPerMonth: number;
+  remainingCallsPerDay: number;
 }
 
 export interface ISubscriptionInformation {
-  simpleApi: IApi,
-  simpleSubscription: ISubscription
-  plan: IUsagePlan
+  simpleApi: IApi;
+  simpleSubscription: ISubscription;
+  plan: IUsagePlan;
 }
 
 export interface IFastPlan {
@@ -341,4 +355,14 @@ export interface IFastApi {
     parent: IFastApiParent
   }
   subscriptionsWithPlan: Array<IFastSubscription>,
+}
+
+export interface IApiPost {
+  _id: string;
+  _humanReadableId: string;
+  _tenant: string;
+  _deleted: string;
+  title: string;
+  lastModificationAt: string;
+  content: string;
 }

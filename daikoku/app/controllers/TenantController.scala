@@ -126,7 +126,6 @@ class TenantController(DaikokuAction: DaikokuAction,
                       description = s"The personal team of ${ctx.user.name}",
                       users =
                         Set(UserWithPermission(ctx.user.id, Administrator)),
-                      subscriptions = Seq.empty,
                       authorizedOtoroshiGroups = Set.empty
                     )
                   )
@@ -198,7 +197,6 @@ class TenantController(DaikokuAction: DaikokuAction,
             description = s"The admin team for the default tenant",
             avatar = tenant.style.map(_.logo),
             users = Set.empty,
-            subscriptions = Seq.empty,
             authorizedOtoroshiGroups = Set.empty,
             contact = tenant.contact
           )

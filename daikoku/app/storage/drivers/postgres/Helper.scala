@@ -1,5 +1,6 @@
 package storage.drivers.postgres
 
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import io.vertx.sqlclient.Row
 import play.api.Logger
 import play.api.libs.json._
@@ -95,6 +96,18 @@ object Helper {
           params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
+    } else if (field._1 == "$unset") {
+      val keys = field._2.as[JsObject].keys
+//      the following request does not work because of quote in object give in argument of the #- operation
+//      val tup = (
+//        s"content = content ${keys.zipWithIndex.map{ case (key, keyIdx) => s"#- {${key.split("\\.").zipWithIndex.map{ case (_, idx) => getParam(keyIdx + idx + params.size)}.mkString(",")}}"}.mkString(" ")}",
+//        params ++ keys.flatMap(key => key.split("\\."))
+//      )
+      val tup = (
+        s"content = content ${keys.map(key => s"#- '{${key.split("\\.").mkString(",")}}'").mkString(" ")}",
+        params
+      )
+      tup
     } else {
       field._2 match {
         case value: JsObject =>
@@ -115,7 +128,7 @@ object Helper {
                   formattedKey = s"content->'${parts.head}'->>'${parts.last}'"
               }
 
-              (s"($formattedKey IN $a OR content->${getParam(b.size)} ?| ARRAY[$arr])",
+              (s"( $formattedKey IN $a OR content->${getParam(b.size)} ?| ARRAY[$arr] )",
                b ++ Seq(field._1))
 
             case Some((key: String, _: JsValue)) if key == "$nin" =>
@@ -165,7 +178,8 @@ object Helper {
             case Some((key: String, _: JsValue)) if key == "$ne" =>
               val (a, b) = _convertTuple(value.fields.head, params)
               (
-                s"(content->>${getParam(b.size)} <> ${getParam(b.size + 1)})",
+                s"(content ->> ${getParam(b.size)} IS NULL OR content->>${getParam(
+                  b.size)} <> ${getParam(b.size + 1)})",
                 b ++ Seq(_removeQuotes(field._1),
                          _removeQuotes(value.fields.head._2))
               )
@@ -183,7 +197,11 @@ object Helper {
             orParams = res._2
           }
 
-          ("(" + l.mkString(" OR ") + ")", orParams)
+          if (l.count(_.nonEmpty) == 1) {
+            (l.head, orParams)
+          } else {
+            ("(" + l.mkString(" OR ") + ")", orParams)
+          }
 
         case value: JsArray if field._1 == "$in" =>
           try {

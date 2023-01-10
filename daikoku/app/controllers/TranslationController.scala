@@ -43,76 +43,74 @@ class TranslationController(
         Ok(Json.stringify(JsArray(languages.map(JsString.apply)))))
     }
   }
-  def getTranslations(domain: Option[String]) =
+
+  def getMailTranslations(domain: Option[String]) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} has reset translations - @{tenant._id}"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
+      env.dataStore.translationRepo
+        .forTenant(ctx.tenant.id)
+        .find(
+          Json.obj(
+            "key" -> Json.obj("$regex" -> s".*${domain.getOrElse("mail")}",
+                              "$options" -> "-i")))
+        .map(translations => {
+          val defaultTranslations = messagesApi.messages
+            .map(v =>
+              (v._1,
+               v._2.filter(k => k._1.startsWith(domain.getOrElse("mail")))))
+            .flatMap { v =>
+              v._2
+                .map {
+                  case (key, value) =>
+                    Translation(
+                      id = DatastoreId(BSONObjectID.generate().stringify),
+                      tenant = ctx.tenant.id,
+                      language = v._1,
+                      key = key,
+                      value = value
+                    )
+                }
+                .filter(t => languages.contains(t.language))
+            }
+
+          Ok(
+            Json.obj(
+              "translations" -> defaultTranslations
+                .map { translation =>
+                  translations.find(t =>
+                    t.key == translation.key && t.language == translation.language) match {
+                    case None    => translation
+                    case Some(t) => t
+                  }
+                }
+                .groupBy(_.key)
+                .map(
+                  v =>
+                    (v._1,
+                     v._2.map(TranslationFormat.writes),
+                     defaultTranslations
+                       .find(p => p.key == v._1)
+                       .map(_.value)
+                       .getOrElse("")))
+            ))
+        })
+    }
+  }
+
+  def getAllTranslations() =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
-        AuditTrailEvent(
-          s"@{user.name} has requested translations of s$domain"))(ctx) {
-        domain match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "Domain missing")))
-          case Some(prefix) =>
-            (if (prefix == "all")
-               env.dataStore.translationRepo
-                 .forTenant(ctx.tenant.id)
-                 .findAll()
-             else
-               env.dataStore.translationRepo
-                 .forTenant(ctx.tenant.id)
-                 .find(Json.obj("key" -> Json.obj("$regex" -> s".*$prefix",
-                                                  "$options" -> "-i"))))
-              .map(translations => {
-                val defaultTranslations =
-                  if (prefix == "mail")
-                    messagesApi.messages
-                      .map(v =>
-                        (v._1, v._2.filter(k => k._1.startsWith(prefix))))
-                      .flatMap { v =>
-                        v._2
-                          .map {
-                            case (key, value) =>
-                              Translation(
-                                id = DatastoreId(
-                                  BSONObjectID.generate().stringify),
-                                tenant = ctx.tenant.id,
-                                language = v._1,
-                                key = key,
-                                value = value
-                              )
-                          }
-                          .filter(t => languages.contains(t.language))
-                      } else {
-                    Seq.empty
-                  }
-                Ok(
-                  if (prefix == "mail")
-                    Json.obj(
-                      "translations" -> defaultTranslations
-                        .map { translation =>
-                          translations.find(t =>
-                            t.key == translation.key && t.language == translation.language) match {
-                            case None    => translation
-                            case Some(t) => t
-                          }
-                        }
-                        .groupBy(_.key)
-                        .map(
-                          v =>
-                            (v._1,
-                             v._2.map(TranslationFormat.writes),
-                             defaultTranslations
-                               .find(p => p.key == v._1)
-                               .map(_.value)
-                               .getOrElse("")))
-                    )
-                  else
-                    Json.obj(
-                      "translations" -> translations.map(
-                        TranslationFormat.writes))
-                )
-              })
-        }
+        AuditTrailEvent(s"@{user.name} has requested all translations"))(ctx) {
+        env.dataStore.translationRepo
+          .forTenant(ctx.tenant.id)
+          .findAll()
+          .map(translations => {
+            Ok(
+              Json.obj(
+                "translations" -> translations.map(TranslationFormat.writes)))
+          })
       }
     }
 

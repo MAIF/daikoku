@@ -101,12 +101,11 @@ case class Team(
     contact: String = "contact@foo.bar",
     avatar: Option[String] = Some("/assets/images/daikoku.svg"),
     users: Set[UserWithPermission] = Set.empty,
-    subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     authorizedOtoroshiGroups: Set[OtoroshiGroup] = Set.empty,
     apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
       TeamApiKeyVisibility.User),
     metadata: Map[String, String] = Map.empty,
-    apisCreationPermission: Option[Boolean] = None,
+    apisCreationPermission: Option[Boolean] = None
 ) extends CanJson[User] {
   override def asJson: JsValue = json.TeamFormat.writes(this)
   def humanReadableId = name.urlPathSegmentSanitized
@@ -171,10 +170,7 @@ object NotificationAction {
   case class TeamInvitation(team: TeamId, user: UserId)
       extends NotificationAction
 
-
-  case class ApiSubscriptionAccept(api: ApiId,
-                                    plan: UsagePlanId,
-                                    team: TeamId)
+  case class ApiSubscriptionAccept(api: ApiId, plan: UsagePlanId, team: TeamId)
       extends NotificationAction
 
   case class ApiSubscriptionReject(message: Option[String],
@@ -182,7 +178,7 @@ object NotificationAction {
                                    plan: UsagePlanId,
                                    team: TeamId)
       extends NotificationAction
-      
+
   case class ApiSubscriptionDemand(
       api: ApiId,
       plan: UsagePlanId,

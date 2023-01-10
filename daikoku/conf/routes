@@ -171,13 +171,14 @@ POST    /api/teams/:teamId/testing/:apiId/call              fr.maif.otoroshi.dai
 GET     /api/teams/:teamId/tenant/otoroshis/:oto/groups     fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsFor(teamId, oto)
 GET     /api/tenants/:tenantId/otoroshis/:oto/groups        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsForTenant(tenantId, oto)
 GET     /api/tenants/:tenantId/otoroshis/:oto/services      fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesForTenant(tenantId, oto)
+GET     /api/tenants/:tenantId/otoroshis/:oto/routes        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiRoutesForTenant(tenantId, oto)
 GET     /api/teams/:teamId/tenant/otoroshis/:oto/services   fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesFor(teamId, oto)
+GET     /api/teams/:teamId/tenant/otoroshis/:oto/routes     fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiRoutesFor(teamId, oto)
 GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys       fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
 
 GET     /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.teams()
 POST    /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.createTeam()
 GET     /api/teams/admin                                fr.maif.otoroshi.daikoku.ctrls.TeamController.tenantAdminTeam()
-GET     /api/teams/joinable                             fr.maif.otoroshi.daikoku.ctrls.TeamController.allJoinableTeams()
 GET     /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.team(teamId)
 PUT     /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.updateTeam(teamId)
 DELETE  /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.deleteTeam(teamId)
@@ -217,11 +218,12 @@ GET     /api/tenants/:tenantId/addable-admins           fr.maif.otoroshi.daikoku
 POST    /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku.ctrls.TenantController.addAdminsToTenant(tenantId)
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.otoroshi.daikoku.ctrls.TenantController.removeAdminFromTenant(tenantId, adminId)
 
-GET     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.getTranslations(domain: Option[String] ?= None)
+GET     /api/translations/_all                          fr.maif.otoroshi.daikoku.ctrls.TranslationController.getAllTranslations()
+GET     /api/translations/_mail                         fr.maif.otoroshi.daikoku.ctrls.TranslationController.getMailTranslations(domain: Option[String] ?= None)
 GET     /api/translations/_languages                    fr.maif.otoroshi.daikoku.ctrls.TranslationController.getLanguages()
 PUT     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTranslation()
 POST    /api/translations/:translationId/_reset         fr.maif.otoroshi.daikoku.ctrls.TranslationController.resetTranslation(translationId: String)
-DELETE /api/translations                                fr.maif.otoroshi.daikoku.ctrls.TranslationController.deleteTranslation()
+DELETE  /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.deleteTranslation()
 
 GET     /api/admin/users/:id/_impersonate               fr.maif.otoroshi.daikoku.ctrls.UsersController.impersonate(id)
 GET     /api/me/_deimpersonate                          fr.maif.otoroshi.daikoku.ctrls.UsersController.deImpersonate()
@@ -276,6 +278,7 @@ GET     /fakeotoroshi/api/apikeys                    fr.maif.otoroshi.daikoku.ct
 GET     /fakeotoroshi/api/groups/:groupId            fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroup(groupId)
 GET     /fakeotoroshi/api/groups                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroups()
 GET     /fakeotoroshi/api/services                   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiServices()
+GET     /fakeotoroshi/api/routes                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiRoutes()
 
 GET     /admin-api/swagger.json                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
 

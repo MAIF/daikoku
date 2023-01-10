@@ -1,23 +1,31 @@
-import React, { useContext, useEffect } from 'react';
-import { connect } from 'react-redux';
+import { constraints, Form, format, type } from '@maif/react-forms';
+import md5 from 'js-md5';
+import { useContext, useEffect } from 'react';
 import { toastr } from 'react-redux-toastr';
 import { useNavigate } from 'react-router-dom';
-import { Form, type, format, constraints } from '@maif/react-forms';
-import md5 from 'js-md5';
 
-import { I18nContext, updateTeamPromise } from '../../../core';
+import { useDispatch, useSelector } from 'react-redux';
+import { ModalContext, useTeamBackOffice } from '../../../contexts';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
+import { I18nContext, TranslateParams, updateTeam } from '../../../core';
 import * as Services from '../../../services';
-import { AssetChooserByModal, MimeTypeFilter } from '../../frontend'
-import { useTeamBackOffice } from '../../../contexts';
+import { isError, IState, ITeamSimple } from '../../../types';
 
 
+type AvatarProps = {
+  rawValues: ITeamSimple
+  value: string
+  getValue: (x: string) => any
+  onChange: (x: string) => void
+  team: ITeamSimple
+}
 const Avatar = ({
   rawValues,
   value,
   getValue,
   onChange,
   team
-}: any) => {
+}: AvatarProps) => {
   const { Translation, translate } = useContext(I18nContext);
 
   const setGravatarLink = () => {
@@ -60,7 +68,7 @@ const Avatar = ({
             tenantMode={false}
             team={team}
             label={translate('Set avatar from asset')}
-            onSelect={(asset: any) => onChange(asset.link)}
+            onSelect={(asset) => onChange(asset.link)}
           />
         </div>
       </div>
@@ -68,7 +76,7 @@ const Avatar = ({
   );
 };
 
-export const teamSchema = (team: any, translate: (props: any) => string) => ({
+export const teamSchema = (team: ITeamSimple, translate: (props: string | TranslateParams) => string) => ({
   name: {
     type: type.string,
     label: translate('Name'),
@@ -111,13 +119,18 @@ export const teamSchema = (team: any, translate: (props: any) => string) => ({
   }
 });
 
+type TeamEditFormProps = {
+  team: ITeamSimple
+  updateTeam: (t: ITeamSimple) => void
+}
 export const TeamEditForm = ({
   team,
   updateTeam
-}: any) => {
+}: TeamEditFormProps) => {
+  const navigate = useNavigate();
+
   const { translate } = useContext(I18nContext);
-
-
+  const { confirm } = useContext(ModalContext);
 
   if (!team) {
     return null;
@@ -127,30 +140,63 @@ export const TeamEditForm = ({
     document.title = `${team.name} - ${translate('Edition')}`;
   }, []);
 
+  const confirmDelete = () => {
+    confirm({
+      message: translate('delete team'),
+      title: 'Delete team',
+    }).then((ok) => {
+      if (ok) {
+        Services.deleteTeam(team._id)
+          .then((r) => {
+            if (isError(r)) {
+              toastr.success(translate("Error"), r.error)
+            } else {
+              navigate("/apis")
+              toastr.success(translate("Success"), translate({ key: 'team.deleted.success', replacements: [team.name] }))
+            }
+          })
+      }
+    })
+  }
+
   return (
     <Form
       schema={teamSchema(team, translate)}
       value={team}
       onSubmit={(team) => updateTeam(team)}
+      footer={({ valid }) => {
+        return (
+          <div className='d-flex flex-row align-items-center justify-content-end mt-3'>
+            <button type="button" className='btn btn-outline-danger me-2' onClick={confirmDelete}>{translate('Delete')}</button>
+            <button type="button" className='btn btn-outline-success' onClick={valid}>{translate('Save')}</button>
+          </div>
+        )
+      }}
+      options={{
+        actions: { submit: { label: translate('Save') } }
+      }}
     />
   );
 };
 
-const TeamEditComponent = ({
-  currentTeam
-}: any) => {
+export const TeamEdit = () => {
   const navigate = useNavigate();
+
+  const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
+  const dispatch = useDispatch();
+
   useTeamBackOffice(currentTeam);
 
   const { translate } = useContext(I18nContext);
 
 
-  const save = (data: any) => {
+  const save = (data: ITeamSimple) => {
     Services.updateTeam(data)
       .then((updatedTeam) => {
         if (data._humanReadableId !== updatedTeam._humanReadableId) {
           navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
         }
+        dispatch(updateTeam(updatedTeam))
         toastr.success(
           translate('Success'),
           translate({ key: 'team.updated.success', replacements: [updatedTeam.name] })
@@ -162,13 +208,3 @@ const TeamEditComponent = ({
     <TeamEditForm team={currentTeam} updateTeam={save} />
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-const mapDispatchToProps = {
-  updateTeam: (team: any) => updateTeamPromise(team),
-};
-
-export const TeamEdit = connect(mapStateToProps, mapDispatchToProps)(TeamEditComponent);

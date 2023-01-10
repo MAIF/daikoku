@@ -1,19 +1,18 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { constraints, Form, format, type } from '@maif/react-forms';
 import md5 from 'js-md5';
 import queryString from 'query-string';
-import { Form, type, format, constraints } from '@maif/react-forms';
+import { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { BrowserRouter as Router, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
 
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
-import * as Services from '../services';
 import { I18nContext } from '../contexts/i18n-context';
+import * as Services from '../services';
+import { IUserSimple } from '../types';
 
 const AvatarInput = ({
   rawValues,
   value,
-  error,
   onChange
 }: any) => {
   const { Translation } = useContext(I18nContext);
@@ -43,14 +42,14 @@ const AvatarInput = ({
   );
 };
 
-export const SignupComponent = () => {
+export const Signup = () => {
   const { translate, Translation } = useContext(I18nContext);
 
   const navigate = useNavigate();
 
   const defaultAvatar = `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`;
-  const [user, setUser] = useState<any>(undefined);
-  const [state, setState] = useState<string>('creation');
+  const [user, setUser] = useState<IUserSimple>();
+  const [state, setState] = useState<'creation' | 'error' | 'done'>('creation');
   const [error, setError] = useState<string>();
 
   useEffect(() => {
@@ -139,8 +138,8 @@ export const SignupComponent = () => {
           <Translation i18nkey="Create account">Create account</Translation>
         </h1>
         <p style={{ width: '100%', textAlign: 'center' }}>
-          <Translation i18nkey="create.account.done" replacements={[user.email]}>
-            You will receive an email at <b>{user.email}</b> to finish your account creation
+          <Translation i18nkey="create.account.done" replacements={[user!.email]}>
+            You will receive an email at <b>{user!.email}</b> to finish your account creation
             process. You will have 15 minutes from now to finish your account creation process.
           </Translation>
         </p>
@@ -179,11 +178,11 @@ export const SignupComponent = () => {
   );
 };
 
-export const ResetPasswordComponent = (props: any) => {
+export const ResetPassword = () => {
   const { translate, Translation } = useContext(I18nContext);
 
-  const [user, setUser] = useState<any>(undefined);
-  const [state, setState] = useState<string>('creation');
+  const [user, setUser] = useState<IUserSimple>();
+  const [state, setState] = useState<'creation' | 'error' | 'done'>('creation');
   const [error, setError] = useState<string>();
 
   const schema = {
@@ -253,7 +252,7 @@ export const ResetPasswordComponent = (props: any) => {
     }
   }, []);
 
-  if (state === 'done') {
+  if (state === 'done' && user) {
     return (
       <div className="col">
         <h1 className="h1-rwd-reduce text-center mt-2">
@@ -441,10 +440,3 @@ export const DaikokuHomeApp = (props: any) => {
     </Router>
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-export const Signup = connect(mapStateToProps)(SignupComponent);
-export const ResetPassword = connect(mapStateToProps)(ResetPasswordComponent);

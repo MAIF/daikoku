@@ -249,7 +249,6 @@ object OAuth2Support {
                         name = s"$name",
                         description = s"The personal team of $name",
                         users = Set(UserWithPermission(userId, Administrator)),
-                        subscriptions = Seq.empty,
                         authorizedOtoroshiGroups = Set.empty
                       )
                       val user = User(

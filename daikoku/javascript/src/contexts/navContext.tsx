@@ -1,11 +1,12 @@
-import React, { useContext, useEffect, useState } from 'react';
 import merge from 'lodash/merge';
-import { useSelector, useDispatch } from 'react-redux';
-import { useParams, useNavigate, Link, useMatch } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { I18nContext, openContactModal } from '../core';
-import { Can, manage, api as API } from '../components/utils';
-import { IState, IStoreState, ITeamSimple, ITenant } from '../types';
+import { api as API, Can, manage } from '../components/utils';
+import { I18nContext } from '../core';
+import { IState, IStoreState, ITeamSimple, ITenant, IUserSimple } from '../types';
+import { ModalContext } from './modalContext';
 
 
 export enum navMode {
@@ -105,9 +106,9 @@ export const NavProvider = ({ children, loginAction, loginProvider }:
 export const useApiFrontOffice = (api: any, team: any) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
-  const { connectedUser, tenant } = useSelector((state) => (state as any).context);
+  const { openContactModal } = useContext(ModalContext);
+  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const params = useParams();
 
   const schema = (currentTab: any) => ({
@@ -191,13 +192,12 @@ export const useApiFrontOffice = (api: any, team: any) => {
               <button
                 className="btn btn-sm btn-access-negative mb-2"
                 onClick={() =>
-                  openContactModal(
-                    connectedUser.name,
-                    connectedUser.email,
-                    tenant._id,
-                    api.team,
-                    api._id
-                  )(dispatch)
+                  openContactModal({
+                    name: connectedUser.name,
+                    email: connectedUser.email,
+                    team: api.team,
+                    api: api._id
+                  })
                 }
               >
                 {translate({ key: `contact.team`, replacements: [team?.name] })}
@@ -240,9 +240,9 @@ export const useApiFrontOffice = (api: any, team: any) => {
 export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
-  const { connectedUser, tenant } = useSelector((state) => (state as any).context);
+  const { openContactModal } = useContext(ModalContext);
+  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const params = useParams();
 
   const schema = (currentTab: any) => ({
@@ -315,13 +315,12 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
               <button
                 className="btn btn-sm btn-access-negative mb-2"
                 onClick={() =>
-                  openContactModal(
-                    connectedUser.name,
-                    connectedUser.email,
-                    tenant._id,
-                    apigroup.team,
-                    apigroup._id
-                  )(dispatch)
+                  openContactModal({
+                    name: connectedUser.name,
+                    email: connectedUser.email,
+                    team: apigroup.team,
+                    api: apigroup._id
+                  })
                 }
               >
                 {translate({ key: `contact.team`, replacements: [team?.name] })}
@@ -534,7 +533,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
                 to={`/${currentTeam._humanReadableId}/settings/apis`}
               >
                 <i className="fas fa-chevron-left" />
-                {translate({key: 'back.to.team', replacements: [currentTeam.name]})}
+                {translate({ key: 'back.to.team', replacements: [currentTeam.name] })}
               </Link>
             ),
           },
@@ -577,7 +576,7 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
   const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const navigate = useNavigate();
-  const match = useMatch('/:teamId/settings/:tab'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
+  const match = useMatch('/:teamId/settings/:tab*'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
 
   const schema = (currentTab: string) => ({
     title: team.name,
@@ -604,7 +603,7 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
                 className: { active: currentTab === 'assets' },
               },
               members: {
-                label: translate({key: 'Member', plural: true}),
+                label: translate({ key: 'Member', plural: true }),
                 action: () => navigateTo('members'),
                 visible: team.type !== 'Personal',
                 className: { active: currentTab === 'members' },
@@ -614,11 +613,12 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
           apis: {
             label: translate('Apis'),
             action: () => navigateTo('apis'),
-            className: { 
-              active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab) },
+            className: {
+              active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab)
+            },
           },
           apikeys: {
-            label: translate({key: 'API key', plural: true}),
+            label: translate({ key: 'API key', plural: true }),
             action: () => navigateTo('apikeys'),
             className: { active: ['apikeys', 'consumption'].includes(currentTab) },
             childs: {
@@ -632,7 +632,7 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
           billing: {
             label: translate('Billing'),
             action: () => navigateTo('billing'),
-            className: { active:  ['billing', 'income'].includes(currentTab) },
+            className: { active: ['billing', 'income'].includes(currentTab) },
             childs: {
               income: {
                 label: translate('Income'),
@@ -655,7 +655,7 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
       setMode(navMode.team);
       setOffice(officeMode.back);
       setTeam(team);
-      setMenu(schema(match?.params?.tab || ''));
+      setMenu(schema(match?.params['tab']));
     }
   }, [team]);
 
@@ -675,7 +675,10 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();
-  const match = useMatch('/settings/:tab/:subtab');
+  const matchParent = useMatch('/settings/:tab');
+  const matchSub = useMatch('/settings/:tab/:subtab');
+
+  const match = matchParent || matchSub
 
   const currentTenant = useSelector<IStoreState, ITenant>((state) => state.context.tenant);
   const tenant = maybeTenant || currentTenant;
@@ -730,12 +733,12 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
             },
           },
           message: {
-            label: translate({key: 'Message', plural: true}),
+            label: translate({ key: 'Message', plural: true }),
             action: () => navigateTo('messages'),
             className: { active: currentTab === 'messages' },
           },
           otoroshi: {
-            label: translate({key: 'Otoroshi instance', plural: true}),
+            label: translate({ key: 'Otoroshi instance', plural: true }),
             action: () => navigateTo('otoroshis'),
             className: { active: currentTab === 'otoroshis' },
           },
@@ -784,6 +787,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   };
 
   useEffect(() => {
+    //@ts-ignore
     setMenu(schema(match?.params.tab, match?.params.subtab));
     setMode(navMode.tenant);
     setOffice(officeMode.back);
@@ -799,7 +803,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   return { addMenu, tenant };
 };
 
-export const useDaikokuBackOffice = (props?: {creation?: boolean}) => {
+export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 

@@ -3,10 +3,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import { updateTeamPromise } from '../../../core';
+import { updateTeam } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { ITeamSimple } from '../../../types';
+import { isError, IState, IStateContext, ITeamSimple } from '../../../types';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage } from '../../utils';
 
@@ -15,7 +15,7 @@ export const ApiGroupApis = ({
 }: any) => {
   const navigate = useNavigate();
 
-  const { connectedUser, apiCreationPermitted } = useSelector((s) => (s as any).context);
+  const { connectedUser, apiCreationPermitted } = useSelector<IState, IStateContext>((s) => s.context);
   const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
@@ -31,11 +31,13 @@ export const ApiGroupApis = ({
     setLoading(true);
     Promise.all([
       Services.teams(),
-      client.query<{myTeams: Array<ITeamSimple>}>({
+      client.query<{ myTeams: Array<ITeamSimple> }>({
         query: Services.graphql.myTeams,
       }),
     ]).then(([t, { data }]) => {
-      setTeams(t);
+      if (!isError(t)) {
+        setTeams(t);
+      }
       setMyTeams(
         data.myTeams.map(({
           users,
@@ -64,12 +66,13 @@ export const ApiGroupApis = ({
     const adminTeam: any = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === (team as any)._id);
 
     if (CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
-      updateTeamPromise(adminTeam)(dispatch).then(() => {
-        const url = api.apis
-          ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-          : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
-        navigate(url);
-      });
+      Promise.resolve(dispatch(updateTeam(adminTeam)))
+        .then(() => {
+          const url = api.apis
+            ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+            : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+          navigate(url);
+        });
     }
   };
 

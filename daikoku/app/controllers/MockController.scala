@@ -45,7 +45,8 @@ class MockController(DaikokuAction: DaikokuAction,
       |```
     """.stripMargin
 
-  def saveApiDocPages(tenant: TenantId): Future[Seq[ApiDocumentationDetailPage]] = {
+  def saveApiDocPages(
+      tenant: TenantId): Future[Seq[ApiDocumentationDetailPage]] = {
     val id1 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
     val id2 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
     val id21 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
@@ -110,12 +111,24 @@ class MockController(DaikokuAction: DaikokuAction,
       )
     } yield {
       Seq(
-        ApiDocumentationDetailPage(id = id1, title = "Introduction", children = Seq.empty),
-        ApiDocumentationDetailPage(id = id2, title = "Do This", children = Seq(
-          ApiDocumentationDetailPage(id = id1, title = "and do it well", children = Seq.empty),
-        )),
-        ApiDocumentationDetailPage(id = id3, title = "Do That ", children = Seq.empty),
-        ApiDocumentationDetailPage(id = id4, title = "FAQ", children = Seq.empty))
+        ApiDocumentationDetailPage(id = id1,
+                                   title = "Introduction",
+                                   children = Seq.empty),
+        ApiDocumentationDetailPage(
+          id = id2,
+          title = "Do This",
+          children = Seq(
+            ApiDocumentationDetailPage(id = id1,
+                                       title = "and do it well",
+                                       children = Seq.empty),
+          )),
+        ApiDocumentationDetailPage(id = id3,
+                                   title = "Do That ",
+                                   children = Seq.empty),
+        ApiDocumentationDetailPage(id = id4,
+                                   title = "FAQ",
+                                   children = Seq.empty)
+      )
     }
   }
 
@@ -445,7 +458,6 @@ class MockController(DaikokuAction: DaikokuAction,
       avatar = Some(
         s"https://www.gravatar.com/avatar/${email.md5}?size=128&d=robohash"),
       users = Set(userWithPermission),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
     val user = User(
@@ -700,7 +712,6 @@ class MockController(DaikokuAction: DaikokuAction,
         UserWithPermission(user3.id, TeamPermission.Administrator),
         UserWithPermission(user4.id, TeamPermission.Administrator)
       ),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
     val tenant2adminTeam = defaultAdminTeam.copy(
@@ -1072,13 +1083,7 @@ class MockController(DaikokuAction: DaikokuAction,
             UserWithPermission(user3.id, TeamUser),
             UserWithPermission(user4.id, TeamUser),
             UserWithPermission(user5.id, Administrator)
-          ),
-          subscriptions = Seq(ApiSubscriptionId("1"),
-                              ApiSubscriptionId("2"),
-                              ApiSubscriptionId("3"),
-                              ApiSubscriptionId("4"),
-                              ApiSubscriptionId("5")) ++ (1 to 10).map(
-            version => ApiSubscriptionId(s"sub-$version"))
+          )
         )
       )
       _ <- teamRepo1.save(
@@ -1415,6 +1420,18 @@ class MockController(DaikokuAction: DaikokuAction,
       "description" -> "A nice service (with prefix)"
     )
   )
+  val routes: Seq[JsObject] = Seq(
+    Json.obj(
+      "id" -> "s_123456",
+      "name" -> "nice-route",
+      "description" -> "A nice route"
+    ),
+    Json.obj(
+      "id" -> "s_12346",
+      "name" -> "daikoku_nice-route",
+      "description" -> "A nice route (with prefix)"
+    )
+  )
   var apikeys: Seq[JsObject] = Seq()
 
   def fakeOtoroshiGroups() = Action {
@@ -1422,6 +1439,9 @@ class MockController(DaikokuAction: DaikokuAction,
   }
   def fakeOtoroshiServices() = Action {
     Ok(JsArray(services))
+  }
+  def fakeOtoroshiRoutes() = Action {
+    Ok(JsArray(routes))
   }
 
   def fakeOtoroshiGroup(groupId: String) = Action {

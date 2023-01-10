@@ -11,6 +11,7 @@ import com.themillhousegroup.scoup.Scoup
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -120,6 +121,9 @@ object utils {
         _ <- daikokuComponents.env.dataStore.messageRepo
           .forAllTenant()
           .deleteAll()
+        _ <- daikokuComponents.env.dataStore.operationRepo
+          .forAllTenant()
+          .deleteAll()
       } yield ()
     }
 
@@ -138,25 +142,30 @@ object utils {
         messages: Seq[Message] = Seq.empty,
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
-        cmsPages: Seq[CmsPage] = Seq.empty
+        cmsPages: Seq[CmsPage] = Seq.empty,
+        operations: Seq[Operation] = Seq.empty
     ) = {
-      Await.result(setupEnv(
-        tenants,
-        users,
-        teams,
-        apis,
-        subscriptions,
-        pages,
-        notifications,
-        consumptions,
-        sessions,
-        resets,
-        creations,
-        messages,
-        issues,
-        posts,
-        cmsPages
-      ), 1.second)
+      Await.result(
+        setupEnv(
+          tenants,
+          users,
+          teams,
+          apis,
+          subscriptions,
+          pages,
+          notifications,
+          consumptions,
+          sessions,
+          resets,
+          creations,
+          messages,
+          issues,
+          posts,
+          cmsPages,
+          operations
+        ),
+        1.second
+      )
     }
 
     def setupEnv(
@@ -174,7 +183,8 @@ object utils {
         messages: Seq[Message] = Seq.empty,
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
-        cmsPages: Seq[CmsPage] = Seq.empty
+        cmsPages: Seq[CmsPage] = Seq.empty,
+        operations: Seq[Operation] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -281,6 +291,22 @@ object utils {
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
           .run()
+        _ <- Source(pages.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.apiDocumentationPageRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(operations.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.operationRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
       } yield ()
     }
 
@@ -330,7 +356,6 @@ object utils {
                     name = user.name,
                     description = s"The personal team of ${user.name}",
                     users = Set(UserWithPermission(user.id, Administrator)),
-                    subscriptions = Seq.empty,
                     authorizedOtoroshiGroups = Set.empty
                   )
                 case Some(team) => team
@@ -373,14 +398,15 @@ object utils {
                              port: Int = port)(
         implicit tenant: Tenant,
         session: UserSession): WSResponse =
-      httpJsonCall(
-        path,
-        method,
-        headers,
-        body,
-        baseUrl,
-        port
-      )(tenant, session).futureValue
+      Await.result(httpJsonCall(
+                     path,
+                     method,
+                     headers,
+                     body,
+                     baseUrl,
+                     port
+                   )(tenant, session),
+                   5.seconds)
 
     def httpJsonCall(_path: String,
                      method: String = "GET",
@@ -444,13 +470,13 @@ object utils {
         port
       )(tenant).futureValue
 
-    def httpJsonCallWithoutSession(path: String,
-                                   method: String = "GET",
-                                   headers: Map[String, String] = Map.empty,
-                                   body: Option[JsValue] = None,
-                                   baseUrl: String = "http://127.0.0.1",
-                                   port: Int = port)(
-        implicit tenant: Tenant): Future[WSResponse] = {
+    def httpJsonCallWithoutSession(
+        path: String,
+        method: String = "GET",
+        headers: Map[String, String] = Map.empty,
+        body: Option[JsValue] = None,
+        baseUrl: String = "http://127.0.0.1",
+        port: Int = port)(implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
         .withHttpHeaders((headers ++ Map("Host" -> tenant.domain)).toSeq: _*)
@@ -682,7 +708,6 @@ object utils {
       description = s"The admin team for the default tenant",
       avatar = None,
       users = Set(UserWithPermission(tenantAdminId, Administrator)),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
     val tenant2AdminTeam = Team(
@@ -693,7 +718,6 @@ object utils {
       description = s"The admin team for the tenant II",
       avatar = None,
       users = Set(UserWithPermission(user.id, Administrator)),
-      subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
     val adminApi = Api(

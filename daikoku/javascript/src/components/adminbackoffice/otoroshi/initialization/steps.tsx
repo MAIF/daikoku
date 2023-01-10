@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import Select, { components } from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
@@ -6,11 +6,14 @@ import classNames from 'classnames';
 import orderBy from 'lodash/orderBy';
 import cloneDeep from 'lodash/cloneDeep';
 
-import { Table } from '../../../inputs';
+import { Table, TableRef } from '../../../inputs';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan, BeautifulTitle, formatPlanType, Option } from '../../../utils';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { ModalContext } from '../../../../contexts';
+import { createColumnHelper } from '@tanstack/react-table';
+import { IApiKey, ISubscription } from '../../../../types/api';
+import { TOption } from '../../../../types';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -299,6 +302,8 @@ export const ServicesStep = (props: any) => {
         :{' '}
         {props.groups.find((g: any) => g.id === props.service.groupId)
           ? props.groups.find((g: any) => g.id === props.service.groupId).name
+          : props.groups.find((g: any) => props.service.groups.includes(g.id))
+          ? props.groups.find((g: any) => props.service.groups.includes(g.id)).name
           : ''}
       </div>
     </div>
@@ -457,10 +462,26 @@ const SelectTeam = ({
   ) : null;
 };
 
-export const ApiKeyStep = (props: any) => {
-  const [selectedEntity, setSelectedEntity] = useState<any>();
+type ApiKeyStepProps = {
+  groups: Array<{id: string, name: string}>,
+  services: Array<{id: string, name: string}>,
+  routes: Array<{id: string, name: string}>,
+  getFilteredApikeys: (entity: {value: string, prefix: string, label: string}) => Array<IApiKey>
+  createdSubs: Array<ISubscription>
+  cancel: () => void
+}
+export const ApiKeyStep = (props: ApiKeyStepProps) => {
+  const table = useRef<TableRef>()
+  const [selectedEntity, setSelectedEntity] = useState<{value: string, prefix: string, label: string} | null>();
 
   const { translate, Translation } = useContext(I18nContext);
+
+  useEffect(() => {
+    if (table.current) {
+      table.current.update()
+    }
+  }, [selectedEntity])
+  
 
   const groups = props.groups.map((g: any) => ({
     value: g.id,
@@ -472,29 +493,29 @@ export const ApiKeyStep = (props: any) => {
     label: g.name,
     prefix: 'service_'
   }));
+  const routes = (props.routes || []).map((g: any) => ({
+    value: g.id,
+    label: g.name,
+    prefix: 'route_'
+  }));
 
+  const columnHelper = createColumnHelper<IApiKey>()
   const columns = [
-    {
-      id: 'oto.api.key',
-      Header: translate('initialize_from_otoroshi.otoroshi_api_key'),
-      style: { textAlign: 'left', width: '20%' },
-      accessor: (apikey: any) => apikey.clientName,
-      sortType: 'basic',
-    },
-    {
-      id: 'apikey.actions',
-      Header: translate('API.s'),
-      style: { textAlign: 'left' },
-      disableSortBy: true,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const apikey = original;
+    columnHelper.accessor('clientName', {
+      header: translate('initialize_from_otoroshi.otoroshi_api_key'),
+      meta: {style: { textAlign: 'left', width: '20%' }},
+      sortingFn: 'basic',
+    }),
+    columnHelper.display({
+      header: translate('API.s'),
+      meta: {style: { textAlign: 'left' }},
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const apikey = info.row.original;
         return <ApiKey apikey={apikey} key={apikey.clientId} {...props} />;
       },
-    },
+    }),
   ];
 
   return (
@@ -509,6 +530,7 @@ export const ApiKeyStep = (props: any) => {
           options={[
             { label: 'Services', options: orderBy(services, ['label']) },
             { label: 'Service groups', options: orderBy(groups, ['label']) },
+            { label: 'Routes', options: orderBy(routes, ['label']) }
           ]}
           onChange={setSelectedEntity}
           value={selectedEntity}
@@ -521,7 +543,11 @@ export const ApiKeyStep = (props: any) => {
           <Table
             defaultSort="name"
             columns={columns}
-            fetchItems={() => props.getFilteredApikeys(selectedEntity)}
+            fetchItems={() => {
+              console.debug({selectedEntity})
+              return props.getFilteredApikeys(selectedEntity)
+            }}
+            ref={table}
           />
         </div>
       )}

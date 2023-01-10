@@ -16,7 +16,7 @@ import * as Services from '../../../services';
 import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
-import { IUserSimple } from '../../../types';
+import { isError, IState, IUserSimple } from '../../../types';
 
 export const AdminMessages = () => {
   useTenantBackOffice();
@@ -35,19 +35,24 @@ export const AdminMessages = () => {
 
   const [groupedMessages, setGroupedMessages] = useState<Array<any>>([]);
   const [newMessage, setNewMessage] = useState<string>('');
-  const [users, setUsers] = useState<Array<any>>([]);
+  const [users, setUsers] = useState<Array<IUserSimple>>([]);
   const [selectedChat, setSelectedChat] = useState<any>(undefined);
 
   const [possibleNewUsers, setPossibleNewUsers] = useState<Array<IUserSimple>>([]);
 
-  const connectedUser = useSelector((s: any) => s.context.connectedUser);
+  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
 
   useEffect(() => {
-    Services.fetchAllUsers().then((users) => setUsers(users));
+    Services.fetchAllUsers()
+      .then((users) => {
+        if (!isError(users)) {
+          setUsers(users)
+        }
+      });
   }, []);
 
   useEffect(() => {
-    setPossibleNewUsers(users.filter((u) => !(u as any).isDaikokuAdmin && !groupedMessages.some(({ chat }) => chat === (u as any)._id)));
+    setPossibleNewUsers(users.filter((u) => !u.isDaikokuAdmin && !groupedMessages.some(({ chat }) => chat === (u as any)._id)));
   }, [groupedMessages, users]);
 
   useEffect(() => {

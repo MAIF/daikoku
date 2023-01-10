@@ -9,7 +9,7 @@ import { BeautifulTitle, OtoroshiStatsVizualization } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
-import { useQuery } from "react-query";
+import { useQuery } from "@tanstack/react-query";
 import { IState, ITeamSimple } from "../../../types";
 
 type QuotasProps = {
@@ -23,7 +23,7 @@ const Quotas = (props: QuotasProps) => {
 
   const { translate } = useContext(I18nContext);
 
-  if (queryQuotas.isLoading || queryQuotas.isIdle) {
+  if (queryQuotas.isLoading) {
     return <Spinner />
   } else if (queryQuotas.data) {
     let colorDaily
@@ -55,7 +55,7 @@ const Quotas = (props: QuotasProps) => {
           })}>
           <Progress
             strokeColor={colorDaily}
-            percent={percentDaily}
+            percent={Math.round(percentDaily)}
             status="active"
           />
         </BeautifulTitle>
@@ -69,7 +69,7 @@ const Quotas = (props: QuotasProps) => {
           })}>
           <Progress
             strokeColor={colorMonthly}
-            percent={percentMontly}
+            percent={Math.round(percentMontly)}
             status="active"
           />
         </BeautifulTitle>

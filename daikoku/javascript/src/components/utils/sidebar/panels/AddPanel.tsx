@@ -1,65 +1,63 @@
 import React, { useContext } from 'react';
-import { useNavigate, useMatch } from 'react-router-dom';
+import { useNavigate, useMatch, PathMatch, Params } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 
 import * as Services from '../../../../services';
-import { openFormModal, openTeamSelectorModal } from '../../../../core/modal';
-import { manage, CanIDoAction, api as API, Option } from '../..';
+import { manage, CanIDoAction, api as API, Option, Spinner } from '../..';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit'
 import { toastr } from 'react-redux-toastr';
-import { useQueryClient } from 'react-query';
-import { ITeamSimple } from '../../../../types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { isError, IState, IStateContext, ITeamSimple } from '../../../../types';
+import { ModalContext } from '../../../../contexts';
 
-export const AddPanel = ({
-  teams
-}: {teams: Array<ITeamSimple>}) => {
+export const AddPanel = () => {
   const { translate } = useContext(I18nContext);
+  const { openFormModal, openTeamSelectorModal } = useContext(ModalContext);
 
-  const { tenant, connectedUser, apiCreationPermitted } = useSelector((state) => (state as any).context);
-  const dispatch = useDispatch();
+  const { tenant, connectedUser, apiCreationPermitted } = useSelector<IState, IStateContext>((state) => state.context);
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/*');
   const queryClient = useQueryClient();
 
-  const myTeams = teams.filter((t) => connectedUser.isDaikokuAdmin || t.users.some((u: any) => u.userId === connectedUser._id));
+  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
 
   const createTeam = () => {
     Services.fetchNewTeam()
-      .then((team) => dispatch(openFormModal({
+      .then((team) => openFormModal({
         title: translate('Create a new team'),
         schema: teamSchema(team, translate),
-        onSubmit: (data: any) => Services.createTeam(data)
+        onSubmit: (data) => Services.createTeam(data)
           .then(r => {
             if (r.error) {
               toastr.error(translate('Error'), r.error)
             } else {
-              queryClient.invalidateQueries('teams')
-              queryClient.invalidateQueries('myTeams')
+              queryClient.invalidateQueries({queryKey: ['teams']})
+              queryClient.invalidateQueries(['myTeams'])
               toastr.success(translate('Success'), translate({ key: "Team %s created successfully", replacements: [data.name] }))
             }
           }),
         actionLabel: translate('Create'),
         value: team
-      })));
+      }));
   };
 
-  const createApi = (teamId: any) => {
-    if (apiCreationPermitted) {
+  const createApi = (teamId?: string) => {
+    if (apiCreationPermitted && !myTeamsRequest.isLoading && myTeamsRequest.data && !isError(myTeamsRequest.data)) {
       if (!teamId) {
-        return dispatch(openTeamSelectorModal({
+        return openTeamSelectorModal({
           allTeamSelector: false,
           title: translate('api.creation.title.modal'),
           description: translate('api.creation.description.modal'),
-          teams: myTeams
+          teams: myTeamsRequest.data
             .filter((t) => t.type !== 'Admin')
             .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
             .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
           action: (teams) => createApi(teams[0]),
           actionLabel: translate('Create')
-        }));
+        });
       } else {
-        const team = myTeams.find((t) => teamId === t._id);
+        const team = myTeamsRequest.data.find((t) => teamId === t._id);
 
         return Services.fetchNewApi()
           .then((e) => {
@@ -75,21 +73,21 @@ export const AddPanel = ({
   };
 
   const createApiGroup = (teamId) => {
-    if (apiCreationPermitted) {
+    if (apiCreationPermitted && !myTeamsRequest.isLoading && myTeamsRequest.data && !isError(myTeamsRequest.data)) {
       if (!teamId) {
-        return dispatch(openTeamSelectorModal({
+        return openTeamSelectorModal({
           allTeamSelector: false,
           title: translate('apigroup.creation.title.modal'),
           description: translate('apigroup.creation.description.modal'),
-          teams: myTeams
+          teams: myTeamsRequest.data
             .filter((t) => t.type !== 'Admin')
             .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
             .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
           action: (teams) => createApiGroup(teams[0]),
           actionLabel: translate('Create')
-        }));
+        });
       } else {
-        const team = myTeams.find((t: any) => teamId === t._id);
+        const team = myTeamsRequest.data.find((t) => teamId === t._id);
 
         return Services.fetchNewApiGroup()
           .then((e) => {
@@ -115,64 +113,72 @@ export const AddPanel = ({
       });
   }
 
-  const maybeTeam = Option(match)
-    .map((m: any) => m.params)
-    .map((p: any) => p.teamId)
-    .map((id: any) => myTeams.find((t) => t._humanReadableId === id))
-    .filter((t: any) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
-    .map((t: any) => t._id)
-    .getOrNull();
-
-  return (
-    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
-      {/* todo: add a title if API page or tenant or Team */}
-      <div>
-        <h3>{translate('Create')}</h3>
-      </div>
-      <div className="blocks">
-        <div className="mb-3 block">
-          <div className="block__entries d-flex flex-column">
-            {connectedUser.isDaikokuAdmin && (
+  if (myTeamsRequest.isLoading) {
+    return <Spinner />
+  } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
+    const teams = myTeamsRequest.data
+    const maybeTeam: string | undefined = Option(match)
+      .map((m: PathMatch) => m.params)
+      .map((p: Params) => p.teamId)
+      .map((id: string) => teams.find((t) => t._humanReadableId === id))
+      .filter((t: ITeamSimple) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
+      .map((t: ITeamSimple) => t._id)
+      .getOrNull();
+  
+    return (
+      <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+        {/* todo: add a title if API page or tenant or Team */}
+        <div>
+          <h3>{translate('Create')}</h3>
+        </div>
+        <div className="blocks">
+          <div className="mb-3 block">
+            <div className="block__entries d-flex flex-column">
+              {connectedUser.isDaikokuAdmin && (
+                <span
+                  className="block__entry__link d-flex align-items-center justify-content-between"
+                  onClick={createTenant}>
+                  <span>{translate('Tenant')}</span>
+                  <button className="btn btn-sm btn-access-negative me-1">
+                    <i className="fas fa-plus-circle" />
+                  </button>
+                </span>
+              )}
               <span
                 className="block__entry__link d-flex align-items-center justify-content-between"
-                onClick={createTenant}>
-                <span>{translate('Tenant')}</span>
+                onClick={createTeam}
+              >
+                <span>{translate('Team')}</span>
                 <button className="btn btn-sm btn-access-negative me-1">
                   <i className="fas fa-plus-circle" />
                 </button>
               </span>
-            )}
-            <span
-              className="block__entry__link d-flex align-items-center justify-content-between"
-              onClick={createTeam}
-            >
-              <span>{translate('Team')}</span>
-              <button className="btn btn-sm btn-access-negative me-1">
-                <i className="fas fa-plus-circle" />
-              </button>
-            </span>
-            <span
-              className="block__entry__link d-flex align-items-center justify-content-between"
-              onClick={() => createApi(maybeTeam)}
-            >
-              <span>{translate('API')}</span>
-              <button className="btn btn-sm btn-access-negative me-1">
-                <i className="fas fa-plus-circle" />
-              </button>
-            </span>
-            <span
-              className="block__entry__link d-flex align-items-center justify-content-between"
-              onClick={() => createApiGroup(maybeTeam)}
-            >
-              <span>{translate('API group')}</span>
-              <button className="btn btn-sm btn-access-negative me-1">
-                <i className="fas fa-plus-circle" />
-              </button>
-            </span>
+              <span
+                className="block__entry__link d-flex align-items-center justify-content-between"
+                onClick={() => createApi(maybeTeam)}
+              >
+                <span>{translate('API')}</span>
+                <button className="btn btn-sm btn-access-negative me-1">
+                  <i className="fas fa-plus-circle" />
+                </button>
+              </span>
+              <span
+                className="block__entry__link d-flex align-items-center justify-content-between"
+                onClick={() => createApiGroup(maybeTeam)}
+              >
+                <span>{translate('API group')}</span>
+                <button className="btn btn-sm btn-access-negative me-1">
+                  <i className="fas fa-plus-circle" />
+                </button>
+              </span>
+            </div>
           </div>
+          {/* todo: add a block in function of context to create plan...otoroshi or whatever */}
         </div>
-        {/* todo: add a block in function of context to create plan...otoroshi or whatever */}
       </div>
-    </div>
-  );
+    );
+  } else {
+    return <span>Error while fetching teams</span>
+  }
+
 };

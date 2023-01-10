@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import moment from 'moment';
 import maxBy from 'lodash/maxBy';
 
 import * as Services from '../../../services';
@@ -17,6 +16,7 @@ import {
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
+import dayjs from 'dayjs';
 
 export const TeamBilling = () => {
   const [state, setState] = useState<any>({
@@ -24,7 +24,7 @@ export const TeamBilling = () => {
     consumptionsByApi: [],
     selectedApi: undefined,
     loading: false,
-    date: moment(),
+    date: dayjs(),
   });
 
   const { currentTeam } = useSelector((state) => (state as any).context);
@@ -44,8 +44,8 @@ export const TeamBilling = () => {
     Promise.all([
       Services.getTeamBillings(
         team._id,
-        moment().startOf('month').valueOf(),
-        moment().endOf('month').valueOf()
+        dayjs().startOf('month').valueOf(),
+        dayjs().endOf('month').valueOf()
       ),
       Services.subscribedApis(team._id),
     ]).then(([consumptions, apis]) => {
@@ -105,7 +105,7 @@ export const TeamBilling = () => {
 
   const total = state.consumptions.reduce((acc: number, curr: any) => acc + (curr as any).billing.total, 0);
   const mostRecentConsumption = maxBy(state.consumptions, (c) => (c as any).to);
-  const lastDate = mostRecentConsumption && moment((mostRecentConsumption as any).to).format('DD/MM/YYYY HH:mm');
+  const lastDate = mostRecentConsumption && dayjs((mostRecentConsumption as any).to).format('DD/MM/YYYY HH:mm');
 
   return (<Can I={read} a={stat} team={currentTeam} dispatchError={true}>
     <div className="row">

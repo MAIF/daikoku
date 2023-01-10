@@ -1,20 +1,18 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter, BrowserRouter as Router, Route, Routes, useParams } from 'react-router-dom';
 import { Navigate } from 'react-router';
-import { connect, useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
-import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { SideBar, Spinner, Error, Footer } from '../components/utils';
 import * as Services from '../services';
-import { updateTeamPromise, setError } from '../core';
+import { updateTeam, setError } from '../core';
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
 import {
-  TeamChooser,
   TeamHome,
   MyHome,
   MaybeHomePage,
@@ -55,19 +53,18 @@ import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp
 import { MessagesEvents } from '../services/messages';
 import { I18nContext } from '../contexts/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
-import { SessionModal } from '../components/frontend/modals/SessionModal';
-import { QueryClientProvider } from 'react-query';
-import { IState, IUserSimple } from '../types';
+import { SessionModal } from '../contexts/modals/SessionModal';
+import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
 import {FastMode} from "../components/frontend/fastMode/FastMode";
 
 type DaikokuAppProps = {
-  session: any,
-  user?: any,
-  tenant: any,
+  session: ISession,
+  user: IUserSimple,
+  tenant: ITenant,
   loginProvider: string,
   loginAction: string
 }
-const DaikokuAppComponent = ({
+export const DaikokuApp = ({
   user,
   tenant,
   loginProvider,
@@ -115,7 +112,6 @@ const DaikokuAppComponent = ({
     );
   }
 
-  //FIXME: verify that removing history prop didn't break anything
   return (
     <BrowserRouter>
       <MessagesProvider>
@@ -371,20 +367,10 @@ const DaikokuAppComponent = ({
                       />
                     )
                   )}
-                  {!tenant.hideTeamsPage && (
-                    <Route
-                      path="/teams"
-                      element={
-                        <FrontOfficeRoute title={`${tenant.title} - ${translate('Teams')}`}>
-                          <TeamChooser />
-                        </FrontOfficeRoute>
-                      }
-                    />
-                  )}
 
                   <Route
                     path="/:teamId/settings*"
-                    element={<TeamBackOfficeRouter tenant={tenant} />}
+                    element={<TeamBackOfficeRouter />}
                   />
 
                   <Route
@@ -400,8 +386,7 @@ const DaikokuAppComponent = ({
                     path="/:teamId/:apiId/:versionId/:tab/*"
                     element={
                       <FrontOfficeRoute>
-                        {' '}
-                        <ApiHome />{' '}
+                        <ApiHome />
                       </FrontOfficeRoute>
                     }
                   />
@@ -418,8 +403,6 @@ const DaikokuAppComponent = ({
                 <Error />
               </div>
             </div>
-            <ModalRoot />
-            {/* @ts-ignore */}{/* FIXME */}
             <ReduxToastr
               timeOut={4000}
               newestOnTop={false}
@@ -442,19 +425,10 @@ const DaikokuAppComponent = ({
   );
 };
 
-const mapStateToProps = (state: any) => ({
-  ...state.context,
-  error: state.error
-});
-
-export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
-
 //custom component route to get team object if it's not present in  redux store...
 
-const TeamBackOfficeRouter = ({
-  tenant
-}: any) => {
-  const { currentTeam } = useSelector((state) => (state as any).context);
+const TeamBackOfficeRouter = () => {
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const dispatch = useDispatch();
   const params = useParams();
@@ -472,20 +446,20 @@ const TeamBackOfficeRouter = ({
     Services.oneOfMyTeam(params.teamId)
       .then((team) => {
         if (team.error) {
-          setError(team.error)(dispatch);
+          dispatch(setError(team.error));
         }
         else {
-          updateTeamPromise(team)(dispatch);
+          dispatch(updateTeam(team));
         }
         setLoading(false);
       });
   }
 
   if (!currentTeam || loading) return <Spinner />;
-  else return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />;
+  else return <TeamBackOffice isLoading={loading} />;
 };
 
-const FrontOfficeRoute = (props: any) => {
+const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
   return (
     <RouteWithTitle {...props}>
       <FrontOffice>{props.children}</FrontOffice>
@@ -493,7 +467,7 @@ const FrontOfficeRoute = (props: any) => {
   );
 };
 
-const RouteWithTitle = (props: { title: string, children: JSX.Element }) => {
+const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
   useEffect(() => {
     if (props.title) {
       document.title = props.title;

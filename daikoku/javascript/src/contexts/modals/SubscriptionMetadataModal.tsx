@@ -3,13 +3,13 @@ import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 
-import { I18nContext } from '../../../core';
-import * as Services from '../../../services';
-import { IApi, IUsagePlan } from '../../../types';
-import { SubscriptionMetadataModalProps } from '../../../types/modal';
-import { formatPlanType, Option, Spinner } from '../../utils';
+import { formatPlanType, Option, Spinner } from '../../components/utils';
+import { I18nContext } from '../../core';
+import * as Services from '../../services';
+import { IApi, IUsagePlan } from '../../types';
+import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';
 
-type FormData = {
+export type OverwriteSubscriptionData = {
   metadata: { [key: string]: string },
   customMetadata: { [key: string]: string },
   customQuotas: {
@@ -20,11 +20,19 @@ type FormData = {
   customReadOnly: boolean
 }
 
-export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps) => {
+export type CustomSubscriptionData = {
+  customMetadata: { [key: string]: string },
+  customMaxPerSecond: number,
+  customMaxPerDay: number,
+  customMaxPerMonth: number,
+  customReadOnly: boolean
+}
+
+export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps & IBaseModalProps) => {
   const [loading, setLoading] = useState(true);
   const [api, setApi] = useState<IApi>();
   const [plan, setPlan] = useState<IUsagePlan>();
-  const [value, setValue] = useState<FormData>();
+  const [value, setValue] = useState<OverwriteSubscriptionData>();
 
   const { translate, Translation } = useContext(I18nContext);
 
@@ -33,11 +41,6 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
   useEffect(() => {
     if (api) {
       setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    if (api) {
       setPlan(api.possibleUsagePlans.find((pp) => pp._id === props.plan));
     }
   }, [api]);
@@ -83,7 +86,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
           .getOrNull()
       })
     }
-  }, [plan]);
+  }, [plan, props.config]);
 
   useEffect(() => {
     if (!!props.api && typeof props.api === 'object') {
@@ -92,7 +95,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       Services.getVisibleApiWithId(props.api).then((api) => {
         if (api.error) {
           toastr.error(translate('Error'), api.error);
-          props.closeModal();
+          props.close();
         }
         else {
           setApi(api);
@@ -103,22 +106,22 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
   }, []);
 
   const actionAndClose = (formData) => {
-    const subProps = {
+    const subProps: CustomSubscriptionData = {
       customMetadata: {
         ...formData.customMetadata,
         ...formData.metadata,
       },
       customMaxPerSecond: formData.customQuotas.customMaxPerSecond,
-      customMaxPerDay: formData.customMaxPerDay,
-      customMaxPerMonth: formData.customMaxPerMonth,
+      customMaxPerDay: formData.customQuotas.customMaxPerDay,
+      customMaxPerMonth: formData.customQuotas.customMaxPerMonth,
       customReadOnly: formData.customReadOnly,
     };
-    if (props.save instanceof Promise) {
-      props.save(subProps)
-        .then(() => props.closeModal());
-    } else {
-      props.closeModal();
-      props.save(subProps);
+
+    const res = props.save(subProps)
+    if (res instanceof Promise) {
+      res.then(() => !props.noClose && props.close());
+    } else if(!props.noClose) {
+      props.close();
     }
   };
 
@@ -127,8 +130,8 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
       type: type.object,
       format: format.form,
       visible: !!plan,
-      label: translate({ key: 'mandatory.metadata.label', replacements: [plan!.otoroshiTarget!.apikeyCustomization.customMetadata.length.toString()] }),
-      schema: sortBy(plan!.otoroshiTarget?.apikeyCustomization.customMetadata, ['key'])
+      label: translate({ key: 'mandatory.metadata.label', replacements: [plan?.otoroshiTarget?.apikeyCustomization.customMetadata.length.toString() || ''] }),
+      schema: sortBy(plan?.otoroshiTarget?.apikeyCustomization.customMetadata, ['key'])
         .map((meta: { key: string, possibleValues: Array<string> }) => {
           return {
             key: meta.key,
@@ -147,7 +150,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
           return { ...acc, [curr.key]: curr.schemaEntry }
         }, {}),
     },
-    customMedata: {
+    customMetadata: {
       type: type.object,
       label: translate('Additional metadata'),
     },
@@ -195,44 +198,44 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps)
           Subscription metadata - {api.name}
         </Translation>
       </h5>)}
-      <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
+      <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
     </div>
     <div className="modal-body">
-      {loading || !plan && <Spinner />}
+      {loading && <Spinner />}
       {!loading && plan && (
         <>
           {!props.description && props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[
-              props.team.name,
+              props.team?.name,
               plan.customName || formatPlanType(plan, translate),
             ]}>
-              {props.team.name} ask you an apikey for plan{' '}
+              {props.team?.name} ask you an apikey for plan{' '}
               {plan.customName || formatPlanType(plan, translate)}
             </Translation>
           </div>)}
           {!props.description && !props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.update.description" replacements={[
-              props.team.name,
+              props.team?.name,
               plan.customName || formatPlanType(plan, translate),
             ]}>
-              Team: {props.team.name} - Plan:{' '}
+              Team: {props.team?.name} - Plan:{' '}
               {plan.customName || formatPlanType(plan, translate)}
             </Translation>
           </div>)}
           {props.description && <div className="modal-description">{props.description}</div>}
 
-          <Form
+        </>
+      )}
+      {!loading && <Form
             schema={schema()}
             onSubmit={actionAndClose}
             ref={formRef}
             value={value}
             footer={() => <></>}
-          />
-        </>
-      )}
+          />}
 
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
+        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
           <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
         <button

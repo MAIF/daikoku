@@ -1,7 +1,9 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import cats.data.EitherT
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{
   DaikokuAction,
   DaikokuActionMaybeWithGuest
@@ -11,7 +13,7 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator}
 import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
@@ -21,7 +23,8 @@ import play.api.mvc.{
   AbstractController,
   Action,
   AnyContent,
-  ControllerComponents
+  ControllerComponents,
+  Result
 }
 import reactivemongo.bson.BSONObjectID
 
@@ -30,12 +33,14 @@ import java.util.Base64
 import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 class UsersController(DaikokuAction: DaikokuAction,
                       DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                       env: Env,
-                      cc: ControllerComponents)
+                      cc: ControllerComponents,
+                      deletionService: DeletionService)
     extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
@@ -59,7 +64,7 @@ class UsersController(DaikokuAction: DaikokuAction,
   def findUserById(id: String) = DaikokuAction.async { ctx =>
     DaikokuAdminOnly(AuditTrailEvent(
       "@{user.name} has accessed user profile of @{u.email} (@{u.id})"))(ctx) {
-      env.dataStore.userRepo.findByIdOrHrId(id).map {
+      env.dataStore.userRepo.findByIdOrHrIdNotDeleted(id).map {
         case Some(user) =>
           ctx.setCtxValue("u.email", user.email)
           ctx.setCtxValue("u.id", user.id.value)
@@ -147,7 +152,6 @@ class UsersController(DaikokuAction: DaikokuAction,
                               s"The personal team of ${userToSave.name}",
                             users =
                               Set(UserWithPermission(user.id, Administrator)),
-                            subscriptions = Seq.empty,
                             authorizedOtoroshiGroups = Set.empty,
                             contact = userToSave.email,
                             avatar = Some(userToSave.picture)
@@ -175,48 +179,26 @@ class UsersController(DaikokuAction: DaikokuAction,
   def deleteUserById(id: String) = DaikokuAction.async { ctx =>
     DaikokuAdminOnly(
       AuditTrailEvent(
-        "@{user.name} has deleted user profile of @{u.email} (@{u.id})"))(ctx) {
-      env.dataStore.userRepo.findByIdNotDeleted(id).flatMap {
-        case Some(user) =>
-          ctx.setCtxValue("u.email", user.email)
-          ctx.setCtxValue("u.id", user.id.value)
-          env.dataStore.userRepo.save(user.copy(deleted = true)).flatMap { _ =>
-            env.dataStore.userSessionRepo
-              .delete(Json.obj(
-                "userId" -> user.id.value
-              ))
-              .map { _ =>
-                Ok(user.asJson)
-              }
-          }
-        case None =>
-          FastFuture.successful(NotFound(Json.obj("error" -> "user not found")))
-      }
+        "@{user.name} has deleted user profile of user.id : @{u.id}"))(ctx) {
+      ctx.setCtxValue("u.id", id)
+      deletionService
+        .deleteCompleteUserByQueue(id, ctx.tenant)
+        .leftMap(_.render())
+        .map(_ => Ok(Json.obj("done" -> true)))
+        .merge
+
     }
   }
 
   def deleteSelfUser() = DaikokuAction.async { ctx =>
     PublicUserAccess(
       AuditTrailEvent("@{user.name} has deleted his own profile)"))(ctx) {
-      env.dataStore.userRepo
-        .save(ctx.user.copy(deleted = true))
-        .flatMap { _ =>
-          env.dataStore.userSessionRepo
-            .delete(Json.obj(
-              "userId" -> ctx.user.id.value
-            ))
-            .flatMap(
-              _ =>
-                env.dataStore.teamRepo
-                  .forTenant(ctx.tenant)
-                  .deleteLogically(
-                    Json.obj("_deleted" -> false,
-                             "type" -> TeamType.Personal.name,
-                             "users.userId" -> ctx.user.id.asJson)))
-            .map { _ =>
-              Ok(ctx.user.asJson)
-            }
-        }
+      deletionService
+        .deleteUserByQueue(ctx.user.id.value, ctx.tenant)
+        .leftMap(_.render())
+        .map(_ => Ok(Json.obj("done" -> true)))
+        .value
+        .map(_.merge)
     }
   }
 

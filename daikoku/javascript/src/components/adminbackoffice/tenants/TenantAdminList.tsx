@@ -17,7 +17,7 @@ import {
 } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext, useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
-import { IState, IStateContext, ITeamSimple, ITenantFull, IUserSimple } from '../../../types';
+import { isError, IState, IStateContext, ITeamSimple, ITenantFull, IUserSimple } from '../../../types';
 
 const AdminList = () => {
   const context = useSelector<IState, IStateContext>((s) => s.context);
@@ -41,12 +41,13 @@ const AdminList = () => {
       Services.tenantAdmins(tenantId),
       Services.addableAdminsForTenant(tenantId),
       Services.oneTenant(tenantId),
-    ]).then(([{ team, admins }, addableAdmins, tenant]) => {
-      setTeam(team);
-      setAdmins(admins);
+    ]).then(([maybeAdministration, addableAdmins, tenant]) => {
+      if (!isError(maybeAdministration)) {
+        setAdmins(maybeAdministration.admins);
+        setTeam(maybeAdministration.team);
+      }
       setTenant(tenant);
       setAddableAdmins(addableAdmins);
-      setAdmins(admins);
       setLoading(false);
     });
   }, [params.tenantId]);

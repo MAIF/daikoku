@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { ModalContext } from '../../../contexts';
-import { IState, ITeamSimple } from '../../../types';
+import { isError, IState, ITeamSimple } from '../../../types';
 
 export const TeamApiSettings = ({
   api,
@@ -38,12 +38,15 @@ export const TeamApiSettings = ({
       type: type.string,
       label: translate('new.owner'),
       format: format.select,
-      optionsFrom: Services.teams().then((teams) =>
-        sortBy(
-          teams.filter((team: any) => team._id !== api.team),
-          'name'
-        )
-      ),
+      optionsFrom: Services.teams()
+        .then((teams) => {
+          if (!isError(teams)) {
+            return sortBy(teams.filter((team: any) => team._id !== api.team),'name')
+          } else {
+            return []
+          }
+        }
+        ),
       transformer: (team: any) => ({
         label: team.name,
         value: team._id

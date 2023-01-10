@@ -3,13 +3,12 @@ import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import 'swagger-ui-dist/swagger-ui.css';
-import { LoginOrRegisterModal } from '../..';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 
 export function ApiSwagger(props: any) {
   const { translate } = useContext(I18nContext);
-  const { alert } = useContext(ModalContext);
+  const { alert, openLoginOrRegisterModal } = useContext(ModalContext);
 
   const [state, setState] = useState<{ error?: string, info?: string }>({});
 
@@ -101,14 +100,11 @@ export function ApiSwagger(props: any) {
   const { tenant, connectedUser } = props;
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
-    return (
-      <LoginOrRegisterModal
-        {...props}
-        showOnlyMessage={true}
-        asFlatFormat
-        message={translate('api_swagger.guest_user')}
-      />
-    );
+    openLoginOrRegisterModal({
+      tenant,
+      showOnlyMessage: true,
+      message: translate('api_swagger.guest_user')
+    })
 
   const api = props.api;
   if (!api) return <div>{translate({ key: 'api_data.missing', replacements: ['Swagger'] })}</div>;
@@ -124,7 +120,6 @@ export function ApiSwagger(props: any) {
   else
     return (
       <div style={{ width: '100%' }}>
-        {/*<button type="button" className="btn btn-success" onClick={e => handleAuthorize(true)}>Use apikey (soon)</button>*/}
         <div id="swagger-ui" style={{ width: '100%' }} />
       </div>
     );

@@ -1,17 +1,19 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { nanoid } from 'nanoid';
 
 import * as Services from '../../../services';
-import { Table } from '../../inputs';
+import { Table, TableRef } from '../../inputs';
 import { Can, manage, tenant as TENANT } from '../../utils';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
+import { IOtoroshiSettings, isError, IState, IStateContext } from '../../../types';
+import { createColumnHelper } from '@tanstack/react-table';
 
 export const TenantOtoroshis = () => {
-  const { tenant, connectedUser } = useSelector((s) => (s as any).context);
+  const { tenant, connectedUser } = useSelector<IState, IStateContext>((s) => s.context);
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
   const navigate = useNavigate();
@@ -19,47 +21,40 @@ export const TenantOtoroshis = () => {
   useTenantBackOffice();
 
   const [isTenantAdmin, setIsTenantAdmin] = useState(connectedUser.isDaikokuAdmin);
+  const table = useRef<TableRef>()
 
   useEffect(() => {
     if (!isTenantAdmin)
-      Services.tenantAdmins(tenant._id).then((res) => {
-        if (res.admins)
-          setIsTenantAdmin(res.admins.find((admin: any) => admin._id === connectedUser._id));
-      });
+      Services.tenantAdmins(tenant._id)
+        .then((res) => {
+          if (!isError(res)) {
+            setIsTenantAdmin(!!res.admins.find((admin) => admin._id === connectedUser._id));
+          }
+        });
   }, []);
 
-  let table: any;
-
+  const columnHelper = createColumnHelper<IOtoroshiSettings>();
   const columns = [
-    {
-      Header: translate('Url'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.url,
-    },
-    {
-      Header: translate('Host'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.host,
-    },
-    {
-      Header: translate('Actions'),
-      style: { textAlign: 'center' },
-      disableSortBy: true,
-      disableFilters: true,
-      accessor: (item: any) => item._id,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const otoroshi = original;
+    columnHelper.accessor("url", {
+      header: translate('Url'),
+    }),
+    columnHelper.accessor("host", {
+      header: translate('Host'),
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: {style: { textAlign: 'center', width: '120px' }},
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const otoroshi = info.row.original;
         return (
-          <div className="btn-group">
+          <div >
             {isTenantAdmin && (
               <Link to={`/settings/otoroshis/${otoroshi._id}`}>
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-outline-primary me-1"
                   title={translate('Edit this settings')}
                 >
                   <i className="fas fa-edit" />
@@ -69,7 +64,7 @@ export const TenantOtoroshis = () => {
             {isTenantAdmin && (
               <button
                 type="button"
-                className="btn btn-sm btn-outline-danger"
+                className="btn btn-outline-danger"
                 title={translate('Delete this settings')}
                 onClick={() => onDelete(otoroshi._id)}
               >
@@ -79,7 +74,7 @@ export const TenantOtoroshis = () => {
           </div>
         );
       },
-    },
+    }),
   ];
 
   const onDelete = (id: string) => {
@@ -89,7 +84,7 @@ export const TenantOtoroshis = () => {
           Services.deleteOtoroshiSettings(tenant._id, id)
             .then(() => {
               toastr.success(translate('Success'), translate('otoroshi.settings.deleted.success'));
-              table.update();
+              table.current?.update();
             });
         }
       });
@@ -124,7 +119,7 @@ export const TenantOtoroshis = () => {
             defaultSort="Url"
             columns={columns}
             fetchItems={() => Services.allOtoroshis(tenant._id)}
-            injectTable={(t: any) => table = t}
+            ref={table}
           />
         </div>
       </div>

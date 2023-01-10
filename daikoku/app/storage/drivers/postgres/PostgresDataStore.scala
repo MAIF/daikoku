@@ -199,6 +199,18 @@ case class PostgresTenantCapableCmsPageRepo(
   override def repo(): PostgresRepo[CmsPage, CmsPageId] = _repo()
 }
 
+case class PostgresTenantCapableOperationRepo(
+    _repo: () => PostgresRepo[Operation, DatastoreId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[Operation, DatastoreId]
+) extends PostgresTenantCapableRepo[Operation, DatastoreId]
+    with OperationRepo {
+  override def tenantRepo(
+      tenant: TenantId): PostgresTenantAwareRepo[Operation, DatastoreId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[Operation, DatastoreId] = _repo()
+}
+
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption,
@@ -307,7 +319,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "api_posts" -> true,
     "api_issues" -> true,
     "evolutions" -> false,
-    "cmspages" -> true
+    "cmspages" -> true,
+    "operations" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -466,6 +479,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   private val _evolutionRepo: EvolutionRepo =
     new PostgresEvolutionRepo(env, reactivePg)
 
+  private val _operationRepo: OperationRepo =
+    PostgresTenantCapableOperationRepo(
+      () => new PostgresOperationRepo(env, reactivePg),
+      t => new PostgresTenantOperationRepo(env, reactivePg, t)
+    )
+
   override def tenantRepo: TenantRepo = _tenantRepo
 
   override def userRepo: UserRepo = _userRepo
@@ -502,6 +521,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def cmsRepo: CmsPageRepo = _cmsPageRepo
 
   override def evolutionRepo: EvolutionRepo = _evolutionRepo
+
+  override def operationRepo: OperationRepo = _operationRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -784,6 +805,18 @@ class PostgresTenantMessageRepo(env: Env,
 
   override def extractId(value: Message): String = value.id.value
 }
+class PostgresTenantOperationRepo(env: Env,
+                                  reactivePg: ReactivePg,
+                                  tenant: TenantId)
+    extends PostgresTenantAwareRepo[Operation, DatastoreId](env,
+                                                            reactivePg,
+                                                            tenant) {
+  override def tableName: String = "operations"
+
+  override def format: Format[Operation] = json.OperationFormat
+
+  override def extractId(value: Operation): String = value.id.value
+}
 
 class PostgresTenantCmsPageRepo(env: Env,
                                 reactivePg: ReactivePg,
@@ -951,6 +984,15 @@ class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[CmsPage] = json.CmsPageFormat
 
   override def extractId(value: CmsPage): String = value.id.value
+}
+
+class PostgresOperationRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[Operation, DatastoreId](env, reactivePg) {
+  override def tableName: String = "operations"
+
+  override def format: Format[Operation] = json.OperationFormat
+
+  override def extractId(value: Operation): String = value.id.value
 }
 
 class PostgresApiRepo(env: Env, reactivePg: ReactivePg)
@@ -1358,6 +1400,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = {
     val (sql, params) = convertQuery(query)
+    logger.debug(s"$tableName.findeOne(${Json.prettyPrint(query)})")
+    logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
+    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
+
     reactivePg
       .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) {
         row =>
@@ -1441,9 +1487,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)})")
 
     val (sql1, params1) = convertQuery(queryUpdate)
-    val (sql2, params2) = convertQuery(query, params1)
+    val (sql2, params2) = if (query.values.isEmpty) {
+      ("", params1)
+    } else {
+      val tuple = convertQuery(query, params1)
+      (s"WHERE ${tuple._1}", tuple._2)
+    }
 
-    var out: String = s"UPDATE $tableName SET $sql1 WHERE $sql2 RETURNING _id"
+    var out: String = s"UPDATE $tableName SET $sql1 $sql2 RETURNING _id"
     params2.zipWithIndex.reverse.foreach {
       case (param, i) =>
         out = out.replace("$" + (i + 1), s"'$param'")

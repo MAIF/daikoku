@@ -8,7 +8,7 @@ import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
-import { IState, IUser, IUserSimple } from '../../../types';
+import { isError, IState, IUser, IUserSimple } from '../../../types';
 
 export const UserList = () => {
   const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
@@ -16,7 +16,7 @@ export const UserList = () => {
 
   const { alert, confirm } = useContext(ModalContext);
 
-  const [users, setUsers] = useState<Array<IUser>>([]);
+  const [users, setUsers] = useState<Array<IUserSimple>>([]);
   const [search, setSearch] = useState<string>();
   const navigate = useNavigate();
 
@@ -28,7 +28,11 @@ export const UserList = () => {
 
   const updateUsers = () => {
     Services.fetchAllUsers()
-      .then(setUsers);
+      .then((users) => {
+        if (!isError(users)) {
+          setUsers(users)
+        }
+      });
   };
 
   const removeUser = (user: IUserSimple) => {

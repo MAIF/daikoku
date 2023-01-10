@@ -1,18 +1,19 @@
 import React from 'react';
-import ReactToolTip from 'react-tooltip';
-import { v4 as uuid } from 'uuid';
+import {Tooltip as ReactToolTip} from 'react-tooltip';
+import { nanoid } from 'nanoid';
 
 export const BeautifulTitle = ({
   title,
   children,
   place,
+  variant,
   ...props
 }: any) => {
-  const id: string = uuid();
+  const id: string = nanoid(4);
   return (
     <>
-      <ReactToolTip html={true} place={place || 'bottom'} id={id} />
-      <span {...props} data-html={true} data-tip={title} data-for={id}>
+      <ReactToolTip className='bf-tooltip' anchorId={`tooltip-${id}`} place={place || 'bottom'} variant={variant || 'dark'}/>
+      <span id={`tooltip-${id}`} {...props} data-tooltip-content={title}>
         {children}
       </span>
     </>

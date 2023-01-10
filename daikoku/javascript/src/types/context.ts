@@ -24,4 +24,6 @@ export interface IStateContext {
   expertMode: boolean;
 }
 
-interface IStateError {}
+export interface IStateError {
+  status: number;
+}

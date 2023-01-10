@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { v4 as uuid } from 'uuid';
 import debounce from 'lodash/debounce';
 
 import * as Services from '../../../../services';
 import { I18nContext } from '../../../../contexts/i18n-context';
+import { isError, IState, IStateContext, ITeamSimple } from '../../../../types';
+import { useQuery } from '@tanstack/react-query';
+import { Spinner } from '../../Spinner';
 
-export const SearchPanel = ({
-  teams
-}: any) => {
+export const SearchPanel = () => {
   const [results, setResults] = useState<Array<any>>([]);
 
   const { translate } = useContext(I18nContext);
+  const { tenant, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
 
-  const { tenant, connectedUser } = useSelector((state) => (state as any).context);
+  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
 
   useEffect(() => {
     debouncedSearch('');
@@ -56,46 +57,56 @@ export const SearchPanel = ({
 
   const debouncedSearch = debounce(search, 100, { leading: true });
 
-  return (
-    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
-      <input
-        placeholder={translate('search.placeholder')}
-        className="mb-3 form-control"
-        onChange={(e) => debouncedSearch(e.target.value)}
-      />
-      <div className="blocks">
-        {results.map((r, idx) => {
-          if (!(r as any).options.length) {
-            return null;
-          }
-          return (<div key={idx} className="mb-3 block">
-            <div className="mb-1 block__category">{(r as any).label}</div>
-            <div className="ms-2 block__entries block__border d-flex flex-column">
-              {(r as any).options.map((option: any) => {
-                const team = teams.find((t: any) => t._id === option.team);
-                switch (option.type) {
-                  case 'link':
-                    return (<Link to={option.url} className="block__entry__link" key={option.value}>
-                      {option.label}
-                    </Link>);
-                  case 'tenant':
-                    return (<Link to={`/settings/tenants/${option.value}`} className="block__entry__link" key={option.value}>
-                      {option.label}
-                    </Link>);
-                  case 'team':
-                    return (<Link to={`/${option.value}/settings`} className="block__entry__link" key={option.value}>
-                      {option.label}
-                    </Link>);
-                  case 'api':
-                    return (<Link to={`/${team ? team._humanReadableId : option.team}/${option.value}/${option.version}/description`} className="block__entry__link" key={`${option.value}-${option.version}`}>
-                      {`${option.label} - ${option.version}`}
-                    </Link>);
-                }
-              })}
-            </div>
-          </div>);
-        })}
+  if (myTeamsRequest.isLoading) {
+    return <Spinner />
+  } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
+    const teams = myTeamsRequest.data;
+    return (
+      <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+        <input
+          placeholder={translate('search.placeholder')}
+          className="mb-3 form-control"
+          onChange={(e) => debouncedSearch(e.target.value)}
+        />
+        <div className="blocks">
+          {results.map((r, idx) => {
+            if (!(r as any).options.length) {
+              return null;
+            }
+            return (<div key={idx} className="mb-3 block">
+              <div className="mb-1 block__category">{(r as any).label}</div>
+              <div className="ms-2 block__entries block__border d-flex flex-column">
+                {(r as any).options.map((option: any) => {
+                  const team = teams.find((t: any) => t._id === option.team);
+                  switch (option.type) {
+                    case 'link':
+                      return (<Link to={option.url} className="block__entry__link" key={option.value}>
+                        {option.label}
+                      </Link>);
+                    case 'tenant':
+                      return (<Link to={`/settings/tenants/${option.value}`} className="block__entry__link" key={option.value}>
+                        {option.label}
+                      </Link>);
+                    case 'team':
+                      return (<Link to={`/${option.value}/settings`} className="block__entry__link" key={option.value}>
+                        {option.label}
+                      </Link>);
+                    case 'api':
+                      return (<Link to={`/${team ? team._humanReadableId : option.team}/${option.value}/${option.version}/description`} className="block__entry__link" key={`${option.value}-${option.version}`}>
+                        {`${option.label} - ${option.version}`}
+                      </Link>);
+                  }
+                })}
+              </div>
+            </div>);
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  } else {
+    return (
+      <span>error while fetching teams</span>
+    )
+  }
+
 };

@@ -36,6 +36,10 @@
   <logger name="otoroshi-reactive-pg-kv" level="INFO" />
   <logger name="PostgresDataStore" level="INFO" />
   <logger name="otoroshi-reactive-pg-kv" level="INFO" />
+  <logger name="OtoroshiDeletionJob" level="INFO" />
+  <logger name="PostgresTenantAwareRepo" level="INFO" />
+  <logger name="CommonPostgresRepo" level="INFO" />
+  <logger name="otoroshi-reactive-pg-kv" level="INFO" />
 
   <!-- Off these ones as they are annoying, and anyway we manage configuration ourselves -->
   <logger name="com.avaje.ebean.config.PropertyMapLoader" level="OFF" />

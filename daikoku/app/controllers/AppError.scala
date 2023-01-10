@@ -11,6 +11,7 @@ sealed trait AppError {
   def render() = AppError.render(this)
   def renderF() = AppError.renderF(this)
   def toJson() = AppError.toJson(this)
+  def future() = FastFuture.successful(this)
 }
 
 object AppError {
@@ -18,6 +19,7 @@ object AppError {
   case object ApiNotFound extends AppError
   case object PageNotFound extends AppError
   case object ApiGroupNotFound extends AppError
+  case object TenantNotFound extends AppError
   case object TeamNotFound extends AppError
   case object UserNotFound extends AppError
   case object ForbiddenAction extends AppError
@@ -54,6 +56,7 @@ object AppError {
     case PageNotFound             => NotFound(toJson(error))
     case ApiGroupNotFound         => NotFound(toJson(error))
     case TeamNotFound             => NotFound(toJson(error))
+    case TenantNotFound           => NotFound(toJson(error))
     case UserNotFound             => NotFound(toJson(error))
     case NotificationNotFound     => NotFound(toJson(error))
     case OtoroshiSettingsNotFound => NotFound(toJson(error))
@@ -98,6 +101,7 @@ object AppError {
           case PageNotFound             => "Page not found"
           case ApiGroupNotFound         => "API group not found"
           case TeamNotFound             => "Team not found"
+          case TenantNotFound           => "Tenant not found"
           case UserNotFound             => "User not found"
           case NotificationNotFound     => "Notification not found"
           case OtoroshiSettingsNotFound => "Otoroshi settings not found"

@@ -1,18 +1,17 @@
+import { getApolloContext } from '@apollo/client';
+import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import { getApolloContext } from '@apollo/client';
-import { useSelector, useDispatch } from 'react-redux';
 
 
-import { I18nContext, updateTeamPromise, updateUser } from '../../../core';
+import { I18nContext, updateTeam, updateUser } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
+import { IApiWithAuthorization, IApiWithSimpleTeam, isError, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
-import { IApi, IApiWithAuthorization, IApiWithSimpleTeam, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
-import { ModalContext } from '../../../contexts';
 
 export const MyHome = () => {
   const [loading, setLoading] = useState(false)
@@ -70,14 +69,15 @@ export const MyHome = () => {
   }, [connectedUser._id, location.pathname]);
 
   const askForApiAccess = (api: any, teams: any) =>
-    Services.askForApiAccess(teams, api._id).then(() => {
-      toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [api.name] }));
-      fetchData();
-    });
+    Services.askForApiAccess(teams, api._id)
+      .then(() => {
+        toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [api.name] }));
+        fetchData();
+      });
 
   const toggleStar = (api: any) => {
     Services.toggleStar(api._id).then((res) => {
-      if (!res.error) {
+      if (!isError(res)) {
         const alreadyStarred = connectedUser.starredApis.includes(api._id);
 
         setApis(
@@ -87,12 +87,12 @@ export const MyHome = () => {
           }),
         );
 
-        updateUser({
+        dispatch(updateUser({
           ...connectedUser,
           starredApis: alreadyStarred
             ? connectedUser.starredApis.filter((id: any) => id !== api._id)
             : [...connectedUser.starredApis, api._id],
-        })(dispatch);
+        }));
       }
     });
   };
@@ -102,7 +102,7 @@ export const MyHome = () => {
   };
 
   const redirectToApiPage = (api: IApiWithSimpleTeam) => {
-    const apiOwner = teamsRequest.data?.find((t) => (t as any)._id === api.team._id);
+    const apiOwner = (teamsRequest.data as ITeamSimple[]).find((t) => (t as any)._id === api.team._id);
 
     const route = (version: string) => api.apis
       ? `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/apigroups/${api._humanReadableId}/apis`
@@ -122,7 +122,7 @@ export const MyHome = () => {
     const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === team._id);
 
     if (adminTeam && CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
-      updateTeamPromise(adminTeam)(dispatch)
+      Promise.resolve(dispatch(updateTeam(adminTeam)))
         .then(() => {
           const url = api.apis
             ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
@@ -136,7 +136,7 @@ export const MyHome = () => {
     return (
       <Spinner />
     )
-  } else if (myTeamsRequest.isSuccess && teamsRequest.isSuccess) {
+  } else if (myTeamsRequest.data && teamsRequest.data && !isError(teamsRequest.data) && !isError(myTeamsRequest.data)) {
     return (
       <main role="main">
         <section className="organisation__header col-12 mb-4 p-3">

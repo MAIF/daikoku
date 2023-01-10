@@ -202,16 +202,28 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                   api.tenant
                 )
           }) ++
-        entities.services.map(
-          service =>
+        entities.services.map(service =>
+          client
+            .getServices()(otoroshi)
+            .andThen {
+              case Failure(_) =>
+                sendErrorNotification(
+                  NotificationAction.OtoroshiSyncApiError(
+                    api,
+                    s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"),
+                  api.team,
+                  api.tenant)
+          }) ++
+        entities.routes.map(
+          route =>
             client
-              .getServices()(otoroshi)
+              .getRoutes()(otoroshi)
               .andThen {
                 case Failure(_) =>
                   sendErrorNotification(
                     NotificationAction.OtoroshiSyncApiError(
                       api,
-                      s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"),
+                      s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore"),
                     api.team,
                     api.tenant)
             })
@@ -547,7 +559,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                         ),
                         authorizedEntities = AuthorizedEntities(
                           groups = apikey1.authorizedEntities.groups | apikey2.authorizedEntities.groups,
-                          services = apikey1.authorizedEntities.services | apikey2.authorizedEntities.services
+                          services = apikey1.authorizedEntities.services | apikey2.authorizedEntities.services,
+                          routes = apikey1.authorizedEntities.routes | apikey2.authorizedEntities.routes
                         )
                       ))
                     case (Left(_), Right(apikey)) => Right(apikey)
@@ -560,8 +573,10 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
             client
               .updateApiKey(newApk)(otoroshiSettings)
               .andThen {
-                case Success(_) if apk.asOtoroshiApiKey != subscription.apiKey =>
-                  logger.info(s"Successfully updated api key: ${apk.clientId} - ${apk.clientName} on ${otoroshiSettings.host}")
+                case Success(_)
+                    if apk.asOtoroshiApiKey != subscription.apiKey =>
+                  logger.info(
+                    s"Successfully updated api key: ${apk.clientId} - ${apk.clientName} on ${otoroshiSettings.host}")
                   env.dataStore.apiSubscriptionRepo
                     .forTenant(subscription.tenant)
                     .updateManyByQuery(
@@ -572,28 +587,29 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                       Json.obj("$set" -> Json.obj(
                         "apiKey" -> newApk.asOtoroshiApiKey.asJson,
                         "tags" -> Some(newApk.tags),
-                        "metadata" -> (newApk.metadata.filterNot(i => i._1.startsWith("daikoku_")) -- subscription.customMetadata
+                        "metadata" -> (newApk.metadata.filterNot(i =>
+                          i._1.startsWith("daikoku_")) -- subscription.customMetadata
                           .flatMap(_.asOpt[Map[String, String]])
-                          .getOrElse(Map.empty[String, String]).keys)
-                          .view.mapValues(i => JsString(i)).toSeq)
+                          .getOrElse(Map.empty[String, String])
+                          .keys).view.mapValues(i => JsString(i)).toSeq
                       ))
-                    .flatMap(
-                      _ =>
-                        env.dataStore.notificationRepo
-                          .forTenant(subscription.tenant)
-                          .save(Notification(
-                            id = NotificationId(BSONObjectID.generate().stringify),
-                            tenant = subscription.tenant,
-                            team = Some(subscription.team),
-                            sender = jobUser,
-                            date = DateTime.now(),
-                            notificationType = NotificationType.AcceptOnly,
-                            status = NotificationStatus.Pending(),
-                            action = NotificationAction.ApiKeyRefresh(
-                              subscription.id.value,
-                              subscription.api.value,
-                              subscription.plan.value)
-                          )))
+                    )
+                    .flatMap(_ =>
+                      env.dataStore.notificationRepo
+                        .forTenant(subscription.tenant)
+                        .save(Notification(
+                          id = NotificationId(BSONObjectID.generate().stringify),
+                          tenant = subscription.tenant,
+                          team = Some(subscription.team),
+                          sender = jobUser,
+                          date = DateTime.now(),
+                          notificationType = NotificationType.AcceptOnly,
+                          status = NotificationStatus.Pending(),
+                          action = NotificationAction.ApiKeyRefresh(
+                            subscription.id.value,
+                            subscription.api.value,
+                            subscription.plan.value)
+                        )))
                     .map(_ =>
                       JobEvent("subscription desync from otoroshi to daikoku")
                         .logJobEvent(tenant,
@@ -613,11 +629,13 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                             .map(_.id.asJson)))),
                       Json.obj("$set" -> Json.obj(
                         "tags" -> Some(newApk.tags),
-                        "metadata" -> (newApk.metadata.filterNot(i => i._1.startsWith("daikoku_")) -- subscription.customMetadata
+                        "metadata" -> (newApk.metadata.filterNot(i =>
+                          i._1.startsWith("daikoku_")) -- subscription.customMetadata
                           .flatMap(_.asOpt[Map[String, String]])
-                          .getOrElse(Map.empty[String, String]).keys)
-                          .view.mapValues(i => JsString(i)).toSeq)
+                          .getOrElse(Map.empty[String, String])
+                          .keys).view.mapValues(i => JsString(i)).toSeq
                       ))
+                    )
                 case Failure(e) =>
                   logger.error(
                     s"Error while updating api key metadata: ${apk.clientId} - ${apk.clientName} on ${otoroshiSettings.host}",

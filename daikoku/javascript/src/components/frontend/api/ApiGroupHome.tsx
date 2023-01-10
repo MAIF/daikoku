@@ -18,13 +18,14 @@ import { useApiGroupFrontOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 import { formatPlanType } from '../../utils/formatters';
+import { INotification, isError, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
 
 export const ApiGroupHome = ({ }) => {
   const [apiGroup, setApiGroup] = useState<any>();
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
+  const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
   const [myTeams, setMyTeams] = useState([]);
-  const [ownerTeam, setOwnerTeam] = useState();
+  const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
 
   const params = useParams();
   const navigate = useNavigate();
@@ -152,8 +153,10 @@ export const ApiGroupHome = ({ }) => {
         ]);
       })
       .then(([team, t]) => {
+        if (!isError(team)) {
+          setOwnerTeam(team);
+        }
         setMyTeams(t.data.myTeams);
-        setOwnerTeam(team);
       });
   }, [params.apiGroupId]);
 
@@ -164,7 +167,7 @@ export const ApiGroupHome = ({ }) => {
     });
   };
 
-  const askForApikeys = (teams: any, plan: any) => {
+  const askForApikeys = ({teams, plan}: {teams: Array<string>, plan: IUsagePlan}) => {
     const planName = formatPlanType(plan, translate);
 
     return Services.askForApiKey(apiGroup._id, teams, plan._id)
@@ -228,17 +231,15 @@ export const ApiGroupHome = ({ }) => {
             <ApiGroupApis apiGroup={apiGroup} ownerTeam={ownerTeam} subscriptions={subscriptions} />
           )}
           {params.tab === 'apis' && match && <ApiHome groupView />}
-          {params.tab === 'description' && <ApiDescription api={apiGroup} ownerTeam={ownerTeam} />}
+          {params.tab === 'description' && <ApiDescription api={apiGroup} />}
           {params.tab === 'pricing' && (
             <ApiPricing
-              connectedUser={connectedUser}
               api={apiGroup}
               myTeams={myTeams}
               ownerTeam={ownerTeam}
               subscriptions={subscriptions}
               askForApikeys={askForApikeys}
               pendingSubscriptions={pendingSubscriptions}
-              tenant={tenant}
             />
           )}
           {params.tab === 'documentation' && (

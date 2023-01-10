@@ -1,29 +1,22 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { connect } from 'react-redux';
-import sortBy from 'lodash/sortBy';
-import { toastr } from 'react-redux-toastr';
 import classnames from 'classnames';
+import sortBy from 'lodash/sortBy';
+import { useContext, useEffect, useState } from 'react';
+import { toastr } from 'react-redux-toastr';
+import { Navigate } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { openInvitationTeamModal, updateTeamPromise, I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
+import { I18nContext, updateTeam } from '../../../core';
+import * as Services from '../../../services';
 import {
-  Option,
-  PaginatedComponent,
-  AvatarWithAction,
-  Can,
-  manage,
-  team,
   administrator,
-  apiEditor,
-  user,
+  apiEditor, AvatarWithAction,
+  Can,
+  manage, Option,
+  PaginatedComponent, team, user
 } from '../../utils';
 
-import 'antd/lib/tooltip/style/index.css';
-import { useSelector } from 'react-redux';
-import { IState, IStateContext, ITeamSimple, IUser, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { IState, IStateContext, ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
 
 type Tabs = 'MEMBERS' | 'PENDING'
 const TABS: { [key: string]: Tabs } = {
@@ -52,7 +45,7 @@ export const TeamMembersSimpleComponent = () => {
   });
 
   const { translate, Translation } = useContext(I18nContext);
-  const { alert } = useContext(ModalContext);
+  const { alert, openInvitationTeamModal } = useContext(ModalContext);
 
   useEffect(() => {
     updateMembers(currentTeam);
@@ -104,7 +97,7 @@ export const TeamMembersSimpleComponent = () => {
       isAdmin(member) &&
       currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
     ) {
-      alert({message: translate('remove.member.alert')});
+      alert({ message: translate('remove.member.alert') });
     } else {
       (window
         .confirm(translate('remove.member.confirm')))//@ts-ignore
@@ -116,7 +109,7 @@ export const TeamMembersSimpleComponent = () => {
                 done
                   ? toastr.success(translate('Success'), translate({ key: 'remove.member.success', replacements: [member.name] }))
                   : toastr.error(translate('Error'), translate('Failure'));
-                updateTeamPromise(team)(dispatch)
+                Promise.resolve(dispatch(updateTeam(team)))
                   .then(() => updateMembers(currentTeam));
               });
           }
@@ -170,7 +163,7 @@ export const TeamMembersSimpleComponent = () => {
                 translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] })
               )
               : toastr.error(translate('Error'), translate('Failure'));
-            updateTeamPromise(team)(dispatch)
+            Promise.resolve(dispatch(updateTeam(team)))
               .then(() => updateMembers(currentTeam));
           }
         );
@@ -221,13 +214,13 @@ export const TeamMembersSimpleComponent = () => {
   return <>
     <div className="container-fluid" style={{ position: 'relative' }}>
       <button className="btn btn-success" type="button" onClick={() => {
-        dispatch(openInvitationTeamModal({
+        openInvitationTeamModal({
           team: currentTeam,
           searchLdapMember: searchLdapMember,
           members: filteredMembers,
           invitUser: invitUser,
           pendingUsers: filteredPending,
-        }));
+        });
       }}>
         {translate('team_member.invit_user')}
       </button>

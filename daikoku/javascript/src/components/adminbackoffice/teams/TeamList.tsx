@@ -6,18 +6,18 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant, Spinner } from '../../utils';
-import { I18nContext, openFormModal } from '../../../core';
+import { I18nContext } from '../../../core';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
-import { ITeamSimple } from '../../../types';
-import { useQuery, useQueryClient } from 'react-query';
+import { isError, ITeamSimple } from '../../../types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const TeamList = () => {
   const dispatch = useDispatch();
   useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
   const teamRequest = useQuery(['teams'], () => Services.teams());
 
@@ -28,7 +28,7 @@ export const TeamList = () => {
   const createNewTeam = () => {
     Services.fetchNewTeam()
       .then((newTeam) => {
-        dispatch(openFormModal({
+        openFormModal({
           title: translate('Create a new team'),
           actionLabel: translate('Create'),
           schema: teamSchema(newTeam, translate),
@@ -37,12 +37,12 @@ export const TeamList = () => {
               if (r.error) {
                 toastr.error(translate('Error'), r.error)
               } else {
-                queryClient.invalidateQueries('teams');
+                queryClient.invalidateQueries(['teams']);
                 toastr.success(translate('Success'), translate({ key: "team.created.success", replacements: [data.name] }))
               }
             }),
           value: newTeam
-        }))
+        })
       });
   };
 
@@ -53,7 +53,7 @@ export const TeamList = () => {
         if (ok) {
           Services.deleteTeam(teamId)
             .then(() => {
-              queryClient.invalidateQueries('teams');
+              queryClient.invalidateQueries(['teams']);
             });
         }
       });
@@ -63,19 +63,25 @@ export const TeamList = () => {
   if (teamRequest.isLoading) {
     return <Spinner />
   } else if (teamRequest.data) {
+
+    if (isError(teamRequest.data)) {
+      return <p>{teamRequest.data.error}</p>;
+    }
+
     const filteredTeams = search
       ? teamRequest.data.filter(({ name }) => name.toLowerCase().includes(search))
       : teamRequest.data;
 
-    const actions = (team: any) => {
+    const actions = (team: ITeamSimple) => {
       const basicActions = [
         {
           action: () => deleteTeam(team._id),
+          variant: 'error',
           iconClass: 'fas fa-trash delete-icon',
           tooltip: translate('Delete team'),
         },
         {
-          redirect: () => dispatch(openFormModal({
+          redirect: () => openFormModal({
             title: translate('Update team'),
             actionLabel: translate('Update'),
             schema: teamSchema(team, translate),
@@ -85,11 +91,11 @@ export const TeamList = () => {
                   toastr.error(translate('Error'), r.error)
                 } else {
                   toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [data.name] }))
-                  queryClient.invalidateQueries('teams');
+                  queryClient.invalidateQueries(['teams']);
                 }
               }),
             value: team
-          })),
+          }),
           iconClass: 'fas fa-pen',
           tooltip: translate('Edit team'),
           actionLabel: translate('Create')
@@ -103,7 +109,7 @@ export const TeamList = () => {
       return [
         ...basicActions,
         {
-          redirect: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
+          action: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
           iconClass: 'fas fa-users',
           tooltip: translate('Team members'),
         },
@@ -129,7 +135,7 @@ export const TeamList = () => {
               onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
-        <PaginatedComponent items={sortBy(filteredTeams, [(team) => (team as any).name.toLowerCase()])} count={8} formatter={(team) => {
+        <PaginatedComponent items={sortBy(filteredTeams, [(team) => team.name.toLowerCase()])} count={8} formatter={(team: ITeamSimple) => {
           return (<AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
             <span className="team__name text-truncate">{team.name}</span>
           </>} actions={actions(team)} />);

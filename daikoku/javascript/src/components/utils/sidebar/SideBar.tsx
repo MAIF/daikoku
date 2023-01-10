@@ -11,7 +11,9 @@ import { MessagesContext } from '../../backoffice';
 
 import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';
 import { Companion } from './companions';
-import { ITeamSimple } from '../../../types';
+import { isError, IState, IStateContext, ITeamSimple } from '../../../types';
+import { useQuery } from '@tanstack/react-query';
+import { Spinner } from '../Spinner';
 
 export const state = {
   opened: 'OPENED',
@@ -19,11 +21,10 @@ export const state = {
 };
 
 export const SideBar = () => {
-  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
   const [panelState, setPanelState] = useState(state.closed);
   const [panelContent, setPanelContent] = useState<JSX.Element>();
 
-  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useSelector((state) => (state as any).context);
+  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useSelector<IState, IStateContext>((state) => state.context);
   const dispatch = useDispatch();
   const location = useLocation();
 
@@ -35,11 +36,9 @@ export const SideBar = () => {
   }, [location]);
 
   useEffect(() => {
-    Promise.all([Services.myUnreadNotificationsCount(), Services.teams()])
-      .then(
-        ([notifCount, teams]) => {
-          updateNotifications(notifCount.count)(dispatch);
-          setTeams(teams);
+    Services.myUnreadNotificationsCount()
+      .then( (notifCount) => {
+          dispatch(updateNotifications(notifCount.count));
         }
       );
   }, []);
@@ -92,7 +91,7 @@ export const SideBar = () => {
                   className="notification-link"
                   onClick={() => {
                     setPanelState(state.opened);
-                    setPanelContent(<SearchPanel teams={teams} />);
+                    setPanelContent(<SearchPanel />);
                   }}
                 />
               </div>
@@ -101,7 +100,7 @@ export const SideBar = () => {
                   className="notification-link"
                   onClick={() => {
                     setPanelState(state.opened);
-                    setPanelContent(<AddPanel teams={teams} />);
+                    setPanelContent(<AddPanel />);
                   }}
                 />
               </div>

@@ -1,26 +1,26 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { connect } from 'react-redux';
-import uniq from 'lodash/uniq';
-import sortBy from 'lodash/sortBy';
 import groupBy from 'lodash/groupBy';
-import { toastr } from 'react-redux-toastr';
+import sortBy from 'lodash/sortBy';
+import uniq from 'lodash/uniq';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { SketchPicker } from 'react-color';
-import { useNavigate, useParams } from 'react-router-dom';
+import { toastr } from 'react-redux-toastr';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { Can, tenant as TENANT, manage, Option } from '../../utils';
+import { Can, manage, Option, tenant as TENANT } from '../../utils';
 
 //@ts-ignore //FIXME: check if it works
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
+import { useDaikokuBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
-import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 
 const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 
-export function TenantStyleEditComponent(props: any) {
+export const TenantStyleEdit = () => {
   const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
   const navigate = useNavigate();
+  const location = useLocation()
 
   const [state, setState] = useState<any>({
     tenant: null,
@@ -37,11 +37,11 @@ export function TenantStyleEditComponent(props: any) {
   useEffect(() => {
     if (!params.tenantId) {
       //todo: hadle this case
-    } else if (props.location && props.location.state && props.location.state.newTenant) {
+    } else if (location.state && location.state.newTenant) {
       setState({
         ...state,
         tenant: {
-          ...props.location.state.newTenant,
+          ...location.state.newTenant,
         },
         create: true,
       });
@@ -150,11 +150,6 @@ export function TenantStyleEditComponent(props: any) {
   );
 }
 
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-export const TenantStyleEdit = connect(mapStateToProps)(TenantStyleEditComponent);
 
 const Preview = (props) => {
   const iframeRef = useRef<HTMLIFrameElement | null>();

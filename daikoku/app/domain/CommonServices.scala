@@ -1,17 +1,13 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
-import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
-import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
-import play.api.mvc.AnyContent
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -158,7 +154,7 @@ object CommonServices {
               .forTenant(tenant.id)
               .findNotDeleted(
                 Json.obj("action.type" -> "ApiAccess",
-                  "action.team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))),
+                  "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
                   "status.status" -> "Pending")
               )
             publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
@@ -167,11 +163,11 @@ object CommonServices {
               Json.obj(
                 "visibility" -> "Private",
                 "$or" -> Json.arr(
-                  Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
+                  Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))),
                   teamFilter
                 )) ++ teamFilter)
             adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-              Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
+              Json.obj("visibility" -> ApiVisibility.AdminOnly.name)
             )
           } yield {
             val sortedApis: Seq[ApiWithAuthorizations] = (publicApis ++ almostPublicApis ++ privateApis)
@@ -180,14 +176,14 @@ object CommonServices {
               .map(api => api
                 .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))
               .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
-                val authorizations = teams
+                val authorizations = myTeams
                   .filter(t => t.`type` != TeamType.Admin)
                   .foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
                     acc :+ AuthorizationApi(
                       team = team.id.value,
-                      authorized = (api.authorizedTeams.contains(team.id) || api.team == team.id),
-                      pending = myCurrentRequests.exists(notif =>
-                        notif.action.asInstanceOf[ApiAccess].team == team.id && notif.action.asInstanceOf[ApiAccess].api == api.id)
+                      authorized = api.authorizedTeams.contains(team.id) || api.team == team.id,
+                      pending = myCurrentRequests
+                        .exists(notif => notif.action.asInstanceOf[ApiAccess].team == team.id && notif.action.asInstanceOf[ApiAccess].api == api.id)
                     )
                   }
 
@@ -197,10 +193,10 @@ object CommonServices {
                 })
               }
 
-            val apis: Seq[ApiWithAuthorizations] = (if (user.isDaikokuAdmin)
+            val apis: Seq[ApiWithAuthorizations] = if (user.isDaikokuAdmin)
                   adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) => acc :+ ApiWithAuthorizations(
                     api = api,
-                    authorizations = teams.foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
+                    authorizations = myTeams.foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
                       acc :+ AuthorizationApi(
                         team = team.id.value,
                         authorized = user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id),
@@ -209,7 +205,7 @@ object CommonServices {
                     })
                   } ++ sortedApis
                 else
-                  sortedApis)
+                  sortedApis
 
               apis.groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
                 .map(res => res._2.head)

@@ -230,6 +230,13 @@ class Config(val underlying: Configuration) {
     .getOptional[FiniteDuration]("daikoku.audit.purge.max.date")
     .getOrElse(60 day)
 
+  lazy val deletionByCron: Boolean = underlying
+    .getOptional[Boolean]("daikoku.deletion.cron")
+    .getOrElse(false)
+  lazy val deletionInterval: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.deletion.interval")
+    .getOrElse(30 second)
+
   lazy val init: InitConfig = InitConfig(underlying)
 
   lazy val adminApiConfig: AdminApiConfig = AdminApiConfig(underlying)
@@ -400,7 +407,6 @@ class DaikokuEnv(ws: WSClient,
                   avatar = Some(
                     s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
                   users = Set(UserWithPermission(userId, Administrator)),
-                  subscriptions = Seq.empty,
                   authorizedOtoroshiGroups = Set.empty
                 )
                 val adminApiDefaultTenant = Api(
@@ -465,7 +471,6 @@ class DaikokuEnv(ws: WSClient,
                   name = s"${config.init.admin.name}",
                   description = s"${config.init.admin.name}'s team",
                   users = Set(UserWithPermission(userId, Administrator)),
-                  subscriptions = Seq.empty,
                   authorizedOtoroshiGroups = Set.empty
                 )
                 val user = User(

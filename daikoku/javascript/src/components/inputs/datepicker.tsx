@@ -1,8 +1,6 @@
 import React from 'react';
 
 import { DatePicker } from 'antd';
-import 'antd/dist/antd.css';
-import './datepicker.css';
 
 const { RangePicker } = DatePicker;
 
@@ -18,8 +16,8 @@ export function OtoDatePicker(props: any) {
   const { from, to } = props;
   const dateFormat = 'YYYY-MM-DD HH:mm:ss';
   return (
-        <RangePicker
-      defaultValue={[from, to]}
+    <RangePicker
+      value={[from, to]}
       showTime={{ format: 'HH:mm:ss' }}
       format={dateFormat}
       placeholder={['Start Time', 'End Time']}

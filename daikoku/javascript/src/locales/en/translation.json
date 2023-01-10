@@ -565,6 +565,7 @@
     "Manual": "Manual",
     "team.created.success": "Team %s created successfully",
     "team.updated.success": "Team %s updated successfully",
+    "team.deleted.success": "Team %s deleted successfully",
     "user.created.success": "User %s created successfully",
     "user.updated.success": "User %s updated successfully",
     "unsaved.modifications.title": "Unsaved modifications",
@@ -1218,5 +1219,16 @@
     "fastMode.apiKey.title": "API Key :",
     "fastMode.reasonSubscription.title": "Reason for subscription",
     "fastMode.button.seeApiKey": "See the api key",
-    "fastMode.button.pending": "Pending"
+    "fastMode.button.pending": "Pending",
+    "Yes": "Yes",
+    "Filter": "Filter",
+    "Filter data": "Filter data",
+    "Filter metadata": "Filter metadata",
+    "Filter tags": "Filter tags",
+    "Don't save": "Don't save",
+    "set.from.assets": "Set %s from asset",
+    "set.logo": "logo",
+    "JS": "JS",
+    "set.favicon": "favicon",
+    "set.font.family": "font family"
 }

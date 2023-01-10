@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import {
@@ -12,14 +11,16 @@ import {
   formatDate,
 } from '../../utils';
 import * as Services from '../../../services';
-import { Table, BooleanColumnFilter, SwitchButton, TableRef } from '../../inputs';
-import { I18nContext, openFormModal, openSubMetadataModal } from '../../../core';
+import { Table, SwitchButton, TableRef } from '../../inputs';
+import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { Form, format, type } from "@maif/react-forms";
-import { IApi, IState, ITeamSimple } from "../../../types";
+import { IApi, ISafeSubscription, isError, IState, ITeamSimple, IUsagePlan } from "../../../types";
 import { string } from "prop-types";
 import { ModalContext } from '../../../contexts';
+import { createColumnHelper, sortingFns } from '@tanstack/react-table';
+import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -32,108 +33,133 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const dispatch = useDispatch();
 
-  const [teams, setTeams] = useState<Array<any>>([]);
-  const [columns, setColumns] = useState<Array<any>>([]);
+  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<SubriptionsFilter>()
   const tableRef = useRef<TableRef>()
 
   const { translate, language, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal, openSubMetadataModal, } = useContext(ModalContext);
 
   useEffect(() => {
-    Services.teams().then((teams) => {
-      setTeams(teams);
-      setLoading(false);
-    });
+    Services.teams()
+      .then((teams) => {
+        if (!isError(teams)) {
+          setTeams(teams);
+        }
+        setLoading(false);
+      });
 
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
   }, []);
-  //TODO dans le use effect : rajouter une colonne metadata
-  useEffect(() => {
-    if (api && tableRef.current && teams.length) {
-      setColumns([
-        {
-          id: 'name',
-          Header: translate('Name'),
-          style: { textAlign: 'left' },
-          accessor: (sub: any) => sub.team === currentTeam._id
-            ? sub.customName || sub.apiKey.clientName
-            : sub.apiKey.clientName,
-          sortType: 'basic',
-        },
-        {
-          Header: translate('Plan'),
-          style: { textAlign: 'left' },
-          accessor: (sub: any) => Option(api.possibleUsagePlans.find((pp: any) => pp._id === sub.plan))
-            .map((p: any) => p.customName || formatPlanType(p, translate))
-            .getOrNull(),
-        },
-        {
-          Header: translate('Team'),
-          style: { textAlign: 'left' },
-          accessor: (sub: any) => Option(teams.find((t) => t._id === sub.team))
-            .map((t: any) => t.name)
-            .getOrElse('unknown team'),
-        },
-        {
-          Header: translate('Enabled'),
-          style: { textAlign: 'center' },
-          accessor: (api: any) => api.enabled,
-          disableSortBy: true,
-          Filter: BooleanColumnFilter,
-          filter: 'equals',
-          // eslint-disable-next-line react/display-name
-          Cell: ({ cell: { row: { original }, } }: any) => {
-            const sub = original;
-            return (
-              <SwitchButton
-                onSwitch={() => Services.archiveSubscriptionByOwner(currentTeam._id, sub._id, !sub.enabled)
-                  .then(() => tableRef.current?.update())}
-                checked={sub.enabled} />);
-          },
-        },
-        {
-          Header: translate('Created at'),
-          style: { textAlign: 'left' },
-          accessor: (sub: any) => formatDate(sub.createdAt, language),
-        },
-        {
-          Header: translate('Actions'),
-          style: { textAlign: 'center' },
-          disableSortBy: true,
-          disableFilters: true,
-          accessor: (item: any) => item._id,
-          // eslint-disable-next-line react/display-name
-          Cell: ({ cell: { row: { original }, } }: any) => {
-            const sub = original;
-            return (<div className="btn-group">
-              <BeautifulTitle title={translate('Update metadata')}>
-                <button key={`edit-meta-${sub._humanReadableId}`} type="button" className="btn btn-sm btn-access-negative" onClick={() => updateMeta(sub)}>
-                  <i className="fas fa-edit" />
-                </button>
-              </BeautifulTitle>
-              <BeautifulTitle title={translate('Refresh secret')}>
-                <button key={`edit-meta-${sub._humanReadableId}`} type="button" className="btn btn-sm btn-access-negative btn-danger" onClick={() => regenerateSecret(sub)}>
-                  <i className="fas fa-sync" />
-                </button>
-              </BeautifulTitle>
-            </div>);
-          },
-        },
-      ]);
-    }
-  }, [tableRef.current]);
 
-  const updateMeta = (sub: any) => dispatch(openSubMetadataModal({
-    save: (updates: any) => {
-      Services.updateSubscription(currentTeam, { ...sub, ...updates }).then(() => tableRef.current?.update());
+  useEffect(() => {
+    if (api) {
+      tableRef.current?.update()
+    }
+  }, [api])
+
+
+  const columnHelper = createColumnHelper<ISafeSubscription>()
+  const columns = [
+    columnHelper.accessor(row => row.team === currentTeam._id ? row.customName || row.apiKey.clientName : row.apiKey.clientName, {
+      id: 'name',
+      header: translate('Name'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => {
+        const sub = info.row.original
+        return sub.team === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
+      },
+      filterFn: (row, _, value) => {
+        const sub = row.original
+        const displayed: string = sub.team === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
+
+        return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
+      },
+      sortingFn: 'basic',
+    }),
+    columnHelper.accessor('plan', {
+      header: translate('Plan'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => Option(api.possibleUsagePlans.find((pp) => pp._id === info.getValue()))
+        .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+        .getOrNull(),
+      filterFn: (row, columnId, value) => {
+        const cell = row.getValue(columnId)
+        const displayed: string = Option(api.possibleUsagePlans.find((pp) => pp._id === cell))
+          .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+          .getOrElse("")
+
+        return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
+      }
+    }),
+    columnHelper.accessor('team', {
+      header: translate('Team'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => Option(teams.find((t) => t._id === info.getValue()))
+        .map((t: ITeamSimple) => t.name)
+        .getOrElse('unknown team'),
+      filterFn: (row, columnId, value) => {
+        const cell = row.getValue(columnId)
+        const displayed: string = Option(teams.find((t) => t._id === cell))
+          .map((t: ITeamSimple) => t.name)
+          .getOrElse('unknown team')
+
+        return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
+      }
+    }),
+    columnHelper.accessor('enabled', {
+      header: translate('Enabled'),
+      enableColumnFilter: false,
+      enableSorting: false,
+      meta: { style: { textAlign: 'center' } },
+      cell: (info) => {
+        const sub = info.row.original;
+        return (
+          <SwitchButton
+            onSwitch={() => Services.archiveSubscriptionByOwner(currentTeam._id, sub._id, !sub.enabled)
+              .then(() => tableRef.current?.update())}
+            checked={sub.enabled} />);
+      },
+    }),
+    columnHelper.accessor('createdAt', {
+      enableColumnFilter: false,
+      header: translate('Created at'),
+      meta: { style: { textAlign: 'left' } },
+      cell: (info) => formatDate(info.getValue(), language),
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center', width: '120px' } },
+      cell: (info) => {
+        const sub = info.row.original;
+        return (<div className="btn-group">
+          <BeautifulTitle title={translate('Update metadata')}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative me-1" onClick={() => updateMeta(sub)}>
+              <i className="fas fa-edit" />
+            </button>
+          </BeautifulTitle>
+          <BeautifulTitle title={translate('Refresh secret')}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-danger" onClick={() => regenerateSecret(sub)}>
+              <i className="fas fa-sync" />
+            </button>
+          </BeautifulTitle>
+        </div>);
+      },
+    }),
+  ]
+
+  const updateMeta = (sub: ISafeSubscription) => openSubMetadataModal({
+    save: (updates: CustomSubscriptionData) => {
+      Services.updateSubscription(currentTeam, { ...sub, ...updates })
+        .then(() => tableRef.current?.update());
     },
     api: sub.api,
     plan: sub.plan,
     team: teams.find((t) => t._id === sub.team),
     subscription: sub,
-  }));
+    creationMode: false
+  });
 
   const regenerateSecret = (sub: any) => {
     confirm({ message: translate('secret.refresh.confirm') })
@@ -159,13 +185,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       {!loading && (
         <div className="row">
           <div className='d-flex flex-row justify-content-start align-items-center'>
-            <button className='btn btn-sm btn-outline-primary' onClick={() => dispatch(openFormModal({
+            <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
               actionLabel: "filter",
               onSubmit: data => {
-                console.debug({ data })
-                //FIXME: understand why form is not working in DK
-                // setFilters({tags: [], metadata: [{key: "tenant", value: "recx"}]})
-                setFilters({ tags: ["contrat"], metadata: [] })
+                setFilters(data)
               },
               schema: {
                 metadata: {
@@ -177,7 +200,8 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                     key: {
                       type: type.string,
                       format: format.select,
-                      options: Array.from(new Set(options))
+                      options: Array.from(new Set(options)),
+                      createOption: true
                     },
                     value: {
                       type: type.string,
@@ -192,9 +216,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                   options: api.possibleUsagePlans.flatMap(pp => pp.otoroshiTarget?.apikeyCustomization.tags || [])
                 }
               },
-              title: "filter data",
+              title: translate("Filter data"),
               value: filters
-            }))}> filter </button>
+            })}> {translate('Filter')} </button>
             {!!filters && (
               <div className="clear cursor-pointer ms-1" onClick={() => setFilters(undefined)}>
                 <i className="far fa-times-circle me-1" />
@@ -206,8 +230,8 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
             <Table
               defaultSort="name"
               columns={columns}
-              fetchItems={() =>
-                Services.apiSubscriptions(api._id, currentTeam._id, api.currentVersion)
+              fetchItems={() => {
+                return Services.apiSubscriptions(api._id, currentTeam._id, api.currentVersion)
                   .then(subscriptions => {
                     if (!filters) {
                       return subscriptions
@@ -223,11 +247,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                           }) && filters.tags.every(tag => subscription.tags.includes(tag))
                         }
                       })
-
                     }
                   })
-              }
-              injectTable={(t: TableRef) => tableRef.current = t}
+              }}
+              ref={tableRef}
             />
           </div>
         </div>

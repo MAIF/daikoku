@@ -8,7 +8,8 @@ import { Table, TableRef } from '../../inputs';
 import { Can, manage, daikoku } from '../../utils';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
-import { IState, IUserSimple } from '../../../types';
+import { ISession, IState, IUserSimple } from '../../../types';
+import { createColumnHelper } from '@tanstack/react-table';
 
 export const SessionList = () => {
   const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
@@ -19,39 +20,31 @@ export const SessionList = () => {
 
   const tableRef = useRef<TableRef>()
 
+  const columnHelper = createColumnHelper<ISession>();
   const columns = [
-    {
-      Header: translate('User'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.userName + ' - ' + item.userEmail,
-    },
-    {
-      Header: translate('Impersonator'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.impersonatorId ? `${item.impersonatorName} - ${item.impersonatorEmail}` : '',
-    },
-    {
-      Header: translate('Created at'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => moment(item.created).format('YYYY-MM-DD HH:mm:ss.SSS'),
-    },
-    {
-      Header: translate('Expires'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => moment(item.expires).format('YYYY-MM-DD HH:mm:ss.SSS'),
-    },
-    {
-      Header: translate('Actions'),
-      style: { textAlign: 'center' },
-      disableSortBy: true,
-      disableFilters: true,
-      content: (item: any) => item._id,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const session = original;
+    columnHelper.accessor(row => `${row.userName} - ${row.userEmail}`, {
+      header: translate('User'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.accessor(row => (row.impersonatorId ? `${row.impersonatorName} - ${row.impersonatorEmail}` : ''), {
+      header: translate('Impersonator'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.accessor(row => moment(row.created).format('YYYY-MM-DD HH:mm:ss.SSS'), {
+      header: translate('Created at'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.accessor(row => moment(row.expires).format('YYYY-MM-DD HH:mm:ss.SSS'), {
+      header: translate('Expires'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center', width: '120px' } },
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const session = info.row.original;
         return (
           <div className="btn-group">
             <button
@@ -65,21 +58,22 @@ export const SessionList = () => {
           </div>
         );
       },
-    },
+    }),
   ];
 
-  const deleteSession = (session: any) => {
+  const deleteSession = (session: ISession) => {
     (confirm({ message: translate('destroy.session.confirm') }))
       .then((ok) => {
         if (ok) {
-          Services.deleteSession(session._id).then(() => {
-            if (tableRef.current) {
-              tableRef.current.update();
-              if (connectedUser._id === session.userId) {
-                window.location.reload();
+          Services.deleteSession(session._id)
+            .then(() => {
+              if (tableRef.current) {
+                tableRef.current.update();
+                if (connectedUser._id === session.userId) {
+                  window.location.reload();
+                }
               }
-            }
-          });
+            });
         }
       });
   };
@@ -109,7 +103,7 @@ export const SessionList = () => {
             <Table
               columns={columns}
               fetchItems={() => Services.getSessions()}
-              injectTable={(t: TableRef) => tableRef.current = t}
+              ref={tableRef}
               injectTopBar={() => (
                 <button
                   type="button"

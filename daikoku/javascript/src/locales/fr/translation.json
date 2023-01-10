@@ -558,6 +558,7 @@
   "Manual": "Manuelle",
   "team.created.success": "L'équipe %s a été créée avec succès",
   "team.updated.success": "L'équipe %s a été modifiée avec succès",
+  "team.deleted.success": "L'équipe %s a été supprimée avec succès",
   "user.created.success": "L'utilisateur %s a été créé avec succès",
   "user.updated.success": "L'utilisateur %s a été modifié avec succès",
   "unsaved.modifications.title": "Modifications en cours",
@@ -1220,5 +1221,17 @@
   "fastMode.apiKey.title": "Clé d'API :",
   "fastMode.reasonSubscription.title": "La raison de votre souscription",
   "fastMode.button.seeApiKey": "Voir la clé d'API",
-  "fastMode.button.pending": "En attente"
+  "fastMode.button.pending": "En attente",
+  "Yes": "Oui",
+  "Filter": "Filtrer",
+  "Filter data": "Filtrer les données",
+  "Filter metadata": "Filtrer les métadonnées",
+  "Filter tags": "Filtrer les tags",
+  "Don't save": "Ne pas enregistrer",
+  "set.from.assets": "définir %s depuis un asset",
+  "set.logo": "le logo",
+  "set.css": "un fichier CSS",
+  "set.js": "un fichier JS",
+  "set.favicon": "le favicon",
+  "set.font.family": "la police de style"
 }

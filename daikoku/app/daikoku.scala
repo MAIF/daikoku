@@ -18,6 +18,7 @@ import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
 import fr.maif.otoroshi.daikoku.utils.{
   ApiService,
+  DeletionService,
   Errors,
   OtoroshiClient,
   Translator
@@ -27,7 +28,12 @@ import io.vertx.core.buffer.Buffer
 import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
 import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
 import io.vertx.sqlclient.PoolOptions
-import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, OtoroshiVerifierJob}
+import jobs.{
+  ApiKeyStatsJob,
+  AuditTrailPurgeJob,
+  DeletionJob,
+  OtoroshiVerifierJob
+}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
@@ -62,12 +68,14 @@ package object modules {
     implicit lazy val env: Env = wire[DaikokuEnv]
 
     lazy val verifier = wire[OtoroshiVerifierJob]
+    lazy val deletor = wire[DeletionJob]
     lazy val statsJob = wire[ApiKeyStatsJob]
     lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
 
     lazy val otoroshiClient = wire[OtoroshiClient]
 
     lazy val apiService = wire[ApiService]
+    lazy val deletionService = wire[DeletionService]
 
     lazy val translator = wire[Translator]
 
@@ -223,12 +231,14 @@ package object modules {
     lazy val pgPool = PgPool.pool(Vertx.vertx, options, poolOptions)
 
 //    statsJob.start()
+    deletor.start()
     verifier.start()
     auditTrailPurgeJob.start()
 
     env.onStartup()
 
     applicationLifecycle.addStopHook { () =>
+      deletor.stop()
       verifier.stop()
       statsJob.stop()
       auditTrailPurgeJob.stop()

@@ -1,4 +1,3 @@
-export * from './modal';
 export * from '../contexts/i18n-context';
 export * from './error';
 export * from './reducers';

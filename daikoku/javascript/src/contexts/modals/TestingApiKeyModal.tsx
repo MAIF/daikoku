@@ -1,12 +1,14 @@
 import React, { useContext, useRef } from 'react';
 import { Form, type, format, constraints } from '@maif/react-forms';
 
-import { Spinner } from '../../utils';
-import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
+import { Spinner } from '../../components/utils';
+import * as Services from '../../services';
+import { I18nContext } from '../../core';
 import { useSelector } from 'react-redux';
+import { IBaseModalProps, TestingApiKeyModalProps } from './types';
 
-export const TestingApiKeyModal = (props: any) => {
+
+export const TestingApiKeyModal = (props: TestingApiKeyModalProps & IBaseModalProps) => {
   const formRef = useRef<any>();
 
   const tenant = useSelector(s => (s as any).context.tenant);
@@ -79,11 +81,31 @@ export const TestingApiKeyModal = (props: any) => {
             label: g.name,
             value: g.id
           })
+        },
+        routes: {
+          type: type.string,
+          format: format.select,
+          isMulti: true,
+          disabled: ({
+            rawValues
+          }: any) => !rawValues.otoroshiSettings,
+          optionsFrom: ({
+            rawValues
+          }: any) => {
+            if (!rawValues.otoroshiSettings) {
+              return Promise.resolve([])
+            }
+            return Services.getOtoroshiRoutesAsTeamAdmin(props.teamId, rawValues.otoroshiSettings)
+          },
+          transformer: (g: any) => ({
+            label: g.name,
+            value: g.id
+          })
         }
       },
       constraints: [
         constraints.required(translate('constraints.required.authorizedEntities')),
-        constraints.test('test', translate('constraint.min.authorizedEntities'), v => v.services.length || v.groups.length)
+        constraints.test('test', translate('constraint.min.authorizedEntities'), v => v.services.length || v.groups.length || v.routes.length)
       ]
     },
   };
@@ -99,7 +121,7 @@ export const TestingApiKeyModal = (props: any) => {
   const generateApiKey = (updatedConfig: any) => {
     Services.createTestingApiKey(props.teamId, { ...updatedConfig, ...props.metadata })
       .then((apikey) => {
-        props.closeModal();
+        props.close();
         props.onChange(apikey, { ...updatedConfig, ...props.metadata });
       });
   };
@@ -107,7 +129,7 @@ export const TestingApiKeyModal = (props: any) => {
   const updateApiKey = (updatedConfig: any) => {
     Services.updateTestingApiKey(props.teamId, { ...updatedConfig, ...props.metadata })
       .then((apikey) => {
-        props.closeModal();
+        props.close();
         props.onChange(apikey, { ...updatedConfig, ...props.metadata });
       });
   };
@@ -116,7 +138,7 @@ export const TestingApiKeyModal = (props: any) => {
     <div className="modal-content" style={{ fontWeight: 'normal' }}>
       <div className="modal-header">
         <h5 className="modal-title">{props.title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal} />
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
       </div>
       <div className="modal-body">
         <React.Suspense fallback={<Spinner />}>
@@ -130,7 +152,7 @@ export const TestingApiKeyModal = (props: any) => {
         </React.Suspense>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
+        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
           <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
         <button

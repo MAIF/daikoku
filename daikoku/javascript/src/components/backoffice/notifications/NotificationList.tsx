@@ -5,7 +5,7 @@ import groupBy from 'lodash/groupBy';
 import * as Services from '../../../services';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
-import { updateNotifications, openSubMetadataModal, I18nContext } from '../../../core';
+import { updateNotifications, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { isError } from '../../../types';
@@ -82,7 +82,7 @@ export const NotificationList = () => {
 
   useEffect(() => {
     if (state.untreatedNotifications)
-      updateNotifications(state.untreatedNotifications.length)(dispatch);
+      dispatch(updateNotifications(state.untreatedNotifications.length));
   }, [state.untreatedNotifications]);
 
   const acceptNotification = (notificationId: string, values?: object): void => {

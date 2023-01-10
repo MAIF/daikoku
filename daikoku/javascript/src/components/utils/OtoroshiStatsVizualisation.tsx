@@ -285,6 +285,9 @@ export function GlobalDataConsumption(props: any) {
   const units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
   const computeValue = (x: number): string => {
+    if (!x) {
+      return `0 ${units[0]}`;
+    }
 
     let l = 0;
 

@@ -2,11 +2,11 @@ import React, { useContext } from 'react';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import { constraints, format, type } from '@maif/react-forms';
-import { useDispatch } from 'react-redux';
 
 import { formatPlanType, Option } from '../../utils';
-import { I18nContext, openFormModal, openSubMetadataModal } from '../../../core';
+import { I18nContext } from '../../../core';
 import { IApi, INotification, ITeamSimple } from '../../../types';
+import { ModalContext } from '../../../contexts';
 
 
 interface ISimpleNotificationProps {
@@ -18,9 +18,9 @@ interface ISimpleNotificationProps {
 }
 export function SimpleNotification(props: ISimpleNotificationProps) {
   const { translate, language, Translation } = useContext(I18nContext);
+  const { openFormModal, openSubMetadataModal } = useContext(ModalContext)
 
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const typeFormatter = (type: string) => {
     switch (type) {
@@ -203,14 +203,14 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       href="#"
                       title={translate('Accept')}
                       onClick={() =>
-                        dispatch(openSubMetadataModal({
+                        openSubMetadataModal({
                           save: props.accept,
                           api: props.notification.action.api,
                           plan: props.notification.action.plan,
                           team: props.getTeam(props.notification.action.team),
                           notification: props.notification,
                           creationMode: true,
-                        }))
+                        })
                       }
                     >
                       <i className="fas fa-check" />
@@ -221,7 +221,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       href="#"
                       title={translate('Reject')}
                       onClick={() => {
-                        dispatch(openFormModal<{ message: string }>({
+                        openFormModal<{ message: string }>({
                           title: translate('Message'),
                           schema: {
                             message: {
@@ -235,7 +235,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                           },
                           onSubmit: ({ message }) => props.reject(message),
                           actionLabel: translate('Send')
-                        }))
+                        })
                       }}
                     >
                       <i className="fas fa-times" />

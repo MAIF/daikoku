@@ -20,6 +20,7 @@ import fr.maif.otoroshi.daikoku.domain.{
   TestingAuth
 }
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.commons.codec.binary.Base64
 import org.joda.time.DateTime
@@ -249,6 +250,27 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
   }
 
+  def otoroshiRoutesFor(teamId: String, oto: String) = DaikokuAction.async {
+    ctx =>
+      TeamApiEditorOnly(AuditTrailEvent(
+        s"@{user.name} has accessed routes of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(
+        teamId,
+        ctx) { _ =>
+        ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+          case Some(settings) =>
+            otoroshiClient
+              .getRoutes()(settings)
+              .map(Ok(_))
+              .recover {
+                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              }
+        }
+      }
+  }
+
   def otoroshiServicesForTenant(tenantId: String, oto: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(AuditTrailEvent(
@@ -262,6 +284,28 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
           case Some(settings) =>
             otoroshiClient
               .getServices()(settings)
+              .map(Ok(_))
+              .recover {
+                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              }
+        }
+      }
+    }
+
+  def otoroshiRoutesForTenant(tenantId: String, oto: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed routes of one otoroshi settings ($oto)"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+          case Some(settings) =>
+            otoroshiClient
+              .getRoutes()(settings)
               .map(Ok(_))
               .recover {
                 case error => BadRequest(Json.obj("error" -> error.getMessage))
@@ -313,6 +357,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         val maxPerMonthOpt =
           (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
 
+        AppLogger.warn(
+          s"$otoroshiSettingsOpt - $authorizedEntitiesOpt - $clientNameOpt - $tagOpt - $apiOpt")
         (otoroshiSettingsOpt,
          authorizedEntitiesOpt,
          clientNameOpt,

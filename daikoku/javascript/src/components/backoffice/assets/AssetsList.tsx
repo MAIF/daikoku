@@ -7,9 +7,10 @@ import { constraints, format, type } from '@maif/react-forms';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { Can, manage, asset, tenant as TENANT } from '../../utils';
-import { openFormModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
 import { ModalContext } from '../../../contexts';
+import { createColumnHelper } from '@tanstack/react-table';
+import { IAsset, IState, IStateContext } from '../../../types';
 
 
 const mimeTypes = [
@@ -142,13 +143,12 @@ const ReplaceButton = (props: any) => {
 
 export const AssetsList = ({
   tenantMode
-}: any) => {
+}: { tenantMode: boolean }) => {
   const tableRef = useRef<TableRef>();
-  const dispatch = useDispatch();
-  const { currentTeam, tenant } = useSelector((state) => (state as any).context);
+  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
 
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
 
   useEffect(() => {
     document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translate({ key: 'Asset', plural: true })}`;
@@ -206,34 +206,27 @@ export const AssetsList = ({
     },
   };
 
+  const columnHelper = createColumnHelper<IAsset>()
   const columns = [
-    {
-      Header: translate('Filename'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.meta && item.meta.filename ? item.meta.filename : '--',
-    },
-    {
-      Header: translate('Title'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.meta && item.meta.title ? item.meta.title : '--',
-    },
-    {
-      Header: translate('Description'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.meta && item.meta.desc ? item.meta.desc : '--',
-    },
-    {
-      Header: translate('Thumbnail'),
-      style: { textAlign: 'left' },
-      disableSortBy: true,
-      disableFilters: true,
-      accessor: (item: any) => item._id,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const item = original;
+    columnHelper.accessor(row => row.meta.filename || '--', {
+      header: translate('Filename'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.accessor(row => row.meta.title || '--', {
+      header: translate('Title'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.accessor(row => row.meta.desc || '--', {
+      header: translate('Description'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.display({
+      header: translate('Thumbnail'),
+      meta: { style: { textAlign: 'left' } },
+      enableSorting: false,
+      enableColumnFilter: false,
+      cell: (info) => {
+        const item = info.row.original;
         const type = item.meta['content-type'];
         if (
           type === 'image/gif' ||
@@ -255,24 +248,18 @@ export const AssetsList = ({
           return null;
         }
       },
-    },
-    {
-      Header: translate('Content-Type'),
-      style: { textAlign: 'left' },
-      accessor: (item: any) => item.meta && item.meta['content-type'] ? item.meta['content-type'] : '--',
-    },
-    {
-      Header: translate('Actions'),
-      disableSortBy: true,
-      disableFilters: true,
-      style: { textAlign: 'right' },
-      accessor: (item: any) => item._id,
-      Cell: ({
-        cell: {
-          row: { original },
-        }
-      }: any) => {
-        const item = original;
+    }),
+    columnHelper.accessor(row => row.contentType || '--', {
+      header: translate('Content-Type'),
+      meta: { style: { textAlign: 'left' } },
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center', width: '180px' } },
+      enableSorting: false,
+      enableColumnFilter: false,
+      cell: (info) => {
+        const item = info.row.original;
         return (
           <div className="btn-group">
             {item.contentType.startsWith('text') && (
@@ -288,7 +275,7 @@ export const AssetsList = ({
               asset={item}
               tenantMode={tenantMode}
               teamId={currentTeam ? currentTeam._id : undefined}
-              displayError={(error: any) => toastr.error(translate('Error'), error)}
+              displayError={(error) => toastr.error(translate('Error'), error)}
               postAction={() => tableRef.current?.update()}
             />
             <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
@@ -317,10 +304,10 @@ export const AssetsList = ({
           </div>
         );
       },
-    },
+    }),
   ];
 
-  const readAndUpdate = (asset: any) => {
+  const readAndUpdate = (asset: IAsset) => {
     let link;
     if (tenantMode) {
       link = `/tenant-assets/${asset.meta.asset}?download=true`;
@@ -334,7 +321,7 @@ export const AssetsList = ({
     })
       .then((response) => response.text())
       .then((content) =>
-        dispatch(openFormModal({
+        openFormModal({
           title: translate('asset.update'),
           schema: {
             content: {
@@ -343,7 +330,7 @@ export const AssetsList = ({
               label: null,
             }
           },
-          onSubmit: (data: any) => {
+          onSubmit: (data) => {
             const textFileAsBlob = new Blob([data.content], { type: 'text/plain' });
             const file = new File([textFileAsBlob], asset.filename);
 
@@ -369,11 +356,11 @@ export const AssetsList = ({
           },
           value: { content },
           actionLabel: translate('Update')
-        }))
+        })
       );
   };
 
-  const assetLink = (asset: any, download = true) => {
+  const assetLink = (asset: string, download = true) => {
     if (tenantMode) {
       return `/tenant-assets/${asset}?download=${download}`;
     } else {
@@ -381,7 +368,7 @@ export const AssetsList = ({
     }
   };
 
-  const serviceDelete = (asset: any) => {
+  const serviceDelete = (asset: string) => {
     if (tenantMode) {
       return Services.deleteTenantAsset(asset);
     } else {
@@ -389,8 +376,8 @@ export const AssetsList = ({
     }
   };
 
-  const deleteAsset = (asset: any) => {
-    confirm({message: translate('delete asset'), okLabel: translate('Yes')})
+  const deleteAsset = (asset: IAsset) => {
+    confirm({ message: translate('delete asset'), okLabel: translate('Yes') })
       .then((ok) => {
         if (ok) {
           serviceDelete(asset.meta.asset)
@@ -441,12 +428,12 @@ export const AssetsList = ({
         <div className="col-12 mb-3 d-flex justify-content-end">
           <button
             className='btn btn-outline-success'
-            onClick={() => dispatch(openFormModal({
+            onClick={() => openFormModal({
               title: translate("Add asset"),
               schema,
               onSubmit: addAsset,
               actionLabel: translate('Add asset')
-            }))}>
+            })}>
 
             {translate("add asset")}
           </button>
@@ -457,7 +444,7 @@ export const AssetsList = ({
           <Table
             columns={columns}
             fetchItems={() => fetchAssets()}
-            injectTable={(t: TableRef) => tableRef.current = t}
+            ref={tableRef}
           />
         </div>
       </div>

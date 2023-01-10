@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { connect } from 'react-redux';
-import { nanoid } from 'nanoid';
 import moment from 'moment';
+import { nanoid } from 'nanoid';
+import React, { useEffect, useState } from 'react';
 
+import { useSelector } from 'react-redux';
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
-import { partition, Option } from '../../utils';
+import { isError, IState, ITeamSimple, IUserSimple } from '../../../types';
+import { Option, partition } from '../../utils';
 
 const initMessageContext = {
   messages: [],
@@ -34,16 +35,17 @@ type TMessageContext = {
 }
 export const MessagesContext = React.createContext<TMessageContext>(initMessageContext);
 
-const MessagesProviderComponent = ({
+export const MessagesProvider = ({
   children,
-  connectedUser
-}: { children: JSX.Element, connectedUser?: any }) => {
+}: { children: JSX.Element }) => {
   const [messages, setMessages] = useState<Array<any>>([]);
-  const [adminTeam, setAdminTeam] = useState<any>(undefined);
+  const [adminTeam, setAdminTeam] = useState<ITeamSimple>();
   const [receivedMessage, setReceivedMessage] = useState<any>(undefined);
   const [totalUnread, setTotalUnread] = useState<number>(0);
   const [lastClosedDates, setLastClosedDates] = useState<Array<any>>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+  const connectedUser = useSelector<IState, IUserSimple>(s => s.context.connectedUser)
 
   const sseId = nanoid(64);
 
@@ -52,9 +54,11 @@ const MessagesProviderComponent = ({
       setLoading(true);
       Services.team('admin')
         .then((team) => {
-          setAdminTeam(team);
-          if (team.users.some((u: any) => u.userId === connectedUser._id)) {
-            return Services.myMessages();
+          if (!isError(team)) {
+            setAdminTeam(team);
+            if (team.users.some((u: any) => u.userId === connectedUser._id)) {
+              return Services.myMessages();
+            }
           }
           return Services.myAdminMessages();
         })
@@ -116,11 +120,11 @@ const MessagesProviderComponent = ({
       });
   };
 
-  const closeChat = (chatid: any) => {
+  const closeChat = (chatid: string) => {
     setLoading(true);
     return Services.closeMessageChat(chatid)
       .then(() => {
-        if (adminTeam.users.some((u: any) => u.userId === connectedUser._id)) {
+        if (adminTeam?.users.some((u) => u.userId === connectedUser._id)) {
           return Services.myMessages();
         }
         return Services.myAdminMessages();
@@ -175,9 +179,3 @@ const MessagesProviderComponent = ({
     </MessagesContext.Provider>
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  ...state.context
-});
-
-export const MessagesProvider = connect(mapStateToProps)(MessagesProviderComponent);

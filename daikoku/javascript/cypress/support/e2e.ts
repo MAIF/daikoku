@@ -19,6 +19,7 @@ import './commands';
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
 
-Cypress.Cookies.defaults({
-  preserve: 'daikoku-session'
-});
+//FIXME ??
+// Cypress.Cookies.defaults({
+//   preserve: 'daikoku-session'
+// });

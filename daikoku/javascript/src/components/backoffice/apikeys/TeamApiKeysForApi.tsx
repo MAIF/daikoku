@@ -21,15 +21,15 @@ import {
 } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
-import { IState, IStateContext, ISubscription } from '../../../types';
+import { IApi, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
 
 export const TeamApiKeysForApi = () => {
   const { currentTeam, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
   useTeamBackOffice(currentTeam);
 
-  const [api, setApi] = useState<any>({ name: '--', possibleUsagePlans: [] });
-  const [apiTeam, setApiTeam] = useState();
-  const [subscriptions, setSubscriptions] = useState([]);
+  const [api, setApi] = useState<IApi>();
+  const [apiTeam, setApiTeam] = useState<ITeamSimple>();
+  const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [searched, setSearched] = useState('');
 
   const [subscribedApis, setSubscribedApis] = useState([]);
@@ -58,8 +58,10 @@ export const TeamApiKeysForApi = () => {
           Promise.resolve({ api, subscriptions }),
         ])
           .then(([{ data }, apiTeam, { api, subscriptions }]) => {
+            if (!isError(apiTeam)) {
+              setApiTeam(apiTeam);
+            }
             setSubscribedApis(data.apis);
-            setApiTeam(apiTeam);
             setSubscriptions(subscriptions);
             setApi(api);
           });
@@ -125,8 +127,8 @@ export const TeamApiKeysForApi = () => {
       });
   };
 
-  const currentPlan = (subscription: any) => {
-    return api.possibleUsagePlans.find((p: any) => (p as any)._id === subscription.plan);
+  const currentPlan = (subscription: ISubscription): IUsagePlan => {
+    return api!.possibleUsagePlans.find((p) => p._id === subscription.plan)!;
   };
 
   const showApiKey = CanIDoAction(connectedUser, read, apikey, currentTeam);
@@ -138,12 +140,12 @@ export const TeamApiKeysForApi = () => {
       : subscriptions.filter((subs) => {
         const plan = currentPlan(subs);
 
-        if (plan && (plan as any).customName && (plan as any).customName.toLowerCase().includes(search)) {
+        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
           return true;
-        } else if ((subs as any).customName && (subs as any).customName.toLowerCase().includes(search)) {
+        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
           return true;
         } else {
-          return formatPlanType(currentPlan(subs), translate)
+          return formatPlanType(plan, translate)
             .toLowerCase()
             .includes(search);
         }
@@ -162,48 +164,50 @@ export const TeamApiKeysForApi = () => {
         : [...acc, { ...sub, children: [] }];
     }, sorted.filter((f) => !(f as any).parent).map((sub: any) => ({ ...sub, children: [] })));
 
-  return (<Can I={read} a={apikey} team={currentTeam} dispatchError>
-    {api && apiTeam ? (<div className="row">
-      <div className="col-12 d-flex align-items-center">
-        <h1>
-          <Translation i18nkey="Api keys for">Api keys for</Translation>
-          &nbsp;
-          <Link to={`/${(apiTeam as any)._humanReadableId}/${(api as any)._humanReadableId}/${(api as any).currentVersion}/description`} className="cursor-pointer underline-on-hover a-fake">
-            {api.name}
-          </Link>
-        </h1>
-      </div>
-      <div className="col-12 mt-2 mb-4">
-        <input type="text" className="form-control col-5" placeholder={translate('Search your apiKey...')} aria-label="Search your apikey" value={searched} onChange={(e) => setSearched(e.target.value)} />
-      </div>
+  return (
+    <Can I={read} a={apikey} team={currentTeam} dispatchError>
+      {api && apiTeam ? (<div className="row">
+        <div className="col-12 d-flex align-items-center">
+          <h1>
+            <Translation i18nkey="Api keys for">Api keys for</Translation>
+            &nbsp;
+            <Link to={`/${(apiTeam as any)._humanReadableId}/${(api as any)._humanReadableId}/${(api as any).currentVersion}/description`} className="cursor-pointer underline-on-hover a-fake">
+              {api.name}
+            </Link>
+          </h1>
+        </div>
+        <div className="col-12 mt-2 mb-4">
+          <input type="text" className="form-control col-5" placeholder={translate('Search your apiKey...')} aria-label="Search your apikey" value={searched} onChange={(e) => setSearched(e.target.value)} />
+        </div>
 
-      <div className="col-12">
-        <PaginatedComponent items={sortedApiKeys} count={5} formatter={(subscription) => {
-          const plan = currentPlan(subscription);
-          if (!plan) {
-            return null;
-          }
-          return (
-            <ApiKeyCard
-              currentTeam={currentTeam}
-              openInfoNotif={(message: any) => toastr.info(translate('Info'), message)}
-              statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
-              key={subscription._id}
-              subscription={subscription}
-              showApiKey={showApiKey}
-              plan={plan}
-              api={api}
-              subscribedApis={subscribedApis}
-              updateCustomName={(name: any) => updateCustomName(subscription, name)}
-              archiveApiKey={() => archiveApiKey(subscription)}
-              makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
-              toggleRotation={(enabled: any, rotationEvery: any, gracePeriod: any) => toggleApiKeyRotation(subscription, plan, enabled, rotationEvery, gracePeriod)}
-              regenerateSecret={() => regenerateApiKeySecret(subscription)}
-              disableRotation={api.visibility === 'AdminOnly' || plan.autoRotation} />);
-        }} />
-      </div>
-    </div>) : null}
-  </Can>);
+        <div className="col-12">
+          <PaginatedComponent items={sortedApiKeys} count={5} formatter={(subscription) => {
+            const plan = currentPlan(subscription);
+            if (!plan) {
+              return null;
+            }
+            return (
+              <ApiKeyCard
+                currentTeam={currentTeam}
+                openInfoNotif={(message: any) => toastr.info(translate('Info'), message)}
+                statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
+                key={subscription._id}
+                subscription={subscription}
+                showApiKey={showApiKey}
+                plan={plan}
+                api={api}
+                subscribedApis={subscribedApis}
+                updateCustomName={(name: any) => updateCustomName(subscription, name)}
+                archiveApiKey={() => archiveApiKey(subscription)}
+                makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
+                toggleRotation={(enabled: any, rotationEvery: any, gracePeriod: any) => toggleApiKeyRotation(subscription, plan, enabled, rotationEvery, gracePeriod)}
+                regenerateSecret={() => regenerateApiKeySecret(subscription)}
+                disableRotation={api.visibility === 'AdminOnly' || plan.autoRotation} />);
+          }} />
+        </div>
+      </div>) : null}
+    </Can>
+  );
 }
 
 const ApiKeyCard = ({

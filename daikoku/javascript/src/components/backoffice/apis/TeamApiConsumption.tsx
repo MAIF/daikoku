@@ -11,7 +11,7 @@ import { OtoroshiStatsVizualization } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
-import { ITeamSimple } from '../../../types';
+import { isError, ITeamSimple } from '../../../types';
 
 const Currency = ({
   plan
@@ -121,7 +121,11 @@ export const TeamApiConsumption = ({
 
   useEffect(() => {
     Services.teams()
-      .then(setTeams);
+      .then(res => {
+        if (!isError(res)) {
+          setTeams(res)
+        }
+      });
 
     document.title = `${currentTeam.name} - ${translate('API consumption')}`;
   }, []);

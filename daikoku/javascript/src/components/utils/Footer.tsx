@@ -1,14 +1,11 @@
-import React from 'react';
-import { connect } from 'react-redux';
 import classNames from 'classnames';
-import { converter } from '../../services/showdown';
 import { useSelector } from 'react-redux';
+import { converter } from '../../services/showdown';
+import { IState, ITenant } from '../../types';
 
-export const Footer = ({
-  isBackOffice
-}: any) => {
+export const Footer = (props: {isBackOffice: boolean}) => {
 
-  const tenant = useSelector((s: any) => s.context.tenant)
+  const tenant = useSelector<IState, ITenant>((s) => s.context.tenant)
 
   if (!tenant.footer) {
     return null;
@@ -17,7 +14,7 @@ export const Footer = ({
   return (
     <footer
       className={classNames('footer row', {
-        'back-office-footer': isBackOffice,
+        'back-office-footer': props.isBackOffice,
       })}
       dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }}
     />

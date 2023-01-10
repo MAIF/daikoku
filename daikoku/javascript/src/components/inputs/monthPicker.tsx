@@ -3,17 +3,13 @@ import React, { useContext } from 'react';
 import DatePicker from 'antd/lib/date-picker';
 import { I18nContext } from '../../core';
 
-const getDateFormat = (language: any) => {
+const getDateFormat = (language: string) => {
   switch (language.toUpperCase()) {
     case 'FR':
-      return {
-        format: 'MMM. YYYY',
-      };
+      return 'MMM. YYYY'
     case 'EN':
     default:
-      return {
-        format: 'MMM., YYYY',
-      };
+      return 'MMM., YYYY';
   }
 };
 
@@ -21,19 +17,20 @@ export const MonthPicker = ({
   updateDate,
   value
 }: any) => {
-    const { language } = useContext(I18nContext);
+  const { language } = useContext(I18nContext);
 
   const dateFormat = getDateFormat(language);
 
   const onChange = (newMonth: any) => {
-    if (newMonth && updateDate && !value.isSame(newMonth)) updateDate(newMonth.endOf('month'));
+    if (newMonth && updateDate && !value.isSame(newMonth))  updateDate(newMonth.endOf('month'));
   };
 
   return (
-        <DatePicker.MonthPicker
+    <DatePicker
+      picker="month"
       defaultValue={value}
       onChange={onChange}
-      format={dateFormat.format}
+      format={dateFormat}
       onOk={(value) => value}
     />
   );

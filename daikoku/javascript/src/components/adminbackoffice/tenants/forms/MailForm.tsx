@@ -1,6 +1,6 @@
 import { constraints, format, type } from '@maif/react-forms';
 import { useContext } from 'react';
-import { UseMutationResult } from 'react-query';
+import { UseMutationResult } from '@tanstack/react-query';
 
 import { I18nContext } from '../../../../core';
 import { IMailerSettings, ITenantFull } from '../../../../types';

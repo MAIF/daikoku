@@ -300,14 +300,19 @@ img:hover+.changePicture,
   z-index: -1;
 }
 
-#redoc-container {
-  background-color: #fafafa;
-}
-
 .wrapper {
   height: 100vh;
   overflow: scroll;
   padding-top: 10px;
   padding-left: 5px;
   padding-right: 20px;
+}
+
+a {
+  text-decoration: none;
+}
+
+.link__disabled {
+  cursor: not-allowed;
+  pointer-events: none;
 }
