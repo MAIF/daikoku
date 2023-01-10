@@ -58,7 +58,7 @@ import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets
 import { SessionModal } from '../components/frontend/modals/SessionModal';
 import { QueryClientProvider } from 'react-query';
 import { IState, IUserSimple } from '../types';
-import {ExpertMode} from "../components/frontend/team/ExpertMode";
+import {FastMode} from "../components/frontend/fastMode/FastMode";
 
 type DaikokuAppProps = {
   session: any,
@@ -342,7 +342,7 @@ const DaikokuAppComponent = ({
                           key: "fastMode.title.page",
                           replacements: [tenant.title]
                         })}>
-                        <ExpertMode/>
+                        <FastMode/>
                       </RouteWithTitle>
                     }
                   />
