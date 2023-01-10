@@ -1212,6 +1212,7 @@
     "fastMode.error.searching.team": "An error has occurred while searching your teams",
     "fastMode.input.reasonSubscription": "Put the reason why you want an API key",
     "fastMode.input.research.api": "Search your API...",
+    "fastMode.input.research.plan": "Search your plan...",
     "fastMode.subscription.resume": "summary of your subscription request",
     "fastMode.show.information": "Click on a plan or on a button \"see the API key\" for see more details\n",
     "fastMode.apiKey.title": "API Key :",

@@ -115,7 +115,7 @@ object Helper {
                   formattedKey = s"content->'${parts.head}'->>'${parts.last}'"
               }
 
-              (s"$formattedKey IN $a OR content->${getParam(b.size)} ?| ARRAY[$arr]",
+              (s"($formattedKey IN $a OR content->${getParam(b.size)} ?| ARRAY[$arr])",
                b ++ Seq(field._1))
 
             case Some((key: String, _: JsValue)) if key == "$nin" =>

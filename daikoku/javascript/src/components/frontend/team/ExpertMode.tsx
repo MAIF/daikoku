@@ -20,7 +20,6 @@ import {
 import {I18nContext, openFormModal} from '../../../core';
 import debounce from "lodash/debounce";
 import Pagination from "react-paginate";
-import {SwitchButton} from "../../inputs";
 import find from "lodash/find";
 import {currencies} from "../../../services/currencies";
 import classNames from "classnames";
@@ -38,6 +37,7 @@ type ExpertApiListProps = {
   input: string
   setInput: Function
   handlePageClick: Function
+  planResearch: string
 
 }
 type ExpertApiCardProps = {
@@ -47,8 +47,9 @@ type ExpertApiCardProps = {
   input: string
   showPlan: Function
   showApiKey: Function
-}
+  planResearch: string
 
+}
 
 const currency = (plan: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
@@ -187,6 +188,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
               classNamePrefix="reactSelect"
             />
           </div>
+          <div className="section pb-1">
           {props.apiWithAuthorizations.map(({api}) => {
             if (!api.parent) {
               const tmp = props.apiWithAuthorizations.filter((temp) => temp.api.name == api.name)
@@ -194,7 +196,12 @@ const ExpertApiList = (props: ExpertApiListProps) => {
                 <div className="section border-bottom" key={api._id}>
                   {tmp.length >= 1 &&
                       <ExpertApiCard apiWithAuthorization={tmp} team={props.team}
-                                     subscriptions={tmp.map((tmpApi) => tmpApi.subscriptionsWithPlan)} input={props.input} showPlan={showPlan} showApiKey={showApiKey}/>
+                                     subscriptions={tmp.map((tmpApi) => tmpApi.subscriptionsWithPlan)}
+                                     input={props.input}
+                                     showPlan={showPlan}
+                                     showApiKey={showApiKey}
+                                     planResearch={props.planResearch}
+                      />
                   }
                 </div>
 
@@ -215,6 +222,7 @@ const ExpertApiList = (props: ExpertApiListProps) => {
             forcePage={props.page}
             activeClassName={'active'}
           />
+          </div>
         </div>
         <div className="col-3" style={{position: "fixed", right:0}}>
           <div className="section p-3 mb-2">
@@ -520,6 +528,10 @@ const ExpertApiCard = (props: ExpertApiCardProps) => {
               const plan = props.apiWithAuthorization
                 .find((api) => api.api.currentVersion === selectedApiV)!.api.possibleUsagePlans
                 .find((pPlan) => pPlan._id == subPlan.planId)!
+              //FIXME
+              if (!plan.customName.includes(props.planResearch)) {
+                return null;
+              }
               return (
                 <div className="fast__hover plan cursor-pointer" key={subPlan.planId}>
                   <div className="mx-3 d-flex justify-content-between my-1">
@@ -551,14 +563,15 @@ const ExpertApiCard = (props: ExpertApiCardProps) => {
 
 export const ExpertMode = () => {
   const {translate} = useContext(I18nContext);
+  const [planResearch, setPlanResearch] = useState<string>("")
   const maybeTeam = localStorage.getItem('selectedTeam')
   const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(maybeTeam ? JSON.parse(maybeTeam) : undefined);
   const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const {client} = useContext(getApolloContext());
-  const [nbOfApis, setNbOfApis] = useState<number>(1);
+  const [nbOfApis, setNbOfApis] = useState<number>(5);
   const [page, setPage] = useState<number>(0);
   const [research, setResearch] = useState<string>("");
-  const [reasonSub, setReasonSub] = useState<string>("")
+  const [reasonSub, setReasonSub] = useState<string>("");
   const [offset, setOffset] = useState<number>(0);
   const [seeApiSubscribed, setSeeApiSubscribed] = useState<boolean>(false)
   const handleChange = (e) => {
@@ -634,7 +647,7 @@ export const ExpertMode = () => {
               {selectedTeam &&
                   <div>
                     <div className="col justify-content-between d-flex">
-                      <div className="col-8">
+                      <div className="col-4">
                         <input
                             type="text"
                             className="form-control mb-2"
@@ -642,12 +655,18 @@ export const ExpertMode = () => {
                             onChange={debouncedResults}
                         />
                       </div>
-                      <div className="col-3">
-                        See only subscribed APIs :
-                        <SwitchButton
-                            onSwitch={() => changeSeeOnlySubscribedApis(!seeApiSubscribed)}
-                            checked={seeApiSubscribed}
+                      <div className="col-4">
+                        <input
+                            type="text"
+                            className="form-control mb-2"
+                            placeholder={translate('fastMode.input.research.plan')}
+                            onChange={(e) =>setPlanResearch(e.target.value)}
                         />
+                      </div>
+                      <div className="col-3">
+                        <button onClick={() => changeSeeOnlySubscribedApis(!seeApiSubscribed)} className="btn btn-sm btn-outline-primary">
+                          {seeApiSubscribed ? translate('show all APIs') : translate('show all subscribed APIs')}
+                        </button>
                       </div>
                     </div>
                     { dataRequest.isLoading &&
@@ -666,6 +685,7 @@ export const ExpertMode = () => {
                           setInput={setReasonSub}
                           nb={dataRequest.data.nb}
                           handlePageClick={handlePageClick}
+                          planResearch={planResearch}
                           page={page}
                           />
                         </>

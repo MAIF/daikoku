@@ -109,7 +109,10 @@ object CommonServices {
           }
         uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(subsApisFilter, offset, limit, Some(Json.obj("name" -> 1)))
         allApisFilter = if (apiSubOnly == 1) {
-          Json.obj("_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value)))))
+          Json.obj(
+            "_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))),
+            "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))
+          )
         } else {
           Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))))
         }
@@ -121,29 +124,16 @@ object CommonServices {
         ))
 
       } yield {
-        if (apiSubOnly == 1) {
-          AccessibleApisWithNumberOfApis(
-            allApis
-              .map(api => {
-                ApiWithSubscriptions(api,
-                  api.possibleUsagePlans.map(plan => {
-                    SubscriptionsWithPlan(plan.id.value,
-                      isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
-                      havesubscriptions = subs.exists(sub => sub.plan.value == plan.id.value && sub.api == api.id))
-                  }))
-              }), uniqueApis._2)
-        } else {
-          AccessibleApisWithNumberOfApis(
-            allApis
-              .map(api => {
-                ApiWithSubscriptions(api,
-                  api.possibleUsagePlans.map(plan => {
-                    SubscriptionsWithPlan(plan.id.value,
-                      isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
-                      havesubscriptions = subs.exists(sub => sub.plan.value == plan.id.value && sub.api == api.id))
-                  }))
-              }), uniqueApis._2)
-        }
+        AccessibleApisWithNumberOfApis(
+          allApis
+            .map(api => {
+              ApiWithSubscriptions(api,
+                api.possibleUsagePlans.map(plan => {
+                  SubscriptionsWithPlan(plan.id.value,
+                    isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
+                    havesubscriptions = subs.exists(sub => sub.plan.value == plan.id.value && sub.api == api.id))
+                }))
+            }), uniqueApis._2)
       }
     }
   }

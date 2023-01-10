@@ -1214,6 +1214,7 @@
   "fastMode.error.searching.team": "Une erreur s'est produite lors de la recherche de vos équipes",
   "fastMode.input.reasonSubscription":"Mettez la raison de votre demande de clé d'API",
   "fastMode.input.research.api": "Chercher votre API...",
+  "fastMode.input.research.plan": "Chercher votre plan...",
   "fastMode.subscription.resume": "résumé de votre demande de souscription",
   "fastMode.show.information": "Cliquez sur un plan ou sur un des boutons \"voir la clé d'API\" pour plus d'informations",
   "fastMode.apiKey.title": "Clé d'API :",
