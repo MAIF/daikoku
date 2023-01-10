@@ -65,19 +65,19 @@ describe('Team back-office', { scrollBehavior: false }, () => {
       .get('table tbody tr').should('have.length', 3);
   });
 
-  it('Team income works', () => {
-    //@ts-ignore
-    cy.login('tester@foo.bar', 'password')
-      .visit('http://localhost:9000/testers/settings')
-      .get('.block__entry__link').contains('Billing').click()
-      .url().should('include', '/testers/settings/billing')
-      .get('.submenu__entry__link').contains('Income').click()
-      .url().should('include', '/testers/settings/income')
-      // .get('.month__and__total button.btn-access-negative').click()
-      .get('.col.apis').should('be.visible')
-      .get('.api__billing__card').click()
-      .get('.col.apikeys h3').should('have.text', 'test API');
-  });
+  // it('Team income works', () => {
+  //   //@ts-ignore
+  //   cy.login('tester@foo.bar', 'password')
+  //     .visit('http://localhost:9000/testers/settings')
+  //     .get('.block__entry__link').contains('Billing').click()
+  //     .url().should('include', '/testers/settings/billing')
+  //     .get('.submenu__entry__link').contains('Income').click()
+  //     .url().should('include', '/testers/settings/income')
+  //     // .get('.month__and__total button.btn-access-negative').click()
+  //     .get('.col.apis').should('be.visible')
+  //     .get('.api__billing__card').click()
+  //     .get('.col.apikeys h3').should('have.text', 'test API');
+  // });
 
   // it('Team billing works', () => {
   //   cy

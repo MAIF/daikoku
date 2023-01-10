@@ -16,7 +16,7 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_DB: daikoku
+          POSTGRES_DB: daikoku_test
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
         ports:
