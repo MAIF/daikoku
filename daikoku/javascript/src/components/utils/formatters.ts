@@ -2,7 +2,7 @@ import moment from 'moment';
 import { TranslateParams } from '../../contexts/i18n-context';
 
 import { currencies } from '../../services/currencies';
-import { IUsagePlan } from '../../types';
+import { IBaseUsagePlan } from '../../types';
 
 export const formatCurrency = (number: any) => {
   return new Intl.NumberFormat('fr-FR', {
@@ -17,7 +17,7 @@ export const getCurrencySymbol = (code: any) => {
 };
 
 export const formatPlanType = (
-  plan: IUsagePlan,
+  plan: IBaseUsagePlan,
   translate: (x: string | TranslateParams) => string
 ) => {
   switch (plan.type) {

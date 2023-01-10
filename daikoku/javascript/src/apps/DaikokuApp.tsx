@@ -336,7 +336,7 @@ export const DaikokuApp = ({
                       <RouteWithTitle title={
                         translate({
                           key: "fastMode.title.page",
-                          replacements: [tenant.title]
+                          replacements: [tenant.title || tenant.name]
                         })}>
                         <FastMode/>
                       </RouteWithTitle>

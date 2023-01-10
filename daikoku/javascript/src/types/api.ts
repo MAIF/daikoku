@@ -103,15 +103,18 @@ export interface ISwagger {
   headers: { [key: string]: string };
 }
 
-export interface IUsagePlan {
+export interface IBaseUsagePlan {
   _id: string;
   type: string;
   customDescription?: string;
   customName?: string;
+  subscriptionProcess: 'Automatic' | 'manual';
+}
+
+export interface IUsagePlan extends IBaseUsagePlan {
   allowMultipleKeys?: boolean;
   otoroshiTarget?: IOtoroshiTarget;
   aggregationApiKeysSecurity?: boolean;
-  subscriptionProcess: 'Automatic' | 'manual';
   integrationProcess: 'Automatic' | 'ApiKey';
   autoRotation?: boolean;
   rotation: boolean;
@@ -312,10 +315,7 @@ export interface ISubscriptionInformation {
   plan: IUsagePlan;
 }
 
-export interface IFastPlan {
-  _id: string
-  customName: string
-  customDescription?: string;
+export interface IFastPlan extends IBaseUsagePlan {
   maxPerSecond?: number
   maxPerMonth?: number
   costPerMonth?: number
@@ -323,8 +323,6 @@ export interface IFastPlan {
   costPerRequest?: number
 
   currency: string
-  type: string
-  subscriptionProcess: 'Automatic' | 'manual'
   allowMultipleKeys: boolean
 }
 

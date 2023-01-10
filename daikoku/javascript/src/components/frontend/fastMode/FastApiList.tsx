@@ -5,7 +5,7 @@ import classNames from "classnames";
 import find from "lodash/find";
 
 import {I18nContext} from "../../../contexts/i18n-context";
-import {IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple} from "../../../types";
+import {IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple, IUsagePlan} from "../../../types";
 import {BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option} from "../../utils";
 import * as Services from "../../../services";
 import {currencies} from "../../../services/currencies";
