@@ -390,3 +390,10 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@quentinovega](https://github.com/quentinovega)
 
+## [v16.0.1] - 2023-01-10
+
+## :beetle: Bug Fixes
+
+- Team selection broken for api access with Super Admin [#501](https://github.com/MAIF/daikoku/issues/501)
+- cms page has no link to be updated in table [#499](https://github.com/MAIF/daikoku/issues/499)
+
