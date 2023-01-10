@@ -10,15 +10,23 @@ import {
   TOGGLE_EXPERT_MODE,
 } from './';
 
-
-export const login =
-  ({ user, team, tenant, language }: { user: IUserSimple, team: ITeamSimple, tenant: ITenant, language: string }) => ({
-    type: LOGIN,
-    user,
-    team,
-    tenant,
-    language,
-  });
+export const login = ({
+  user,
+  team,
+  tenant,
+  language,
+}: {
+  user: IUserSimple;
+  team: ITeamSimple;
+  tenant: ITenant;
+  language: string;
+}) => ({
+  type: LOGIN,
+  user,
+  team,
+  tenant,
+  language,
+});
 
 export const logout = () => {
   return {

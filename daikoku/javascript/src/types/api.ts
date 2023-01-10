@@ -196,9 +196,9 @@ export interface IDocTitle {
 }
 
 export interface IApiDoc {
-  currentVersion: string,
-  apiId: string,
-  pages: Array<IDocTitle>
+  currentVersion: string;
+  apiId: string;
+  pages: Array<IDocTitle>;
 }
 export interface IDocDetail {
   pages: Array<string>;
@@ -291,7 +291,7 @@ export interface ISubscription extends IBaseSubscription {
 
 export interface ISubscriptionWithApiInfo extends ISubscription {
   apiName: string;
-  planType: string
+  planType: string;
 }
 
 export interface IQuotas {

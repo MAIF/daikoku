@@ -50,7 +50,8 @@ export const getVisibleApi = (id: any, version: any) =>
 export const getVisibleApiGroup = (id: any) => customFetch(`/api/me/visible-groups/${id}`);
 export const getTeamVisibleApi = (teamId: any, apiId: any, version: any) =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
-export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> => customFetch('/api/me/teams');
+export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> =>
+  customFetch('/api/me/teams');
 
 export const teamAllNotifications = (teamId: any, page = 0) =>
   customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`);
@@ -99,7 +100,10 @@ export const getDocDetails = (api: string, version: string): Promise<IDocDetail>
 export const getTeamSubscriptions = (api: any, team: any, version: any) =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
 
-export const getMySubscriptions = (apiId: string, version: string): Promise<{subscriptions: Array<ISubscription>, requests: Array<INotification>}> =>
+export const getMySubscriptions = (
+  apiId: string,
+  version: string
+): Promise<{ subscriptions: Array<ISubscription>; requests: Array<INotification> }> =>
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
 export const askForApiKey = (
@@ -1008,8 +1012,11 @@ export const getAllApiVersions = (teamId: string, apiId: string): Promise<Array<
 export const getDefaultApiVersion = (apiId: string): Promise<{ defaultVersion: string }> =>
   customFetch(`/api/apis/${apiId}/default_version`);
 
-export const getAllPlanOfApi = (teamId: string, apiId: string, version: string): Promise<Array<IApi>> =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
+export const getAllPlanOfApi = (
+  teamId: string,
+  apiId: string,
+  version: string
+): Promise<Array<IApi>> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
 
 export const getRootApi = (apiId: any) => customFetch(`/api/apis/${apiId}/_root`);
 
@@ -1021,8 +1028,11 @@ export const importApiPages = (teamId: any, apiId: any, pages: any, version: any
     }),
   });
 
-export const getAllApiDocumentation = (teamId: string, apiId: string, version: string): Promise<any> =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`);
+export const getAllApiDocumentation = (
+  teamId: string,
+  apiId: string,
+  version: string
+): Promise<any> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`);
 
 export const getMyTeamsStatusAccess = (teamId: any, apiId: any, version: any) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
