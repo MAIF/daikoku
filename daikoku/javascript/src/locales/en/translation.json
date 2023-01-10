@@ -1230,5 +1230,6 @@
     "set.logo": "logo",
     "JS": "JS",
     "set.favicon": "favicon",
-    "set.font.family": "font family"
+    "set.font.family": "font family",
+    "select.team.placeholder": "Select a team"
 }

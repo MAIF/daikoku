@@ -13,7 +13,7 @@ import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../ut
 import { I18nContext } from '../../../core';
 import { isError, ITeamSimple } from '../../../types';
 
-const Currency = ({
+export const Currency = ({
   plan
 }: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);

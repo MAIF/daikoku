@@ -109,6 +109,7 @@ export interface IBaseUsagePlan {
   customDescription?: string;
   customName?: string;
   subscriptionProcess: 'Automatic' | 'manual';
+  currency: ICurrency
 }
 
 export interface IUsagePlan extends IBaseUsagePlan {
@@ -321,8 +322,6 @@ export interface IFastPlan extends IBaseUsagePlan {
   costPerMonth?: number
   costPerAdditionalRequest?: number
   costPerRequest?: number
-
-  currency: string
   allowMultipleKeys: boolean
 }
 

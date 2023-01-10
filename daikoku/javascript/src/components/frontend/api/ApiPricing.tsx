@@ -9,7 +9,7 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, isMiniFreeWithQuotas, isPayPerUse, isQuotasWitoutLimit, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
+import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, isPayPerUse, isQuotasWitoutLimit, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
 import { INotification } from '../../../types';
 import {
   access,
@@ -29,7 +29,10 @@ const Curreny = (props: {plan: IUsagePlan}) => {
   );
 };
 
-const currency = (plan: IUsagePlan) => {
+export const currency = (plan?: IBaseUsagePlan) => {
+  if (!plan) {
+    return ""; //todo: return undefined
+  }
   const cur = find(currencies, (c) => c.code === plan.currency.code);
   return `${cur?.name}(${cur?.symbol})`;
 };
