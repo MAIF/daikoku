@@ -29,7 +29,7 @@ const currency = (plan: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
   return `${cur?.name}(${cur?.symbol})`;
 };
-const Curreny = ({
+const Currency = ({
                    plan
                  }: any) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
@@ -86,7 +86,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
           <>
             {translate({key: 'quotas.with.limits.desc', replacements: [planInfo!.costPerMonth!.toString(), currency(planInfo), planInfo!.maxPerMonth!.toString()]})}
             You'll pay {planInfo!.costPerMonth}
-            <Curreny plan={planInfo} /> and you'll have {planInfo!.maxPerMonth} authorized requests
+            <Currency plan={planInfo} /> and you'll have {planInfo!.maxPerMonth} authorized requests
             per month
           </>
       } {type === 'QuotasWithoutLimits' &&
@@ -95,9 +95,9 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                 [planInfo!.costPerMonth!.toString(), currency(planInfo), planInfo!.maxPerMonth!.toString(),planInfo!.costPerAdditionalRequest!.toString(), currency(planInfo)]
             })}
             You'll pay {planInfo!.costPerMonth}
-            <Curreny plan={planInfo} /> for {planInfo!.maxPerMonth} authorized requests per month and
+            <Currency plan={planInfo} /> for {planInfo!.maxPerMonth} authorized requests per month and
             you'll be charged {planInfo!.costPerAdditionalRequest}
-            <Curreny plan={planInfo} /> per additional request
+            <Currency plan={planInfo} /> per additional request
           </>
       } {type === 'PayPerUse' &&
           <>
@@ -107,15 +107,15 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
             {planInfo!.costPerMonth === 0.0 &&
                 <>
                   You'll pay {planInfo!.costPerMonth}
-                  <Curreny plan={planInfo} /> per month and you'll be charged{' '}
+                  <Currency plan={planInfo} /> per month and you'll be charged{' '}
                   {planInfo!.costPerRequest}
-                  <Curreny plan={planInfo} /> per request
+                  <Currency plan={planInfo} /> per request
                 </>
             }
             {planInfo!.costPerMonth !== 0.0 &&
                 <>
                   You'll be charged {planInfo!.costPerRequest}
-                  <Curreny plan={planInfo} /> per request
+                  <Currency plan={planInfo} /> per request
                 </>
             } </>
       }

@@ -1,28 +1,20 @@
 import React, { useContext, useEffect, useMemo, useState} from "react";
-import {useQuery, useQueryClient} from "react-query";
+import {useQuery} from "react-query";
 import Select from 'react-select';
 import {getApolloContext} from "@apollo/client";
-import {useDispatch} from "react-redux";
-import {toastr} from "react-redux-toastr"
-import {constraints, format, type as formType} from "@maif/react-forms";
 import "../../../style/components/fastApiCard.scss";
 
 import * as Services from "../../../services";
-import {BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option, Spinner} from "../../utils";
+import {Spinner} from "../../utils";
 import {
   IFastApi,
-  IFastPlan,
-  IFastSubscription, IFastApiSubscription,
   ITeamSimple,
 
 
 } from "../../../types";
-import {I18nContext, openFormModal} from '../../../core';
+import {I18nContext} from '../../../core';
 import debounce from "lodash/debounce";
-import Pagination from "react-paginate";
-import find from "lodash/find";
-import {currencies} from "../../../services/currencies";
-import classNames from "classnames";
+
 import {ExpertApiList} from "./FastApiList";
 
 
@@ -74,13 +66,16 @@ export const FastMode = () => {
     queryFn: ({queryKey}) => {
       return client!.query<{ accessibleApis: {apis: Array<IFastApi>, nb: number} }>({
         query: Services.graphql.getApisWithSubscription,
+        fetchPolicy: "no-cache",
         variables: {teamId: queryKey[1], limit: nbOfApis, apisubonly: seeApiSubscribed ? 1 : 0, offset: page, research: research}
       }).then(({data: {accessibleApis}}) => {
         return accessibleApis
         }
       )
     },
-    enabled: !!selectedTeam && !!client
+    enabled: !!selectedTeam && !!client,
+    cacheTime: 0
+
   })
 
   if (myTeamsRequest.isLoading ) {
