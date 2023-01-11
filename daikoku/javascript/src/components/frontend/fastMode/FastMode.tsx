@@ -1,15 +1,14 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Select from 'react-select';
-import { getApolloContext } from "@apollo/client";
-import debounce from "lodash/debounce";
+
 
 import * as Services from "../../../services";
 import { Spinner } from "../../utils";
 import { IFastApi, isError, ITeamSimple } from "../../../types";
 import { I18nContext } from '../../../core';
 
-import { ExpertApiList } from "./FastApiList";
+import { FastApiList } from "./FastApiList";
 
 
 export const FastMode = () => {
@@ -61,7 +60,7 @@ export const FastMode = () => {
                 </div>
               }
               {selectedTeam &&
-                <ExpertApiList
+                <FastApiList
                   team={selectedTeam}
                   setTeam={setSelectedTeam}
                   teamList={myTeamsRequest.data}

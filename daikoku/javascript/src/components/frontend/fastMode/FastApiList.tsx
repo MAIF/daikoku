@@ -1,22 +1,20 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import Select from "react-select";
 import Pagination from "react-paginate";
-import classNames from "classnames";
 import debounce from "lodash/debounce";
 
 import { I18nContext } from "../../../contexts/i18n-context";
-import { IFastApi, IFastApiSubscription, IFastPlan, isPayPerUse, isQuotasWitoutLimit, ITeamSimple, IUsagePlan, IUsagePlanPayPerUse, IUsagePlanQuotasWitoutLimit } from "../../../types";
-import { BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option, Spinner } from "../../utils";
+import { IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple, } from "../../../types";
+import { Spinner } from "../../utils";
 import * as Services from "../../../services";
 
-import { ExpertApiCard } from "./FastApiCard";
+import { FastApiCard } from "./FastApiCard";
 import { useQuery } from "@tanstack/react-query";
 import { getApolloContext } from "@apollo/client";
-import { Currency } from "../../backoffice/apis/TeamApiConsumption";
-import { currency } from "../api/ApiPricing";
+
 import { FastItemView } from "./FastItemView";
 
-type ExpertApiListProps = {
+type FastApiListProps = {
   teamList: Array<ITeamSimple>
   team: ITeamSimple
   setTeam: Function
@@ -24,7 +22,7 @@ type ExpertApiListProps = {
 
 export type FastItemViewMode = 'PLAN' | 'APIKEY' | 'NONE';
 
-export const ExpertApiList = (props: ExpertApiListProps) => {
+export const FastApiList = (props: FastApiListProps) => {
   const { translate } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
@@ -52,6 +50,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
         fetchPolicy: "no-cache",
         variables: { teamId: queryKey[1], limit: nbOfApis, apisubonly: seeApiSubscribed ? 1 : 0, offset: page, research: research }
       }).then(({ data: { accessibleApis } }) => {
+        console.log(accessibleApis)
         return accessibleApis
       }
       )
@@ -152,7 +151,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                     return (
                       <div className="section border-bottom" key={api._id}>
                         {allFastApiVersions.length >= 1 &&
-                          <ExpertApiCard
+                          <FastApiCard
                             apisWithAuthorization={allFastApiVersions}
                             team={props.team}
                             subscriptions={allFastApiVersions.map((fastApi) => fastApi.subscriptionsWithPlan)}

@@ -104,11 +104,12 @@ object CommonServices {
             ), "parent" -> JsNull, "_humanReadableId" -> Json.obj("$regex" -> research))
           }
         uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(subsApisFilter, offset, limit, Some(Json.obj("name" -> 1)))
-        allApisFilter = if (apiSubOnly == 1) {
-          Json.obj(
-            "_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))),
-            "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))
-          )
+        allApisFilter =
+          if (apiSubOnly == 1) {
+            Json.obj(
+              "_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))),
+              "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))
+            )
         } else {
           Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))))
         }
@@ -127,7 +128,7 @@ object CommonServices {
                 api.possibleUsagePlans.map(plan => {
                   SubscriptionsWithPlan(plan.id.value,
                     isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
-                    havesubscriptions = subs.exists(sub => sub.plan.value == plan.id.value && sub.api == api.id))
+                    havesubscriptions = subs.find(sub => sub.plan.value == plan.id.value && sub.api == api.id).size)
                 }))
             }), uniqueApis._2)
       }

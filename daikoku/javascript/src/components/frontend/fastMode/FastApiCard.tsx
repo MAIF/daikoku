@@ -1,4 +1,3 @@
-import { useDispatch } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useContext, useEffect, useState } from "react";
 import { toastr } from "react-redux-toastr";
@@ -10,7 +9,7 @@ import { I18nContext } from "../../../contexts/i18n-context";
 import * as Services from "../../../services";
 import { ModalContext } from "../../../contexts";
 
-type ExpertApiCardProps = {
+type FastApiCardProps = {
   team: ITeamSimple,
   apisWithAuthorization: Array<IFastApi>,
   subscriptions: Array<Array<IFastSubscription>>,
@@ -19,7 +18,7 @@ type ExpertApiCardProps = {
   showApiKey: Function
   planResearch: string
 }
-export const ExpertApiCard = (props: ExpertApiCardProps) => {
+export const FastApiCard = (props: FastApiCardProps) => {
   const { openFormModal } = useContext(ModalContext);
 
   const queryClient = useQueryClient();
@@ -141,7 +140,7 @@ export const ExpertApiCard = (props: ExpertApiCardProps) => {
                       style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                       {plan.customName}
                     </div>
-                    {subPlan.havesubscriptions &&
+                    {subPlan.havesubscriptions === 1 &&
                       <button className={"btn btn-outline-success me-1"}
                         onClick={() =>
                           props.showApiKey(
@@ -153,6 +152,9 @@ export const ExpertApiCard = (props: ExpertApiCardProps) => {
                         style={{ whiteSpace: "nowrap" }}>
                         {translate('fastMode.button.seeApiKey')}
                       </button>}
+                    {subPlan.havesubscriptions > 1 &&
+                        <div>allow multiple API KEY BUDDY</div>
+                    }
                     {subPlan.isPending &&
                       <button style={{ whiteSpace: "nowrap" }} disabled={true}
                         className={"btn btn-outline-primary disabled me-1"}>
