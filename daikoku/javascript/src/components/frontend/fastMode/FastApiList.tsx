@@ -78,7 +78,6 @@ export const FastApiList = (props: FastApiListProps) => {
     }
   }
   const toggleApiKey = (apiId: string, teamId: string, version: string, plan: IFastPlan) => {
-    console.debug({ plan: plan._id, planInfo: plan._id, test: plan._id === planInfo?._id })
     switch (viewMode) {
       case 'APIKEY':
         if (plan._id === planInfo?._id) {
