@@ -1,6 +1,6 @@
 import { useDispatch } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { toastr } from "react-redux-toastr";
 import { constraints, format, type as formType } from "@maif/react-forms";
 import Select from "react-select";
@@ -12,7 +12,7 @@ import { ModalContext } from "../../../contexts";
 
 type ExpertApiCardProps = {
   team: ITeamSimple,
-  apiWithAuthorization: Array<IFastApi>,
+  apisWithAuthorization: Array<IFastApi>,
   subscriptions: Array<Array<IFastSubscription>>,
   input: string
   showPlan: Function
@@ -24,15 +24,18 @@ export const ExpertApiCard = (props: ExpertApiCardProps) => {
 
   const queryClient = useQueryClient();
 
-  const apisWithAuthorization = props.apiWithAuthorization
-
   const { translate } = useContext(I18nContext);
-  const [selectedApiV, setSelectedApiV] = useState(props.apiWithAuthorization.find(a => a.api.isDefault)?.api.currentVersion || props.apiWithAuthorization[0].api.currentVersion);
-  const [selectedApi, setSelectedApi] = useState<IFastApi>(apisWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!)
+  const [selectedApiV, setSelectedApiV] = useState(props.apisWithAuthorization.find(a => a.api.isDefault)?.api.currentVersion || props.apisWithAuthorization[0].api.currentVersion);
+  const [selectedApi, setSelectedApi] = useState<IFastApi>(props.apisWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!)
+
+  useEffect(() => {
+    setSelectedApi(props.apisWithAuthorization.find((api) => api.api.currentVersion === selectedApiV)!)
+  }, [props.apisWithAuthorization])
+
 
   const changeApiV = (version: string) => {
     setSelectedApiV(version)
-    setSelectedApi(apisWithAuthorization.find((api) => api.api.currentVersion === version)!)
+    setSelectedApi(props.apisWithAuthorization.find((api) => api.api.currentVersion === version)!)
   }
   function subscribe(input: string, apiId: string, team: ITeamSimple, plan: IFastPlan) {
     const teamsSubscriber = new Array(team._id)
@@ -56,7 +59,6 @@ export const ExpertApiCard = (props: ExpertApiCardProps) => {
                     team.name
                   ]
                 }))
-
             queryClient.invalidateQueries(['data'])
           }
         })
@@ -106,30 +108,29 @@ export const ExpertApiCard = (props: ExpertApiCardProps) => {
   }
   return (
     <div className="row py-2">
-      <div className="col-12"><span className="d-flex flex-row mx-3 justify-content-between">
-        <h3>{props.apiWithAuthorization[0].api.name}</h3>
-        {props.apiWithAuthorization.length > 1 &&
-          <Select
-            name="versions-selector"
-            classNamePrefix="reactSelect"
-            className="me-2"
-            menuPlacement="auto"
-            menuPosition="fixed"
-            value={{ value: selectedApiV, label: selectedApiV }}
-            isClearable={false}
-            options={props.apiWithAuthorization.map((api) => {
-              return { value: api.api.currentVersion, label: api.api.currentVersion }
-            })}
-            onChange={(e) => {
-              changeApiV(e!.value)
-            }}
-          />}
-      </span>
+      <div className="col-12">
+        <div className="d-flex flex-row mx-3 justify-content-between">
+          {/* TODO: overflow ellips  for title*/}
+          <h3>{selectedApi.api.name}</h3>
+          {props.apisWithAuthorization.length > 1 &&
+            <Select
+              name="versions-selector"
+              classNamePrefix="reactSelect"
+              className="me-2"
+              menuPlacement="auto"
+              menuPosition="fixed"
+              value={{ value: selectedApiV, label: selectedApiV }}
+              isClearable={false}
+              options={props.apisWithAuthorization.map((api) => {
+                return { value: api.api.currentVersion, label: api.api.currentVersion }
+              })}
+              onChange={(e) => { changeApiV(e!.value) }}
+            />}
+        </div>
         <div className="d-flex flex-column fast_api">
           {selectedApi.subscriptionsWithPlan
             .map((subPlan) => {
-              const plan = selectedApi.api.possibleUsagePlans
-                .find((pPlan) => pPlan._id === subPlan.planId)!
+              const plan = selectedApi.api.possibleUsagePlans.find((pPlan) => pPlan._id === subPlan.planId)!
               if (!plan.customName?.includes(props.planResearch)) {
                 return;
               }

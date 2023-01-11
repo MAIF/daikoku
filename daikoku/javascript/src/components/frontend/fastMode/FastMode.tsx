@@ -4,7 +4,6 @@ import Select from 'react-select';
 import { getApolloContext } from "@apollo/client";
 import debounce from "lodash/debounce";
 
-import "../../../style/components/fastApiCard.scss";
 import * as Services from "../../../services";
 import { Spinner } from "../../utils";
 import { IFastApi, isError, ITeamSimple } from "../../../types";
@@ -27,9 +26,10 @@ export const FastMode = () => {
   } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
     return (
       <main role="main">
-        <section className="bg-light col-12 mb-4 p-3">
+        <section className="organisation__header col-12 mb-4 p-3">
           <div className="container-fluid">
             <h1 className="jumbotron-heading">{translate('fastMode.title')}</h1>
+            {/* FIXME */}
             {!selectedTeam && <p className="lead">
               Le fast mode de Daikoku vous permet d'afficher toutes les APIs accessible pour une équipe.
               Le processus de souscription est ainsi acceléré ....

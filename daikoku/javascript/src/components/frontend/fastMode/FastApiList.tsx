@@ -3,9 +3,13 @@ import Select from "react-select";
 import Pagination from "react-paginate";
 import classNames from "classnames";
 import debounce from "lodash/debounce";
+//@ts-ignore
+import Eye from 'react-feather/dist/icons/eye'
+//@ts-ignore
+import EyeOff from 'react-feather/dist/icons/eye-off'
 
 import { I18nContext } from "../../../contexts/i18n-context";
-import { IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple, IUsagePlan } from "../../../types";
+import { IFastApi, IFastApiSubscription, IFastPlan, isPayPerUse, isQuotasWitoutLimit, ITeamSimple, IUsagePlan, IUsagePlanPayPerUse, IUsagePlanQuotasWitoutLimit } from "../../../types";
 import { BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option, Spinner } from "../../utils";
 import * as Services from "../../../services";
 
@@ -62,28 +66,24 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
 
   })
 
-  const renderPricing = (type: string) => {
+  //todo: extract to utils.ts & refactor usage in other pages
+  const renderPricing = (plan: IFastPlan | IUsagePlan) => {
     let pricing = translate('Free');
     const req = translate('req.');
 
     const month = translate('month');
-    if (type === 'QuotasWithoutLimits') {
-      pricing = `${formatCurrency(planInfo!.costPerMonth)} ${getCurrencySymbol(
-        planInfo!.currency
-      )}/${month} + ${formatCurrency(planInfo!.costPerAdditionalRequest)} ${getCurrencySymbol(
-        planInfo!.currency
-      )}/${req}`
-    } else if (type === 'PayPerUse') {
-      pricing = `${formatCurrency(planInfo!.costPerRequest)} ${getCurrencySymbol(
-        planInfo!.currency
-      )}/${req}`;
-    } else if (planInfo!.costPerMonth) {
-      pricing = `${formatCurrency(planInfo!.costPerMonth)} ${getCurrencySymbol(
-        planInfo!.currency
-      )}/${month}`;
+    if (isQuotasWitoutLimit(plan)) {
+      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency)}/${month} + 
+      ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(plan.currency)}/${req}`
+    } else if (isPayPerUse(plan)) {
+      pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency)}/${req}`;
+    } else if (plan.costPerMonth) {
+      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency)}/${month}`;
     }
     return pricing;
   }
+
+  //todo: extract to utils.ts & refactor usage in other pages
   const renderPlanInfo = (type: string) => {
     return (
       <span>
@@ -138,7 +138,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
     )
   }
 
-  function showPlan(plan: IFastPlan) {
+  const showPlan = (plan: IFastPlan) => {
     if (plan._id == planInfo?._id && isPlan) {
       setIsPlan(undefined)
     } else {
@@ -146,7 +146,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
       setPlanInfo(plan)
     }
   }
-  function showApiKey(apiId: string, teamId: string, version: string, planInfo: IFastPlan) {
+  const showApiKey = (apiId: string, teamId: string, version: string, planInfo: IFastPlan) => {
     if (planInfo._id == apiKeyValue && isPlan == false) {
       setIsPlan(undefined)
 
@@ -189,7 +189,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
   return (
     <div className="container">
       <div className="row" style={{ position: "relative" }}>
-        <div className="col-9" style={{ height: 600, overflow: "scroll" }}>
+        <div className="col-9">
           <div className="d-flex justify-content-between mb-2">
             <div className="flex-grow-1 me-2">
               <input
@@ -208,31 +208,35 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
               />
             </div>
             <button onClick={() => changeSeeOnlySubscribedApis(!seeApiSubscribed)} className="btn btn-sm btn-outline-primary">
-              {seeApiSubscribed ? translate('show all APIs') : translate('show all subscribed APIs')}
+              {seeApiSubscribed ? translate('fastMode.button.show.all.apis') : translate('fastMode.button.show.subs.apis')}
             </button>
           </div>
           {dataRequest.isLoading && <Spinner />}
           {dataRequest.data && (
             <div className="section pb-1">
-              {dataRequest.data.apis.map(({ api }) => {
-                if (!api.parent) {
-                  const tmp = dataRequest.data.apis.filter((temp) => temp.api.name == api.name)
-                  return (
-                    <div className="section border-bottom" key={api._id}>
-                      {tmp.length >= 1 &&
-                        <ExpertApiCard apiWithAuthorization={tmp} team={props.team}
-                          subscriptions={tmp.map((tmpApi) => tmpApi.subscriptionsWithPlan)}
-                          input={reasonSub}
-                          showPlan={showPlan}
-                          showApiKey={showApiKey}
-                          planResearch={planResearch}
-                        />
-                      }
-                    </div>
+              <div className="apis" style={{ maxHeight: '600px', overflowY: 'scroll', overflowX: 'hidden' }}>
+                {dataRequest.data.apis.map(({ api }) => {
+                  if (!api.parent) {
+                    const allFastApiVersions = dataRequest.data.apis.filter((fastApi) => fastApi.api.name == api.name)
+                    return (
+                      <div className="section border-bottom" key={api._id}>
+                        {allFastApiVersions.length >= 1 &&
+                          <ExpertApiCard
+                            apisWithAuthorization={allFastApiVersions}
+                            team={props.team}
+                            subscriptions={allFastApiVersions.map((fastApi) => fastApi.subscriptionsWithPlan)}
+                            input={reasonSub}
+                            showPlan={showPlan}
+                            showApiKey={showApiKey}
+                            planResearch={planResearch}
+                          />
+                        }
+                      </div>
 
-                  )
-                }
-              })}
+                    )
+                  }
+                })}
+              </div>
               <div className="d-flex flex-row align-items-center mx-3">
                 <Select
                   className="col-2 tag__selector filter__select reactSelect"
@@ -243,7 +247,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                     value: nbOfApis,
                   }}
                   isSearchable={false}
-                  options={[5, 10, 20].map((x) => ({ label: `Show ${x}`, value: x }))}
+                  options={[5, 10, 20].map((x) => ({ label: translate({ key: 'Show.results', replacements: [`${x}`] }), value: x }))}
                   onChange={(e) => changeNbOfApis(e!.value)}
                   classNamePrefix="reactSelect"
                 />
@@ -267,9 +271,12 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
             </div>
           )}
         </div>
-        <div className="col-3" style={{ position: "fixed", right: 0 }}>
+        <div className="col-3">
           <div className="section p-3 mb-2">
-            Change Team :
+            <h5>
+              <i className="fas fa-users me-2" />
+              {translate("fastMode.selected.team.title")}
+            </h5>
             <Select
               name="team-selector"
               className="tag__selector filter__select reactSelect  "
@@ -287,11 +294,15 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
             />
           </div>
           <div className="section p-3 mb-2">
-            {translate('fastMode.reasonSubscription.title')}
+            <h5>
+              <i className="fas fa-envelope me-2" />
+              {translate('fastMode.reasonSubscription.title')}
+            </h5>
             <textarea
               className="form-control"
+              rows={4}
               placeholder={translate('fastMode.input.reasonSubscription')}
-              aria-label=""
+              aria-label={translate('fastMode.input.reasonSubscription')}
               value={reasonSub}
               onChange={(e) => {
                 setReasonSub(e.target.value);
@@ -300,7 +311,6 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
           </div>
           {planInfo && isPlan &&
             <div className='p-3 mb-2 section'>
-              Plan :
               <div className="card shadow-sm">
                 <div className="card-img-top card-link card-skin" data-holder-rendered="true">
                   <span>{planInfo.customName || formatPlanType(planInfo, translate)}</span>
@@ -320,7 +330,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                       }
                     </span>
                     <span className="plan-pricing">
-                      {translate({ key: 'plan.pricing', replacements: [renderPricing(planInfo.type)] })}
+                      {translate({ key: 'plan.pricing', replacements: [renderPricing(planInfo)] })}
                     </span>
                   </div>
                 </div>
@@ -329,7 +339,6 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
           }
           {apiKeyValue && planInfo && subscription !== undefined && isPlan === false &&
             <div className="section p-3 mb-2">
-              {translate('fastMode.apiKey.title')}
               <div className="card">
                 <div className="card-header" style={{ position: 'relative' }}>
                   <div className="d-flex align-items-center justify-content-between">
@@ -357,7 +366,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                 </div>
                 <div className="card-body" style={{ margin: 0 }}>
                   <div className="row">
-                    <ul className="nav nav-tabs flex-column flex-sm-row mb-2 col-12">
+                    <ul className="nav nav-tabs flex-row">
                       <li className="nav-item cursor-pointer">
                         <span
                           className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
@@ -371,7 +380,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                           className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
                           onClick={() => setActiveTab('token')}
                         >
-                          {translate('Integration token')}
+                          {translate('fastMode.token.label')}
                         </span>
                       </li>
 
@@ -413,10 +422,10 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
                               onClick={() => {
                                 setHide(!hide);
                               }}
-                              className={classNames('input-group-text')}
+                              className={'input-group-text cursor-pointer'}
                               id={`client-secret-addon`}
                             >
-                              {hide ? <i className="fas fa-eye" /> : <i className="fas fa-eye-slash" />}
+                              {hide ? <Eye /> : <EyeOff />}
                             </span>
                           </div>
                         </div>
@@ -446,7 +455,7 @@ export const ExpertApiList = (props: ExpertApiListProps) => {
             </div>
           }
           {isPlan === undefined &&
-            <div className="section p-3 mb-2">
+            <div className="section p-3 mb-2 text-center">
               {translate('fastMode.show.information')}
             </div>
           }

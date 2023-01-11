@@ -256,15 +256,15 @@ export interface IBaseSubscription {
   parent: string | null;
 }
 
-export const isPayPerUse = (obj: IUsagePlan): obj is IUsagePlanPayPerUse => {
+export const isPayPerUse = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanPayPerUse => {
   return (<IUsagePlanPayPerUse>obj).costPerRequest !== undefined;
 };
 
-export const isQuotasWitoutLimit = (obj: IUsagePlan): obj is IUsagePlanQuotasWitoutLimit => {
+export const isQuotasWitoutLimit = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanQuotasWitoutLimit => {
   return (<IUsagePlanQuotasWitoutLimit>obj).costPerAdditionalRequest !== undefined;
 };
 
-export const isMiniFreeWithQuotas = (obj: IUsagePlan): obj is IUsagePlanFreeWithQuotas => {
+export const isMiniFreeWithQuotas = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanFreeWithQuotas => {
   return (<IUsagePlanFreeWithQuotas>obj).maxPerSecond !== undefined;
 };
 

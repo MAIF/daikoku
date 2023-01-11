@@ -167,7 +167,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
           label: translate({ key: 'Show.results', replacements: [table.getState().pagination.pageSize.toLocaleString()] }),
           value: table.getState().pagination.pageSize,
         }}
-        options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
+        options={[10, 20, 50, 100].map((x) => ({ label: translate({ key: 'Show.results', replacements: [`${x}`] }), value: x }))}
         onChange={(value) => table.setPageSize(Number(value?.value || 10))}
         classNamePrefix="reactSelect"
         styles={customStyles}
