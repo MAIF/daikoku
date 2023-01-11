@@ -85,12 +85,12 @@ object CommonServices {
       }
     }
   }
-  def getApisWithSubscriptions(teamId: String, research: String, limit: Int, offset: Int, apiSubOnly: Int)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AccessibleApisWithNumberOfApis, AppError]] = {
+  def getApisWithSubscriptions(teamId: String, research: String, limit: Int, offset: Int, apiSubOnly: Boolean)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AccessibleApisWithNumberOfApis, AppError]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
       for {
         subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
         subsApisFilter =
-          if (apiSubOnly == 1) {
+          if (apiSubOnly) {
             Json.obj("$or" -> Json.arr(
               Json.obj("visibility" -> "Public"),
               Json.obj("authorizedTeams" -> teamId),
@@ -105,7 +105,7 @@ object CommonServices {
           }
         uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(subsApisFilter, offset, limit, Some(Json.obj("name" -> 1)))
         allApisFilter =
-          if (apiSubOnly == 1) {
+          if (apiSubOnly) {
             Json.obj(
               "_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))),
               "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))

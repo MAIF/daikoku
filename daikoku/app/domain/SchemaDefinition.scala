@@ -1,13 +1,12 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
-import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._TenantAdminAccessTenant
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{NotificationTypeFormat, TenantIdFormat, UserIdFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
 import org.joda.time.format.ISODateTimeFormat
@@ -16,11 +15,9 @@ import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
-import sangria.marshalling.FromInput
 import sangria.schema.{Context, _}
-import sangria.util.tag.@@
 import sangria.validation.ValueCoercionViolation
-import storage.{DataStore, _}
+import storage._
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -1180,16 +1177,15 @@ object SchemaDefinition {
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
-    val APISUBONLY: Argument[Int] = Argument("apisubonly", IntType,
+    val APISUBONLY: Argument[Boolean] = Argument("apisubonly", BooleanType,
       description = "The condition if you want to see only subscribed Apis.",
-      defaultValue = 0)
+      defaultValue = false)
     val RESEARCH: Argument[String] = Argument("research", StringType,
       description ="This his a the string of a research", defaultValue = "")
     val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
     val TEAM_ID_NOT_OPT = Argument("teamId", StringType, description = "The id of the team")
-  //todo: add 2 new const as search & onlySubApis with default value
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
@@ -1212,7 +1208,7 @@ object SchemaDefinition {
       })
     )
 
-    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, apiSubOnly: Int, limit: Int, offset: Int) = {
+    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, apiSubOnly: Boolean, limit: Int, offset: Int) = {
       CommonServices.getApisWithSubscriptions(teamId, research, limit, offset, apiSubOnly)(ctx.ctx._2, env, e).map {
         case Left(value) => value
         case Right(r) => throw NotAuthorizedError(r.toString)

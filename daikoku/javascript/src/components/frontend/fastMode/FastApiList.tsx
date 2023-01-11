@@ -48,9 +48,8 @@ export const FastApiList = (props: FastApiListProps) => {
       return client!.query<{ accessibleApis: { apis: Array<IFastApi>, nb: number } }>({
         query: Services.graphql.getApisWithSubscription,
         fetchPolicy: "no-cache",
-        variables: { teamId: queryKey[1], limit: nbOfApis, apisubonly: seeApiSubscribed ? 1 : 0, offset: page, research: research }
+        variables: { teamId: queryKey[1], limit: nbOfApis, apisubonly: seeApiSubscribed, offset: page, research: research }
       }).then(({ data: { accessibleApis } }) => {
-        console.log(accessibleApis)
         return accessibleApis
       }
       )

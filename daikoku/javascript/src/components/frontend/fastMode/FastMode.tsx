@@ -28,12 +28,6 @@ export const FastMode = () => {
         <section className="organisation__header col-12 mb-4 p-3">
           <div className="container-fluid">
             <h1 className="jumbotron-heading">{translate('fastMode.title')}</h1>
-            {/* FIXME */}
-            {!selectedTeam && <p className="lead">
-              Le fast mode de Daikoku vous permet d'afficher toutes les APIs accessible pour une équipe.
-              Le processus de souscription est ainsi acceléré ....
-              Veuillez commencer en selecxtionnant une équipe
-            </p>}
           </div>
         </section>
         <section className="container">
@@ -42,6 +36,11 @@ export const FastMode = () => {
               {!selectedTeam &&
                 <div className="d-flex justify-content-center">
                   <div className="col-6">
+                    {!selectedTeam && <p className="lead explain__text">
+                      {translate('fastMode.help.text.1')}<br />
+                      {translate('fastMode.help.text.2')}<br />
+                      {translate('fastMode.help.text.3')}
+                    </p>}
                     <Select
                       name="team-selector"
                       className="tag__selector filter__select reactSelect"

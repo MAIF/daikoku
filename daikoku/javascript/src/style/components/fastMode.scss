@@ -1,0 +1,15 @@
+@import '../variables.scss';
+/* fast cards*/
+.fast__hover:hover {
+  background-color: $menu-text-hover-bg-color;
+  color: $menu-text-hover-color;
+}
+
+.explain__text {
+  border: 1px solid $body-text-color;
+  padding: 10px;
+  border-radius: 4px;
+  text-align: justify;
+  text-justify: distribute;
+  font-size: 16px;
+}
