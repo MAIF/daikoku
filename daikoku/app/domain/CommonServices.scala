@@ -125,7 +125,8 @@ object CommonServices {
           allApis
             .map(api => {
               ApiWithSubscriptions(api,
-                api.possibleUsagePlans.map(plan => {
+                api.possibleUsagePlans
+                  .map(plan => {
                   SubscriptionsWithPlan(plan.id.value,
                     isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
                     subscriptionsCount = subs.count(sub => sub.plan.value == plan.id.value && sub.api == api.id))

@@ -5,7 +5,7 @@ import Select from 'react-select';
 
 import * as Services from "../../../services";
 import { Spinner } from "../../utils";
-import { IFastApi, isError, ITeamSimple } from "../../../types";
+import { isError, ITeamSimple } from "../../../types";
 import { I18nContext } from '../../../core';
 
 import { FastApiList } from "./FastApiList";

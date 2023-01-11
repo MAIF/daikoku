@@ -130,7 +130,12 @@ export const FastApiCard = (props: FastApiCardProps) => {
           {selectedApi.subscriptionsWithPlan
             .map((subPlan) => {
               const plan = selectedApi.api.possibleUsagePlans.find((pPlan) => pPlan._id === subPlan.planId)!
-              if (!plan.customName?.includes(props.planResearch)) {
+              const otoroshiSetUp =
+                plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities !== null
+                && plan.otoroshiTarget.authorizedEntities.groups.length >= 1
+                && plan.otoroshiTarget.authorizedEntities.services.length >= 1
+                && plan.otoroshiTarget.authorizedEntities.routes.length >= 1
+              if (!plan.customName?.includes(props.planResearch) || plan.otoroshiTarget?.authorizedEntities === null) {
                 return;
               }
               return (
@@ -140,7 +145,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
                       style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                       {plan.customName}
                     </div>
-                    {subPlan.subscriptionsCount > 0 &&
+                    {otoroshiSetUp && subPlan.subscriptionsCount > 0 &&
                       <button className={"btn btn-outline-success me-1"}
                         onClick={() =>
                           props.showApiKey(
@@ -152,12 +157,12 @@ export const FastApiCard = (props: FastApiCardProps) => {
                         style={{ whiteSpace: "nowrap" }}>
                         {translate({key: 'fastMode.button.seeApiKey', plural: subPlan.subscriptionsCount > 1})}
                       </button>}
-                    {subPlan.isPending &&
+                    {otoroshiSetUp && subPlan.isPending &&
                       <button style={{ whiteSpace: "nowrap" }} disabled={true}
                         className={"btn btn-outline-primary disabled me-1"}>
                         {translate('fastMode.button.pending')}
                       </button>}
-                    {(!subPlan.subscriptionsCount || plan.allowMultipleKeys) && !subPlan.isPending &&
+                    { otoroshiSetUp && (!subPlan.subscriptionsCount || plan.allowMultipleKeys) && !subPlan.isPending &&
                       <button
                         style={{ whiteSpace: "nowrap" }}
                         className={"btn btn-sm btn-outline-primary me-1"}
@@ -167,8 +172,12 @@ export const FastApiCard = (props: FastApiCardProps) => {
                           props.team,
                           plan
                         )}>
+
                         {translate(plan.subscriptionProcess === 'Automatic' ? ('Get API key') : ('Request API key'))}
                       </button>}
+                    {!plan.otoroshiTarget &&
+                        <span className="badge bg-danger">{translate('otoroshi.missing.target')}</span>
+                    }
                   </div>
                 </div>
               )

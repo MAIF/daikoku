@@ -5,7 +5,7 @@ import EyeOff from 'react-feather/dist/icons/eye-off';
 import { I18nContext } from "../../../core";
 import { IFastApiSubscription, IFastPlan, isPayPerUse, isQuotasWitoutLimit, IUsagePlan } from "../../../types";
 import { Currency } from "../../backoffice/apis/TeamApiConsumption";
-import { BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol, Option } from "../../utils";
+import { BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol } from "../../utils";
 import { currency } from "../api/ApiPricing";
 import { FastItemViewMode } from "./FastApiList";
 
@@ -146,7 +146,7 @@ export const FastItemView = (props: FastItemViewProps) => {
               className="badge bg-secondary"
               style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
             >
-              {Option(props.planInfo.customName).getOrElse(formatPlanType(props.planInfo, translate))}
+              {formatPlanType(props.planInfo, translate)}
             </span>
           </div>
           <div className="card-body" style={{ margin: 0 }}>

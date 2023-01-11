@@ -1248,6 +1248,14 @@ export const graphql = {
               _id
               customName
               customDescription
+              otoroshiTarget {
+                otoroshiSettings
+                authorizedEntities {
+                  services
+                  groups
+                  routes
+                }
+              }
               currency
               type
               subscriptionProcess

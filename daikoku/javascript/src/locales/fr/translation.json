@@ -1240,5 +1240,6 @@
   "set.js": "un fichier JS",
   "set.favicon": "le favicon",
   "set.font.family": "la police de style",
-  "select.team.placeholder": "Selectionner une équipe"
+  "select.team.placeholder": "Selectionner une équipe",
+  "otoroshi.missing.target": "Cible Otoroshi manquante"
 }

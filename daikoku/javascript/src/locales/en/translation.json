@@ -1237,5 +1237,6 @@
     "JS": "JS",
     "set.favicon": "favicon",
     "set.font.family": "font family",
-    "select.team.placeholder": "Select a team"
+    "select.team.placeholder": "Select a team",
+    "otoroshi.missing.target":"Missing otoroshi target"
 }

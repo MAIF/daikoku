@@ -110,11 +110,11 @@ export interface IBaseUsagePlan {
   customName?: string;
   subscriptionProcess: 'Automatic' | 'manual';
   currency: ICurrency
+  otoroshiTarget?: IOtoroshiTarget;
 }
 
 export interface IUsagePlan extends IBaseUsagePlan {
   allowMultipleKeys?: boolean;
-  otoroshiTarget?: IOtoroshiTarget;
   aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
   autoRotation?: boolean;
@@ -159,6 +159,7 @@ export interface IUsagePlanPayPerUse extends IUsagePlan {
 interface IAuthorizedEntities {
   groups: Array<string>;
   services: Array<string>;
+  routes: Array<string>;
 }
 
 interface IBillingDuration {
