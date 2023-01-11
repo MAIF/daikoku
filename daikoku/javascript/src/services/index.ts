@@ -1289,7 +1289,7 @@ export const graphql = {
           subscriptionsWithPlan {
             planId
             isPending
-            havesubscriptions
+            subscriptionsCount
           }
         }
         nb

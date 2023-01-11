@@ -329,7 +329,7 @@ export interface IFastPlan extends IBaseUsagePlan {
 export interface IFastSubscription {
   planId: string,
   isPending: boolean,
-  havesubscriptions: number,
+  subscriptionsCount: number,
 
 }
 

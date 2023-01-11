@@ -12,7 +12,7 @@ import { FastItemViewMode } from "./FastApiList";
 type FastItemViewProps = {
   viewMode: FastItemViewMode,
   planInfo?: IFastPlan,
-  subscription?: IFastApiSubscription
+  subscriptions?: Array<IFastApiSubscription>
 }
 
 export const FastItemView = (props: FastItemViewProps) => {
@@ -123,7 +123,7 @@ export const FastItemView = (props: FastItemViewProps) => {
                 </div>
               </div>
             }
-            {props.viewMode === 'APIKEY' && props.planInfo && props.subscription &&
+            {props.viewMode === 'APIKEY' && props.planInfo && props.subscriptions &&
               <div className="card">
                 <div className="card-header" style={{ position: 'relative' }}>
                   <div className="d-flex align-items-center justify-content-between">
@@ -183,7 +183,7 @@ export const FastItemView = (props: FastItemViewProps) => {
                             readOnly
                             disabled={true}
                             className="form-control input-sm"
-                            value={props.subscription.apiKey.clientId}
+                            value={props.subscriptions[0].apiKey.clientId}
                           />
                         </div>
                       </div>
@@ -199,7 +199,7 @@ export const FastItemView = (props: FastItemViewProps) => {
                             type={hidePassword ? 'password' : ''}
                             className="form-control input-sm"
                             id={`client-secret`}
-                            value={props.subscription.apiKey.clientSecret}
+                            value={props.subscriptions[0].apiKey.clientSecret}
                             aria-describedby={`client-secret-addon`}
                           />
                           <div className="input-group-append">
@@ -229,7 +229,7 @@ export const FastItemView = (props: FastItemViewProps) => {
                             rows={4}
                             className="form-control input-sm"
                             id={`token`}
-                            value={props.subscription.integrationToken}
+                            value={props.subscriptions[0].integrationToken}
                           />
                         </div>
                       </div>

@@ -1217,7 +1217,10 @@
     "fastMode.subscription.resume": "summary of your subscription request",
     "fastMode.show.information": "no plan or API Key selected",
     "fastMode.reasonSubscription.title": "Default message",
-    "fastMode.button.seeApiKey": "See the api key",
+    "fastMode.button.seeApiKey": {
+        "s": "See API key",
+        "p": "See API keys"
+    },
     "fastMode.button.pending": "Pending",
     "fastMode.button.show.subs.apis": "Show all subscribed APIs",
     "fastMode.button.show.all.apis": "Show all APIs",

@@ -140,7 +140,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
                       style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                       {plan.customName}
                     </div>
-                    {subPlan.havesubscriptions === 1 &&
+                    {subPlan.subscriptionsCount > 0 &&
                       <button className={"btn btn-outline-success me-1"}
                         onClick={() =>
                           props.showApiKey(
@@ -150,17 +150,14 @@ export const FastApiCard = (props: FastApiCardProps) => {
                             plan
                           )}
                         style={{ whiteSpace: "nowrap" }}>
-                        {translate('fastMode.button.seeApiKey')}
+                        {translate({key: 'fastMode.button.seeApiKey', plural: subPlan.subscriptionsCount > 1})}
                       </button>}
-                    {subPlan.havesubscriptions > 1 &&
-                        <div>allow multiple API KEY BUDDY</div>
-                    }
                     {subPlan.isPending &&
                       <button style={{ whiteSpace: "nowrap" }} disabled={true}
                         className={"btn btn-outline-primary disabled me-1"}>
                         {translate('fastMode.button.pending')}
                       </button>}
-                    {(!subPlan.havesubscriptions || plan.allowMultipleKeys) && !subPlan.isPending &&
+                    {(!subPlan.subscriptionsCount || plan.allowMultipleKeys) && !subPlan.isPending &&
                       <button
                         style={{ whiteSpace: "nowrap" }}
                         className={"btn btn-sm btn-outline-primary me-1"}

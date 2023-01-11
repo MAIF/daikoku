@@ -128,7 +128,7 @@ object CommonServices {
                 api.possibleUsagePlans.map(plan => {
                   SubscriptionsWithPlan(plan.id.value,
                     isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
-                    havesubscriptions = subs.find(sub => sub.plan.value == plan.id.value && sub.api == api.id).size)
+                    subscriptionsCount = subs.count(sub => sub.plan.value == plan.id.value && sub.api == api.id))
                 }))
             }), uniqueApis._2)
       }

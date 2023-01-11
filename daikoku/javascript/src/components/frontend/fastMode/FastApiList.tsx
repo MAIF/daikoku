@@ -26,7 +26,7 @@ export const FastApiList = (props: FastApiListProps) => {
   const { translate } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
-  const [subscription, setSubscription] = useState<IFastApiSubscription>()
+  const [subscriptions, setSubscriptions] = useState<Array<IFastApiSubscription>>()
 
   const [planInfo, setPlanInfo] = useState<IFastPlan>();
 
@@ -61,9 +61,14 @@ export const FastApiList = (props: FastApiListProps) => {
   })
 
   const togglePlan = (plan: IFastPlan) => {
+    console.debug("hé hé")
     switch (viewMode) {
       case 'PLAN':
-        setViewMode('NONE');
+        if (plan._id === planInfo?._id) {
+          setViewMode('NONE');
+        } else {
+          setPlanInfo(plan)
+        }
         break;
       case 'APIKEY':
       case 'NONE':
@@ -72,18 +77,27 @@ export const FastApiList = (props: FastApiListProps) => {
         break;
     }
   }
-  const toggleApiKey = (apiId: string, teamId: string, version: string, planInfo: IFastPlan) => {
+  const toggleApiKey = (apiId: string, teamId: string, version: string, plan: IFastPlan) => {
+    console.debug({ plan: plan._id, planInfo: plan._id, test: plan._id === planInfo?._id })
     switch (viewMode) {
       case 'APIKEY':
-        setViewMode('NONE');
+        if (plan._id === planInfo?._id) {
+          setViewMode('NONE');
+        } else {
+          Services.getTeamSubscriptionsWithPlan(apiId, teamId, version, plan._id)
+            .then((subs) => {
+              setPlanInfo(plan)
+              setSubscriptions(subs)
+            })
+        }
         break;
       case 'PLAN':
       case 'NONE':
-        Services.getTeamSubscriptionsWithPlan(apiId, teamId, version, planInfo._id)
+        Services.getTeamSubscriptionsWithPlan(apiId, teamId, version, plan._id)
           .then((subs) => {
-            setPlanInfo(planInfo)
+            setPlanInfo(plan)
             setViewMode('APIKEY');
-            setSubscription(subs[0])
+            setSubscriptions(subs)
           })
         break;
     }
@@ -239,7 +253,7 @@ export const FastApiList = (props: FastApiListProps) => {
               }}
             />
           </div>
-          <FastItemView viewMode={viewMode} planInfo={planInfo} subscription={subscription} />
+          <FastItemView viewMode={viewMode} planInfo={planInfo} subscriptions={subscriptions} />
         </div>
       </div>
     </div>

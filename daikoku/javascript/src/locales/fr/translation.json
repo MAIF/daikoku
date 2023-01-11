@@ -1219,7 +1219,10 @@
   "fastMode.subscription.resume": "résumé de votre demande de souscription",
   "fastMode.show.information": "Aucun plan ou clé d'API selectionné",
   "fastMode.reasonSubscription.title": "Message par défaut",
-  "fastMode.button.seeApiKey": "Voir la clé d'API",
+  "fastMode.button.seeApiKey": {
+    "s": "Voir la clé d'API",
+    "p": "Voir les clés d'API"
+  },
   "fastMode.button.pending": "En attente",
   "fastMode.button.show.subs.apis": "Voir les APIs souscrites",
   "fastMode.button.show.all.apis": "Voir toutes les APIs",
