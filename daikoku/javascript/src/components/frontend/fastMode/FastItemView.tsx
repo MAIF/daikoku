@@ -1,6 +1,8 @@
 import { useContext, useState } from "react";
 import Eye from 'react-feather/dist/icons/eye';
 import EyeOff from 'react-feather/dist/icons/eye-off';
+import ArrowLeft from 'react-feather/dist/icons/arrow-left';
+import ArrowRight from 'react-feather/dist/icons/arrow-right';
 
 import { I18nContext } from "../../../core";
 import { IFastApiSubscription, IFastPlan } from "../../../types";
@@ -23,6 +25,17 @@ export const FastItemView = (props: FastItemViewProps) => {
 
   const [activeTab, setActiveTab] = useState<'apikey' | 'token'>('apikey');
   const [hidePassword, setHidePassword] = useState(true);
+  const [idxSubscription, setIdxSubscription] = useState(0);
+
+  const handlePreviousSubs = () => {
+    const prevIdx = idxSubscription === 0 ? props.subscriptions!.length - 1 : idxSubscription - 1;
+    setIdxSubscription(prevIdx);
+  }
+
+  const handleNextSubs = () => {
+    const nextIdx = idxSubscription === props.subscriptions!.length - 1 ? 0 : idxSubscription + 1;
+    setIdxSubscription(nextIdx);
+  }
 
   return (
     <div className="section p-3 mb-2 text-center">
@@ -65,6 +78,7 @@ export const FastItemView = (props: FastItemViewProps) => {
                   maxWidth: '85%',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  fontSize: '1.5rem'
                 }}
                 className="plan-name"
               >
@@ -112,7 +126,7 @@ export const FastItemView = (props: FastItemViewProps) => {
                       readOnly
                       disabled={true}
                       className="form-control input-sm"
-                      value={props.subscriptions[0].apiKey.clientId}
+                      value={props.subscriptions[idxSubscription].apiKey.clientId}
                     />
                   </div>
                 </div>
@@ -128,7 +142,7 @@ export const FastItemView = (props: FastItemViewProps) => {
                       type={hidePassword ? 'password' : ''}
                       className="form-control input-sm"
                       id={`client-secret`}
-                      value={props.subscriptions[0].apiKey.clientSecret}
+                      value={props.subscriptions[idxSubscription].apiKey.clientSecret}
                       aria-describedby={`client-secret-addon`}
                     />
                     <div className="input-group-append">
@@ -158,11 +172,18 @@ export const FastItemView = (props: FastItemViewProps) => {
                       rows={4}
                       className="form-control input-sm"
                       id={`token`}
-                      value={props.subscriptions[0].integrationToken}
+                      value={props.subscriptions[idxSubscription].integrationToken}
                     />
                   </div>
                 </div>
               </>
+            )}
+            {props.subscriptions && props.subscriptions.length > 1 && (
+              <div className="d-flex flex-row justify-content-between">
+                <ArrowLeft className="cursor-pointer" onClick={handlePreviousSubs}/>
+                <div>{`${idxSubscription + 1}/${props.subscriptions.length}`}</div>
+                <ArrowRight className="cursor-pointer" onClick={handleNextSubs}/>
+              </div>
             )}
           </div>
         </div>
