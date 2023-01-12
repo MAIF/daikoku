@@ -1606,16 +1606,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
             .map(_.getOrElse(0L))
         else {
           val (sql, params) = convertQuery(query)
-
-          var out: String =
-            s"SELECT COUNT(*) as count FROM $tableName WHERE $sql"
-          params.zipWithIndex.reverse.foreach {
-            case (param, i) =>
-              out = out.replace("$" + (i + 1), s"'$param'")
-          }
+          val out: String = s"SELECT COUNT(*) as count FROM $tableName WHERE $sql"
 
           reactivePg
-            .queryOne(out) { _.optLong("count") }
+            .queryOne(out, params.map {
+              case x: String => x.replace("\"", "")
+              case x => x
+            }) { _.optLong("count") }
             .map(_.getOrElse(0L))
         }
       }
@@ -1635,7 +1632,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC LIMIT ${Integer
               .valueOf(pageSize)} OFFSET ${Integer.valueOf(page*pageSize)}",
-            params
+            params.map{
+              case x:String => x.replace("\"", "")
+              case x => x
+            }
           ) { row =>
             rowToJson(row, format)
           }

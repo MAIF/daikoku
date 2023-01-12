@@ -110,12 +110,12 @@ export const FastApiCard = (props: FastApiCardProps) => {
       <div className="col-12">
         <div className="d-flex flex-row mx-3 justify-content-between">
           {/* TODO: overflow ellips  for title*/}
-          <h3>{selectedApi.api.name}</h3>
+          <h3 style={{overflow: 'hidden', textOverflow: "ellipsis", whiteSpace: 'nowrap'}}>{selectedApi.api.name}</h3>
           {props.apisWithAuthorization.length > 1 &&
             <Select
               name="versions-selector"
               classNamePrefix="reactSelect"
-              className="me-2"
+              className="me-2 col-2"
               menuPlacement="auto"
               menuPosition="fixed"
               value={{ value: selectedApiV, label: selectedApiV }}
@@ -128,25 +128,28 @@ export const FastApiCard = (props: FastApiCardProps) => {
         </div>
         <div className="d-flex flex-column fast_api">
           {selectedApi.subscriptionsWithPlan
-            .map((subPlan) => {
+            .map(subPlan => {
               const plan = selectedApi.api.possibleUsagePlans.find((pPlan) => pPlan._id === subPlan.planId)!
-              const otoroshiSetUp =
-                plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities !== null
-                && (plan.otoroshiTarget.authorizedEntities.groups.length >= 1
-                || plan.otoroshiTarget.authorizedEntities.services.length >= 1
-                || plan.otoroshiTarget.authorizedEntities.routes.length >= 1)
+              return {plan, ...subPlan}
+            })
+            .sort((a, b) => (a.plan.customName ||'').localeCompare(b.plan.customName || ''))
+            .filter(({plan}) => plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities !== null
+            && (!!plan.otoroshiTarget.authorizedEntities.groups.length
+            || !!plan.otoroshiTarget.authorizedEntities.services.length
+            || !!plan.otoroshiTarget.authorizedEntities.routes.length))
+            .map(({plan, subscriptionsCount, isPending}) => {
               if (!plan.customName?.includes(props.planResearch) || plan.otoroshiTarget?.authorizedEntities === null) {
                 return;
               }
               return (
-                <div className="fast__hover plan cursor-pointer" key={subPlan.planId}>
+                <div className="fast__hover plan cursor-pointer" key={plan._id}>
                   <div className="mx-3 d-flex justify-content-between my-1">
                     <div className="flex-grow-1" onClick={() => props.showPlan(plan)}
                       style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                       {plan.customName}
                     </div>
-                    {otoroshiSetUp && subPlan.subscriptionsCount > 0 &&
-                      <button className={"btn btn-outline-success me-1"}
+                    {!!subscriptionsCount &&
+                      <button className={"btn btn-sm btn-outline-success"}
                         onClick={() =>
                           props.showApiKey(
                             selectedApi.api._id,
@@ -155,29 +158,25 @@ export const FastApiCard = (props: FastApiCardProps) => {
                             plan
                           )}
                         style={{ whiteSpace: "nowrap" }}>
-                        {translate({key: 'fastMode.button.seeApiKey', plural: subPlan.subscriptionsCount > 1})}
+                        {translate({key: 'fastMode.button.seeApiKey', plural: subscriptionsCount > 1})}
                       </button>}
-                    {otoroshiSetUp && subPlan.isPending &&
+                    {isPending &&
                       <button style={{ whiteSpace: "nowrap" }} disabled={true}
-                        className={"btn btn-outline-primary disabled me-1"}>
+                        className={"btn btn-sm btn-outline-primary disabled"}>
                         {translate('fastMode.button.pending')}
                       </button>}
-                    { otoroshiSetUp && (!subPlan.subscriptionsCount || plan.allowMultipleKeys) && !subPlan.isPending &&
+                    { (!subscriptionsCount || plan.allowMultipleKeys) && !isPending &&
                       <button
                         style={{ whiteSpace: "nowrap" }}
-                        className={"btn btn-sm btn-outline-primary me-1"}
+                        className={"btn btn-sm btn-outline-primary"}
                         onClick={() => subscribe(
                           props.input,
                           selectedApi.api._id,
                           props.team,
                           plan
                         )}>
-
                         {translate(plan.subscriptionProcess === 'Automatic' ? ('Get API key') : ('Request API key'))}
                       </button>}
-                    {!plan.otoroshiTarget &&
-                        <span className="badge bg-danger">{translate('otoroshi.missing.target')}</span>
-                    }
                   </div>
                 </div>
               )

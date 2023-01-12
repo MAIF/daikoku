@@ -90,7 +90,7 @@ object CommonServices {
       for {
         subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
         subsApisFilter =
-          if (apiSubOnly) {
+          if (apiSubOnly) { //todo: debug this request
             Json.obj("$or" -> Json.arr(
               Json.obj("visibility" -> "Public"),
               Json.obj("authorizedTeams" -> teamId),
@@ -124,13 +124,16 @@ object CommonServices {
         AccessibleApisWithNumberOfApis(
           allApis
             .map(api => {
-              ApiWithSubscriptions(api,
+              def filterPrivatePlan(plan: UsagePlan, api: Api, teamId: String): Boolean = plan.visibility != UsagePlanVisibility.Private || api.team.value == teamId ||  plan.authorizedTeams.contains(TeamId(teamId))
+              ApiWithSubscriptions(
+                api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => filterPrivatePlan(p, api, teamId))),
                 api.possibleUsagePlans
+                  .filter(p => filterPrivatePlan(p, api, teamId))
                   .map(plan => {
-                  SubscriptionsWithPlan(plan.id.value,
-                    isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
-                    subscriptionsCount = subs.count(sub => sub.plan.value == plan.id.value && sub.api == api.id))
-                }))
+                    SubscriptionsWithPlan(plan.id.value,
+                      isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
+                      subscriptionsCount = subs.count(sub => sub.plan.value == plan.id.value && sub.api == api.id))
+                  }))
             }), uniqueApis._2)
       }
     }

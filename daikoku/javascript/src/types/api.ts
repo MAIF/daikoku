@@ -167,7 +167,7 @@ interface IBillingDuration {
   unit: 'Hour' | 'Day' | 'Month' | 'Year';
 }
 
-interface ICurrency {
+export interface ICurrency {
   code: string;
 }
 
@@ -331,7 +331,6 @@ export interface IFastSubscription {
   planId: string,
   isPending: boolean,
   subscriptionsCount: number,
-
 }
 
 export interface IFastApiParent {
