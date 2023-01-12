@@ -23,7 +23,7 @@ export const newPossibleUsagePlan = (customName: string): IUsagePlanFreeWithQuot
   authorizedTeams: [],
   otoroshiTarget: {
     otoroshiSettings: undefined,
-    authorizedEntities: { groups: [], services: [] },
+    authorizedEntities: { groups: [], services: [], routes: [] },
     apikeyCustomization: {
       clientIdOnly: false,
       constrainedServicesOnly: false,

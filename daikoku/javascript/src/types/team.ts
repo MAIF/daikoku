@@ -1,4 +1,5 @@
 import { Language } from './types';
+import {IFastApiParent} from "./api";
 
 export type TeamPermission = 'Administrator' | 'ApiEditor' | 'User';
 
@@ -45,4 +46,23 @@ interface I2FA {
   secret: string;
   token: string;
   backupCodes: string;
+}
+
+export interface IFastTeam {
+  _id: string;
+  _humanReadableId: string;
+  name: string;
+}
+
+export interface IFastApiSubscription {
+  integrationToken: string
+  apiKey: IFastApiKey;
+
+
+}
+
+export interface IFastApiKey {
+  clientId: string;
+  clientName: string;
+  clientSecret: string;
 }

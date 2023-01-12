@@ -1,11 +1,10 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
-import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._TenantAdminAccessTenant
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
@@ -16,11 +15,9 @@ import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
-import sangria.marshalling.FromInput
 import sangria.schema.{Context, _}
-import sangria.util.tag.@@
 import sangria.validation.ValueCoercionViolation
-import storage.{DataStore, _}
+import storage._
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -270,6 +267,7 @@ object SchemaDefinition {
       ),
     )
 
+
     lazy val  BillingTimeUnitInterfaceType = InterfaceType(
       "BillingTimeUnit",
       "Interface of billing Time : hour, day, month or year",
@@ -329,6 +327,13 @@ object SchemaDefinition {
         Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission)
       )
     )
+    lazy val CurrencyType = ObjectType (
+      name = "Currency",
+      description = "Currency for a plan of an api",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), Currency](
+        Field("code", StringType, resolve = _.value.code)
+      )
+    )
 
     lazy val UsagePlanInterfaceType = InterfaceType(
       name = "UsagePlan",
@@ -341,7 +346,7 @@ object SchemaDefinition {
         Field("maxRequestPerMonth", OptionType(LongType), resolve = _.value.maxRequestPerMonth),
         Field("allowMultipleKeys", OptionType(BooleanType), resolve = _.value.allowMultipleKeys),
         Field("autoRotation", OptionType(BooleanType), resolve = _.value.autoRotation),
-        Field("currency", StringType, resolve = _.value.currency.code),
+        Field("currency", CurrencyType, resolve = _.value.currency),
         Field("customName", OptionType(StringType), resolve = _.value.customName),
         Field("customDescription", OptionType(StringType), resolve = _.value.customDescription),
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget),
@@ -378,7 +383,7 @@ object SchemaDefinition {
     lazy val  FreeWithoutQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithoutQuotas](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key without quotas"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
@@ -399,7 +404,7 @@ object SchemaDefinition {
     lazy val  FreeWithQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithQuotas](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with quotas"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
@@ -420,7 +425,7 @@ object SchemaDefinition {
     lazy val  QuotasWithLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithLimits](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with limited quotas"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -442,7 +447,7 @@ object SchemaDefinition {
     lazy val  QuotasWithoutLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithoutLimits](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with quotas but not limited"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -464,7 +469,7 @@ object SchemaDefinition {
     lazy val  PayPerUseType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.PayPerUse](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key where you need to pay per use"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -753,6 +758,20 @@ object SchemaDefinition {
       ObjectTypeDescription("A Daikoku api with the list of teams authorizations"),
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
       ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations))
+    )
+
+    lazy val subscriptionsWithPlanType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionsWithPlan]()
+
+    lazy val GraphQLAccessibleApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithSubscriptions](
+      ObjectTypeDescription("A Daikoku api with the list of plans and his state of subscription"),
+      ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
+      ReplaceField("subscriptionsWithPlan", Field("subscriptionsWithPlan", ListType(subscriptionsWithPlanType), resolve = _.value.subscriptionsWithPlan))
+    )
+
+    lazy val GraphQlAccessibleApisWithNumberOfApis = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AccessibleApisWithNumberOfApis](
+      ObjectTypeDescription("A limited list of Daikoku apis with the count of all the apis for pagination"),
+      ReplaceField("apis", Field("apis", ListType(GraphQLAccessibleApiType), resolve = _.value.apis)),
+      ReplaceField("nb", Field("nb", LongType, resolve = _.value.nb))
     )
 
     lazy val  NotificationStatusType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus] = InterfaceType(
@@ -1166,10 +1185,15 @@ object SchemaDefinition {
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
+    val APISUBONLY: Argument[Boolean] = Argument("apisubonly", BooleanType,
+      description = "The condition if you want to see only subscribed Apis.",
+      defaultValue = false)
+    val RESEARCH: Argument[String] = Argument("research", StringType,
+      description ="This his a the string of a research", defaultValue = "")
     val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
-
+    val TEAM_ID_NOT_OPT = Argument("teamId", StringType, description = "The id of the team")
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
@@ -1189,6 +1213,19 @@ object SchemaDefinition {
     def apiQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("visibleApis", ListType(GraphQLApiType), arguments = TEAM_ID :: Nil, resolve = ctx => {
         getVisibleApis(ctx, ctx.arg(TEAM_ID))
+      })
+    )
+
+    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, apiSubOnly: Boolean, limit: Int, offset: Int) = {
+      CommonServices.getApisWithSubscriptions(teamId, research, limit, offset, apiSubOnly)(ctx.ctx._2, env, e).map {
+        case Left(value) => value
+        case Right(r) => throw NotAuthorizedError(r.toString)
+      }
+    }
+
+    def apiWithSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("accessibleApis", GraphQlAccessibleApisWithNumberOfApis, arguments = TEAM_ID_NOT_OPT :: RESEARCH :: APISUBONLY :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
+        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT),ctx.arg(RESEARCH), ctx.arg(APISUBONLY),ctx.arg(LIMIT), ctx.arg(OFFSET))
       })
     )
 
@@ -1270,7 +1307,7 @@ object SchemaDefinition {
 
     (
       Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields() ++ cmsPageFields():_*)
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ apiWithSubscriptionsQueryFields() ++ cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher)
     )

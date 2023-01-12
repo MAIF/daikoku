@@ -1206,6 +1206,29 @@
     "page.prompt.creation.message": "Specify the name of the new page",
     "page.prompt.creation.title": "New page creation",
     "page.prompt.creation.placeholder": "New page",
+    "fastMode.access": "Access to the fast mode",
+    "fastMode.title": "Fast Mode",
+    "fastMode.title.page": "%s - Fast Mode",
+    "fastMode.title.chooseTeam": "Choose a team to start",
+    "fastMode.error.searching.team": "An error has occurred while searching your teams",
+    "fastMode.input.reasonSubscription": "Fill with the default reason for your API subscription request",
+    "fastMode.input.research.api": "Search your API...",
+    "fastMode.input.research.plan": "Search your plan...",
+    "fastMode.subscription.resume": "summary of your subscription request",
+    "fastMode.show.information": "no plan or API Key selected",
+    "fastMode.reasonSubscription.title": "Default message",
+    "fastMode.button.seeApiKey": {
+        "s": "See API key",
+        "p": "See API keys"
+    },
+    "fastMode.button.pending": "Pending",
+    "fastMode.button.show.subs.apis": "Show all subscribed APIs",
+    "fastMode.button.show.all.apis": "Show all APIs",
+    "fastMode.selected.team.title": "Selected team",
+    "fastMode.token.label": "Token",
+    "fastMode.help.text.1": "The fast mode gives you simplified access to all the APIs accessible by a team.",
+    "fastMode.help.text.2": "The information displayed is brief to facilitate API key retrieval.",
+    "fastMode.help.text.3": "To use this feature, first select your team.",
     "Yes": "Yes",
     "Filter": "Filter",
     "Filter data": "Filter data",
@@ -1216,5 +1239,7 @@
     "set.logo": "logo",
     "JS": "JS",
     "set.favicon": "favicon",
-    "set.font.family": "font family"
+    "set.font.family": "font family",
+    "select.team.placeholder": "Select a team",
+    "otoroshi.missing.target":"Missing otoroshi target"
 }

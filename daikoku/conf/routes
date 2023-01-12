@@ -88,7 +88,8 @@ GET     /api/teams/:teamId/subscription/:subscriptionId/quotas  fr.maif.otoroshi
 GET     /api/me/subscriptions/:apiId/:version                   fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId, version)
 PUT     /api/apis/:apiId/subscriptions/:apiKeyId                fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, apiKeyId)
 POST    /api/apis/:apiId/subscriptions                          fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
-GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId   fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version)
+GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId   fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version, planId: Option[String] ?= None)
+
 GET     /api/subscriptions/teams/:teamId                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionsOfTeam(teamId)
 GET     /api/apis/:apiId/pages/:id/content                      fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPageRemoteContent(apiId, id)
 GET     /api/apis/:apiId/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPage(apiId, id)

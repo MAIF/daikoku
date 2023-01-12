@@ -369,7 +369,7 @@ const ApiKeyCard = ({
                 className="badge bg-secondary"
                 style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
               >
-                {Option(plan.customName).getOrElse(formatPlanType(plan, translate))}
+                {formatPlanType(plan, translate)}
               </span>
             )}
           </div>

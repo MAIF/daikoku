@@ -1208,6 +1208,29 @@
   "page.prompt.creation.message": "Indiquez le nom de la nouvelle page",
   "page.prompt.creation.title": "Création d'une nouvelle page",
   "page.prompt.creation.placeholder": "Nouvelle page",
+  "fastMode.access": "Accéder au mode rapide",
+  "fastMode.title": "Mode rapide",
+  "fastMode.title.page": "%s - Mode rapide",
+  "fastMode.title.chooseTeam": "Choisir une team pour commencer",
+  "fastMode.error.searching.team": "Une erreur s'est produite lors de la recherche de vos équipes",
+  "fastMode.input.reasonSubscription":"Renseigner le motif par défaut de votre demande de souscription",
+  "fastMode.input.research.api": "Chercher votre API...",
+  "fastMode.input.research.plan": "Chercher votre plan...",
+  "fastMode.subscription.resume": "résumé de votre demande de souscription",
+  "fastMode.show.information": "Aucun plan ou clé d'API selectionné",
+  "fastMode.reasonSubscription.title": "Message par défaut",
+  "fastMode.button.seeApiKey": {
+    "s": "Voir la clé d'API",
+    "p": "Voir les clés d'API"
+  },
+  "fastMode.button.pending": "En attente",
+  "fastMode.button.show.subs.apis": "Voir les APIs souscrites",
+  "fastMode.button.show.all.apis": "Voir toutes les APIs",
+  "fastMode.selected.team.title": "Équipe sélectionée",
+  "fastMode.token.label": "Jeton",
+  "fastMode.help.text.1": "Le mode rapide vous offre un accès simplifié à toutes les API accessible par une équipe.",
+  "fastMode.help.text.2": "Les informations affichées sont succinctes afin de faciliter la récupération de clé d'API.",
+  "fastMode.help.text.3": "Pour utiliser cette fonctionnalité, sélectionnez d'abord votre équipe.",
   "Yes": "Oui",
   "Filter": "Filtrer",
   "Filter data": "Filtrer les données",
@@ -1219,5 +1242,7 @@
   "set.css": "un fichier CSS",
   "set.js": "un fichier JS",
   "set.favicon": "le favicon",
-  "set.font.family": "la police de style"
+  "set.font.family": "la police de style",
+  "select.team.placeholder": "Selectionner une équipe",
+  "otoroshi.missing.target": "Cible Otoroshi manquante"
 }

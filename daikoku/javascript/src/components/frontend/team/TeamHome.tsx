@@ -55,7 +55,6 @@ export const TeamHome = () => {
 
   const redirectToApiPage = (api: IApiWithAuthorization) => {
     if (queryTeams.data && !isError(queryTeams.data)) {
-      console.debug({auth: api})
       if (api.visibility === 'Public' || api.authorizations.some(a => a.authorized)) {
         const apiOwner = queryTeams.data.find((t) => t._id === api.team._id);
 

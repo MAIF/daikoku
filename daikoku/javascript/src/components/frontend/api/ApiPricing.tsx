@@ -9,27 +9,21 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, isMiniFreeWithQuotas, isPayPerUse, isQuotasWitoutLimit, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
+import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
 import { INotification } from '../../../types';
 import {
   access,
-  apikey, Can, formatCurrency, getCurrencySymbol, manage,
-  Option
+  apikey, Can, manage,
+  Option, renderPlanInfo, renderPricing
 } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
 
-const Curreny = (props: {plan: IUsagePlan}) => {
-  const cur = find(currencies, (c) => c.code === props.plan.currency.code);
-  return (
-    <span>
-      {' '}
-      {cur?.name}({cur?.symbol})
-    </span>
-  );
-};
 
-const currency = (plan: IUsagePlan) => {
+export const currency = (plan?: IBaseUsagePlan) => {
+  if (!plan) {
+    return ""; //todo: return undefined
+  }
   const cur = find(currencies, (c) => c.code === plan.currency.code);
   return `${cur?.name}(${cur?.symbol})`;
 };
@@ -50,109 +44,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { client } = useContext(getApolloContext());
 
   const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
-
-
-  const renderFreeWithoutQuotas = () => (
-    <span>
-      <Translation i18nkey="free.without.quotas.desc">
-        You'll pay nothing and do whatever you want :)
-      </Translation>
-    </span>
-  );
-
-  const renderFreeWithQuotas = () => {
-    const plan: IUsagePlanFreeWithQuotas = props.plan as IUsagePlanFreeWithQuotas
-    return (
-      <span>
-        <Translation i18nkey="free.with.quotas.desc" replacements={[plan.maxPerMonth]}>
-          You'll pay nothing but you'll have {plan.maxPerMonth} authorized requests per month
-        </Translation>
-      </span>
-    )
-  };
-
-  const renderQuotasWithLimits = () => {
-    const plan: IUsagePlanQuotasWithLimits = props.plan as IUsagePlanQuotasWithLimits;
-
-    return (
-      <span>
-        <Translation
-          i18nkey="quotas.with.limits.desc"
-          replacements={[props.plan.costPerMonth, currency(props.plan), plan.maxPerMonth]}
-        >
-          You'll pay {props.plan.costPerMonth}
-          <Curreny plan={props.plan} /> and you'll have {plan.maxPerMonth} authorized requests
-          per month
-        </Translation>
-      </span>
-    )
-  };
-
-  const renderQuotasWithoutLimits = () => {
-    const plan: IUsagePlanQuotasWitoutLimit = props.plan as IUsagePlanQuotasWitoutLimit
-    return (
-      <span>
-        <Translation
-          i18nkey="quotas.without.limits.desc"
-          replacements={[
-            props.plan.costPerMonth,
-            currency(props.plan),
-            plan.maxPerMonth,
-            plan.costPerAdditionalRequest,
-            currency(props.plan),
-          ]}
-        >
-          You'll pay {props.plan.costPerMonth}
-          <Curreny plan={props.plan} /> for {plan.maxPerMonth} authorized requests per month and
-          you'll be charged {plan.costPerAdditionalRequest}
-          <Curreny plan={props.plan} /> per additional request
-        </Translation>
-      </span>
-    )
-  }
-
-  const renderPayPerUse = () => {
-
-    const plan: IUsagePlanPayPerUse = props.plan as IUsagePlanPayPerUse
-
-    if (props.plan.costPerMonth === 0.0) {
-      return (
-        <span>
-          <Translation
-            i18nkey="pay.per.use.desc.default"
-            replacements={[
-              props.plan.costPerMonth,
-              currency(props.plan),
-              plan.costPerRequest,
-              currency(props.plan),
-            ]}
-          >
-            You'll pay {props.plan.costPerMonth}
-            <Curreny plan={props.plan} /> per month and you'll be charged{' '}
-            {plan.costPerRequest}
-            <Curreny plan={props.plan} /> per request
-          </Translation>
-        </span>
-      );
-    } else {
-      return (
-        <span>
-          <Translation
-            i18nkey="pay.per.use.desc.default"
-            replacements={[
-              props.plan.costPerMonth,
-              currency(props.plan),
-              plan.costPerRequest,
-              currency(props.plan),
-            ]}
-          >
-            You'll be charged {plan.costPerRequest}
-            <Curreny plan={props.plan} /> per request
-          </Translation>
-        </span>
-      );
-    }
-  };
 
   const showApiKeySelectModal = (teams: Array<string>) => {
     const { plan } = props;
@@ -221,7 +112,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   };
 
   const plan = props.plan;
-  const type = plan.type;
   const customDescription = plan.customDescription;
 
   const authorizedTeams = props.myTeams
@@ -248,24 +138,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const { translate } = useContext(I18nContext);
 
-  let pricing = translate('Free');
-  const req = translate('req.');
-  const month = translate('month');
-  if (isQuotasWitoutLimit(plan)) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${month} + ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${req}`;
-  } else if (isPayPerUse(plan)) {
-    pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${req}`;
-  } else if (plan.costPerMonth) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${month}`;
-  }
+  let pricing = renderPricing(plan, translate)
+
 
   return (
     <div className="card mb-4 shadow-sm">
@@ -275,11 +149,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       <div className="card-body plan-body d-flex flex-column">
         <p className="card-text text-justify">
           {customDescription && <span>{customDescription}</span>}
-          {!customDescription && type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas()}
-          {!customDescription && type === 'FreeWithQuotas' && renderFreeWithQuotas()}
-          {!customDescription && type === 'QuotasWithLimits' && renderQuotasWithLimits()}
-          {!customDescription && type === 'QuotasWithoutLimits' && renderQuotasWithoutLimits()}
-          {!customDescription && type === 'PayPerUse' && renderPayPerUse()}
+          {!customDescription && renderPlanInfo(plan)}
         </p>
         <div className="d-flex flex-column mb-2">
           <span className="plan-quotas">
@@ -324,7 +194,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   teams={authorizedTeams.filter((team) => team._id === props.ownerTeam._id)}
                 >
                   {!plan.otoroshiTarget && (
-                    <span className="badge bg-danger">Missing otoroshi target</span>
+                    <span className="badge bg-danger">{translate('otoroshi.missing.target')}</span>
                   )}
                 </Can>
               )}

@@ -5,13 +5,9 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Accepted
-import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
-import play.api.mvc.AnyContent
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -86,6 +82,59 @@ object CommonServices {
         apis.groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
           .map(res => res._2.head)
           .toSeq
+      }
+    }
+  }
+  def getApisWithSubscriptions(teamId: String, research: String, limit: Int, offset: Int, apiSubOnly: Boolean)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AccessibleApisWithNumberOfApis, AppError]] = {
+    _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
+      for {
+        subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
+        subsApisFilter =
+          if (apiSubOnly) { //todo: debug this request
+            Json.obj("$or" -> Json.arr(
+              Json.obj("visibility" -> "Public"),
+              Json.obj("authorizedTeams" -> teamId),
+              Json.obj("team" -> teamId),
+            ), "parent" -> JsNull, "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value)))), "_humanReadableId" -> Json.obj("$regex" -> research))
+          } else {
+            Json.obj("$or" -> Json.arr(
+              Json.obj("visibility" -> "Public"),
+              Json.obj("authorizedTeams" -> teamId),
+              Json.obj("team" -> teamId),
+            ), "parent" -> JsNull, "_humanReadableId" -> Json.obj("$regex" -> research))
+          }
+        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(subsApisFilter, offset, limit, Some(Json.obj("name" -> 1)))
+        allApisFilter =
+          if (apiSubOnly) {
+            Json.obj(
+              "_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))),
+              "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))
+            )
+        } else {
+          Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))))
+        }
+
+        allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter, sort = Some(Json.obj("name" -> 1)))
+        notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
+          "action.type" -> "ApiSubscription",
+          "status.status" -> "Pending"
+        ))
+
+      } yield {
+        AccessibleApisWithNumberOfApis(
+          allApis
+            .map(api => {
+              def filterPrivatePlan(plan: UsagePlan, api: Api, teamId: String): Boolean = plan.visibility != UsagePlanVisibility.Private || api.team.value == teamId ||  plan.authorizedTeams.contains(TeamId(teamId))
+              ApiWithSubscriptions(
+                api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => filterPrivatePlan(p, api, teamId))),
+                api.possibleUsagePlans
+                  .filter(p => filterPrivatePlan(p, api, teamId))
+                  .map(plan => {
+                    SubscriptionsWithPlan(plan.id.value,
+                      isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
+                      subscriptionsCount = subs.count(sub => sub.plan.value == plan.id.value && sub.api == api.id))
+                  }))
+            }), uniqueApis._2)
       }
     }
   }

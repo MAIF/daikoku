@@ -1,40 +1,21 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.ctrls.playJson._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
-import fr.maif.otoroshi.daikoku.domain.{
-  DatastoreId,
-  SchemaDefinition,
-  User,
-  UserId,
-  UserSession,
-  UserSessionId
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.admin.DaikokuApiAction
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.I18nSupport
-import play.api.libs.json.{JsObject, JsValue, Json}
-import sangria.execution.{
-  ExceptionHandler,
-  Executor,
-  HandledException,
-  MaxQueryDepthReachedError,
-  QueryReducer
-}
-import storage.DataStore
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
-import sangria.marshalling.playJson._
+import storage.DataStore
 import sangria.renderer.SchemaRenderer
 
 import java.util.concurrent.TimeUnit

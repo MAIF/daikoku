@@ -1,6 +1,6 @@
 import { isPromiseLike } from 'xstate/lib/utils';
 import { TreeItem, TreeItems } from '../components/utils/dnd/types';
-import { ITeamSimple } from './team';
+import { IFastTeam, ITeamSimple } from './team';
 
 interface IBaseApi {
   _id: string;
@@ -103,15 +103,19 @@ export interface ISwagger {
   headers: { [key: string]: string };
 }
 
-export interface IUsagePlan {
+export interface IBaseUsagePlan {
   _id: string;
   type: string;
   customDescription?: string;
   customName?: string;
-  allowMultipleKeys?: boolean;
-  otoroshiTarget?: IOtoroshiTarget;
-  aggregationApiKeysSecurity?: boolean;
   subscriptionProcess: 'Automatic' | 'manual';
+  currency: ICurrency
+  otoroshiTarget?: IOtoroshiTarget;
+}
+
+export interface IUsagePlan extends IBaseUsagePlan {
+  allowMultipleKeys?: boolean;
+  aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
   autoRotation?: boolean;
   rotation: boolean;
@@ -155,6 +159,7 @@ export interface IUsagePlanPayPerUse extends IUsagePlan {
 interface IAuthorizedEntities {
   groups: Array<string>;
   services: Array<string>;
+  routes: Array<string>;
 }
 
 interface IBillingDuration {
@@ -162,7 +167,7 @@ interface IBillingDuration {
   unit: 'Hour' | 'Day' | 'Month' | 'Year';
 }
 
-interface ICurrency {
+export interface ICurrency {
   code: string;
 }
 
@@ -252,15 +257,15 @@ export interface IBaseSubscription {
   parent: string | null;
 }
 
-export const isPayPerUse = (obj: IUsagePlan): obj is IUsagePlanPayPerUse => {
+export const isPayPerUse = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanPayPerUse => {
   return (<IUsagePlanPayPerUse>obj).costPerRequest !== undefined;
 };
 
-export const isQuotasWitoutLimit = (obj: IUsagePlan): obj is IUsagePlanQuotasWitoutLimit => {
+export const isQuotasWitoutLimit = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanQuotasWitoutLimit => {
   return (<IUsagePlanQuotasWitoutLimit>obj).costPerAdditionalRequest !== undefined;
 };
 
-export const isMiniFreeWithQuotas = (obj: IUsagePlan): obj is IUsagePlanFreeWithQuotas => {
+export const isMiniFreeWithQuotas = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanFreeWithQuotas => {
   return (<IUsagePlanFreeWithQuotas>obj).maxPerSecond !== undefined;
 };
 
@@ -310,6 +315,43 @@ export interface ISubscriptionInformation {
   simpleApi: IApi;
   simpleSubscription: ISubscription;
   plan: IUsagePlan;
+}
+
+export interface IFastPlan extends IBaseUsagePlan {
+  maxPerSecond?: number
+  maxPerMonth?: number
+  costPerMonth?: number
+  costPerAdditionalRequest?: number
+  costPerRequest?: number
+  allowMultipleKeys: boolean
+}
+
+
+export interface IFastSubscription {
+  planId: string,
+  isPending: boolean,
+  subscriptionsCount: number,
+}
+
+export interface IFastApiParent {
+  _id: string,
+  currentVersion: string,
+}
+
+
+export interface IFastApi {
+  api: {
+    name: string,
+    _humanReadableId: string,
+    _id: string,
+    isDefault: boolean,
+    visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly',
+    possibleUsagePlans: Array<IFastPlan>,
+    currentVersion: string,
+    team: IFastTeam,
+    parent: IFastApiParent
+  }
+  subscriptionsWithPlan: Array<IFastSubscription>,
 }
 
 export interface IApiPost {

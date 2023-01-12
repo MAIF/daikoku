@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 import {
+  IFastApiSubscription,
   IAsset,
   IAuditTrail,
   IMailingTranslation,
@@ -99,6 +100,9 @@ export const getDocDetails = (api: string, version: string): Promise<IDocDetail>
 
 export const getTeamSubscriptions = (api: any, team: any, version: any) =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
+
+export const getTeamSubscriptionsWithPlan = (api: string, team: string, version: string, planId: string):Promise<Array<IFastApiSubscription>> =>
+  customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}?planId=${planId}`);
 
 export const getMySubscriptions = (
   apiId: string,
@@ -1201,7 +1205,9 @@ export const graphql = {
           possibleUsagePlans {
             _id
             customName
-            currency
+            currency {
+              code
+            }
             type
           }
           currentVersion
@@ -1225,6 +1231,82 @@ export const graphql = {
           pending
         }
       }
+    }`),
+  getApisWithSubscription: gql(`
+    query AccessibleApis ($teamId: String!, $research: String, $apisubonly: Boolean, $limit: Int, $offset: Int) {
+      accessibleApis (teamId: $teamId, research: $research, apisubonly: $apisubonly , limit: $limit, offset: $offset) {
+        apis {
+          api {
+            name
+            _humanReadableId
+            _id
+            isDefault
+            visibility
+            parent {
+              _id
+              currentVersion
+            }
+            possibleUsagePlans {
+              _id
+              customName
+              customDescription
+              otoroshiTarget {
+                otoroshiSettings
+                authorizedEntities {
+                  services
+                  groups
+                  routes
+                }
+              }
+              currency {
+                code
+              }
+              type
+              subscriptionProcess
+              allowMultipleKeys
+              ... on QuotasWithLimits {
+                costPerMonth
+                maxPerSecond
+                maxPerDay
+                maxPerMonth
+              }
+              ... on FreeWithQuotas {
+                maxPerSecond
+                maxPerDay
+                maxPerMonth
+              }
+              ... on QuotasWithoutLimits {
+                costPerMonth
+                costPerAdditionalRequest
+                maxPerSecond
+                maxPerDay
+                maxPerMonth
+              }
+              ... on PayPerUse {
+                costPerRequest
+              }
+             }
+            currentVersion
+            team {
+              _id
+              _humanReadableId
+              name
+            }
+            apis {
+              api {
+                _id
+              }
+            }
+          }
+          subscriptionsWithPlan {
+            planId
+            isPending
+            subscriptionsCount
+          }
+        }
+        nb
+      }
+
     }`),
   getCmsPage: (id: any) => gql`
     query GetCmsPage {

@@ -55,6 +55,7 @@ import { I18nContext } from '../contexts/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { SessionModal } from '../contexts/modals/SessionModal';
 import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
+import {FastMode} from "../components/frontend/fastMode/FastMode";
 
 type DaikokuAppProps = {
   session: ISession,
@@ -326,6 +327,18 @@ export const DaikokuApp = ({
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate('Init')}`}>
                         <InitializeFromOtoroshi />
+                      </RouteWithTitle>
+                    }
+                  />
+                  <Route
+                    path="/apis/fast"
+                    element={
+                      <RouteWithTitle title={
+                        translate({
+                          key: "fastMode.title.page",
+                          replacements: [tenant.title || tenant.name]
+                        })}>
+                        <FastMode/>
                       </RouteWithTitle>
                     }
                   />
