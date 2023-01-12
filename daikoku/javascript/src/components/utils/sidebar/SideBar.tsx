@@ -110,11 +110,12 @@ export const SideBar = () => {
             <Link
               to="/apis/fast"
               className={classNames(
-                'nav-item mb-3 notification-link messages-link cursor-pointer'
+                'nav-item mb-3 cursor-pointer'
               )}
               title={translate('fastMode.access')}
             >
-              <Zap/>
+              <Zap 
+                  className="notification-link"/>
             </Link>
           )}
         </div>
