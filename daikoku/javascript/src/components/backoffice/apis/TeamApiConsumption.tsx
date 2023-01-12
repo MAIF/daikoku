@@ -7,23 +7,12 @@ import find from 'lodash/find';
 
 import * as Services from '../../../services';
 
-import { OtoroshiStatsVizualization } from '../..';
-import { currencies } from '../../../services/currencies';
+import {OtoroshiStatsVizualization, renderPlanInfo} from '../..';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
 import { isError, ITeamSimple } from '../../../types';
 
-export const Currency = ({
-  plan
-}: any) => {
-  const cur = find(currencies, (c) => c.code === plan.currency.code);
-  return (
-    <span>
-      {' '}
-      {cur?.name}({cur?.symbol})
-    </span>
-  );
-};
+
 
 const sumGlobalInformations = (data: any) => data
   .map((d: any) => d.globalInformations)
@@ -159,52 +148,8 @@ export const TeamApiConsumption = ({
 const PlanLightConsumption = (props: any) => {
   const { translate } = useContext(I18nContext);
 
-  const renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
-
-  const renderFreeWithQuotas = () => (
-    <span>
-      You'll pay nothing but you'll have {props.plan.maxPerMonth} authorized requests per month
-    </span>
-  );
-
-  const renderQuotasWithLimits = () => (
-    <span>
-      You'll pay {props.plan.costPerMonth}
-      <Currency plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
-      per month
-    </span>
-  );
-
-  const renderQuotasWithoutLimits = () => (
-    <span>
-      You'll pay {props.plan.costPerMonth}
-      <Currency plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
-      you'll be charged {props.plan.costPerAdditionalRequest}
-      <Currency plan={props.plan} /> per additional request
-    </span>
-  );
-
-  const renderPayPerUse = () => {
-    if (props.plan.costPerMonth === 0.0) {
-      return (
-        <span>
-          You'll pay {props.plan.costPerMonth}
-          <Currency plan={props.plan} /> per month and you'll be charged {props.plan.costPerRequest}
-          <Currency plan={props.plan} /> per request
-        </span>
-      );
-    } else {
-      return (
-        <span>
-          You'll be charged {props.plan.costPerRequest}
-          <Currency plan={props.plan} /> per request
-        </span>
-      );
-    }
-  };
 
   const plan = props.plan;
-  const type = plan.type;
   const customName = plan.customName;
   const customDescription = plan.customDescription;
   return (
@@ -220,11 +165,7 @@ const PlanLightConsumption = (props: any) => {
         {!customName && <h3>{formatPlanType(plan, translate)}</h3>}
         <p className="card-text text-justify">
           {customDescription && <span>{customDescription}</span>}
-          {!customDescription && type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas()}
-          {!customDescription && type === 'FreeWithQuotas' && renderFreeWithQuotas()}
-          {!customDescription && type === 'QuotasWithLimits' && renderQuotasWithLimits()}
-          {!customDescription && type === 'QuotasWithoutLimits' && renderQuotasWithoutLimits()}
-          {!customDescription && type === 'PayPerUse' && renderPayPerUse()}
+          {!customDescription && renderPlanInfo(plan)}
         </p>
       </div>
     </div>

@@ -1205,7 +1205,9 @@ export const graphql = {
           possibleUsagePlans {
             _id
             customName
-            currency
+            currency {
+              code
+            }
             type
           }
           currentVersion
@@ -1256,7 +1258,9 @@ export const graphql = {
                   routes
                 }
               }
-              currency
+              currency {
+                code
+              }
               type
               subscriptionProcess
               allowMultipleKeys

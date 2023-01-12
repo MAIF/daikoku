@@ -3,10 +3,13 @@ import Eye from 'react-feather/dist/icons/eye';
 import EyeOff from 'react-feather/dist/icons/eye-off';
 
 import { I18nContext } from "../../../core";
-import { IFastApiSubscription, IFastPlan, isPayPerUse, isQuotasWitoutLimit, IUsagePlan } from "../../../types";
-import { Currency } from "../../backoffice/apis/TeamApiConsumption";
-import { BeautifulTitle, formatCurrency, formatPlanType, getCurrencySymbol } from "../../utils";
-import { currency } from "../api/ApiPricing";
+import { IFastApiSubscription, IFastPlan } from "../../../types";
+import {
+  BeautifulTitle,
+  formatPlanType,
+  renderPlanInfo,
+  renderPricing
+} from "../../utils";
 import { FastItemViewMode } from "./FastApiList";
 
 type FastItemViewProps = {
@@ -21,80 +24,6 @@ export const FastItemView = (props: FastItemViewProps) => {
   const [activeTab, setActiveTab] = useState<'apikey' | 'token'>('apikey');
   const [hidePassword, setHidePassword] = useState(true);
 
-
-
-  //todo: extract to utils.ts & refactor usage in other pages
-  const renderPricing = (plan: IFastPlan | IUsagePlan) => {
-    let pricing = translate('Free');
-    const req = translate('req.');
-
-    const month = translate('month');
-    if (isQuotasWitoutLimit(plan)) {
-      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency)}/${month} + 
-      ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(plan.currency)}/${req}`
-    } else if (isPayPerUse(plan)) {
-      pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency)}/${req}`;
-    } else if (plan.costPerMonth) {
-      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency)}/${month}`;
-    }
-    return pricing;
-  }
-
-  //todo: extract to utils.ts & refactor usage in other pages
-  const renderPlanInfo = (type: string) => {
-    return (
-      <span>
-        {type === 'FreeWithoutQuotas' &&
-          <>
-            {translate('free.without.quotas.desc')}
-          </>
-        } {type === 'FreeWithQuotas' &&
-          <>
-            {translate({ key: 'free.with.quotas.desc', replacements: [props.planInfo!.maxPerMonth!.toString()] })}
-          </>
-        } {type === 'QuotasWithLimits' &&
-          <>
-            {translate({ key: 'quotas.with.limits.desc', replacements: [props.planInfo!.costPerMonth!.toString(), currency(props.planInfo), props.planInfo!.maxPerMonth!.toString()] })}
-            You'll pay {props.planInfo!.costPerMonth}
-            <Currency plan={props.planInfo} /> and you'll have {props.planInfo!.maxPerMonth} authorized requests
-            per month
-          </>
-        } {type === 'QuotasWithoutLimits' &&
-          <>
-            {translate({
-              key: 'quotas.without.limits.desc', replacements:
-                [props.planInfo!.costPerMonth!.toString(), currency(props.planInfo), props.planInfo!.maxPerMonth!.toString(), props.planInfo!.costPerAdditionalRequest!.toString(), currency(props.planInfo)]
-            })}
-            You'll pay {props.planInfo!.costPerMonth}
-            <Currency plan={props.planInfo} /> for {props.planInfo!.maxPerMonth} authorized requests per month and
-            you'll be charged {props.planInfo!.costPerAdditionalRequest}
-            <Currency plan={props.planInfo} /> per additional request
-          </>
-        } {type === 'PayPerUse' &&
-          <>
-            {translate({
-              key: 'pay.per.use.desc.default', replacements:
-                [props.planInfo!.costPerMonth!.toString(), currency(props.planInfo), props.planInfo!.costPerRequest!.toString(), currency(props.planInfo)]
-            })}
-            {props.planInfo!.costPerMonth === 0.0 &&
-              <>
-                You'll pay {props.planInfo!.costPerMonth}
-                <Currency plan={props.planInfo} /> per month and you'll be charged{' '}
-                {props.planInfo!.costPerRequest}
-                <Currency plan={props.planInfo} /> per request
-              </>
-            }
-            {props.planInfo!.costPerMonth !== 0.0 &&
-              <>
-                You'll be charged {props.planInfo!.costPerRequest}
-                <Currency plan={props.planInfo} /> per request
-              </>
-            } </>
-        }
-      </span>
-    )
-  }
-
   return (
     <div className="section p-3 mb-2 text-center">
       {props.viewMode === 'PLAN' && props.planInfo &&
@@ -105,7 +34,7 @@ export const FastItemView = (props: FastItemViewProps) => {
           <div className="card-body plan-body d-flex flex-column">
             <p className="card-text text-justify">
               {props.planInfo.customDescription && <span>{props.planInfo.customDescription}</span>}
-              {!props.planInfo.customDescription && props.planInfo.type === 'FreeWithoutQuotas' && renderPlanInfo(props.planInfo.type)}
+              {!props.planInfo.customDescription && renderPlanInfo(props.planInfo)}
             </p>
             <div className="d-flex flex-column mb-2">
               <span className="plan-quotas">
@@ -117,7 +46,7 @@ export const FastItemView = (props: FastItemViewProps) => {
                 }
               </span>
               <span className="plan-pricing">
-                {translate({ key: 'plan.pricing', replacements: [renderPricing(props.planInfo)] })}
+                {translate({ key: 'plan.pricing', replacements: [renderPricing(props.planInfo, translate)] })}
               </span>
             </div>
           </div>

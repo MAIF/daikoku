@@ -15,7 +15,14 @@ import { ITeamSimple } from '../../../types';
 import { IApi, IUsagePlan } from '../../../types/api';
 import { ITenant } from '../../../types/tenant';
 import {
-  formatCurrency, formatPlanType, getCurrencySymbol, IMultistepsformStep, MultiStepForm, newPossibleUsagePlan, Option
+  formatCurrency,
+  formatPlanType,
+  getCurrencySymbol,
+  IMultistepsformStep,
+  MultiStepForm,
+  newPossibleUsagePlan,
+  Option,
+  renderPricing
 } from '../../utils';
 
 const SUBSCRIPTION_PLAN_TYPES = {
@@ -315,24 +322,8 @@ const Card = ({
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
-  let pricing = translate('Free');
-  const req = translate('req.');
-  const month = translate('month');
-  if (plan.costPerMonth && plan.costPerAdditionalRequest) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${month} + ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${req}`;
-  } else if (plan.costPerMonth) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${month}`;
-  } else if (plan.costPerRequest) {
-    pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(
-      plan.currency.code
-    )}/${req}`;
-  }
+
+  let pricing = renderPricing(plan, translate)
 
   const deleteWithConfirm = () => {
     confirm({ message: translate('delete.plan.confirm') })

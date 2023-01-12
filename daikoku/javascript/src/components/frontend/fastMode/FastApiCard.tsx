@@ -132,9 +132,9 @@ export const FastApiCard = (props: FastApiCardProps) => {
               const plan = selectedApi.api.possibleUsagePlans.find((pPlan) => pPlan._id === subPlan.planId)!
               const otoroshiSetUp =
                 plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities !== null
-                && plan.otoroshiTarget.authorizedEntities.groups.length >= 1
-                && plan.otoroshiTarget.authorizedEntities.services.length >= 1
-                && plan.otoroshiTarget.authorizedEntities.routes.length >= 1
+                && (plan.otoroshiTarget.authorizedEntities.groups.length >= 1
+                || plan.otoroshiTarget.authorizedEntities.services.length >= 1
+                || plan.otoroshiTarget.authorizedEntities.routes.length >= 1)
               if (!plan.customName?.includes(props.planResearch) || plan.otoroshiTarget?.authorizedEntities === null) {
                 return;
               }

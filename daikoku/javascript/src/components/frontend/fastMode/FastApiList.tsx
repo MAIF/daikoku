@@ -50,6 +50,7 @@ export const FastApiList = (props: FastApiListProps) => {
         fetchPolicy: "no-cache",
         variables: { teamId: queryKey[1], limit: nbOfApis, apisubonly: seeApiSubscribed, offset: page, research: research }
       }).then(({ data: { accessibleApis } }) => {
+        console.log(accessibleApis)
         return accessibleApis
       }
       )

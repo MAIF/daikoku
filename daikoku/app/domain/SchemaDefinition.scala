@@ -267,6 +267,7 @@ object SchemaDefinition {
       ),
     )
 
+
     lazy val  BillingTimeUnitInterfaceType = InterfaceType(
       "BillingTimeUnit",
       "Interface of billing Time : hour, day, month or year",
@@ -326,6 +327,13 @@ object SchemaDefinition {
         Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission)
       )
     )
+    lazy val CurrencyType = ObjectType (
+      name = "Currency",
+      description = "Currency for a plan of an api",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), Currency](
+        Field("code", StringType, resolve = _.value.code)
+      )
+    )
 
     lazy val UsagePlanInterfaceType = InterfaceType(
       name = "UsagePlan",
@@ -338,7 +346,7 @@ object SchemaDefinition {
         Field("maxRequestPerMonth", OptionType(LongType), resolve = _.value.maxRequestPerMonth),
         Field("allowMultipleKeys", OptionType(BooleanType), resolve = _.value.allowMultipleKeys),
         Field("autoRotation", OptionType(BooleanType), resolve = _.value.autoRotation),
-        Field("currency", StringType, resolve = _.value.currency.code),
+        Field("currency", CurrencyType, resolve = _.value.currency),
         Field("customName", OptionType(StringType), resolve = _.value.customName),
         Field("customDescription", OptionType(StringType), resolve = _.value.customDescription),
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget),
@@ -375,7 +383,7 @@ object SchemaDefinition {
     lazy val  FreeWithoutQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithoutQuotas](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key without quotas"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
@@ -396,7 +404,7 @@ object SchemaDefinition {
     lazy val  FreeWithQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithQuotas](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with quotas"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
@@ -417,7 +425,7 @@ object SchemaDefinition {
     lazy val  QuotasWithLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithLimits](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with limited quotas"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -439,7 +447,7 @@ object SchemaDefinition {
     lazy val  QuotasWithoutLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithoutLimits](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with quotas but not limited"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -461,7 +469,7 @@ object SchemaDefinition {
     lazy val  PayPerUseType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.PayPerUse](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key where you need to pay per use"),
-      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
