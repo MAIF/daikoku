@@ -114,7 +114,7 @@ object CommonServices {
           Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))))
         }
 
-        allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(allApisFilter)
+        allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter, sort = Some(Json.obj("name" -> 1)))
         notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
           "action.type" -> "ApiSubscription",
           "status.status" -> "Pending"

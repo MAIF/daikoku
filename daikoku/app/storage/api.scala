@@ -176,9 +176,9 @@ trait Repo[Of, Id <: ValueType] {
   def findAllNotDeleted()(implicit ec: ExecutionContext): Future[Seq[Of]] =
     find(Json.obj("_deleted" -> false))
 
-  def findNotDeleted(query: JsObject, maxDocs: Int = -1)(
+  def findNotDeleted(query: JsObject, maxDocs: Int = -1, sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[Seq[Of]] =
-    find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs)
+    find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs, sort = sort)
 
   def findOneNotDeleted(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] =

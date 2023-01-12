@@ -1113,28 +1113,20 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
           }
         }
 
-      case Some(s) =>
+      case Some(_) =>
+        val sortedKeys = sort
+          .map(obj => obj.fields.sortWith((a, b) => a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+          .map(r => r.map(x => s"content->>'${x._1}'"))
+          .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT *, $$2 FROM $tableName ORDER BY $$1",
-            Seq(s.keys.map(key => s"$quotes$key$quotes").mkString(","),
-                s.keys
-                  .map { key =>
-                    s"content->>'$key' as $quotes$key$quotes"
-                  }
-                  .mkString(","))
+            s"SELECT * FROM $tableName ORDER BY ${sortedKeys.mkString(",")} ASC",
+            Seq.empty
           ) { rowToJson(_, format) } else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
-            s"SELECT *, $${params.size+1} FROM $tableName WHERE $sql ORDER BY $${params.size}",
-            params ++ Seq(
-              s.keys.map(key => s"$quotes$key$quotes").mkString(","),
-              s.keys
-                .map { key =>
-                  s"content->>'$key' as $quotes$key$quotes"
-                }
-                .mkString(",")
-            )
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC",
+            params
           ) { rowToJson(_, format) }
         }
     }
@@ -1274,31 +1266,20 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           }
         }
       case Some(s) =>
+        val sortedKeys = sort
+          .map(obj => obj.fields.sortWith((a, b) => a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+          .map(r => r.map(x => s"content->>'${x._1}'"))
+          .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT *, $$2 FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' ORDER BY $$1",
-            Seq(
-              s.keys.map(key => s"$quotes$key$quotes").mkString(","),
-              s.keys
-                .map { key =>
-                  s"content->>'$key' as $quotes$key$quotes"
-                }
-                .mkString(",")
-            )
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' ORDER BY ${sortedKeys.mkString(",")} ASC",
+            Seq.empty
           ) { rowToJson(_, format) } else {
           val (sql, params) = convertQuery(
             query ++ Json.obj("_tenant" -> tenant.value))
           reactivePg.querySeq(
-            s"SELECT *, ${getParam(params.size + 1)} FROM $tableName WHERE $sql ORDER BY ${getParam(
-              params.size)}",
-            params ++ Seq(
-              s.keys.map(key => s"$quotes$key$quotes").mkString(","),
-              s.keys
-                .map { key =>
-                  s"content->>'$key' as $quotes$key$quotes"
-                }
-                .mkString(",")
-            )
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC",
+            params
           ) { rowToJson(_, format) }
         }
     }
@@ -1619,7 +1600,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       queryRes <- {
         val sortedKeys = sort
           .map(obj => obj.fields.sortWith((a, b) => a._2.as[JsNumber].value < b._2.as[JsNumber].value))
-          .map(r => r.map(x => s"content->'${x._1}'"))
+          .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
 
         if (query.values.isEmpty)
