@@ -1244,5 +1244,6 @@
   "set.favicon": "le favicon",
   "set.font.family": "la police de style",
   "select.team.placeholder": "Selectionner une équipe",
-  "otoroshi.missing.target": "Cible Otoroshi manquante"
+  "otoroshi.missing.target": "Cible Otoroshi manquante",
+  "otoroshi.missing.entities": "entités Otoroshi manquantes"
 }

@@ -90,7 +90,7 @@ object CommonServices {
       for {
         subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
         subsApisFilter =
-          if (apiSubOnly) { //todo: debug this request
+          if (apiSubOnly) {
             Json.obj("$or" -> Json.arr(
               Json.obj("visibility" -> "Public"),
               Json.obj("authorizedTeams" -> teamId),
@@ -115,6 +115,7 @@ object CommonServices {
         }
 
         allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter, sort = Some(Json.obj("name" -> 1)))
+        teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))))
         notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
           "action.type" -> "ApiSubscription",
           "status.status" -> "Pending"
@@ -125,9 +126,13 @@ object CommonServices {
           allApis
             .map(api => {
               def filterPrivatePlan(plan: UsagePlan, api: Api, teamId: String): Boolean = plan.visibility != UsagePlanVisibility.Private || api.team.value == teamId ||  plan.authorizedTeams.contains(TeamId(teamId))
+              def filterUnlinkedPlan(plan: UsagePlan): Boolean = (ctx.user.isDaikokuAdmin || teams.exists(team => team.id == api.team && team.users.exists(u => ctx.user.id == u.userId))) ||
+                (plan.otoroshiTarget.nonEmpty &&
+                  plan.otoroshiTarget.exists(target => target.authorizedEntities.exists(entities => entities.groups.nonEmpty || entities.routes.nonEmpty || entities.services.nonEmpty)))
               ApiWithSubscriptions(
-                api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => filterPrivatePlan(p, api, teamId))),
+                api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(filterUnlinkedPlan).filter(p => filterPrivatePlan(p, api, teamId))),
                 api.possibleUsagePlans
+                  .filter(filterUnlinkedPlan)
                   .filter(p => filterPrivatePlan(p, api, teamId))
                   .map(plan => {
                     SubscriptionsWithPlan(plan.id.value,
