@@ -142,9 +142,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   let pricing = renderPricing(plan, translate)
 
   const otoroshiTargetIsDefined = !!plan.otoroshiTarget;
-  const otoroshiEntitiesIsDefined = !!plan.otoroshiTarget?.authorizedEntities.groups.length ||
+  const otoroshiEntitiesIsDefined = otoroshiTargetIsDefined && (!!plan.otoroshiTarget?.authorizedEntities.groups.length ||
     !!plan.otoroshiTarget?.authorizedEntities.routes.length ||
-    !!plan.otoroshiTarget?.authorizedEntities.services.length;
+    !!plan.otoroshiTarget?.authorizedEntities.services.length);
 
   return (
     <div className="card mb-4 shadow-sm">
