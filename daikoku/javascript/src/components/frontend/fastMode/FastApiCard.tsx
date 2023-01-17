@@ -14,9 +14,10 @@ type FastApiCardProps = {
   apisWithAuthorization: Array<IFastApi>,
   subscriptions: Array<Array<IFastSubscription>>,
   input: string
-  showPlan: Function
-  showApiKey: Function
+  showPlan: (plan: IFastPlan) => void
+  showApiKey: (apiId: string, teamId: string, version: string, plan: IFastPlan) => void
   planResearch: string
+  setReasonSub: (reason: string) => void
 }
 export const FastApiCard = (props: FastApiCardProps) => {
   const { openFormModal } = useContext(ModalContext);
@@ -78,6 +79,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
         onSubmit: ({ motivation }) => {
           Services.askForApiKey(apiId, teamsSubscriber, plan._id, motivation)
             .then((response) => {
+              props.setReasonSub(motivation)
               if (response[0].error) {
                 toastr.error(
                   translate('Error'),
