@@ -1085,7 +1085,10 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     super.findOneWithProjection(query ++ Json.obj("_tenant" -> tenant.value),
                                 projection)
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
+  override def findWithPagination(query: JsObject,
+                                  page: Int,
+                                  pageSize: Int,
+                                  sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
     super.findWithPagination(query ++ Json.obj("_tenant" -> tenant.value),
                              page,
@@ -1337,10 +1340,14 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
       .one[JsObject](ReadPreference.primaryPreferred)
   }
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
+  override def findWithPagination(query: JsObject,
+                                  page: Int,
+                                  pageSize: Int,
+                                  sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext
   ): Future[(Seq[Of], Long)] = collection.flatMap { col =>
-    logger.debug(s"$collectionName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
+    logger.debug(
+      s"$collectionName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
     for {
       count <- col.count(Some(query), None, 0, None, ReadConcern.Majority)
       queryRes <- col

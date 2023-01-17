@@ -1,5 +1,5 @@
 import { Language } from './types';
-import {IFastApiParent} from "./api";
+import { IFastApiParent } from './api';
 
 export type TeamPermission = 'Administrator' | 'ApiEditor' | 'User';
 
@@ -55,10 +55,8 @@ export interface IFastTeam {
 }
 
 export interface IFastApiSubscription {
-  integrationToken: string
+  integrationToken: string;
   apiKey: IFastApiKey;
-
-
 }
 
 export interface IFastApiKey {

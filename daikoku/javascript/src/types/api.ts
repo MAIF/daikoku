@@ -109,7 +109,7 @@ export interface IBaseUsagePlan {
   customDescription?: string;
   customName?: string;
   subscriptionProcess: 'Automatic' | 'manual';
-  currency: ICurrency
+  currency: ICurrency;
   otoroshiTarget?: IOtoroshiTarget;
 }
 
@@ -261,11 +261,15 @@ export const isPayPerUse = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanPayPe
   return (<IUsagePlanPayPerUse>obj).costPerRequest !== undefined;
 };
 
-export const isQuotasWitoutLimit = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanQuotasWitoutLimit => {
+export const isQuotasWitoutLimit = (
+  obj: IUsagePlan | IFastPlan
+): obj is IUsagePlanQuotasWitoutLimit => {
   return (<IUsagePlanQuotasWitoutLimit>obj).costPerAdditionalRequest !== undefined;
 };
 
-export const isMiniFreeWithQuotas = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanFreeWithQuotas => {
+export const isMiniFreeWithQuotas = (
+  obj: IUsagePlan | IFastPlan
+): obj is IUsagePlanFreeWithQuotas => {
   return (<IUsagePlanFreeWithQuotas>obj).maxPerSecond !== undefined;
 };
 
@@ -318,40 +322,38 @@ export interface ISubscriptionInformation {
 }
 
 export interface IFastPlan extends IBaseUsagePlan {
-  maxPerSecond?: number
-  maxPerMonth?: number
-  costPerMonth?: number
-  costPerAdditionalRequest?: number
-  costPerRequest?: number
-  allowMultipleKeys: boolean
+  maxPerSecond?: number;
+  maxPerMonth?: number;
+  costPerMonth?: number;
+  costPerAdditionalRequest?: number;
+  costPerRequest?: number;
+  allowMultipleKeys: boolean;
 }
 
-
 export interface IFastSubscription {
-  planId: string,
-  isPending: boolean,
-  subscriptionsCount: number,
+  planId: string;
+  isPending: boolean;
+  subscriptionsCount: number;
 }
 
 export interface IFastApiParent {
-  _id: string,
-  currentVersion: string,
+  _id: string;
+  currentVersion: string;
 }
-
 
 export interface IFastApi {
   api: {
-    name: string,
-    _humanReadableId: string,
-    _id: string,
-    isDefault: boolean,
-    visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly',
-    possibleUsagePlans: Array<IFastPlan>,
-    currentVersion: string,
-    team: IFastTeam,
-    parent: IFastApiParent
-  }
-  subscriptionsWithPlan: Array<IFastSubscription>,
+    name: string;
+    _humanReadableId: string;
+    _id: string;
+    isDefault: boolean;
+    visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly';
+    possibleUsagePlans: Array<IFastPlan>;
+    currentVersion: string;
+    team: IFastTeam;
+    parent: IFastApiParent;
+  };
+  subscriptionsWithPlan: Array<IFastSubscription>;
 }
 
 export interface IApiPost {

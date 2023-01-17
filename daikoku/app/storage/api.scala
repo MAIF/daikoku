@@ -62,7 +62,10 @@ trait Repo[Of, Id <: ValueType] {
       implicit ec: ExecutionContext
   ): Future[Option[JsObject]]
 
-  def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
+  def findWithPagination(query: JsObject,
+                         page: Int,
+                         pageSize: Int,
+                         sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext
   ): Future[(Seq[Of], Long)]
 
@@ -176,7 +179,9 @@ trait Repo[Of, Id <: ValueType] {
   def findAllNotDeleted()(implicit ec: ExecutionContext): Future[Seq[Of]] =
     find(Json.obj("_deleted" -> false))
 
-  def findNotDeleted(query: JsObject, maxDocs: Int = -1, sort: Option[JsObject] = None)(
+  def findNotDeleted(query: JsObject,
+                     maxDocs: Int = -1,
+                     sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[Seq[Of]] =
     find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs, sort = sort)
 
