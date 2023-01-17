@@ -355,7 +355,7 @@
   "Delete all sessions": "Supprimer toutes les sessions",
   "Reload the table content": "Recharger le contenu du tableau",
   "importing ...": "import ...",
-  "import state": "importer l'état",
+  "import state": "Importer l'état",
   "download state": "Exporter l'état",
   "Published": "Publiée",
   "View this api consumption": "Voir la consommation de l'API",
