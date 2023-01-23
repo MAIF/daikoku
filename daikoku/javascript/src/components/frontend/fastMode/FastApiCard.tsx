@@ -140,7 +140,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
             || !!plan.otoroshiTarget.authorizedEntities.services.length
             || !!plan.otoroshiTarget.authorizedEntities.routes.length))
             .map(({plan, subscriptionsCount, isPending}) => {
-              if (!plan.customName?.includes(props.planResearch) || plan.otoroshiTarget?.authorizedEntities === null) {
+              if (!plan.customName?.toLowerCase().includes(props.planResearch.toLowerCase()) || plan.otoroshiTarget?.authorizedEntities === null) {
                 return;
               }
               return (
@@ -162,12 +162,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
                         style={{ whiteSpace: "nowrap" }}>
                         {translate({key: 'fastMode.button.seeApiKey', plural: subscriptionsCount > 1})}
                       </button>}
-                    {isPending &&
-                      <button style={{ whiteSpace: "nowrap" }} disabled={true}
-                        className={"btn btn-sm btn-outline-primary disabled"}>
-                        {translate('fastMode.button.pending')}
-                      </button>}
-                    { (!subscriptionsCount || plan.allowMultipleKeys) && !isPending &&
+                    { ((!subscriptionsCount && !isPending)  || plan.allowMultipleKeys) &&
                       <button
                         style={{ whiteSpace: "nowrap" }}
                         className={"btn btn-sm btn-outline-primary"}
@@ -178,6 +173,11 @@ export const FastApiCard = (props: FastApiCardProps) => {
                           plan
                         )}>
                         {translate(plan.subscriptionProcess === 'Automatic' ? ('Get API key') : ('Request API key'))}
+                      </button>}
+                      {isPending &&
+                      <button style={{ whiteSpace: "nowrap" }} disabled={true}
+                        className={"btn btn-sm btn-outline-primary disabled"}>
+                        {translate('fastMode.button.pending')}
                       </button>}
                   </div>
                 </div>

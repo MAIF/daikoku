@@ -544,7 +544,6 @@ export const ApiKeyStep = (props: ApiKeyStepProps) => {
             defaultSort="name"
             columns={columns}
             fetchItems={() => {
-              console.debug({selectedEntity})
               return props.getFilteredApikeys(selectedEntity)
             }}
             ref={table}

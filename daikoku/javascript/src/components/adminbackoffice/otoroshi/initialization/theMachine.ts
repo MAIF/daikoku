@@ -162,7 +162,6 @@ export const theMachine = createMachine({
       invoke: {
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
-          console.debug('hello services');
           return (callBack, _event) =>
             Promise.all([
               Services.getOtoroshiServices(context.tenant, context.otoroshi),
@@ -297,7 +296,6 @@ export const theMachine = createMachine({
       invoke: {
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
-          console.debug('hello apikeys');
           return (callBack, _event) =>
             Services.getOtoroshiApiKeys(context.tenant, context.otoroshi)
               .then((newApikeys) => {

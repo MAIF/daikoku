@@ -60,7 +60,6 @@ export const FastApiList = (props: FastApiListProps) => {
   })
 
   const togglePlan = (plan: IFastPlan) => {
-    console.debug("hé hé")
     switch (viewMode) {
       case 'PLAN':
         if (plan._id === planInfo?._id) {

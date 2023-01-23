@@ -1158,6 +1158,11 @@ export const graphql = {
             allowMultipleKeys
             otoroshiTarget {
               otoroshiSettings
+              authorizedEntities {
+                groups
+                services
+                routes
+              }
             }
             aggregationApiKeysSecurity
           }

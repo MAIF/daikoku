@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -97,15 +98,16 @@ object CommonServices {
               Json.obj("team" -> teamId),
             ),
               "published" -> true,
+              "_deleted" -> false,
               "parent" -> JsNull,
               "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value)))),
-              "_humanReadableId" -> Json.obj("$regex" -> research))
+              "name" -> Json.obj("$regex" -> research))
           } else {
             Json.obj("$or" -> Json.arr(
               Json.obj("visibility" -> "Public"),
               Json.obj("authorizedTeams" -> teamId),
               Json.obj("team" -> teamId),
-            ), "published" -> true, "parent" -> JsNull, "_humanReadableId" -> Json.obj("$regex" -> research))
+            ), "published" -> true, "_deleted" -> false, "parent" -> JsNull, "name" -> Json.obj("$regex" -> research))
           }
         uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(subsApisFilter, offset, limit, Some(Json.obj("name" -> 1)))
         allApisFilter =
