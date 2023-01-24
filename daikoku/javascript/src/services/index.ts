@@ -1274,6 +1274,7 @@ export const graphql = {
               type
               subscriptionProcess
               allowMultipleKeys
+              aggregationApiKeysSecurity
               ... on QuotasWithLimits {
                 costPerMonth
                 maxPerSecond

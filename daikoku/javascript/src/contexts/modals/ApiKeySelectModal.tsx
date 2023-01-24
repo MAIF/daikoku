@@ -1,11 +1,11 @@
 import React, { useContext, useState } from 'react';
 import { I18nContext } from '../../core';
-import { IApiKey, ISubscription, ISubscriptionWithApiInfo, IUsagePlan } from '../../types';
+import { IApiKey, IFastPlan, ISubscription, ISubscriptionWithApiInfo, IUsagePlan } from '../../types';
 import { IBaseModalProps } from './types';
 
 export interface IApiKeySelectModalProps {
   onSubscribe: () => void,
-  plan: IUsagePlan,
+  plan: IUsagePlan | IFastPlan,
   apiKeys: Array<ISubscriptionWithApiInfo>,
   extendApiKey: (key: ISubscription) => void
 }
@@ -68,7 +68,9 @@ const ApiKeysView = (props: ApiKeysViewProps) => {
     <div>
       <h5 className="modal-title">{translate('apikey_select_modal.select_your_api_key')}</h5>
       <div className="team-selection__container">
-        {props.apiKeys.map((apiKey) => <div
+        {props.apiKeys
+        .sort((a, b) => a.apiName.localeCompare(b.apiName) || (a.customName || a.planType).localeCompare((b.customName || b.planType)))
+        .map((apiKey) => <div
           key={apiKey._id}
           className="team-selection team-selection__team selectable mt-1"
           onClick={() => props.extendApiKey(apiKey)}

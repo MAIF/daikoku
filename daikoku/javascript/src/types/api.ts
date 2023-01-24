@@ -328,6 +328,7 @@ export interface IFastPlan extends IBaseUsagePlan {
   costPerAdditionalRequest?: number;
   costPerRequest?: number;
   allowMultipleKeys: boolean;
+  aggregationApiKeysSecurity: boolean;
 }
 
 export interface IFastSubscription {
