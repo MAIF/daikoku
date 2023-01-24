@@ -219,6 +219,24 @@ object TenantMode {
   }
 }
 
+sealed trait ThirdPartyPaymentType {
+  def name: String
+}
+
+object ThirdPartyPaymentType {
+  case object Stripe extends ThirdPartyPaymentType {
+    override def name: String = "Stripe"
+  }
+}
+
+case class ThirdPartyPaymentSettings(
+    `type`: ThirdPartyPaymentType,
+    publicKey: String,
+    secretKey: String
+) extends CanJson[ThirdPartyPaymentSettings] {
+  override def asJson: JsValue = json.ThirdPartyPaymentSettingsFormat.writes(this)
+}
+
 case class Tenant(
     id: TenantId,
     enabled: Boolean = true,
@@ -243,7 +261,8 @@ case class Tenant(
     defaultMessage: Option[String] = None,
     tenantMode: Option[TenantMode] = None,
     aggregationApiKeysSecurity: Option[Boolean] = None,
-    robotTxt: Option[String] = None
+    robotTxt: Option[String] = None,
+    thirdPartyPaymentSettings: Option[ThirdPartyPaymentSettings] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)

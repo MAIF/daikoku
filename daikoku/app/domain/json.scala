@@ -1687,7 +1687,8 @@ object json {
             tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat),
             aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
               .asOpt[Boolean],
-            robotTxt = (json \ "robotTxt").asOpt[String]
+            robotTxt = (json \ "robotTxt").asOpt[String],
+            thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings").asOpt(ThirdPartyPaymentSettingsFormat)
           )
         )
       } recover {
@@ -1754,6 +1755,10 @@ object json {
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
+      "thirdPartyPaymentSettings" -> o.thirdPartyPaymentSettings
+        .map(ThirdPartyPaymentSettingsFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -3554,6 +3559,36 @@ object json {
       "action" -> OperationActionFormat.writes(o.action),
       "payload" -> o.payload.getOrElse(JsNull).as[JsValue],
       "status" -> OperationStatusFormat.writes(o.status)
+    )
+  }
+
+  val ThirdPartyPaymentTypeFormat = new Format[ThirdPartyPaymentType] {
+    override def reads(json: JsValue) = json.as[String] match {
+      case "Stripe" => JsSuccess(ThirdPartyPaymentType.Stripe)
+      case str => JsError(s"Bad ThirdPartyPaymentType value: $str")
+    }
+
+    override def writes(o: ThirdPartyPaymentType) = JsString(o.name)
+  }
+
+  var ThirdPartyPaymentSettingsFormat = new Format[ThirdPartyPaymentSettings] {
+    override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettings] = Try {
+      ThirdPartyPaymentSettings(
+        `type` = (json \ "type").as(ThirdPartyPaymentTypeFormat),
+        publicKey = (json \ "publicKey").as[String],
+        secretKey = (json \ "secretKey").as[String],
+      )
+    } match {
+      case Failure(e) =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      case Success(value) => JsSuccess(value)
+    }
+
+    override def writes(o: ThirdPartyPaymentSettings): JsValue = Json.obj(
+      "type" -> o.`type`.name,
+      "publicKey" -> o.publicKey,
+      "secretKey" -> o.secretKey
     )
   }
 

@@ -725,6 +725,11 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
                 action: () => navigateTo('settings/bucket'),
                 className: { active: subTab === 'bucket' },
               },
+              payment: {
+                label: translate('Payment'),
+                action: () => navigateTo('settings/payment'),
+                className: { active: subTab === 'payment' },
+              },
               security: {
                 label: translate('Security'),
                 action: () => navigateTo('settings/security'),

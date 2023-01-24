@@ -10,6 +10,7 @@ import { ITenantFull } from '../../../types/tenant';
 import { Spinner } from '../../utils/Spinner';
 import { AuditForm, AuthenticationForm, BucketForm, CustomizationForm, GeneralForm, MailForm } from './forms';
 import { SecurityForm } from './forms/SecurityForm';
+import { ThirdPartyPaymentForm } from './forms/ThirdPartyPaymentForm';
 
 export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: string, fromDaikokuAdmin?: boolean }) => {
   const { translate } = useContext(I18nContext)
@@ -95,10 +96,19 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
         }
       />
       <Route
-        path="/security"
+        path="/payment"
         element={
           <>
             {fromDaikokuAdmin && <h1>{data?.name} - {translate('Security')}</h1>}
+            <ThirdPartyPaymentForm tenant={data} updateTenant={updateTenant} />
+          </>
+        }
+      />
+      <Route
+        path="/security"
+        element={
+          <>
+            {fromDaikokuAdmin && <h1>{data?.name} - {translate('Third-Party payment')}</h1>}
             <SecurityForm tenant={data} updateTenant={updateTenant} />
           </>
         }
