@@ -192,6 +192,7 @@ export const FastApiList = (props: FastApiListProps) => {
                   options={[5, 10, 20].map((x) => ({ label: translate({ key: 'Show.results', replacements: [`${x}`] }), value: x }))}
                   onChange={(e) => changeNbOfApis(e!.value)}
                   classNamePrefix="reactSelect"
+                  menuPlacement="top"
                 />
                 <div className="flex-grow-1 d-flex justify-content-center">
                   <Pagination
