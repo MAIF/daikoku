@@ -12,8 +12,8 @@ import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import { ITeamSimple } from '../../../types';
-import { IApi, IUsagePlan } from '../../../types/api';
-import { ITenant } from '../../../types/tenant';
+import { IApi, IUsagePlan, UsagePlanVisibility } from '../../../types/api';
+import { IOtoroshiSettings, ITenant } from '../../../types/tenant';
 import {
   formatCurrency,
   formatPlanType,
@@ -427,8 +427,8 @@ const Card = ({
   );
 };
 
-const PUBLIC = 'Public';
-const PRIVATE = 'Private';
+const PUBLIC: UsagePlanVisibility = 'Public';
+const PRIVATE: UsagePlanVisibility = 'Private';
 
 type Props = {
   value: IApi
@@ -499,6 +499,11 @@ export const TeamApiPricings = (props: Props) => {
 
   const quotasWithLimitsFlow = [
     {
+      label: translate('Third-party Payment'),
+      collapsed: false,
+      flow: ['thirdPartyPaymentType'],
+    },
+    {
       label: translate('Quotas'),
       collapsed: false,
       flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
@@ -511,6 +516,11 @@ export const TeamApiPricings = (props: Props) => {
   ];
 
   const quotasWithoutLimitsFlow = [
+    {
+      label: translate('Third-party Payment'),
+      collapsed: false,
+      flow: ['thirdPartyPaymentType'],
+    },
     {
       label: translate('Quotas'),
       collapsed: false,
@@ -531,6 +541,11 @@ export const TeamApiPricings = (props: Props) => {
 
   const payPerUseFlow = [
     {
+      label: translate('Third-party Payment'),
+      collapsed: false,
+      flow: ['thirdPartyPaymentType'],
+    },
+    {
       label: translate('Billing'),
       collapsed: false,
       flow: [
@@ -543,7 +558,7 @@ export const TeamApiPricings = (props: Props) => {
     },
   ];
 
-  const getRightBillingFlow = (plan: any) => {
+  const getRightBillingFlow = (plan: IUsagePlan) => {
     if (!plan) {
       return [];
     }
@@ -568,8 +583,8 @@ export const TeamApiPricings = (props: Props) => {
     }
   }, [props.value]);
 
-  const deletePlan = (plan: any) => {
-    let plans = cloneDeep(props.value.possibleUsagePlans).filter((p: any) => p._id !== plan._id);
+  const deletePlan = (plan: IUsagePlan) => {
+    let plans = cloneDeep(props.value.possibleUsagePlans).filter((p) => p._id !== plan._id);
     const newValue = cloneDeep(props.value);
     newValue.possibleUsagePlans = plans;
     props.save(newValue);
@@ -581,20 +596,20 @@ export const TeamApiPricings = (props: Props) => {
     setMode(possibleMode.creation);
     setCreation(true);
   };
-  const editPlan = (plan: any) => {
+  const editPlan = (plan: IUsagePlan) => {
     setCreation(false);
     setPlanForEdition(plan);
     setMode(possibleMode.creation);
   };
 
-  const makePlanDefault = (plan: any) => {
+  const makePlanDefault = (plan: IUsagePlan) => {
     if (props.value.defaultUsagePlan !== plan._id && plan.visibility !== PRIVATE) {
       const updatedApi = { ...props.value, defaultUsagePlan: plan._id };
       props.save(updatedApi);
     }
   };
 
-  const toggleVisibility = (plan: any) => {
+  const toggleVisibility = (plan: IUsagePlan) => {
     if (props.value.defaultUsagePlan !== plan._id) {
       const originalVisibility = plan.visibility;
       const visibility = originalVisibility === PUBLIC ? PRIVATE : PUBLIC;
@@ -608,14 +623,14 @@ export const TeamApiPricings = (props: Props) => {
     const updatedApi: IApi = {
       ...api,
       possibleUsagePlans: [
-        ...api.possibleUsagePlans.filter((p: any) => p._id !== updatedPlan._id),
+        ...api.possibleUsagePlans.filter((p) => p._id !== updatedPlan._id),
         updatedPlan,
       ],
     };
     return props.save(updatedApi);
   };
 
-  const clonePlanAndEdit = (plan: any) => {
+  const clonePlanAndEdit = (plan: IUsagePlan) => {
     const clone = {
       ...cloneDeep(plan),
       _id: nanoid(32),
@@ -630,7 +645,7 @@ export const TeamApiPricings = (props: Props) => {
     openApiSelectModal({
       api: props.value,
       teamId: props.team._id,
-      onClose: (plan: any) => {
+      onClose: (plan) => {
         const clone = {
           ...cloneDeep(plan),
           _id: nanoid(32),
@@ -712,10 +727,10 @@ export const TeamApiPricings = (props: Props) => {
             otoroshiSettings: {
               type: type.string,
               format: format.select,
-              disabled: !creation && !!(planForEdition as any)?.otoroshiTarget?.otoroshiSettings,
+              disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translate('Otoroshi instances'),
               optionsFrom: Services.allSimpleOtoroshis(props.tenant._id),
-              transformer: (s: any) => ({
+              transformer: (s: IOtoroshiSettings) => ({
                 label: s.url,
                 value: s._id
               }),
@@ -724,7 +739,7 @@ export const TeamApiPricings = (props: Props) => {
               type: type.object,
               visible: ({ rawValues }) => !!rawValues.otoroshiTarget.otoroshiSettings,
               deps: ['otoroshiTarget.otoroshiSettings'],
-              render: (props: any) => OtoroshiEntitiesSelector({ ...props, translate }),
+              render: (props) => OtoroshiEntitiesSelector({ ...props, translate }),
               label: translate('Authorized entities'),
               placeholder: translate('Authorized.entities.placeholder'),
               help: translate('authorized.entities.help'),
@@ -856,9 +871,17 @@ export const TeamApiPricings = (props: Props) => {
     {
       id: 'quotasAndBilling',
       label: translate('Quotas & Billing'),
-      disabled: (plan: any) => plan.type === 'FreeWithoutQuotas',
+      disabled: (plan) => plan.type === 'FreeWithoutQuotas',
       flow: getRightBillingFlow,
       schema: {
+        thirdPartyPaymentType: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: "Type",
+          help: 'If no type is selected, use daikokuy APIs to get billing informations',
+          options: [{value: "Stripe", label: "Stripe"}],
+          props: { isClearable: true},
+        },
         maxPerSecond: {
           type: type.number,
           label: translate('Max. per second'),
@@ -900,7 +923,7 @@ export const TeamApiPricings = (props: Props) => {
         },
         costPerMonth: {
           type: type.number,
-          label: ({ rawValues }: any) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
+          label: ({ rawValues }) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
           placeholder: translate('Cost per billing period'),
           props: {
             step: 1,

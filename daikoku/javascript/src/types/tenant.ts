@@ -65,7 +65,7 @@ enum ThirdPartyPaymentType {
 }
 
 export interface IThirdPartyPaymentSettings {
-  type: ThirdPartyPaymentType,
+  name: ThirdPartyPaymentType,
 }
 
 interface IThirdPartyPaymentStripe extends IThirdPartyPaymentSettings {

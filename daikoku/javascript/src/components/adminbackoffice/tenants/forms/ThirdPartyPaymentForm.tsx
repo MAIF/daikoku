@@ -10,10 +10,10 @@ export const ThirdPartyPaymentForm = (props: { tenant?: ITenantFull, updateTenan
   const { translate } = useContext(I18nContext)
 
   const steps: Array<IMultistepsformStep<IThirdPartyPaymentSettings>> = [{
-    id: 'type',
+    id: 'name',
     label: translate('Third-Party payment provider'),
     schema: {
-      type: {
+      name: {
         type: type.string,
         format: format.buttonsSelect,
         label: translate('Third-Party payment provider'),
@@ -35,7 +35,7 @@ export const ThirdPartyPaymentForm = (props: { tenant?: ITenantFull, updateTenan
       }
     },
     schema: (data) => {
-      switch (data?.type) {
+      switch (data?.name) {
         default:
           return {
             publicKey: {
@@ -55,7 +55,7 @@ export const ThirdPartyPaymentForm = (props: { tenant?: ITenantFull, updateTenan
     <MultiStepForm<IThirdPartyPaymentSettings>
       value={props.tenant?.thirdPartyPaymentSettings}
       steps={steps}
-      initial={props.tenant?.thirdPartyPaymentSettings ? "settings" : "type"}
+      initial={props.tenant?.thirdPartyPaymentSettings ? "settings" : "name"}
       creation={false}
       save={(d: IThirdPartyPaymentSettings) => props.updateTenant.mutateAsync({ ...props.tenant, thirdPartyPaymentSettings: d } as ITenantFull)}
       labels={{

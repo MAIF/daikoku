@@ -113,6 +113,8 @@ export interface IBaseUsagePlan {
   otoroshiTarget?: IOtoroshiTarget;
 }
 
+export type UsagePlanVisibility = 'Public' | 'Private'
+export type thirdPartyPaymentType = 'Stripe'
 export interface IUsagePlan extends IBaseUsagePlan {
   allowMultipleKeys?: boolean;
   aggregationApiKeysSecurity?: boolean;
@@ -121,9 +123,10 @@ export interface IUsagePlan extends IBaseUsagePlan {
   rotation: boolean;
   currency: ICurrency;
   billingDuration: IBillingDuration;
-  visibility: 'Public' | 'Private';
+  visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
   costPerMonth?: number;
+  thirdPartyPaymentType?: thirdPartyPaymentType
 }
 
 export interface IUsagePlanAdmin extends IUsagePlan {}
