@@ -13,6 +13,7 @@ import { Can, manage, Option, tenant as TENANT } from '../../utils';
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
 import { useDaikokuBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
+import { isError } from '../../../types';
 
 const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 
@@ -48,14 +49,16 @@ export const TenantStyleEdit = () => {
     } else {
       Services.oneTenant(params.tenantId)
         .then((tenant) => {
-          const style = state.style.map(({ value, defaultColor, group }) => {
-            const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
-              () => defaultColor,
-              (value: any) => value[1]
-            );
-            return { value, color: color, group };
-          });
-          setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
+          if (!isError(tenant)) {
+            const style = state.style.map(({ value, defaultColor, group }) => {
+              const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
+                () => defaultColor,
+                (value: any) => value[1]
+              );
+              return { value, color: color, group };
+            });
+            setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
+          }
         });
     }
   }, [params.tenantId]);

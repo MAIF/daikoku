@@ -46,7 +46,9 @@ const AdminList = () => {
         setAdmins(maybeAdministration.admins);
         setTeam(maybeAdministration.team);
       }
-      setTenant(tenant);
+      if (!isError(tenant)){
+        setTenant(tenant);
+      } 
       setAddableAdmins(addableAdmins);
       setLoading(false);
     });

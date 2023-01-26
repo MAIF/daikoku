@@ -73,6 +73,7 @@ package object modules {
     lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
 
     lazy val otoroshiClient = wire[OtoroshiClient]
+    lazy val paymentClient = wire[PaymentClient]
 
     lazy val apiService = wire[ApiService]
     lazy val deletionService = wire[DeletionService]

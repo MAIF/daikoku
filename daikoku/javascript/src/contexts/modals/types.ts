@@ -81,6 +81,7 @@ export interface IFormModalProps<T> {
   onSubmit: (x: T) => void;
   options?: Option;
   actionLabel: string;
+  noClose?: boolean
 }
 
 export type TestingApiKeyModalProps = {

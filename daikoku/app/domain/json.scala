@@ -7,13 +7,10 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
+import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -472,6 +469,16 @@ object json {
 
     override def writes(o: OtoroshiSettingsId): JsValue = JsString(o.value)
   }
+  val ThirdPartyPaymentSettingsIdFormat = new Format[ThirdPartyPaymentSettingsId] {
+    override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettingsId] =
+      Try {
+        JsSuccess(ThirdPartyPaymentSettingsId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ThirdPartyPaymentSettingsId): JsValue = JsString(o.value)
+  }
   val TeamTypeFormat = new Format[TeamType] {
     override def reads(json: JsValue) = json.as[String] match {
       case "Personal"     => JsSuccess(Personal)
@@ -519,14 +526,6 @@ object json {
     }
 
     override def writes(o: IntegrationProcess) = JsString(o.name)
-  }
-  val ThirdPartyPaymentTypeFormat = new Format[ThirdPartyPaymentType] {
-    override def writes(o: ThirdPartyPaymentType): JsValue = JsString(o.name)
-
-    override def reads(json: JsValue): JsResult[ThirdPartyPaymentType] = json.as[String] match {
-      case "Stripe" => JsSuccess(ThirdPartyPaymentType.Stripe)
-      case str      => JsError(s"Bad ThirdPartyPaymentType value: $str")
-    }
   }
 
   val UsagePlanFormat = new Format[UsagePlan] {
@@ -690,6 +689,37 @@ object json {
         .as[JsValue]
     )
   }
+
+  val PaymentSettingsFormat = new Format[PaymentSettings] {
+    override def reads(json: JsValue): JsResult[PaymentSettings] = (json \ "type").as[String] match {
+      case "Stripe" => StripePaymentSettingsFormat.reads(json)
+    }
+
+    override def writes(o: PaymentSettings): JsValue = o match {
+      case s: PaymentSettings.Stripe =>
+        StripePaymentSettingsFormat.writes(s).as[JsObject] ++ Json.obj("type" -> "Stripe")
+    }
+  }
+
+  val StripePaymentSettingsFormat = new Format[PaymentSettings.Stripe] {
+    override def reads(json: JsValue): JsResult[PaymentSettings.Stripe] = Try {
+      JsSuccess(
+        PaymentSettings.Stripe(
+          thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat),
+          productId = (json \ "productId").as[String],
+          priceId = (json \ "priceId").as[String]
+        ))
+    } recover {
+      case e => JsError(e.getMessage)
+    } get
+
+    override def writes(o: PaymentSettings.Stripe): JsValue = Json.obj(
+      "thirdPartyPaymentSettingsId" -> o.thirdPartyPaymentSettingsId.asJson,
+      "productId" -> o.productId,
+      "priceId" -> o.priceId
+    )
+  }
+
   val AdminFormat = new Format[Admin] {
     override def reads(json: JsValue): JsResult[Admin] =
       Try {
@@ -903,8 +933,8 @@ object json {
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            thirdPartyPaymentType =
-              (json \ "thirdPartyPaymentType").asOpt(ThirdPartyPaymentTypeFormat)
+            paymentSettings =
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
           )
         )
       } recover {
@@ -953,8 +983,8 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
-      "thirdPartyPaymentType" -> o.thirdPartyPaymentType
-        .map(ThirdPartyPaymentTypeFormat.writes)
+      "paymentSettings" -> o.paymentSettings
+        .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -994,8 +1024,8 @@ object json {
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            thirdPartyPaymentType =
-              (json \ "thirdPartyPaymentType").asOpt(ThirdPartyPaymentTypeFormat)
+            paymentSettings =
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
           )
         )
       } recover {
@@ -1045,8 +1075,8 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsNull)
         .as[JsValue],
-      "thirdPartyPaymentType" -> o.thirdPartyPaymentType
-        .map(ThirdPartyPaymentTypeFormat.writes)
+      "thirdPartyPaymentType" -> o.paymentSettings
+        .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -1082,8 +1112,8 @@ object json {
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            thirdPartyPaymentType =
-              (json \ "thirdPartyPaymentType").asOpt(ThirdPartyPaymentTypeFormat)
+            paymentSettings =
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
           )
         )
       } recover {
@@ -1130,8 +1160,8 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
-      "thirdPartyPaymentType" -> o.thirdPartyPaymentType
-        .map(ThirdPartyPaymentTypeFormat.writes)
+      "thirdPartyPaymentType" -> o.paymentSettings
+        .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -1715,7 +1745,9 @@ object json {
             aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
               .asOpt[Boolean],
             robotTxt = (json \ "robotTxt").asOpt[String],
-            thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings").asOpt(ThirdPartyPaymentSettingsFormat)
+            thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings")
+              .asOpt(SeqThirdPartyPaymentSettingsFormat)
+              .getOrElse(Seq.empty)
           )
         )
       } recover {
@@ -1782,10 +1814,7 @@ object json {
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
-      "thirdPartyPaymentSettings" -> o.thirdPartyPaymentSettings
-        .map(ThirdPartyPaymentSettingsFormat.writes)
-        .getOrElse(JsNull)
-        .as[JsValue]
+      "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat.writes(o.thirdPartyPaymentSettings)
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -3590,19 +3619,21 @@ object json {
   }
 
   val ThirdPartyPaymentSettingsFormat = new Format[ThirdPartyPaymentSettings] {
-    override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettings] = (json \ "name").as[String] match {
+    override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettings] = (json \ "type").as[String] match {
       case "Stripe" => StripeSettingsFormat.reads(json)
       case str => JsError(s"Bad ThirdPartyPaymentSettings value: $str")
     }
 
     override def writes(o: ThirdPartyPaymentSettings): JsValue = o match {
-      case s: StripeSettings =>  StripeSettingsFormat.writes(s).as[JsObject] ++ Json.obj("name" -> "Stripe")
+      case s: StripeSettings =>  StripeSettingsFormat.writes(s).as[JsObject] ++ Json.obj("type" -> "Stripe")
     }
   }
 
   val StripeSettingsFormat = new Format[StripeSettings] {
     override def reads(json: JsValue): JsResult[StripeSettings] = Try {
       StripeSettings(
+        id  = (json \ "_id").as(ThirdPartyPaymentSettingsIdFormat),
+        name = (json \ "name").as[String],
         publicKey = (json \ "publicKey").as[String],
         secretKey = (json \ "secretKey").as[String],
       )
@@ -3622,16 +3653,19 @@ object json {
 
   val SetOtoroshiServicesIdFormat =
     Format(Reads.set(OtoroshiServiceIdFormat),
-           Writes.set(OtoroshiServiceIdFormat))
+      Writes.set(OtoroshiServiceIdFormat))
   val SetOtoroshiRoutesIdFormat =
     Format(Reads.set(OtoroshiRouteIdFormat), Writes.set(OtoroshiRouteIdFormat))
   val SetOtoroshiServiceGroupsIdFormat =
     Format(Reads.set(OtoroshiServiceGroupIdFormat),
-           Writes.set(OtoroshiServiceGroupIdFormat))
+      Writes.set(OtoroshiServiceGroupIdFormat))
   val SeqCmsHistoryFormat =
     Format(Reads.seq(CmsHistoryFormat), Writes.seq(CmsHistoryFormat))
   val SeqApiDocumentationDetailPageFormat
-    : Format[Seq[ApiDocumentationDetailPage]] =
+  : Format[Seq[ApiDocumentationDetailPage]] =
     Format(Reads.seq(ApiDocumentationDetailPageFormat),
-           Writes.seq(ApiDocumentationDetailPageFormat))
+      Writes.seq(ApiDocumentationDetailPageFormat))
+  val SeqThirdPartyPaymentSettingsFormat: Format[Seq[ThirdPartyPaymentSettings]] =
+    Format(Reads.seq(ThirdPartyPaymentSettingsFormat), Writes.seq(ThirdPartyPaymentSettingsFormat))
+
 }

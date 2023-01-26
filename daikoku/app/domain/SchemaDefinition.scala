@@ -335,6 +335,14 @@ object SchemaDefinition {
       )
     )
 
+    lazy val PaymentSettingsType = InterfaceType(
+      name = "PaymentSettings",
+      description = "a payment settings for usage plan",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), PaymentSettings] (
+        Field("thirdPartyPaymentSettingsId", StringType, resolve = _.value.thirdPartyPaymentSettingsId.value)
+      )
+    )
+
     lazy val UsagePlanInterfaceType = InterfaceType(
       name = "UsagePlan",
       description = "A plan of api in Daikoku",
@@ -359,7 +367,7 @@ object SchemaDefinition {
         ),
         Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name),
         Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name),
-        Field("thirdPartyPaymentType", OptionType(StringType), resolve = _.value.thirdPartyPaymentType.map(_.name)),
+        Field("paymentSettings", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings),
         Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity),
         Field("type", StringType, resolve = _.value.typeName)
       )
@@ -369,6 +377,7 @@ object SchemaDefinition {
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan visible only by admins"),
       ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id.value)),
+      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = ctx => ctx.value.otoroshiTarget)
       ),
@@ -389,7 +398,7 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("thirdPartyPaymentType", Field("thirdPartyPaymentType", OptionType(StringType), resolve = _.value.thirdPartyPaymentType.map(_.name))),
+      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
@@ -411,7 +420,7 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("thirdPartyPaymentType", Field("thirdPartyPaymentType", OptionType(StringType), resolve = _.value.thirdPartyPaymentType.map(_.name))),
+      ReplaceField("paymentSettings", Field("thirdPartyPaymentType", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
@@ -434,7 +443,7 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("thirdPartyPaymentType", Field("thirdPartyPaymentType", OptionType(StringType), resolve = _.value.thirdPartyPaymentType.map(_.name))),
+      ReplaceField("paymentSettings", Field("thirdPartyPaymentType", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
@@ -457,7 +466,7 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("thirdPartyPaymentType", Field("thirdPartyPaymentType", OptionType(StringType), resolve = _.value.thirdPartyPaymentType.map(_.name))),
+      ReplaceField("paymentSettings", Field("thirdPartyPaymentType", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
@@ -480,7 +489,7 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("thirdPartyPaymentType", Field("thirdPartyPaymentType", OptionType(StringType), resolve = _.value.thirdPartyPaymentType.map(_.name))),
+      ReplaceField("paymentSettings", Field("thirdPartyPaymentType", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",

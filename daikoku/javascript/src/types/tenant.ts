@@ -60,12 +60,14 @@ export interface IBucketSettings {
   v4auth: boolean;
 }
 
-enum ThirdPartyPaymentType {
+export enum ThirdPartyPaymentType {
   stripe = 'Stripe'
 }
 
 export interface IThirdPartyPaymentSettings {
-  name: ThirdPartyPaymentType,
+  _id: string
+  name: string
+  type: ThirdPartyPaymentType
 }
 
 interface IThirdPartyPaymentStripe extends IThirdPartyPaymentSettings {
@@ -185,7 +187,7 @@ export interface ITenantFull extends ITenant {
   otoroshiSettings: Array<IOtoroshiSettings>;
   style: ITenantStyle;
   translation: any;
-  thirdPartyPaymentSettings: IThirdPartyPaymentSettings
+  thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>
 }
 
 export type TranslationItem = string | { s: string; p: string };

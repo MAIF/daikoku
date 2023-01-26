@@ -47,6 +47,7 @@ object AppError {
   case object TeamForbidden extends AppError
   case class ParsingPayloadError(message: String) extends AppError
   case object NameAlreadyExists extends AppError
+  case object ThirdPartyPaymentSettingsNotFound extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
@@ -86,6 +87,7 @@ object AppError {
     case Unauthorized                            => play.api.mvc.Results.Unauthorized(toJson(error))
     case ParsingPayloadError(message)            => BadRequest(toJson(error))
     case NameAlreadyExists                       => Conflict(toJson(error))
+    case ThirdPartyPaymentSettingsNotFound       => NotFound(toJson(error))
   }
 
   def toJson(error: AppError) = {
@@ -133,6 +135,7 @@ object AppError {
           case TranslationNotFound => "Translation not found"
           case Unauthorized        => "You're not authorized here"
           case NameAlreadyExists   => "Resource with same name already exists"
+          case ThirdPartyPaymentSettingsNotFound   => "Third-party payment settings not found"
           case _                   => ""
         }))
     }

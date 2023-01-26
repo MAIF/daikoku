@@ -199,19 +199,18 @@ case class Currency(code: String) extends CanJson[Currency] {
 }
 
 
-
-
-sealed trait ThirdPartyPaymentType {
-  def name: String
+sealed trait PaymentSettings {
+  def thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId
+  def asJson: JsValue = json.PaymentSettingsFormat.writes(this)
 }
 
-object ThirdPartyPaymentType {
-  case object Stripe
-    extends ThirdPartyPaymentType{
-    override def name: String = "Stripe"
-    def asJson: JsValue = JsString(name)
+case object PaymentSettings {
+  case class Stripe(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
+                    productId: String,
+                    priceId: String) extends PaymentSettings {
   }
 }
+
 
 sealed trait UsagePlan {
   def id: UsagePlanId
@@ -239,7 +238,7 @@ sealed trait UsagePlan {
   def subscriptionProcess: SubscriptionProcess
   def integrationProcess: IntegrationProcess
   def aggregationApiKeysSecurity: Option[Boolean]
-  def thirdPartyPaymentType: Option[ThirdPartyPaymentType] = None
+  def paymentSettings: Option[PaymentSettings]
 }
 
 case object UsagePlan {
@@ -249,6 +248,7 @@ case object UsagePlan {
       customDescription: Option[String] = Some("access to admin api"),
       otoroshiTarget: Option[OtoroshiTarget],
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def costPerMonth: BigDecimal = BigDecimal(0)
@@ -289,9 +289,9 @@ case object UsagePlan {
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty,
-      override val thirdPartyPaymentType: Option[ThirdPartyPaymentType] = None
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "FreeWithoutQuotas"
     override def costPerMonth: BigDecimal = BigDecimal(0)
@@ -324,9 +324,9 @@ case object UsagePlan {
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty,
-      override val thirdPartyPaymentType: Option[ThirdPartyPaymentType] = None
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "FreeWithQuotas"
     override def costPerMonth: BigDecimal = BigDecimal(0)
@@ -361,9 +361,9 @@ case object UsagePlan {
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty,
-      override val thirdPartyPaymentType: Option[ThirdPartyPaymentType] = None
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "QuotasWithLimits"
     override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
@@ -397,9 +397,9 @@ case object UsagePlan {
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty,
-      override val thirdPartyPaymentType: Option[ThirdPartyPaymentType] = None
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "QuotasWithoutLimits"
     override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
@@ -431,9 +431,9 @@ case object UsagePlan {
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty,
-      override val thirdPartyPaymentType: Option[ThirdPartyPaymentType] = None
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "PayPerUse"
     override def costFor(requests: Long): BigDecimal =

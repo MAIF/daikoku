@@ -341,7 +341,7 @@ export const saveDocPage = (teamId: string, page: IDocPage): Promise<IDocPage | 
   });
 
 export const allTenants = () => customFetch('/api/tenants');
-export const oneTenant = (tenantId: string): Promise<ITenantFull> =>
+export const oneTenant = (tenantId: string): Promise<ResponseError | ITenantFull> =>
   customFetch(`/api/tenants/${tenantId}`);
 
 export const getConsummedQuotasWithSubscriptionId = (

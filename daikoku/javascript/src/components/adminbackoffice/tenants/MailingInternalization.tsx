@@ -39,27 +39,29 @@ const EditMailtemplate = ({
   useEffect(() => {
     Services.oneTenant(tenantId)
       .then((tenant) => {
-        setTenant(tenant);
-
-        Promise.all([
-          Services.getTranslationLanguages(),
-          Services.getMailTranslations(KEY_MAIL_TEMPLATE)
-        ])
-          .then(([languages, data]) => {
-            if (!isError(languages) && !isError(data)) {
-              const templates = languages.map((language) => {
-                return Option(data.translations[0][1].find((t) => t.language === language))
-                  .getOrElse({
-                    _id: nanoid(),
-                    key: KEY_MAIL_TEMPLATE,
-                    language,
-                    value: '{{email}}',
-                    _tenant: tenant._id
-                  });
-              })
-              setMailTemplateTranslations(templates)
-            }
-          });
+        if (!isError(tenant)) {
+          setTenant(tenant);
+  
+          Promise.all([
+            Services.getTranslationLanguages(),
+            Services.getMailTranslations(KEY_MAIL_TEMPLATE)
+          ])
+            .then(([languages, data]) => {
+              if (!isError(languages) && !isError(data)) {
+                const templates = languages.map((language) => {
+                  return Option(data.translations[0][1].find((t) => t.language === language))
+                    .getOrElse({
+                      _id: nanoid(),
+                      key: KEY_MAIL_TEMPLATE,
+                      language,
+                      value: '{{email}}',
+                      _tenant: tenant._id
+                    });
+                })
+                setMailTemplateTranslations(templates)
+              }
+            });
+        }
       });
   }, []);
 

@@ -109,6 +109,10 @@ case class CmsPageId(value: String) extends ValueType with CanJson[CmsPageId] {
   def asJson: JsValue = JsString(value)
 }
 
+case class ThirdPartyPaymentSettingsId(value: String) extends ValueType with CanJson[CmsPageId] {
+  def asJson: JsValue = JsString(value)
+}
+
 case class Translation(id: DatastoreId,
                        tenant: TenantId,
                        language: String,
