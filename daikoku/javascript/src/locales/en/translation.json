@@ -1248,5 +1248,9 @@
     "set.font.family": "font family",
     "select.team.placeholder": "Select a team",
     "otoroshi.missing.target":"Missing Otoroshi target",
-    "otoroshi.missing.entities":"Missing Otoroshi entities"
+    "otoroshi.missing.entities":"Missing Otoroshi entities",
+    "Payment": "Payment",
+    "third-party.payment.list.add.label": "Add new settings",
+    "third-party.payment.settings.delete.confirm.message": "Are your sure to delete this settings?",
+    "third-party.payment.settings.type.select.message": "Please, Select the third-party payment settings type"
 }

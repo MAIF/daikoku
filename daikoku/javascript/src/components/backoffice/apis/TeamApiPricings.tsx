@@ -1,4 +1,5 @@
 import { constraints, format, type } from '@maif/react-forms';
+import { useQuery } from '@tanstack/react-query';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
@@ -11,9 +12,9 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { ITeamSimple } from '../../../types';
+import { ITeamFull, ITeamSimple } from '../../../types';
 import { IApi, IUsagePlan, UsagePlanVisibility } from '../../../types/api';
-import { IOtoroshiSettings, ITenant } from '../../../types/tenant';
+import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
   formatCurrency,
   formatPlanType,
@@ -22,7 +23,8 @@ import {
   MultiStepForm,
   newPossibleUsagePlan,
   Option,
-  renderPricing
+  renderPricing,
+  tenant
 } from '../../utils';
 
 const SUBSCRIPTION_PLAN_TYPES = {
@@ -449,6 +451,8 @@ export const TeamApiPricings = (props: Props) => {
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
 
+  const queryFullTenant = useQuery(['full-tenant'], () => Services.oneTenant(props.tenant._id))
+
   useEffect(() => {
     return () => {
       props.injectSubMenu(null);
@@ -501,7 +505,7 @@ export const TeamApiPricings = (props: Props) => {
     {
       label: translate('Third-party Payment'),
       collapsed: false,
-      flow: ['thirdPartyPaymentType'],
+      flow: ['paymentSettings'],
     },
     {
       label: translate('Quotas'),
@@ -874,13 +878,21 @@ export const TeamApiPricings = (props: Props) => {
       disabled: (plan) => plan.type === 'FreeWithoutQuotas',
       flow: getRightBillingFlow,
       schema: {
-        thirdPartyPaymentType: {
-          type: type.string,
-          format: format.buttonsSelect,
-          label: "Type",
-          help: 'If no type is selected, use daikokuy APIs to get billing informations',
-          options: [{value: "Stripe", label: "Stripe"}],
-          props: { isClearable: true},
+        paymentSettings: {
+          type: type.object,
+          format: format.form,
+          label: translate('payment settings'),
+          schema: {
+            thirdPartyPaymentSettingsId: {
+              type: type.string,
+              format: format.select,
+              label: translate('Type'),
+              help: 'If no type is selected, use daikokuy APIs to get billing informations',
+              options: queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : [],
+              transformer: (s: IThirdPartyPaymentSettings) => ({label: s.name, value: s._id}),
+              props: { isClearable: true},
+            }
+          }
         },
         maxPerSecond: {
           type: type.number,

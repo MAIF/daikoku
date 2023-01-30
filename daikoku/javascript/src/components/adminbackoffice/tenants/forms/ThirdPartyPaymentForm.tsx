@@ -1,20 +1,30 @@
 import { constraints, format, Schema, type } from '@maif/react-forms';
-import { UseMutationResult } from '@tanstack/react-query';
-import { useContext, useRef } from 'react';
-
+import { UseMutationResult, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
-import { I18nContext, updateTenant } from '../../../../core';
+import { useContext, useEffect, useRef } from 'react';
+import { nanoid } from 'nanoid';
+
+import { ModalContext } from '../../../../contexts';
+import { I18nContext } from '../../../../core';
 import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
 import { Table, TableRef } from '../../../inputs/Table';
 import { Can, manage, tenant as TENANT } from '../../../utils';
-import { ModalContext } from '../../../../contexts';
-import { nanoid } from 'nanoid';
+import { deleteOtoroshiSettings } from '../../../../services';
 
 export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-  const table = useRef<TableRef>()
+  const table = useRef<TableRef>();
 
-  const { translate } = useContext(I18nContext)
-  const { openFormModal } = useContext(ModalContext);
+  const { translate } = useContext(I18nContext);
+  const { openFormModal, confirm } = useContext(ModalContext);
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    //todo: refactor this
+    table.current?.update()
+  }, [props.tenant.thirdPartyPaymentSettings])
+
+
 
   // const steps: Array<IMultistepsformStep<IThirdPartyPaymentSettings>> = [{
   //   id: 'name',
@@ -63,38 +73,38 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
     columnHelper.accessor("name", {
       header: translate('Name'),
     }),
-    // columnHelper.accessor("type", {
-    //   header: translate('Type'),
-    // }),
-    // columnHelper.display({
-    //   header: translate('Actions'),
-    //   meta: { style: { textAlign: 'center', width: '120px' } },
-    //   enableColumnFilter: false,
-    //   enableSorting: false,
-    //   cell: (info) => {
-    //     const settings = info.row.original;
-    //     return (
-    //       <div >
-    //         <button
-    //           type="button"
-    //           className="btn btn-outline-primary me-1"
-    //           title={translate('Edit this settings')}
-    //           onClick={() => console.debug(`Editing ${settings.name}`)}
-    //         >
-    //           <i className="fas fa-edit" />
-    //         </button>
-    //         <button
-    //           type="button"
-    //           className="btn btn-outline-danger"
-    //           title={translate('Delete this settings')}
-    //           onClick={() => console.debug(`Deleting third party settings ${settings.name}`)}
-    //         >
-    //           <i className="fas fa-trash" />
-    //         </button>
-    //       </div>
-    //     );
-    //   },
-    // }),
+    columnHelper.accessor("type", {
+      header: translate('Type'),
+    }),
+    columnHelper.display({
+      header: translate('Actions'),
+      meta: { style: { textAlign: 'center', width: '120px' } },
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info) => {
+        const settings = info.row.original;
+        return (
+          <div >
+            <button
+              type="button"
+              className="btn btn-outline-primary me-1"
+              title={translate('Edit')}
+              onClick={() => editSettings(settings.type, settings)}
+            >
+              <i className="fas fa-edit" />
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-danger"
+              title={translate('Delete')}
+              onClick={() => deleteSettings(settings)}
+            >
+              <i className="fas fa-trash" />
+            </button>
+          </div>
+        );
+      },
+    }),
   ];
 
   const getSettingsSchema = (paymentType: ThirdPartyPaymentType): Schema => {
@@ -104,7 +114,6 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
           name: {
             type: type.string,
             label: translate('Name'),
-            defaultValue: 'New Stripe settings',
             constraints: [
               constraints.required()
             ]
@@ -127,18 +136,47 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
     }
   }
 
-  const createNewSettings = (paymentType: ThirdPartyPaymentType) => {
+  const deleteSettings = (paymentSetttings: IThirdPartyPaymentSettings) => {
+    const thirdPartyPaymentSettings = [...props.tenant.thirdPartyPaymentSettings.filter(s => s._id !== paymentSetttings._id)];
+
+    confirm({
+      message: translate('third-party.payment.settings.delete.confirm.message'),
+      okLabel: translate('Delete')
+    }).then((ok) => {
+      if (ok) {
+        props.updateTenant.mutateAsync({ ...props.tenant, thirdPartyPaymentSettings })
+          .then(() => queryClient.invalidateQueries(['full-tenant']))
+          .then(() => table.current?.update())
+      }
+    })
+  }
+
+  const editSettings = (paymentType: ThirdPartyPaymentType, paymentSetttings?: IThirdPartyPaymentSettings) => {
     const schema = getSettingsSchema(paymentType);
 
     openFormModal<IThirdPartyPaymentSettings>({
-      title: 'creation',
+      title: translate('Creation'),
       schema: schema,
-      onSubmit: (data) => props.updateTenant.mutateAsync({
-        ...props.tenant, 
-        thirdPartyPaymentSettings: [
-          ...props.tenant.thirdPartyPaymentSettings, 
-          {...data, type: paymentType, _id: nanoid(32)}]}),
-      actionLabel: 'Create'
+      value: paymentSetttings,
+      onSubmit: (data) => {
+        const thirdPartyPaymentSettings = !paymentSetttings ?
+          [
+            ...props.tenant.thirdPartyPaymentSettings,
+            { ...data, type: paymentType, _id: nanoid(32) }
+          ] :
+          [
+            ...props.tenant.thirdPartyPaymentSettings.filter(s => s._id !== data._id),
+            data
+          ];
+
+        props.updateTenant.mutateAsync({
+          ...props.tenant,
+          thirdPartyPaymentSettings
+        })
+          .then(() => queryClient.invalidateQueries(['full-tenant']))
+          .then(() => table.current?.update())
+      },
+      actionLabel: !!paymentSetttings ? translate('Update') : translate('Create')
     })
   }
 
@@ -147,7 +185,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       type: type.string,
       format: format.buttonsSelect,
       options: ['Stripe'],
-      label: 'Quel type de third-party paiement ?'
+      label: translate('third-party.payment.settings.type.select.message')
     }
   }
 
@@ -158,18 +196,18 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
         <button
           type="button"
           className="btn btn-sm btn-outline-success mb-1 ms-1"
-          title={translate('otoroshi.list.add.label')}
+          title={translate('third-party.payment.list.add.label')}
           onClick={() => {
             openFormModal({
               title: 'titre',
               schema: beforeCreationSchema,
-              onSubmit: (data: {type: ThirdPartyPaymentType}) => createNewSettings(data.type),
-              actionLabel: 'Next',
+              onSubmit: (data: { type: ThirdPartyPaymentType }) => editSettings(data.type),
+              actionLabel: translate('Next'),
               noClose: true
             })
           }}
         >
-          {translate('otoroshi.list.add.label')}
+          {translate('third-party.payment.list.add.label')}
         </button>
         <div className="section p-2"></div>
         <Table

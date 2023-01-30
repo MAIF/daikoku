@@ -32,6 +32,9 @@ class PaymentClient(
       case Some(settings) =>
         settings.typeName match {
           case "Stripe" =>
+            //todo: find product with convention name of stripe product (for example: <name>::<version>/<plan>)
+            //todo: if a product is found, create a new Price => associate productId & priceId to usage plan
+            //todo: if a product is not found, create a new Product & Price => associate productId & priceId to usage plan
             EitherT.liftF(createStripeProduct(
               settings.asInstanceOf[StripeSettings],
               team,

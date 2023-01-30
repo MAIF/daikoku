@@ -1251,5 +1251,9 @@
   "set.font.family": "la police de style",
   "select.team.placeholder": "Sélectionner une équipe",
   "otoroshi.missing.target": "Cible Otoroshi manquante",
-  "otoroshi.missing.entities": "entités Otoroshi manquantes"
+  "otoroshi.missing.entities": "entités Otoroshi manquantes",
+  "Payment": "Paiement",
+  "third-party.payment.list.add.label": "Ajouter un tiers de paiement",
+  "third-party.payment.settings.delete.confirm.message": "Êtes-vous sûr de vouloir supprimer ces paramètres ?",
+  "third-party.payment.settings.type.select.message": "Merci de selectionner un type de tiers de paiement à parametrer"
 }

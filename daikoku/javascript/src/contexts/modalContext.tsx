@@ -71,15 +71,15 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
     />)
   })
 
-  const confirm = (props: ConfirmModalProps) => new Promise<boolean>((success) => {
+  const confirm = (props: ConfirmModalProps) => new Promise<boolean>((resolve) => {
     open(<Confirm
       {...props}
       ok={() => {
-        success(true);
+        resolve(true);
         close();
       }}
       cancel={() => {
-        success(false);
+        resolve(false);
         close();
       }}
     />)

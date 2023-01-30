@@ -3645,7 +3645,8 @@ object json {
     }
 
     override def writes(o: StripeSettings): JsValue = Json.obj(
-      "name" -> "Stripe",
+      "_id" -> ThirdPartyPaymentSettingsIdFormat.writes(o.id),
+      "name" -> o.name,
       "publicKey" -> o.publicKey,
       "secretKey" -> o.secretKey
     )

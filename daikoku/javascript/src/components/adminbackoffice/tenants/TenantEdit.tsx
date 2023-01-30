@@ -20,11 +20,10 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
   const { state } = useLocation();
 
   const queryClient = useQueryClient()
-  const { isLoading, data } = useQuery(['tenant'], () => Services.oneTenant(tenantId))
+  const { isLoading, data } = useQuery(['full-tenant'], () => Services.oneTenant(tenantId))
   const updateTenant = useMutation((tenant: ITenantFull) => Services.saveTenant(tenant), {
-    onSuccess: () => { 
-      toastr.success(translate('Success'), translate('Tenant updated successfully')) 
-      queryClient.invalidateQueries['tenant']
+    onSuccess: () => {
+      toastr.success(translate('Success'), translate('Tenant updated successfully'))
     },
     onError: () => { toastr.error(translate('Error'), translate('Error')) }
   });
