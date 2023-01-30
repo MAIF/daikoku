@@ -101,7 +101,12 @@ export const getDocDetails = (api: string, version: string): Promise<IDocDetail>
 export const getTeamSubscriptions = (api: any, team: any, version: any) =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
 
-export const getTeamSubscriptionsWithPlan = (api: string, team: string, version: string, planId: string):Promise<Array<IFastApiSubscription>> =>
+export const getTeamSubscriptionsWithPlan = (
+  api: string,
+  team: string,
+  version: string,
+  planId: string
+): Promise<Array<IFastApiSubscription>> =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}?planId=${planId}`);
 
 export const getMySubscriptions = (
@@ -1153,6 +1158,11 @@ export const graphql = {
             allowMultipleKeys
             otoroshiTarget {
               otoroshiSettings
+              authorizedEntities {
+                groups
+                services
+                routes
+              }
             }
             aggregationApiKeysSecurity
           }
@@ -1264,6 +1274,7 @@ export const graphql = {
               type
               subscriptionProcess
               allowMultipleKeys
+              aggregationApiKeysSecurity
               ... on QuotasWithLimits {
                 costPerMonth
                 maxPerSecond

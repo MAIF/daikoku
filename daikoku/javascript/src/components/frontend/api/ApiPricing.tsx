@@ -57,7 +57,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     const askForApikeys = (teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription) => {
       if (plan.subscriptionProcess === "Automatic") {
         props.askForApikeys({ teams, plan: plan, apiKey })
-      } else (
+      } else {
         openFormModal<{ motivation: string }>({
           title: translate('motivations.modal.title'),
           schema: {
@@ -73,7 +73,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           onSubmit: ({ motivation }) => props.askForApikeys({ teams, plan, apiKey, motivation }),
           actionLabel: translate('Send')
         })
-      )
+      }
     }
 
     Services.getAllTeamSubscriptions(teams[0])
@@ -93,9 +93,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             return { subscription, api, plan };
           })
 
-        const filteredApiKeys = int.filter(
-          (infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
-            plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
+        const filteredApiKeys = int.filter((infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
+          plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
         )
           .map((infos) => infos.subscription);
 
@@ -142,9 +141,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   let pricing = renderPricing(plan, translate)
 
   const otoroshiTargetIsDefined = !!plan.otoroshiTarget;
-  const otoroshiEntitiesIsDefined = !!plan.otoroshiTarget?.authorizedEntities.groups.length ||
+  const otoroshiEntitiesIsDefined = otoroshiTargetIsDefined && (!!plan.otoroshiTarget?.authorizedEntities.groups.length ||
     !!plan.otoroshiTarget?.authorizedEntities.routes.length ||
-    !!plan.otoroshiTarget?.authorizedEntities.services.length;
+    !!plan.otoroshiTarget?.authorizedEntities.services.length);
 
   return (
     <div className="card mb-4 shadow-sm">

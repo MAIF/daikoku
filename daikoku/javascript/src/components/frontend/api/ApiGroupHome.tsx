@@ -18,7 +18,7 @@ import { useApiGroupFrontOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 import { formatPlanType } from '../../utils/formatters';
-import { INotification, isError, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
+import { INotification, isError, IState, ISubscription, ITeamSimple, IUsagePlan, IUserSimple } from '../../../types';
 
 export const ApiGroupHome = ({ }) => {
   const [apiGroup, setApiGroup] = useState<any>();
@@ -31,7 +31,7 @@ export const ApiGroupHome = ({ }) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab');
 
-  const { connectedUser, tenant } = useSelector((s) => (s as any).context);
+  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
 
   const { addMenu } = useApiGroupFrontOffice(apiGroup, ownerTeam);
 
@@ -40,7 +40,7 @@ export const ApiGroupHome = ({ }) => {
 
   useEffect(() => {
     if (!!apiGroup && !!match) {
-      const api = (apiGroup as any).apis.find((a: any) => a._humanReadableId === match.params.apiId);
+      const api = apiGroup.apis.find((a: any) => a._humanReadableId === match.params.apiId);
       const navigateTo = (navTab: any) => navigate(
         `/${match.params.teamId}/apigroups/${match.params.apiGroupId}/apis/${match.params.apiId}/${match.params.versionId}/${navTab}`
       );

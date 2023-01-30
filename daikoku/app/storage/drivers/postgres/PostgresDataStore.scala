@@ -1115,7 +1115,9 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
 
       case Some(_) =>
         val sortedKeys = sort
-          .map(obj => obj.fields.sortWith((a, b) => a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+          .map(obj =>
+            obj.fields.sortWith((a, b) =>
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
           .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
@@ -1177,7 +1179,10 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
       .map(_.size() > 0)
   }
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
+  override def findWithPagination(query: JsObject,
+                                  page: Int,
+                                  pageSize: Int,
+                                  sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
     super.findWithPagination(query, page, pageSize, sort)
 }
@@ -1267,12 +1272,15 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         }
       case Some(s) =>
         val sortedKeys = sort
-          .map(obj => obj.fields.sortWith((a, b) => a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+          .map(obj =>
+            obj.fields.sortWith((a, b) =>
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
           .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' ORDER BY ${sortedKeys.mkString(",")} ASC",
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' ORDER BY ${sortedKeys
+              .mkString(",")} ASC",
             Seq.empty
           ) { rowToJson(_, format) } else {
           val (sql, params) = convertQuery(
@@ -1314,7 +1322,10 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     super.findOneWithProjection(query ++ Json.obj("_tenant" -> tenant.value),
                                 projection)
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
+  override def findWithPagination(query: JsObject,
+                                  page: Int,
+                                  pageSize: Int,
+                                  sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
     super.findWithPagination(query ++ Json.obj("_tenant" -> tenant.value),
                              page,
@@ -1571,7 +1582,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     }
   }
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int, sort: Option[JsObject] = None)(
+  override def findWithPagination(query: JsObject,
+                                  page: Int,
+                                  pageSize: Int,
+                                  sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext
   ): Future[(Seq[Of], Long)] = {
     logger.debug(
@@ -1587,35 +1601,39 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
             .map(_.getOrElse(0L))
         else {
           val (sql, params) = convertQuery(query)
-          val out: String = s"SELECT COUNT(*) as count FROM $tableName WHERE $sql"
+          val out: String =
+            s"SELECT COUNT(*) as count FROM $tableName WHERE $sql"
 
           reactivePg
             .queryOne(out, params.map {
               case x: String => x.replace("\"", "")
-              case x => x
+              case x         => x
             }) { _.optLong("count") }
             .map(_.getOrElse(0L))
         }
       }
       queryRes <- {
         val sortedKeys = sort
-          .map(obj => obj.fields.sortWith((a, b) => a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+          .map(obj =>
+            obj.fields.sortWith((a, b) =>
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
           .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
 
         if (query.values.isEmpty)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName ORDER BY ${sortedKeys.mkString(",")} ASC LIMIT $$1 OFFSET $$2",
-            Seq(Integer.valueOf(pageSize), Integer.valueOf(page*pageSize))) {
-            row => rowToJson(row, format)
+            Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize))
+          ) { row =>
+            rowToJson(row, format)
           } else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC LIMIT ${Integer
-              .valueOf(pageSize)} OFFSET ${Integer.valueOf(page*pageSize)}",
-            params.map{
-              case x:String => x.replace("\"", "")
-              case x => x
+              .valueOf(pageSize)} OFFSET ${Integer.valueOf(page * pageSize)}",
+            params.map {
+              case x: String => x.replace("\"", "")
+              case x         => x
             }
           ) { row =>
             rowToJson(row, format)

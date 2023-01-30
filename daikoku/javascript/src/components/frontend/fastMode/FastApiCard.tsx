@@ -3,25 +3,29 @@ import React, { useContext, useEffect, useState } from "react";
 import { toastr } from "react-redux-toastr";
 import { constraints, format, type as formType } from "@maif/react-forms";
 import Select from "react-select";
+import { getApolloContext } from "@apollo/client";
 
-import { IFastApi, IFastPlan, IFastSubscription, ITeamSimple } from "../../../types";
+import { IApi, IFastApi, IFastPlan, IFastSubscription, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan } from "../../../types";
 import { I18nContext } from "../../../contexts/i18n-context";
 import * as Services from "../../../services";
 import { ModalContext } from "../../../contexts";
+import { Option } from '../../utils';
 
 type FastApiCardProps = {
   team: ITeamSimple,
   apisWithAuthorization: Array<IFastApi>,
   subscriptions: Array<Array<IFastSubscription>>,
   input: string
-  showPlan: Function
-  showApiKey: Function
+  showPlan: (plan: IFastPlan) => void
+  showApiKey: (apiId: string, teamId: string, version: string, plan: IFastPlan) => void
   planResearch: string
+  setReasonSub: (reason: string) => void
 }
 export const FastApiCard = (props: FastApiCardProps) => {
-  const { openFormModal } = useContext(ModalContext);
+  const { openFormModal, openApiKeySelectModal } = useContext(ModalContext);
 
   const queryClient = useQueryClient();
+  const { client } = useContext(getApolloContext());
 
   const { translate } = useContext(I18nContext);
   const [selectedApiV, setSelectedApiV] = useState(props.apisWithAuthorization.find(a => a.api.isDefault)?.api.currentVersion || props.apisWithAuthorization[0].api.currentVersion);
@@ -36,11 +40,16 @@ export const FastApiCard = (props: FastApiCardProps) => {
     setSelectedApiV(version)
     setSelectedApi(props.apisWithAuthorization.find((api) => api.api.currentVersion === version)!)
   }
-  function subscribe(input: string, apiId: string, team: ITeamSimple, plan: IFastPlan) {
+
+  const subscribe = (input: string, apiId: string, team: ITeamSimple, plan: IFastPlan, apiKey?: ISubscription) => {
     const teamsSubscriber = new Array(team._id)
 
+    const apiKeyDemand = (motivation?: string) => apiKey
+      ? Services.extendApiKey(apiId, apiKey._id, teamsSubscriber, plan._id, motivation)
+      : Services.askForApiKey(apiId, teamsSubscriber, plan._id, motivation)
+
     if (plan.subscriptionProcess === 'Automatic') {
-      Services.askForApiKey(apiId, teamsSubscriber, plan._id)
+      apiKeyDemand()
         .then((response) => {
           if (response[0].error) {
             toastr.error(
@@ -76,8 +85,9 @@ export const FastApiCard = (props: FastApiCardProps) => {
           }
         },
         onSubmit: ({ motivation }) => {
-          Services.askForApiKey(apiId, teamsSubscriber, plan._id, motivation)
+          apiKeyDemand(motivation)
             .then((response) => {
+              props.setReasonSub(motivation)
               if (response[0].error) {
                 toastr.error(
                   translate('Error'),
@@ -105,12 +115,53 @@ export const FastApiCard = (props: FastApiCardProps) => {
 
     }
   }
+
+
+  const subscribeOrExtends = (input: string, apiId: string, team: ITeamSimple, plan: IFastPlan) => {
+    if (client) {
+      Services.getAllTeamSubscriptions(props.team._id)
+        .then((subscriptions) => client.query({
+          query: Services.graphql.apisByIdsWithPlans,
+          variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
+        })
+          .then(({ data }) => ({ apis: data.apis, subscriptions }))
+        )
+        .then(({ apis, subscriptions }: { apis: Array<IApi>, subscriptions: Array<ISubscriptionWithApiInfo> }) => {
+          const int = subscriptions
+            .map((subscription) => {
+              const api = apis.find((a) => a._id === subscription.api);
+              const plan: IUsagePlan = Option(api?.possibleUsagePlans)
+                .flatMap((plans: Array<IUsagePlan>) => Option(plans.find((plan) => plan._id === subscription.plan)))
+                .getOrNull();
+              return { subscription, api, plan };
+            })
+
+          const filteredApiKeys = int.filter((infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
+            plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
+          )
+            .map((infos) => infos.subscription);
+
+          if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
+            subscribe(input, apiId, team, plan);
+          } else {
+            openApiKeySelectModal({
+              plan,
+              apiKeys: filteredApiKeys,
+              onSubscribe: () => subscribe(input, apiId, team, plan),
+              extendApiKey: (apiKey: ISubscription) => subscribe(input, apiId, team, plan, apiKey),
+            });
+          }
+        });
+    }
+
+  }
+
   return (
     <div className="row py-2">
       <div className="col-12">
         <div className="d-flex flex-row mx-3 justify-content-between">
           {/* TODO: overflow ellips  for title*/}
-          <h3 style={{overflow: 'hidden', textOverflow: "ellipsis", whiteSpace: 'nowrap'}}>{selectedApi.api.name}</h3>
+          <h3 style={{ overflow: 'hidden', textOverflow: "ellipsis", whiteSpace: 'nowrap' }}>{selectedApi.api.name}</h3>
           {props.apisWithAuthorization.length > 1 &&
             <Select
               name="versions-selector"
@@ -130,15 +181,15 @@ export const FastApiCard = (props: FastApiCardProps) => {
           {selectedApi.subscriptionsWithPlan
             .map(subPlan => {
               const plan = selectedApi.api.possibleUsagePlans.find((pPlan) => pPlan._id === subPlan.planId)!
-              return {plan, ...subPlan}
+              return { plan, ...subPlan }
             })
-            .sort((a, b) => (a.plan.customName ||'').localeCompare(b.plan.customName || ''))
-            .filter(({plan}) => plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities !== null
-            && (!!plan.otoroshiTarget.authorizedEntities.groups.length
-            || !!plan.otoroshiTarget.authorizedEntities.services.length
-            || !!plan.otoroshiTarget.authorizedEntities.routes.length))
-            .map(({plan, subscriptionsCount, isPending}) => {
-              if (!plan.customName?.includes(props.planResearch) || plan.otoroshiTarget?.authorizedEntities === null) {
+            .sort((a, b) => (a.plan.customName || '').localeCompare(b.plan.customName || ''))
+            .filter(({ plan }) => plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities !== null
+              && (!!plan.otoroshiTarget.authorizedEntities.groups.length
+                || !!plan.otoroshiTarget.authorizedEntities.services.length
+                || !!plan.otoroshiTarget.authorizedEntities.routes.length))
+            .map(({ plan, subscriptionsCount, isPending }) => {
+              if (!plan.customName?.toLowerCase().includes(props.planResearch.toLowerCase()) || plan.otoroshiTarget?.authorizedEntities === null) {
                 return;
               }
               return (
@@ -158,24 +209,24 @@ export const FastApiCard = (props: FastApiCardProps) => {
                             plan
                           )}
                         style={{ whiteSpace: "nowrap" }}>
-                        {translate({key: 'fastMode.button.seeApiKey', plural: subscriptionsCount > 1})}
+                        {translate({ key: 'fastMode.button.seeApiKey', plural: subscriptionsCount > 1 })}
                       </button>}
-                    {isPending &&
-                      <button style={{ whiteSpace: "nowrap" }} disabled={true}
-                        className={"btn btn-sm btn-outline-primary disabled"}>
-                        {translate('fastMode.button.pending')}
-                      </button>}
-                    { (!subscriptionsCount || plan.allowMultipleKeys) && !isPending &&
+                    {((!subscriptionsCount && !isPending) || plan.allowMultipleKeys) &&
                       <button
                         style={{ whiteSpace: "nowrap" }}
                         className={"btn btn-sm btn-outline-primary"}
-                        onClick={() => subscribe(
+                        onClick={() => subscribeOrExtends(
                           props.input,
                           selectedApi.api._id,
                           props.team,
                           plan
                         )}>
                         {translate(plan.subscriptionProcess === 'Automatic' ? ('Get API key') : ('Request API key'))}
+                      </button>}
+                    {isPending &&
+                      <button style={{ whiteSpace: "nowrap" }} disabled={true}
+                        className={"btn btn-sm btn-outline-primary disabled"}>
+                        {translate('fastMode.button.pending')}
                       </button>}
                   </div>
                 </div>
