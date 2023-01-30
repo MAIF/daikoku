@@ -159,14 +159,14 @@ export const FastApiCard = (props: FastApiCardProps) => {
   return (
     <div className="row py-2">
       <div className="col-12">
-        <div className="d-flex flex-row mx-3 justify-content-between">
+        <div className="d-flex flex-row mx-3 justify-content-between align-items-center">
           {/* TODO: overflow ellips  for title*/}
           <h3 style={{ overflow: 'hidden', textOverflow: "ellipsis", whiteSpace: 'nowrap' }}>{selectedApi.api.name}</h3>
           {props.apisWithAuthorization.length > 1 &&
             <Select
               name="versions-selector"
               classNamePrefix="reactSelect"
-              className="me-2 col-2"
+              className="me-2 col-2 select-sm"
               menuPlacement="auto"
               menuPosition="fixed"
               value={{ value: selectedApiV, label: selectedApiV }}
