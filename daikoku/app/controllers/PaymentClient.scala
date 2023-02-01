@@ -1,26 +1,14 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
-import com.stripe.Stripe
-import com.stripe.model.{Price, Product}
-import com.stripe.param.{
-  PriceCreateParams,
-  ProductCreateParams,
-  ProductSearchParams
-}
 import controllers.AppError
-import controllers.AppError.OtoroshiError
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.ActualOtoroshiApiKeyFormat
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.libs.json.{JsError, JsObject, JsSuccess, Json}
+import play.api.libs.json.JsObject
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class PaymentClient(
     env: Env
@@ -31,8 +19,9 @@ class PaymentClient(
   val STRIPE_URL = "https://api.stripe.com";
   val ws = env.wsClient
 
-  def getStripeProductName(api: Api) =
-    s"${api.name}::${api.currentVersion.value}"
+  def getStripeProductName(api: Api, plan: UsagePlan) =
+    s"${api.name}::${api.currentVersion.value}/${plan.customName.getOrElse(plan.typeName)}"
+
   def stripeClient(
       path: String
   )(implicit stripeSettings: StripeSettings): WSRequest = {
@@ -51,7 +40,7 @@ class PaymentClient(
       tenant: Tenant,
       api: Api,
       plan: UsagePlan
-  ): EitherT[Future, AppError, (String, String)] =
+  ): EitherT[Future, AppError, StripePrices] =
     tenant.thirdPartyPaymentSettings.find(s =>
       plan.paymentSettings.exists(ps => ps.thirdPartyPaymentSettingsId == s.id)
     ) match {
@@ -59,91 +48,119 @@ class PaymentClient(
         settings match {
           case s: StripeSettings =>
             implicit val stripeSettings: StripeSettings = s
-            Stripe.apiKey = s.secretKey
-            val productName = getStripeProductName(api)
-            val params = ProductSearchParams
-              .builder()
-              .setQuery(s"name:'$productName'")
-              .build();
-            val result = Product.search(params).getData.asScala.toSeq
-
-            if (result.nonEmpty) {
-              createStripePrice(
-                plan,
-                result.head.getId
-              )
-            } else {
-              createStripeProduct(
-                api,
-                plan
-              )
-            }
+            createStripeProduct(
+              api,
+              plan
+            )
         }
       case None =>
-        EitherT.leftT[Future, (String, String)](
+        EitherT.leftT[Future, StripePrices](
           AppError.ThirdPartyPaymentSettingsNotFound
         )
     }
 
-  def createStripePrice(
-      plan: UsagePlan,
-      productId: String
-  )(implicit
-      stripeSettings: StripeSettings
-  ): EitherT[Future, AppError, (String, String)] = {
-
-    val planName: String = plan.customName.getOrElse(plan.typeName)
+  def postStripePrice(body: Map[String, String])(implicit s: StripeSettings): EitherT[Future, AppError, StripePriceId] = {
     EitherT
       .liftF(
         stripeClient("/v1/prices")
-          .post(
-            Map(
-              "product" -> productId,
-              "unit_amount" -> (plan.costPerMonth * 100).longValue.toString,
-              "currency" -> plan.currency.code,
-              "nickname" -> planName,
-              "metadata[plan]" -> plan.id.value,
-              "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase
-            )
-          )
+          .post(body)
       )
       .flatMap(res => {
         if (res.status == 200 || res.status == 201) {
-          EitherT
-            .rightT[Future, AppError]((productId, (res.json \ "id").as[String]))
+          EitherT.rightT[Future, AppError]((res.json \ "id").as[StripePriceId])
         } else {
-          EitherT.leftT[Future, (String, String)](
+          EitherT.leftT[Future, StripePriceId](
             AppError.OtoroshiError(res.json.as[JsObject])
           )
         }
       })
-
   }
+
+  def createStripePrice(
+      plan: UsagePlan,
+      productId: StripeProductId
+  )(implicit
+      stripeSettings: StripeSettings
+  ): EitherT[Future, AppError, StripePrices] = {
+
+    val planName: String = plan.customName.getOrElse(plan.typeName)
+
+    val body = Map(
+      "product" -> productId,
+      "unit_amount" -> (plan.costPerMonth * 100).longValue.toString,
+      "currency" -> plan.currency.code,
+      "nickname" -> planName,
+      "metadata[plan]" -> plan.id.value,
+      "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase
+    )
+
+    plan match {
+      case _: UsagePlan.QuotasWithLimits =>
+        postStripePrice(body).map(priceId => (productId, Seq(priceId)))
+      case p: UsagePlan.QuotasWithoutLimits =>
+        for {
+          baseprice <- postStripePrice(body)
+          payperUsePrice <- postStripePrice(Map(
+            "product" -> productId,
+            "unit_amount" -> (p.costPerAdditionalRequest * 100).longValue.toString,
+            "currency" -> plan.currency.code,
+            "nickname" -> planName,
+            "metadata[plan]" -> plan.id.value,
+            "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
+            "recurring[usage_type]" -> "metered",
+            "recurring[aggregate_usage]" -> "sum",
+          ))
+        } yield (productId, Seq(baseprice, payperUsePrice))
+      case p: UsagePlan.PayPerUse =>
+        for {
+          baseprice <- postStripePrice(body)
+          payperUsePrice <- postStripePrice(Map(
+            "product" -> productId,
+            "unit_amount" -> (p.costPerRequest * 100).longValue.toString,
+            "currency" -> plan.currency.code,
+            "nickname" -> planName,
+            "metadata[plan]" -> plan.id.value,
+            "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
+            "recurring[usage_type]" -> "metered",
+            "recurring[aggregate_usage]" -> "sum",
+          ))
+        } yield (productId, Seq(baseprice, payperUsePrice))
+      case _ => EitherT.leftT[Future, StripePrices](
+        AppError.PlanUnauthorized
+      )
+    }
+  }
+
+  type StripeProductId = String
+  type StripePriceId = String
+  type StripePrices = (StripeProductId, Seq[StripePriceId])
 
   def createStripeProduct(
       api: Api,
       plan: UsagePlan
   )(implicit
       stripeSettings: StripeSettings
-  ): EitherT[Future, AppError, (String, String)] = {
+  ): EitherT[Future, AppError, StripePrices] = {
+
+    val body = Map(
+      "name" -> getStripeProductName(api, plan),
+      "metadata[tenant]" -> api.tenant.value,
+      "metadata[api]" -> api.id.value,
+      "metadata[team]" -> api.team.value,
+      "metadata[plan]" -> plan.id.value
+    )
 
     EitherT
       .liftF(
         stripeClient("/v1/products")
-          .post(
-            Map(
-              "name" -> getStripeProductName(api),
-              "metadata[tenant]" -> api.tenant.value,
-              "metadata[api]" -> api.id.value,
-              "metadata[team]" -> api.team.value
-            )
-          )
+          .post(body)
       )
       .flatMap(res => {
         if (res.status == 200 || res.status == 201) {
-          createStripePrice(plan, (res.json \ "id").as[String])
+          val productId = (res.json \ "id").as[StripeProductId]
+          createStripePrice(plan, productId)
         } else {
-          EitherT.leftT[Future, (String, String)](
+          EitherT.leftT[Future, StripePrices](
             AppError.OtoroshiError(res.json.as[JsObject])
           )
         }
