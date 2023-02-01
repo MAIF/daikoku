@@ -206,8 +206,8 @@ sealed trait PaymentSettings {
 
 case object PaymentSettings {
   case class Stripe(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
-                    productId: String,
-                    priceId: String) extends PaymentSettings {
+                    productId: Option[String],
+                    priceId: Option[String]) extends PaymentSettings {
   }
 }
 

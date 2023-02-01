@@ -2429,9 +2429,9 @@ class ApiController(
                     val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
                       deletedPlansId.contains(pp.id))
 
-
-                    val newPricedPlan = api.possibleUsagePlans.filter(p => newPlans.contains(p.id))
-                      .filter(p => p.paymentSettings.isDefined)
+                    val newPricedPlan = api.possibleUsagePlans
+                      .filter(pp => newPlans.diff(oldPlans).contains(pp.id))
+                      .filter(_.paymentSettings.isDefined)
 
                     env.dataStore.apiRepo
                       .forTenant(ctx.tenant.id)
@@ -2477,7 +2477,7 @@ class ApiController(
                               apiToSave.currentVersion.value
                             )
                             _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
-                            _ <- Future.sequence(newPricedPlan.map(p => paymentClient.createProduct(team, ctx.tenant, api, p).value))
+                            _ <- Future.sequence(newPricedPlan.map(p => paymentClient.createProduct(ctx.tenant, api, p).value))
                           } yield {
                             ctx.setCtxValue("api.name", api.name)
                             ctx.setCtxValue("api.id", api.id)

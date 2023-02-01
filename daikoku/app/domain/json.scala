@@ -693,6 +693,7 @@ object json {
   val PaymentSettingsFormat = new Format[PaymentSettings] {
     override def reads(json: JsValue): JsResult[PaymentSettings] = (json \ "type").as[String] match {
       case "Stripe" => StripePaymentSettingsFormat.reads(json)
+      case str => JsError(s"Bad notification payment settings value: $str")
     }
 
     override def writes(o: PaymentSettings): JsValue = o match {
@@ -706,8 +707,8 @@ object json {
       JsSuccess(
         PaymentSettings.Stripe(
           thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat),
-          productId = (json \ "productId").as[String],
-          priceId = (json \ "priceId").as[String]
+          productId = (json \ "productId").asOpt[String],
+          priceId = (json \ "priceId").asOpt[String]
         ))
     } recover {
       case e => JsError(e.getMessage)
@@ -1117,7 +1118,10 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn("Pay per use")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: PayPerUse): JsValue = Json.obj(
@@ -2088,7 +2092,8 @@ object json {
         )
       } recover {
         case e =>
-          AppLogger.error(e.toString)
+          AppLogger.warn("API")
+          AppLogger.error(e.toString, e)
           JsError(e.getMessage)
       } get
 
@@ -3639,6 +3644,7 @@ object json {
       )
     } match {
       case Failure(e) =>
+        AppLogger.warn("Stripe Settings")
         AppLogger.error(e.getMessage, e)
         JsError(e.getMessage)
       case Success(value) => JsSuccess(value)

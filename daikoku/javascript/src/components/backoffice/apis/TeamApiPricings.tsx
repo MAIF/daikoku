@@ -523,7 +523,7 @@ export const TeamApiPricings = (props: Props) => {
     {
       label: translate('Third-party Payment'),
       collapsed: false,
-      flow: ['thirdPartyPaymentType'],
+      flow: ['paymentSettings'],
     },
     {
       label: translate('Quotas'),
@@ -547,7 +547,7 @@ export const TeamApiPricings = (props: Props) => {
     {
       label: translate('Third-party Payment'),
       collapsed: false,
-      flow: ['thirdPartyPaymentType'],
+      flow: ['paymentSettings'],
     },
     {
       label: translate('Billing'),
@@ -889,8 +889,12 @@ export const TeamApiPricings = (props: Props) => {
               label: translate('Type'),
               help: 'If no type is selected, use daikokuy APIs to get billing informations',
               options: queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : [],
-              transformer: (s: IThirdPartyPaymentSettings) => ({label: s.name, value: s._id}),
-              props: { isClearable: true},
+              transformer: (s: IThirdPartyPaymentSettings) => ({ label: s.name, value: s._id }),
+              props: { isClearable: true },
+              onChange: ({ rawValues, setValue, value }) => {
+                const settings = queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : []
+                setValue('paymentSettings.type', settings.find(s => value === s._id)?.type);
+              }
             }
           }
         },
@@ -1025,6 +1029,7 @@ export const TeamApiPricings = (props: Props) => {
               type: type.number,
               label: translate('Trial period'),
               placeholder: translate('The trial period'),
+              defaultValue: 0,
               props: {
                 step: 1,
                 min: 0,
@@ -1038,6 +1043,7 @@ export const TeamApiPricings = (props: Props) => {
               type: type.string,
               format: format.buttonsSelect,
               label: translate('Trial period unit'),
+              defaultValue: 'Month',
               options: [
                 { label: translate('Hours'), value: 'Hour' },
                 { label: translate('Days'), value: 'Day' },
@@ -1072,7 +1078,7 @@ export const TeamApiPricings = (props: Props) => {
           help: translate('aggregation_apikeys.security.help'),
           onChange: ({ value, setValue }: any) => {
             if (value)
-              confirm({message: translate('aggregation.api_key.security.notification')})
+              confirm({ message: translate('aggregation.api_key.security.notification') })
                 .then((ok) => {
                   if (ok) {
                     setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
