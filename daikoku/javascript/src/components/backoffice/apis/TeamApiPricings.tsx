@@ -16,6 +16,7 @@ import { ITeamFull, ITeamSimple } from '../../../types';
 import { IApi, IUsagePlan, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
+  BeautifulTitle,
   formatCurrency,
   formatPlanType,
   getCurrencySymbol,
@@ -311,6 +312,16 @@ const CustomMetadataInput = (props: {
   );
 };
 
+type CardProps = {
+  plan: IUsagePlan
+  isDefault: boolean
+  makeItDefault?: () => void
+  toggleVisibility?: () => void
+  deletePlan?: () => void
+  editPlan?: () => void
+  duplicatePlan?: () => void
+  creation?: boolean
+}
 const Card = ({
   plan,
   isDefault,
@@ -320,36 +331,55 @@ const Card = ({
   editPlan,
   duplicatePlan,
   creation
-}: any) => {
+}: CardProps) => {
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
 
-  let pricing = renderPricing(plan, translate)
+  const pricing = renderPricing(plan, translate)
 
   const deleteWithConfirm = () => {
     confirm({ message: translate('delete.plan.confirm') })
       .then((ok) => {
-        if (ok) {
-          deletePlan();
+        if (ok && deletePlan) {
+          deletePlan()
         }
       });
   };
 
+  const noOtoroshi = !plan.otoroshiTarget ||
+    (!plan.otoroshiTarget.authorizedEntities.groups.length &&
+      !plan.otoroshiTarget.authorizedEntities.services.length &&
+      !plan.otoroshiTarget.authorizedEntities.routes.length)
+
   return (
     <div className="card hoverable-card mb-4 shadow-sm" style={{ position: 'relative' }}>
-      {isDefault && (
-        <i
-          className="fas fa-star"
-          style={{
-            position: 'absolute',
-            fontSize: '20px',
-            top: '15px',
-            right: '15px',
-            zIndex: '100',
-          }}
-        />
+      {noOtoroshi && (
+        <BeautifulTitle className="" title={translate("warning.missing.otoroshi")} style={{
+          position: 'absolute',
+          fontSize: '20px',
+          bottom: '15px',
+          right: '15px',
+          zIndex: '100',
+          color: 'var(--error-color, #ff6347)'
+        }}>
+          <i className="fas fa-exclamation-triangle" />
+        </BeautifulTitle>
       )}
+      <div style={{
+        position: 'absolute',
+        fontSize: '20px',
+        top: '15px',
+        right: '15px',
+        zIndex: '100',
+      }}>
+        {plan.visibility === PRIVATE && (
+          <i className="fas fa-lock" />
+        )}
+        {isDefault && (
+          <i className="fas fa-star" />
+        )}
+      </div>
       {!creation && (
         <div
           className="dropdown"
@@ -1155,7 +1185,6 @@ export const TeamApiPricings = (props: Props) => {
         {planForEdition && mode === possibleMode.creation && (<div className="row">
           <div className="col-md-4">
             <Card
-              api={props.value}
               plan={planForEdition}
               isDefault={(planForEdition as any)._id === props.value.defaultUsagePlan}
               creation={true} />
@@ -1176,17 +1205,18 @@ export const TeamApiPricings = (props: Props) => {
           </div>
         </div>)}
         {mode === possibleMode.list && (<div className="row">
-          {props.value.possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-md-4">
-            <Card
-              api={props.value}
-              plan={plan}
-              isDefault={plan._id === props.value.defaultUsagePlan}
-              makeItDefault={() => makePlanDefault(plan)}
-              toggleVisibility={() => toggleVisibility(plan)}
-              deletePlan={() => deletePlan(plan)}
-              editPlan={() => editPlan(plan)}
-              duplicatePlan={() => clonePlanAndEdit(plan)} />
-          </div>)}
+          {props.value.possibleUsagePlans
+            .sort((a, b) => (a.customName || a.type).localeCompare(b.customName || b.type))
+            .map((plan) => <div key={plan._id} className="col-md-4">
+              <Card
+                plan={plan}
+                isDefault={plan._id === props.value.defaultUsagePlan}
+                makeItDefault={() => makePlanDefault(plan)}
+                toggleVisibility={() => toggleVisibility(plan)}
+                deletePlan={() => deletePlan(plan)}
+                editPlan={() => editPlan(plan)}
+                duplicatePlan={() => clonePlanAndEdit(plan)} />
+            </div>)}
         </div>)}
       </div>
     </div>

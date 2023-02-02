@@ -48,7 +48,8 @@ export const renderPricing = (plan: IFastPlan | IUsagePlan, translate: (params: 
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + 
       ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`
   } else if (isPayPerUse(plan)) {
-    pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`;
+    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + 
+    ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`;
   } else if (plan.costPerMonth) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month}`;
   }

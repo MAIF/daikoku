@@ -32,6 +32,7 @@ object AppError {
   case object ApiNotLinked extends AppError
   case class UserNotTeamAdmin(userId: String, teamId: String) extends AppError
   case class OtoroshiError(message: JsObject) extends AppError
+  case class PaymentError(message: JsObject) extends AppError
   case object SubscriptionConflict extends AppError
   case object ApiKeyRotationConflict extends AppError
   case class ApiKeyRotationError(message: JsObject) extends AppError
@@ -72,6 +73,7 @@ object AppError {
     case UserNotTeamAdmin(userId, teamId) =>
       play.api.mvc.Results.Unauthorized(toJson(error))
     case OtoroshiError(e)                        => BadRequest(e)
+    case PaymentError(e)                        => BadRequest(e)
     case SubscriptionConflict                    => Conflict(toJson(error))
     case ApiKeyRotationConflict                  => Conflict(toJson(error))
     case ApiKeyRotationError(e)                  => BadRequest(e)
@@ -93,6 +95,7 @@ object AppError {
   def toJson(error: AppError) = {
     error match {
       case OtoroshiError(e)       => e
+      case PaymentError(e)       => e
       case ApiKeyRotationError(e) => e
       case ParsingPayloadError(msg) =>
         Json.obj("error" -> "Error while parsing payload", "msg" -> msg)

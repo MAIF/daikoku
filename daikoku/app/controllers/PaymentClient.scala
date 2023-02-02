@@ -14,6 +14,10 @@ class PaymentClient(
     env: Env
 ) {
 
+  type ProductId = String
+  type PriceId = String
+  type PaymentInformations = (ProductId, Seq[PriceId])
+
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
   val STRIPE_URL = "https://api.stripe.com";
@@ -40,7 +44,7 @@ class PaymentClient(
       tenant: Tenant,
       api: Api,
       plan: UsagePlan
-  ): EitherT[Future, AppError, StripePrices] =
+  ): EitherT[Future, AppError, PaymentInformations] =
     tenant.thirdPartyPaymentSettings.find(s =>
       plan.paymentSettings.exists(ps => ps.thirdPartyPaymentSettingsId == s.id)
     ) match {
@@ -54,12 +58,12 @@ class PaymentClient(
             )
         }
       case None =>
-        EitherT.leftT[Future, StripePrices](
+        EitherT.leftT[Future, PaymentInformations](
           AppError.ThirdPartyPaymentSettingsNotFound
         )
     }
 
-  def postStripePrice(body: Map[String, String])(implicit s: StripeSettings): EitherT[Future, AppError, StripePriceId] = {
+  def postStripePrice(body: Map[String, String])(implicit s: StripeSettings): EitherT[Future, AppError, PriceId] = {
     EitherT
       .liftF(
         stripeClient("/v1/prices")
@@ -67,9 +71,9 @@ class PaymentClient(
       )
       .flatMap(res => {
         if (res.status == 200 || res.status == 201) {
-          EitherT.rightT[Future, AppError]((res.json \ "id").as[StripePriceId])
+          EitherT.rightT[Future, AppError]((res.json \ "id").as[PriceId])
         } else {
-          EitherT.leftT[Future, StripePriceId](
+          EitherT.leftT[Future, PriceId](
             AppError.OtoroshiError(res.json.as[JsObject])
           )
         }
@@ -78,10 +82,10 @@ class PaymentClient(
 
   def createStripePrice(
       plan: UsagePlan,
-      productId: StripeProductId
+      productId: ProductId
   )(implicit
       stripeSettings: StripeSettings
-  ): EitherT[Future, AppError, StripePrices] = {
+  ): EitherT[Future, AppError, PaymentInformations] = {
 
     val planName: String = plan.customName.getOrElse(plan.typeName)
 
@@ -125,22 +129,18 @@ class PaymentClient(
             "recurring[aggregate_usage]" -> "sum",
           ))
         } yield (productId, Seq(baseprice, payperUsePrice))
-      case _ => EitherT.leftT[Future, StripePrices](
+      case _ => EitherT.leftT[Future, PaymentInformations](
         AppError.PlanUnauthorized
       )
     }
   }
-
-  type StripeProductId = String
-  type StripePriceId = String
-  type StripePrices = (StripeProductId, Seq[StripePriceId])
 
   def createStripeProduct(
       api: Api,
       plan: UsagePlan
   )(implicit
       stripeSettings: StripeSettings
-  ): EitherT[Future, AppError, StripePrices] = {
+  ): EitherT[Future, AppError, PaymentInformations] = {
 
     val body = Map(
       "name" -> getStripeProductName(api, plan),
@@ -157,10 +157,10 @@ class PaymentClient(
       )
       .flatMap(res => {
         if (res.status == 200 || res.status == 201) {
-          val productId = (res.json \ "id").as[StripeProductId]
+          val productId = (res.json \ "id").as[ProductId]
           createStripePrice(plan, productId)
         } else {
-          EitherT.leftT[Future, StripePrices](
+          EitherT.leftT[Future, PaymentInformations](
             AppError.OtoroshiError(res.json.as[JsObject])
           )
         }

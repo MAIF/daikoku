@@ -126,6 +126,9 @@ export interface IUsagePlan extends IBaseUsagePlan {
   visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
   costPerMonth?: number;
+  maxPerMonth?: number
+  maxPerSecond?: number
+  maxPerDay?: number
   thirdPartyPaymentType?: thirdPartyPaymentType
 }
 
