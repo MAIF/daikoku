@@ -29,6 +29,7 @@ import {
   IApiPost,
   IApiDoc,
   ISubscriptionWithApiInfo,
+  IUsagePlan,
 } from '../types/api';
 
 const HEADERS = {
@@ -449,7 +450,7 @@ export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
-export const fetchNewPlan = (planType: any) =>
+export const fetchNewPlan = (planType: string): Promise<IUsagePlan> =>
   customFetch(`/api/entities/plan?planType=${planType}`);
 
 export const checkIfApiNameIsUnique = (name: any, id?: any) =>
@@ -1383,3 +1384,9 @@ export const transferApiOwnership = (newTeamId: any, teamId: any, apiId: any) =>
     method: 'POST',
     body: JSON.stringify({ team: newTeamId }),
   });
+
+export const setupPayment = (teamId: string, apiId: string, version: string, planId, data: IUsagePlan): Promise<ResponseError | IApi> => 
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${planId}/_payment`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  })

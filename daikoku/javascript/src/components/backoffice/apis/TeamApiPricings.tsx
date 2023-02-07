@@ -1,4 +1,4 @@
-import { constraints, format, type } from '@maif/react-forms';
+import { constraints, Form, format, type } from '@maif/react-forms';
 import { useQuery } from '@tanstack/react-query';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
@@ -472,11 +472,13 @@ type Props = {
   injectSubMenu: (x: any) => void
   openApiSelectModal?: () => void
 }
+type Tab = 'settings' | 'security' | 'payment'
 export const TeamApiPricings = (props: Props) => {
-  const possibleMode = { list: 'LIST', creation: 'CREATION' };
+  const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
   const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<Tab>('settings')
 
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
@@ -538,11 +540,6 @@ export const TeamApiPricings = (props: Props) => {
       flow: ['paymentSettings'],
     },
     {
-      label: translate('Quotas'),
-      collapsed: false,
-      flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
-    },
-    {
       label: translate('Billing'),
       collapsed: false,
       flow: ['trialPeriod', 'billingDuration', 'costPerMonth', 'currency'],
@@ -554,11 +551,6 @@ export const TeamApiPricings = (props: Props) => {
       label: translate('Third-party Payment'),
       collapsed: false,
       flow: ['paymentSettings'],
-    },
-    {
-      label: translate('Quotas'),
-      collapsed: false,
-      flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
     },
     {
       label: translate('Billing'),
@@ -625,15 +617,17 @@ export const TeamApiPricings = (props: Props) => {
   };
 
   const createNewPlan = () => {
-    const newPlan = newPossibleUsagePlan('new plan');
-    setPlanForEdition(newPlan);
-    setMode(possibleMode.creation);
-    setCreation(true);
+    Services.fetchNewPlan('FreeWithQuotas')
+      .then(newPlan => {
+        setPlanForEdition(newPlan);
+        setMode(possibleMode.creation);
+        setCreation(true);
+      })
   };
   const editPlan = (plan: IUsagePlan) => {
     setCreation(false);
     setPlanForEdition(plan);
-    setMode(possibleMode.creation);
+    setMode(possibleMode.edition);
   };
 
   const makePlanDefault = (plan: IUsagePlan) => {
@@ -706,6 +700,13 @@ export const TeamApiPricings = (props: Props) => {
     'QuotasWithoutLimits',
     'PayPerUse',
   ];
+
+  const paidPlans = [
+    'QuotasWithLimits',
+    'QuotasWithoutLimits',
+    'PayPerUse',
+  ];
+
   const steps: Array<IMultistepsformStep<IUsagePlan>> = [
     {
       id: 'info',
@@ -715,15 +716,22 @@ export const TeamApiPricings = (props: Props) => {
           type: type.string,
           format: format.select,
           label: translate('Type'),
-          onChange: ({ rawValues, setValue, value }: { rawValues: any, setValue: (key: string, value: any) => void, value: string }) => {
-            const isDescIsDefault = Object.values(SUBSCRIPTION_PLAN_TYPES)
-              .map(({ defaultDescription }) => defaultDescription)
-              .some((d) => !rawValues.customDescription || d === rawValues.customDescription);
-            if (isDescIsDefault) {
-              //@ts-ignore //FIXME ???
-              const planType = SUBSCRIPTION_PLAN_TYPES[value]
-              setValue('customDescription', planType.defaultDescription);
-            }
+          onAfterChange: ({ rawValues, setValue, value, reset }: any) => {
+
+            Services.fetchNewPlan(value)
+              .then((newPlan => {
+                const isDescIsDefault = Object.values(SUBSCRIPTION_PLAN_TYPES)
+                  .map(({ defaultDescription }) => defaultDescription)
+                  .some((d) => !rawValues.customDescription || d === rawValues.customDescription);
+                let customDescription = rawValues.customDescription;
+                if (isDescIsDefault) {
+                  const planType = SUBSCRIPTION_PLAN_TYPES[value]
+                  customDescription = planType.defaultDescription;
+                }
+
+                reset({...newPlan, ...rawValues, type: value, customDescription})
+              }))
+
           },
           options: planTypes,
           transformer: (value: any) => ({
@@ -903,31 +911,10 @@ export const TeamApiPricings = (props: Props) => {
       },
     },
     {
-      id: 'quotasAndBilling',
-      label: translate('Quotas & Billing'),
-      disabled: (plan) => plan.type === 'FreeWithoutQuotas',
-      flow: getRightBillingFlow,
+      id: 'quotas',
+      label: translate('Quotas'),
+      disabled: (plan) => plan.type === 'FreeWithoutQuotas' || plan.type === 'PayPerUse',
       schema: {
-        paymentSettings: {
-          type: type.object,
-          format: format.form,
-          label: translate('payment settings'),
-          schema: {
-            thirdPartyPaymentSettingsId: {
-              type: type.string,
-              format: format.select,
-              label: translate('Type'),
-              help: 'If no type is selected, use daikokuy APIs to get billing informations',
-              options: queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : [],
-              transformer: (s: IThirdPartyPaymentSettings) => ({ label: s.name, value: s._id }),
-              props: { isClearable: true },
-              onChange: ({ rawValues, setValue, value }) => {
-                const settings = queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : []
-                setValue('paymentSettings.type', settings.find(s => value === s._id)?.type);
-              }
-            }
-          }
-        },
         maxPerSecond: {
           type: type.number,
           label: translate('Max. per second'),
@@ -966,126 +953,6 @@ export const TeamApiPricings = (props: Props) => {
             constraints.positive('constraints.positive'),
             constraints.integer('constraints.integer'),
           ],
-        },
-        costPerMonth: {
-          type: type.number,
-          label: ({ rawValues }) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
-          placeholder: translate('Cost per billing period'),
-          props: {
-            step: 1,
-            min: 0,
-          },
-          constraints: [constraints.positive('constraints.positive')],
-        },
-        costPerAdditionalRequest: {
-          type: type.number,
-          label: translate('Cost per add. req.'),
-          placeholder: translate('Cost per additionnal request'),
-          props: {
-            step: 1,
-            min: 0,
-          },
-          constraints: [constraints.positive('constraints.positive')],
-        },
-        costPerRequest: {
-          type: type.number,
-          label: translate('Cost per req.'),
-          placeholder: translate('Cost per request'),
-          props: {
-            step: 1,
-            min: 0,
-          },
-          constraints: [constraints.positive('constraints.positive')],
-        },
-        currency: {
-          type: type.object,
-          format: format.form,
-          label: null,
-          schema: {
-            code: {
-              type: type.string,
-              format: format.select,
-              label: translate('Currency'),
-              defaultValue: 'EUR',
-              options: currencies.map((c) => ({
-                label: `${c.name} (${c.symbol})`,
-                value: c.code,
-              })),
-            },
-          },
-        },
-        billingDuration: {
-          type: type.object,
-          format: format.form,
-          label: translate('Billing every'),
-          schema: {
-            value: {
-              type: type.number,
-              label: translate('Billing period'),
-              placeholder: translate('The Billing period'),
-              props: {
-                step: 1,
-                min: 0,
-              },
-              constraints: [
-                constraints.positive('constraints.positive'),
-                constraints.integer('constraints.integer'),
-                constraints.required('constraints.required.billing.period'),
-              ],
-            },
-            unit: {
-              type: type.string,
-              format: format.buttonsSelect,
-              label: translate('Billing period unit'),
-              options: [
-                { label: translate('Hours'), value: 'Hour' },
-                { label: translate('Days'), value: 'Day' },
-                { label: translate('Months'), value: 'Month' },
-                { label: translate('Years'), value: 'Year' },
-              ],
-              constraints: [
-                constraints.required('constraints.required.billing.period'),
-                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
-              ],
-            },
-          },
-        },
-        trialPeriod: {
-          type: type.object,
-          format: format.form,
-          label: translate('Trial'),
-          schema: {
-            value: {
-              type: type.number,
-              label: translate('Trial period'),
-              placeholder: translate('The trial period'),
-              defaultValue: 0,
-              props: {
-                step: 1,
-                min: 0,
-              },
-              constraints: [
-                constraints.integer(translate('constraints.integer')),
-                constraints.test('positive', translate('constraints.positive'), (v) => v >= 0),
-              ],
-            },
-            unit: {
-              type: type.string,
-              format: format.buttonsSelect,
-              label: translate('Trial period unit'),
-              defaultValue: 'Month',
-              options: [
-                { label: translate('Hours'), value: 'Hour' },
-                { label: translate('Days'), value: 'Day' },
-                { label: translate('Months'), value: 'Month' },
-                { label: translate('Years'), value: 'Year' },
-              ],
-              constraints: [
-                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
-                // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period'))]) //FIXME
-              ],
-            },
-          },
         },
       },
     },
@@ -1166,6 +1033,137 @@ export const TeamApiPricings = (props: Props) => {
     },
   ];
 
+  const billingSchema = {
+    paymentSettings: {
+      type: type.object,
+      format: format.form,
+      label: translate('payment settings'),
+      schema: {
+        thirdPartyPaymentSettingsId: {
+          type: type.string,
+          format: format.select,
+          label: translate('Type'),
+          help: 'If no type is selected, use daikokuy APIs to get billing informations',
+          options: queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : [],
+          transformer: (s: IThirdPartyPaymentSettings) => ({ label: s.name, value: s._id }),
+          props: { isClearable: true },
+          onChange: ({ rawValues, setValue, value }) => {
+            const settings = queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : []
+            setValue('paymentSettings.type', settings.find(s => value === s._id)?.type);
+          }
+        }
+      }
+    },
+    costPerMonth: {
+      type: type.number,
+      label: ({ rawValues }) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
+      placeholder: translate('Cost per billing period'),
+      constraints: [constraints.positive('constraints.positive')],
+    },
+    costPerAdditionalRequest: {
+      type: type.number,
+      label: translate('Cost per add. req.'),
+      placeholder: translate('Cost per additionnal request'),
+      constraints: [constraints.positive('constraints.positive')],
+    },
+    costPerRequest: {
+      type: type.number,
+      label: translate('Cost per req.'),
+      placeholder: translate('Cost per request'),
+      constraints: [constraints.positive('constraints.positive')],
+    },
+    currency: {
+      type: type.object,
+      format: format.form,
+      label: null,
+      schema: {
+        code: {
+          type: type.string,
+          format: format.select,
+          label: translate('Currency'),
+          defaultValue: 'EUR',
+          options: currencies.map((c) => ({
+            label: `${c.name} (${c.symbol})`,
+            value: c.code,
+          })),
+        },
+      },
+    },
+    billingDuration: {
+      type: type.object,
+      format: format.form,
+      label: translate('Billing every'),
+      schema: {
+        value: {
+          type: type.number,
+          label: translate('Billing period'),
+          placeholder: translate('The Billing period'),
+          props: {
+            step: 1,
+            min: 0,
+          },
+          constraints: [
+            constraints.positive('constraints.positive'),
+            constraints.integer('constraints.integer'),
+            constraints.required('constraints.required.billing.period'),
+          ],
+        },
+        unit: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: translate('Billing period unit'),
+          options: [
+            { label: translate('Hours'), value: 'Hour' },
+            { label: translate('Days'), value: 'Day' },
+            { label: translate('Months'), value: 'Month' },
+            { label: translate('Years'), value: 'Year' },
+          ],
+          constraints: [
+            constraints.required('constraints.required.billing.period'),
+            constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
+          ],
+        },
+      },
+    },
+    trialPeriod: {
+      type: type.object,
+      format: format.form,
+      label: translate('Trial'),
+      schema: {
+        value: {
+          type: type.number,
+          label: translate('Trial period'),
+          placeholder: translate('The trial period'),
+          defaultValue: 0,
+          props: {
+            step: 1,
+            min: 0,
+          },
+          constraints: [
+            constraints.integer(translate('constraints.integer')),
+            constraints.test('positive', translate('constraints.positive'), (v) => v >= 0),
+          ],
+        },
+        unit: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: translate('Trial period unit'),
+          defaultValue: 'Month',
+          options: [
+            { label: translate('Hours'), value: 'Hour' },
+            { label: translate('Days'), value: 'Day' },
+            { label: translate('Months'), value: 'Month' },
+            { label: translate('Years'), value: 'Year' },
+          ],
+          constraints: [
+            constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
+            // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period'))]) //FIXME
+          ],
+        },
+      },
+    },
+  }
+
   return (<div className="d-flex col flex-column pricing-content">
     <div className="album">
       <div className="container">
@@ -1182,15 +1180,17 @@ export const TeamApiPricings = (props: Props) => {
             </button>
           </div>)}
         </div>
-        {planForEdition && mode === possibleMode.creation && (<div className="row">
+        {planForEdition && mode !== possibleMode.list && (<div className="row">
           <div className="col-md-4">
-            <Card
-              plan={planForEdition}
-              isDefault={(planForEdition as any)._id === props.value.defaultUsagePlan}
-              creation={true} />
+            <h3>{planForEdition.customName || planForEdition.type}</h3>
+            <ul>
+              <li onClick={() => setSelectedTab('settings')}>Settings</li>
+              {mode === possibleMode.edition && paidPlans.includes(planForEdition.type) && <li onClick={() => setSelectedTab('payment')}>Payment</li>}
+              {mode === possibleMode.edition && <li onClick={() => setSelectedTab('security')}>Security</li>}
+            </ul>
           </div>
           <div className="col-md-8 d-flex">
-            <MultiStepForm<IUsagePlan>
+            {selectedTab === 'settings' && <MultiStepForm<IUsagePlan>
               value={planForEdition}
               steps={steps}
               initial="info"
@@ -1201,7 +1201,18 @@ export const TeamApiPricings = (props: Props) => {
                 skip: translate('Skip'),
                 next: translate('Next'),
                 save: translate('Save'),
-              }} />
+              }} />}
+            {selectedTab === 'payment' && (
+              <Form
+                schema={billingSchema}
+                flow={getRightBillingFlow(planForEdition)}
+                onSubmit={data => Services.setupPayment(props.team._id, props.value._id, props.value.currentVersion, planForEdition._id, data)}
+                value={planForEdition}
+              />
+            )}
+            {selectedTab === 'security' && (
+              <div>security</div>
+            )}
           </div>
         </div>)}
         {mode === possibleMode.list && (<div className="row">

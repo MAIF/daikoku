@@ -1,6 +1,7 @@
 import { isPromiseLike } from 'xstate/lib/utils';
 import { TreeItem, TreeItems } from '../components/utils/dnd/types';
 import { IFastTeam, ITeamSimple } from './team';
+import { ThirdPartyPaymentType } from './tenant';
 
 interface IBaseApi {
   _id: string;
@@ -114,7 +115,17 @@ export interface IBaseUsagePlan {
 }
 
 export type UsagePlanVisibility = 'Public' | 'Private'
-export type thirdPartyPaymentType = 'Stripe'
+
+export interface IPaymentSettings {
+  thirdPartyPaymentSettingsId: string
+  type: ThirdPartyPaymentType
+}
+
+export interface IStripePaymentSettings extends IPaymentSettings {
+  productId: string
+  priceIds: Array<string>
+}
+
 export interface IUsagePlan extends IBaseUsagePlan {
   allowMultipleKeys?: boolean;
   aggregationApiKeysSecurity?: boolean;
@@ -129,12 +140,12 @@ export interface IUsagePlan extends IBaseUsagePlan {
   maxPerMonth?: number
   maxPerSecond?: number
   maxPerDay?: number
-  thirdPartyPaymentType?: thirdPartyPaymentType
+  paymentSettings?: IPaymentSettings
 }
 
-export interface IUsagePlanAdmin extends IUsagePlan {}
+export interface IUsagePlanAdmin extends IUsagePlan { }
 
-export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan {}
+export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan { }
 export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
   maxPerSecond: number;
   maxPerDay: number;

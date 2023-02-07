@@ -528,6 +528,32 @@ object json {
     override def writes(o: IntegrationProcess) = JsString(o.name)
   }
 
+  val BasePaymentInformationFormat = new Format[BasePaymentInformation] {
+    override def reads(json: JsValue): JsResult[BasePaymentInformation] = Try {
+      JsSuccess(BasePaymentInformation(
+        costPerMonth = (json \ "costPerMonth").as[BigDecimal],
+        trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
+        billingDuration =
+          (json \ "billingDuration").as(BillingDurationFormat),
+        currency = (json \ "currency").as(CurrencyFormat),
+      ))
+    } recover {
+      case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+    } get
+
+    override def writes(o: BasePaymentInformation): JsValue = Json.obj(
+      "costPerMonth" -> o.costPerMonth,
+      "trialPeriod" -> o.trialPeriod
+        .map(_.asJson)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "billingDuration" -> o.billingDuration.asJson,
+      "currency" -> o.currency.asJson,
+    )
+  }
+
   val UsagePlanFormat = new Format[UsagePlan] {
     override def reads(json: JsValue) = (json \ "type").as[String] match {
       case "FreeWithoutQuotas"   => FreeWithoutQuotasFormat.reads(json)
@@ -691,9 +717,10 @@ object json {
   }
 
   val PaymentSettingsFormat = new Format[PaymentSettings] {
-    override def reads(json: JsValue): JsResult[PaymentSettings] = (json \ "type").as[String] match {
-      case "Stripe" => StripePaymentSettingsFormat.reads(json)
-      case str => JsError(s"Bad notification payment settings value: $str")
+    override def reads(json: JsValue): JsResult[PaymentSettings] = (json \ "type").asOpt[String] match {
+      case Some("Stripe") => StripePaymentSettingsFormat.reads(json)
+      case Some(str) => JsError(s"Bad notification payment settings value: $str")
+      case None => JsError(s"No notification payment settings value")
     }
 
     override def writes(o: PaymentSettings): JsValue = o match {
@@ -707,17 +734,20 @@ object json {
       JsSuccess(
         PaymentSettings.Stripe(
           thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat),
-          productId = (json \ "productId").asOpt[String],
-          priceId = (json \ "priceId").asOpt[String]
+          productId = (json \ "productId").as[String],
+          priceIds = (json \ "priceIds").as[Seq[String]]
         ))
     } recover {
-      case e => JsError(e.getMessage)
+      case e =>
+        AppLogger.warn("Stripe Settings")
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
     } get
 
     override def writes(o: PaymentSettings.Stripe): JsValue = Json.obj(
       "thirdPartyPaymentSettingsId" -> o.thirdPartyPaymentSettingsId.asJson,
       "productId" -> o.productId,
-      "priceId" -> o.priceId
+      "priceIds" -> JsArray(o.priceIds.map(JsString.apply))
     )
   }
 
@@ -734,7 +764,10 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn("Admin")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: Admin): JsValue = Json.obj(
@@ -786,7 +819,10 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn("Free without quotas")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: FreeWithoutQuotas): JsValue = Json.obj(
@@ -859,7 +895,10 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn("Free with quotas")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: FreeWithQuotas): JsValue = Json.obj(
@@ -939,7 +978,10 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn("Quotas with limits")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: QuotasWithLimits): JsValue = Json.obj(
@@ -1030,7 +1072,10 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn("Quotas without limit")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: QuotasWithoutLimits): JsValue = Json.obj(
@@ -1076,14 +1121,14 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsNull)
         .as[JsValue],
-      "thirdPartyPaymentType" -> o.paymentSettings
+      "paymentSettings" -> o.paymentSettings
         .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
   }
   val PayPerUseFormat = new Format[PayPerUse] {
-    override def reads(json: JsValue): JsResult[PayPerUse] =
+    override def reads(json: JsValue): JsResult[PayPerUse] = {
       Try {
         JsSuccess(
           PayPerUse(
@@ -1120,9 +1165,12 @@ object json {
       } recover {
         case e =>
           AppLogger.warn("Pay per use")
+          AppLogger.warn(Json.prettyPrint(json))
+          AppLogger.warn(Json.prettyPrint((json \ "paymentSettings").as[JsValue]))
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
       } get
+    }
 
     override def writes(o: PayPerUse): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
@@ -1164,7 +1212,7 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
-      "thirdPartyPaymentType" -> o.paymentSettings
+      "paymentSettings" -> o.paymentSettings
         .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]

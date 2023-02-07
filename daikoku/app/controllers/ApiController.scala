@@ -1,45 +1,25 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{
-  Flow,
-  GraphDSL,
-  JsonFraming,
-  Merge,
-  Partition,
-  Sink,
-  Source
-}
+import akka.stream.scaladsl.{Flow, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
 import akka.stream.{FlowShape, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import cats.data.EitherT
-import cats.implicits.toTraverseOps
+import cats.data.{EitherT, OptionT}
+import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import fr.maif.otoroshi.daikoku.utils.{
-  ApiService,
-  IdGenerator,
-  OtoroshiClient,
-  Translator
-}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient, Translator}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -2429,10 +2409,6 @@ class ApiController(
                     val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
                       deletedPlansId.contains(pp.id))
 
-                    val newPricedPlan = api.possibleUsagePlans
-                      .filter(pp => newPlans.diff(oldPlans).contains(pp.id))
-                      .filter(_.paymentSettings.isDefined)
-
                     env.dataStore.apiRepo
                       .forTenant(ctx.tenant.id)
                       .exists(
@@ -2477,7 +2453,6 @@ class ApiController(
                               apiToSave.currentVersion.value
                             )
                             _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
-                            _ <- Future.sequence(newPricedPlan.map(p => paymentClient.createProduct(ctx.tenant, api, p).value))
                           } yield {
                             ctx.setCtxValue("api.name", api.name)
                             ctx.setCtxValue("api.id", api.id)
@@ -4075,6 +4050,106 @@ class ApiController(
         } yield {
           Ok(Json.obj("notify" -> true))
         }).merge
+      }
+    }
+
+  def createNewPlan(teamId: String, apiId: String, version: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+      )(teamId, ctx) { team =>
+        val newPlan = ctx.request.body.as(UsagePlanFormat)
+
+        val value: EitherT[Future, AppError, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId), AppError.ApiNotFound)
+          saved <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(api.copy(possibleUsagePlans = api.possibleUsagePlans :+ newPlan)))
+        } yield Ok(Json.obj("done" -> saved))
+
+        value.leftMap(_.render()).merge
+      }
+    }
+
+  def updatePlan(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+      )(teamId, ctx) { team =>
+        val newPlan = ctx.request.body.as(UsagePlanFormat)
+
+        val value: EitherT[Future, AppError, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId), AppError.ApiNotFound)
+          saved <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(api.copy(possibleUsagePlans = api.possibleUsagePlans :+ newPlan)))
+        } yield Ok(Json.obj("done" -> saved))
+
+        value.leftMap(_.render()).merge
+      }
+    }
+  def deletePlan(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+      )(teamId, ctx) { team =>
+
+        val value: EitherT[Future, AppError, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId), AppError.ApiNotFound)
+          saved <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(pp => pp.id.value != planId))))
+        } yield Ok(Json.obj("done" -> saved))
+
+        value.leftMap(_.render()).merge
+      }
+    }
+
+
+  def setupPayment(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+      )(teamId, ctx) { _ =>
+        val paymentSettingsId = (ctx.request.body \ "paymentSettings" \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat)
+        val base = (ctx.request.body).as(BasePaymentInformationFormat)
+
+
+
+        val value: EitherT[Future, AppError, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId), AppError.ApiNotFound)
+          plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id.value == planId), AppError.PlanNotFound)
+          paymentSettings <- paymentClient.createProduct(ctx.tenant, api, plan, paymentSettingsId)
+
+          p = plan match {
+            case p: UsagePlan.QuotasWithLimits =>
+              p.mergeBase(base)
+                .copy(paymentSettings = paymentSettings.some)
+            case p: UsagePlan.QuotasWithoutLimits =>
+              val costPerAdditionalRequest = (ctx.request.body \ "costPerAdditionalRequest").as[BigDecimal]
+              p.mergeBase(base)
+                .copy(costPerAdditionalRequest = costPerAdditionalRequest, paymentSettings = paymentSettings.some)
+            case p: UsagePlan.PayPerUse =>
+              val costPerRequest = (ctx.request.body \ "costPerRequest").as[BigDecimal]
+              p.mergeBase(base).copy(costPerRequest = costPerRequest, paymentSettings = paymentSettings.some)
+            case p: UsagePlan => p
+          }
+
+          _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .save(api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(_.id != plan.id) :+ p)))
+        } yield Ok(api.asJson)
+
+        value.leftMap(_.render()).merge
+      }
+    }
+  def stopPayment(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+      )(teamId, ctx) { team =>
+
+        val value: EitherT[Future, Result, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId), AppError.ApiNotFound.render())
+          //todo: save api
+          //todo: run job to "close payment"
+          //todo: close pricing in stripe ?
+        } yield (Ok(Json.obj()))
+
+        value.merge
       }
     }
 }

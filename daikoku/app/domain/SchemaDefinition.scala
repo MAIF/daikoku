@@ -335,13 +335,24 @@ object SchemaDefinition {
       )
     )
 
-    lazy val PaymentSettingsType = InterfaceType(
+    lazy val PaymentSettingsInterfaceType = InterfaceType(
       name = "PaymentSettings",
       description = "a payment settings for usage plan",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), PaymentSettings] (
         Field("thirdPartyPaymentSettingsId", StringType, resolve = _.value.thirdPartyPaymentSettingsId.value)
       )
     )
+
+    lazy val StripePaymentSettingsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), PaymentSettings.Stripe](
+      Interfaces(PaymentSettingsInterfaceType),
+      ObjectTypeDescription("Stripe settings - productId and PriceIds"),
+      ReplaceField("thirdPartyPaymentSettingsId", Field("thirdPartyPaymentSettingsId", StringType, resolve = ctx => ctx.value.thirdPartyPaymentSettingsId.value)),
+      ReplaceField("productId", Field("productId", StringType, resolve = ctx => ctx.value.productId)),
+      ReplaceField("priceIds", Field("priceIds", ListType(StringType), resolve = ctx => ctx.value.priceIds)),
+      AddFields(
+        Field("type", StringType, resolve = _.value.typeName)
+      )
+    ))
 
     lazy val UsagePlanInterfaceType = InterfaceType(
       name = "UsagePlan",
@@ -367,7 +378,8 @@ object SchemaDefinition {
         ),
         Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name),
         Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name),
-        Field("paymentSettings", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings),
+        Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
+          possibleTypes = List(StripePaymentSettingsType)),
         Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity),
         Field("type", StringType, resolve = _.value.typeName)
       )
@@ -377,7 +389,7 @@ object SchemaDefinition {
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan visible only by admins"),
       ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id.value)),
-      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
+      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = ctx => ctx.value.otoroshiTarget)
       ),
@@ -398,7 +410,8 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
+      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
+        possibleTypes = List(StripePaymentSettingsType))),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
@@ -420,7 +433,8 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("paymentSettings", Field("thirdPartyPaymentType", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
+      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
+        possibleTypes = List(StripePaymentSettingsType))),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
@@ -443,7 +457,8 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("paymentSettings", Field("thirdPartyPaymentType", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
+      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
+        possibleTypes = List(StripePaymentSettingsType))),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
@@ -466,7 +481,8 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("paymentSettings", Field("thirdPartyPaymentType", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
+      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
+        possibleTypes = List(StripePaymentSettingsType))),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",
@@ -489,7 +505,8 @@ object SchemaDefinition {
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
-      ReplaceField("paymentSettings", Field("thirdPartyPaymentType", OptionType(PaymentSettingsType), resolve = _.value.paymentSettings)),
+      ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
+        possibleTypes = List(StripePaymentSettingsType))),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
       ReplaceField("visibility",

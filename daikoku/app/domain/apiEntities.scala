@@ -202,15 +202,24 @@ case class Currency(code: String) extends CanJson[Currency] {
 sealed trait PaymentSettings {
   def thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId
   def asJson: JsValue = json.PaymentSettingsFormat.writes(this)
+  def typeName: String
 }
 
 case object PaymentSettings {
   case class Stripe(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
-                    productId: Option[String],
-                    priceId: Option[String]) extends PaymentSettings {
+                    productId: String,
+                    priceIds: Seq[String]) extends PaymentSettings {
+    override def typeName: String = "Stripe"
   }
 }
 
+case class BasePaymentInformation(
+                                   costPerMonth: BigDecimal,
+                                   billingDuration: BillingDuration,
+                                   currency: Currency,
+                                   trialPeriod: Option[BillingDuration]) extends CanJson[BasePaymentInformation] {
+  override def asJson: JsValue = json.BasePaymentInformationFormat.writes(this)
+}
 
 sealed trait UsagePlan {
   def id: UsagePlanId
@@ -239,6 +248,7 @@ sealed trait UsagePlan {
   def integrationProcess: IntegrationProcess
   def aggregationApiKeysSecurity: Option[Boolean]
   def paymentSettings: Option[PaymentSettings]
+  def mergeBase(a: BasePaymentInformation): UsagePlan
 }
 
 case object UsagePlan {
@@ -276,6 +286,7 @@ case object UsagePlan {
       SubscriptionProcess.Automatic
     override def integrationProcess: IntegrationProcess =
       IntegrationProcess.ApiKey
+    override def mergeBase(a: BasePaymentInformation): Admin = this
   }
   case class FreeWithoutQuotas(
       id: UsagePlanId,
@@ -308,6 +319,11 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+
+    override def mergeBase(a: BasePaymentInformation): FreeWithoutQuotas = this.copy(
+      currency = a.currency,
+      billingDuration = a.billingDuration,
+    )
   }
   case class FreeWithQuotas(
       id: UsagePlanId,
@@ -343,6 +359,11 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+
+    override def mergeBase(a: BasePaymentInformation): FreeWithQuotas = this.copy(
+      currency = a.currency,
+      billingDuration = a.billingDuration,
+    )
   }
   case class QuotasWithLimits(
       id: UsagePlanId,
@@ -378,6 +399,12 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+    override def mergeBase(a: BasePaymentInformation): QuotasWithLimits = this.copy(
+      costPerMonth = a.costPerMonth,
+      currency = a.currency,
+      trialPeriod = a.trialPeriod,
+      billingDuration = a.billingDuration,
+    )
   }
   case class QuotasWithoutLimits(
       id: UsagePlanId,
@@ -415,6 +442,12 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+    override def mergeBase(a: BasePaymentInformation): QuotasWithoutLimits = this.copy(
+      costPerMonth = a.costPerMonth,
+      currency = a.currency,
+      trialPeriod = a.trialPeriod,
+      billingDuration = a.billingDuration,
+    )
   }
   case class PayPerUse(
       id: UsagePlanId,
@@ -449,6 +482,12 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+    override def mergeBase(a: BasePaymentInformation): PayPerUse = this.copy(
+      costPerMonth = a.costPerMonth,
+      currency = a.currency,
+      trialPeriod = a.trialPeriod,
+      billingDuration = a.billingDuration,
+    )
   }
 }
 

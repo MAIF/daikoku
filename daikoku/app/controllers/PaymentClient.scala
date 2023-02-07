@@ -16,7 +16,6 @@ class PaymentClient(
 
   type ProductId = String
   type PriceId = String
-  type PaymentInformations = (ProductId, Seq[PriceId])
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -43,11 +42,10 @@ class PaymentClient(
   def createProduct(
       tenant: Tenant,
       api: Api,
-      plan: UsagePlan
-  ): EitherT[Future, AppError, PaymentInformations] =
-    tenant.thirdPartyPaymentSettings.find(s =>
-      plan.paymentSettings.exists(ps => ps.thirdPartyPaymentSettingsId == s.id)
-    ) match {
+      plan: UsagePlan,
+      settingsId: ThirdPartyPaymentSettingsId
+  ): EitherT[Future, AppError, PaymentSettings] =
+    tenant.thirdPartyPaymentSettings.find(_.id == settingsId ) match {
       case Some(settings) =>
         settings match {
           case s: StripeSettings =>
@@ -58,7 +56,7 @@ class PaymentClient(
             )
         }
       case None =>
-        EitherT.leftT[Future, PaymentInformations](
+        EitherT.leftT[Future, PaymentSettings](
           AppError.ThirdPartyPaymentSettingsNotFound
         )
     }
@@ -85,7 +83,7 @@ class PaymentClient(
       productId: ProductId
   )(implicit
       stripeSettings: StripeSettings
-  ): EitherT[Future, AppError, PaymentInformations] = {
+  ): EitherT[Future, AppError, PaymentSettings] = {
 
     val planName: String = plan.customName.getOrElse(plan.typeName)
 
@@ -100,7 +98,8 @@ class PaymentClient(
 
     plan match {
       case _: UsagePlan.QuotasWithLimits =>
-        postStripePrice(body).map(priceId => (productId, Seq(priceId)))
+        postStripePrice(body)
+          .map(priceId => PaymentSettings.Stripe(stripeSettings.id, productId, Seq(priceId)))
       case p: UsagePlan.QuotasWithoutLimits =>
         for {
           baseprice <- postStripePrice(body)
@@ -114,7 +113,7 @@ class PaymentClient(
             "recurring[usage_type]" -> "metered",
             "recurring[aggregate_usage]" -> "sum",
           ))
-        } yield (productId, Seq(baseprice, payperUsePrice))
+        } yield PaymentSettings.Stripe(stripeSettings.id, productId, Seq(baseprice, payperUsePrice))
       case p: UsagePlan.PayPerUse =>
         for {
           baseprice <- postStripePrice(body)
@@ -128,8 +127,8 @@ class PaymentClient(
             "recurring[usage_type]" -> "metered",
             "recurring[aggregate_usage]" -> "sum",
           ))
-        } yield (productId, Seq(baseprice, payperUsePrice))
-      case _ => EitherT.leftT[Future, PaymentInformations](
+        } yield PaymentSettings.Stripe(stripeSettings.id, productId, Seq(baseprice, payperUsePrice))
+      case _ => EitherT.leftT[Future, PaymentSettings](
         AppError.PlanUnauthorized
       )
     }
@@ -140,7 +139,7 @@ class PaymentClient(
       plan: UsagePlan
   )(implicit
       stripeSettings: StripeSettings
-  ): EitherT[Future, AppError, PaymentInformations] = {
+  ): EitherT[Future, AppError, PaymentSettings] = {
 
     val body = Map(
       "name" -> getStripeProductName(api, plan),
@@ -160,7 +159,7 @@ class PaymentClient(
           val productId = (res.json \ "id").as[ProductId]
           createStripePrice(plan, productId)
         } else {
-          EitherT.leftT[Future, PaymentInformations](
+          EitherT.leftT[Future, PaymentSettings](
             AppError.OtoroshiError(res.json.as[JsObject])
           )
         }
