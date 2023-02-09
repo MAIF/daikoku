@@ -25,7 +25,7 @@ import {
   toggleExpertMode,
 } from '../../../core';
 import { TOptions } from '../../../types/types';
-import { IApi, isError } from '../../../types/api';
+import { IApi, isError, IUsagePlan } from '../../../types/api';
 import { IState, IStateContext, ITeamSimple } from '../../../types';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
@@ -87,7 +87,7 @@ type TeamApiParams = {
   versionId: string
   teamId: string
   tab: string
-} 
+}
 export const TeamApi = (props: { creation: boolean }) => {
   const params = useParams<TeamApiParams>();
 
@@ -196,7 +196,7 @@ export const TeamApi = (props: { creation: boolean }) => {
         apiVersion.value!,
         editedApi._humanReadableId
       ).then((res) => {
-        if (res.error) {
+        if (isError(res)) {
           toastr.error(translate('Error'), translate(res.error));
         } else {
           toastr.success(translate('Success'), translate('Api saved'));
@@ -211,6 +211,26 @@ export const TeamApi = (props: { creation: boolean }) => {
       });
     }
   };
+
+  const setDefaultPlan = (plan: IUsagePlan) => {
+    if (api && api.defaultUsagePlan !== plan._id && plan.visibility !== 'Private') {
+      const updatedApi = { ...api, defaultUsagePlan: plan._id }
+      Services.saveTeamApiWithId(
+        currentTeam._id,
+        updatedApi,
+        apiVersion.value!,
+        updatedApi._humanReadableId
+      ).then((response) => {
+        if (isError(response)) {
+          toastr.error(translate('Error'), translate(response.error));
+        } else {
+          setApi(response);
+          methods.setApi(response)
+          reloadState() //todo: use react query instead
+        }
+      })
+    }
+  }
 
   const tab: string = params.tab || 'infos';
 
@@ -298,10 +318,11 @@ export const TeamApi = (props: { creation: boolean }) => {
                 reloadState={reloadState} />)}
             {tab === 'plans' && (
               <TeamApiPricings
-                value={api}
+                api={api}
+                setApi={setApi}
+                setDefaultPlan={setDefaultPlan}
                 team={currentTeam}
                 tenant={tenant}
-                save={save}
                 creation={!!props.creation}
                 expertMode={expertMode}
                 injectSubMenu={(component: any) => methods.addMenu({

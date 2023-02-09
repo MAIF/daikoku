@@ -37,7 +37,8 @@ const HEADERS = {
   'Content-Type': 'application/json',
 };
 
-const customFetch = (
+type PromiseWithError<T> = Promise<ResponseError | T>
+const customFetch = <T>(
   url: string,
   { headers = HEADERS, method = 'GET', body, ...props }: any = {}
 ) => fetch(url, { headers, method, body, ...props }).then((r) => r.json());
@@ -286,7 +287,7 @@ export const deleteTeamApi = (teamId: any, id: any) =>
     method: 'DELETE',
   });
 
-export const saveTeamApiWithId = (teamId: string, api: IApi, version: string, apiId: string) =>
+export const saveTeamApiWithId = (teamId: string, api: IApi, version: string, apiId: string): PromiseWithError<IApi> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`, {
     method: 'PUT',
     body: JSON.stringify(api),
@@ -1028,7 +1029,7 @@ export const getAllPlanOfApi = (
   version: string
 ): Promise<Array<IApi>> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
 
-export const getRootApi = (apiId: any) => customFetch(`/api/apis/${apiId}/_root`);
+export const getRootApi = (apiId: string): PromiseWithError<IApi> => customFetch(`/api/apis/${apiId}/_root`);
 
 export const importApiPages = (teamId: any, apiId: any, pages: any, version: any) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`, {
@@ -1385,8 +1386,25 @@ export const transferApiOwnership = (newTeamId: any, teamId: any, apiId: any) =>
     body: JSON.stringify({ team: newTeamId }),
   });
 
-export const setupPayment = (teamId: string, apiId: string, version: string, planId, data: IUsagePlan): Promise<ResponseError | IApi> => 
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${planId}/_payment`, {
+export const setupPayment = (teamId: string, apiId: string, version: string, plan: IUsagePlan): Promise<ResponseError | IApi> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}/_payment`, {
     method: 'PUT',
-    body: JSON.stringify(data)
+    body: JSON.stringify(plan)
+  })
+
+export const createPlan = (teamId: string, apiId: string, version: string, plan: IUsagePlan): PromiseWithError<IApi> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan`, {
+    method: 'POST',
+    body: JSON.stringify(plan)
+  })
+
+export const updatePlan = (teamId: string, apiId: string, version: string, plan: IUsagePlan): PromiseWithError<IApi> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
+    method: 'PUT',
+    body: JSON.stringify(plan)
+  })
+
+export const deletePlan = (teamId: string, apiId: string, version: string, plan: IUsagePlan): PromiseWithError<IApi> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
+    method: 'DELETE'
   })

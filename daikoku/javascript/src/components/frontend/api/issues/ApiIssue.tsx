@@ -8,13 +8,14 @@ import { TeamApiIssueTags } from './TeamApiIssueTags';
 import * as Services from '../../../../services';
 import { Can, manage, api as API } from '../../../utils';
 import { I18nContext } from '../../../../core';
+import { IApi, isError } from '../../../../types';
 
 export function ApiIssue({
   ownerTeam,
   ...props
 }: any) {
   const { issueId, versionId } = useParams();
-  const [api, setRootApi] = useState();
+  const [api, setRootApi] = useState<IApi>();
 
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
@@ -22,14 +23,21 @@ export function ApiIssue({
   const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.getRootApi(props.api._humanReadableId).then((rootApi) => {
-      setRootApi(rootApi);
-    });
+    Services.getRootApi(props.api._humanReadableId)
+      .then((rootApi) => {
+        if (!isError(rootApi)) {
+          setRootApi(rootApi)
+        }
+      });
   }, []);
 
   const onChange = (editedApi: any) => {
     Services.saveTeamApi(ownerTeam._id, editedApi, versionId!)
-      .then((res) => setRootApi(res))
+      .then((res) => {
+        if (!isError(res)) {
+          setRootApi(res)
+        }
+      })
       .then(() => toastr.success(translate('Success'), translate('Api saved')));
   };
 

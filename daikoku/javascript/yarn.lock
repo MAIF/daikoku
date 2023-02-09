@@ -2017,10 +2017,10 @@
   dependencies:
     "@lezer/lr" "^0.15.0"
 
-"@maif/react-forms@^1.3.3":
-  "integrity" "sha512-rg660n8E2gz2jXAgdQ65FNZP7fsoacm/aVI1j/OhWT1G8cLb6/rbUE4/tPRz4Z+ZamWa6J94aRIlJjtB1tFmvA=="
-  "resolved" "https://registry.npmjs.org/@maif/react-forms/-/react-forms-1.3.3.tgz"
-  "version" "1.3.3"
+"@maif/react-forms@^1.3.4":
+  "integrity" "sha512-TB5JRTZhig+EU39wj4b4LVEb1Dqvwvml5q8vnnotfIDWYmQzpv8QUyAXEwSMGCuMixmVp7fRdfUSVPmgPSRUWA=="
+  "resolved" "https://registry.npmjs.org/@maif/react-forms/-/react-forms-1.3.4.tgz"
+  "version" "1.3.4"
   dependencies:
     "@codemirror/basic-setup" "^0.19.1"
     "@codemirror/lang-html" "^0.19.4"

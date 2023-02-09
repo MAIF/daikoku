@@ -283,6 +283,12 @@ object SchemaDefinition {
       )
     )
 
+    lazy val StripePriceIdsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), StripePriceIds](
+      ObjectTypeDescription("Ids of stripe prices for a product"),
+      ReplaceField("basePriceId", Field("basePriceId", StringType, resolve = _.value.basePriceId)),
+      ReplaceField("additionalPriceId", Field("additionalPriceId", OptionType(StringType), resolve = _.value.additionalPriceId)),
+    )
+
     lazy val  UsagePlanVisibilityType = InterfaceType(
       "UsagePlanVisibility",
       "Interface of Usage Plan Visibility",
@@ -348,7 +354,7 @@ object SchemaDefinition {
       ObjectTypeDescription("Stripe settings - productId and PriceIds"),
       ReplaceField("thirdPartyPaymentSettingsId", Field("thirdPartyPaymentSettingsId", StringType, resolve = ctx => ctx.value.thirdPartyPaymentSettingsId.value)),
       ReplaceField("productId", Field("productId", StringType, resolve = ctx => ctx.value.productId)),
-      ReplaceField("priceIds", Field("priceIds", ListType(StringType), resolve = ctx => ctx.value.priceIds)),
+      ReplaceField("priceIds", Field("priceIds", StripePriceIdsType, resolve = ctx => ctx.value.priceIds)),
       AddFields(
         Field("type", StringType, resolve = _.value.typeName)
       )

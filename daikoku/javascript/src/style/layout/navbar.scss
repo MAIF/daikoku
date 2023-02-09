@@ -311,3 +311,37 @@ a.navbar-brand, #teamSelector:hover {
     }
   }
 }
+
+// UsagePlan forms
+
+.page__menu {
+  text-decoration: none;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+
+.page__menu__entry{
+  cursor: pointer;
+  font-size: 14px;
+  color: $aside-text-color;
+  margin-bottom: 5px;
+  line-height: 40px;
+  border-radius: 4px;
+  padding-left: .5rem;
+  &.active {
+    background-color: $menu-text-hover-bg-color;
+    color: $menu-text-hover-color;
+  }
+
+  &.disabled {
+    color: lighten(#000, 50%);
+    cursor: default;
+  }
+
+  &:hover {
+    background-color: $menu-text-hover-bg-color;
+    color: var(--menu-text-hover-color, #fff);
+  }
+}

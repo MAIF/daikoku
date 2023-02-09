@@ -205,10 +205,13 @@ sealed trait PaymentSettings {
   def typeName: String
 }
 
+case class StripePriceIds(basePriceId: String, additionalPriceId: Option[String] = None) extends CanJson[StripePriceIds] {
+  override def asJson: JsValue = json.StripePriceIdsFormat.writes(this)
+}
 case object PaymentSettings {
   case class Stripe(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
                     productId: String,
-                    priceIds: Seq[String]) extends PaymentSettings {
+                    priceIds: StripePriceIds) extends PaymentSettings {
     override def typeName: String = "Stripe"
   }
 }

@@ -1256,5 +1256,8 @@
   "third-party.payment.list.add.label": "Ajouter un tiers de paiement",
   "third-party.payment.settings.delete.confirm.message": "Êtes-vous sûr de vouloir supprimer ces paramètres ?",
   "third-party.payment.settings.type.select.message": "Merci de selectionner un type de tiers de paiement à parametrer",
-  "warning.missing.otoroshi": "Aucune instance Otoroshi configurée ou aucune entité configurée"
+  "warning.missing.otoroshi": "Aucune instance Otoroshi configurée ou aucune entité configurée",
+  "plan.update.successful": "Le plan a été créé avec succès",
+  "plan.creation.successful": "Le plan a été mis à jour avec succès",
+  "plan.payment.setup.successful": "Les paramètres de paiement du plan ont été mis à jour avec succès"
 }

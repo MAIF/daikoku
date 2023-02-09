@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain._
@@ -99,7 +100,7 @@ class PaymentClient(
     plan match {
       case _: UsagePlan.QuotasWithLimits =>
         postStripePrice(body)
-          .map(priceId => PaymentSettings.Stripe(stripeSettings.id, productId, Seq(priceId)))
+          .map(priceId => PaymentSettings.Stripe(stripeSettings.id, productId, StripePriceIds(basePriceId = priceId)))
       case p: UsagePlan.QuotasWithoutLimits =>
         for {
           baseprice <- postStripePrice(body)
@@ -113,7 +114,7 @@ class PaymentClient(
             "recurring[usage_type]" -> "metered",
             "recurring[aggregate_usage]" -> "sum",
           ))
-        } yield PaymentSettings.Stripe(stripeSettings.id, productId, Seq(baseprice, payperUsePrice))
+        } yield PaymentSettings.Stripe(stripeSettings.id, productId, StripePriceIds(basePriceId = baseprice, additionalPriceId = payperUsePrice.some))
       case p: UsagePlan.PayPerUse =>
         for {
           baseprice <- postStripePrice(body)
@@ -127,7 +128,7 @@ class PaymentClient(
             "recurring[usage_type]" -> "metered",
             "recurring[aggregate_usage]" -> "sum",
           ))
-        } yield PaymentSettings.Stripe(stripeSettings.id, productId, Seq(baseprice, payperUsePrice))
+        } yield PaymentSettings.Stripe(stripeSettings.id, productId, StripePriceIds(basePriceId = baseprice, additionalPriceId = payperUsePrice.some))
       case _ => EitherT.leftT[Future, PaymentSettings](
         AppError.PlanUnauthorized
       )

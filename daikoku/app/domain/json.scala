@@ -716,6 +716,25 @@ object json {
     )
   }
 
+  val StripePriceIdsFormat = new Format[StripePriceIds] {
+    override def reads(json: JsValue): JsResult[StripePriceIds] = Try {
+      JsSuccess(
+        StripePriceIds(
+          basePriceId = (json \ "basePriceId").as[String],
+          additionalPriceId = (json \ "additionalPriceId").asOpt[String]
+        ))
+    } recover {
+      case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+    } get
+
+    override def writes(o: StripePriceIds): JsValue = Json.obj(
+      "basePriceId" -> o.basePriceId,
+      "additionalPriceId" -> o.additionalPriceId.map(JsString).getOrElse(JsNull).as[JsValue]
+    )
+  }
+
   val PaymentSettingsFormat = new Format[PaymentSettings] {
     override def reads(json: JsValue): JsResult[PaymentSettings] = (json \ "type").asOpt[String] match {
       case Some("Stripe") => StripePaymentSettingsFormat.reads(json)
@@ -735,7 +754,7 @@ object json {
         PaymentSettings.Stripe(
           thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat),
           productId = (json \ "productId").as[String],
-          priceIds = (json \ "priceIds").as[Seq[String]]
+          priceIds = (json \ "priceIds").as(StripePriceIdsFormat)
         ))
     } recover {
       case e =>
@@ -747,7 +766,7 @@ object json {
     override def writes(o: PaymentSettings.Stripe): JsValue = Json.obj(
       "thirdPartyPaymentSettingsId" -> o.thirdPartyPaymentSettingsId.asJson,
       "productId" -> o.productId,
-      "priceIds" -> JsArray(o.priceIds.map(JsString.apply))
+      "priceIds" -> StripePriceIdsFormat.writes(o.priceIds)
     )
   }
 
