@@ -637,6 +637,7 @@ export const TeamApiPricings = (props: Props) => {
       .then(newPlan => {
         setPlanForEdition(newPlan);
         setMode(possibleMode.creation);
+        setSelectedTab('settings')
         setCreation(true);
       })
   };
@@ -688,10 +689,11 @@ export const TeamApiPricings = (props: Props) => {
   }
 
   const clonePlanAndEdit = (plan: IUsagePlan) => {
-    const clone = {
+    const clone: IUsagePlan = {
       ...cloneDeep(plan),
       _id: nanoid(32),
       customName: `${plan.customName} (copy)`,
+      paymentSettings: undefined
     };
     setPlanForEdition(clone);
     setMode(possibleMode.creation);
