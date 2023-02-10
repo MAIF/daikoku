@@ -1,22 +1,19 @@
 import React, { useContext } from 'react';
 import classNames from 'classnames';
 
-import { Can, manage, api as API } from '../../utils';
-import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
+import { Can, manage, api as API,ActionWithTeamSelector } from '../../utils';
 import StarsButton from './StarsButton';
 import { I18nContext } from '../../../core';
-import { IApi, IApiWithAuthorization, ITeamSimple, IUserSimple } from '../../../types';
+import { IApiWithAuthorization, ITeamSimple, IUserSimple } from '../../../types';
+import {useNavigate} from "react-router-dom";
 
 export const ApiCard = (props: {
-  key: string
   user: IUserSimple
-  api: IApiWithAuthorization
-  showTeam: boolean
+  apiWithAutho: Array<IApiWithAuthorization>
   teamVisible: boolean
   team?: ITeamSimple
   myTeams: Array<ITeamSimple>
   askForApiAccess: (teams: Array<string>) => Promise<any>
-  redirectToTeamPage: (team: ITeamSimple) => void
   redirectToApiPage: () => void
   redirectToEditPage: () => void
   handleTagSelect: (tag: string) => void
@@ -26,29 +23,37 @@ export const ApiCard = (props: {
   connectedUser: IUserSimple
   groupView?: boolean
 }) => {
+
+  const apiWithAutho = props.apiWithAutho.find((apiWithAuthorization) => apiWithAuthorization.api.isDefault) || props.apiWithAutho.sort((a,b) => a.api.lastUpdate.localeCompare(b.api.lastUpdate))[0]
+  const api = apiWithAutho.api
+  const authorization = apiWithAutho.authorizations
   const allTeamsAreAuthorized =
-    props.api.visibility === 'Public' || props.api.authorizations.every((a: any) => a.authorized);
+    api.visibility === 'Public' || authorization.every((a: any) => a.authorized);
 
   const isPending =
-    props.api.authorizations && props.api.authorizations.every((a: any) => a.pending && !a.authorized);
-  const api = props.api;
+    authorization && authorization.every((a: any) => a.pending && !a.authorized);
+  const authorizations = authorization
   const team = props.team;
 
   const { translate, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
+
+  const redirectToTeamPage = (team: ITeamSimple) => {
+    navigate(`/${team._humanReadableId}`);
+  };
 
   const accessButton = () => {
     if (
       !allTeamsAreAuthorized &&
       !props.groupView &&
-      // !isPending &&
       !['Private', 'AdminOnly'].includes(api.visibility)
     ) {
       return (
         <ActionWithTeamSelector
           title="Api access"
           description={translate({ key: 'api.access.request', replacements: [api.name] })}
-          pendingTeams={api.authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
-          acceptedTeams={api.authorizations
+          pendingTeams={authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
+          acceptedTeams={authorizations
             .filter((auth) => auth.authorized)
             .map((auth) => auth.team)}
           teams={props.myTeams?.filter((t: any) => t.type !== 'Admin')}
@@ -105,7 +110,7 @@ export const ApiCard = (props: {
             {props.teamVisible && team && (
               <small
                 className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline justify-content-end"
-                onClick={() => props.redirectToTeamPage(team)}
+                onClick={() => redirectToTeamPage(team)}
               >
                 <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
                 {team.name}
@@ -183,7 +188,7 @@ export const ApiCard = (props: {
         {props.teamVisible && team && (
           <small
             className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline"
-            onClick={() => props.redirectToTeamPage(team)}
+            onClick={() => redirectToTeamPage(team)}
           >
             <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
             {team.name}

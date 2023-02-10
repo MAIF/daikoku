@@ -1241,5 +1241,7 @@
     "set.favicon": "favicon",
     "set.font.family": "font family",
     "select.team.placeholder": "Select a team",
-    "otoroshi.missing.target":"Missing otoroshi target"
+    "otoroshi.missing.target":"Missing otoroshi target",
+    "apiList.tag.search":"Search your tag",
+    "apiList.category.search":"Search your category"
 }

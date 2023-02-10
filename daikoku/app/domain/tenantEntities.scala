@@ -532,8 +532,8 @@ case class CmsPage(
 
     handlebars.registerHelper(s"daikoku-${name}s", (_: CmsPage, options: Options) => {
       val visibility = options.hash.getOrDefault("visibility", "All").asInstanceOf[String]
-      Await.result(CommonServices.getVisibleApis()(ctxUserContext, env, ec), 10.seconds) match {
-        case Left(apis) =>
+      Await.result(CommonServices.getVisibleApis(research = "", limit = Int.MaxValue, offset = 0)(ctxUserContext, env, ec), 10.seconds) match {
+        case Left(ApiWithCount(apis, _)) =>
           apis
             .filter(api => if(visibility == "All") true else api.api.visibility.name == visibility)
             .map(api => renderString(ctx,
@@ -580,8 +580,8 @@ case class CmsPage(
       }
     })
     handlebars.registerHelper(s"daikoku-json-${name}s", (_: CmsPage, _: Options) =>
-      Await.result(CommonServices.getVisibleApis()(ctxUserContext, env, ec).map {
-        case Left(apis) => JsArray(apis.map(_.api.asJson))
+      Await.result(CommonServices.getVisibleApis(research = "", limit = Int.MaxValue, offset = 0)(ctxUserContext, env, ec).map {
+        case Left(ApiWithCount(apis, _)) => JsArray(apis.map(_.api.asJson))
         case Right(error) => toJson(error)
       }, 10.seconds)
     )
