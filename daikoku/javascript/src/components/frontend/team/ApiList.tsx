@@ -91,7 +91,7 @@ export const ApiList = (props: TApiList) => {
   const [categories, setCategories] = useState<TOptions>([]);
 
   const [view, setView] = useState<'LIST' | 'GRID'>(LIST);
-  const pageNumber = view === GRID ? 1 : 10;
+  const pageNumber = view === GRID ? 12 : 10;
 
 
 

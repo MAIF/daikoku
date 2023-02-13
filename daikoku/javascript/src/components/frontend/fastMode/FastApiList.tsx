@@ -32,7 +32,7 @@ export const FastApiList = (props: FastApiListProps) => {
 
   const [viewMode, setViewMode] = useState<FastItemViewMode>('NONE')
 
-  const [nbOfApis, setNbOfApis] = useState<number>(1);
+  const [nbOfApis, setNbOfApis] = useState<number>(5);
   const [page, setPage] = useState<number>(0);
   const [offset, setOffset] = useState<number>(0);
 
