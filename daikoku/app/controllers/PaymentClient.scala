@@ -6,7 +6,8 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import play.api.libs.json.JsObject
+import fr.maif.otoroshi.daikoku.logger.AppLogger
+import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 
 import scala.concurrent.Future
@@ -46,7 +47,7 @@ class PaymentClient(
       plan: UsagePlan,
       settingsId: ThirdPartyPaymentSettingsId
   ): EitherT[Future, AppError, PaymentSettings] =
-    tenant.thirdPartyPaymentSettings.find(_.id == settingsId ) match {
+    tenant.thirdPartyPaymentSettings.find(_.id == settingsId) match {
       case Some(settings) =>
         settings match {
           case s: StripeSettings =>
@@ -62,7 +63,43 @@ class PaymentClient(
         )
     }
 
-  def postStripePrice(body: Map[String, String])(implicit s: StripeSettings): EitherT[Future, AppError, PriceId] = {
+  def checkoutSubscription(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      plan: UsagePlan,
+      api: Api,
+      team: Team,
+      apiTeam: Team,
+      user: User
+  ): EitherT[Future, AppError, String] =
+    plan.paymentSettings match {
+      case Some(settings) =>
+        settings match {
+          case p: PaymentSettings.Stripe =>
+            implicit val stripeSettings: StripeSettings =
+              tenant.thirdPartyPaymentSettings
+                .find(_.id == p.thirdPartyPaymentSettingsId)
+                .get
+                .asInstanceOf[StripeSettings]
+            createStripeCheckoutSession(
+              tenant,
+              api,
+              team,
+              apiTeam,
+              subscription,
+              p,
+              user
+            )
+        }
+      case None =>
+        EitherT.leftT[Future, String](
+          AppError.ThirdPartyPaymentSettingsNotFound
+        )
+    }
+
+  def postStripePrice(
+      body: Map[String, String]
+  )(implicit s: StripeSettings): EitherT[Future, AppError, PriceId] = {
     EitherT
       .liftF(
         stripeClient("/v1/prices")
@@ -100,38 +137,63 @@ class PaymentClient(
     plan match {
       case _: UsagePlan.QuotasWithLimits =>
         postStripePrice(body)
-          .map(priceId => PaymentSettings.Stripe(stripeSettings.id, productId, StripePriceIds(basePriceId = priceId)))
+          .map(priceId =>
+            PaymentSettings.Stripe(
+              stripeSettings.id,
+              productId,
+              StripePriceIds(basePriceId = priceId)
+            )
+          )
       case p: UsagePlan.QuotasWithoutLimits =>
         for {
           baseprice <- postStripePrice(body)
-          payperUsePrice <- postStripePrice(Map(
-            "product" -> productId,
-            "unit_amount" -> (p.costPerAdditionalRequest * 100).longValue.toString,
-            "currency" -> plan.currency.code,
-            "nickname" -> planName,
-            "metadata[plan]" -> plan.id.value,
-            "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
-            "recurring[usage_type]" -> "metered",
-            "recurring[aggregate_usage]" -> "sum",
-          ))
-        } yield PaymentSettings.Stripe(stripeSettings.id, productId, StripePriceIds(basePriceId = baseprice, additionalPriceId = payperUsePrice.some))
+          payperUsePrice <- postStripePrice(
+            Map(
+              "product" -> productId,
+              "unit_amount" -> (p.costPerAdditionalRequest * 100).longValue.toString,
+              "currency" -> plan.currency.code,
+              "nickname" -> planName,
+              "metadata[plan]" -> plan.id.value,
+              "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
+              "recurring[usage_type]" -> "metered",
+              "recurring[aggregate_usage]" -> "sum"
+            )
+          )
+        } yield PaymentSettings.Stripe(
+          stripeSettings.id,
+          productId,
+          StripePriceIds(
+            basePriceId = baseprice,
+            additionalPriceId = payperUsePrice.some
+          )
+        )
       case p: UsagePlan.PayPerUse =>
         for {
           baseprice <- postStripePrice(body)
-          payperUsePrice <- postStripePrice(Map(
-            "product" -> productId,
-            "unit_amount" -> (p.costPerRequest * 100).longValue.toString,
-            "currency" -> plan.currency.code,
-            "nickname" -> planName,
-            "metadata[plan]" -> plan.id.value,
-            "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
-            "recurring[usage_type]" -> "metered",
-            "recurring[aggregate_usage]" -> "sum",
-          ))
-        } yield PaymentSettings.Stripe(stripeSettings.id, productId, StripePriceIds(basePriceId = baseprice, additionalPriceId = payperUsePrice.some))
-      case _ => EitherT.leftT[Future, PaymentSettings](
-        AppError.PlanUnauthorized
-      )
+          payperUsePrice <- postStripePrice(
+            Map(
+              "product" -> productId,
+              "unit_amount" -> (p.costPerRequest * 100).longValue.toString,
+              "currency" -> plan.currency.code,
+              "nickname" -> planName,
+              "metadata[plan]" -> plan.id.value,
+              "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
+              "recurring[usage_type]" -> "metered",
+              "recurring[aggregate_usage]" -> "sum"
+            )
+          )
+        } yield PaymentSettings.Stripe(
+          stripeSettings.id,
+          productId,
+          StripePriceIds(
+            basePriceId = baseprice,
+            additionalPriceId = payperUsePrice.some
+          )
+        )
+      case _ =>
+        EitherT.leftT[Future, PaymentSettings](
+          AppError.PlanUnauthorized
+        )
     }
   }
 
@@ -161,6 +223,64 @@ class PaymentClient(
           createStripePrice(plan, productId)
         } else {
           EitherT.leftT[Future, PaymentSettings](
+            AppError.OtoroshiError(res.json.as[JsObject])
+          )
+        }
+      })
+  }
+
+  def createStripeCheckoutSession(
+      tenant: Tenant,
+      api: Api,
+      team: Team,
+      apiTeam: Team,
+      subscription: ApiSubscription,
+      settings: PaymentSettings.Stripe,
+      user: User
+  )(implicit
+      stripeSettings: StripeSettings
+  ): EitherT[Future, AppError, String] = {
+    //todo: success url must be just an UI to explain how does it work
+    val baseBody = Map(
+      "metadata[tenant]" -> subscription.tenant.value,
+      "metadata[api]" -> subscription.api.value,
+      "metadata[team]" -> subscription.team.value,
+      "metadata[plan]" -> subscription.plan.value,
+      "metadata[subscription]" -> subscription.id.value,
+      "line_items[0][price]" -> settings.priceIds.basePriceId,
+      "line_items[0][quantity]" -> "1",
+      "mode" -> "subscription",
+      "customer_email" -> team.contact,
+      "billing_address_collection " -> "required",
+      "locale" -> user.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en").toLowerCase,
+      "success_url" -> env.getDaikokuUrl(
+        tenant,
+        s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
+      ),
+      "cancel_url" -> env.getDaikokuUrl(
+        tenant,
+        s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion}/pricing"
+      )
+    )
+
+    val body = settings.priceIds.additionalPriceId
+      .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
+      .getOrElse(baseBody)
+
+    EitherT
+      .liftF(
+        stripeClient("/v1/checkout/sessions")
+          .post(body)
+      )
+      .flatMap(res => {
+        AppLogger.warn(res.statusText)
+        if (res.status == 200 || res.status == 201) {
+          val url = (res.json \ "url").as[String]
+          AppLogger.warn(url)
+          //todo: handle real redirection to checkout page
+          EitherT.pure(url)
+        } else {
+          EitherT.leftT[Future, String](
             AppError.OtoroshiError(res.json.as[JsObject])
           )
         }

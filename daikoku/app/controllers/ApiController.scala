@@ -1,11 +1,11 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{Flow, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
-import akka.stream.{FlowShape, Materializer}
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import cats.data.{EitherT, OptionT}
+import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
@@ -13,7 +13,7 @@ import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, Da
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
-import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
+import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -24,14 +24,13 @@ import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.http.HttpEntity
-import play.api.i18n.{I18nSupport, Lang}
+import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
-import scala.util.hashing.MurmurHash3
 import scala.util.{Failure, Success, Try}
 
 class ApiController(
@@ -2397,17 +2396,17 @@ class ApiController(
                             .map(_.otoroshiSettings))) =>
                     AppError.renderF(AppError.ForbiddenAction)
                   case false =>
-                    val flippedPlans = api.possibleUsagePlans.filter(pp =>
-                      oldApi.possibleUsagePlans.exists(oldPp =>
-                        pp.id == oldPp.id && oldPp.visibility != pp.visibility))
-                    val untouchedPlans =
-                      api.possibleUsagePlans.diff(flippedPlans)
+//                    val flippedPlans = api.possibleUsagePlans.filter(pp =>
+//                      oldApi.possibleUsagePlans.exists(oldPp =>
+//                        pp.id == oldPp.id && oldPp.visibility != pp.visibility))
+//                    val untouchedPlans =
+//                      api.possibleUsagePlans.diff(flippedPlans)
 
-                    val newPlans = api.possibleUsagePlans.map(_.id)
-                    val oldPlans = oldApi.possibleUsagePlans.map(_.id)
-                    val deletedPlansId = oldPlans.diff(newPlans)
-                    val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
-                      deletedPlansId.contains(pp.id))
+//                    val newPlans = api.possibleUsagePlans.map(_.id)
+//                    val oldPlans = oldApi.possibleUsagePlans.map(_.id)
+//                    val deletedPlansId = oldPlans.diff(newPlans)
+//                    val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
+//                      deletedPlansId.contains(pp.id))
 
                     env.dataStore.apiRepo
                       .forTenant(ctx.tenant.id)
@@ -2422,42 +2421,42 @@ class ApiController(
                         case true => AppError.renderF(ApiVersionConflict)
                         case false =>
                           for {
-                            plans <- changePlansVisibility(
-                              flippedPlans,
-                              api,
-                              ctx.tenant
-                            )
-                            _ <- deleteApiPlansSubscriptions(
-                              deletedPlans,
-                              oldApi,
-                              ctx.tenant,
-                              ctx.user
-                            )
-                            apiToSave = api.copy(possibleUsagePlans =
-                              untouchedPlans ++ plans)
+//                            plans <- changePlansVisibility(
+//                              flippedPlans,
+//                              api,
+//                              ctx.tenant
+//                            )
+//                            _ <- deleteApiPlansSubscriptions(
+//                              deletedPlans,
+//                              oldApi,
+//                              ctx.tenant,
+//                              ctx.user
+//                            )
+//                            apiToSave = api.copy(possibleUsagePlans =
+//                              untouchedPlans ++ plans)
                             _ <- env.dataStore.apiRepo
                               .forTenant(ctx.tenant.id)
-                              .save(apiToSave)
+                              .save(api)
                             _ <- otoroshiSynchronisator.verify(
                               Json.obj("api" -> api.id.value)
                             ) //launch synhro to maybe update customeMetadata & authorizedEntities
-                            _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                            _ <- updateTagsOfIssues(ctx.tenant.id, api)
                             _ <- updateAllHumanReadableId(ctx,
-                                                          apiToSave,
-                                                          oldApi)
+                              api,
+                              oldApi)
                             _ <- turnOffDefaultVersion(
                               ctx,
-                              apiToSave,
+                              api,
                               oldApi,
-                              apiToSave.humanReadableId,
-                              apiToSave.currentVersion.value
+                              api.humanReadableId,
+                              api.currentVersion.value
                             )
-                            _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
+                            _ <- checkIssuesVersion(ctx, api, oldApi)
                           } yield {
                             ctx.setCtxValue("api.name", api.name)
                             ctx.setCtxValue("api.id", api.id)
 
-                            Ok(apiToSave.asJson)
+                            Ok(api.asJson)
                           }
                       }
                 }
@@ -2768,28 +2767,6 @@ class ApiController(
           .map(categories => Ok(JsArray(categories.map(JsString.apply).toSeq)))
       }
     }
-
-  def changePlansVisibility(
-      plans: Seq[UsagePlan],
-      api: Api,
-      tenant: Tenant
-  ): Future[Seq[UsagePlan]] = {
-    Future.sequence(plans.map(plan => {
-      plan.visibility match {
-        case Public => FastFuture.successful(plan.removeAllAuthorizedTeams())
-        case Private =>
-          for {
-            subs <- env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant)
-              .findNotDeleted(
-                Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
-              )
-          } yield {
-            plan.addAutorizedTeams(subs.map(_.team).distinct)
-          }
-      }
-    }))
-  }
 
   def deleteApiPlansSubscriptions(
       plans: Seq[UsagePlan],
@@ -4062,7 +4039,7 @@ class ApiController(
 
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)), AppError.ApiNotFound)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
           updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans :+ newPlan)
           _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
         } yield Ok(updatedApi.asJson)
@@ -4078,26 +4055,69 @@ class ApiController(
       )(teamId, ctx) { team =>
         val updatedPlan = ctx.request.body.as(UsagePlanFormat)
 
+        def getPlanAndCheckIt(api: Api, plan: UsagePlan): EitherT[Future, AppError, UsagePlan] = {
+          api.possibleUsagePlans.find(_.id == plan.id) match {
+            case Some(oldPlan) if oldPlan.id.value != planId =>  EitherT.leftT(AppError.PlanNotFound)
+            case Some(oldPlan) if oldPlan.otoroshiTarget.map(_.otoroshiSettings) != plan.otoroshiTarget.map(_.otoroshiSettings) => EitherT.leftT(AppError.ForbiddenAction)
+            //FIXME: Handle type changes
+            case Some(oldPlan) if oldPlan.typeName != plan.typeName => EitherT.leftT(AppError.ForbiddenAction)
+            //FIXME: Handle prices changes
+            case Some(oldPlan) => oldPlan match {
+              case p: UsagePlan.QuotasWithLimits if p.costPerMonth != plan.costPerMonth => EitherT.leftT(AppError.ForbiddenAction)
+              case p: UsagePlan.QuotasWithoutLimits
+                if p.costPerMonth != plan.costPerMonth || p.costPerAdditionalRequest != oldPlan.asInstanceOf[UsagePlan.QuotasWithoutLimits].costPerAdditionalRequest =>
+                EitherT.leftT(AppError.ForbiddenAction)
+              case p: UsagePlan.PayPerUse
+                if p.costPerMonth != plan.costPerMonth || p.costPerRequest != oldPlan.asInstanceOf[UsagePlan.PayPerUse].costPerRequest =>
+                EitherT.leftT(AppError.ForbiddenAction)
+              case _ => EitherT.pure(plan)
+            }
+            case None => EitherT.leftT(AppError.PlanNotFound)
+          }
+        }
+
+        def handleVisibilityToggling(oldApi: Api, plan: UsagePlan): EitherT[Future, AppError, UsagePlan] = {
+          oldApi.possibleUsagePlans.find(_.id == plan.id) match {
+            case Some(oldPlan) if plan.visibility != oldPlan.visibility =>
+              plan.visibility match {
+                case UsagePlanVisibility.Public => EitherT.pure(plan.removeAllAuthorizedTeams())
+                case UsagePlanVisibility.Private =>
+                  val future: Future[Either[AppError, UsagePlan]] = env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+                    .findNotDeleted(Json.obj("api" -> oldApi.id.asJson, "plan" -> plan.id.asJson))
+                    .map(subs => subs.map(_.team).distinct)
+                    .map(x => Right(plan.addAutorizedTeams(x)))
+                  val value: EitherT[Future, AppError, UsagePlan] = EitherT(future)
+                  value
+              }
+            case None => EitherT.leftT(AppError.PlanNotFound)
+          }
+        }
+
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)), AppError.ApiNotFound)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          _ <- getPlanAndCheckIt(api, updatedPlan)
+          _ <- handleVisibilityToggling(api, updatedPlan)
           updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(_.id != updatedPlan.id) :+ updatedPlan)
           _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
+          _ <- EitherT.liftF(otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)))
         } yield Ok(updatedApi.asJson)
 
         value.leftMap(_.render()).merge
       }
     }
+
   def deletePlan(teamId: String, apiId: String, version: String, planId: String) =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
       )(teamId, ctx) { team =>
-
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)), AppError.ApiNotFound)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id.value == planId), AppError.PlanNotFound)
           updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(pp => pp.id.value != planId))
+          _ <- EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, ctx.tenant, ctx.user))
           _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
         } yield Ok(updatedApi.asJson)
 

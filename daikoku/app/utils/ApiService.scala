@@ -6,6 +6,7 @@ import akka.stream.scaladsl.{Flow, Source}
 import cats.data.EitherT
 import controllers.AppError
 import controllers.AppError._
+import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
@@ -24,7 +25,8 @@ class ApiService(env: Env,
                  messagesApi: MessagesApi,
                  translator: Translator,
                  apiKeyStatsJob: ApiKeyStatsJob,
-                 otoroshiSynchronisator: OtoroshiVerifierJob) {
+                 otoroshiSynchronisator: OtoroshiVerifierJob,
+                 paymentClient: PaymentClient) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -222,11 +224,14 @@ class ApiService(env: Env,
               case None => EitherT(otoroshiClient.createApiKey(tunedApiKey))
             }
 
-            otoroshiApiKeyActionResult
-              .flatMap(_ => EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo
+            for {
+              _ <- otoroshiApiKeyActionResult
+              apiTeam <- EitherT.fromOptionF(ev.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team), AppError.TeamNotFound)
+              _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo
                 .forTenant(tenant.id)
-                .save(apiSubscription)))
-            .map(_ => Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson))
+                .save(apiSubscription))
+              _ <- paymentClient.checkoutSubscription(tenant, apiSubscription, plan, api, team, apiTeam, user)
+            } yield Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
         }.value
     }
 
@@ -657,11 +662,13 @@ class ApiService(env: Env,
       })
     })
     .flatMapConcat(seq => Source(seq.toList))
-    //todo: update to 5 parralelism if team.subscriptions is no more used
+    //todo: update to 5 parallelism if team.subscriptions is no more used
     .mapAsync(1)(sub => {
       val plan = sub._1
       val subscription = sub._2
       val notification = sub._3
+
+      //FIXME: handle third party payment subscriptions
 
       plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
         tenant.otoroshiSettings.find(_.id == id)
