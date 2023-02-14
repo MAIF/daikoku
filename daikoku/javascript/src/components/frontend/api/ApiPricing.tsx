@@ -32,7 +32,7 @@ export const currency = (plan?: IBaseUsagePlan) => {
 type ApiPricingCardProps = {
   plan: IUsagePlan,
   api: IApi,
-  askForApikeys: (x: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
+  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
   myTeams: Array<ITeamSimple>,
   ownerTeam: ITeamSimple,
   subscriptions: Array<ISubscription>,
@@ -46,7 +46,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
-  const showApiKeySelectModal = (teams: Array<string>) => {
+  const showApiKeySelectModal = (team: string) => {
     const { plan } = props;
 
     //FIXME: not bwaaagh !!
@@ -54,9 +54,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       return;
     }
 
-    const askForApikeys = (teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription) => {
+    const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
       if (plan.subscriptionProcess === "Automatic") {
-        props.askForApikeys({ teams, plan: plan, apiKey })
+        props.askForApikeys({ team, plan: plan, apiKey })
       } else {
         openFormModal<{ motivation: string }>({
           title: translate('motivations.modal.title'),
@@ -70,13 +70,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               ]
             }
           },
-          onSubmit: ({ motivation }) => props.askForApikeys({ teams, plan, apiKey, motivation }),
+          onSubmit: ({ motivation }) => props.askForApikeys({ team, plan, apiKey, motivation }),
           actionLabel: translate('Send')
         })
       }
     }
 
-    Services.getAllTeamSubscriptions(teams[0])
+    Services.getAllTeamSubscriptions(team)
       .then((subscriptions) => client.query({
         query: Services.graphql.apisByIdsWithPlans,
         variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
@@ -99,13 +99,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           .map((infos) => infos.subscription);
 
         if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
-          askForApikeys(teams, plan);
+          askForApikeys(team, plan);
         } else {
           openApiKeySelectModal({
             plan,
             apiKeys: filteredApiKeys,
-            onSubscribe: () => askForApikeys(teams, plan),
-            extendApiKey: (apiKey: ISubscription) => askForApikeys(teams, plan, apiKey),
+            onSubscribe: () => askForApikeys(team, plan),
+            extendApiKey: (apiKey: ISubscription) => askForApikeys(team, plan, apiKey),
           });
         }
       });
@@ -217,7 +217,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                         .map((subs) => subs.team)}
                       allowMultipleDemand={plan.allowMultipleKeys}
                       allTeamSelector={false}
-                      action={(teams) => showApiKeySelectModal(teams)}
+                      action={(teams) => showApiKeySelectModal(teams[0])}
                       actionLabel={translate(plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key')}
                     >
                       <button type="button" className="btn btn-sm btn-access-negative col-12">
@@ -256,7 +256,7 @@ type ApiPricingProps = {
   ownerTeam: ITeamSimple
   subscriptions: Array<ISubscription>,
   pendingSubscriptions: Array<INotification>,
-  askForApikeys: (x: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
+  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
 }
 export function ApiPricing(props: ApiPricingProps) {
   if (!props.api) {

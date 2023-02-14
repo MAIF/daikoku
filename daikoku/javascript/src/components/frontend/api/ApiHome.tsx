@@ -255,14 +255,14 @@ export const ApiHome = ({
   };
 
 
-  const askForApikeys = ({ teams, plan, apiKey, motivation }: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => {
+  const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => {
     const planName = formatPlanType(plan, translate);
 
     if (api) {
       return (
         apiKey
-          ? Services.extendApiKey(api!._id, apiKey._id, teams, plan._id, motivation)
-          : Services.askForApiKey(api!._id, teams, plan._id, motivation)
+          ? Services.extendApiKey(api!._id, apiKey._id, team, plan._id, motivation)
+          : Services.askForApiKey(api!._id, team, plan._id, motivation)
       ).then((results) => {
         if (results.error) {
           return toastr.error(translate('Error'), results.error);

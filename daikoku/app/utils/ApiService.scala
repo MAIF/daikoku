@@ -227,10 +227,12 @@ class ApiService(env: Env,
             for {
               _ <- otoroshiApiKeyActionResult
               apiTeam <- EitherT.fromOptionF(ev.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team), AppError.TeamNotFound)
+              //todo: create key after all subscription validation ended
               _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo
                 .forTenant(tenant.id)
                 .save(apiSubscription))
-              _ <- paymentClient.checkoutSubscription(tenant, apiSubscription, plan, api, team, apiTeam, user)
+              //todo: start checkout session if plan is paied plan with payment settings
+//              _ <- paymentClient.checkoutSubscription(tenant, apiSubscription, plan, api, team, apiTeam, user)
             } yield Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
         }.value
     }

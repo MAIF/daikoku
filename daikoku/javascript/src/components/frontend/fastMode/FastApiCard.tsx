@@ -42,11 +42,9 @@ export const FastApiCard = (props: FastApiCardProps) => {
   }
 
   const subscribe = (input: string, apiId: string, team: ITeamSimple, plan: IFastPlan, apiKey?: ISubscription) => {
-    const teamsSubscriber = new Array(team._id)
-
     const apiKeyDemand = (motivation?: string) => apiKey
-      ? Services.extendApiKey(apiId, apiKey._id, teamsSubscriber, plan._id, motivation)
-      : Services.askForApiKey(apiId, teamsSubscriber, plan._id, motivation)
+      ? Services.extendApiKey(apiId, apiKey._id, team._id, plan._id, motivation)
+      : Services.askForApiKey(apiId, team._id, plan._id, motivation)
 
     if (plan.subscriptionProcess === 'Automatic') {
       apiKeyDemand()

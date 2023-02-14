@@ -86,8 +86,8 @@ GET     /api/teams/:teamId/income                               fr.maif.otoroshi
 GET     /api/teams/:teamId/subscription/:subscriptionId/quotas  fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getApiKeyQuotasWithSubscriptionId(teamId, subscriptionId)
 
 GET     /api/me/subscriptions/:apiId/:version                   fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId, version)
-PUT     /api/apis/:apiId/subscriptions/:apiKeyId                fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, apiKeyId)
-POST    /api/apis/:apiId/subscriptions                          fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
+PUT     /api/apis/:apiId/plan/:planId/team/:teamId/:apiKeyId/_extends   fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, planId, teamId, apiKeyId)
+POST    /api/apis/:apiId/plan/:planId/team/:teamId/_subscribe           fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId, planId, teamId)
 GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId   fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version, planId: Option[String] ?= None)
 
 GET     /api/subscriptions/teams/:teamId                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionsOfTeam(teamId)

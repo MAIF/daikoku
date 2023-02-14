@@ -832,18 +832,20 @@ class ApiController(
       }
     }
 
-  def extendApiKey(apiId: String, apiKeyId: String) =
+  def extendApiKey(apiId: String, planId: String, teamId: String, apiKeyId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      _createOrExtendApiKey(apiId, ctx, Some(ApiSubscriptionId(apiKeyId)))
+      _createOrExtendApiKey(apiId, planId, teamId, ctx, Some(ApiSubscriptionId(apiKeyId)))
     }
 
-  def askForApiKey(apiId: String) =
+  def askForApiKey(apiId: String, planId: String, teamId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      _createOrExtendApiKey(apiId, ctx)
+      _createOrExtendApiKey(apiId, planId, teamId, ctx)
     }
 
   def _createOrExtendApiKey(
       apiId: String,
+      planId: String,
+      teamId: String,
       ctx: DaikokuActionContext[JsValue],
       parentSubscriptionId: Option[ApiSubscriptionId] = None
   ) = {
@@ -855,179 +857,95 @@ class ApiController(
         s"@{user.name} has asked for an apikey for @{api.name} - @{api.id}"
       )
     )(ctx) {
-      val teams: Seq[String] = (ctx.request.body \ "teams").as[Seq[String]]
-      val planId: String = (ctx.request.body \ "plan").as[String]
-      val motivation: Option[String] =
-        (ctx.request.body \ "motivation").asOpt[String]
+      val motivation: Option[String] = (ctx.request.body \ "motivation").asOpt[String]
 
-      val results: EitherT[Future, Result, Result] = for {
-        api <- EitherT.fromOptionF(
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findByIdNotDeleted(apiId),
-          NotFound(Json.obj("error" -> "api not found"))
+      def controlApiAndPlan(api: Api, plan: UsagePlan): EitherT[Future, AppError, Unit] = {
+        if (!api.published) {
+          EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
+        } else if (api.visibility == ApiVisibility.AdminOnly && !ctx.user.isDaikokuAdmin) {
+          EitherT.leftT[Future, Unit](AppError.ForbiddenAction)
+        } else {
+          EitherT.pure(())
+        }
+      }
+
+      def controlTeam(team: Team, api: Api, plan: UsagePlan): EitherT[Future, AppError, Unit] = {
+        if (!ctx.user.isDaikokuAdmin && !team.includeUser(ctx.user.id)) {
+          EitherT.leftT[Future, Unit](AppError.TeamUnauthorized)
+        } else if (plan.visibility == Private && team.id != api.team) {
+          EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
+        } else if (ctx.tenant.subscriptionSecurity.forall(t => t) && team.`type` == TeamType.Personal) {
+          EitherT.leftT[Future, Unit](AppError.SecurityError("Subscription security"))
+        } else {
+          EitherT.pure(())
+        }
+      }
+
+      def controlSubscriptionExtension(plan: UsagePlan, team: Team): EitherT[Future, AppError, Unit] = {
+        EitherT(parentSubscriptionId match {
+          case Some(apiKey) =>
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant)
+              .findByIdNotDeleted(apiKey.value)
+              .flatMap {
+                case Some(sub) if sub.parent.isDefined => FastFuture.successful(Left(AppError.SubscriptionParentExisted))
+                case Some(_) if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity
+                  .exists(a => !a) => FastFuture.successful(Left(AppError.SecurityError("Subscription Aggregation")))
+                case Some(sub) if sub.team != team.id => FastFuture.successful(Left(SubscriptionAggregationTeamConflict))
+                case Some(sub) => env.dataStore.apiRepo
+                  .forTenant(ctx.tenant)
+                  .findByIdNotDeleted(sub.api)
+                  .map {
+                    case Some(parentApi) => parentApi.possibleUsagePlans.find(p => p.id == sub.plan) match {
+                      case Some(parentPlan)
+                        if parentPlan.otoroshiTarget
+                          .map(
+                            _.otoroshiSettings
+                          ) != plan.otoroshiTarget
+                          .map(
+                            _.otoroshiSettings
+                          ) => Left(AppError.SubscriptionAggregationOtoroshiConflict)
+                      case _ => Right(())
+                    }
+                    case None => Left(AppError.ApiNotFound)
+                  }
+              }
+          case None => FastFuture.successful(Right(()))
+        })
+      }
+
+      val value: EitherT[Future, AppError, Result] = for {
+        api     <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId),
+          AppError.ApiNotFound)
+        plan    <- EitherT.fromOption[Future](api.possibleUsagePlans.find(pp => pp.id.value == planId),
+          AppError.PlanNotFound)
+        _       <- controlApiAndPlan(api, plan)
+        team    <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(teamId),
+          AppError.TeamNotFound)
+        _       <- controlTeam(team, api, plan)
+        _       <- EitherT(env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findOneNotDeleted(
+          Json.obj(
+            "team" -> team.id.asJson,
+            "api" -> api.id.asJson,
+            "plan" -> plan.id.asJson
+          )
+        ).map {
+          case Some(_) => Left(AppError.SubscriptionConflict)
+          case None => Right(())
+        })
+        _       <- controlSubscriptionExtension(plan, team)
+        result  <- applyProcessForApiSubscription(
+          ctx.tenant,
+          ctx.user,
+          api,
+          plan.id.value,
+          team,
+          parentSubscriptionId,
+          motivation
         )
-        plan <- EitherT.fromOption[Future](
-          api.possibleUsagePlans.find(pp => pp.id.value == planId),
-          NotFound(Json.obj("error" -> "plan not found"))
-        )
-        unpublishedError: EitherT[Future, Result, Result] = EitherT
-          .leftT[Future, Result](
-            Forbidden(
-              Json.obj(
-                "error" -> "You're not authorized to subscribed to an unpublished api"
-              )
-            )
-          )
-        adminError: EitherT[Future, Result, Result] = EitherT
-          .leftT[Future, Result](
-            Forbidden(
-              Json.obj(
-                "error" -> "You're not authorized to subscribed to an admin api"
-              )
-            )
-          )
-        value: EitherT[Future, Result, Result] = EitherT
-          .liftF(
-            Future
-              .sequence(
-                teams
-                  .map(teamId =>
-                    env.dataStore.teamRepo
-                      .forTenant(ctx.tenant.id)
-                      .findByIdNotDeleted(teamId)
-                      .flatMap {
-                        case Some(team)
-                            if !ctx.user.isDaikokuAdmin && !team
-                              .includeUser(ctx.user.id) =>
-                          Future.successful(
-                            Json.obj(
-                              "error" -> s"You're not authorized on the team ${team.name}"
-                            )
-                          )
-                        case Some(team)
-                            if plan.visibility == Private && team.id != api.team =>
-                          Future.successful(
-                            Json.obj(
-                              "error" -> s"${team.name} is not authorized on this plan"
-                            )
-                          )
-                        case Some(team)
-                            if ctx.tenant.subscriptionSecurity
-                              .forall(t => t) && team.`type` == TeamType.Personal =>
-                          Future.successful(
-                            Json.obj(
-                              "error" -> s"${team.name} is not authorized to subscribe to an api"
-                            )
-                          )
-                        case Some(team) =>
-                          env.dataStore.apiSubscriptionRepo
-                            .forTenant(ctx.tenant)
-                            .findOneNotDeleted(
-                              Json.obj(
-                                "team" -> team.id.asJson,
-                                "api" -> api.id.asJson,
-                                "plan" -> plan.id.asJson
-                              )
-                            )
-                            .flatMap {
-                              case Some(_)
-                                  if !plan.allowMultipleKeys
-                                    .getOrElse(false) =>
-                                Future.successful(
-                                  AppError.toJson(SubscriptionConflict)
-                                )
-                              case _ =>
-                                def process() =
-                                  applyProcessForApiSubscription(
-                                    ctx.tenant,
-                                    ctx.user,
-                                    api,
-                                    plan.id.value,
-                                    team,
-                                    parentSubscriptionId,
-                                    motivation
-                                  ).leftMap(AppError.toJson).merge
+      } yield Ok(result)
 
-                                parentSubscriptionId match {
-                                  case Some(apiKey) =>
-                                    env.dataStore.apiSubscriptionRepo
-                                      .forTenant(ctx.tenant)
-                                      .findByIdNotDeleted(apiKey.value)
-                                      .flatMap {
-                                        case Some(sub)
-                                            if sub.parent.isDefined =>
-                                          FastFuture.successful(
-                                            AppError.toJson(
-                                              SubscriptionParentExisted
-                                            )
-                                          )
-                                        case Some(_)
-                                            if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity
-                                              .exists(a => !a) =>
-                                          FastFuture.successful(
-                                            AppError.toJson(
-                                              SubscriptionAggregationDisabled
-                                            )
-                                          )
-                                        case Some(sub) if sub.team != team.id =>
-                                          FastFuture.successful(
-                                            AppError.toJson(
-                                              SubscriptionAggregationTeamConflict
-                                            )
-                                          )
-                                        case Some(sub) =>
-                                          env.dataStore.apiRepo
-                                            .forTenant(ctx.tenant)
-                                            .findByIdNotDeleted(sub.api)
-                                            .flatMap {
-                                              case Some(parentApi) =>
-                                                parentApi.possibleUsagePlans
-                                                  .find(p => p.id == sub.plan) match {
-                                                  case Some(parentPlan)
-                                                      if parentPlan.otoroshiTarget
-                                                        .map(
-                                                          _.otoroshiSettings
-                                                        ) != plan.otoroshiTarget
-                                                        .map(
-                                                          _.otoroshiSettings
-                                                        ) =>
-                                                    FastFuture.successful(
-                                                      AppError.toJson(
-                                                        SubscriptionAggregationOtoroshiConflict
-                                                      )
-                                                    )
-                                                  case _ => process()
-                                                }
-                                              case None =>
-                                                FastFuture.successful(
-                                                  AppError.toJson(ApiNotFound)
-                                                )
-                                            }
-                                        case None =>
-                                          FastFuture.successful(
-                                            AppError
-                                              .toJson(SubscriptionNotFound)
-                                          )
-                                      }
-                                  case _ => process()
-                                }
-                            }
-                        case None =>
-                          Future
-                            .successful(Json.obj(teamId -> "team not found"))
-                    })
-              )
-              .map(objs => Ok(JsArray(objs)))
-          )
-        result <- if (!api.published) unpublishedError
-        else if (api.visibility == ApiVisibility.AdminOnly && !ctx.user.isDaikokuAdmin)
-          adminError
-        else value
-      } yield result
-
-      results.value
-        .map(_.merge)
+      value.leftMap(_.render()).merge
     }
   }
 

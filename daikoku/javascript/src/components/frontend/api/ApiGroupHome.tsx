@@ -167,10 +167,10 @@ export const ApiGroupHome = ({ }) => {
     });
   };
 
-  const askForApikeys = ({teams, plan}: {teams: Array<string>, plan: IUsagePlan}) => {
+  const askForApikeys = ({team, plan}: {team: string, plan: IUsagePlan}) => {
     const planName = formatPlanType(plan, translate);
 
-    return Services.askForApiKey(apiGroup._id, teams, plan._id)
+    return Services.askForApiKey(apiGroup._id, team, plan._id)
       .then((results) => {
         if (results.error) {
           return toastr.error(translate('Error'), results.error);

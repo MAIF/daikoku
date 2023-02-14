@@ -17,6 +17,7 @@ sealed trait AppError {
 object AppError {
   case object ApiVersionConflict extends AppError
   case object ApiNotFound extends AppError
+  case object ApiNotPublished extends AppError
   case object PageNotFound extends AppError
   case object ApiGroupNotFound extends AppError
   case object TenantNotFound extends AppError
@@ -49,12 +50,14 @@ object AppError {
   case class ParsingPayloadError(message: String) extends AppError
   case object NameAlreadyExists extends AppError
   case object ThirdPartyPaymentSettingsNotFound extends AppError
+  case class SecurityError(security: String) extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
   def render(error: AppError): mvc.Result = error match {
     case ApiVersionConflict       => Conflict(toJson(ApiVersionConflict))
     case ApiNotFound              => NotFound(toJson(error))
+    case ApiNotPublished          => Forbidden(toJson(error))
     case PageNotFound             => NotFound(toJson(error))
     case ApiGroupNotFound         => NotFound(toJson(error))
     case TeamNotFound             => NotFound(toJson(error))
@@ -73,7 +76,7 @@ object AppError {
     case UserNotTeamAdmin(userId, teamId) =>
       play.api.mvc.Results.Unauthorized(toJson(error))
     case OtoroshiError(e)                        => BadRequest(e)
-    case PaymentError(e)                        => BadRequest(e)
+    case PaymentError(e)                          => BadRequest(e)
     case SubscriptionConflict                    => Conflict(toJson(error))
     case ApiKeyRotationConflict                  => Conflict(toJson(error))
     case ApiKeyRotationError(e)                  => BadRequest(e)
@@ -90,6 +93,7 @@ object AppError {
     case ParsingPayloadError(message)            => BadRequest(toJson(error))
     case NameAlreadyExists                       => Conflict(toJson(error))
     case ThirdPartyPaymentSettingsNotFound       => NotFound(toJson(error))
+    case SecurityError(security)                 => play.api.mvc.Results.Unauthorized(toJson(error))
   }
 
   def toJson(error: AppError) = {
@@ -103,6 +107,7 @@ object AppError {
         Json.obj("error" -> (err match {
           case ApiVersionConflict       => "This version already existed"
           case ApiNotFound              => "API not found"
+          case ApiNotPublished          => "API not published"
           case PageNotFound             => "Page not found"
           case ApiGroupNotFound         => "API group not found"
           case TeamNotFound             => "Team not found"
@@ -139,6 +144,7 @@ object AppError {
           case Unauthorized        => "You're not authorized here"
           case NameAlreadyExists   => "Resource with same name already exists"
           case ThirdPartyPaymentSettingsNotFound   => "Third-party payment settings not found"
+          case SecurityError(s) => s"Forbidden action due to security : $s"
           case _                   => ""
         }))
     }

@@ -118,14 +118,14 @@ export const getMySubscriptions = (
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
 export const askForApiKey = (
-  api: string,
-  teams: Array<string>,
-  plan: string,
+  apiId: string,
+  teamId: string,
+  planId: string,
   motivation?: string
 ): Promise<any> => {
-  return customFetch(`/api/apis/${api}/subscriptions`, {
+  return customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/_subscribe`, {
     method: 'POST',
-    body: JSON.stringify({ plan, teams, motivation }),
+    body: JSON.stringify({ motivation }),
   });
 };
 
@@ -1001,13 +1001,13 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
 export const extendApiKey = (
   apiId: string,
   apiKeyId: string,
-  teams: Array<string>,
-  plan: string,
+  teamId: string,
+  planId: string,
   motivation?: string
 ) =>
-  customFetch(`/api/apis/${apiId}/subscriptions/${apiKeyId}`, {
+  customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
     method: 'PUT',
-    body: JSON.stringify({ plan, teams, motivation }),
+    body: JSON.stringify({ motivation }),
   });
 
 export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscriptionWithApiInfo>> =>
