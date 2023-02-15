@@ -3,7 +3,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 import fr.maif.otoroshi.daikoku.actions._
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminAccessTenant
-import fr.maif.otoroshi.daikoku.domain.{Api, ApiVisibility, Team}
+import fr.maif.otoroshi.daikoku.domain.{Api, ApiState, ApiVisibility, Team}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.future._
@@ -37,7 +37,7 @@ class IntegrationApiController(DaikokuAction: DaikokuAction,
                 Left(NotFound(Json.obj("error" -> "api not found"))).future
               case Some(api) if team.id != api.team =>
                 Left(NotFound(Json.obj("error" -> "api not found"))).future
-              case Some(api) if !api.published =>
+              case Some(api) if !api.isPublished =>
                 Left(NotFound(Json.obj("error" -> "api not found"))).future
               case Some(api) => {
                 env.dataStore.teamRepo
@@ -71,7 +71,7 @@ class IntegrationApiController(DaikokuAction: DaikokuAction,
         publicApis <- apiRepo.findNotDeleted(
           Json.obj(
             "visibility" -> "Public",
-            "published" -> true
+            "state" -> ApiState.publishedJsonFilter
           ))
       } yield {
         val apis = publicApis
@@ -101,7 +101,7 @@ class IntegrationApiController(DaikokuAction: DaikokuAction,
                 Json.obj(
                   "visibility" -> "Public",
                   "team" -> team.id.value,
-                  "published" -> true
+                  "state" -> ApiState.publishedJsonFilter
                 ))
             } yield {
               val apis = publicApis

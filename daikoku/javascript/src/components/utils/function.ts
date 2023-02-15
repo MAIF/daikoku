@@ -1,3 +1,5 @@
+import { IApi, IBaseUsagePlan, IFastPlan, isValidationStepEmail, isValidationStepTeamAdmin, IUsagePlan, IValidationStep } from "../../types";
+
 export function partition(array: any, isValid: any) {
   return array.reduce(
     ([pass, fail]: Array<any>, elem: any) => {
@@ -18,3 +20,11 @@ export const randomColor = () => {
 export const getColorByBgColor = (bgColor: string) => {
   return parseInt(bgColor.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff';
 };
+
+export const isSubscriptionProcessIsAutomatic = (plan: IBaseUsagePlan): boolean => {
+  return plan.subscriptionProcess.steps.every(step => !isValidationStepEmail(step) && !isValidationStepTeamAdmin(step))
+}
+
+export const isPublish = (api: IApi): boolean => {
+  return api.state === 'published' || api.state === 'deprecated'
+}

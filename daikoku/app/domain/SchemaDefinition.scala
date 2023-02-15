@@ -283,6 +283,38 @@ object SchemaDefinition {
       )
     )
 
+    lazy val ValidationStepInterfaceType = InterfaceType(
+      "ValidationStep",
+      "Interface of a validation step: email, admin or payment",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), ValidationStep](
+        Field("name", StringType, resolve = _.value.name)
+      )
+    )
+
+    lazy val ValidationStepEmail = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.Email](
+      Interfaces(ValidationStepInterfaceType),
+      ObjectTypeDescription("A validation Step by email"),
+      ReplaceField("emails", Field("id", ListType(StringType), resolve = ctx => ctx.value.emails)),
+    ))
+    lazy val ValidationStepAdmin = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.TeamAdmin](
+      Interfaces(ValidationStepInterfaceType),
+      ObjectTypeDescription("A validation Step by team admins"),
+      ReplaceField("team", Field("team", StringType, resolve = ctx => ctx.value.team.value)),
+    ))
+    lazy val ValidationStepPayment = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.Payment](
+      Interfaces(ValidationStepInterfaceType),
+      ObjectTypeDescription("A validation Step by payment"),
+      ReplaceField("thirdPartyPaymentSettingsId", Field("thirdPartyPaymentSettingsId", StringType, resolve = ctx => ctx.value.thirdPartyPaymentSettingsId.value)),
+    ))
+
+    lazy val SubscriptionProcessType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionProcess](
+      ObjectTypeDescription("The subscription process of a usage plan"),
+      ReplaceField("steps",
+        Field("steps", ListType(ValidationStepInterfaceType), resolve =_.value.steps,
+          possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))
+      )
+    )
+
     lazy val StripePriceIdsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), StripePriceIds](
       ObjectTypeDescription("Ids of stripe prices for a product"),
       ReplaceField("basePriceId", Field("basePriceId", StringType, resolve = _.value.basePriceId)),
@@ -293,14 +325,6 @@ object SchemaDefinition {
       "UsagePlanVisibility",
       "Interface of Usage Plan Visibility",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), UsagePlanVisibility](
-        Field("name", StringType, resolve = _.value.name)
-      )
-    )
-
-    lazy val  SubscriptionProcessType = InterfaceType(
-      "SubscriptionProcess",
-      "Interface of SubscriptionProcess",
-      () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionProcess](
         Field("name", StringType, resolve = _.value.name)
       )
     )
@@ -382,7 +406,7 @@ object SchemaDefinition {
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
             Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         ),
-        Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name),
+        Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess),
         Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name),
         Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
           possibleTypes = List(StripePaymentSettingsType)),
@@ -414,7 +438,7 @@ object SchemaDefinition {
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -437,7 +461,7 @@ object SchemaDefinition {
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -461,7 +485,7 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -485,7 +509,7 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -509,7 +533,7 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", StringType, resolve = _.value.subscriptionProcess.name)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -747,7 +771,6 @@ object SchemaDefinition {
         Field("supportedVersions", ListType(StringType), resolve = _.value.supportedVersions.toSeq.map(_.value)),
         Field("isDefault", BooleanType, resolve = _.value.isDefault),
         Field("lastUpdate", DateTimeUnitype, resolve = _.value.lastUpdate),
-        Field("published", BooleanType, resolve = _.value.published),
         Field("testing", TestingType, resolve = _.value.testing),
         Field("documentation", ApiDocumentationType, resolve = _.value.documentation),
         Field("swagger", OptionType(SwaggerAccessType), resolve = _.value.swagger),
@@ -787,7 +810,8 @@ object SchemaDefinition {
               case Right(_) => None
             }
           }
-        })
+        }),
+        Field("state", StringType, resolve = _.value.state.name)
     ))
 
     lazy val  AuthorizationApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationApi]()

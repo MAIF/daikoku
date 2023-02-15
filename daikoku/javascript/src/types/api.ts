@@ -1,8 +1,7 @@
-import { isPromiseLike } from 'xstate/lib/utils';
-import { TreeItem, TreeItems } from '../components/utils/dnd/types';
-import { IFastTeam, ITeamSimple } from './team';
+import { IFastTeam } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 
+export type ApiState = "created" | "published" | "deprecated" | "blocked" | "deleted"
 interface IBaseApi {
   _id: string;
   _humanReadableId: string;
@@ -16,7 +15,6 @@ interface IBaseApi {
   description: string;
   currentVersion: string;
   supportedVersions: Array<string>;
-  published: boolean;
   testing: ITesting;
   documentation: IDocumentation;
   swagger?: ISwagger;
@@ -33,6 +31,7 @@ interface IBaseApi {
   parent?: string;
   isDefault: boolean;
   apis: Array<string>;
+  state: ApiState
 }
 
 export interface IIssuesTag {
@@ -104,12 +103,35 @@ export interface ISwagger {
   headers: { [key: string]: string };
 }
 
+export interface IValidationStep {
+  name: string
+}
+
+export interface IValidationStepEmail extends IValidationStep {
+  emails: Array<string>
+}
+
+export function isValidationStepEmail(item: any): item is IValidationStepEmail {
+  return (<IValidationStepEmail>item).emails !== undefined;
+}
+
+export interface IValidationStepTeamAdmin extends IValidationStep {
+  team: string
+}
+
+export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {
+  return (<IValidationStepTeamAdmin>item).team !== undefined;
+}
+
+export interface IValidationStepPayment extends IValidationStep {
+  thirdPartyPaymentSettingsId: string
+}
 export interface IBaseUsagePlan {
   _id: string;
   type: string;
   customDescription?: string;
   customName?: string;
-  subscriptionProcess: 'Automatic' | 'manual';
+  subscriptionProcess: { steps: Array<IValidationStep> };
   currency: ICurrency;
   otoroshiTarget?: IOtoroshiTarget;
 }
@@ -168,7 +190,6 @@ export interface IUsagePlanPayPerUse extends IUsagePlan {
   visibility: 'Public' | 'Private';
   authorizedTeams: Array<string>;
   autoRotation?: boolean;
-  subscriptionProcess: 'Automatic' | 'manual';
   integrationProcess: 'Automatic' | 'ApiKey';
   rotation: boolean;
 }

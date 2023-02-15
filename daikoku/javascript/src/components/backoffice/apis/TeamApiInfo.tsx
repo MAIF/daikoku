@@ -119,9 +119,16 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       label: translate('Supported versions'), //@ts-ignore //FIXME
       expert: true,
     },
-    published: {
-      type: type.bool,
-      label: translate('Published'),
+    state: {
+      type: type.string,
+      format: format.buttonsSelect,
+      label: translate('State'),
+      options: [
+        {label: translate('Created'), value: 'created'}, 
+        {label: translate('Published'), value: 'published'}, 
+        {label: translate('Deprecated'), value: 'deprecated'}, 
+        {label: translate('Blocked'), value: 'blocked'}],
+      defaultValue: 'created',
     },
     testable: {
       type: type.bool,
@@ -182,7 +189,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
   const flow = (expert: any) => [
     {
       label: translate('Basic.informations'),
-      flow: ['published', 'name', 'smallDescription', 'image', 'header'].filter((entry) =>
+      flow: ['state', 'name', 'smallDescription', 'image', 'header'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
       collapsed: false,

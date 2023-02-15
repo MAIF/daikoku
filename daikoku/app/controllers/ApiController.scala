@@ -371,7 +371,7 @@ class ApiController(
     } yield {
       if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
             .intersect(myTeams.map(_.id))
-            .nonEmpty) && (api.published || myTeams.exists(_.id == api.team))) {
+            .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))) {
         val betterApi = api
           .copy(possibleUsagePlans = api.possibleUsagePlans
             .filter(p =>
@@ -860,7 +860,7 @@ class ApiController(
       val motivation: Option[String] = (ctx.request.body \ "motivation").asOpt[String]
 
       def controlApiAndPlan(api: Api, plan: UsagePlan): EitherT[Future, AppError, Unit] = {
-        if (!api.published) {
+        if (!api.isPublished) {
           EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
         } else if (api.visibility == ApiVisibility.AdminOnly && !ctx.user.isDaikokuAdmin) {
           EitherT.leftT[Future, Unit](AppError.ForbiddenAction)
@@ -974,25 +974,27 @@ class ApiController(
           if plan.visibility == UsagePlanVisibility.Private && api.team != team.id =>
         EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) =>
-        plan.subscriptionProcess match {
-          case SubscriptionProcess.Manual =>
-            EitherT(
-              notifyApiSubscription(
-                tenant,
-                user,
-                api,
-                planId,
-                team,
-                apiKeyId,
-                motivation
-              )
-            )
-          case SubscriptionProcess.Automatic =>
-            EitherT(
-              apiService
-                .subscribeToApi(tenant, user, api, planId, team, apiKeyId)
-            )
-        }
+        //FIXME
+        ???
+//        plan.subscriptionProcess match {
+//          case SubscriptionProcess.Manual =>
+//            EitherT(
+//              notifyApiSubscription(
+//                tenant,
+//                user,
+//                api,
+//                planId,
+//                team,
+//                apiKeyId,
+//                motivation
+//              )
+//            )
+//          case SubscriptionProcess.Automatic =>
+//            EitherT(
+//              apiService
+//                .subscribeToApi(tenant, user, api, planId, team, apiKeyId)
+//            )
+//        }
     }
   }
 
@@ -3651,7 +3653,6 @@ class ApiController(
                               id = generatedApiId,
                               parent = Some(api.id),
                               currentVersion = Version(newVersion),
-                              published = false,
                               isDefault = true,
                               testing = Testing(),
                               documentation = ApiDocumentation(
@@ -3669,7 +3670,8 @@ class ApiController(
                               possibleUsagePlans = Seq.empty,
                               defaultUsagePlan = UsagePlanId(""),
                               posts = Seq.empty,
-                              issues = Seq.empty
+                              issues = Seq.empty,
+                              state = ApiState.Created
                             )
                           )
                           .flatMap {

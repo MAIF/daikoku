@@ -418,7 +418,6 @@ class DaikokuEnv(ws: WSClient,
                   smallDescription = "admin api",
                   description = "admin api",
                   currentVersion = Version("1.0.0"),
-                  published = true,
                   documentation = ApiDocumentation(
                     id = ApiDocumentationId(BSONObjectID.generate().stringify),
                     tenant = Tenant.Default,
@@ -437,13 +436,14 @@ class DaikokuEnv(ws: WSClient,
                       otoroshiTarget = None,
                       allowMultipleKeys = Some(true),
                       autoRotation = None,
-                      subscriptionProcess = SubscriptionProcess.Automatic,
+                      subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                       integrationProcess = IntegrationProcess.ApiKey
                     )
                   ),
                   visibility = ApiVisibility.AdminOnly,
                   defaultUsagePlan = UsagePlanId("1"),
-                  authorizedTeams = Seq.empty
+                  authorizedTeams = Seq.empty,
+                  state = ApiState.Published
                 )
                 val tenant = Tenant(
                   id = Tenant.Default,

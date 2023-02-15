@@ -48,22 +48,9 @@ export const TeamApis = () => {
       header: translate('Description'),
       meta: { style: { textAlign: 'left' } }
     }),
-    columnHelper.accessor('published', {
-      header: translate('Published'),
+    columnHelper.accessor('state', {
+      header: translate('State'),
       meta: { style: { textAlign: 'center', width: '60px' } },
-      enableColumnFilter: false,
-      cell: (info) => {
-        const api = info.row.original;
-        return (
-          <Can I={manage} a={API} team={currentTeam}>
-            <SwitchButton
-              onSwitch={() => togglePublish(api)}
-              checked={api.published}
-              disabled={api.visibility === 'AdminOnly'}
-            />
-          </Can>
-        );
-      },
     }),
     columnHelper.display({
       header: translate('Actions'),
@@ -114,17 +101,6 @@ export const TeamApis = () => {
       },
     }),
   ];
-
-  const togglePublish = (api: IApi) => {
-    Services.saveTeamApi(
-      currentTeam._id,
-      {
-        ...api,
-        published: !api.published,
-      },
-      api.currentVersion
-    ).then(() => table.current?.update());
-  };
 
   const deleteApi = (api: IApi) => {
     confirm({ message: translate('delete.api.confirm'), okLabel: translate('Yes') })

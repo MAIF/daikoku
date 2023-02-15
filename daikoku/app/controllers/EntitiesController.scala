@@ -210,7 +210,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
                   allowMultipleKeys = Some(false),
                   visibility = Private,
                   autoRotation = Some(false),
-                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                   integrationProcess = IntegrationProcess.ApiKey
                 )
                 .asJson)
@@ -228,7 +228,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
                   customDescription = None,
                   otoroshiTarget = None,
                   allowMultipleKeys = Some(false),
-                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                   integrationProcess = IntegrationProcess.ApiKey,
                   autoRotation = Some(false)
                 )
@@ -244,7 +244,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
                   customDescription = None,
                   otoroshiTarget = None,
                   allowMultipleKeys = Some(false),
-                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                   integrationProcess = IntegrationProcess.ApiKey,
                   autoRotation = Some(false)
                 )
@@ -265,7 +265,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
                   customDescription = None,
                   otoroshiTarget = None,
                   allowMultipleKeys = Some(false),
-                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                   integrationProcess = IntegrationProcess.ApiKey,
                   autoRotation = Some(false)
                 )
@@ -287,7 +287,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
                   customDescription = None,
                   otoroshiTarget = None,
                   allowMultipleKeys = Some(true),
-                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                   integrationProcess = IntegrationProcess.ApiKey,
                   autoRotation = Some(false)
                 )

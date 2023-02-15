@@ -2,15 +2,9 @@ package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  SeqIssueIdFormat,
-  SeqPostIdFormat,
-  SeqTeamIdFormat,
-  SetApiTagFormat,
-  UsagePlanFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TeamFormat, TeamIdFormat, UsagePlanFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.ReplaceAllWith
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import org.joda.time.DateTime
 import play.api.libs.json._
@@ -156,25 +150,6 @@ object UsagePlanVisibility {
   }
 }
 
-sealed trait SubscriptionProcess {
-  def name: String
-}
-
-object SubscriptionProcess {
-  case object Automatic extends SubscriptionProcess {
-    def name: String = "Automatic"
-  }
-  case object Manual extends SubscriptionProcess {
-    def name: String = "Manual"
-  }
-  val values: Seq[SubscriptionProcess] = Seq(Automatic, Manual)
-  def apply(name: String): Option[SubscriptionProcess] = name match {
-    case "Automatic" => Automatic.some
-    case "Manual"    => Manual.some
-    case _           => None
-  }
-}
-
 sealed trait IntegrationProcess {
   def name: String
 }
@@ -247,11 +222,11 @@ sealed trait UsagePlan {
   def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan
   def removeAuthorizedTeam(teamId: TeamId): UsagePlan
   def removeAllAuthorizedTeams(): UsagePlan
-  def subscriptionProcess: SubscriptionProcess
   def integrationProcess: IntegrationProcess
   def aggregationApiKeysSecurity: Option[Boolean]
   def paymentSettings: Option[PaymentSettings]
   def mergeBase(a: BasePaymentInformation): UsagePlan
+  def subscriptionProcess: SubscriptionProcess
 }
 
 case object UsagePlan {
@@ -285,8 +260,7 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
-    override def subscriptionProcess: SubscriptionProcess =
-      SubscriptionProcess.Automatic
+    override def subscriptionProcess: SubscriptionProcess = SubscriptionProcess(steps = Seq.empty)
     override def integrationProcess: IntegrationProcess =
       IntegrationProcess.ApiKey
     override def mergeBase(a: BasePaymentInformation): Admin = this
@@ -667,6 +641,27 @@ case class Testing(
   override def asJson: JsValue = json.TestingFormat.writes(this)
 }
 
+sealed trait ApiState {
+  def name: String
+}
+
+object ApiState {
+  case object Created extends ApiState {
+    override def name: String = "created"
+  }
+  case object Published extends ApiState {
+    override def name: String = "published"
+  }
+  case object Blocked extends ApiState {
+    override def name: String = "blocked"
+  }
+  case object Deprecated extends ApiState {
+    override def name: String = "deprecated"
+  }
+
+  def publishedJsonFilter: JsObject = Json.obj("state" -> Json.obj("$in" -> Json.arr(Published.name, Deprecated.name)))
+}
+
 case class Api(
     id: ApiId,
     tenant: TenantId,
@@ -681,7 +676,6 @@ case class Api(
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
     isDefault: Boolean = false,
     lastUpdate: DateTime,
-    published: Boolean = false,
     testing: Testing = Testing(),
     documentation: ApiDocumentation,
     swagger: Option[SwaggerAccess] = Some(
@@ -697,7 +691,8 @@ case class Api(
     issuesTags: Set[ApiIssueTag] = Set.empty,
     stars: Int = 0,
     parent: Option[ApiId] = None,
-    apis: Option[Set[ApiId]] = None
+    apis: Option[Set[ApiId]] = None,
+    state: ApiState = ApiState.Created
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -722,7 +717,8 @@ case class Api(
     "issuesTags" -> SetApiTagFormat.writes(issuesTags),
     "stars" -> stars,
     "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
-    "isDefault" -> isDefault
+    "isDefault" -> isDefault,
+    "state" -> json.ApiStateFormat.writes(state)
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
@@ -749,13 +745,18 @@ case class Api(
     "description" -> description,
     "currentVersion" -> currentVersion.asJson,
     "isDefault" -> isDefault,
-    "published" -> published,
+    "state" -> json.ApiStateFormat.writes(state),
     "tags" -> JsArray(tags.map(JsString.apply).toSeq),
     "categories" -> JsArray(categories.map(JsString.apply).toSeq),
     "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
     "stars" -> stars,
     "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
   )
+  def isPublished: Boolean = state match {
+    case ApiState.Published => true
+    case ApiState.Deprecated => true
+    case _ => false
+  }
 }
 
 case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
@@ -785,3 +786,25 @@ case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],
                                           nb: Long)
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
+
+case class SubscriptionProcess(steps: Seq[ValidationStep] = Seq.empty) extends CanJson[SubscriptionProcess] {
+  override def asJson: JsValue = json.SubscriptionProcessFormat.writes(this)
+}
+
+sealed trait ValidationStep {
+  def name: String
+  def asJson: JsValue = json.ValidationStepFormat.writes(this)
+}
+
+object ValidationStep {
+  case class Email(emails: Seq[String]) extends ValidationStep {
+    def name: String = "email"
+  }
+
+  case class TeamAdmin(team: TeamId) extends ValidationStep {
+    def name: String = "teamAdmin"
+  }
+  case class Payment(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId) extends ValidationStep {
+    def name: String = "payment"
+  }
+}

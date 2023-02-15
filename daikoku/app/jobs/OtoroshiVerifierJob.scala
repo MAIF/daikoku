@@ -337,7 +337,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
             env.dataStore.apiRepo
               .forAllTenant()
               .findOneNotDeleted(
-                Json.obj("_id" -> subscription.api.value, "published" -> true)),
+                Json.obj("_id" -> subscription.api.value, "state" -> ApiState.publishedJsonFilter)),
             sendErrorNotification(
               NotificationAction.OtoroshiSyncSubscriptionError(
                 subscription,
@@ -403,7 +403,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                       env.dataStore.apiRepo
                         .forAllTenant()
                         .findOneNotDeleted(Json.obj("_id" -> sub.api.value,
-                                                    "published" -> true)),
+                          "state" -> ApiState.publishedJsonFilter)),
                       sendErrorNotification(
                         NotificationAction.OtoroshiSyncSubscriptionError(
                           sub,
@@ -688,7 +688,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
             env.dataStore.apiRepo
               .forAllTenant()
               .findOneNotDeleted(
-                Json.obj("_id" -> subscription.api.value, "published" -> true)),
+                Json.obj("_id" -> subscription.api.value,
+                  "state" -> ApiState.publishedJsonFilter)),
             sendErrorNotification(
               NotificationAction.OtoroshiSyncSubscriptionError(
                 subscription,

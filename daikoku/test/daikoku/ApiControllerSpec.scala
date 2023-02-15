@@ -824,7 +824,7 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi.copy(published = false))
+        apis = Seq(defaultApi.copy(state = ApiState.Created))
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -866,7 +866,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false),
                 visibility = UsagePlanVisibility.Private
@@ -1050,7 +1050,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1119,7 +1119,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1253,7 +1253,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1369,7 +1369,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Manual,
+                subscriptionProcess = SubscriptionProcess(steps = Seq(ValidationStep.TeamAdmin(defaultApi.team))),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -2428,7 +2428,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Manual,
+                subscriptionProcess = SubscriptionProcess(steps = Seq(ValidationStep.TeamAdmin(defaultApi.team))),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -2747,7 +2747,7 @@ class ApiControllerSpec()
             users = Set(UserWithPermission(user.id, Administrator))
           )
         ),
-        apis = Seq(defaultApi.copy(published = false))
+        apis = Seq(defaultApi.copy(state = ApiState.Created))
       )
 
       val session = loginWithBlocking(user, tenant)
@@ -2852,7 +2852,7 @@ class ApiControllerSpec()
                 allowMultipleKeys = Some(false),
                 visibility = Private,
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -2913,7 +2913,7 @@ class ApiControllerSpec()
                 allowMultipleKeys = Some(false),
                 visibility = Private,
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -2977,7 +2977,7 @@ class ApiControllerSpec()
             visibility = Public,
             authorizedTeams = Seq.empty,
             autoRotation = Some(false),
-            subscriptionProcess = SubscriptionProcess.Automatic,
+            subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
             integrationProcess = IntegrationProcess.ApiKey
           )
         )
@@ -3061,7 +3061,7 @@ class ApiControllerSpec()
                 visibility = Private,
                 authorizedTeams = Seq(teamConsumerId),
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -3150,7 +3150,7 @@ class ApiControllerSpec()
                 visibility = Private,
                 authorizedTeams = Seq(teamConsumerId),
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -3334,7 +3334,7 @@ class ApiControllerSpec()
         description = "new description",
         visibility = ApiVisibility.Public,
         currentVersion = Version("3.0.0"),
-        published = false,
+        state = ApiState.Created,
         possibleUsagePlans = Seq(
           adminApi.possibleUsagePlans.head
             .asInstanceOf[Admin]
@@ -3386,7 +3386,7 @@ class ApiControllerSpec()
       resultAdminApi.description mustBe "admin api"
       resultAdminApi.visibility mustBe ApiVisibility.AdminOnly
       resultAdminApi.currentVersion mustBe Version("1.0.0")
-      resultAdminApi.published mustBe true
+      resultAdminApi.state mustBe ApiState.Published
       resultAdminApi.possibleUsagePlans.length mustBe 1
 
       val adminPlan = resultAdminApi.possibleUsagePlans.head.asInstanceOf[Admin]

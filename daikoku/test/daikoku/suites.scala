@@ -729,7 +729,7 @@ object utils {
       smallDescription = "admin api",
       description = "admin api",
       currentVersion = Version("1.0.0"),
-      published = true,
+      state = ApiState.Published,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
@@ -759,7 +759,7 @@ object utils {
       smallDescription = "admin api II",
       description = "admin api II",
       currentVersion = Version("1.0.0"),
-      published = true,
+      state = ApiState.Published,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
@@ -890,7 +890,7 @@ object utils {
       """.stripMargin,
       currentVersion = Version("1.1.0"),
       supportedVersions = Set(Version("1.0.0")),
-      published = true,
+      state = ApiState.Published,
       visibility = ApiVisibility.Public,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
@@ -914,7 +914,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -934,7 +934,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -956,7 +956,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -979,7 +979,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(true),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -999,7 +999,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )

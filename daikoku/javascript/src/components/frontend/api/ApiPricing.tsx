@@ -9,12 +9,12 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
+import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
 import { INotification } from '../../../types';
 import {
   access,
   api,
-  apikey, Can, manage,
+  apikey, Can, isPublish, isSubscriptionProcessIsAutomatic, manage,
   Option, renderPlanInfo, renderPricing
 } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
@@ -55,9 +55,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     }
 
     const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
-      if (plan.subscriptionProcess === "Automatic") {
-        props.askForApikeys({ team, plan: plan, apiKey })
-      } else {
+      if (plan.subscriptionProcess.steps.some(isValidationStepTeamAdmin)) {
         openFormModal<{ motivation: string }>({
           title: translate('motivations.modal.title'),
           schema: {
@@ -73,6 +71,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           onSubmit: ({ motivation }) => props.askForApikeys({ team, plan, apiKey, motivation }),
           actionLabel: translate('Send')
         })
+      } else {
+        props.askForApikeys({ team, plan: plan, apiKey })
       }
     }
 
@@ -113,6 +113,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const plan = props.plan;
   const customDescription = plan.customDescription;
+  const isAutomaticProcess = isSubscriptionProcessIsAutomatic(plan)
 
   const authorizedTeams = props.myTeams
     .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')
@@ -191,7 +192,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           )}
           {(otoroshiTargetIsDefined && otoroshiEntitiesIsDefined || props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&
-            props.api.published && (
+            isPublish(props.api) && (
               <Can
                 I={access}
                 a={apikey}
@@ -204,7 +205,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                     <ActionWithTeamSelector
                       title={translate('team.selection.title')}
                       description={translate(
-                        plan.subscriptionProcess === 'Automatic'
+                        isAutomaticProcess
                           ? 'team.selection.desc.get'
                           : 'team.selection.desc.request')}
                       teams={authorizedTeams
@@ -218,15 +219,15 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                       allowMultipleDemand={plan.allowMultipleKeys}
                       allTeamSelector={false}
                       action={(teams) => showApiKeySelectModal(teams[0])}
-                      actionLabel={translate(plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key')}
+                      actionLabel={translate(isAutomaticProcess ? 'Get API key' : 'Request API key')}
                     >
                       <button type="button" className="btn btn-sm btn-access-negative col-12">
                         <Translation
                           i18nkey={
-                            plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
+                            isAutomaticProcess ? 'Get API key' : 'Request API key'
                           }
                         >
-                          {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
+                          {isAutomaticProcess ? 'Get API key' : 'Request API key'}
                         </Translation>
                       </button>
                     </ActionWithTeamSelector>

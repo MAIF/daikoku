@@ -1247,8 +1247,8 @@
     "set.favicon": "favicon",
     "set.font.family": "font family",
     "select.team.placeholder": "Select a team",
-    "otoroshi.missing.target":"Missing Otoroshi target",
-    "otoroshi.missing.entities":"Missing Otoroshi entities",
+    "otoroshi.missing.target": "Missing Otoroshi target",
+    "otoroshi.missing.entities": "Missing Otoroshi entities",
     "Payment": "Payment",
     "third-party.payment.list.add.label": "Add new settings",
     "third-party.payment.settings.delete.confirm.message": "Are your sure to delete this settings?",
@@ -1256,5 +1256,9 @@
     "warning.missing.otoroshi": "No Otoroshi instances configured or no entities configured",
     "plan.update.successful": "The plan has been successfully created",
     "plan.creation.successful": "The plan has been successfully modified",
-    "plan.payment.setup.successful": "The payment settings of the plan has been successfully updated"
+    "plan.payment.setup.successful": "The payment settings of the plan has been successfully updated",
+    "api.created": "Created",
+    "api.published": "Published",
+    "api.deprecated": "Deprecated",
+    "api.blocked": "Blocked"
 }

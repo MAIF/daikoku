@@ -479,6 +479,16 @@ object json {
 
     override def writes(o: ThirdPartyPaymentSettingsId): JsValue = JsString(o.value)
   }
+  val SubscriptionDemandIdFormat = new Format[SubscriptionDemandId] {
+    override def reads(json: JsValue): JsResult[SubscriptionDemandId] =
+      Try {
+        JsSuccess(SubscriptionDemandId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: SubscriptionDemandId): JsValue = JsString(o.value)
+  }
   val TeamTypeFormat = new Format[TeamType] {
     override def reads(json: JsValue) = json.as[String] match {
       case "Personal"     => JsSuccess(Personal)
@@ -500,6 +510,17 @@ object json {
 
     override def writes(o: ApiVisibility) = JsString(o.name)
   }
+  val ApiStateFormat = new Format[ApiState] {
+    override def reads(json: JsValue) = json.as[String] match {
+      case "created"    => JsSuccess(ApiState.Created)
+      case "published"  => JsSuccess(ApiState.Published)
+      case "blocked"    => JsSuccess(ApiState.Blocked)
+      case "deprecated" => JsSuccess(ApiState.Deprecated)
+      case str          => JsError(s"Bad ApiState value: $str")
+    }
+
+    override def writes(o: ApiState) = JsString(o.name)
+  }
   val UsagePlanVisibilityFormat = new Format[UsagePlanVisibility] {
     override def reads(json: JsValue) = json.as[String] match {
       case "Public"  => JsSuccess(UsagePlanVisibility.Public)
@@ -509,15 +530,49 @@ object json {
 
     override def writes(o: UsagePlanVisibility) = JsString(o.name)
   }
-  val SubscriptionProcessFormat = new Format[SubscriptionProcess] {
-    override def reads(json: JsValue) = json.as[String] match {
-      case "Automatic" => JsSuccess(SubscriptionProcess.Automatic)
-      case "Manual"    => JsSuccess(SubscriptionProcess.Manual)
-      case str         => JsError(s"Bad SubscriptionProcess value: $str")
+
+  val ValidationStepFormat = new Format[ValidationStep] {
+    override def writes(o: ValidationStep): JsValue = o match {
+      case ValidationStep.Email(emails) => Json.obj(
+        "type" -> "email",
+        "emails" -> emails
+      )
+      case ValidationStep.TeamAdmin(team) => Json.obj(
+        "type" -> "teamAdmin",
+        "team" -> team.asJson
+      )
+      case ValidationStep.Payment(thirdPartyPaymentSettingsId) => Json.obj(
+        "type" -> "payment",
+        "thirdPartyPaymentSettingsId" -> thirdPartyPaymentSettingsId.asJson
+      )
     }
 
-    override def writes(o: SubscriptionProcess) = JsString(o.name)
+
+    override def reads(json: JsValue): JsResult[ValidationStep] = (json \ "type").as[String] match {
+      case "email" => JsSuccess(ValidationStep.Email(emails = (json \ "emails").as[Seq[String]]))
+      case "teamAdmin" => JsSuccess(ValidationStep.TeamAdmin(team = (json \ "team").as(TeamIdFormat)))
+      case "payment" => JsSuccess(ValidationStep.Payment(thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat)))
+      case str => JsError(s"Bad UsagePlanVisibility value: $str")
+    }
   }
+
+  val SubscriptionProcessFormat = new Format[SubscriptionProcess] {
+    override def reads(json: JsValue) = Try {
+      JsSuccess(
+        SubscriptionProcess(
+          steps = (json \ "steps").as(SeqValidationStepFormat)
+        )
+      )} recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: SubscriptionProcess) = Json.obj(
+      "steps" -> SeqValidationStepFormat.writes(o.steps)
+    )
+  }
+
   val IntegrationProcessFormat = new Format[IntegrationProcess] {
     override def reads(json: JsValue) = json.as[String] match {
       case "Automatic" => JsSuccess(IntegrationProcess.Automatic)
@@ -2120,13 +2175,11 @@ object json {
               .asOpt(SeqVersionFormat)
               .map(_.toSet)
               .getOrElse(Set.empty),
-            published = (json \ "published").asOpt[Boolean].getOrElse(false),
             testing =
               (json \ "testing").asOpt(TestingFormat).getOrElse(Testing()),
             documentation = (json \ "documentation")
               .as(ApiDocumentationFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            //serviceGroup = (json \ "serviceGroup").asOpt(OtoroshiServiceGroupIdFormat),
             tags = (json \ "tags")
               .asOpt[Seq[String]]
               .map(_.toSet)
@@ -2154,12 +2207,13 @@ object json {
             stars = (json \ "stars").asOpt[Int].getOrElse(0),
             parent = (json \ "parent").asOpt(ApiIdFormat),
             isDefault = (json \ "isDefault").asOpt[Boolean].getOrElse(false),
-            apis = (json \ "apis").asOpt(SetApiIdFormat)
+            apis = (json \ "apis").asOpt(SetApiIdFormat),
+            state = (json \ "state").as(ApiStateFormat)
           )
         )
       } recover {
         case e =>
-          AppLogger.warn("API")
+          AppLogger.error("API format error")
           AppLogger.error(e.toString, e)
           JsError(e.getMessage)
       } get
@@ -2178,7 +2232,6 @@ object json {
       "description" -> o.description,
       "currentVersion" -> VersionFormat.writes(o.currentVersion),
       "supportedVersions" -> JsArray(o.supportedVersions.map(_.asJson).toSeq),
-      "published" -> o.published,
       "testing" -> o.testing.asJson,
       "documentation" -> o.documentation.asJson,
       "swagger" -> o.swagger
@@ -2205,7 +2258,8 @@ object json {
       "apis" -> o.apis
         .map(SetApiIdFormat.writes)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "state" -> ApiStateFormat.writes(o.state)
     )
   }
 
@@ -2332,6 +2386,28 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue]
     )
+  }
+
+  val SubscriptionDemandFormat = new Format[SubscriptionDemand] {
+    override def writes(o: SubscriptionDemand): JsValue = ???
+
+    override def reads(json: JsValue): JsResult[SubscriptionDemand] = Try {
+      JsSuccess(
+        SubscriptionDemand(
+          id = (json \ "_id").as(SubscriptionDemandIdFormat),
+          tenant = (json \ "_tenant").as(TenantIdFormat),
+          deleted = (json \ "_deleted").as[Boolean],
+          api = (json \ "api").as(ApiIdFormat),
+          plan = (json \ "plan").as(UsagePlanIdFormat),
+          step = (json \ "step").as[Int],
+          token = (json \ "token").as[String]
+        )
+      )
+    } recover {
+      case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+    } get
   }
 
   //just because otoroshi do not use the actual entities format ;)
@@ -3741,5 +3817,7 @@ object json {
       Writes.seq(ApiDocumentationDetailPageFormat))
   val SeqThirdPartyPaymentSettingsFormat: Format[Seq[ThirdPartyPaymentSettings]] =
     Format(Reads.seq(ThirdPartyPaymentSettingsFormat), Writes.seq(ThirdPartyPaymentSettingsFormat))
+val SeqValidationStepFormat: Format[Seq[ValidationStep]] =
+    Format(Reads.seq(ValidationStepFormat), Writes.seq(ValidationStepFormat))
 
 }

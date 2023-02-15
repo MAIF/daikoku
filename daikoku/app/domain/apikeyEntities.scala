@@ -1,5 +1,6 @@
 package fr.maif.otoroshi.daikoku.domain
 
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -170,4 +171,50 @@ case class ApiKeyQuotas(authorizedCallsPerSec: Long,
 case class ApiKeyBilling(hits: Long, total: BigDecimal)
     extends CanJson[ApiKeyBilling] {
   override def asJson: JsValue = json.ApiKeyBillingFormat.writes(this)
+}
+
+sealed trait SubscriptionDemandState {
+  def name: String
+}
+
+object SubscriptionDemandState {
+  case object Accepted extends SubscriptionDemandState {
+    def name: String = "accepted"
+  }
+  case object Refused extends SubscriptionDemandState {
+    def name: String = "refused"
+  }
+  case object Cancelled extends SubscriptionDemandState {
+    def name: String = "cancelled"
+  }
+  case object InProgress extends SubscriptionDemandState {
+    def name: String = "inProgress"
+  }
+  case object Waiting extends SubscriptionDemandState {
+    def name: String = "waiting"
+  }
+
+  val values: Seq[SubscriptionDemandState] =
+    Seq(Accepted, Refused, Cancelled, InProgress)
+
+  def apply(name: String): Option[SubscriptionDemandState] = name match {
+    case "accepted"   => Accepted.some
+    case "refused"    => Refused.some
+    case "cancelled"  => Cancelled.some
+    case "inProgress" => InProgress.some
+    case "waiting"    => Waiting.some
+    case _            => None
+  }
+}
+
+case class SubscriptionDemand(id: SubscriptionDemandId,
+                              tenant: TenantId,
+                              deleted: Boolean = false,
+                              api: ApiId,
+                              plan: UsagePlanId,
+                              step: Int,
+                              token: String = IdGenerator.token(32),
+                              state: SubscriptionDemandState = SubscriptionDemandState.Waiting)
+  extends CanJson[SubscriptionDemand] {
+  override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }
