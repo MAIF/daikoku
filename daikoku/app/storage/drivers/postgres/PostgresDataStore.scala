@@ -211,6 +211,16 @@ case class PostgresTenantCapableOperationRepo(
   override def repo(): PostgresRepo[Operation, DatastoreId] = _repo()
 }
 
+case class PostgresTenantCapableSubscriptionDemandRepo(
+    _repo: () => PostgresRepo[SubscriptionDemand, SubscriptionDemandId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId]
+) extends PostgresTenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
+  with SubscriptionDemandRepo {
+  override def repo(): PostgresRepo[SubscriptionDemand, SubscriptionDemandId] = _repo()
+
+  override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] = _tenantRepo(tenant)
+}
+
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption,
@@ -320,7 +330,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "api_issues" -> true,
     "evolutions" -> false,
     "cmspages" -> true,
-    "operations" -> true
+    "operations" -> true,
+    "subscription_demands" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -485,6 +496,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       t => new PostgresTenantOperationRepo(env, reactivePg, t)
     )
 
+  private val _subscriptionDemandRepo: SubscriptionDemandRepo =
+    PostgresTenantCapableSubscriptionDemandRepo(
+      () => new PostgresSubscriptionDemand(env, reactivePg),
+      t => new PostgresTenantSubscriptionDemandRepo(env, reactivePg, t)
+    )
+
   override def tenantRepo: TenantRepo = _tenantRepo
 
   override def userRepo: UserRepo = _userRepo
@@ -523,6 +540,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def evolutionRepo: EvolutionRepo = _evolutionRepo
 
   override def operationRepo: OperationRepo = _operationRepo
+
+  override def subscriptionDemandRepo: SubscriptionDemandRepo = _subscriptionDemandRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -818,6 +837,17 @@ class PostgresTenantOperationRepo(env: Env,
   override def extractId(value: Operation): String = value.id.value
 }
 
+class PostgresTenantSubscriptionDemandRepo(env: Env,
+                                           reactivePg: ReactivePg,
+                                           tenant: TenantId)
+extends PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](env, reactivePg, tenant) {
+  override def tableName: String = "subscription_demands"
+
+  override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
+
+  override def extractId(value: SubscriptionDemand): String = value.id.value
+}
+
 class PostgresTenantCmsPageRepo(env: Env,
                                 reactivePg: ReactivePg,
                                 tenant: TenantId)
@@ -993,6 +1023,15 @@ class PostgresOperationRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[Operation] = json.OperationFormat
 
   override def extractId(value: Operation): String = value.id.value
+}
+
+class PostgresSubscriptionDemand(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[SubscriptionDemand, SubscriptionDemandId](env, reactivePg) {
+  override def tableName: String = "subscription_demands"
+
+  override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
+
+  override def extractId(value: SubscriptionDemand): String = value.id.value
 }
 
 class PostgresApiRepo(env: Env, reactivePg: ReactivePg)

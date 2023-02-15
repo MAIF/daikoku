@@ -319,6 +319,8 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 
 trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
 
+trait SubscriptionDemandRepo extends TenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
+
 trait DataStore {
   def start(): Future[Unit]
 
@@ -363,6 +365,8 @@ trait DataStore {
   def operationRepo: OperationRepo
 
   def evolutionRepo: EvolutionRepo
+
+  def subscriptionDemandRepo: SubscriptionDemandRepo
 
   def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,

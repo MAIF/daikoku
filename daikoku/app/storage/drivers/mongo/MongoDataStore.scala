@@ -284,6 +284,18 @@ case class MongoTenantCapableOperationRepo(
     _tenantRepo(tenant)
 }
 
+case class MongoTenantCapableSubscriptionDemandRepo(
+    _repo: () => MongoRepo[SubscriptionDemand, SubscriptionDemandId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId]
+) extends MongoTenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
+    with SubscriptionDemandRepo {
+  override def repo(): MongoRepo[SubscriptionDemand, SubscriptionDemandId] = _repo()
+
+  override def tenantRepo(
+      tenant: TenantId): MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] =
+    _tenantRepo(tenant)
+}
+
 class MongoDataStore(context: Context, env: Env)
     extends ReactiveMongoApiFromContext(context)
     with DataStore {
@@ -374,6 +386,13 @@ class MongoDataStore(context: Context, env: Env)
     )
   }
 
+  private val _subscriptionDemandRepo: SubscriptionDemandRepo = {
+    MongoTenantCapableSubscriptionDemandRepo(
+      () => new MongoSubscriptionDemandRepo(env, reactiveMongoApi),
+      t => new MongoTenantSubscriptionDemandRepo(env, reactiveMongoApi, t)
+    )
+  }
+
   override def tenantRepo: TenantRepo = _tenantRepo
 
   override def userRepo: UserRepo = _userRepo
@@ -412,6 +431,8 @@ class MongoDataStore(context: Context, env: Env)
   override def cmsRepo: CmsPageRepo = _cmsRepo
 
   override def operationRepo: OperationRepo = _operationRepo
+
+  override def subscriptionDemandRepo: SubscriptionDemandRepo = _subscriptionDemandRepo
 
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
@@ -674,6 +695,16 @@ class MongoTenantOperationRepo(env: Env,
 
   override def extractId(value: Operation): String = value.id.value
 }
+class MongoTenantSubscriptionDemandRepo(env: Env, reactiveMongoApi: ReactiveMongoApi, tenant: TenantId)
+    extends MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](env,
+                                                         reactiveMongoApi,
+                                                         tenant) {
+  override def collectionName: String = "SubscriptionDemands"
+
+  override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
+
+  override def extractId(value: SubscriptionDemand): String = value.id.value
+}
 
 class MongoTenantApiSubscriptionRepo(env: Env,
                                      reactiveMongoApi: ReactiveMongoApi,
@@ -836,6 +867,15 @@ class MongoOperationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[Operation] = json.OperationFormat
 
   override def extractId(value: Operation): String = value.id.value
+}
+
+class MongoSubscriptionDemandRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[SubscriptionDemand, SubscriptionDemandId](env, reactiveMongoApi) {
+  override def collectionName: String = "SubscriptionDemands"
+
+  override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
+
+  override def extractId(value: SubscriptionDemand): String = value.id.value
 }
 
 class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
