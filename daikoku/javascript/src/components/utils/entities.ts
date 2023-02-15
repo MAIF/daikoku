@@ -17,7 +17,7 @@ export const newPossibleUsagePlan = (customName: string): IUsagePlanFreeWithQuot
   },
 
   visibility: 'Public',
-  subscriptionProcess: { steps: [] },
+  subscriptionProcess: [],
   integrationProcess: 'ApiKey',
   rotation: false,
   authorizedTeams: [],

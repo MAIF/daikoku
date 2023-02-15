@@ -55,7 +55,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     }
 
     const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
-      if (plan.subscriptionProcess.steps.some(isValidationStepTeamAdmin)) {
+      if (plan.subscriptionProcess.some(isValidationStepTeamAdmin)) {
         openFormModal<{ motivation: string }>({
           title: translate('motivations.modal.title'),
           schema: {
@@ -141,10 +141,10 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   let pricing = renderPricing(plan, translate)
 
-  const otoroshiTargetIsDefined = !!plan.otoroshiTarget;
-  const otoroshiEntitiesIsDefined = otoroshiTargetIsDefined && (!!plan.otoroshiTarget?.authorizedEntities.groups.length ||
-    !!plan.otoroshiTarget?.authorizedEntities.routes.length ||
-    !!plan.otoroshiTarget?.authorizedEntities.services.length);
+  const otoroshiTargetIsDefined = !!plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities;
+  const otoroshiEntitiesIsDefined = otoroshiTargetIsDefined && (!!plan.otoroshiTarget?.authorizedEntities?.groups.length ||
+    !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
+    !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
   return (
     <div className="card mb-4 shadow-sm">

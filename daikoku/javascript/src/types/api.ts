@@ -131,7 +131,7 @@ export interface IBaseUsagePlan {
   type: string;
   customDescription?: string;
   customName?: string;
-  subscriptionProcess: { steps: Array<IValidationStep> };
+  subscriptionProcess: Array<IValidationStep>;
   currency: ICurrency;
   otoroshiTarget?: IOtoroshiTarget;
 }
@@ -211,7 +211,7 @@ export interface ICurrency {
 
 interface IOtoroshiTarget {
   otoroshiSettings?: string;
-  authorizedEntities: IAuthorizedEntities;
+  authorizedEntities?: IAuthorizedEntities;
   apikeyCustomization: {
     clientIdOnly: boolean;
     constrainedServicesOnly: boolean;

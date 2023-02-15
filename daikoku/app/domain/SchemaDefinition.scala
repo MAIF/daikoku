@@ -307,14 +307,6 @@ object SchemaDefinition {
       ReplaceField("thirdPartyPaymentSettingsId", Field("thirdPartyPaymentSettingsId", StringType, resolve = ctx => ctx.value.thirdPartyPaymentSettingsId.value)),
     ))
 
-    lazy val SubscriptionProcessType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionProcess](
-      ObjectTypeDescription("The subscription process of a usage plan"),
-      ReplaceField("steps",
-        Field("steps", ListType(ValidationStepInterfaceType), resolve =_.value.steps,
-          possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))
-      )
-    )
-
     lazy val StripePriceIdsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), StripePriceIds](
       ObjectTypeDescription("Ids of stripe prices for a product"),
       ReplaceField("basePriceId", Field("basePriceId", StringType, resolve = _.value.basePriceId)),
@@ -406,7 +398,8 @@ object SchemaDefinition {
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
             Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         ),
-        Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess),
+        Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
+          possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment)),
         Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name),
         Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
           possibleTypes = List(StripePaymentSettingsType)),
@@ -438,7 +431,8 @@ object SchemaDefinition {
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
+        possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -461,7 +455,8 @@ object SchemaDefinition {
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
+        possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -485,7 +480,8 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
+        possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -509,7 +505,8 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
+        possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),
@@ -533,7 +530,8 @@ object SchemaDefinition {
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
+        possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))),
       ReplaceField("integrationProcess", Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
         possibleTypes = List(StripePaymentSettingsType))),

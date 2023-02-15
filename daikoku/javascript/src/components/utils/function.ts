@@ -22,7 +22,7 @@ export const getColorByBgColor = (bgColor: string) => {
 };
 
 export const isSubscriptionProcessIsAutomatic = (plan: IBaseUsagePlan): boolean => {
-  return plan.subscriptionProcess.steps.every(step => !isValidationStepEmail(step) && !isValidationStepTeamAdmin(step))
+  return plan.subscriptionProcess.every(step => !isValidationStepEmail(step) && !isValidationStepTeamAdmin(step))
 }
 
 export const isPublish = (api: IApi): boolean => {

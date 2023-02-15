@@ -4009,6 +4009,7 @@ class ApiController(
                   val value: EitherT[Future, AppError, UsagePlan] = EitherT(future)
                   value
               }
+            case Some(_) => EitherT.pure(plan)
             case None => EitherT.leftT(AppError.PlanNotFound)
           }
         }

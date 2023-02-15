@@ -341,7 +341,7 @@ const Card = ({
       });
   };
 
-  const noOtoroshi = !plan.otoroshiTarget ||
+  const noOtoroshi = !plan.otoroshiTarget || !plan.otoroshiTarget.authorizedEntities ||
     (!plan.otoroshiTarget.authorizedEntities.groups.length &&
       !plan.otoroshiTarget.authorizedEntities.services.length &&
       !plan.otoroshiTarget.authorizedEntities.routes.length)
@@ -820,23 +820,11 @@ export const TeamApiPricings = (props: Props) => {
           },
         },
         subscriptionProcess: {
-          type: type.string,
-          format: format.buttonsSelect,
-          disabled: ({ rawValues }: any) => !!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length,
-          label: ({ rawValues }: any) => translate('Subscription') +
-            (rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length
-              ? ` (${translate('Subscription.manual.help')})`
-              : ''),
-          options: [
-            {
-              label: translate('Automatic'),
-              value: 'Automatic',
-            },
-            { label: translate('Manual'), value: 'Manual' },
-          ],
-          constraints: [
-            constraints.oneOf(['Automatic', 'Manual'], translate('constraints.oneof.sub.process')),
-          ],
+          type: type.object,
+          array: true,
+          label: translate('Subscription process'),
+          defaultValue: []
+          //todo: add constraints to test presence of admin validation if custom metatada
         },
       },
       flow: ['otoroshiTarget', 'subscriptionProcess'],

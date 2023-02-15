@@ -196,7 +196,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       FreeWithQuotas(
@@ -211,7 +211,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithLimits(
@@ -228,7 +228,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithoutLimits(
@@ -246,7 +246,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       PayPerUse(
@@ -261,7 +261,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       )
     ),
@@ -340,7 +340,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       FreeWithQuotas(
@@ -362,7 +362,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithLimits(
@@ -386,7 +386,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithoutLimits(
@@ -411,7 +411,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       PayPerUse(
@@ -433,7 +433,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       )
     ),
@@ -553,7 +553,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         ),
         FreeWithQuotas(
@@ -568,7 +568,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         ),
         QuotasWithLimits(
@@ -585,7 +585,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         ),
         QuotasWithoutLimits(
@@ -603,7 +603,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         ),
         PayPerUse(
@@ -618,7 +618,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         )
       ),

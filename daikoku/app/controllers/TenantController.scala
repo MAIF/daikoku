@@ -228,7 +228,7 @@ class TenantController(DaikokuAction: DaikokuAction,
                 otoroshiTarget = None,
                 allowMultipleKeys = Some(true),
                 autoRotation = None,
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             ),

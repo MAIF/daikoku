@@ -571,47 +571,34 @@ object evolution_1612 extends EvolutionScript {
         .forAllTenant()
         .streamAllRaw()(ec)
         .mapAsync(1) { value =>
-          AppLogger.info("### api value updating ###")
           val state =
             if ((value \ "published").asOpt[Boolean].getOrElse(false)) {
               ApiState.Published
             } else {
               ApiState.Created
             }
-          AppLogger.info(s"### new state -> $state")
-          AppLogger.info(s"### calculating plans")
-          AppLogger.info("trigger")
           val plans = (value \ "possibleUsagePlans")
             .as[JsArray]
             .value
 
            val updatedPlans =  plans.map(oldPlan => {
-              AppLogger.info(s"### updating plan")
               val subscriptionProcess = (oldPlan \ "subscriptionProcess").asOpt[String] match {
-                case Some("Manual") => SubscriptionProcess(steps =
-                  Seq(
+                case Some("Manual") => Seq(
                     ValidationStep
                       .TeamAdmin((value \ "team").as(TeamIdFormat))
                   )
-                )
-                case _ => SubscriptionProcess(steps = Seq.empty)
+                case _ => Seq.empty
               }
 
-              AppLogger
-                .info(s"### new process -> ${subscriptionProcess.asJson}")
 
               oldPlan.as[JsObject] ++ Json
-                .obj("subscriptionProcess" -> subscriptionProcess.asJson)
+                .obj("subscriptionProcess" -> json.SeqValidationStepFormat.writes(subscriptionProcess))
             })
-
-          AppLogger.info(Json.prettyPrint(JsArray(updatedPlans)))
 
           val updatedApi = value.as[JsObject] ++ Json.obj(
             "state" -> state.name,
             "possibleUsagePlans" -> JsArray(updatedPlans)
           )
-
-          AppLogger.warn(Json.prettyPrint(updatedApi))
 
           ApiFormat.reads(updatedApi) match {
             case JsSuccess(v, _) =>

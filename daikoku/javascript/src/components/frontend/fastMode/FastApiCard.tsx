@@ -46,7 +46,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
       ? Services.extendApiKey(apiId, apiKey._id, team._id, plan._id, motivation)
       : Services.askForApiKey(apiId, team._id, plan._id, motivation)
 
-    if (plan.subscriptionProcess.steps.some(p => isValidationStepTeamAdmin(p))) {
+    if (plan.subscriptionProcess.some(p => isValidationStepTeamAdmin(p))) {
       openFormModal<{ motivation: string }>({
         title: translate(input === '' ? 'motivations.modal.title' : 'fastMode.subscription.resume'),
         schema: {
@@ -181,7 +181,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
               return { plan, ...subPlan }
             })
             .sort((a, b) => (a.plan.customName || '').localeCompare(b.plan.customName || ''))
-            .filter(({ plan }) => plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities !== null
+            .filter(({ plan }) => plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities
               && (!!plan.otoroshiTarget.authorizedEntities.groups.length
                 || !!plan.otoroshiTarget.authorizedEntities.services.length
                 || !!plan.otoroshiTarget.authorizedEntities.routes.length))

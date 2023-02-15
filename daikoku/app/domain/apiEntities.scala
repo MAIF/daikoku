@@ -226,7 +226,7 @@ sealed trait UsagePlan {
   def aggregationApiKeysSecurity: Option[Boolean]
   def paymentSettings: Option[PaymentSettings]
   def mergeBase(a: BasePaymentInformation): UsagePlan
-  def subscriptionProcess: SubscriptionProcess
+  def subscriptionProcess: Seq[ValidationStep] = Seq.empty
 }
 
 case object UsagePlan {
@@ -260,7 +260,7 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
-    override def subscriptionProcess: SubscriptionProcess = SubscriptionProcess(steps = Seq.empty)
+    override def subscriptionProcess: Seq[ValidationStep] = Seq.empty
     override def integrationProcess: IntegrationProcess =
       IntegrationProcess.ApiKey
     override def mergeBase(a: BasePaymentInformation): Admin = this
@@ -273,11 +273,11 @@ case object UsagePlan {
       customDescription: Option[String],
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
-      autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      autoRotation: Option[Boolean],
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -314,10 +314,10 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -356,10 +356,10 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -398,10 +398,10 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -438,10 +438,10 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -786,10 +786,6 @@ case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],
                                           nb: Long)
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
-
-case class SubscriptionProcess(steps: Seq[ValidationStep] = Seq.empty) extends CanJson[SubscriptionProcess] {
-  override def asJson: JsValue = json.SubscriptionProcessFormat.writes(this)
-}
 
 sealed trait ValidationStep {
   def name: String

@@ -436,7 +436,7 @@ class DaikokuEnv(ws: WSClient,
                       otoroshiTarget = None,
                       allowMultipleKeys = Some(true),
                       autoRotation = None,
-                      subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                      subscriptionProcess = Seq.empty,
                       integrationProcess = IntegrationProcess.ApiKey
                     )
                   ),

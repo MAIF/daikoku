@@ -556,23 +556,6 @@ object json {
     }
   }
 
-  val SubscriptionProcessFormat = new Format[SubscriptionProcess] {
-    override def reads(json: JsValue) = Try {
-      JsSuccess(
-        SubscriptionProcess(
-          steps = (json \ "steps").as(SeqValidationStepFormat)
-        )
-      )} recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
-
-    override def writes(o: SubscriptionProcess) = Json.obj(
-      "steps" -> SeqValidationStepFormat.writes(o.steps)
-    )
-  }
-
   val IntegrationProcessFormat = new Format[IntegrationProcess] {
     override def reads(json: JsValue) = json.as[String] match {
       case "Automatic" => JsSuccess(IntegrationProcess.Automatic)
@@ -885,7 +868,7 @@ object json {
             autoRotation = (json \ "autoRotation")
               .asOpt[Boolean],
             subscriptionProcess =
-              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
@@ -925,7 +908,7 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
-      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+      "subscriptionProcess" -> SeqValidationStepFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
         o.integrationProcess),
@@ -961,7 +944,7 @@ object json {
             autoRotation = (json \ "autoRotation")
               .asOpt[Boolean],
             subscriptionProcess =
-              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
@@ -1004,7 +987,7 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
-      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+      "subscriptionProcess" -> SeqValidationStepFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
         o.integrationProcess),
@@ -1042,7 +1025,7 @@ object json {
             autoRotation = (json \ "autoRotation")
               .asOpt[Boolean],
             subscriptionProcess =
-              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
@@ -1092,7 +1075,7 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
-      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+      "subscriptionProcess" -> SeqValidationStepFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
         o.integrationProcess),
@@ -1136,7 +1119,7 @@ object json {
             autoRotation = (json \ "autoRotation")
               .asOpt[Boolean],
             subscriptionProcess =
-              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
@@ -1187,7 +1170,7 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
-      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+      "subscriptionProcess" -> SeqValidationStepFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
         o.integrationProcess),
@@ -1227,7 +1210,7 @@ object json {
             autoRotation = (json \ "autoRotation")
               .asOpt[Boolean],
             subscriptionProcess =
-              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
@@ -1278,7 +1261,7 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
-      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+      "subscriptionProcess" -> SeqValidationStepFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
         o.integrationProcess),
