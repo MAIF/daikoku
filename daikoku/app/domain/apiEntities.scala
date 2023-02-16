@@ -227,6 +227,8 @@ sealed trait UsagePlan {
   def paymentSettings: Option[PaymentSettings]
   def mergeBase(a: BasePaymentInformation): UsagePlan
   def subscriptionProcess: Seq[ValidationStep] = Seq.empty
+  def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan
+  def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
 }
 
 case object UsagePlan {
@@ -264,6 +266,10 @@ case object UsagePlan {
     override def integrationProcess: IntegrationProcess =
       IntegrationProcess.ApiKey
     override def mergeBase(a: BasePaymentInformation): Admin = this
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = this
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class FreeWithoutQuotas(
       id: UsagePlanId,
@@ -301,6 +307,19 @@ case object UsagePlan {
       currency = a.currency,
       billingDuration = a.billingDuration,
     )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan =
+      this.copy(subscriptionProcess = this.subscriptionProcess.filter(predicate))
   }
   case class FreeWithQuotas(
       id: UsagePlanId,
@@ -341,6 +360,18 @@ case object UsagePlan {
       currency = a.currency,
       billingDuration = a.billingDuration,
     )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class QuotasWithLimits(
       id: UsagePlanId,
@@ -382,6 +413,18 @@ case object UsagePlan {
       trialPeriod = a.trialPeriod,
       billingDuration = a.billingDuration,
     )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class QuotasWithoutLimits(
       id: UsagePlanId,
@@ -425,6 +468,18 @@ case object UsagePlan {
       trialPeriod = a.trialPeriod,
       billingDuration = a.billingDuration,
     )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class PayPerUse(
       id: UsagePlanId,
@@ -465,6 +520,18 @@ case object UsagePlan {
       trialPeriod = a.trialPeriod,
       billingDuration = a.billingDuration,
     )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
 }
 

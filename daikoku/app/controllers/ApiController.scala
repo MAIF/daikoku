@@ -874,7 +874,9 @@ class ApiController(
       def controlTeam(team: Team, api: Api, plan: UsagePlan): EitherT[Future, AppError, Unit] = {
         if (!ctx.user.isDaikokuAdmin && !team.includeUser(ctx.user.id)) {
           EitherT.leftT[Future, Unit](AppError.TeamUnauthorized)
-        } else if (plan.visibility == Private && team.id != api.team) {
+        } else if (team.id != api.team && api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id)) {
+          EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
+        } else if (team.id != api.team && plan.visibility == Private && !plan.authorizedTeams.contains(team.id)) {
           EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
         } else if (ctx.tenant.subscriptionSecurity.forall(t => t) && team.`type` == TeamType.Personal) {
           EitherT.leftT[Future, Unit](AppError.SecurityError("Subscription security"))
@@ -3989,10 +3991,23 @@ class ApiController(
       )(teamId, ctx) { team =>
         val newPlan = ctx.request.body.as(UsagePlanFormat)
 
+        def addProcess(api: Api, plan: UsagePlan): EitherT[Future, AppError, Api] = {
+          val updatedPlan: UsagePlan = (plan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty), plan.paymentSettings) match {
+            case (true, None) => plan
+            case (true, Some(settings)) => plan.addSubscriptionStep(ValidationStep.Payment(settings.thirdPartyPaymentSettingsId)) //ajouter le proces de paiement
+            case (false, Some(settings)) => plan
+            .addSubscriptionStep(ValidationStep.Payment(settings.thirdPartyPaymentSettingsId))
+            .addSubscriptionStep(ValidationStep.TeamAdmin(api.team), 0.some)
+            case (false, None) => plan.addSubscriptionStep(ValidationStep.TeamAdmin(api.team), 0.some)
+          }
+
+          EitherT.pure[Future, AppError](api.copy(possibleUsagePlans = api.possibleUsagePlans :+ updatedPlan))
+        }
+
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
-          updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans :+ newPlan)
+          updatedApi <- addProcess(api, newPlan)
           _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
         } yield Ok(updatedApi.asJson)
 
@@ -4003,7 +4018,7 @@ class ApiController(
   def updatePlan(teamId: String, apiId: String, version: String, planId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
-        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+        AuditTrailEvent(s"@{user.name} has updated plan @{plan.id} for api @{api.name} to @{newTeam.name}")
       )(teamId, ctx) { team =>
         val updatedPlan = ctx.request.body.as(UsagePlanFormat)
 
@@ -4013,7 +4028,9 @@ class ApiController(
             case Some(oldPlan) if oldPlan.otoroshiTarget.map(_.otoroshiSettings) != plan.otoroshiTarget.map(_.otoroshiSettings) => EitherT.leftT(AppError.ForbiddenAction)
             //FIXME: Handle type changes
             case Some(oldPlan) if oldPlan.typeName != plan.typeName => EitherT.leftT(AppError.ForbiddenAction)
-            //FIXME: Handle prices changes
+            //FIXME: Handle prices changes or payment settings deletion (addition is really forbidden)
+            case Some(oldPlan) if oldPlan.paymentSettings != plan.paymentSettings =>
+              EitherT.leftT(AppError.ForbiddenAction)
             case Some(oldPlan) => oldPlan match {
               case p: UsagePlan.QuotasWithLimits if p.costPerMonth != plan.costPerMonth => EitherT.leftT(AppError.ForbiddenAction)
               case p: UsagePlan.QuotasWithoutLimits
@@ -4046,12 +4063,40 @@ class ApiController(
           }
         }
 
+        def handleProcess(api: Api, plan: UsagePlan): EitherT[Future, AppError, Api] = {
+          api.possibleUsagePlans.find(_.id == plan.id)
+            .map(oldPlan => {
+              if (oldPlan.paymentSettings.isEmpty && plan.paymentSettings.isDefined) {
+                (oldPlan, plan.addSubscriptionStep(ValidationStep.Payment(plan.paymentSettings.get.thirdPartyPaymentSettingsId)))
+              } else {
+                (oldPlan, plan)
+              }
+            })
+            .map(tuple => {
+              if (tuple._1.paymentSettings.isDefined && tuple._2.paymentSettings.isEmpty) {
+                (tuple._1, tuple._2.removeSubscriptionStep(step => step.name == "payment"))
+              } else {
+                tuple
+              }
+            })
+            .map(tuple => {
+              if (tuple._1.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty) && tuple._2.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.nonEmpty)) {
+                plan.addSubscriptionStep(ValidationStep.Payment(plan.paymentSettings.get.thirdPartyPaymentSettingsId), 0.some)
+              } else {
+                tuple._2
+              }
+            }) match {
+            case Some(updatedPlan) => EitherT.pure[Future, AppError](api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(_.id != updatedPlan.id) :+ updatedPlan))
+            case None => EitherT.leftT[Future, Api](AppError.PlanNotFound)
+          }
+        }
+
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
           _ <- getPlanAndCheckIt(api, updatedPlan)
           _ <- handleVisibilityToggling(api, updatedPlan)
-          updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(_.id != updatedPlan.id) :+ updatedPlan)
+          updatedApi <- handleProcess(api, updatedPlan)
           _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
           _ <- EitherT.liftF(otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)))
         } yield Ok(updatedApi.asJson)
@@ -4112,10 +4157,13 @@ class ApiController(
           ratedPlanwithSettings = ratedPlan match {
             case p: UsagePlan.QuotasWithLimits =>
               p.copy(paymentSettings = paymentSettings.some)
+                .addSubscriptionStep(ValidationStep.Payment(paymentSettings.thirdPartyPaymentSettingsId))
             case p: UsagePlan.QuotasWithoutLimits =>
               p.copy(paymentSettings = paymentSettings.some)
+                .addSubscriptionStep(ValidationStep.Payment(paymentSettings.thirdPartyPaymentSettingsId))
             case p: UsagePlan.PayPerUse =>
               p.copy(paymentSettings = paymentSettings.some)
+                .addSubscriptionStep(ValidationStep.Payment(paymentSettings.thirdPartyPaymentSettingsId))
             case p: UsagePlan => p
           }
 

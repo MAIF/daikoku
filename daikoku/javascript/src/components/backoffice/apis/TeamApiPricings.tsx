@@ -205,6 +205,7 @@ const CustomMetadataInput = (props: {
   setValue?: (key: string, data: any) => void;
   translate: (key: string) => string
 }) => {
+  const { alert } = useContext(ModalContext);
 
   const changeValue = (possibleValues: any, key: any) => {
     const oldValue = Option(props.value?.find((x: any) => x.key === key)).getOrElse({ '': '' });
@@ -227,8 +228,10 @@ const CustomMetadataInput = (props: {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
       props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
-      props.setValue && props.setValue('subscriptionProcess', 'Manual');
-      toastr.info(props.translate('Info'), props.translate('custom.metadata.process.change.to.manual'));
+      alert({message: props.translate('custom.metadata.process.change.to.manual'), title: props.translate('Information')})
+      //FIXME: add info to user for the new subscription process
+      // props.setValue && props.setValue('subscriptionProcess', 'Manual');
+      // toastr.info(props.translate('Info'), props.translate('custom.metadata.process.change.to.manual'));
     }
   };
 
