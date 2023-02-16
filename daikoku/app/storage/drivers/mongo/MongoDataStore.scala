@@ -296,6 +296,18 @@ case class MongoTenantCapableSubscriptionDemandRepo(
     _tenantRepo(tenant)
 }
 
+case class MongoTenantCapableStepValidatorRepo(
+    _repo: () => MongoRepo[StepValidator, DatastoreId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[StepValidator, DatastoreId]
+) extends MongoTenantCapableRepo[StepValidator, DatastoreId]
+    with StepValidatorRepo {
+  override def repo(): MongoRepo[StepValidator, DatastoreId] = _repo()
+
+  override def tenantRepo(
+      tenant: TenantId): MongoTenantAwareRepo[StepValidator, DatastoreId] =
+    _tenantRepo(tenant)
+}
+
 class MongoDataStore(context: Context, env: Env)
     extends ReactiveMongoApiFromContext(context)
     with DataStore {
@@ -392,6 +404,12 @@ class MongoDataStore(context: Context, env: Env)
       t => new MongoTenantSubscriptionDemandRepo(env, reactiveMongoApi, t)
     )
   }
+  private val _stepValidatorRepo: StepValidatorRepo = {
+    MongoTenantCapableStepValidatorRepo(
+      () => new MongoStepValidatorRepo(env, reactiveMongoApi),
+      t => new MongoTenantStepValidatorRepo(env, reactiveMongoApi, t)
+    )
+  }
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -433,6 +451,8 @@ class MongoDataStore(context: Context, env: Env)
   override def operationRepo: OperationRepo = _operationRepo
 
   override def subscriptionDemandRepo: SubscriptionDemandRepo = _subscriptionDemandRepo
+
+  override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
 
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
@@ -705,6 +725,16 @@ class MongoTenantSubscriptionDemandRepo(env: Env, reactiveMongoApi: ReactiveMong
 
   override def extractId(value: SubscriptionDemand): String = value.id.value
 }
+class MongoTenantStepValidatorRepo(env: Env, reactiveMongoApi: ReactiveMongoApi, tenant: TenantId)
+    extends MongoTenantAwareRepo[StepValidator, DatastoreId](env,
+                                                         reactiveMongoApi,
+                                                         tenant) {
+  override def collectionName: String = "StepValidators"
+
+  override def format: Format[StepValidator] = json.StepValidatorFormat
+
+  override def extractId(value: StepValidator): String = value.id.value
+}
 
 class MongoTenantApiSubscriptionRepo(env: Env,
                                      reactiveMongoApi: ReactiveMongoApi,
@@ -876,6 +906,15 @@ class MongoSubscriptionDemandRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
 
   override def extractId(value: SubscriptionDemand): String = value.id.value
+}
+
+class MongoStepValidatorRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[StepValidator, DatastoreId](env, reactiveMongoApi) {
+  override def collectionName: String = "StepValidators"
+
+  override def format: Format[StepValidator] = json.StepValidatorFormat
+
+  override def extractId(value: StepValidator): String = value.id.value
 }
 
 class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)

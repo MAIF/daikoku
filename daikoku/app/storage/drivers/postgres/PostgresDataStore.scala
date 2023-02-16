@@ -221,6 +221,16 @@ case class PostgresTenantCapableSubscriptionDemandRepo(
   override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] = _tenantRepo(tenant)
 }
 
+case class PostgresTenantCapableStepValidatorRepo(
+    _repo: () => PostgresRepo[StepValidator, DatastoreId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[StepValidator, DatastoreId]
+) extends PostgresTenantCapableRepo[StepValidator, DatastoreId]
+  with StepValidatorRepo {
+  override def repo(): PostgresRepo[StepValidator, DatastoreId] = _repo()
+
+  override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[StepValidator, DatastoreId] = _tenantRepo(tenant)
+}
+
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption,
@@ -331,7 +341,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "evolutions" -> false,
     "cmspages" -> true,
     "operations" -> true,
-    "subscription_demands" -> true
+    "subscription_demands" -> true,
+    "step_validators" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -498,8 +509,14 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
 
   private val _subscriptionDemandRepo: SubscriptionDemandRepo =
     PostgresTenantCapableSubscriptionDemandRepo(
-      () => new PostgresSubscriptionDemand(env, reactivePg),
+      () => new PostgresSubscriptionDemandRepo(env, reactivePg),
       t => new PostgresTenantSubscriptionDemandRepo(env, reactivePg, t)
+    )
+
+  private val _stepValidatorRepo: StepValidatorRepo =
+    PostgresTenantCapableStepValidatorRepo(
+      () => new PostgresStepValidatorRepo(env, reactivePg),
+      t => new PostgresTenantStepValidatorRepo(env, reactivePg, t)
     )
 
   override def tenantRepo: TenantRepo = _tenantRepo
@@ -542,6 +559,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def operationRepo: OperationRepo = _operationRepo
 
   override def subscriptionDemandRepo: SubscriptionDemandRepo = _subscriptionDemandRepo
+
+  override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -848,6 +867,17 @@ extends PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](env, r
   override def extractId(value: SubscriptionDemand): String = value.id.value
 }
 
+class PostgresTenantStepValidatorRepo(env: Env,
+                                           reactivePg: ReactivePg,
+                                           tenant: TenantId)
+extends PostgresTenantAwareRepo[StepValidator, DatastoreId](env, reactivePg, tenant) {
+  override def tableName: String = "step_validators"
+
+  override def format: Format[StepValidator] = json.StepValidatorFormat
+
+  override def extractId(value: StepValidator): String = value.id.value
+}
+
 class PostgresTenantCmsPageRepo(env: Env,
                                 reactivePg: ReactivePg,
                                 tenant: TenantId)
@@ -1025,13 +1055,22 @@ class PostgresOperationRepo(env: Env, reactivePg: ReactivePg)
   override def extractId(value: Operation): String = value.id.value
 }
 
-class PostgresSubscriptionDemand(env: Env, reactivePg: ReactivePg)
+class PostgresSubscriptionDemandRepo(env: Env, reactivePg: ReactivePg)
   extends PostgresRepo[SubscriptionDemand, SubscriptionDemandId](env, reactivePg) {
   override def tableName: String = "subscription_demands"
 
   override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
 
   override def extractId(value: SubscriptionDemand): String = value.id.value
+}
+
+class PostgresStepValidatorRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[StepValidator, DatastoreId](env, reactivePg) {
+  override def tableName: String = "step_validators"
+
+  override def format: Format[StepValidator] = json.StepValidatorFormat
+
+  override def extractId(value: StepValidator): String = value.id.value
 }
 
 class PostgresApiRepo(env: Env, reactivePg: ReactivePg)

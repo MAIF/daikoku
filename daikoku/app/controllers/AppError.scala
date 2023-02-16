@@ -26,10 +26,12 @@ object AppError {
   case object ForbiddenAction extends AppError
   case object OtoroshiSettingsNotFound extends AppError
   case object NotificationNotFound extends AppError
+  case object SubscriptionDemandNotFound extends AppError
+  case object SubscriptionDemandClosed extends AppError
   case object TeamUnauthorized extends AppError
-  case object ApiUnauthorized extends AppError with Product with Serializable
-  case object PlanUnauthorized extends AppError with Product with Serializable
-  case object PlanNotFound extends AppError with Product with Serializable
+  case object ApiUnauthorized extends AppError
+  case object PlanUnauthorized extends AppError
+  case object PlanNotFound extends AppError
   case object ApiNotLinked extends AppError
   case class UserNotTeamAdmin(userId: String, teamId: String) extends AppError
   case class OtoroshiError(message: JsObject) extends AppError
@@ -64,6 +66,8 @@ object AppError {
     case TenantNotFound           => NotFound(toJson(error))
     case UserNotFound             => NotFound(toJson(error))
     case NotificationNotFound     => NotFound(toJson(error))
+    case SubscriptionDemandNotFound  => NotFound(toJson(error))
+    case SubscriptionDemandClosed => Forbidden(toJson(error))
     case OtoroshiSettingsNotFound => NotFound(toJson(error))
     case TeamUnauthorized         => play.api.mvc.Results.Unauthorized(toJson(error))
     case TeamForbidden            => play.api.mvc.Results.Forbidden(toJson(error))
@@ -114,6 +118,8 @@ object AppError {
           case TenantNotFound           => "Tenant not found"
           case UserNotFound             => "User not found"
           case NotificationNotFound     => "Notification not found"
+          case SubscriptionDemandNotFound  => "SubscriptionDemand not found"
+          case SubscriptionDemandClosed => "SubscriptionDemand is closed"
           case OtoroshiSettingsNotFound => "Otoroshi settings not found"
           case TeamUnauthorized         => "You're not authorized on this team"
           case ApiUnauthorized          => "You're not authorized on this api"

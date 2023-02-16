@@ -11,7 +11,6 @@ import fr.maif.otoroshi.daikoku.actions.{
   DaikokuTenantAction
 }
 import fr.maif.otoroshi.daikoku.ctrls._
-import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.getSchema
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._

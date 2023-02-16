@@ -133,7 +133,7 @@ class ApiService(env: Env,
                      customMaxPerSecond: Option[Long] = None,
                      customMaxPerDay: Option[Long] = None,
                      customMaxPerMonth: Option[Long] = None,
-                     customReadOnly: Option[Boolean] = None): Future[Either[AppError, JsObject]] = {
+                     customReadOnly: Option[Boolean] = None): Future[Either[AppError, ApiSubscription]] = {
     val defaultPlanOpt =
       api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
     val askedUsagePlan = api.possibleUsagePlans.find(p => p.id.value == planId)
@@ -143,7 +143,7 @@ class ApiService(env: Env,
 
     def createKey(api: Api, plan: UsagePlan, team: Team, authorizedEntities: AuthorizedEntities, parentSubscriptionId: Option[ApiSubscriptionId])(
       implicit otoroshiSettings: OtoroshiSettings
-    ): Future[Either[AppError, JsObject]] = {
+    ): Future[Either[AppError, ApiSubscription]] = {
       import cats.implicits._
 
       EitherT(parentSubscriptionId match {
@@ -226,18 +226,17 @@ class ApiService(env: Env,
 
             for {
               _ <- otoroshiApiKeyActionResult
-              apiTeam <- EitherT.fromOptionF(ev.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team), AppError.TeamNotFound)
-              //todo: create key after all subscription validation ended
               _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo
                 .forTenant(tenant.id)
                 .save(apiSubscription))
               //todo: start checkout session if plan is paied plan with payment settings
+//              apiTeam <- EitherT.fromOptionF(ev.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team), AppError.TeamNotFound)
 //              _ <- paymentClient.checkoutSubscription(tenant, apiSubscription, plan, api, team, apiTeam, user)
-            } yield Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
+            } yield apiSubscription
         }.value
     }
 
-    def createAdminKey(api: Api, plan: UsagePlan): Future[Either[AppError, JsObject]] = {
+    def createAdminKey(api: Api, plan: UsagePlan): Future[Either[AppError, ApiSubscription]] = {
       import cats.implicits._
       // TODO: verify if group is in authorized groups (if some)
 
@@ -263,7 +262,7 @@ class ApiService(env: Env,
         integrationToken = IdGenerator.token(64)
       )
 
-      val r: EitherT[Future, AppError, JsObject] = for {
+      val r: EitherT[Future, AppError, ApiSubscription] = for {
         _ <- EitherT.liftF(
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
@@ -271,9 +270,7 @@ class ApiService(env: Env,
         _ <- EitherT.liftF(
           env.dataStore.tenantRepo.save(tenant.copy(adminSubscriptions = tenant.adminSubscriptions :+ apiSubscription.id))
         )
-      } yield {
-        Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
-      }
+      } yield apiSubscription
 
       r.value
     }

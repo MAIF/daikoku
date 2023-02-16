@@ -1,14 +1,18 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiSubscriptionDemand
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
+import play.api.mvc.Result
+import play.api.mvc.Results.Redirect
 
 import scala.concurrent.Future
 
@@ -63,39 +67,39 @@ class PaymentClient(
         )
     }
 
-  def checkoutSubscription(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      api: Api,
-      team: Team,
-      apiTeam: Team,
-      user: User
-  ): EitherT[Future, AppError, String] =
-    plan.paymentSettings match {
-      case Some(settings) =>
-        settings match {
-          case p: PaymentSettings.Stripe =>
-            implicit val stripeSettings: StripeSettings =
-              tenant.thirdPartyPaymentSettings
-                .find(_.id == p.thirdPartyPaymentSettingsId)
-                .get
-                .asInstanceOf[StripeSettings]
-            createStripeCheckoutSession(
-              tenant,
-              api,
-              team,
-              apiTeam,
-              subscription,
-              p,
-              user
-            )
-        }
-      case None =>
-        EitherT.leftT[Future, String](
-          AppError.ThirdPartyPaymentSettingsNotFound
+  def checkoutSubscription(tenant: Tenant,
+                           subscriptionDemand: SubscriptionDemand
+                          ): EitherT[Future, AppError, Result] = {
+    for {
+      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(subscriptionDemand.api), AppError.ApiNotFound)
+      apiTeam <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team), AppError.TeamNotFound)
+      team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscriptionDemand.team), AppError.TeamNotFound)
+      user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(subscriptionDemand.from), AppError.UserNotFound)
+      plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscriptionDemand.plan), AppError.PlanNotFound)
+      settings <- EitherT.fromOption[Future](plan.paymentSettings, AppError.ThirdPartyPaymentSettingsNotFound)
+      checkoutUrl <- createSessionCheckout(tenant, api, team, apiTeam, subscriptionDemand, settings, user)
+    } yield Redirect(checkoutUrl)
+  }
+
+  def createSessionCheckout(tenant: Tenant, api: Api, team: Team, apiTeam: Team, demand: SubscriptionDemand, settings: PaymentSettings, user: User) = {
+    settings match {
+      case p: PaymentSettings.Stripe =>
+        implicit val stripeSettings: StripeSettings =
+          tenant.thirdPartyPaymentSettings
+            .find(_.id == p.thirdPartyPaymentSettingsId)
+            .get
+            .asInstanceOf[StripeSettings]
+        createStripeCheckoutSession(
+          tenant,
+          api,
+          team,
+          apiTeam,
+          demand,
+          p,
+          user
         )
     }
+  }
 
   def postStripePrice(
       body: Map[String, String]
@@ -234,7 +238,7 @@ class PaymentClient(
       api: Api,
       team: Team,
       apiTeam: Team,
-      subscription: ApiSubscription,
+      subscriptionDemand: SubscriptionDemand,
       settings: PaymentSettings.Stripe,
       user: User
   )(implicit
@@ -242,11 +246,11 @@ class PaymentClient(
   ): EitherT[Future, AppError, String] = {
     //todo: success url must be just an UI to explain how does it work
     val baseBody = Map(
-      "metadata[tenant]" -> subscription.tenant.value,
-      "metadata[api]" -> subscription.api.value,
-      "metadata[team]" -> subscription.team.value,
-      "metadata[plan]" -> subscription.plan.value,
-      "metadata[subscription]" -> subscription.id.value,
+      "metadata[tenant]" -> subscriptionDemand.tenant.value,
+      "metadata[api]" -> subscriptionDemand.api.value,
+      "metadata[team]" -> subscriptionDemand.team.value,
+      "metadata[plan]" -> subscriptionDemand.plan.value,
+      "metadata[subscription_demand]" -> subscriptionDemand.id.value,
       "line_items[0][price]" -> settings.priceIds.basePriceId,
       "line_items[0][quantity]" -> "1",
       "mode" -> "subscription",

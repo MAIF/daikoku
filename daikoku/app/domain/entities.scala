@@ -117,6 +117,10 @@ case class SubscriptionDemandId(value: String) extends ValueType with CanJson[Su
   def asJson: JsValue = JsString(value)
 }
 
+case class SubscriptionDemandStepId(value: String) extends ValueType with CanJson[SubscriptionDemandStepId] {
+  def asJson: JsValue = JsString(value)
+}
+
 case class Translation(id: DatastoreId,
                        tenant: TenantId,
                        language: String,

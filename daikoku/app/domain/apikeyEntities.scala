@@ -175,23 +175,29 @@ case class ApiKeyBilling(hits: Long, total: BigDecimal)
 
 sealed trait SubscriptionDemandState {
   def name: String
+  def isClosed: Boolean
 }
 
 object SubscriptionDemandState {
   case object Accepted extends SubscriptionDemandState {
     def name: String = "accepted"
+    def isClosed: Boolean = true
   }
   case object Refused extends SubscriptionDemandState {
     def name: String = "refused"
+    def isClosed: Boolean = true
   }
   case object Cancelled extends SubscriptionDemandState {
     def name: String = "cancelled"
+    def isClosed: Boolean = true
   }
   case object InProgress extends SubscriptionDemandState {
     def name: String = "inProgress"
+    def isClosed: Boolean = false
   }
   case object Waiting extends SubscriptionDemandState {
     def name: String = "waiting"
+    def isClosed: Boolean = false
   }
 
   val values: Seq[SubscriptionDemandState] =
@@ -212,9 +218,29 @@ case class SubscriptionDemand(id: SubscriptionDemandId,
                               deleted: Boolean = false,
                               api: ApiId,
                               plan: UsagePlanId,
-                              step: Int,
-                              token: String = IdGenerator.token(32),
-                              state: SubscriptionDemandState = SubscriptionDemandState.Waiting)
+                              steps: Seq[SubscriptionDemandStep],
+                              state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
+                              team: TeamId,
+                              from: UserId)
   extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }
+
+case class SubscriptionDemandStep(id: SubscriptionDemandStepId,
+                                  state: SubscriptionDemandState,
+                                  step: ValidationStep,
+                                  metadata: JsObject = Json.obj())
+  extends CanJson[SubscriptionDemandStep] {
+  override def asJson: JsValue = json.SubscriptionDemandStepFormat.writes(this)
+}
+
+case class StepValidator(id: DatastoreId,
+                         tenant: TenantId,
+                         deleted: Boolean = false,
+                         token: String,
+                         step: SubscriptionDemandStepId,
+                         subscriptionDemand: SubscriptionDemandId)
+  extends CanJson[StepValidator] {
+  override def asJson: JsValue = json.StepValidatorFormat.writes(this)
+}
+

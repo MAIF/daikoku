@@ -489,6 +489,16 @@ object json {
 
     override def writes(o: SubscriptionDemandId): JsValue = JsString(o.value)
   }
+  val SubscriptionDemandStepIdFormat = new Format[SubscriptionDemandStepId] {
+    override def reads(json: JsValue): JsResult[SubscriptionDemandStepId] =
+      Try {
+        JsSuccess(SubscriptionDemandStepId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: SubscriptionDemandStepId): JsValue = JsString(o.value)
+  }
   val TeamTypeFormat = new Format[TeamType] {
     override def reads(json: JsValue) = json.as[String] match {
       case "Personal"     => JsSuccess(Personal)
@@ -2371,8 +2381,32 @@ object json {
     )
   }
 
+  val SubscriptionDemandStateFormat = new Format[SubscriptionDemandState] {
+    override def reads(json: JsValue) = json.as[String] match {
+      case "waiting" => JsSuccess(SubscriptionDemandState.Waiting)
+      case "inProgress" => JsSuccess(SubscriptionDemandState.InProgress)
+      case "cancelled" => JsSuccess(SubscriptionDemandState.Cancelled)
+      case "accepted" => JsSuccess(SubscriptionDemandState.Accepted)
+      case "refused" => JsSuccess(SubscriptionDemandState.Refused)
+      case str => JsError(s"Bad SubscriptionDemandState value: $str")
+    }
+
+    override def writes(o: SubscriptionDemandState) = JsString(o.name)
+  }
+
+
   val SubscriptionDemandFormat = new Format[SubscriptionDemand] {
-    override def writes(o: SubscriptionDemand): JsValue = ???
+    override def writes(o: SubscriptionDemand): JsValue = Json.obj(
+      "_id" -> o.id.asJson,
+      "_tenant" -> o.tenant.asJson,
+      "_deleted" -> o.deleted,
+      "api" -> o.api.asJson,
+      "plan" -> o.plan.asJson,
+      "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
+      "state" -> o.state.name,
+      "team" -> o.team.asJson,
+      "from" -> o.from.asJson,
+    )
 
     override def reads(json: JsValue): JsResult[SubscriptionDemand] = Try {
       JsSuccess(
@@ -2382,8 +2416,62 @@ object json {
           deleted = (json \ "_deleted").as[Boolean],
           api = (json \ "api").as(ApiIdFormat),
           plan = (json \ "plan").as(UsagePlanIdFormat),
-          step = (json \ "step").as[Int],
-          token = (json \ "token").as[String]
+          steps = (json \ "steps").as(SeqSubscriptionDemanStepFormat),
+          state = (json \ "state").as(SubscriptionDemandStateFormat),
+          team = (json \ "team").as(TeamIdFormat),
+          from = (json \ "from").as(UserIdFormat),
+        )
+      )
+    } recover {
+      case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+    } get
+  }
+
+  val SubscriptionDemandStepFormat = new Format[SubscriptionDemandStep] {
+    override def writes(o: SubscriptionDemandStep): JsValue = Json.obj(
+      "_id" -> o.id.asJson,
+      "state" -> o.state.name,
+      "step" -> ValidationStepFormat.writes(o.step),
+      "metadata" -> o.metadata
+    )
+
+    override def reads(json: JsValue): JsResult[SubscriptionDemandStep] = Try {
+      JsSuccess(
+        SubscriptionDemandStep(
+          id = (json \ "_id").as(SubscriptionDemandStepIdFormat),
+          state = (json \ "state").as(SubscriptionDemandStateFormat),
+          step = (json \ "step").as(ValidationStepFormat),
+          metadata = (json \ "metadata").as[JsObject]
+        )
+      )
+    } recover {
+      case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+    } get
+  }
+
+  val StepValidatorFormat = new Format[StepValidator] {
+    override def writes(o: StepValidator): JsValue = Json.obj(
+      "_id" -> o.id.asJson,
+      "-tenant" -> o.tenant.asJson,
+      "_deleted" -> o.deleted,
+      "token" -> o.token,
+      "step" -> o.step.asJson,
+      "subscriptionDemand" -> o.subscriptionDemand.asJson
+    )
+
+    override def reads(json: JsValue): JsResult[StepValidator] = Try {
+      JsSuccess(
+        StepValidator(
+          id = (json \ "_id").as(DatastoreIdFormat),
+          tenant = (json \ "_tenant").as(TenantIdFormat),
+          deleted = (json \ "_deleted").as[Boolean],
+          token = (json \ "token").as[String],
+          step = (json \ "step").as(SubscriptionDemandStepIdFormat),
+          subscriptionDemand = (json \ "subscriptionDemand").as(SubscriptionDemandIdFormat)
         )
       )
     } recover {
@@ -3800,7 +3888,9 @@ object json {
       Writes.seq(ApiDocumentationDetailPageFormat))
   val SeqThirdPartyPaymentSettingsFormat: Format[Seq[ThirdPartyPaymentSettings]] =
     Format(Reads.seq(ThirdPartyPaymentSettingsFormat), Writes.seq(ThirdPartyPaymentSettingsFormat))
-val SeqValidationStepFormat: Format[Seq[ValidationStep]] =
+  val SeqValidationStepFormat: Format[Seq[ValidationStep]] =
     Format(Reads.seq(ValidationStepFormat), Writes.seq(ValidationStepFormat))
+  val SeqSubscriptionDemanStepFormat =
+    Format(Reads.seq(SubscriptionDemandStepFormat), Writes.seq(SubscriptionDemandStepFormat))
 
 }

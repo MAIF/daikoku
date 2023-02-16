@@ -321,6 +321,8 @@ trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
 
 trait SubscriptionDemandRepo extends TenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
 
+trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId]
+
 trait DataStore {
   def start(): Future[Unit]
 
@@ -367,6 +369,8 @@ trait DataStore {
   def evolutionRepo: EvolutionRepo
 
   def subscriptionDemandRepo: SubscriptionDemandRepo
+
+  def stepValidatorRepo: StepValidatorRepo
 
   def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,
