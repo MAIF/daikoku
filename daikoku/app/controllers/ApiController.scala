@@ -373,6 +373,10 @@ class ApiController(
             )
           )
       )
+      adminTeam <- EitherT.fromOptionF(
+        env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(api.team),
+        AppError.TeamNotFound.render()
+      )
       pendingRequests <- value
       subscriptions <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
@@ -389,9 +393,14 @@ class ApiController(
             .intersect(myTeams.map(_.id))
             .nonEmpty) && (api.published || myTeams.exists(_.id == api.team))) {
         val betterApi = api
-          .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p =>
-            p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams
-              .exists(_.id == api.team)))
+          .copy(possibleUsagePlans = api.possibleUsagePlans
+            .filter(p =>
+              (ctx.user.isDaikokuAdmin || adminTeam.users.exists(u => ctx.user.id == u.userId)) ||
+                (p.otoroshiTarget.nonEmpty &&
+                  p.otoroshiTarget.exists(target => target.authorizedEntities.exists(entities => entities.groups.nonEmpty || entities.routes.nonEmpty || entities.services.nonEmpty))))
+            .filter(p =>
+              p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams
+                .exists(_.id == api.team)))
           .asJson
           .as[JsObject] ++ Json.obj(
           "pendingRequests" -> JsArray(

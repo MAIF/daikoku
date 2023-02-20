@@ -176,6 +176,7 @@ export const FastApiList = (props: FastApiListProps) => {
                             showPlan={togglePlan}
                             showApiKey={toggleApiKey}
                             planResearch={planResearch}
+                            setReasonSub={setReasonSub}
                           />
                         }
                       </div>
@@ -197,6 +198,7 @@ export const FastApiList = (props: FastApiListProps) => {
                   options={[5, 10, 20].map((x) => ({ label: translate({ key: 'Show.results', replacements: [`${x}`] }), value: x }))}
                   onChange={(e) => changeNbOfApis(e!.value)}
                   classNamePrefix="reactSelect"
+                  menuPlacement="top"
                 />
                 <div className="flex-grow-1 d-flex justify-content-center">
                   <Pagination
@@ -240,22 +242,6 @@ export const FastApiList = (props: FastApiListProps) => {
                 localStorage.setItem('selectedTeam', JSON.stringify(e!.value));
               }}
               classNamePrefix="reactSelect"
-            />
-          </div>
-          <div className="section p-3 mb-2">
-            <h5>
-              <i className="fas fa-envelope me-2" />
-              {translate('fastMode.reasonSubscription.title')}
-            </h5>
-            <textarea
-              className="form-control"
-              rows={4}
-              placeholder={translate('fastMode.input.reasonSubscription')}
-              aria-label={translate('fastMode.input.reasonSubscription')}
-              value={reasonSub}
-              onChange={(e) => {
-                setReasonSub(e.target.value);
-              }}
             />
           </div>
           <FastItemView viewMode={viewMode} planInfo={planInfo} subscriptions={subscriptions} />

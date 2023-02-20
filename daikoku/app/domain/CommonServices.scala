@@ -7,7 +7,6 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -90,44 +89,36 @@ object CommonServices {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
       for {
         subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
-        subsApisFilter =
-          if (apiSubOnly) { //todo: debug this request
-            Json.obj("$or" -> Json.arr(
-              Json.obj("visibility" -> "Public"),
-              Json.obj("authorizedTeams" -> teamId),
-              Json.obj("team" -> teamId),
-            ), "parent" -> JsNull, "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value)))), "name" -> Json.obj("$regex" -> research))
-          } else {
-            Json.obj("$or" -> Json.arr(
-              Json.obj("visibility" -> "Public"),
-              Json.obj("authorizedTeams" -> teamId),
-              Json.obj("team" -> teamId),
-            ), "parent" -> JsNull, "name" -> Json.obj("$regex" -> research))
-          }
-        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(subsApisFilter, offset, limit, Some(Json.obj("name" -> 1)))
-        allApisFilter =
-          if (apiSubOnly) {
-            Json.obj(
-              "_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))),
-              "_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))
-            )
-        } else {
-          Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))))
-        }
-        allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter, sort = Some(Json.obj("name" -> 1)))
+        subsOnlyFilter = if (apiSubOnly) Json.obj("_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))) else Json.obj()
+        apiFilter = Json.obj("$or" -> Json.arr(
+          Json.obj("visibility" -> "Public"),
+          Json.obj("authorizedTeams" -> teamId),
+          Json.obj("team" -> teamId),
+        ),
+          "published" -> true,
+          "_deleted" -> false,
+          "parent" -> JsNull, //FIXME : could be a problem if parent is not published
+          "name" -> Json.obj("$regex" -> research))
+        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(apiFilter ++ subsOnlyFilter, offset, limit, Some(Json.obj("name" -> 1)))
+        allApisFilter = Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))), "published" -> true)
+        allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter ++ subsOnlyFilter, sort = Some(Json.obj("name" -> 1)))
+        teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))))
         notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
           "action.type" -> "ApiSubscription",
           "status.status" -> "Pending"
         ))
-
       } yield {
         AccessibleApisWithNumberOfApis(
           allApis
             .map(api => {
               def filterPrivatePlan(plan: UsagePlan, api: Api, teamId: String): Boolean = plan.visibility != UsagePlanVisibility.Private || api.team.value == teamId ||  plan.authorizedTeams.contains(TeamId(teamId))
+              def filterUnlinkedPlan(plan: UsagePlan): Boolean = (ctx.user.isDaikokuAdmin || teams.exists(team => team.id == api.team && team.users.exists(u => ctx.user.id == u.userId))) ||
+                (plan.otoroshiTarget.nonEmpty &&
+                  plan.otoroshiTarget.exists(target => target.authorizedEntities.exists(entities => entities.groups.nonEmpty || entities.routes.nonEmpty || entities.services.nonEmpty)))
               ApiWithSubscriptions(
-                api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => filterPrivatePlan(p, api, teamId))),
+                api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(filterUnlinkedPlan).filter(p => filterPrivatePlan(p, api, teamId))),
                 api.possibleUsagePlans
+                  .filter(filterUnlinkedPlan)
                   .filter(p => filterPrivatePlan(p, api, teamId))
                   .map(plan => {
                     SubscriptionsWithPlan(plan.id.value,
@@ -182,9 +173,6 @@ object CommonServices {
                   "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
                   "status.status" -> "Pending")
               )
-
-
-
             paginateApis <- apiRepo.findWithPagination(Json.obj("$or" -> Json.arr(
               Json.obj("visibility" -> "Public"),
               if (user.isGuest) Json.obj() else Json.obj("visibility" -> "PublicWithAuthorizations"),

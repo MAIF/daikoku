@@ -137,7 +137,7 @@ object Helper {
 
             case Some((key: String, _: JsValue)) if key == "$regex" =>
               (
-                s"content->>${getParam(params.size)} ~ ${getParam(params.size + 1)}",
+                s"content->>${getParam(params.size)} ~* ${getParam(params.size + 1)}",
                 params ++ Seq(field._1, value.fields.head._2.as[String])
               )
 

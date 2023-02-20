@@ -13,6 +13,7 @@ import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISub
 import { INotification } from '../../../types';
 import {
   access,
+  api,
   apikey, Can, manage,
   Option, renderPlanInfo, renderPricing
 } from '../../utils';
@@ -56,7 +57,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     const askForApikeys = (teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription) => {
       if (plan.subscriptionProcess === "Automatic") {
         props.askForApikeys({ teams, plan: plan, apiKey })
-      } else (
+      } else {
         openFormModal<{ motivation: string }>({
           title: translate('motivations.modal.title'),
           schema: {
@@ -72,7 +73,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           onSubmit: ({ motivation }) => props.askForApikeys({ teams, plan, apiKey, motivation }),
           actionLabel: translate('Send')
         })
-      )
+      }
     }
 
     Services.getAllTeamSubscriptions(teams[0])
@@ -92,9 +93,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             return { subscription, api, plan };
           })
 
-        const filteredApiKeys = int.filter(
-          (infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
-            plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
+        const filteredApiKeys = int.filter((infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
+          plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
         )
           .map((infos) => infos.subscription);
 
@@ -140,6 +140,10 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   let pricing = renderPricing(plan, translate)
 
+  const otoroshiTargetIsDefined = !!plan.otoroshiTarget;
+  const otoroshiEntitiesIsDefined = otoroshiTargetIsDefined && (!!plan.otoroshiTarget?.authorizedEntities.groups.length ||
+    !!plan.otoroshiTarget?.authorizedEntities.routes.length ||
+    !!plan.otoroshiTarget?.authorizedEntities.services.length);
 
   return (
     <div className="card mb-4 shadow-sm">
@@ -179,59 +183,56 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               <Translation i18nkey="Request in progress">Request in progress</Translation>
             </button>
           )}
-          {(!isAccepted || props.api.visibility === 'AdminOnly') && props.api.published && (
-            <Can
-              I={access}
-              a={apikey}
-              teams={authorizedTeams.filter(
-                (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
-              )}
-            >
-              {props.api.visibility !== 'AdminOnly' && (
-                <Can
-                  I={manage}
-                  a={apikey}
-                  teams={authorizedTeams.filter((team) => team._id === props.ownerTeam._id)}
-                >
-                  {!plan.otoroshiTarget && (
-                    <span className="badge bg-danger">{translate('otoroshi.missing.target')}</span>
-                  )}
-                </Can>
-              )}
-              {(props.api.visibility === 'AdminOnly' ||
-                (plan.otoroshiTarget && !isAccepted && !isPending)) && (
-                  <ActionWithTeamSelector
-                    title={translate('team.selection.title')}
-                    description={translate(
-                      plan.subscriptionProcess === 'Automatic'
-                        ? 'team.selection.desc.get'
-                        : 'team.selection.desc.request')}
-                    teams={authorizedTeams
-                      .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-                      .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
-                      .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-                    pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
-                    acceptedTeams={props.subscriptions
-                      .filter((f) => !f._deleted)
-                      .map((subs) => subs.team)}
-                    allowMultipleDemand={plan.allowMultipleKeys}
-                    allTeamSelector={false}
-                    action={(teams) => showApiKeySelectModal(teams)}
-                    actionLabel={translate(plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key')}
-                  >
-                    <button type="button" className="btn btn-sm btn-access-negative col-12">
-                      <Translation
-                        i18nkey={
-                          plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
-                        }
-                      >
-                        {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
-                      </Translation>
-                    </button>
-                  </ActionWithTeamSelector>
-                )}
-            </Can>
+          {!otoroshiTargetIsDefined && props.api.visibility !== 'AdminOnly' && (
+            <span className="badge bg-danger">{translate('otoroshi.missing.target')}</span>
           )}
+          {!otoroshiEntitiesIsDefined && props.api.visibility !== 'AdminOnly' && (
+            <span className="badge bg-danger">{translate('otoroshi.missing.entities')}</span>
+          )}
+          {(otoroshiTargetIsDefined && otoroshiEntitiesIsDefined || props.api.visibility === 'AdminOnly') &&
+            (!isAccepted || props.api.visibility === 'AdminOnly') &&
+            props.api.published && (
+              <Can
+                I={access}
+                a={apikey}
+                teams={authorizedTeams.filter(
+                  (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
+                )}
+              >
+                {(props.api.visibility === 'AdminOnly' ||
+                  (plan.otoroshiTarget && !isAccepted && !isPending)) && (
+                    <ActionWithTeamSelector
+                      title={translate('team.selection.title')}
+                      description={translate(
+                        plan.subscriptionProcess === 'Automatic'
+                          ? 'team.selection.desc.get'
+                          : 'team.selection.desc.request')}
+                      teams={authorizedTeams
+                        .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+                        .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
+                        .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+                      pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
+                      acceptedTeams={props.subscriptions
+                        .filter((f) => !f._deleted)
+                        .map((subs) => subs.team)}
+                      allowMultipleDemand={plan.allowMultipleKeys}
+                      allTeamSelector={false}
+                      action={(teams) => showApiKeySelectModal(teams)}
+                      actionLabel={translate(plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key')}
+                    >
+                      <button type="button" className="btn btn-sm btn-access-negative col-12">
+                        <Translation
+                          i18nkey={
+                            plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
+                          }
+                        >
+                          {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
+                        </Translation>
+                      </button>
+                    </ActionWithTeamSelector>
+                  )}
+              </Can>
+            )}
           {connectedUser.isGuest && (
             <button
               type="button"
