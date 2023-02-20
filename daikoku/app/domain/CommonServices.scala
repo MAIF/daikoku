@@ -7,7 +7,6 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -131,22 +130,42 @@ object CommonServices {
     }
   }
 
-  def getVisibleApis[A](teamId: Option[String] = None)
-                       (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[Seq[ApiWithAuthorizations], AppError]] = {
+  def getVisibleApis[A](teamId: Option[String] = None, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, groupOpt: Option[String] = None)
+                       (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[ApiWithCount, AppError]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
+
+      val tagFilter = selectedTag match {
+        case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
+        case None => Json.obj()
+      }
+      val catFilter = selectedCat match {
+        case Some(_) => Json.obj("categories" -> selectedCat.map(JsString))
+        case None => Json.obj()
+      }
+
+
       val teamRepo = env.dataStore.teamRepo.forTenant(ctx.tenant)
+
+
       (teamId match {
         case None => teamRepo.findAllNotDeleted()
         case Some(id) => teamRepo.find(Json.obj("$or" -> Json.arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> id))))
       })
         .map(teams => if (ctx.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.user.id)))
         .flatMap(teams => {
+
           val teamFilter = if (teams.nonEmpty) Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))) else Json.obj()
           val tenant = ctx.tenant
           val user = ctx.user
+
           for {
             myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
             apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
+            groupFilter <- if (groupOpt.isDefined) apiRepo.findByIdNotDeleted(groupOpt.get).map {
+              case Some(api) => Json.obj("_id" -> Json.obj("$in" -> JsArray(api.apis.map(apiIds => apiIds.map(_.asJson)).getOrElse(Set.empty).toSeq)))
+              case None => Json.obj()
+            } else FastFuture.successful(Json.obj())
+
             myCurrentRequests <- if (user.isGuest) FastFuture.successful(Seq.empty) else env.dataStore.notificationRepo
               .forTenant(tenant.id)
               .findNotDeleted(
@@ -154,20 +173,24 @@ object CommonServices {
                   "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
                   "status.status" -> "Pending")
               )
-            publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
-            almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(Json.obj("visibility" -> "PublicWithAuthorizations"))
-            privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-              Json.obj(
-                "visibility" -> "Private",
+            paginateApis <- apiRepo.findWithPagination(Json.obj("$or" -> Json.arr(
+              Json.obj("visibility" -> "Public"),
+              if (user.isGuest) Json.obj() else Json.obj("visibility" -> "PublicWithAuthorizations"),
+              if (user.isGuest) Json.obj() else Json.obj("visibility" -> "Private",
                 "$or" -> Json.arr(
                   Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))),
                   teamFilter
-                )) ++ teamFilter)
-            adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-              Json.obj("visibility" -> ApiVisibility.AdminOnly.name)
+                )),
+              if (!user.isDaikokuAdmin) Json.obj() else Json.obj("visibility" -> ApiVisibility.AdminOnly.name)
+            ), "name" -> Json.obj("$regex" -> research)
+              , "parent" -> JsNull) ++ tagFilter ++ catFilter ++ groupFilter
+              , offset, limit, Some(Json.obj("name" -> 1))
             )
+            uniqueApisWithVersion <- apiRepo.findNotDeleted(
+              Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(paginateApis._1.map(a => JsString(a.humanReadableId))))),
+              sort = Some(Json.obj("name" -> 1)))
           } yield {
-            val sortedApis: Seq[ApiWithAuthorizations] = (publicApis ++ almostPublicApis ++ privateApis)
+            val sortedApis: Seq[ApiWithAuthorizations] = ( uniqueApisWithVersion)
               .filter(api => api.published || myTeams.exists(api.team == _.id))
               .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
               .map(api => api
@@ -189,28 +212,41 @@ object CommonServices {
                   case _ => ApiWithAuthorizations(api = api)
                 })
               }
-
-            val apis: Seq[ApiWithAuthorizations] = if (user.isDaikokuAdmin)
-                  adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) => acc :+ ApiWithAuthorizations(
-                    api = api,
-                    authorizations = myTeams.foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
-                      acc :+ AuthorizationApi(
-                        team = team.id.value,
-                        authorized = user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id),
-                        pending = false
-                      )
-                    })
-                  } ++ sortedApis
-                else
-                  sortedApis
-
-              apis.groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
-                .map(res => res._2.head)
-                .toSeq
+            ApiWithCount(sortedApis, paginateApis._2)
               }
           })
         }
     }
+  def getAllTags(research: String)(implicit ctx: DaikokuActionContext[_], env: Env, ec: ExecutionContext): Future[Seq[String]]= {
+    for {
+      apis <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findAllNotDeleted()
+    } yield {
+      apis.flatMap(api => api.tags.toSeq.filter(tag => tag.indexOf(research) != -1)).foldLeft(Map.empty[String, Int])((map, tag) => {
+        val nbOfMatching = map.get(tag) match {
+          case Some(count) => count + 1
+          case None => 1
+        }
+        map + (tag -> nbOfMatching)
+
+      }).toSeq.sortBy(_._2).reverse.map(a => a._1).take(5)
+
+    }
+  }
+
+  def getAllCategories(research: String)(implicit ctx: DaikokuActionContext[_], env: Env, ec: ExecutionContext): Future[Seq[String]]= {
+    for{
+      apis <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findAllNotDeleted()
+    } yield {
+      apis.flatMap(api => api.categories.toSeq.filter(cat => cat.indexOf(research) != -1)).foldLeft(Map.empty[String, Int])((map, cat) => {
+        val nbOfMatching = map.get(cat) match {
+          case Some(count) => count + 1
+          case None => 1
+        }
+        map + (cat -> nbOfMatching)
+
+      }).toSeq.sortBy(_._2).reverse.map(a => a._1).take(5)
+    }
+  }
 
   case class ApiWithTranslation(api: Api, translation: JsObject)
 

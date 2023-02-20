@@ -11,9 +11,8 @@ import { MessagesContext } from '../../backoffice';
 
 import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';
 import { Companion } from './companions';
-import { isError, IState, IStateContext, ITeamSimple } from '../../../types';
-import { useQuery } from '@tanstack/react-query';
-import { Spinner } from '../Spinner';
+import { IState, IStateContext } from '../../../types';
+
 
 export const state = {
   opened: 'OPENED',

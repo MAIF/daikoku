@@ -43,12 +43,13 @@ export const FastApiList = (props: FastApiListProps) => {
   const [reasonSub, setReasonSub] = useState<string>("");
 
   const dataRequest = useQuery<{ apis: Array<IFastApi>, nb: number }>({
+
     queryKey: ["data", props.team._id, offset, seeApiSubscribed, nbOfApis, research],
     queryFn: ({ queryKey }) => {
       return client!.query<{ accessibleApis: { apis: Array<IFastApi>, nb: number } }>({
         query: Services.graphql.getApisWithSubscription,
         fetchPolicy: "no-cache",
-        variables: { teamId: queryKey[1], limit: nbOfApis, apisubonly: seeApiSubscribed, offset: page, research: research }
+        variables: { teamId: queryKey[1], limit: queryKey[4], apisubonly: queryKey[3], offset: queryKey[2], research: queryKey[5] }
       }).then(({ data: { accessibleApis } }) => {
         return accessibleApis
       }
@@ -102,12 +103,14 @@ export const FastApiList = (props: FastApiListProps) => {
 
   const handleChange = (e) => {
     setPage(0)
+    setOffset(0)
     setResearch(e.target.value);
   };
 
   const debouncedResults = useMemo(() => {
     return debounce(handleChange, 500);
   }, []);
+
   useEffect(() => {
     return () => {
       debouncedResults.cancel();
@@ -121,11 +124,14 @@ export const FastApiList = (props: FastApiListProps) => {
   const changeNbOfApis = (data) => {
     setNbOfApis(data)
     setPage(0)
+    setOffset(0)
   }
   const changeSeeOnlySubscribedApis = (data) => {
     setSeeApiSubscribed(data)
     setPage(0)
+    setOffset(0)
   }
+
 
   return (
     <div className="container">
@@ -153,7 +159,7 @@ export const FastApiList = (props: FastApiListProps) => {
             </button>
           </div>
           {dataRequest.isLoading && <Spinner />}
-          {dataRequest.data && (
+          {dataRequest.data &&  (
             <div className="section pb-1">
               <div className="apis" style={{ maxHeight: '600px', overflowY: 'scroll', overflowX: 'hidden' }}>
                 {dataRequest.data.apis.map(({ api }) => {
@@ -203,7 +209,7 @@ export const FastApiList = (props: FastApiListProps) => {
                     pageCount={Math.ceil(dataRequest.data.nb / nbOfApis)}
                     marginPagesDisplayed={1}
                     pageRangeDisplayed={5}
-                    onPageChange={(data) => handlePageClick(data)}
+                    onPageChange={handlePageClick}
                     containerClassName={'pagination'}
                     pageClassName={'page-selector'}
                     forcePage={page}
@@ -230,6 +236,8 @@ export const FastApiList = (props: FastApiListProps) => {
               })}
               onChange={(e) => {
                 props.setTeam(e!.value)
+                setPage(0)
+                setOffset(0)
                 setViewMode('NONE')
                 localStorage.setItem('selectedTeam', JSON.stringify(e!.value));
               }}

@@ -1,6 +1,5 @@
-import { isPromiseLike } from 'xstate/lib/utils';
-import { TreeItem, TreeItems } from '../components/utils/dnd/types';
-import { IFastTeam, ITeamSimple } from './team';
+
+import { IFastTeam } from './team';
 
 interface IBaseApi {
   _id: string;
@@ -52,13 +51,29 @@ export interface IApi extends IBaseApi {
   team: string;
 }
 
-export interface IApiWithAuthorization extends IApiWithSimpleTeam {
+/*export interface IApiWithAuthorization extends IApiWithSimpleTeam {
+  authorizations: Array<{
+    team: string;
+    authorized: boolean;
+    pending: boolean;
+  }>;
+}*/
+
+export interface IApiWithAuthorization {
+  api: IApiWithSimpleTeam
   authorizations: Array<{
     team: string;
     authorized: boolean;
     pending: boolean;
   }>;
 }
+
+export interface IApiAuthoWithCount {
+  apis: Array<IApiWithAuthorization>
+  result: number
+
+}
+
 
 export interface ITesting {
   enabled: boolean;
@@ -109,7 +124,7 @@ export interface IBaseUsagePlan {
   customDescription?: string;
   customName?: string;
   subscriptionProcess: 'Automatic' | 'manual';
-  currency: ICurrency;
+  currency: ICurrency
   otoroshiTarget?: IOtoroshiTarget;
 }
 

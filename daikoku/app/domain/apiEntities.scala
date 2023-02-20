@@ -711,14 +711,16 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
 case class ApiWithAuthorizations(api: Api,
                                  authorizations: Seq[AuthorizationApi] =
                                    Seq.empty)
+case class ApiWithCount(apis: Seq[ApiWithAuthorizations],
+                        result: Long)
 case class SubscriptionsWithPlan(planId: String,
                                  isPending: Boolean,
                                  subscriptionsCount: Int)
-case class ApiWithSubscriptions(
-    api: Api,
-    subscriptionsWithPlan: Seq[SubscriptionsWithPlan])
+case class ApiWithSubscriptions(api: Api,
+                                subscriptionsWithPlan: Seq[SubscriptionsWithPlan])
 
 case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],
                                           nb: Long)
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
+

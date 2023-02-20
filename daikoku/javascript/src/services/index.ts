@@ -27,7 +27,6 @@ import {
   ISubscription,
   ResponseDone,
   IApiPost,
-  IApiDoc,
   ISubscriptionWithApiInfo,
 } from '../types/api';
 
@@ -1199,48 +1198,63 @@ export const graphql = {
       }
     `),
   myVisibleApis: gql(`
-    query AllVisibleApis ($teamId: String) {
-      visibleApis (teamId: $teamId) {
-        api {
-          name
-          _humanReadableId
-          _id
-          tags
-          categories
-          stars
-          smallDescription
-          isDefault
-          visibility
-          image
-          possibleUsagePlans {
-            _id
-            customName
-            currency {
-              code
-            }
-            type
-          }
-          currentVersion
-          team {
-            _id
-            _humanReadableId
+    query AllVisibleApis ($teamId: String, $research: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
+      visibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
+        apis {
+          api {
             name
-            avatar
-          }
-          apis {
-            api {
+            _humanReadableId
+            _id
+            tags
+            categories
+            stars
+            parent {
+              _id
+              currentVersion
+            }
+            smallDescription
+            isDefault
+            visibility
+            image
+            possibleUsagePlans {
+              _id
+              customName
+              currency {
+                code
+              }
+              type
+            }
+            currentVersion
+            team {
               _id
               _humanReadableId
               name
+              avatar
+            }
+            apis {
+              api {
+                _id
+                _humanReadableId
+                name
+              }
             }
           }
+          authorizations {
+            team
+            authorized
+            pending
+          }
         }
-        authorizations {
-          team
-          authorized
-          pending
-        }
+        result
       }
+    }`),
+  getAllTags: gql(`
+    query getAllTags ($research: String){
+      allTags (research: $research)
+    }`),
+  getAllCategories: gql(`
+    query getAllCategories ($research: String){
+      allCategories (research: $research)
     }`),
   getApisWithSubscription: gql(`
     query AccessibleApis ($teamId: String!, $research: String, $apisubonly: Boolean, $limit: Int, $offset: Int) {

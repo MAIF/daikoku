@@ -7,7 +7,7 @@ import { updateTeam } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { isError, IState, IStateContext, ITeamSimple } from '../../../types';
-import { ApiList } from '../../frontend';
+import { ApiList } from '../team';
 import { api as API, CanIDoAction, manage } from '../../utils';
 
 export const ApiGroupApis = ({
@@ -18,7 +18,6 @@ export const ApiGroupApis = ({
   const { connectedUser, apiCreationPermitted } = useSelector<IState, IStateContext>((s) => s.context);
   const dispatch = useDispatch();
 
-  const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
 
@@ -28,7 +27,6 @@ export const ApiGroupApis = ({
     if (!client) {
       return;
     }
-    setLoading(true);
     Promise.all([
       Services.teams(),
       client.query<{ myTeams: Array<ITeamSimple> }>({
@@ -50,7 +48,6 @@ export const ApiGroupApis = ({
           }: any) => ({ ...user, teamPermission })),
         }))
       );
-      setLoading(false);
     });
   }, [apiGroup]);
 
@@ -58,9 +55,7 @@ export const ApiGroupApis = ({
     navigate(`${api._humanReadableId}/${api.currentVersion}/description`);
   };
 
-  const redirectToTeamPage = (team: any) => {
-    navigate(`/${team._humanReadableId}`);
-  };
+
 
   const redirectToEditPage = (api: any) => {
     const adminTeam: any = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === (team as any)._id);
@@ -93,17 +88,13 @@ export const ApiGroupApis = ({
         </div>
       </section>
       <ApiList
-        apis={apiGroup.apis}
         teams={teams}
         myTeams={myTeams}
         teamVisible={true}
         redirectToApiPage={redirectToApiPage}
         redirectToEditPage={redirectToEditPage}
-        redirectToTeamPage={redirectToTeamPage}
-        showTeam={true}
         groupView={true}
-        toggleStar={(api) => Services.toggleStar(api._id)}
-        askForApiAccess={(api, teams) => Services.askForApiAccess(teams, api._id)}
+        apiGroupId={apiGroup._id}
       />
     </main>
   );
