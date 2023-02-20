@@ -866,7 +866,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false),
                 visibility = UsagePlanVisibility.Private
@@ -1050,7 +1050,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1119,7 +1119,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1253,7 +1253,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1369,7 +1369,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq(ValidationStep.TeamAdmin(defaultApi.team))),
+                subscriptionProcess = Seq(ValidationStep.TeamAdmin(defaultApi.team)),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -2428,7 +2428,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq(ValidationStep.TeamAdmin(defaultApi.team))),
+                subscriptionProcess =  Seq(ValidationStep.TeamAdmin(defaultApi.team)),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -2852,7 +2852,7 @@ class ApiControllerSpec()
                 allowMultipleKeys = Some(false),
                 visibility = Private,
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -2913,7 +2913,7 @@ class ApiControllerSpec()
                 allowMultipleKeys = Some(false),
                 visibility = Private,
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -2977,7 +2977,7 @@ class ApiControllerSpec()
             visibility = Public,
             authorizedTeams = Seq.empty,
             autoRotation = Some(false),
-            subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+            subscriptionProcess = Seq.empty,
             integrationProcess = IntegrationProcess.ApiKey
           )
         )
@@ -3061,7 +3061,7 @@ class ApiControllerSpec()
                 visibility = Private,
                 authorizedTeams = Seq(teamConsumerId),
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -3150,7 +3150,7 @@ class ApiControllerSpec()
                 visibility = Private,
                 authorizedTeams = Seq(teamConsumerId),
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )

@@ -914,7 +914,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -934,7 +934,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -956,7 +956,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -979,7 +979,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(true),
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -999,7 +999,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess(steps = Seq.empty),
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )

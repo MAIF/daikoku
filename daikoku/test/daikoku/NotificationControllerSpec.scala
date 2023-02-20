@@ -472,7 +472,7 @@ class NotificationControllerSpec()
                                Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
-            subscriptionProcess = SubscriptionProcess(steps = Seq(ValidationStep.TeamAdmin(defaultApi.team))),
+            subscriptionProcess = Seq(ValidationStep.TeamAdmin(defaultApi.team)),
             integrationProcess = IntegrationProcess.ApiKey,
             autoRotation = Some(false)
           )))),
@@ -527,7 +527,7 @@ class NotificationControllerSpec()
                                Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
-            subscriptionProcess = SubscriptionProcess(steps = Seq(ValidationStep.TeamAdmin(defaultApi.team))),
+            subscriptionProcess = Seq(ValidationStep.TeamAdmin(defaultApi.team)),
             integrationProcess = IntegrationProcess.ApiKey,
             autoRotation = Some(false)
           )))),
@@ -750,7 +750,7 @@ class NotificationControllerSpec()
                                Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
-            subscriptionProcess = SubscriptionProcess(steps = Seq(ValidationStep.TeamAdmin(defaultApi.team))),
+            subscriptionProcess = Seq(ValidationStep.TeamAdmin(defaultApi.team)),
             integrationProcess = IntegrationProcess.ApiKey,
             autoRotation = Some(false)
           )))),
@@ -805,7 +805,7 @@ class NotificationControllerSpec()
                                Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
-            subscriptionProcess = SubscriptionProcess(steps = Seq(ValidationStep.TeamAdmin(defaultApi.team))),
+            subscriptionProcess = Seq(ValidationStep.TeamAdmin(defaultApi.team)),
             integrationProcess = IntegrationProcess.ApiKey,
             autoRotation = Some(false)
           )))),

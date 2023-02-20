@@ -4203,4 +4203,7 @@ class ApiController(
         value.merge
       }
     }
+
+  def validateProcess() =
+    DaikokuActionMaybeWithGuest
 }
