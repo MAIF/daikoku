@@ -860,7 +860,7 @@ sealed trait ValidationStep {
 }
 
 object ValidationStep {
-  case class Email(emails: Seq[String]) extends ValidationStep {
+  case class Email(emails: Seq[String], template: Option[String]) extends ValidationStep {
     def name: String = "email"
   }
 

@@ -263,28 +263,27 @@ export const ApiHome = ({
         apiKey
           ? Services.extendApiKey(api!._id, apiKey._id, team, plan._id, motivation)
           : Services.askForApiKey(api!._id, team, plan._id, motivation)
-      ).then((results) => {
-        if (results.error) {
-          return toastr.error(translate('Error'), results.error);
-        }
-        return results.forEach((result: any) => {
-          if (result.error) {
-            return toastr.error(translate('Error'), result.error);
-          } else if (result.creation === 'done') {
-            const team: any = myTeams.find((t) => t._id === result.subscription.team);
+      ).then((result) => {
 
-            return toastr.success(
-              translate('Done'),
-              translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
-            );
-          } else if (result.creation === 'waiting') {
-            const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
-            return toastr.info(
-              translate('Pending request'),
-              translate({ key: 'subscription.plan.waiting', replacements: [planName, team.name] })
-            );
-          }
-        });
+        if (result.error) {
+          return toastr.error(translate('Error'), result.error);
+        } else if (result.checkoutUrl) {
+          window.location.href = result.checkoutUrl
+        } else if (result.creation === 'done') {
+          const team: any = myTeams.find((t) => t._id === result.subscription.team);
+
+          return toastr.success(
+            translate('Done'),
+            translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
+          );
+        } else if (result.creation === 'waiting') {
+          const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
+          return toastr.info(
+            translate('Pending request'),
+            translate({ key: 'subscription.plan.waiting', replacements: [planName, team.name] })
+          );
+        }
+
       })
         .then(() => updateSubscriptions(api._id));
     } else {

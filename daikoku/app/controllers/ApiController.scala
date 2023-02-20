@@ -1000,8 +1000,8 @@ class ApiController(
                   team = team.id,
                   from = user.id
                 )))
-              _ <- runSubscriptionProcess(demanId, ctx.tenant)
-            } yield Accepted(Json.obj("id" -> demanId.asJson))
+              result <- runSubscriptionProcess(demanId, ctx.tenant)
+            } yield result
         }
     }
   }
@@ -1011,7 +1011,20 @@ class ApiController(
 
     def runRightProcess(step: SubscriptionDemandStep, validator: StepValidator, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
       step.step match {
-        case ValidationStep.Email(emails) => EitherT.pure[Future, AppError](Ok(Json.obj("mails" -> emails))) //FIXME: sends mails
+        case ValidationStep.Email(emails, template) =>
+          implicit val currentLanguage: String = ctx.request.headers.toSimpleMap
+            .find(test => test._1 == "X-contact-language")
+            .map(h => h._2)
+            .orElse(ctx.tenant.defaultLanguage)
+            .getOrElse("en")
+
+          for {
+            title <- EitherT.liftF(translator.translate("mail.subscription.validation.title", ctx.tenant))
+            body <- EitherT.liftF(template.map(FastFuture.successful).getOrElse(translator.translate("mail.subscription.validation.body", ctx.tenant))) //todo add right injected value
+            _ <- EitherT.liftF(ctx.tenant.mailer.send(title, emails, body, ctx.tenant))
+          } yield {
+            Ok(Json.obj("mailSended" -> true))
+          }
         case ValidationStep.TeamAdmin(_) => notifyApiSubscription(
           tenantId = tenant.id,
           userId = demand.from,
@@ -1101,8 +1114,8 @@ class ApiController(
           }).flatten
         })))
     } yield Ok(Json.obj(
+      "notificationSended" -> true,
       "creation" -> "waiting",
-      "subscription" -> Json.obj("team" -> teamId.asJson, "plan" -> planId.asJson)
     ))
 
 
@@ -3994,7 +4007,7 @@ class ApiController(
         def addProcess(api: Api, plan: UsagePlan): EitherT[Future, AppError, Api] = {
           val updatedPlan: UsagePlan = (plan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty), plan.paymentSettings) match {
             case (true, None) => plan
-            case (true, Some(settings)) => plan.addSubscriptionStep(ValidationStep.Payment(settings.thirdPartyPaymentSettingsId)) //ajouter le proces de paiement
+            case (true, Some(settings)) => plan.addSubscriptionStep(ValidationStep.Payment(settings.thirdPartyPaymentSettingsId))
             case (false, Some(settings)) => plan
             .addSubscriptionStep(ValidationStep.Payment(settings.thirdPartyPaymentSettingsId))
             .addSubscriptionStep(ValidationStep.TeamAdmin(api.team), 0.some)

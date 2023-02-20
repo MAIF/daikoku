@@ -77,3 +77,14 @@ Please click on the following link to finalize your account creation process\
 <br/>\
 The [tenant] team
 tenant.mail.template=[email]
+mail.subscription.validation.title = Validate a subscription
+mail.subscription.validation.body = Hello,\
+    <br/>\
+    Somebody want to subscribe your API,\
+    <br>\
+    <div>\
+    [user] :\
+    <br>\
+    [body]\
+    </div>\
+<a href="[linkAccept]">Accept</a> or <a href="[linkReject]">Reject</a>

@@ -1,10 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiSubscriptionDemand
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -12,7 +10,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.mvc.Result
-import play.api.mvc.Results.Redirect
+import play.api.mvc.Results.Ok
 
 import scala.concurrent.Future
 
@@ -30,6 +28,7 @@ class PaymentClient(
 
   def getStripeProductName(api: Api, plan: UsagePlan) =
     s"${api.name}::${api.currentVersion.value}/${plan.customName.getOrElse(plan.typeName)}"
+
 
   def stripeClient(
       path: String
@@ -78,7 +77,7 @@ class PaymentClient(
       plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscriptionDemand.plan), AppError.PlanNotFound)
       settings <- EitherT.fromOption[Future](plan.paymentSettings, AppError.ThirdPartyPaymentSettingsNotFound)
       checkoutUrl <- createSessionCheckout(tenant, api, team, apiTeam, subscriptionDemand, settings, user)
-    } yield Redirect(checkoutUrl)
+    } yield Ok(Json.obj("checkoutUrl" -> checkoutUrl))
   }
 
   def createSessionCheckout(tenant: Tenant, api: Api, team: Team, apiTeam: Team, demand: SubscriptionDemand, settings: PaymentSettings, user: User) = {

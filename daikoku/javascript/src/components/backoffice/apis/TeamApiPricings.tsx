@@ -228,10 +228,8 @@ const CustomMetadataInput = (props: {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
       props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
+      //FIXME: add better info to user for the new subscription process
       alert({message: props.translate('custom.metadata.process.change.to.manual'), title: props.translate('Information')})
-      //FIXME: add info to user for the new subscription process
-      // props.setValue && props.setValue('subscriptionProcess', 'Manual');
-      // toastr.info(props.translate('Info'), props.translate('custom.metadata.process.change.to.manual'));
     }
   };
 
@@ -470,7 +468,7 @@ type Props = {
   injectSubMenu: (x: JSX.Element | null) => void
   openApiSelectModal?: () => void
 }
-type Tab = 'settings' | 'security' | 'payment'
+type Tab = 'settings' | 'security' | 'payment' | 'subscription-process'
 export const TeamApiPricings = (props: Props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
   const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
@@ -498,6 +496,10 @@ export const TeamApiPricings = (props: Props) => {
         {mode === possibleMode.edition && paidPlans.includes(planForEdition!.type) && (
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'payment' })}
             onClick={() => setSelectedTab('payment')}>Payment</span>
+        )}
+        {mode === possibleMode.edition && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'subscription-process' })}
+            onClick={() => setSelectedTab('subscription-process')}>Security</span>
         )}
         {mode === possibleMode.edition && (
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'security' })}
@@ -821,14 +823,7 @@ export const TeamApiPricings = (props: Props) => {
               help: translate('authorized.entities.help'),
             },
           },
-        },
-        subscriptionProcess: {
-          type: type.object,
-          array: true,
-          label: translate('Subscription process'),
-          defaultValue: []
-          //todo: add constraints to test presence of admin validation if custom metatada
-        },
+        }
       },
       flow: ['otoroshiTarget', 'subscriptionProcess'],
     },

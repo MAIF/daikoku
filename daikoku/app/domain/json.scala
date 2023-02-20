@@ -543,9 +543,10 @@ object json {
 
   val ValidationStepFormat = new Format[ValidationStep] {
     override def writes(o: ValidationStep): JsValue = o match {
-      case ValidationStep.Email(emails) => Json.obj(
+      case ValidationStep.Email(emails, template) => Json.obj(
         "type" -> "email",
-        "emails" -> emails
+        "emails" -> emails,
+        "template" -> template.map(JsString).getOrElse(JsNull).as[JsValue]
       )
       case ValidationStep.TeamAdmin(team) => Json.obj(
         "type" -> "teamAdmin",
@@ -559,7 +560,7 @@ object json {
 
 
     override def reads(json: JsValue): JsResult[ValidationStep] = (json \ "type").as[String] match {
-      case "email" => JsSuccess(ValidationStep.Email(emails = (json \ "emails").as[Seq[String]]))
+      case "email" => JsSuccess(ValidationStep.Email(emails = (json \ "emails").as[Seq[String]], template = (json \ "template").asOpt[String]))
       case "teamAdmin" => JsSuccess(ValidationStep.TeamAdmin(team = (json \ "team").as(TeamIdFormat)))
       case "payment" => JsSuccess(ValidationStep.Payment(thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat)))
       case str => JsError(s"Bad UsagePlanVisibility value: $str")
