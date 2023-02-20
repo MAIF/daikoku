@@ -2,10 +2,8 @@ package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -110,7 +108,8 @@ class GuestModeSpec()
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi = defaultApi.copy(id = ApiId("public"))
       val privateApi = defaultApi.copy(id = ApiId("private"),
-                                       visibility = ApiVisibility.Private)
+                                       visibility = ApiVisibility.Private,
+                                       name = "private api")
 
       setupEnvBlocking(
         tenants = Seq(publicTenant),
@@ -124,11 +123,14 @@ class GuestModeSpec()
         "POST",
         body = Some(
           Json.obj(
-            "query" -> """
-            |query AllVisibleApis {
-            |          visibleApis {
-            |            api {
-            |              _id
+            "variables" -> Json.obj("limit" -> 10, "offset" -> 0),
+            "query" -> s"""
+            |query AllVisibleApis ($$limit: Int, $$offset: Int) {
+            |          visibleApis (limit: $$limit, offset: $$offset){
+            |            apis {
+            |              api {
+            |                _id
+            |              }
             |            }
             |          }
             |        }
@@ -136,20 +138,22 @@ class GuestModeSpec()
           ))
       )(publicTenant)
       resp.status mustBe 200
+
       val apis =
-        (resp.json \ "data" \ "visibleApis")
+        (resp.json \ "data" \ "visibleApis" \ "apis")
           .as[JsArray]
           .value
-          .map(json => (json \ "api" \ "_id").as[String])
       apis.size mustBe 1
-      apis.contains(publicApi.id.value) mustBe true
+      apis.toList.map(js => js.toString())
+        .mkString.contains(publicApi.id.value) mustBe true
 
     }
     "get visible apis of team" in {
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi = defaultApi.copy(id = ApiId("public"))
       val privateApi = defaultApi.copy(id = ApiId("private"),
-                                       visibility = ApiVisibility.Private)
+                                       visibility = ApiVisibility.Private,
+                                       name = "private api")
 
       setupEnvBlocking(
         tenants = Seq(publicTenant),
@@ -163,12 +167,14 @@ class GuestModeSpec()
         "POST",
         body = Some(
           Json.obj(
-            "variables" -> Json.obj("teamId" -> teamOwnerId.value),
+            "variables" -> Json.obj("teamId" -> teamOwnerId.value, "limit" -> 5, "offset" -> 0),
             "query" -> s"""
-            |query AllVisibleApis ($$teamId: String) {
-            |      visibleApis (teamId: $$teamId) {
-            |        api {
-            |          _id
+            |query AllVisibleApis ($$teamId: String, $$limit: Int, $$offset: Int) {
+            |      visibleApis (teamId: $$teamId, limit: $$limit, offset: $$offset) {
+            |        apis {
+            |          api {
+            |            _id
+            |          }
             |        }
             |    }
             |}
@@ -177,13 +183,14 @@ class GuestModeSpec()
       )(publicTenant)
       resp.status mustBe 200
       val apis =
-        (resp.json \ "data" \ "visibleApis")
+        (resp.json \ "data" \ "visibleApis" \ "apis")
           .as[JsArray]
           .value
-          .map(json => (json \ "api" \ "_id").as[String])
       apis.size mustBe 1
-      apis.contains(publicApi.id.value) mustBe true
+      apis.toList.map(js => js.toString())
+        .mkString.contains(publicApi.id.value) mustBe true
     }
+
 
     "get one visible api" in {
       val publicTenant = tenant.copy(isPrivate = false)
