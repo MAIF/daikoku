@@ -24,31 +24,16 @@ import { ApiCard } from '../api';
 import {getApolloContext} from "@apollo/client";
 import {useQuery} from "@tanstack/react-query";
 import * as Services from "../../../services";
-import {Spinner} from "../../utils";
+import {arrayStringToTOps, Spinner, FilterPreview} from "../../utils";
 
 import debounce from "lodash/debounce";
 import {toastr} from "react-redux-toastr";
 import queryClient from "../../utils/queryClient";
 
-const all = { value: 'All', label: 'All' };
 const GRID = 'GRID';
 const LIST = 'LIST';
 
-const computeTop = (arrayOfArray: string[]): TOptions => {
-  return arrayOfArray
-    .flat()
-    .reduce<Array<TOption & {count: number}>>((acc, value) => {
-      const val = acc.find((item) => item.value === value);
-      let newVal;
-      if (val) {
-        newVal = { ...val, count: val.count + 1 };
-      } else {
-        newVal = { value, label: value, count: 1 };
-      }
-      return [...acc.filter((item) => item.value !== value), newVal];
-    }, [])
-    .sort((a, b) => b.count - a.count);
-};
+
 
 type TApiList = {
   teams: Array<ITeamSimple>,
@@ -65,7 +50,7 @@ export const ApiList = (props: TApiList) => {
 
   const { client } = useContext(getApolloContext());
 
-  const { translate, Translation } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
 
 
@@ -103,7 +88,6 @@ export const ApiList = (props: TApiList) => {
         fetchPolicy: "no-cache",
         variables: {teamId: queryKey[4] , research: queryKey[1], selectedTag: queryKey[5], selectedCategory: queryKey[6], limit: queryKey[7], offset: queryKey[8], groupId:  queryKey[9]}
       }).then(({ data: { visibleApis }}) => {
-
         setApisWithAuth(visibleApis.apis)
         return visibleApis
         }
@@ -121,9 +105,8 @@ export const ApiList = (props: TApiList) => {
         query: Services.graphql.getAllTags,
         variables: {research: queryKey[1]}
       }).then(({data: {allTags}}) => {
-
-        setTags(computeTop(allTags))
-        return computeTop(allTags)
+        setTags(arrayStringToTOps(allTags))
+        return arrayStringToTOps(allTags)
       })
     }
   })
@@ -135,8 +118,7 @@ export const ApiList = (props: TApiList) => {
         query: Services.graphql.getAllTags,
         variables: {research: ""}
       }).then(({data: {allTags}}) => {
-
-        return computeTop(allTags)
+        return arrayStringToTOps(allTags)
       })
     }
   })
@@ -148,10 +130,8 @@ export const ApiList = (props: TApiList) => {
         query: Services.graphql.getAllCategories,
         variables: {research: queryKey[1]}
       }).then(({data: {allCategories}}) => {
-
-
-        setCategories(computeTop(allCategories))
-        return computeTop(allCategories)
+        setCategories(arrayStringToTOps(allCategories))
+        return arrayStringToTOps(allCategories)
       })
     }
   })
@@ -162,9 +142,7 @@ export const ApiList = (props: TApiList) => {
         query: Services.graphql.getAllCategories,
         variables: {research: ""}
       }).then(({data: {allCategories}}) => {
-
-
-        return computeTop(allCategories)
+        return arrayStringToTOps(allCategories)
       })
     }
   })
@@ -223,41 +201,6 @@ export const ApiList = (props: TApiList) => {
     setPage(0)
     setOffset(0)
   }
-
-  const filterPreview = (count: number) => {
-    if (!selectedCategory?.value && !selectedTag?.value && !searched) {
-      return null;
-    }
-
-    return (
-      <div className="d-flex justify-content-between">
-        <div className="preview">
-          <strong>{count}</strong> {`${translate('result')}${count > 1 ? 's' : ''}`}
-          &nbsp;
-          {!!searched && (
-            <span>
-              {translate('matching')} <strong>{searched}</strong>&nbsp;
-            </span>
-          )}
-          {selectedCategory?.value !== all.value && (
-            <span>
-              {translate('categorised in')} <strong>{selectedCategory?.value}</strong>
-              &nbsp;
-            </span>
-          )}
-          {!!selectedTag?.value && (
-            <span>
-              {translate('tagged')} <strong>{selectedTag?.value}</strong>
-            </span>
-          )}
-        </div>
-        <div className="clear cursor-pointer" onClick={clearFilter}>
-          <i className="far fa-times-circle me-1" />
-          <Translation i18nkey="clear filter">clear filter</Translation>
-        </div>
-      </div>
-    );
-  };
 
   const handlePageClick = (data) => {
     setOffset(data.selected * pageNumber);
@@ -380,7 +323,7 @@ export const ApiList = (props: TApiList) => {
                     row: view === GRID,
                   })}
               >
-                {filterPreview(dataRequest.data.result)}
+                <FilterPreview count={dataRequest.data.result} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedCategory={selectedCategory}/>
 
                 { apisWithAuth.map((apiWithAuth) => {
                   const sameApis = apisWithAuth!.filter(((apiWithAuth2) => apiWithAuth2.api._humanReadableId === apiWithAuth.api._humanReadableId ))

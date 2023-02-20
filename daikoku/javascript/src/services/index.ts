@@ -1257,8 +1257,8 @@ export const graphql = {
       allCategories (research: $research)
     }`),
   getApisWithSubscription: gql(`
-    query AccessibleApis ($teamId: String!, $research: String, $apisubonly: Boolean, $limit: Int, $offset: Int) {
-      accessibleApis (teamId: $teamId, research: $research, apisubonly: $apisubonly , limit: $limit, offset: $offset) {
+    query AccessibleApis ($teamId: String!, $research: String, $selectedTag: String, $selectedCategory: String, $apisubonly: Boolean, $limit: Int, $offset: Int) {
+      accessibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, apisubonly: $apisubonly , limit: $limit, offset: $offset) {
         apis {
           api {
             name
