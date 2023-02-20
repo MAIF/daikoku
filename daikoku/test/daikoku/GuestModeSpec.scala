@@ -29,11 +29,11 @@ class GuestModeSpec()
       val resp =
         httpJsonCallWithoutSessionBlocking(path = s"/api/teams")(publicTenant)
       resp.status mustBe 200
-      val myTeams =
+      val allTeams =
         fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads(resp.json)
-      myTeams.isSuccess mustBe true
-      myTeams.get.size mustBe 1
-      myTeams.get.exists(t => t.id == teamOwnerId) mustBe true
+      allTeams.isSuccess mustBe true
+      allTeams.get.size mustBe 1
+      allTeams.get.exists(t => t.id == teamOwnerId) mustBe true
     }
 
     "access to his teams" in {
