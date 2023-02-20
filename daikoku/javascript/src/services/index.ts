@@ -1198,8 +1198,8 @@ export const graphql = {
       }
     `),
   myVisibleApis: gql(`
-    query AllVisibleApis ($teamId: String, $research: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupOpt: String) {
-      visibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupOpt: $groupOpt) {
+    query AllVisibleApis ($teamId: String, $research: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
+      visibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
         apis {
           api {
             name

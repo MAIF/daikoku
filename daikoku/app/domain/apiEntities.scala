@@ -712,7 +712,7 @@ case class ApiWithAuthorizations(api: Api,
                                  authorizations: Seq[AuthorizationApi] =
                                    Seq.empty)
 case class ApiWithCount(apis: Seq[ApiWithAuthorizations],
-                        result: Int)
+                        result: Long)
 case class SubscriptionsWithPlan(planId: String,
                                  isPending: Boolean,
                                  subscriptionsCount: Int)
@@ -724,4 +724,3 @@ case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
 
-//case class ApisGlobalData(nbOfApiParent: Int, tags: Seq[String], categories: Seq[String])

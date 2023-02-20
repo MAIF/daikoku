@@ -101,7 +101,7 @@ export const ApiList = (props: TApiList) => {
       return client!.query<{ visibleApis: IApiAuthoWithCount }>({
         query: Services.graphql.myVisibleApis,
         fetchPolicy: "no-cache",
-        variables: {teamId: queryKey[4] , research: queryKey[1], selectedTag: queryKey[5], selectedCategory: queryKey[6], limit: queryKey[7], offset: queryKey[8], groupOpt:  props.apiGroupId }
+        variables: {teamId: queryKey[4] , research: queryKey[1], selectedTag: queryKey[5], selectedCategory: queryKey[6], limit: queryKey[7], offset: queryKey[8], groupId:  queryKey[9]}
       }).then(({ data: { visibleApis }}) => {
 
         setApisWithAuth(visibleApis.apis)
@@ -112,6 +112,7 @@ export const ApiList = (props: TApiList) => {
     enabled: !!client,
     cacheTime: 0
   })
+
 
   const dataTags = useQuery({
     queryKey: ["dataTags", researchTag],

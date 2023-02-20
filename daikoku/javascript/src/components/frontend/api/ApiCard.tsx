@@ -26,13 +26,12 @@ export const ApiCard = (props: {
 
   const apiWithAutho = props.apiWithAutho.find((apiWithAuthorization) => apiWithAuthorization.api.isDefault) || props.apiWithAutho.sort((a,b) => a.api.lastUpdate.localeCompare(b.api.lastUpdate))[0]
   const api = apiWithAutho.api
-  const authorization = apiWithAutho.authorizations
+  const authorizations = apiWithAutho.authorizations
   const allTeamsAreAuthorized =
-    api.visibility === 'Public' || authorization.every((a: any) => a.authorized);
+    api.visibility === 'Public' || authorizations.every((a: any) => a.authorized);
 
   const isPending =
-    authorization && authorization.every((a: any) => a.pending && !a.authorized);
-  const authorizations = authorization
+    authorizations && authorizations.every((a: any) => a.pending && !a.authorized);
   const team = props.team;
 
   const { translate, Translation } = useContext(I18nContext);

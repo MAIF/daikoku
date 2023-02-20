@@ -1249,6 +1249,6 @@
     "select.team.placeholder": "Select a team",
     "otoroshi.missing.entities":"Missing Otoroshi entities",
     "otoroshi.missing.target":"Missing otoroshi target",
-    "apiList.tag.search":"Search your tag",
-    "apiList.category.search":"Search your category"
+    "apiList.tag.search":"Search a tag",
+    "apiList.category.search":"Search a category"
 }

@@ -742,7 +742,7 @@ object SchemaDefinition {
             case None => None
           }
         ),
-        Field("apis", OptionType(ListType(GraphQLApiType)), resolve = ctx => {
+        Field("apis", OptionType(ListType(ApiWithAuthorizationType)), resolve = ctx => {
           ctx.value.apis match {
             case None => FastFuture.successful(None)
             case Some(apis) => CommonServices.getApisByIds(apis.toSeq.map(_.value))(ctx.ctx._2, env, e).map {
@@ -755,16 +755,15 @@ object SchemaDefinition {
 
     lazy val  AuthorizationApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationApi]()
 
-    lazy val GraphQLApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithAuthorizations](
+    lazy val ApiWithAuthorizationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithAuthorizations](
       ObjectTypeDescription("A Daikoku api with the list of teams authorizations"),
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
       ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations)),
-      /*ReplaceField("result", Field("result", OptionType(IntType), resolve = _.value.result))*/
     )
-    lazy val GraphQLApiWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithCount](
+    lazy val ApiWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithCount](
       ObjectTypeDescription("An object composed of an array of apis with autho and the total count of them"),
-      ReplaceField("apis", Field("apis", ListType(GraphQLApiType), resolve = _.value.apis)),
-      ReplaceField("result", Field("result", IntType, resolve = _.value.result))
+      ReplaceField("apis", Field("apis", ListType(ApiWithAuthorizationType), resolve = _.value.apis)),
+      ReplaceField("result", Field("result", LongType, resolve = _.value.result))
     )
 
 
@@ -1193,7 +1192,7 @@ object SchemaDefinition {
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
-    val GROUPOPT = Argument("groupOpt", OptionInputType(StringType), description = "The id of API group")
+    val GROUP_ID = Argument("groupId", OptionInputType(StringType), description = "The id of API group")
     val APISUBONLY: Argument[Boolean] = Argument("apisubonly", BooleanType,
       description = "The condition if you want to see only subscribed Apis.",
       defaultValue = false)
@@ -1223,28 +1222,22 @@ object SchemaDefinition {
 
 
     def apiQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("visibleApis", GraphQLApiWithCountType, arguments = TEAM_ID :: RESEARCH :: SELECTEDTAG :: SELECTEDCAT :: LIMIT :: OFFSET :: GROUPOPT :: Nil, resolve = ctx => {
-        getVisibleApis(ctx, ctx.arg(TEAM_ID), ctx.arg(RESEARCH), ctx.arg(SELECTEDTAG), ctx.arg(SELECTEDCAT), ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(GROUPOPT))
+      Field("visibleApis", ApiWithCountType, arguments = TEAM_ID :: RESEARCH :: SELECTEDTAG :: SELECTEDCAT :: LIMIT :: OFFSET :: GROUP_ID :: Nil, resolve = ctx => {
+        getVisibleApis(ctx, ctx.arg(TEAM_ID), ctx.arg(RESEARCH), ctx.arg(SELECTEDTAG), ctx.arg(SELECTEDCAT), ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(GROUP_ID))
       })
     )
 
-    def getAllTags(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], research: String) = {
-      CommonServices.getAllTags(research)(ctx.ctx._2, env, e)
-    }
+
 
     def getAllTagsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("allTags", ListType(StringType), arguments = RESEARCH :: Nil ,resolve = ctx => {
-        getAllTags(ctx, ctx.arg(RESEARCH))
+        CommonServices.getAllTags(ctx.arg(RESEARCH))(ctx.ctx._2, env, e)
       })
     )
 
-    def getAllCategories(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], research: String) = {
-      CommonServices.getAllCategories(research)(ctx.ctx._2, env, e)
-    }
-
     def  getAllCategoriesQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("allCategories", ListType(StringType), arguments = RESEARCH :: Nil , resolve = ctx => {
-        getAllCategories(ctx, ctx.arg(RESEARCH))
+        CommonServices.getAllCategories( ctx.arg(RESEARCH))(ctx.ctx._2, env, e)
       })
     )
 

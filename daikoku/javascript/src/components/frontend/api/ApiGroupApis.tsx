@@ -31,7 +31,6 @@ export const ApiGroupApis = ({
       Services.teams(),
       client.query<{ myTeams: Array<ITeamSimple> }>({
         query: Services.graphql.myTeams,
-        variables: { }
       }),
     ]).then(([t, { data }]) => {
       if (!isError(t)) {
