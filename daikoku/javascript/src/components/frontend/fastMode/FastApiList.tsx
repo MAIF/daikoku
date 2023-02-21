@@ -259,7 +259,7 @@ export const FastApiList = (props: FastApiListProps) => {
                 />
               </div>
             <div className="section pb-1">
-              <FilterPreview count={dataRequest.data.nb} clearFilter={clearFilter} searched={research} selectedTag={selectedTag} selectedCategory={selectedCategory}/>
+              <FilterPreview count={dataRequest.data.nb} clearFilter={clearFilter} searched={research} selectedTag={selectedTag} selectedCategory={selectedCategory} filterPlan={planResearch} seeOnlySubs={seeApiSubscribed}/>
               <div className="apis" style={{ maxHeight: '600px', overflowY: 'scroll', overflowX: 'hidden' }}>
                 {dataRequest.data.apis.map(({ api }) => {
                   if (!api.parent) {

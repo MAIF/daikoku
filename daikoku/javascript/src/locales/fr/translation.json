@@ -1253,5 +1253,7 @@
   "otoroshi.missing.target": "Cible Otoroshi manquante",
   "otoroshi.missing.entities": "entités Otoroshi manquantes",
   "apiList.tag.search":"Recherchez un tag",
-  "apiList.category.search":"Recherchez une categorie"
+  "apiList.category.search":"Recherchez une categorie",
+  "fastMode.onlySubs.info": "avec seulement les souscrites ",
+  "fastMode.planSearch.info": "et les plans nommés comme"
 }

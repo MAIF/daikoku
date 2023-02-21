@@ -49,13 +49,15 @@ interface FilterType {
   selectedTag: TOption | undefined
   searched: string
   clearFilter: any
+  filterPlan?: string
+  seeOnlySubs?: boolean
 }
 
 export const FilterPreview = (props: FilterType) => {
   const { translate, Translation } = useContext(I18nContext);
 
 
-  if (!props.selectedCategory?.value && !props.selectedTag?.value && !props.searched) {
+  if (!props.selectedCategory?.value && !props.selectedTag?.value && !props.searched &&  !props.filterPlan && !props.seeOnlySubs) {
     return null;
   }
 
@@ -64,22 +66,33 @@ export const FilterPreview = (props: FilterType) => {
     <div className="preview">
       <strong>{props.count}</strong> {`${translate('result')}${props.count > 1 ? 's' : ''}`}
       &nbsp;
-  {!!props.searched && (
-    <span>
-      {translate('matching')} <strong>{props.searched}</strong>&nbsp;
-  </span>
-  )}
-  {props.selectedCategory?.value && (
-    <span>
-      {translate('categorised in')} <strong>{props.selectedCategory?.value}</strong>
-  &nbsp;
-    </span>
-  )}
-  {!!props.selectedTag?.value && (
-    <span>
-      {translate('tagged')} <strong>{props.selectedTag?.value}</strong>
-  </span>
-  )}
+      {!!props.searched && (
+        <span>
+          {translate('matching')} <strong>{props.searched}</strong>&nbsp;
+        </span>
+      )}
+      {props.selectedCategory?.value && (
+        <span>
+          {translate('categorised in')} <strong>{props.selectedCategory?.value}</strong>
+          &nbsp;
+        </span>
+      )}
+      {!!props.selectedTag?.value && (
+        <span>
+          {translate('tagged')} <strong>{props.selectedTag?.value}</strong>
+          &nbsp;
+        </span>
+      )}
+      {props.seeOnlySubs  === true && (
+        <span>
+          {translate('fastMode.onlySubs.info')}
+        </span>
+      )}
+      {!!props.filterPlan && (
+        <span>
+          {translate('fastMode.planSearch.info')} <strong>{props.filterPlan}</strong>
+        </span>
+      )}
   </div>
   <div className="clear cursor-pointer" onClick={props.clearFilter}>
   <i className="far fa-times-circle me-1" />
