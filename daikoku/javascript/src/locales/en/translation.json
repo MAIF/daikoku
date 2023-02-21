@@ -1250,5 +1250,7 @@
     "otoroshi.missing.entities":"Missing Otoroshi entities",
     "otoroshi.missing.target":"Missing otoroshi target",
     "apiList.tag.search":"Search a tag",
-    "apiList.category.search":"Search a category"
+    "apiList.category.search":"Search a category",
+    "fastMode.onlySubs.info": "with only subscribed ",
+    "fastMode.planSearch.info": "and plans with a name like"
 }

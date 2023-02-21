@@ -85,8 +85,16 @@ object CommonServices {
       }
     }
   }
-  def getApisWithSubscriptions(teamId: String, research: String, limit: Int, offset: Int, apiSubOnly: Boolean)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AccessibleApisWithNumberOfApis, AppError]] = {
+  def getApisWithSubscriptions(teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, apiSubOnly: Boolean)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AccessibleApisWithNumberOfApis, AppError]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
+      val tagFilter = selectedTag match {
+        case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
+        case None => Json.obj()
+      }
+      val catFilter = selectedCat match {
+        case Some(_) => Json.obj("categories" -> selectedCat.map(JsString))
+        case None => Json.obj()
+      }
       for {
         subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
         subsOnlyFilter = if (apiSubOnly) Json.obj("_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))) else Json.obj()
@@ -99,8 +107,9 @@ object CommonServices {
           "_deleted" -> false,
           "parent" -> JsNull, //FIXME : could be a problem if parent is not published
           "name" -> Json.obj("$regex" -> research))
-        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(apiFilter ++ subsOnlyFilter, offset, limit, Some(Json.obj("name" -> 1)))
-        allApisFilter = Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))), "published" -> true)
+        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(apiFilter ++ subsOnlyFilter ++ tagFilter ++ catFilter, offset, limit, Some(Json.obj("name" -> 1)))
+
+        allApisFilter = Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))), "published" -> true) //++ tagFilter ++ catFilter
         allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter ++ subsOnlyFilter, sort = Some(Json.obj("name" -> 1)))
         teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))))
         notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
@@ -133,7 +142,6 @@ object CommonServices {
   def getVisibleApis[A](teamId: Option[String] = None, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, groupOpt: Option[String] = None)
                        (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[ApiWithCount, AppError]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
-
       val tagFilter = selectedTag match {
         case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
         case None => Json.obj()
@@ -142,22 +150,16 @@ object CommonServices {
         case Some(_) => Json.obj("categories" -> selectedCat.map(JsString))
         case None => Json.obj()
       }
-
-
       val teamRepo = env.dataStore.teamRepo.forTenant(ctx.tenant)
-
-
       (teamId match {
         case None => teamRepo.findAllNotDeleted()
         case Some(id) => teamRepo.find(Json.obj("$or" -> Json.arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> id))))
       })
         .map(teams => if (ctx.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.user.id)))
         .flatMap(teams => {
-
           val teamFilter = if (teams.nonEmpty) Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))) else Json.obj()
           val tenant = ctx.tenant
           val user = ctx.user
-
           for {
             myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
             apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
@@ -206,7 +208,6 @@ object CommonServices {
                         .exists(notif => notif.action.asInstanceOf[ApiAccess].team == team.id && notif.action.asInstanceOf[ApiAccess].api == api.id)
                     )
                   }
-
                 acc :+ (api.visibility.name match {
                   case "PublicWithAuthorizations" | "Private" => ApiWithAuthorizations(api = api, authorizations = authorizations)
                   case _ => ApiWithAuthorizations(api = api)
