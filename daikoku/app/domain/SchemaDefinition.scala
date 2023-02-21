@@ -1193,13 +1193,13 @@ object SchemaDefinition {
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
     val GROUP_ID = Argument("groupId", OptionInputType(StringType), description = "The id of API group")
-    val APISUBONLY: Argument[Boolean] = Argument("apisubonly", BooleanType,
+    val API_SUB_ONLY: Argument[Boolean] = Argument("apiSubOnly", BooleanType,
       description = "The condition if you want to see only subscribed Apis.",
       defaultValue = false)
     val RESEARCH: Argument[String] = Argument("research", StringType,
       description ="This is a the string of a research", defaultValue = "")
-    val SELECTEDTAG = Argument("selectedTag", OptionInputType(StringType), description = "A tag of an Api")
-    val SELECTEDCAT = Argument("selectedCategory", OptionInputType(StringType), description = "A category of an Api" )
+    val SELECTED_TAG = Argument("selectedTag", OptionInputType(StringType), description = "A tag of an Api")
+    val SELECTED_CAT = Argument("selectedCategory", OptionInputType(StringType), description = "A category of an Api" )
     val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
@@ -1222,8 +1222,8 @@ object SchemaDefinition {
 
 
     def apiQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("visibleApis", ApiWithCountType, arguments = TEAM_ID :: RESEARCH :: SELECTEDTAG :: SELECTEDCAT :: LIMIT :: OFFSET :: GROUP_ID :: Nil, resolve = ctx => {
-        getVisibleApis(ctx, ctx.arg(TEAM_ID), ctx.arg(RESEARCH), ctx.arg(SELECTEDTAG), ctx.arg(SELECTEDCAT), ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(GROUP_ID))
+      Field("visibleApis", ApiWithCountType, arguments = TEAM_ID :: RESEARCH :: SELECTED_TAG :: SELECTED_CAT :: LIMIT :: OFFSET :: GROUP_ID :: Nil, resolve = ctx => {
+        getVisibleApis(ctx, ctx.arg(TEAM_ID), ctx.arg(RESEARCH), ctx.arg(SELECTED_TAG), ctx.arg(SELECTED_CAT), ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(GROUP_ID))
       })
     )
 
@@ -1250,8 +1250,8 @@ object SchemaDefinition {
     }
 
     def apiWithSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("accessibleApis", GraphQlAccessibleApisWithNumberOfApis, arguments = TEAM_ID_NOT_OPT :: RESEARCH :: SELECTEDTAG :: SELECTEDCAT :: APISUBONLY :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
-        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT),ctx.arg(RESEARCH), ctx.arg(SELECTEDTAG), ctx.arg(SELECTEDCAT),ctx.arg(APISUBONLY),ctx.arg(LIMIT), ctx.arg(OFFSET))
+      Field("accessibleApis", GraphQlAccessibleApisWithNumberOfApis, arguments = TEAM_ID_NOT_OPT :: RESEARCH :: SELECTED_TAG :: SELECTED_CAT :: API_SUB_ONLY :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
+        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT),ctx.arg(RESEARCH), ctx.arg(SELECTED_TAG), ctx.arg(SELECTED_CAT),ctx.arg(API_SUB_ONLY),ctx.arg(LIMIT), ctx.arg(OFFSET))
       })
     )
 

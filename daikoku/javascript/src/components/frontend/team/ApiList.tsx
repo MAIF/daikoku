@@ -81,12 +81,28 @@ export const ApiList = (props: TApiList) => {
 
 
   const dataRequest = useQuery({
-    queryKey: ["data", searched, connectedUser._id, location.pathname, props.team?._id, selectedTag?.value, selectedCategory?.value, pageNumber, offset, props.apiGroupId ],
+    queryKey: ["data",
+      props.team?._id,
+      searched,
+      selectedTag?.value,
+      selectedCategory?.value,
+      pageNumber,
+      offset,
+      props.apiGroupId,
+      connectedUser._id,
+      location.pathname],
     queryFn: ({ queryKey }) => {
       return client!.query<{ visibleApis: IApiAuthoWithCount }>({
         query: Services.graphql.myVisibleApis,
         fetchPolicy: "no-cache",
-        variables: {teamId: queryKey[4] , research: queryKey[1], selectedTag: queryKey[5], selectedCategory: queryKey[6], limit: queryKey[7], offset: queryKey[8], groupId:  queryKey[9]}
+        variables: {
+          teamId: queryKey[1],
+          research: queryKey[2],
+          selectedTag: queryKey[3],
+          selectedCategory: queryKey[4],
+          limit: queryKey[5],
+          offset: queryKey[6],
+          groupId:  queryKey[7]}
       }).then(({ data: { visibleApis }}) => {
         setApisWithAuth(visibleApis.apis)
         return visibleApis
@@ -344,6 +360,7 @@ export const ApiList = (props: TApiList) => {
                         view={view}
                         connectedUser={connectedUser}
                         groupView={props.groupView}
+                        key={apiWithAuth.api._id}
                       />
                     );
                   }

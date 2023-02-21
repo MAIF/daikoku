@@ -51,12 +51,26 @@ export const FastApiList = (props: FastApiListProps) => {
 
   const dataRequest = useQuery<{ apis: Array<IFastApi>, nb: number }>({
 
-    queryKey: ["data", props.team._id, offset, seeApiSubscribed, nbOfApis, research, selectedTag?.value, selectedCategory?.value],
+    queryKey: ["data",
+      props.team._id,
+      research,
+      selectedTag?.value,
+      selectedCategory?.value,
+      seeApiSubscribed,
+      nbOfApis,
+      offset],
     queryFn: ({ queryKey }) => {
       return client!.query<{ accessibleApis: { apis: Array<IFastApi>, nb: number } }>({
         query: Services.graphql.getApisWithSubscription,
         fetchPolicy: "no-cache",
-        variables: { teamId: queryKey[1], limit: queryKey[4], apisubonly: queryKey[3], offset: queryKey[2], research: queryKey[5], selectedTag: queryKey[6], selectedCat: queryKey[7] }
+        variables: {
+          teamId: queryKey[1],
+          research: queryKey[2],
+          selectedTag: queryKey[3],
+          selectedCat: queryKey[4],
+          apiSubOnly: queryKey[5],
+          limit: queryKey[6],
+          offset: queryKey[7]}
       }).then(({ data: { accessibleApis } }) => {
         return accessibleApis
       }
@@ -199,6 +213,7 @@ export const FastApiList = (props: FastApiListProps) => {
                 type="text"
                 className="form-control"
                 placeholder={translate('fastMode.input.research.plan')}
+                value={planResearch}
                 onChange={(e) => setPlanResearch(e.target.value)}
               />
             </div>
