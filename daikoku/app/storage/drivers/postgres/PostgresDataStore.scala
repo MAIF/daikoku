@@ -1389,6 +1389,20 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .flatMapConcat(res => Source(res.toList))
   }
 
+  override def streamAllRawFormatted(query: JsObject = Json.obj())(
+    implicit ec: ExecutionContext): Source[Of, NotUsed] = {
+    logger.debug(s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
+
+    Source
+      .future(
+        reactivePg
+          .querySeq(s"SELECT * FROM $tableName") { row =>
+            row.optJsObject("content")
+          }
+      )
+      .flatMapConcat(res => Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
+  }
+
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = {
     val (sql, params) = convertQuery(query)
