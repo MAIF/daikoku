@@ -1,4 +1,3 @@
-
 import { IFastTeam } from './team';
 
 interface IBaseApi {
@@ -60,7 +59,7 @@ export interface IApi extends IBaseApi {
 }*/
 
 export interface IApiWithAuthorization {
-  api: IApiWithSimpleTeam
+  api: IApiWithSimpleTeam;
   authorizations: Array<{
     team: string;
     authorized: boolean;
@@ -69,11 +68,9 @@ export interface IApiWithAuthorization {
 }
 
 export interface IApiAuthoWithCount {
-  apis: Array<IApiWithAuthorization>
-  result: number
-
+  apis: Array<IApiWithAuthorization>;
+  result: number;
 }
-
 
 export interface ITesting {
   enabled: boolean;
@@ -124,7 +121,7 @@ export interface IBaseUsagePlan {
   customDescription?: string;
   customName?: string;
   subscriptionProcess: 'Automatic' | 'manual';
-  currency: ICurrency
+  currency: ICurrency;
   otoroshiTarget?: IOtoroshiTarget;
 }
 

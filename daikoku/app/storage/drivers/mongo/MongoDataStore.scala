@@ -1172,7 +1172,8 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
           .cursor[JsObject](ReadPreference.primaryPreferred)
           .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
       })
-      .flatMapConcat(res => Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
+      .flatMapConcat(res =>
+        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
 
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = collection.flatMap {

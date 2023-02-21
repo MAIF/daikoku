@@ -1390,8 +1390,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   }
 
   override def streamAllRawFormatted(query: JsObject = Json.obj())(
-    implicit ec: ExecutionContext): Source[Of, NotUsed] = {
-    logger.debug(s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
+      implicit ec: ExecutionContext): Source[Of, NotUsed] = {
+    logger.debug(
+      s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
 
     Source
       .future(
@@ -1400,7 +1401,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
             row.optJsObject("content")
           }
       )
-      .flatMapConcat(res => Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
+      .flatMapConcat(res =>
+        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
   }
 
   override def findOne(query: JsObject)(
