@@ -239,8 +239,13 @@ case class StepValidator(id: DatastoreId,
                          deleted: Boolean = false,
                          token: String,
                          step: SubscriptionDemandStepId,
-                         subscriptionDemand: SubscriptionDemandId)
+                         subscriptionDemand: SubscriptionDemandId,
+                         metadata: JsObject = Json.obj())
   extends CanJson[StepValidator] {
   override def asJson: JsValue = json.StepValidatorFormat.writes(this)
+  def asEncryptedToken = {
+    //todo:
+    ???
+  }
 }
 

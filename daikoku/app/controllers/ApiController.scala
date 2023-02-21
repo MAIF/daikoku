@@ -8,6 +8,7 @@ import akka.{Done, NotUsed}
 import cats.Id
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
+import com.auth0.jwt.JWT
 import controllers.AppError
 import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
@@ -1009,7 +1010,7 @@ class ApiController(
   def runSubscriptionProcess(demandId: SubscriptionDemandId, tenant: Tenant)
                             (implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, Result] = {
 
-    def runRightProcess(step: SubscriptionDemandStep, validator: StepValidator, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
+    def runRightProcess(step: SubscriptionDemandStep, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
       step.step match {
         case ValidationStep.Email(emails, template) =>
           implicit val currentLanguage: String = ctx.request.headers.toSimpleMap
@@ -1021,7 +1022,20 @@ class ApiController(
           for {
             title <- EitherT.liftF(translator.translate("mail.subscription.validation.title", ctx.tenant))
             body <- EitherT.liftF(template.map(FastFuture.successful).getOrElse(translator.translate("mail.subscription.validation.body", ctx.tenant))) //todo add right injected value
-            _ <- EitherT.liftF(ctx.tenant.mailer.send(title, emails, body, ctx.tenant))
+            _ <- EitherT.liftF(Future.sequence(emails.map(email => {
+              val stepValidator = StepValidator(
+                id = DatastoreId(BSONObjectID.generate().stringify),
+                tenant = tenant.id,
+                token = IdGenerator.token,
+                step = step.id,
+                subscriptionDemand = demand.id,
+                metadata = Json.obj("from" -> email)
+              )
+              val url = s"/api/subscription/_validate?token=$stepValidator"
+              translator.translate("mail.subscription.validation.body", ctx.tenant, Map("urlAccept" -> url))
+                .flatMap(body => env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator).map(_ => body))
+                .flatMap(body => ctx.tenant.mailer.send(title, Seq(email), body, ctx.tenant))
+            })))
           } yield {
             Ok(Json.obj("mailSended" -> true))
           }
@@ -1045,18 +1059,27 @@ class ApiController(
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).findByIdNotDeleted(demandId), AppError.SubscriptionDemandNotFound)
       _ <- if (demand.state.isClosed) EitherT.leftT[Future, Unit](AppError.SubscriptionDemandClosed) else EitherT.pure[Future, AppError](())
       step <- EitherT.fromOption[Future](demand.steps.find(!_.state.isClosed), AppError.SubscriptionDemandClosed)
-      stepValidator = StepValidator(
-        id = DatastoreId(BSONObjectID.generate().stringify),
-        tenant = tenant.id,
-        token = IdGenerator.token,
-        step = step.id,
-        subscriptionDemand = demand.id
-      )
-      _ <- EitherT.liftF(env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator))
-      result <- runRightProcess(step, stepValidator, demand, tenant)
+      result <- runRightProcess(step, demand, tenant)
     } yield result
+  }
 
+  def validateProcess() = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(
+      AuditTrailEvent(s"Process has been validated"))(ctx) {
+      ctx.request.getQueryString("token")
 
+      //extract provenance
+      //extract token
+      //dechiffrer token
+      // find stepValidatore
+      //find demand & step
+      // valid step & run process or run subscription
+
+      {
+
+      }
+      ???
+    }
   }
 
   def notifyApiSubscription(
@@ -4203,7 +4226,4 @@ class ApiController(
         value.merge
       }
     }
-
-  def validateProcess() =
-    DaikokuActionMaybeWithGuest
 }
