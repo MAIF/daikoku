@@ -4,28 +4,10 @@ import akka.{Done, NotUsed}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiDocumentationFormat,
-  ApiDocumentationPageFormat,
-  ApiDocumentationPageIdFormat,
-  ApiFormat,
-  ApiSubscriptionFormat,
-  SeqApiDocumentationDetailPageFormat,
-  TeamFormat,
-  TenantFormat,
-  UserFormat
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  ApiDocumentationDetailPage,
-  ApiDocumentationPageId,
-  ApiId,
-  CmsPage,
-  CmsPageId,
-  DatastoreId,
-  Evolution,
-  TenantId
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationFormat, ApiDocumentationPageFormat, ApiDocumentationPageIdFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TenantFormat, UserFormat}
+import fr.maif.otoroshi.daikoku.domain.{ApiDocumentationDetailPage, ApiDocumentationPageId, ApiId, CmsPage, CmsPageId, DatastoreId, Evolution, TenantId}
 import fr.maif.otoroshi.daikoku.env.evolution_157.version
+import fr.maif.otoroshi.daikoku.env.evolution_157_c.version
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import org.joda.time.DateTime
@@ -530,6 +512,40 @@ object evolution_157_c extends EvolutionScript {
     }
 }
 
+object evolution_1612_b extends EvolutionScript {
+  override def version: String = "16.1.2_b"
+
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext, OtoroshiClient) => Future[Done] = {
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - flag all team as unverified")
+
+      implicit val execContext: ExecutionContext = ec
+
+      val eventualLong = dataStore.teamRepo
+        .forAllTenant()
+        .updateManyByQuery(Json.obj(),
+          Json.obj(
+            "$set" -> Json.obj(
+              "verified" -> false,
+            )))
+
+      //todo: passer les personalTeam a verified true
+
+      Source
+        .future(eventualLong)
+        .runWith(Sink.ignore)(mat)
+
+    }
+  }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(evolution_102,
@@ -538,7 +554,8 @@ object evolutions {
          evolution_155,
          evolution_157,
          evolution_157_b,
-         evolution_157_c)
+         evolution_157_c,
+         evolution_1612_b)
   def run(
       dataStore: DataStore,
       otoroshiClient: OtoroshiClient

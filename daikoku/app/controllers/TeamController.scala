@@ -5,38 +5,27 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import cats.Id
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import controllers.AppError.renderF
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
-import fr.maif.otoroshi.daikoku.utils.{
-  DeletionService,
-  IdGenerator,
-  OtoroshiClient,
-  Translator
-}
+import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator, OtoroshiClient, Translator}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents,
-  Result
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Result}
 import reactivemongo.bson.BSONObjectID
 
+import scala.concurrent.impl.Promise
 import scala.concurrent.{ExecutionContext, Future}
 
 class TeamController(DaikokuAction: DaikokuAction,
@@ -133,24 +122,57 @@ class TeamController(DaikokuAction: DaikokuAction,
           val teamToSave = team.copy(users =
             Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)))
 
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(
-              Json.obj(
-                "$or" -> Json.arr(
-                  Json.obj("_id" -> team.id.asJson),
-                  Json.obj("_humanReadableId" -> team.humanReadableId))
-              ))
-            .flatMap {
-              case Some(_) =>
-                FastFuture.successful(Conflict(
-                  Json.obj("error" -> "Team with id or name already exist")))
-              case None =>
-                env.dataStore.teamRepo
-                  .forTenant(ctx.tenant.id)
-                  .save(teamToSave)
-                  .map(_ => Created(teamToSave.asJson))
-            }
+          implicit val language = ctx.user.defaultLanguage.getOrElse(
+              ctx.tenant.defaultLanguage.getOrElse("en"))
+          val res: EitherT[Future, AppError, Result] = for {
+            _ <- EitherT.fromOptionF(env.dataStore.teamRepo
+              .forTenant(ctx.tenant)
+              .findOneNotDeleted(
+                Json.obj(
+                  "$or" -> Json.arr(
+                    Json.obj("_id" -> team.id.asJson),
+                    Json.obj("_humanReadableId" -> team.humanReadableId))
+                )).map(r => r.fold(().some)(_ => None)), AppError.ApiVersionConflict) //FIXME
+            emailVerif = EmailVerification(
+              id = DatastoreId(BSONObjectID.generate().stringify),
+              randomId = IdGenerator.token,
+              tenant = ctx.tenant.id,
+              team = teamToSave.id,
+              creationDate = DateTime.now(),
+              validUntil = DateTime.now().plusMinutes(15)
+            )
+            _ <- EitherT.liftF(env.dataStore.teamRepo
+              .forTenant(ctx.tenant.id)
+              .save(teamToSave))
+            _ <- EitherT.liftF(env.dataStore.emailVerificationRepo.forTenant(ctx.tenant.id)
+              .save(emailVerif))
+            title <- EitherT.liftF(translator.translate("mail.create.team.token.title",
+              ctx.tenant))
+            value <- EitherT.liftF(translator.translate(
+              "mail.create.team.token.body",
+              ctx.tenant,
+              Map("team" -> teamToSave.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${teamToSave.id}/_verify?token=${emailVerif.randomId}"))
+            ))
+            _ <- EitherT.liftF(ctx.tenant.mailer
+              .send(title, Seq(teamToSave.contact), value, ctx.tenant))
+          } yield Created(teamToSave.asJson)
+          res.leftMap(AppError.render).merge
+      }
+    }
+  }
+
+  def verifyContactEmail(teamId: String): Action[JsValue] = DaikokuAction.async(parse.json) { ctx =>
+    PublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(
+      ctx
+    ) {
+      ctx.request.getQueryString("token") match {
+        case Some(token) => env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("randomId" -> token, "team" -> teamId)).map {
+          case Some(emailVerif) => ???
+          case None => AppError.ApiNotFound.render()
+        }
+
+
+        case None => AppError.ParsingPayloadError("todo").renderF()
       }
     }
   }

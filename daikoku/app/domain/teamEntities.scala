@@ -105,7 +105,8 @@ case class Team(
     apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
       TeamApiKeyVisibility.User),
     metadata: Map[String, String] = Map.empty,
-    apisCreationPermission: Option[Boolean] = None
+    apisCreationPermission: Option[Boolean] = None,
+    verified: Boolean = false
 ) extends CanJson[User] {
   override def asJson: JsValue = json.TeamFormat.writes(this)
   def humanReadableId = name.urlPathSegmentSanitized

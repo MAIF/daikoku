@@ -2687,7 +2687,7 @@ class ApiController(
       }
     }
 
-  def search() =
+  def search() = // TODO PRENDRE EXEMEPLELPLEPLE
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(
         ctx

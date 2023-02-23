@@ -284,6 +284,18 @@ case class MongoTenantCapableOperationRepo(
     _tenantRepo(tenant)
 }
 
+case class MongoTenantCapableEmailVerificationRepo(
+    _repo: () => MongoRepo[EmailVerification, DatastoreId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[EmailVerification, DatastoreId]
+) extends MongoTenantCapableRepo[EmailVerification, DatastoreId]
+    with EmailVerificationRepo {
+  override def repo(): MongoRepo[EmailVerification, DatastoreId] = _repo()
+
+  override def tenantRepo(
+    tenant: TenantId): MongoTenantAwareRepo[EmailVerification, DatastoreId] =
+    _tenantRepo(tenant)
+}
+
 class MongoDataStore(context: Context, env: Env)
     extends ReactiveMongoApiFromContext(context)
     with DataStore {
@@ -374,6 +386,15 @@ class MongoDataStore(context: Context, env: Env)
     )
   }
 
+  private val _emailVerificationRepo: EmailVerificationRepo = {
+    MongoTenantCapableEmailVerificationRepo(
+      () => new MongoEmailVerificationRepo(env, reactiveMongoApi),
+      t => new MongoTenantEmailVerificationRepo(env, reactiveMongoApi, t)
+    )
+  }
+  //TODO HERE
+
+
   override def tenantRepo: TenantRepo = _tenantRepo
 
   override def userRepo: UserRepo = _userRepo
@@ -413,6 +434,9 @@ class MongoDataStore(context: Context, env: Env)
 
   override def operationRepo: OperationRepo = _operationRepo
 
+  override def emailVerificationRepo: EmailVerificationRepo = _emailVerificationRepo
+
+  //TODO HERE
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
 
@@ -452,7 +476,8 @@ class MongoDataStore(context: Context, env: Env)
       consumptionRepo.forAllTenant(),
       translationRepo.forAllTenant(),
       messageRepo.forAllTenant(),
-      operationRepo.forAllTenant()
+      operationRepo.forAllTenant(),
+      emailVerificationRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -494,6 +519,7 @@ class MongoDataStore(context: Context, env: Env)
       _ <- translationRepo.forAllTenant().deleteAll()
       - <- messageRepo.forAllTenant().deleteAll()
       _ <- operationRepo.forAllTenant().deleteAll()
+      _ <- emailVerificationRepo.forAllTenant().deleteAll()
       _ <- source
         .via(Framing.delimiter(ByteString("\n"), 1000000000, true))
         .map(_.utf8String)
@@ -561,6 +587,10 @@ class MongoDataStore(context: Context, env: Env)
             operationRepo
               .forAllTenant()
               .save(OperationFormat.reads(payload).get)
+          case ("emailVerification", payload) =>
+            messageRepo
+              .forAllTenant()
+              .save(MessageFormat.reads(payload).get)
           case (typ, _) =>
             logger.info(s"Unknown type: $typ")
             FastFuture.successful(false)
@@ -673,6 +703,16 @@ class MongoTenantOperationRepo(env: Env,
   override def format: Format[Operation] = json.OperationFormat
 
   override def extractId(value: Operation): String = value.id.value
+}
+
+class MongoTenantEmailVerificationRepo(env: Env,
+                                       reactiveMongoApi: ReactiveMongoApi,
+                                       tenant: TenantId)
+extends MongoTenantAwareRepo[EmailVerification,DatastoreId](env, reactiveMongoApi, tenant) {
+  override def collectionName: String = "EmailVerifications"
+  override def format: Format[EmailVerification] = json.EmailVerificationFormat
+
+  override def extractId(value: EmailVerification): String = value.id.value
 }
 
 class MongoTenantApiSubscriptionRepo(env: Env,
@@ -836,6 +876,16 @@ class MongoOperationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[Operation] = json.OperationFormat
 
   override def extractId(value: Operation): String = value.id.value
+}
+
+class MongoEmailVerificationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[EmailVerification, DatastoreId](env, reactiveMongoApi) {
+
+  override def collectionName: String = "EmailVerifications"
+
+  override def format: Format[EmailVerification] = json.EmailVerificationFormat
+
+  override def extractId(value: EmailVerification): String = value.id.value
 }
 
 class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
