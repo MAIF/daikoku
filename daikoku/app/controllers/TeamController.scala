@@ -122,7 +122,7 @@ class TeamController(DaikokuAction: DaikokuAction,
           val teamToSave = team.copy(users =
             Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)))
 
-          implicit val language = ctx.user.defaultLanguage.getOrElse(
+          implicit val language: String = ctx.user.defaultLanguage.getOrElse(
               ctx.tenant.defaultLanguage.getOrElse("en"))
           val res: EitherT[Future, AppError, Result] = for {
             _ <- EitherT.fromOptionF(env.dataStore.teamRepo
@@ -132,7 +132,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                   "$or" -> Json.arr(
                     Json.obj("_id" -> team.id.asJson),
                     Json.obj("_humanReadableId" -> team.humanReadableId))
-                )).map(r => r.fold(().some)(_ => None)), AppError.ApiVersionConflict) //FIXME
+                )).map(r => r.fold(().some)(_ => None)), AppError.TeamNameAlreadyExists)
             emailVerif = EmailVerification(
               id = DatastoreId(BSONObjectID.generate().stringify),
               randomId = IdGenerator.token,
@@ -168,7 +168,7 @@ class TeamController(DaikokuAction: DaikokuAction,
       ctx.request.getQueryString("token") match {
         case Some(token) => env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("randomId" -> token, "team" -> teamId)).map {
           case Some(emailVerif) => ???
-          case None => AppError.ApiNotFound.render()
+          case None => AppError.ApiNotFound.render() //FIXME: create a dedicated AppError
         }
 
 
