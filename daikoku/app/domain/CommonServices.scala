@@ -144,6 +144,8 @@ object CommonServices {
   def getVisibleApis[A](teamId: Option[String] = None, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, groupOpt: Option[String] = None)
                        (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[ApiWithCount, AppError]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
+      val userIsAdmin = ctx.user.isDaikokuAdmin || ctx.isTenantAdmin
+
       val tagFilter = selectedTag match {
         case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
         case None => Json.obj()
@@ -177,15 +179,15 @@ object CommonServices {
                   "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
                   "status.status" -> "Pending")
               )
-              public = Json.obj("visibility" -> "Public").some
-              pwa = if (user.isGuest) None else Json.obj("visibility" -> "PublicWithAuthorizations").some
-              priv = if (user.isGuest) None else Json.obj("visibility" -> "Private",
+            publicApi = Json.obj("visibility" -> "Public").some
+            pwaApi = if (user.isGuest) None else Json.obj("visibility" -> "PublicWithAuthorizations").some
+            privateApi = if (user.isGuest) None else Json.obj("visibility" -> "Private",
               "$or" -> Json.arr(
-              Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))),
-              teamFilter
+                Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))),
+                teamFilter
               )).some
-              admin = if (!user.isDaikokuAdmin) None else Json.obj("visibility" -> ApiVisibility.AdminOnly.name).some
-            visibilityFilter = JsArray(Seq(public, pwa, priv, admin).filter(_.isDefined).map(_.get))
+            adminApi = if (!userIsAdmin) None else Json.obj("visibility" -> ApiVisibility.AdminOnly.name).some
+            visibilityFilter = JsArray(Seq(publicApi, pwaApi, privateApi, adminApi).filter(_.isDefined).map(_.get))
             paginateApis <- apiRepo.findWithPagination(Json.obj("$or" -> visibilityFilter, "name" -> Json.obj("$regex" -> research)
               , "parent" -> JsNull) ++ tagFilter ++ catFilter ++ groupFilter
               , offset, limit, Some(Json.obj("name" -> 1))

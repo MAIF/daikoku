@@ -1,14 +1,14 @@
 import classNames from 'classnames';
 
 import sortBy from 'lodash/sortBy';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Grid, List } from 'react-feather';
 import Pagination from 'react-paginate';
-import {useLocation, useNavigate} from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
 
-import {useDispatch, useSelector} from 'react-redux';
-import {I18nContext, updateUser} from '../../../core';
+import { useDispatch, useSelector } from 'react-redux';
+import { I18nContext, updateUser } from '../../../core';
 import {
   IState,
   IApiAuthoWithCount,
@@ -21,13 +21,13 @@ import {
 } from '../../../types';
 import { ApiCard } from '../api';
 
-import {getApolloContext} from "@apollo/client";
-import {useQuery} from "@tanstack/react-query";
+import { getApolloContext } from "@apollo/client";
+import { useQuery } from "@tanstack/react-query";
 import * as Services from "../../../services";
-import {arrayStringToTOps, Spinner, FilterPreview} from "../../utils";
+import { arrayStringToTOps, Spinner, FilterPreview } from "../../utils";
 
 import debounce from "lodash/debounce";
-import {toastr} from "react-redux-toastr";
+import { toastr } from "react-redux-toastr";
 import queryClient from "../../utils/queryClient";
 
 const GRID = 'GRID';
@@ -102,11 +102,12 @@ export const ApiList = (props: TApiList) => {
           selectedCategory: queryKey[4],
           limit: queryKey[5],
           offset: queryKey[6],
-          groupId:  queryKey[7]}
-      }).then(({ data: { visibleApis }}) => {
+          groupId: queryKey[7]
+        }
+      }).then(({ data: { visibleApis } }) => {
         setApisWithAuth(visibleApis.apis)
         return visibleApis
-        }
+      }
       )
     },
     enabled: !!client,
@@ -116,11 +117,11 @@ export const ApiList = (props: TApiList) => {
 
   const dataTags = useQuery({
     queryKey: ["dataTags", researchTag],
-    queryFn: ({queryKey}) => {
-      return client!.query<{allTags: Array<string>}>({
+    queryFn: ({ queryKey }) => {
+      return client!.query<{ allTags: Array<string> }>({
         query: Services.graphql.getAllTags,
-        variables: {research: queryKey[1]}
-      }).then(({data: {allTags}}) => {
+        variables: { research: queryKey[1] }
+      }).then(({ data: { allTags } }) => {
         setTags(arrayStringToTOps(allTags))
         return arrayStringToTOps(allTags)
       })
@@ -130,10 +131,10 @@ export const ApiList = (props: TApiList) => {
   const bestTags = useQuery({
     queryKey: ["bestTags"],
     queryFn: () => {
-      return client!.query<{allTags: Array<string>}>({
+      return client!.query<{ allTags: Array<string> }>({
         query: Services.graphql.getAllTags,
-        variables: {research: ""}
-      }).then(({data: {allTags}}) => {
+        variables: { research: "" }
+      }).then(({ data: { allTags } }) => {
         return arrayStringToTOps(allTags)
       })
     }
@@ -141,11 +142,11 @@ export const ApiList = (props: TApiList) => {
 
   const dataCategories = useQuery({
     queryKey: ["dataCategories", researchCat],
-    queryFn: ({queryKey}) => {
-      return client!.query<{allCategories: Array<string>}>({
+    queryFn: ({ queryKey }) => {
+      return client!.query<{ allCategories: Array<string> }>({
         query: Services.graphql.getAllCategories,
-        variables: {research: queryKey[1]}
-      }).then(({data: {allCategories}}) => {
+        variables: { research: queryKey[1] }
+      }).then(({ data: { allCategories } }) => {
         setCategories(arrayStringToTOps(allCategories))
         return arrayStringToTOps(allCategories)
       })
@@ -154,10 +155,10 @@ export const ApiList = (props: TApiList) => {
   const bestCategories = useQuery({
     queryKey: ["bestCategories"],
     queryFn: () => {
-      return client!.query<{allCategories: Array<string>}>({
+      return client!.query<{ allCategories: Array<string> }>({
         query: Services.graphql.getAllCategories,
-        variables: {research: ""}
-      }).then(({data: {allCategories}}) => {
+        variables: { research: "" }
+      }).then(({ data: { allCategories } }) => {
         return arrayStringToTOps(allCategories)
       })
     }
@@ -206,7 +207,7 @@ export const ApiList = (props: TApiList) => {
     setOffset(0)
   };
 
-  const setTagByBestTag = (data) =>{
+  const setTagByBestTag = (data) => {
     setSelectedTag(data)
     setPage(0)
     setOffset(0)
@@ -268,10 +269,10 @@ export const ApiList = (props: TApiList) => {
         <Select
           name="tag-selector"
           className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
-          value={selectedTag ?selectedTag : null}
+          value={selectedTag ? selectedTag : null}
           placeholder={translate('apiList.tag.search')}
           isClearable={true}
-          options={ dataTags.data ? [...dataTags.data] : [] }
+          options={dataTags.data ? [...dataTags.data] : []}
           onChange={(e: SingleValue<TOption>) => {
             setSelectedTag(e || undefined);
             setPage(0)
@@ -287,7 +288,7 @@ export const ApiList = (props: TApiList) => {
           value={selectedCategory ? selectedCategory : null}
           placeholder={translate('apiList.category.search')}
           isClearable={true}
-          options={ dataCategories.data ?  [...dataCategories.data] : []}
+          options={dataCategories.data ? [...dataCategories.data] : []}
           onChange={(e: SingleValue<TOption>) => {
 
             setSelectedCategory(e || undefined);
@@ -301,7 +302,7 @@ export const ApiList = (props: TApiList) => {
       <div className="row mb-2 view-selectors">
         <div className="col-12 col-sm-9 d-flex justify-content-end">
           <button
-            className={classNames('btn btn-sm btn-access-negative me-2', {active: view === LIST})}
+            className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
             onClick={() => {
               setView(LIST)
               setPage(0)
@@ -309,40 +310,42 @@ export const ApiList = (props: TApiList) => {
             }}
 
           >
-            <List/>
+            <List />
           </button>
           <button
-            className={classNames('btn btn-sm btn-access-negative', {active: view === GRID})}
+            className={classNames('btn btn-sm btn-access-negative', { active: view === GRID })}
             onClick={() => {
               setView(GRID)
               setPage(0)
               setOffset(0)
             }}
           >
-            <Grid/>
+            <Grid />
           </button>
         </div>
       </div>
       <div className="row">
-        {dataRequest.isLoading && <Spinner/>}
-        {apisWithAuth && dataRequest.data &&
-            <div
-                className={classNames('section d-flex flex-column', {
-                  'col-12 col-sm-9': !props.groupView,
-                  'col-12': props.groupView,
-                })}
-            >
-              <div
-                  className={classNames('d-flex justify-content-between p-3', {
-                    'flex-column': view === LIST,
-                    'flex-wrap': view === GRID,
-                    row: view === GRID,
-                  })}
-              >
-                <FilterPreview count={dataRequest.data.result} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedCategory={selectedCategory}/>
+        {dataRequest.isLoading && <Spinner />}
 
-                { apisWithAuth.map((apiWithAuth) => {
-                  const sameApis = apisWithAuth!.filter(((apiWithAuth2) => apiWithAuth2.api._humanReadableId === apiWithAuth.api._humanReadableId ))
+        <div
+          className={classNames('section d-flex flex-column', {
+            'col-12 col-sm-9': !props.groupView,
+            'col-12': props.groupView,
+          })}
+        >
+          {apisWithAuth && dataRequest.data &&
+            <>
+              <div
+                className={classNames('d-flex justify-content-between p-3', {
+                  'flex-column': view === LIST,
+                  'flex-wrap': view === GRID,
+                  row: view === GRID,
+                })}
+              >
+                <FilterPreview count={dataRequest.data.result} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedCategory={selectedCategory} />
+
+                {apisWithAuth.map((apiWithAuth) => {
+                  const sameApis = apisWithAuth!.filter(((apiWithAuth2) => apiWithAuth2.api._humanReadableId === apiWithAuth.api._humanReadableId))
                   if (!apiWithAuth.api.isDefault || !sameApis.find((api) => !api.api.parent)) {
                     return (
                       <ApiCard
@@ -368,28 +371,29 @@ export const ApiList = (props: TApiList) => {
               </div>
               <div className="apis__pagination">
                 <Pagination
-                    previousLabel={translate('Previous')}
-                    nextLabel={translate('Next')}
-                    breakLabel="..."
-                    breakClassName={'break'}
-                    pageCount={Math.ceil(dataRequest.data.result / pageNumber)}
-                    marginPagesDisplayed={1}
-                    pageRangeDisplayed={5}
-                    onPageChange={handlePageClick}
-                    containerClassName={'pagination'}
-                    pageClassName={'page-selector'}
-                    forcePage={page}
-                    activeClassName={'active'}
+                  previousLabel={translate('Previous')}
+                  nextLabel={translate('Next')}
+                  breakLabel="..."
+                  breakClassName={'break'}
+                  pageCount={Math.ceil(dataRequest.data.result / pageNumber)}
+                  marginPagesDisplayed={1}
+                  pageRangeDisplayed={5}
+                  onPageChange={handlePageClick}
+                  containerClassName={'pagination'}
+                  pageClassName={'page-selector'}
+                  forcePage={page}
+                  activeClassName={'active'}
                 />
               </div>
-            </div>
-        }
+            </>
+          }
+        </div>
         {!props.groupView && (
           <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
             {!props.team && !connectedUser.isGuest && (
-              <YourTeams teams={props.myTeams || []} redirectToTeam={redirectToTeam}/>
+              <YourTeams teams={props.myTeams || []} redirectToTeam={redirectToTeam} />
             )}
-            {!!bestTags.data && !!bestTags.data.length   && (
+            {!!bestTags.data && !!bestTags.data.length && (
               <Top
                 className="p-3 rounded additionalContent mb-2"
                 title="Top tags"
@@ -399,7 +403,7 @@ export const ApiList = (props: TApiList) => {
                 handleClick={setTagByBestTag}
               />
             )}
-            {!!bestCategories.data && !!bestCategories.data.length  && (
+            {!!bestCategories.data && !!bestCategories.data.length && (
               <Top
                 className="p-3 rounded additionalContent"
                 title="Top categories"
