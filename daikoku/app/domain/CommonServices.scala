@@ -187,16 +187,16 @@ object CommonServices {
                 teamFilter
               )).some
             adminApi = if (!userIsAdmin) None else Json.obj("visibility" -> ApiVisibility.AdminOnly.name).some
-            visibilityFilter = JsArray(Seq(publicApi, pwaApi, privateApi, adminApi).filter(_.isDefined).map(_.get))
-            paginateApis <- apiRepo.findWithPagination(Json.obj("$or" -> visibilityFilter, "name" -> Json.obj("$regex" -> research)
-              , "parent" -> JsNull) ++ tagFilter ++ catFilter ++ groupFilter
+            visibilityFilter = Json.obj("$or" -> JsArray(Seq(publicApi, pwaApi, privateApi, adminApi).filter(_.isDefined).map(_.get)))
+            paginateApis <- apiRepo.findWithPagination(visibilityFilter ++ Json.obj("name" -> Json.obj("$regex" -> research)
+              , "parent" -> JsNull, "_deleted" -> false) ++ tagFilter ++ catFilter ++ groupFilter
               , offset, limit, Some(Json.obj("name" -> 1))
             )
             uniqueApisWithVersion <- apiRepo.findNotDeleted(
               Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(paginateApis._1.map(a => JsString(a.humanReadableId))))),
               sort = Some(Json.obj("name" -> 1)))
           } yield {
-            val sortedApis: Seq[ApiWithAuthorizations] = ( uniqueApisWithVersion)
+            val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
               .filter(api => api.published || myTeams.exists(api.team == _.id))
               .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
               .map(api => api
@@ -218,8 +218,8 @@ object CommonServices {
                 })
               }
             ApiWithCount(sortedApis, paginateApis._2)
-              }
-          })
+          }
+        })
         }
     }
   def getAllTags(research: String)(implicit ctx: DaikokuActionContext[_], env: Env, ec: ExecutionContext): Future[Seq[String]]= {

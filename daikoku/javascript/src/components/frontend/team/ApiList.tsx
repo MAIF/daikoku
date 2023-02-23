@@ -220,7 +220,7 @@ export const ApiList = (props: TApiList) => {
   }
 
   const handlePageClick = (data) => {
-    setOffset(data.selected * pageNumber);
+    setOffset(data.selected);
     setPage(data.selected);
   };
 
@@ -345,8 +345,8 @@ export const ApiList = (props: TApiList) => {
                 <FilterPreview count={dataRequest.data.result} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedCategory={selectedCategory} />
 
                 {apisWithAuth.map((apiWithAuth) => {
-                  const sameApis = apisWithAuth!.filter(((apiWithAuth2) => apiWithAuth2.api._humanReadableId === apiWithAuth.api._humanReadableId))
-                  if (!apiWithAuth.api.isDefault || !sameApis.find((api) => !api.api.parent)) {
+                  const sameApis = apisWithAuth.filter(((apiWithAuth2) => apiWithAuth2.api._humanReadableId === apiWithAuth.api._humanReadableId))
+                  if (apiWithAuth.api.isDefault) {
                     return (
                       <ApiCard
                         user={user}

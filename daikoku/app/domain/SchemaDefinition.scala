@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
-import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
