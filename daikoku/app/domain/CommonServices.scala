@@ -1,12 +1,14 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -175,16 +177,16 @@ object CommonServices {
                   "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
                   "status.status" -> "Pending")
               )
-            paginateApis <- apiRepo.findWithPagination(Json.obj("$or" -> Json.arr(
-              Json.obj("visibility" -> "Public"),
-              if (user.isGuest) Json.obj() else Json.obj("visibility" -> "PublicWithAuthorizations"),
-              if (user.isGuest) Json.obj() else Json.obj("visibility" -> "Private",
-                "$or" -> Json.arr(
-                  Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))),
-                  teamFilter
-                )),
-              if (!user.isDaikokuAdmin) Json.obj() else Json.obj("visibility" -> ApiVisibility.AdminOnly.name)
-            ), "name" -> Json.obj("$regex" -> research)
+              public = Json.obj("visibility" -> "Public").some
+              pwa = if (user.isGuest) None else Json.obj("visibility" -> "PublicWithAuthorizations").some
+              priv = if (user.isGuest) None else Json.obj("visibility" -> "Private",
+              "$or" -> Json.arr(
+              Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))),
+              teamFilter
+              )).some
+              admin = if (!user.isDaikokuAdmin) None else Json.obj("visibility" -> ApiVisibility.AdminOnly.name).some
+            visibilityFilter = JsArray(Seq(public, pwa, priv, admin).filter(_.isDefined).map(_.get))
+            paginateApis <- apiRepo.findWithPagination(Json.obj("$or" -> visibilityFilter, "name" -> Json.obj("$regex" -> research)
               , "parent" -> JsNull) ++ tagFilter ++ catFilter ++ groupFilter
               , offset, limit, Some(Json.obj("name" -> 1))
             )
