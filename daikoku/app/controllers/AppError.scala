@@ -23,6 +23,7 @@ object AppError {
   case object TenantNotFound extends AppError
   case object TeamNotFound extends AppError
   case object UserNotFound extends AppError
+  case class EntityNotFound(entityName: String) extends AppError
   case object ForbiddenAction extends AppError
   case object OtoroshiSettingsNotFound extends AppError
   case object NotificationNotFound extends AppError
@@ -38,6 +39,7 @@ object AppError {
   case class PaymentError(message: JsObject) extends AppError
   case object SubscriptionConflict extends AppError
   case object ApiKeyRotationConflict extends AppError
+  case class EntityConflict(entityName: String) extends AppError
   case class ApiKeyRotationError(message: JsObject) extends AppError
   case object ApiKeyCustomMetadataNotPrivided extends AppError
   case object SubscriptionNotFound extends AppError
@@ -65,6 +67,7 @@ object AppError {
     case TeamNotFound             => NotFound(toJson(error))
     case TenantNotFound           => NotFound(toJson(error))
     case UserNotFound             => NotFound(toJson(error))
+    case EntityNotFound(_)        => NotFound(toJson(error))
     case NotificationNotFound     => NotFound(toJson(error))
     case SubscriptionDemandNotFound  => NotFound(toJson(error))
     case SubscriptionDemandClosed => Forbidden(toJson(error))
@@ -80,9 +83,10 @@ object AppError {
     case UserNotTeamAdmin(userId, teamId) =>
       play.api.mvc.Results.Unauthorized(toJson(error))
     case OtoroshiError(e)                        => BadRequest(e)
-    case PaymentError(e)                          => BadRequest(e)
+    case PaymentError(e)                         => BadRequest(e)
     case SubscriptionConflict                    => Conflict(toJson(error))
     case ApiKeyRotationConflict                  => Conflict(toJson(error))
+    case EntityConflict(_)                       => Conflict(toJson(error))
     case ApiKeyRotationError(e)                  => BadRequest(e)
     case ForbiddenAction                         => Forbidden(toJson(error))
     case ApiKeyCustomMetadataNotPrivided         => BadRequest(toJson(error))
@@ -109,30 +113,33 @@ object AppError {
         Json.obj("error" -> "Error while parsing payload", "msg" -> msg)
       case err =>
         Json.obj("error" -> (err match {
-          case ApiVersionConflict       => "This version already existed"
-          case ApiNotFound              => "API not found"
-          case ApiNotPublished          => "API not published"
-          case PageNotFound             => "Page not found"
-          case ApiGroupNotFound         => "API group not found"
-          case TeamNotFound             => "Team not found"
-          case TenantNotFound           => "Tenant not found"
-          case UserNotFound             => "User not found"
-          case NotificationNotFound     => "Notification not found"
-          case SubscriptionDemandNotFound  => "SubscriptionDemand not found"
+          case ApiVersionConflict => "This version already existed"
+          case ApiNotFound => "API not found"
+          case ApiNotPublished => "API not published"
+          case PageNotFound => "Page not found"
+          case ApiGroupNotFound => "API group not found"
+          case TeamNotFound => "Team not found"
+          case TenantNotFound => "Tenant not found"
+          case UserNotFound => "User not found"
+          case EntityNotFound(name) => s"$name not found"
+          case NotificationNotFound => "Notification not found"
+          case SubscriptionDemandNotFound => "SubscriptionDemand not found"
           case SubscriptionDemandClosed => "SubscriptionDemand is closed"
           case OtoroshiSettingsNotFound => "Otoroshi settings not found"
-          case TeamUnauthorized         => "You're not authorized on this team"
-          case ApiUnauthorized          => "You're not authorized on this api"
-          case PlanUnauthorized         => "You're not authorized on this plan"
-          case PlanNotFound             => "Plan not found"
-          case ApiNotLinked             => "Api is not linked to an Otoroshi descriptor"
+          case TeamUnauthorized => "You're not authorized on this team"
+          case ApiUnauthorized => "You're not authorized on this api"
+          case PlanUnauthorized => "You're not authorized on this plan"
+          case PlanNotFound => "Plan not found"
+          case ApiNotLinked => "Api is not linked to an Otoroshi descriptor"
           case UserNotTeamAdmin(userId, teamId) =>
             s"User $userId is not an admin for team $teamId"
           case SubscriptionConflict => "conflict with subscription request"
           case ApiKeyRotationConflict =>
             "conflict, Api have already setup apikey rotation"
+          case EntityConflict(entityName) =>
+            s"Conflict with $entityName"
           case ForbiddenAction => "You're not authorized to do this action"
-          case TeamForbidden   => "You're not part of this team"
+          case TeamForbidden => "You're not part of this team"
           case ApiKeyCustomMetadataNotPrivided =>
             "You need to provide custom metadata"
           case SubscriptionNotFound => "Subscription not found"
@@ -147,11 +154,11 @@ object AppError {
           case MissingParentSubscription =>
             "The parent of this subscription is missing"
           case TranslationNotFound => "Translation not found"
-          case Unauthorized        => "You're not authorized here"
-          case NameAlreadyExists   => "Resource with same name already exists"
-          case ThirdPartyPaymentSettingsNotFound   => "Third-party payment settings not found"
+          case Unauthorized => "You're not authorized here"
+          case NameAlreadyExists => "Resource with same name already exists"
+          case ThirdPartyPaymentSettingsNotFound => "Third-party payment settings not found"
           case SecurityError(s) => s"Forbidden action due to security : $s"
-          case _                   => ""
+          case _ => ""
         }))
     }
   }

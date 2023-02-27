@@ -1,10 +1,18 @@
 package fr.maif.otoroshi.daikoku.domain
 
+import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import play.api.libs.json._
+import cats.implicits._
+
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 case class CustomMetadata(key: String, possibleValues: Set[String] = Set.empty)
     extends CanJson[CustomMetadata] {
@@ -221,7 +229,9 @@ case class SubscriptionDemand(id: SubscriptionDemandId,
                               steps: Seq[SubscriptionDemandStep],
                               state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
                               team: TeamId,
-                              from: UserId)
+                              from: UserId,
+                              motivation: Option[String],
+                              parentSubscriptionId: Option[ApiSubscriptionId])
   extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }
@@ -232,6 +242,12 @@ case class SubscriptionDemandStep(id: SubscriptionDemandStepId,
                                   metadata: JsObject = Json.obj())
   extends CanJson[SubscriptionDemandStep] {
   override def asJson: JsValue = json.SubscriptionDemandStepFormat.writes(this)
+  def check() = {
+    state match {
+      case SubscriptionDemandState.InProgress => EitherT.pure[Future, AppError](())
+      case _ => EitherT.leftT[Future, Unit](AppError.EntityConflict("Subscription demand state"))
+    }
+  }
 }
 
 case class StepValidator(id: DatastoreId,
@@ -243,9 +259,5 @@ case class StepValidator(id: DatastoreId,
                          metadata: JsObject = Json.obj())
   extends CanJson[StepValidator] {
   override def asJson: JsValue = json.StepValidatorFormat.writes(this)
-  def asEncryptedToken = {
-    //todo:
-    ???
-  }
 }
 

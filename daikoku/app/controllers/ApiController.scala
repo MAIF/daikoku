@@ -22,6 +22,7 @@ import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient, Translator}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
@@ -33,6 +34,8 @@ import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
@@ -53,6 +56,8 @@ class ApiController(
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
   implicit val tr = translator
+
+  private lazy val secret = new SecretKeySpec("secret".getBytes, "AES")
 
   val logger = Logger("ApiController")
 
@@ -335,7 +340,7 @@ class ApiController(
       }
     }
 
-  def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]) = {
+  def getApi(api: Api, ctx: DaikokuActionContext[JsValue]) = {
     import cats.implicits._
 
     val r: EitherT[Future, Result, Result] = for {
@@ -413,7 +418,7 @@ class ApiController(
   }
 
   def getVisibleApiWithId(apiId: String) =
-    DaikokuActionMaybeWithGuest.async { ctx =>
+    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible api @{api.name}")
       )(ctx) {
@@ -428,7 +433,7 @@ class ApiController(
     }
 
   def getVisibleApi(humanReadableId: String, version: String) =
-    DaikokuActionMaybeWithGuest.async { ctx =>
+    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible api @{api.name}")
       )(ctx) {
@@ -999,9 +1004,11 @@ class ApiController(
                     metadata = motivation.map(m => Json.obj("motivation" -> m)).getOrElse(Json.obj())
                   )),
                   team = team.id,
-                  from = user.id
+                  from = user.id,
+                  motivation = motivation,
+                  parentSubscriptionId = apiKeyId
                 )))
-              result <- runSubscriptionProcess(demanId, ctx.tenant)
+              result <- runSubscriptionProcess(demanId, ctx.tenant)(ctx)
             } yield result
         }
     }
@@ -1019,9 +1026,10 @@ class ApiController(
             .orElse(ctx.tenant.defaultLanguage)
             .getOrElse("en")
 
+
+
           for {
             title <- EitherT.liftF(translator.translate("mail.subscription.validation.title", ctx.tenant))
-            body <- EitherT.liftF(template.map(FastFuture.successful).getOrElse(translator.translate("mail.subscription.validation.body", ctx.tenant))) //todo add right injected value
             _ <- EitherT.liftF(Future.sequence(emails.map(email => {
               val stepValidator = StepValidator(
                 id = DatastoreId(BSONObjectID.generate().stringify),
@@ -1031,7 +1039,12 @@ class ApiController(
                 subscriptionDemand = demand.id,
                 metadata = Json.obj("from" -> email)
               )
-              val url = s"/api/subscription/_validate?token=$stepValidator"
+              val cipher: Cipher = Cipher.getInstance("AES")
+              cipher.init(Cipher.ENCRYPT_MODE, secret)
+              val bytes = cipher.doFinal(stepValidator.token.getBytes)
+              val cipheredValidationToken = java.util.Base64.getUrlEncoder.encodeToString(bytes)
+              val url = s"/api/subscription/_validate?token=$cipheredValidationToken"
+
               translator.translate("mail.subscription.validation.body", ctx.tenant, Map("urlAccept" -> url))
                 .flatMap(body => env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator).map(_ => body))
                 .flatMap(body => ctx.tenant.mailer.send(title, Seq(email), body, ctx.tenant))
@@ -1055,30 +1068,50 @@ class ApiController(
       }
     }
 
-    for {
+    val value: EitherT[Future, AppError, SubscriptionDemand] = for {
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).findByIdNotDeleted(demandId), AppError.SubscriptionDemandNotFound)
-      _ <- if (demand.state.isClosed) EitherT.leftT[Future, Unit](AppError.SubscriptionDemandClosed) else EitherT.pure[Future, AppError](())
-      step <- EitherT.fromOption[Future](demand.steps.find(!_.state.isClosed), AppError.SubscriptionDemandClosed)
-      result <- runRightProcess(step, demand, tenant)
-    } yield result
+      a: EitherT[Future, AppError, Unit] = if (demand.state.isClosed) EitherT.leftT[Future, Unit](AppError.SubscriptionDemandClosed) else EitherT.pure[Future, AppError](())
+      _ <- a
+    } yield demand
+
+    value.map(demand => (demand.steps.find(!_.state.isClosed), demand)).flatMap {
+      case (Some(step), demand) => runRightProcess(step, demand, tenant)
+      case (None, demand) => for {
+        result <- EitherT.liftF(_createOrExtendApiKey(demand.api.value, demand.plan.value, demand.team.value, ctx, demand.parentSubscriptionId))
+        _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).save(demand.copy(state = SubscriptionDemandState.Accepted)))
+      } yield result
+    }
   }
 
-  def validateProcess() = DaikokuActionMaybeWithGuest.async { ctx =>
+  private def decrypt(encryptedString: String): EitherT[Future, AppError, String] = {
+    val tokenBytes = java.util.Base64.getUrlDecoder.decode(encryptedString)
+    val cipher: Cipher = Cipher.getInstance("AES")
+    cipher.init(Cipher.DECRYPT_MODE, secret)
+    val token = new String(cipher.doFinal(tokenBytes))
+
+    EitherT.pure(token)
+  }
+
+  def validateProcess() = DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
     UberPublicUserAccess(
-      AuditTrailEvent(s"Process has been validated"))(ctx) {
-      ctx.request.getQueryString("token")
+      AuditTrailEvent(s"Subscription process has been validated by @{validator.name}"))(ctx) { //todo: better audit trail event
 
-      //extract provenance
-      //extract token
-      //dechiffrer token
-      // find stepValidatore
-      //find demand & step
-      // valid step & run process or run subscription
-
-      {
-
-      }
-      ???
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](ctx.request.getQueryString("token"), AppError.EntityNotFound("token from query"))
+        token <- decrypt(encryptedToken)
+        validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
+          .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
+        _ <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(ctx.tenant)
+        .findByIdNotDeleted((validator.metadata \ "teamId").as[String]), AppError.TeamNotFound)
+        demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
+          .findByIdNotDeleted(validator.subscriptionDemand), AppError.EntityNotFound("Step Validator"))
+        _ <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
+        step <- EitherT.fromOption[Future](demand.steps.find(_.id == validator.step), AppError.EntityNotFound("Validation Step"))
+        _ <- step.check()
+        updatedDemand = demand.copy(steps = demand.steps.filter(_.id != step.id) :+ step.copy(state = SubscriptionDemandState.Accepted))
+        _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).save(updatedDemand))
+        result <- runSubscriptionProcess(demand.id, ctx.tenant)(ctx)
+      } yield result).leftMap(_.render()).merge
     }
   }
 

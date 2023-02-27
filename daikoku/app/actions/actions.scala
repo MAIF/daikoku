@@ -8,7 +8,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.{IdentityAttrs, TenantHelper}
 import fr.maif.otoroshi.daikoku.utils.Errors
 import play.api.Logger
-import play.api.libs.json.{JsString, Json}
+import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.mvc._
 
 import scala.collection.concurrent.TrieMap

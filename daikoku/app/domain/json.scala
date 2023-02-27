@@ -2407,7 +2407,9 @@ object json {
       "state" -> o.state.name,
       "team" -> o.team.asJson,
       "from" -> o.from.asJson,
-    )
+      "motivation" -> o.motivation.map(JsString).getOrElse(JsNull).as[JsValue],
+      "parentSubscription" -> o.parentSubscriptionId.map(_.asJson).getOrElse(JsNull).as[JsValue])
+
 
     override def reads(json: JsValue): JsResult[SubscriptionDemand] = Try {
       JsSuccess(
@@ -2421,6 +2423,8 @@ object json {
           state = (json \ "state").as(SubscriptionDemandStateFormat),
           team = (json \ "team").as(TeamIdFormat),
           from = (json \ "from").as(UserIdFormat),
+          motivation = (json \ "motivation").asOpt[String],
+          parentSubscriptionId = (json \ "parentSubscription").asOpt(ApiSubscriptionIdFormat)
         )
       )
     } recover {

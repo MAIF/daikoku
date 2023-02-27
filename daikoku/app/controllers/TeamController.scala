@@ -53,7 +53,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   implicit val mat: Materializer = env.defaultMaterializer
   implicit val tr = translator
 
-  def team(teamId: String): Action[AnyContent] =
+  def team(teamId: String) =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(AuditTrailEvent(
         s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(ctx) {
@@ -68,7 +68,7 @@ class TeamController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def teamFull(teamId: String): Action[AnyContent] = DaikokuAction.async {
+  def teamFull(teamId: String) = DaikokuAction.async {
     ctx =>
       TeamAdminOrTenantAdminOnly(
         AuditTrailEvent(
