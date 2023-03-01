@@ -4,19 +4,10 @@ import akka.Done
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiDocumentationPageFormat,
-  ApiFormat,
-  ApiSubscriptionFormat,
-  SeqApiDocumentationDetailPageFormat,
-  TeamFormat,
-  TeamIdFormat,
-  TenantFormat,
-  UserFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
@@ -585,7 +576,9 @@ object evolution_1612 extends EvolutionScript {
               val subscriptionProcess = (oldPlan \ "subscriptionProcess").asOpt[String] match {
                 case Some("Manual") => Seq(
                     ValidationStep
-                      .TeamAdmin((value \ "team").as(TeamIdFormat))
+                      .TeamAdmin(
+                        id = IdGenerator.token(32),
+                        team = (value \ "team").as(TeamIdFormat))
                   )
                 case _ => Seq.empty
               }

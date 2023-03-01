@@ -199,7 +199,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
           title={translate('third-party.payment.list.add.label')}
           onClick={() => {
             openFormModal({
-              title: 'titre',
+              title: translate('third-party.payment.list.add.label'), //todo ?
               schema: beforeCreationSchema,
               onSubmit: (data: { type: ThirdPartyPaymentType }) => editSettings(data.type),
               actionLabel: translate('Next'),

@@ -36,6 +36,7 @@ export type TModalContext = {
   openAssetSelectorModal: (p: IAssetSelectorModalProps) => void;
   openApiKeySelectModal: (p: IApiKeySelectModalProps) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
+  close: () => void;
 };
 export type ConfirmModalProps = {
   message: JSX.Element | string | ((ok: () => void, cancel: () => void) => JSX.Element | string);

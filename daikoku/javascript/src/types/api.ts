@@ -104,11 +104,13 @@ export interface ISwagger {
 }
 
 export interface IValidationStep {
-  name: string
+  id: string
+  type: 'teamAdmin' | 'email' | 'payment'
 }
 
 export interface IValidationStepEmail extends IValidationStep {
-  emails: Array<string>
+  emails: Array<string>,
+  message
 }
 
 export function isValidationStepEmail(item: any): item is IValidationStepEmail {
@@ -121,6 +123,10 @@ export interface IValidationStepTeamAdmin extends IValidationStep {
 
 export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {
   return (<IValidationStepTeamAdmin>item).team !== undefined;
+}
+
+export function isValidationStepPayment(item: any): item is IValidationStepPayment {
+  return (<IValidationStepPayment>item).thirdPartyPaymentSettingsId !== undefined;
 }
 
 export interface IValidationStepPayment extends IValidationStep {

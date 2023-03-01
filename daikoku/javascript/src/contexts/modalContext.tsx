@@ -53,6 +53,7 @@ const init: TModalContext = {
   openAssetSelectorModal: () => { },
   openApiSelectModal: () => { },
   openApiKeySelectModal: () => { },
+  close: () => {}
 }
 
 export const ModalContext = React.createContext<TModalContext>(init);
@@ -136,7 +137,8 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
       openContactModal,
       openAssetSelectorModal,
       openApiSelectModal,
-      openApiKeySelectModal
+      openApiKeySelectModal,
+      close
     }}>
       <Modal modal={modal} modalContent={modalContent} />
       {props.children}

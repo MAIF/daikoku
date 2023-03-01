@@ -1019,7 +1019,7 @@ class ApiController(
 
     def runRightProcess(step: SubscriptionDemandStep, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
       step.step match {
-        case ValidationStep.Email(emails, template) =>
+        case ValidationStep.Email(_, emails, template) =>
           implicit val currentLanguage: String = ctx.request.headers.toSimpleMap
             .find(test => test._1 == "X-contact-language")
             .map(h => h._2)
@@ -1052,7 +1052,7 @@ class ApiController(
           } yield {
             Ok(Json.obj("mailSended" -> true))
           }
-        case ValidationStep.TeamAdmin(_) => notifyApiSubscription(
+        case ValidationStep.TeamAdmin(_, _) => notifyApiSubscription(
           tenantId = tenant.id,
           userId = demand.from,
           apiId = demand.api,
@@ -1061,7 +1061,7 @@ class ApiController(
           apiKeyId = None,
           motivation = None
         )
-        case ValidationStep.Payment(_) => paymentClient.checkoutSubscription(
+        case ValidationStep.Payment(_, _) => paymentClient.checkoutSubscription(
           tenant = tenant,
           subscriptionDemand = demand
         )
@@ -4063,11 +4063,11 @@ class ApiController(
         def addProcess(api: Api, plan: UsagePlan): EitherT[Future, AppError, Api] = {
           val updatedPlan: UsagePlan = (plan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty), plan.paymentSettings) match {
             case (true, None) => plan
-            case (true, Some(settings)) => plan.addSubscriptionStep(ValidationStep.Payment(settings.thirdPartyPaymentSettingsId))
+            case (true, Some(settings)) => plan.addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), settings.thirdPartyPaymentSettingsId))
             case (false, Some(settings)) => plan
-            .addSubscriptionStep(ValidationStep.Payment(settings.thirdPartyPaymentSettingsId))
-            .addSubscriptionStep(ValidationStep.TeamAdmin(api.team), 0.some)
-            case (false, None) => plan.addSubscriptionStep(ValidationStep.TeamAdmin(api.team), 0.some)
+            .addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), settings.thirdPartyPaymentSettingsId))
+            .addSubscriptionStep(ValidationStep.TeamAdmin(IdGenerator.token(32), api.team), 0.some)
+            case (false, None) => plan.addSubscriptionStep(ValidationStep.TeamAdmin(IdGenerator.token(32), api.team), 0.some)
           }
 
           EitherT.pure[Future, AppError](api.copy(possibleUsagePlans = api.possibleUsagePlans :+ updatedPlan))
@@ -4136,7 +4136,7 @@ class ApiController(
           api.possibleUsagePlans.find(_.id == plan.id)
             .map(oldPlan => {
               if (oldPlan.paymentSettings.isEmpty && plan.paymentSettings.isDefined) {
-                (oldPlan, plan.addSubscriptionStep(ValidationStep.Payment(plan.paymentSettings.get.thirdPartyPaymentSettingsId)))
+                (oldPlan, plan.addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), plan.paymentSettings.get.thirdPartyPaymentSettingsId)))
               } else {
                 (oldPlan, plan)
               }
@@ -4150,7 +4150,7 @@ class ApiController(
             })
             .map(tuple => {
               if (tuple._1.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty) && tuple._2.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.nonEmpty)) {
-                plan.addSubscriptionStep(ValidationStep.Payment(plan.paymentSettings.get.thirdPartyPaymentSettingsId), 0.some)
+                plan.addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), plan.paymentSettings.get.thirdPartyPaymentSettingsId), 0.some)
               } else {
                 tuple._2
               }
@@ -4226,13 +4226,21 @@ class ApiController(
           ratedPlanwithSettings = ratedPlan match {
             case p: UsagePlan.QuotasWithLimits =>
               p.copy(paymentSettings = paymentSettings.some)
-                .addSubscriptionStep(ValidationStep.Payment(paymentSettings.thirdPartyPaymentSettingsId))
+                .addSubscriptionStep(ValidationStep.Payment(
+                  id = IdGenerator.token(32),
+                  thirdPartyPaymentSettingsId = paymentSettings.thirdPartyPaymentSettingsId))
             case p: UsagePlan.QuotasWithoutLimits =>
               p.copy(paymentSettings = paymentSettings.some)
-                .addSubscriptionStep(ValidationStep.Payment(paymentSettings.thirdPartyPaymentSettingsId))
+                .addSubscriptionStep(ValidationStep.Payment(
+                  id = IdGenerator.token(32),
+                  thirdPartyPaymentSettingsId = paymentSettings.thirdPartyPaymentSettingsId
+                ))
             case p: UsagePlan.PayPerUse =>
               p.copy(paymentSettings = paymentSettings.some)
-                .addSubscriptionStep(ValidationStep.Payment(paymentSettings.thirdPartyPaymentSettingsId))
+                .addSubscriptionStep(ValidationStep.Payment(
+                  id = IdGenerator.token(32),
+                  thirdPartyPaymentSettingsId = paymentSettings.thirdPartyPaymentSettingsId
+                ))
             case p: UsagePlan => p
           }
 

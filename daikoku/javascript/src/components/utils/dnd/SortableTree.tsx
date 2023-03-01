@@ -39,37 +39,6 @@ import { sortableTreeKeyboardCoordinates } from './keyboardCoordinates';
 import { SortableTreeItem } from './components/sortableTreeItem';
 import { CSS } from '@dnd-kit/utilities';
 
-// const initialItems: TreeItems = [
-//   {
-//     id: 'Home',
-//     title: 'maison',
-//     children: [],
-//   },
-//   {
-//     id: 'Collections',
-//     title: "collections",
-//     children: [
-//       { id: 'Spring', title: 'printemps',children: [] },
-//       { id: 'Summer', title: 'été', children: [] },
-//       { id: 'Fall', title: "automne", children: [] },
-//       { id: 'Winter', title: "hiver", children: [] },
-//     ],
-//   },
-//   {
-//     id: 'About Us',
-//     title: "a propos",
-//     children: [],
-//   },
-//   {
-//     id: 'My Account',
-//     title: "Mon compte",
-//     children: [
-//       { id: 'Addresses', title: "adresses", children: [] },
-//       { id: 'Order History', title: "historique", children: [] },
-//     ],
-//   },
-// ];
-
 const measuring = {
   droppable: {
     strategy: MeasuringStrategy.Always,

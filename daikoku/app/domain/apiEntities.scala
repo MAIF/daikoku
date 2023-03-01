@@ -855,19 +855,20 @@ case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
 
 sealed trait ValidationStep {
+  def id: String
   def name: String
   def asJson: JsValue = json.ValidationStepFormat.writes(this)
 }
 
 object ValidationStep {
-  case class Email(emails: Seq[String], template: Option[String]) extends ValidationStep {
+  case class Email(id: String, emails: Seq[String], message: Option[String]) extends ValidationStep {
     def name: String = "email"
   }
 
-  case class TeamAdmin(team: TeamId) extends ValidationStep {
+  case class TeamAdmin(id: String, team: TeamId) extends ValidationStep {
     def name: String = "teamAdmin"
   }
-  case class Payment(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId) extends ValidationStep {
+  case class Payment(id: String, thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId) extends ValidationStep {
     def name: String = "payment"
   }
 }

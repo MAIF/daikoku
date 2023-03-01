@@ -1,0 +1,40 @@
+.sortable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.sortable-item {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  flex-grow: 1;
+  align-items: center;
+  padding: 18px 20px;
+  background-color: #fff;
+  box-shadow: 0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05),
+    0 1px calc(3px / var(--scale-x, 1)) 0 rgba(34, 33, 81, 0.15);
+  border-radius: calc(4px / var(--scale-x, 1));
+  box-sizing: border-box;
+  list-style: none;
+
+  .action {
+    position: absolute;
+    top: 10px;
+    right: -25px
+  }
+  &.fixed {
+    cursor: default;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      top: 0; bottom: 0;
+      background-color: rgba(0, 0, 0, 0.15);
+    }
+  }
+}
