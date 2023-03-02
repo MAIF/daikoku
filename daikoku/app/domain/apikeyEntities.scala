@@ -244,7 +244,7 @@ case class SubscriptionDemandStep(id: SubscriptionDemandStepId,
   override def asJson: JsValue = json.SubscriptionDemandStepFormat.writes(this)
   def check() = {
     state match {
-      case SubscriptionDemandState.InProgress => EitherT.pure[Future, AppError](())
+      case SubscriptionDemandState.InProgress | SubscriptionDemandState.Waiting => EitherT.pure[Future, AppError](())
       case _ => EitherT.leftT[Future, Unit](AppError.EntityConflict("Subscription demand state"))
     }
   }

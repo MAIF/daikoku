@@ -1008,13 +1008,13 @@ class ApiController(
                   motivation = motivation,
                   parentSubscriptionId = apiKeyId
                 )))
-              result <- runSubscriptionProcess(demanId, ctx.tenant)(ctx)
+              result <- runSubscriptionProcess(demanId)(ctx)
             } yield result
         }
     }
   }
 
-  def runSubscriptionProcess(demandId: SubscriptionDemandId, tenant: Tenant)
+  def runSubscriptionProcess(demandId: SubscriptionDemandId)
                             (implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, Result] = {
 
     def runRightProcess(step: SubscriptionDemandStep, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
@@ -1069,13 +1069,13 @@ class ApiController(
     }
 
     val value: EitherT[Future, AppError, SubscriptionDemand] = for {
-      demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).findByIdNotDeleted(demandId), AppError.SubscriptionDemandNotFound)
+      demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findByIdNotDeleted(demandId), AppError.SubscriptionDemandNotFound)
       a: EitherT[Future, AppError, Unit] = if (demand.state.isClosed) EitherT.leftT[Future, Unit](AppError.SubscriptionDemandClosed) else EitherT.pure[Future, AppError](())
       _ <- a
     } yield demand
 
     value.map(demand => (demand.steps.find(!_.state.isClosed), demand)).flatMap {
-      case (Some(step), demand) => runRightProcess(step, demand, tenant)
+      case (Some(step), demand) => runRightProcess(step, demand, ctx.tenant)
       case (None, demand) => for {
         result <- EitherT.liftF(_createOrExtendApiKey(demand.api.value, demand.plan.value, demand.team.value, ctx, demand.parentSubscriptionId))
         _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).save(demand.copy(state = SubscriptionDemandState.Accepted)))
@@ -1096,23 +1096,30 @@ class ApiController(
     UberPublicUserAccess(
       AuditTrailEvent(s"Subscription process has been validated by @{validator.name}"))(ctx) { //todo: better audit trail event
 
+      implicit val c = ctx
       (for {
         encryptedToken <- EitherT.fromOption[Future](ctx.request.getQueryString("token"), AppError.EntityNotFound("token from query"))
         token <- decrypt(encryptedToken)
         validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
           .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
-        _ <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(ctx.tenant)
-        .findByIdNotDeleted((validator.metadata \ "teamId").as[String]), AppError.TeamNotFound)
-        demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
-          .findByIdNotDeleted(validator.subscriptionDemand), AppError.EntityNotFound("Step Validator"))
-        _ <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
-        step <- EitherT.fromOption[Future](demand.steps.find(_.id == validator.step), AppError.EntityNotFound("Validation Step"))
-        _ <- step.check()
-        updatedDemand = demand.copy(steps = demand.steps.filter(_.id != step.id) :+ step.copy(state = SubscriptionDemandState.Accepted))
-        _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).save(updatedDemand))
-        result <- runSubscriptionProcess(demand.id, ctx.tenant)(ctx)
+        result <- validateProcessWithStepValidator(validator)
       } yield result).leftMap(_.render()).merge
     }
+  }
+
+  private def validateProcessWithStepValidator(validator: StepValidator)(implicit ctx: DaikokuActionContext[JsValue]) = {
+    for {
+      _ <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(ctx.tenant)
+        .findByIdNotDeleted((validator.metadata \ "teamId").as[String]), AppError.TeamNotFound)
+      demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
+        .findByIdNotDeleted(validator.subscriptionDemand), AppError.EntityNotFound("Subscription demand Validator"))
+      _ <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
+      step <- EitherT.fromOption[Future](demand.steps.find(_.id == validator.step), AppError.EntityNotFound("Validation Step"))
+      _ <- step.check()
+      updatedDemand = demand.copy(steps = demand.steps.filter(_.id != step.id) :+ step.copy(state = SubscriptionDemandState.Accepted))
+      _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).save(updatedDemand))
+      result <- runSubscriptionProcess(demand.id)(ctx)
+    } yield result
   }
 
   def notifyApiSubscription(
@@ -4141,33 +4148,108 @@ class ApiController(
                 (oldPlan, plan)
               }
             })
-            .map(tuple => {
-              if (tuple._1.paymentSettings.isDefined && tuple._2.paymentSettings.isEmpty) {
-                (tuple._1, tuple._2.removeSubscriptionStep(step => step.name == "payment"))
+            .map{case (oldPlan, plan) =>
+              if (oldPlan.paymentSettings.isDefined && plan.paymentSettings.isEmpty) {
+                (oldPlan, plan.removeSubscriptionStep(step => step.name == "payment"))
               } else {
-                tuple
+                (oldPlan, plan)
               }
-            })
-            .map(tuple => {
-              if (tuple._1.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty) && tuple._2.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.nonEmpty)) {
+            }
+            .map{case (oldPlan, plan) =>
+              if (oldPlan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty) && plan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.nonEmpty)) {
                 plan.addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), plan.paymentSettings.get.thirdPartyPaymentSettingsId), 0.some)
               } else {
-                tuple._2
+                plan
               }
-            }) match {
+            } match {
             case Some(updatedPlan) => EitherT.pure[Future, AppError](api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(_.id != updatedPlan.id) :+ updatedPlan))
             case None => EitherT.leftT[Future, Api](AppError.PlanNotFound)
+          }
+        }
+
+        def runDemandUpdate(api: Api, updatedPlan: UsagePlan):EitherT[Future, AppError, Unit] = {
+          implicit val c = ctx
+
+          //todo: mettre a jours les subscription demand si le subProcess a été modifié
+
+          env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
+            .streamAllRaw(Json.obj(
+              "api" -> api.id.asJson,
+              "plan" -> updatedPlan.id.asJson,
+              "$or" -> Json.arr(
+                Json.obj("state" -> SubscriptionDemandState.InProgress.name),
+                Json.obj("state" -> SubscriptionDemandState.Waiting.name),
+              )))
+            .map(json.SubscriptionDemandFormat.reads)
+            .collect { case JsSuccess(demand, _) => demand }
+            .mapAsync(1)(demand => {
+              val newSteps = updatedPlan.subscriptionProcess.map(validationStep => {
+                val demandStep = demand.steps.find(_.step.id == validationStep.id)
+                //todo: metre a jour le flow de validation avec les nouvelles info si le state est en waiting ou inProgress
+                //todo: garder le reste tel quel
+              })
+            })
+
+          //todo: puis gerer les mise a jour en question
+          api.possibleUsagePlans.find(_.id == updatedPlan.id)
+            .map(plan => {
+              updatedPlan.subscriptionProcess.foreach(step => {
+                //todo: valider les "stepValidator" si la step en question a été supprimé
+                if (!plan.subscriptionProcess.exists(_.id == step.id)) {
+                  for {
+                    demands <- env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+                      "api" -> api.id.asJson,
+                      "plan" -> updatedPlan.id.asJson,
+                      "$or" -> Json.arr(
+                        Json.obj("state" -> SubscriptionDemandState.InProgress.name),
+                        Json.obj("state" -> SubscriptionDemandState.Waiting.name),
+                      )
+                    ))
+                    validators <- env.dataStore.stepValidatorRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+                      "subscriptionDemand" -> Json.obj("$in" -> JsArray(demands.map(_.id.asJson))),
+                      "step" -> step.id
+                    ))
+                    _ <- Future.sequence(validators.map(validateProcessWithStepValidator).map(_.value))
+                  } yield ()
+                } else if (!plan.subscriptionProcess.find(_.id == step.id).contains(step)) {
+                  //todo: relancer le rpocess de step si elle a ét modifié (apr ex: nouvelle email)
+                  for {
+                    demands <- env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+                      "api" -> api.id.asJson,
+                      "plan" -> updatedPlan.id.asJson,
+                      "$or" -> Json.arr(
+                        Json.obj("state" -> SubscriptionDemandState.InProgress.name),
+                        Json.obj("state" -> SubscriptionDemandState.Waiting.name),
+                      )
+                    ))
+                    validators <- env.dataStore.stepValidatorRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+                      "subscriptionDemand" -> Json.obj("$in" -> JsArray(demands.map(_.id.asJson))),
+                      "step" -> step.id
+                    ))
+                    _ <- Future.sequence(demands
+                      .filter(d => validators.exists(_.subscriptionDemand == d.id))
+                      .map(d => runSubscriptionProcess(d.id))
+                      .map(_.value))
+                  } yield ()
+                }
+              })
+            }) match {
+            case Some(value) => EitherT.pure[Future, AppError](())
+            case None => EitherT.pure[Future, AppError](()) //todo: ???
           }
         }
 
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          //todo: bloquer les subscriptionDemand en cours (passer le state a BLOCKED)
           _ <- getPlanAndCheckIt(api, updatedPlan)
           _ <- handleVisibilityToggling(api, updatedPlan)
           updatedApi <- handleProcess(api, updatedPlan)
           _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
           _ <- EitherT.liftF(otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)))
+          _ <- runDemandUpdate(api, updatedPlan)
+          //todo: débloquer les subscriptionDemand (passer le state a INPROGRESS)
         } yield Ok(updatedApi.asJson)
 
         value.leftMap(_.render()).merge

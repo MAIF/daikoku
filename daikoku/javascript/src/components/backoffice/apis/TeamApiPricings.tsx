@@ -1,3 +1,4 @@
+import { UniqueIdentifier } from '@dnd-kit/core';
 import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames';
@@ -23,7 +24,7 @@ import {
   team
 } from '../../utils';
 import { insertArrayIndex } from '../../utils/array';
-import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
+import { Droppable, FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -1354,11 +1355,11 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
     })
   }
 
-  const deleteStep = (deletedStep: IValidationStep) => {
-    console.debug({ deleteStep })
-    props.savePlan({ ...props.value, subscriptionProcess: props.value.subscriptionProcess.filter(step => step.id !== deletedStep.id) })
+  const deleteStep = (deletedStepId: UniqueIdentifier) => {
+    const subscriptionProcess = props.value.subscriptionProcess.filter(step => step.id !== deletedStepId)
+    console.debug({old: props.value.subscriptionProcess, deletedStepId, subscriptionProcess})
+    props.savePlan({ ...props.value, subscriptionProcess })
   }
-
 
   return (
     <>
@@ -1376,23 +1377,28 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
             const RenderedStep = () => <ValidationStep
               step={item}
               tenant={props.tenant} />
-            if (isValidationStepTeamAdmin(item) && !!props.value.otoroshiTarget?.apikeyCustomization.customMetadata) {
-              return <FixedItem id={item.id}>
-                <RenderedStep />
-              </FixedItem>
+            if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) { 
+              return (
+                <FixedItem id={item.id}>
+                  <RenderedStep />
+                </FixedItem>
+              )
             } else if (isValidationStepPayment(item)) {
-              return <FixedItem id={item.id}>
-                <RenderedStep />
-              </FixedItem>
+              return (
+                <FixedItem id={item.id}>
+                  <RenderedStep />
+                </FixedItem>
+              )
             } else {
-              return <>
-                <SortableItem id={item.id}>
+              return (
+                <SortableItem
+                  id={item.id}>
                   <RenderedStep />
                 </SortableItem>
-                <button className='action' onClick={(e) => { e.stopPropagation(); e.preventDefault(); console.debug("delete") }}>delete</button>
-              </>
+              )
             }
           }}
+          delete={deleteStep}
         />
       </div>
     </>

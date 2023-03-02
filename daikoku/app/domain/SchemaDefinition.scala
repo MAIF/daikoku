@@ -294,16 +294,19 @@ object SchemaDefinition {
     lazy val ValidationStepEmail = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.Email](
       Interfaces(ValidationStepInterfaceType),
       ObjectTypeDescription("A validation Step by email"),
-      ReplaceField("emails", Field("id", ListType(StringType), resolve = ctx => ctx.value.emails)),
+      ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id)),
+      ReplaceField("emails", Field("emails", ListType(StringType), resolve = ctx => ctx.value.emails)),
     ))
     lazy val ValidationStepAdmin = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.TeamAdmin](
       Interfaces(ValidationStepInterfaceType),
       ObjectTypeDescription("A validation Step by team admins"),
+      ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id)),
       ReplaceField("team", Field("team", StringType, resolve = ctx => ctx.value.team.value)),
     ))
     lazy val ValidationStepPayment = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.Payment](
       Interfaces(ValidationStepInterfaceType),
       ObjectTypeDescription("A validation Step by payment"),
+      ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id)),
       ReplaceField("thirdPartyPaymentSettingsId", Field("thirdPartyPaymentSettingsId", StringType, resolve = ctx => ctx.value.thirdPartyPaymentSettingsId.value)),
     ))
 
