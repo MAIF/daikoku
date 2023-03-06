@@ -207,6 +207,10 @@ object SubscriptionDemandState {
     def name: String = "waiting"
     def isClosed: Boolean = false
   }
+  case object Blocked extends SubscriptionDemandState {
+    def name: String = "blocked"
+    def isClosed: Boolean = true
+  }
 
   val values: Seq[SubscriptionDemandState] =
     Seq(Accepted, Refused, Cancelled, InProgress)
