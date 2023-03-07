@@ -1,8 +1,8 @@
 import { constraints, Form, format, type } from '@maif/react-forms';
 import md5 from 'js-md5';
-import { useContext, useEffect } from 'react';
+import {useContext, useEffect, useState} from 'react';
 import { toastr } from 'react-redux-toastr';
-import { useNavigate } from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
@@ -24,7 +24,7 @@ const Avatar = ({
   value,
   getValue,
   onChange,
-  team
+  team,
 }: AvatarProps) => {
   const { Translation, translate } = useContext(I18nContext);
 
@@ -122,10 +122,14 @@ export const teamSchema = (team: ITeamSimple, translate: (props: string | Transl
 type TeamEditFormProps = {
   team: ITeamSimple
   updateTeam: (t: ITeamSimple) => void
+
+
 }
 export const TeamEditForm = ({
   team,
-  updateTeam
+  updateTeam,
+
+
 }: TeamEditFormProps) => {
   const navigate = useNavigate();
 
@@ -181,20 +185,35 @@ export const TeamEditForm = ({
 
 export const TeamEdit = () => {
   const navigate = useNavigate();
-
   const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
+  const [contact, setContact] = useState(currentTeam.contact)
+  const [alreadyClicked, setAlreadyClicked] = useState(false)
   const dispatch = useDispatch();
 
   useTeamBackOffice(currentTeam);
 
+  const { search } = useLocation();
   const { translate } = useContext(I18nContext);
 
-
-  const save = (data: ITeamSimple) => {
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get("teamVerified") === "true") {
+      toastr.success(translate('Success'), translate('team.validated.success'))
+    }
+  }, []);
+  const save = (data: ITeamSimple, contact: string) => {
     Services.updateTeam(data)
-      .then((updatedTeam) => {
+      .then((updatedTeam: ITeamSimple) => {
         if (data._humanReadableId !== updatedTeam._humanReadableId) {
           navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
+        }
+        if(contact !== updatedTeam.contact) {
+          setContact(updatedTeam.contact)
+          toastr.info(
+            translate("mailValidation.sent.title"),
+            translate("mailValidation.sent.body")
+          )
+          setAlreadyClicked(false)
         }
         dispatch(updateTeam(updatedTeam))
         toastr.success(
@@ -205,6 +224,27 @@ export const TeamEdit = () => {
   };
 
   return (
-    <TeamEditForm team={currentTeam} updateTeam={save} />
+    <div>
+      {!currentTeam.verified && !alreadyClicked &&
+      <div className="alert alert-danger" role="alert">
+        Your email isn't verified. Send a mail for verifying it <a href="#" onClick={() => {
+        Services.sendEmailVerification(currentTeam._id)
+          .then((r) => {
+            if (isError(r)) {
+              toastr.success(translate("Error"), r.error)
+            } else {
+              setAlreadyClicked(true)
+              toastr.success(
+                translate("Success"),
+                translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] }))
+            }
+          })}} className="alert-link">here</a>.
+      </div> }
+      {!currentTeam.verified && alreadyClicked &&
+          <div className="alert alert-success" role="alert">
+            mail sent !
+          </div> }
+      <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, contact)} />
+    </div>
   );
 };

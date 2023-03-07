@@ -218,6 +218,11 @@ export const createTeam = (team: ITeamSimple) =>
     body: JSON.stringify(team),
   });
 
+export const sendEmailVerification = (teamId: String) =>
+  customFetch(`/api/teams/${teamId}/_sendEmail`,{
+    method: 'PUT'
+  });
+
 export const updateTeam = (team: ITeamSimple) =>
   customFetch(`/api/teams/${team._id}`, {
     method: 'PUT',

@@ -129,7 +129,8 @@ case class Team(
       "apisCreationPermission" -> apisCreationPermission
         .map(JsBoolean)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "verified" -> verified
     )
   }
   def includeUser(userId: UserId): Boolean = {

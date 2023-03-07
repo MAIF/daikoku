@@ -163,6 +163,10 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("play.http.secret.key")
     .getOrElse("secret")
 
+  lazy val cypherSecret: String = underlying
+    .getOptional[String]("daikoku.mode").getOrElse("cypherSecret")
+
+
   lazy val signingKey: String =
     underlying.get[String]("daikoku.signingKey")
 

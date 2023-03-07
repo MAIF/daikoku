@@ -1253,5 +1253,11 @@
   "otoroshi.missing.target": "Cible Otoroshi manquante",
   "otoroshi.missing.entities": "entités Otoroshi manquantes",
   "apiList.tag.search":"Recherchez un tag",
-  "apiList.category.search":"Recherchez une categorie"
+  "apiList.category.search":"Recherchez une categorie",
+  "team.email.verification.send": "Mail envoyé à %s pour verifier cet adresse email.",
+  "team.email.alreadyVerified":"Cet email est verifié",
+  "team.email.notVerified":"Cliquez ici pour envoyer un email de validation",
+  "mailValidation.sent.title":"Mail envoyé",
+  "mailValidation.sent.body":"un mail a été envoyé pour valider cette nouvelle adresse email.",
+  "team.validated.success": "Votre email a été vérifié"
 }

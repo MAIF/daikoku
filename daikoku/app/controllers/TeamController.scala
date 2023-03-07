@@ -3,21 +3,18 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import cats.Id
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
-import controllers.AppError.renderF
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
+import fr.maif.otoroshi.daikoku.cypher.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
-import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator, OtoroshiClient, Translator}
+import fr.maif.otoroshi.daikoku.login.{LdapConfig, LdapSupport}
+import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator, Translator}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.{I18nSupport, Lang}
@@ -25,7 +22,6 @@ import play.api.libs.json._
 import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Result}
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.impl.Promise
 import scala.concurrent.{ExecutionContext, Future}
 
 class TeamController(DaikokuAction: DaikokuAction,
@@ -41,6 +37,8 @@ class TeamController(DaikokuAction: DaikokuAction,
   implicit val ev: Env = env
   implicit val mat: Materializer = env.defaultMaterializer
   implicit val tr = translator
+
+  private lazy val secret = env.config.cypherSecret
 
   def team(teamId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
@@ -106,7 +104,7 @@ class TeamController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def createTeam() = DaikokuAction.async(parse.json) { ctx =>
+  def createTeam(): Action[JsValue] = DaikokuAction.async(parse.json) { ctx =>
     PublicUserAccess(
       AuditTrailEvent(
         s"@{user.name} have create team @{team.name} - @{team.id}"))(ctx) {
@@ -122,7 +120,7 @@ class TeamController(DaikokuAction: DaikokuAction,
           val teamToSave = team.copy(users =
             Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)))
 
-          implicit val language = ctx.user.defaultLanguage.getOrElse(
+          implicit val language: String = ctx.user.defaultLanguage.getOrElse(
               ctx.tenant.defaultLanguage.getOrElse("en"))
           val res: EitherT[Future, AppError, Result] = for {
             _ <- EitherT.fromOptionF(env.dataStore.teamRepo
@@ -132,7 +130,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                   "$or" -> Json.arr(
                     Json.obj("_id" -> team.id.asJson),
                     Json.obj("_humanReadableId" -> team.humanReadableId))
-                )).map(r => r.fold(().some)(_ => None)), AppError.ApiVersionConflict) //FIXME
+                )).map(r => r.fold(().some)(_ => None)), AppError.TeamNotFound)
             emailVerif = EmailVerification(
               id = DatastoreId(BSONObjectID.generate().stringify),
               randomId = IdGenerator.token,
@@ -146,38 +144,92 @@ class TeamController(DaikokuAction: DaikokuAction,
               .save(teamToSave))
             _ <- EitherT.liftF(env.dataStore.emailVerificationRepo.forTenant(ctx.tenant.id)
               .save(emailVerif))
-            title <- EitherT.liftF(translator.translate("mail.create.team.token.title",
-              ctx.tenant))
-            value <- EitherT.liftF(translator.translate(
-              "mail.create.team.token.body",
-              ctx.tenant,
-              Map("team" -> teamToSave.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${teamToSave.id}/_verify?token=${emailVerif.randomId}"))
-            ))
-            _ <- EitherT.liftF(ctx.tenant.mailer
-              .send(title, Seq(teamToSave.contact), value, ctx.tenant))
-          } yield Created(teamToSave.asJson)
+          } yield {
+
+            val cipheredValidationToken = encrypt(secret, emailVerif.randomId )
+            for {
+              title <- translator.translate("mail.create.team.token.title",
+                ctx.tenant)
+              value <- translator.translate(
+                "mail.create.team.token.body",
+                ctx.tenant,
+                Map("team" -> team.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${team.id.value}/_verify?token=$cipheredValidationToken"))
+              )
+            } yield {
+              ctx.tenant.mailer
+                .send(title, Seq(team.contact), value, ctx.tenant)
+            }
+            Created(teamToSave.asJson)
+          }
           res.leftMap(AppError.render).merge
       }
     }
   }
 
-  def verifyContactEmail(teamId: String): Action[JsValue] = DaikokuAction.async(parse.json) { ctx =>
-    PublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(
-      ctx
-    ) {
-      ctx.request.getQueryString("token") match {
-        case Some(token) => env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("randomId" -> token, "team" -> teamId)).map {
-          case Some(emailVerif) => ???
-          case None => AppError.ApiNotFound.render()
+  def verifyContactEmail(teamId: String): Action[AnyContent] = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(ctx) {
+      val teamRepo = env.dataStore.teamRepo.forTenant(ctx.tenant)
+      val emailVerificationRepo = env.dataStore.emailVerificationRepo.forTenant(ctx.tenant)
+
+      teamRepo.findOneNotDeleted(Json.obj("_id" -> teamId)).flatMap {
+        case None => AppError.TeamNotFound.renderF()
+        case Some(team) if team.verified => AppError.TeamAlreadyVerified.renderF()
+        case Some(team) => ctx.request.getQueryString("token") match {
+
+          case None => AppError.TokenNotFound.renderF()
+          case Some(encryptedString) =>
+
+            val token = decrypt(secret, encryptedString)
+            emailVerificationRepo.findOneNotDeleted(Json.obj("randomId" -> token)).flatMap {
+            case None => AppError.VerificationEmailNotFound.renderF()
+            case Some(emailVerification) =>
+              if (emailVerification.validUntil.isAfter(DateTime.now)) {
+                val newTeam = team.copy(verified = true)
+                teamRepo.save(newTeam)
+                  .map(_ => Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?teamVerified=true"))
+                    .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?teamVerified=true"))
+              } else {
+                AppError.ExpiredVerificationEmail.renderF()
+              }
+          }
         }
-
-
-        case None => AppError.ParsingPayloadError("todo").renderF()
       }
     }
   }
 
-  def updateTeam(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
+  def sendEmailVerification(teamId: String): Action[AnyContent] = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has sent a mail for validating contact email @{team.name} - @{team.id}"))(ctx) {
+      env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(teamId).flatMap {
+        case Some(team) =>
+          val emailVerif = EmailVerification(
+            id = DatastoreId(BSONObjectID.generate().stringify),
+            randomId = IdGenerator.token,
+            tenant = ctx.tenant.id,
+            team = team.id,
+            creationDate = DateTime.now(),
+            validUntil = DateTime.now().plusMinutes(15))
+          val cipheredValidationToken = encrypt(secret, emailVerif.randomId )
+          implicit val language: String = ctx.user.defaultLanguage.getOrElse(
+            ctx.tenant.defaultLanguage.getOrElse("en"))
+          for {
+            title <- translator.translate("mail.create.team.token.title",
+              ctx.tenant)
+            value <- translator.translate(
+              "mail.create.team.token.body",
+              ctx.tenant,
+              Map("team" -> team.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${team.id.value}/_verify?token=$cipheredValidationToken"))
+            )
+          } yield {
+            ctx.tenant.mailer
+              .send(title, Seq(team.contact), value, ctx.tenant)
+            env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).save(emailVerif)
+            Created(emailVerif.asJson)
+          }
+        case None => AppError.TeamNotFound.renderF()
+      }
+    }
+  }
+  def updateTeam(teamId: String): Action[JsValue] = DaikokuAction.async(parse.json) { ctx =>
     TeamAdminOrTenantAdminOnly(AuditTrailEvent(
       "@{user.name} has updated team @{team.name} - @{team.id}"))(teamId, ctx) {
       _ =>
@@ -196,12 +248,42 @@ class TeamController(DaikokuAction: DaikokuAction,
                 case Some(team) =>
                   ctx.setCtxValue("team.id", team.id)
                   ctx.setCtxValue("team.name", team.name)
-                  val teamToSave =
+                  val teamWithEdits =
                     if (ctx.user.isDaikokuAdmin || ctx.isTenantAdmin) newTeam
                     else
                       newTeam.copy(metadata = team.metadata,
-                                   apisCreationPermission =
-                                     team.apisCreationPermission)
+                        apisCreationPermission =
+                          team.apisCreationPermission)
+
+                  val isTeamContactChanged = team.contact == teamWithEdits.contact
+                  val teamToSave = teamWithEdits.copy(verified = isTeamContactChanged)
+                  if(!isTeamContactChanged) {
+
+                    val emailVerif = EmailVerification(
+                      id = DatastoreId(BSONObjectID.generate().stringify),
+                      randomId = IdGenerator.token,
+                      tenant = ctx.tenant.id,
+                      team = teamToSave.id,
+                      creationDate = DateTime.now(),
+                      validUntil = DateTime.now().plusMinutes(15)
+                    )
+                    val cipheredValidationToken = encrypt(secret, emailVerif.randomId )
+                    implicit val language: String = ctx.user.defaultLanguage.getOrElse(
+                      ctx.tenant.defaultLanguage.getOrElse("en"))
+                    for {
+                      title <- translator.translate("mail.create.team.token.title",
+                        ctx.tenant)
+                      value <- translator.translate(
+                        "mail.create.team.token.body",
+                        ctx.tenant,
+                        Map("team" -> teamToSave.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${teamToSave.id.value}/_verify?token=$cipheredValidationToken"))
+                      )
+                    } yield {
+                      ctx.tenant.mailer
+                        .send(title, Seq(teamToSave.contact), value, ctx.tenant)
+                    }
+                    env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).save(emailVerif)
+                  }
                   env.dataStore.teamRepo
                     .forTenant(ctx.tenant.id)
                     .save(teamToSave)

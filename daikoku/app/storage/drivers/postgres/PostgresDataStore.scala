@@ -842,7 +842,7 @@ class PostgresTenantEmailVerificationRepo(env: Env,
 extends PostgresTenantAwareRepo[EmailVerification, DatastoreId](env,
                                                                 reactivePg,
                                                                 tenant) {
-  override def tableName: String = "email_verification"
+  override def tableName: String = "email_verifications"
   override def format: Format[EmailVerification] = json.EmailVerificationFormat
 
   override def extractId(value: EmailVerification): String = value.id.value

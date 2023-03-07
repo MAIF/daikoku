@@ -204,6 +204,7 @@ PUT     /api/notifications/:id/accept                   fr.maif.otoroshi.daikoku
 PUT     /api/notifications/:id/reject                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.rejectNotification(id)
 
 GET     /api/teams/:teamId/_verify                      fr.maif.otoroshi.daikoku.ctrls.TeamController.verifyContactEmail(teamId)
+PUT     /api/teams/:teamId/_sendEmail                   fr.maif.otoroshi.daikoku.ctrls.TeamController.sendEmailVerification(teamId )
 
 POST    /api/oidc/_fetchConfig                          fr.maif.otoroshi.daikoku.ctrls.TenantController.fetchOpenIdConfiguration()
 GET     /api/tenants/simplified                         fr.maif.otoroshi.daikoku.ctrls.TenantController.tenantList()
