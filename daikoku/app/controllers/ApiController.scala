@@ -340,7 +340,7 @@ class ApiController(
       }
     }
 
-  def getApi(api: Api, ctx: DaikokuActionContext[JsValue]) = {
+  def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]) = {
     import cats.implicits._
 
     val r: EitherT[Future, Result, Result] = for {
@@ -418,7 +418,7 @@ class ApiController(
   }
 
   def getVisibleApiWithId(apiId: String) =
-    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
+    DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible api @{api.name}")
       )(ctx) {
@@ -433,7 +433,7 @@ class ApiController(
     }
 
   def getVisibleApi(humanReadableId: String, version: String) =
-    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
+    DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible api @{api.name}")
       )(ctx) {
