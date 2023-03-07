@@ -320,6 +320,7 @@ class TeamController(DaikokuAction: DaikokuAction,
     }
   }
 
+
   def askForJoinTeam(teamId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has asked to join team @{team.name} - @{team.id}"))(ctx) {
