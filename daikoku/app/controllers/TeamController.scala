@@ -130,7 +130,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                   "$or" -> Json.arr(
                     Json.obj("_id" -> team.id.asJson),
                     Json.obj("_humanReadableId" -> team.humanReadableId))
-                )).map(r => r.fold(().some)(_ => None)), AppError.TeamNotFound)
+                )).map(r => r.fold(().some)(_ => None)), AppError.TeamNameAlreadyExists)
             emailVerif = EmailVerification(
               id = DatastoreId(BSONObjectID.generate().stringify),
               randomId = IdGenerator.token,
