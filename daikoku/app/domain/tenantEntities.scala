@@ -576,11 +576,11 @@ case class CmsPage(
         case Some(api) =>
           Await.result(CommonServices.apiOfTeam(api.team.value, api.id.value, version)(ctx.asInstanceOf[DaikokuActionContext[Any]], env, ec)
             .map {
-              case Left(api) => renderString(ctx, parentId,
+              case Right(api) => renderString(ctx, parentId,
                 options.fn.text(),
                 fields = fields,
                 jsonToCombine = jsonToCombine ++ Map("api" -> api.api.asJson))
-              case Right(error) => AppError.render(error)
+              case Left(error) => AppError.render(error)
             }, 10.seconds)
         case None => AppError.render(AppError.ApiNotFound)
       }
@@ -594,8 +594,8 @@ case class CmsPage(
         case Some(api) =>
           Await.result(CommonServices.apiOfTeam(api.team.value, api.id.value, version)(ctx.asInstanceOf[DaikokuActionContext[Any]], env, ec)
             .map {
-              case Left(api) => api.api.asJson
-              case Right(error) => AppError.render(error)
+              case Right(api) => api.api.asJson
+              case Left(error) => AppError.render(error)
             }, 10.seconds)
         case None => toJson(AppError.ApiNotFound)
       }
@@ -676,10 +676,10 @@ case class CmsPage(
           ctx.setCtxValue("team.name", team.name)
           ctx.setCtxValue("team.id", team.id)
 
-          FastFuture.successful(Left(team.toUiPayload()))
+          FastFuture.successful(Right(team.toUiPayload()))
         }, 10.seconds)match {
-        case Left(jsonTeam) => jsonTeam
-        case Right(error) => toJson(error)
+        case Right(jsonTeam) => jsonTeam
+        case Left(error) => toJson(error)
       }
     })
     handlebars.registerHelper(s"daikoku-json-owned-teams", (_: CmsPage, _: Options) =>

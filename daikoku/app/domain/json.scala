@@ -2419,6 +2419,7 @@ object json {
       "state" -> o.state.name,
       "team" -> o.team.asJson,
       "from" -> o.from.asJson,
+      "date" -> DateTimeFormat.writes(o.date),
       "motivation" -> o.motivation.map(JsString).getOrElse(JsNull).as[JsValue],
       "parentSubscription" -> o.parentSubscriptionId.map(_.asJson).getOrElse(JsNull).as[JsValue])
 
@@ -2435,6 +2436,7 @@ object json {
           state = (json \ "state").as(SubscriptionDemandStateFormat),
           team = (json \ "team").as(TeamIdFormat),
           from = (json \ "from").as(UserIdFormat),
+          date = (json \ "date").as(DateTimeFormat),
           motivation = (json \ "motivation").asOpt[String],
           parentSubscriptionId = (json \ "parentSubscription").asOpt(ApiSubscriptionIdFormat)
         )

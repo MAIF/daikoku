@@ -1,10 +1,13 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
+import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._TenantAdminAccessTenant
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
@@ -15,7 +18,9 @@ import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
+import sangria.marshalling.FromInput
 import sangria.schema.{Context, _}
+import sangria.util.tag.@@
 import sangria.validation.ValueCoercionViolation
 import storage._
 
@@ -1243,6 +1248,43 @@ object SchemaDefinition {
       )
     )
 
+    lazy val SubscriptionDemandStepType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep](
+      "SubscriptionDemandStep",
+      "A subscription demand step",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep](
+        Field("id", StringType, resolve = _.value.id.value),
+        Field("step", ValidationStepInterfaceType, resolve = _.value.step),
+        Field("state", StringType, resolve = _.value.state.name),
+        Field("medatada", JsonType, resolve = _.value.metadata),
+      )
+    )
+
+    lazy val SubscriptionDemandType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
+      "SubscriptionDemand",
+      "A subscription demand",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
+        Field("id", StringType, resolve = _.value.id.value),
+        Field("tenant", StringType, resolve = _.value.id.value),
+        Field("deleted", BooleanType, resolve = _.value.deleted),
+        Field("api", StringType, resolve = _.value.api.value),
+        Field("plan", StringType, resolve = _.value.plan.value),
+        Field("steps", ListType(SubscriptionDemandStepType), resolve = _.value.steps),
+        Field("state", StringType, resolve = _.value.state.name),
+        Field("team", StringType, resolve = _.value.team.value),
+        Field("from", StringType, resolve = _.value.from.value),
+        Field("motivation", OptionType(StringType), resolve = _.value.motivation),
+        Field("parentSubscriptionId", OptionType(StringType), resolve = _.value.parentSubscriptionId.map(_.value)),
+      )
+    )
+
+
+    case class SubscriptionDemandWithCount(subscriptionDemands: Seq[SubscriptionDemand], count: Long)
+    lazy val graphQlSubscriptionDemandWithCount = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandWithCount](
+      ObjectTypeDescription("A limited list of Daikoku apis with the count of all the apis for pagination"),
+      ReplaceField("subscriptionDemands", Field("subscriptionDemands", ListType(SubscriptionDemandType), resolve = _.value.subscriptionDemands)),
+      ReplaceField("count", Field("count", LongType, resolve = _.value.count))
+    )
+
     val ID: Argument[String] = Argument("id", StringType, description = "The id of element")
     val LIMIT: Argument[Int] = Argument("limit", IntType,
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
@@ -1257,6 +1299,7 @@ object SchemaDefinition {
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
     val TEAM_ID_NOT_OPT = Argument("teamId", StringType, description = "The id of the team")
+    val API_IDS = Argument("apiIds", ListInputType(StringType), description = "The ids of apis to filter request")
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
@@ -1304,6 +1347,36 @@ object SchemaDefinition {
         }
       })
     )
+
+    def subscriptionDemandsForTeamAdmin(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("subscriptionDemandsForAdmin", graphQlSubscriptionDemandWithCount, arguments = TEAM_ID_NOT_OPT :: API_IDS :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
+        _TeamMemberOnly(ctx.arg(TEAM_ID_NOT_OPT), AuditTrailEvent("*** TODO ***"))(ctx.ctx._2) { team =>
+          val tenant = ctx.ctx._2.tenant
+          val dataStore = ctx.ctx._1
+          val apiIds: JsArray = JsArray(ctx.arg(API_IDS).map(JsString))
+
+          def testApisTeam(apis: Seq[Api]): EitherT[Future, AppError, Unit] = {
+            if (apis.exists(_.team != team.id)) EitherT.leftT[Future, Unit](AppError.ForbiddenAction)
+            else EitherT.pure[Future, AppError](())
+          }
+
+          val value: EitherT[Future, AppError, (Seq[SubscriptionDemand], Long)] = for {
+            apis <- EitherT.liftF(dataStore.apiRepo.forTenant(tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> apiIds))))
+            _ <- testApisTeam(apis)
+            demands <- EitherT.liftF(dataStore.subscriptionDemandRepo.forTenant(tenant).findWithPagination(Json.obj(
+              "deleted" -> false,
+              "api" -> Json.obj("$in" -> apiIds)
+            ), ctx.arg(OFFSET), ctx.arg(LIMIT), Json.obj("date" -> 1).some))
+          } yield demands
+
+          value.value
+
+      }.map {
+          case Left(error) => throw NotAuthorizedError((error.toJson() \ "error").as[String])
+          case Right(demands) => SubscriptionDemandWithCount(demands._1, demands._2)
+        }
+      }
+    ))
 
     def getRepoFields[Out, Of, Id <: ValueType](
                                                fieldName: String,
@@ -1370,7 +1443,7 @@ object SchemaDefinition {
 
     (
       Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ apiWithSubscriptionsQueryFields() ++ cmsPageFields():_*)
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ apiWithSubscriptionsQueryFields() ++ subscriptionDemandsForTeamAdmin() ++ cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher)
     )

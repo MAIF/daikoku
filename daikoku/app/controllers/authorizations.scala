@@ -85,7 +85,7 @@ object authorizations {
         implicit ec: ExecutionContext,
         env: Env): Future[Result] = {
       async.TeamMemberOnly(audit)(teamId, ctx) { team =>
-        FastFuture.successful(Left(f(team)))
+        FastFuture.successful(Right(f(team)))
       }
     }
 
@@ -486,9 +486,9 @@ object authorizations {
     }
 
     def _TeamMemberOnly[T, B](teamId: String, audit: AuditEvent)(
-        ctx: DaikokuActionContext[T])(f: Team => Future[Either[B, AppError]])(
+        ctx: DaikokuActionContext[T])(f: Team => Future[Either[AppError, B]])(
         implicit ec: ExecutionContext,
-        env: Env): Future[Either[B, AppError]] = {
+        env: Env): Future[Either[AppError, B]] = {
       env.dataStore.teamRepo
         .forTenant(ctx.tenant.id)
         .findByIdOrHrId(teamId)
@@ -537,7 +537,7 @@ object authorizations {
                                       ctx.ctx,
                                       AuthorizationLevel.NotAuthorized)
 
-            FastFuture.successful(Right(TeamForbidden))
+            FastFuture.successful(Left(TeamForbidden))
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
                                       ctx.user,
@@ -545,19 +545,19 @@ object authorizations {
                                       ctx.request,
                                       ctx.ctx,
                                       AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(Right(TeamNotFound))
+            FastFuture.successful(Left(TeamNotFound))
         }
     }
 
     def TeamMemberOnly[T](audit: AuditEvent)(teamId: String,
                                              ctx: DaikokuActionContext[T])(
-        f: Team => Future[Either[Result, AppError]])(
+        f: Team => Future[Either[AppError, Result]])(
         implicit ec: ExecutionContext,
         env: Env): Future[Result] = {
       _TeamMemberOnly(teamId, audit)(ctx)(f)
         .map {
-          case Left(value)  => value
-          case Right(value) => AppError.render(value)
+          case Right(value)  => value
+          case Left(error) => AppError.render(error)
         }
     }
 

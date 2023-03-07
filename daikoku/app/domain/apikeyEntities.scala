@@ -234,6 +234,7 @@ case class SubscriptionDemand(id: SubscriptionDemandId,
                               state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
                               team: TeamId,
                               from: UserId,
+                              date: DateTime = DateTime.now,
                               motivation: Option[String],
                               parentSubscriptionId: Option[ApiSubscriptionId])
   extends CanJson[SubscriptionDemand] {

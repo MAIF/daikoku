@@ -565,12 +565,12 @@ class TeamController(DaikokuAction: DaikokuAction,
       // TODO: verify if the behavior is correct
       case team if team.includeUser(UserId(id)) =>
         env.dataStore.userRepo.findByIdNotDeleted(id).map {
-          case None       => Left(NotFound(Json.obj("error" -> "User not found")))
-          case Some(user) => Left(Ok(user.asSimpleJson))
+          case None       => Left(AppError.UserNotFound)
+          case Some(user) => Right(Ok(user.asSimpleJson))
         }
       case _ =>
         FastFuture.successful(
-          Left(NotFound(Json.obj("error" -> "Member is not part of the team"))))
+          Left(AppError.UserNotFound))
     }
   }
 
@@ -617,7 +617,7 @@ class TeamController(DaikokuAction: DaikokuAction,
       } yield {
         ctx.setCtxValue("team.id", team.id)
         ctx.setCtxValue("team.name", team.name)
-        Left(
+        Right(
           Ok(
             team.asJson.as[JsObject] ++ Json.obj(
               "apisCount" -> apis.size,
