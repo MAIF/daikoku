@@ -199,6 +199,14 @@ export const TeamEdit = () => {
     const params = new URLSearchParams(search);
     if (params.get("teamVerified") === "true") {
       toastr.success(translate('Success'), translate('team.validated.success'))
+    } else if (params.get("error") === "2") {
+      toastr.error(translate('Error'), translate('team.email.alreadyVerified'))
+    } else if (params.get("error") === "3") {
+      toastr.error(translate('Error'), translate('token.missing'))
+    } else if (params.get("error") === "4") {
+      toastr.error(translate('Error'), translate('token.notFound'))
+    } else if (params.get("error") === "5") {
+      toastr.error(translate('Error'), translate('token.expired'))
     }
   }, []);
   const save = (data: ITeamSimple, contact: string) => {
@@ -227,7 +235,7 @@ export const TeamEdit = () => {
     <div>
       {!currentTeam.verified && !alreadyClicked &&
       <div className="alert alert-danger" role="alert">
-        Your email isn't verified. Send a mail for verifying it <a href="#" onClick={() => {
+        {translate('team.email.notVerified.info')} <a href="#" onClick={() => {
         Services.sendEmailVerification(currentTeam._id)
           .then((r) => {
             if (isError(r)) {
@@ -238,11 +246,11 @@ export const TeamEdit = () => {
                 translate("Success"),
                 translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] }))
             }
-          })}} className="alert-link">here</a>.
+          })}} className="alert-link">{translate('here')}</a>.
       </div> }
       {!currentTeam.verified && alreadyClicked &&
           <div className="alert alert-success" role="alert">
-            mail sent !
+            {translate('mail.sent')}
           </div> }
       <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, contact)} />
     </div>

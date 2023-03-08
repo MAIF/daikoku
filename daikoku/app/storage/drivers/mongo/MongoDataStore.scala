@@ -587,7 +587,7 @@ class MongoDataStore(context: Context, env: Env)
             operationRepo
               .forAllTenant()
               .save(OperationFormat.reads(payload).get)
-          case ("emailVerification", payload) =>
+          case ("emailVerifications", payload) =>
             messageRepo
               .forAllTenant()
               .save(MessageFormat.reads(payload).get)

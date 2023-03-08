@@ -48,11 +48,7 @@ object AppError {
   case object TeamForbidden extends AppError
   case class ParsingPayloadError(message: String) extends AppError
   case object NameAlreadyExists extends AppError
-  case object TeamAlreadyVerified extends AppError
-  case object VerificationEmailNotFound extends AppError
-  case object ExpiredVerificationEmail extends AppError
-  case object TokenNotFound extends AppError
-  case object EmailAlreadyExists extends AppError
+
 
 
   def renderF(error: AppError): Future[mvc.Result] =
@@ -94,11 +90,7 @@ object AppError {
     case Unauthorized                            => play.api.mvc.Results.Unauthorized(toJson(error))
     case ParsingPayloadError(message)            => BadRequest(toJson(error))
     case NameAlreadyExists                       => Conflict(toJson(error))
-    case TeamAlreadyVerified                     => Conflict(toJson(error))
-    case VerificationEmailNotFound               => NotFound(toJson(error))
-    case ExpiredVerificationEmail                => RequestTimeout(toJson(error))
-    case TokenNotFound                           => NotFound(toJson(error))
-    case EmailAlreadyExists                      => Conflict(toJson(error))
+
   }
 
   def toJson(error: AppError) = {
@@ -147,11 +139,6 @@ object AppError {
           case TranslationNotFound => "Translation not found"
           case Unauthorized        => "You're not authorized here"
           case NameAlreadyExists   => "Resource with same name already exists"
-          case TeamAlreadyVerified => "The team is already verified"
-          case VerificationEmailNotFound => "Verification email not found"
-          case ExpiredVerificationEmail => "Your email verification expired"
-          case TokenNotFound => "Token not found"
-          case EmailAlreadyExists => "An mail have been already sent "
           case _                   => ""
         }))
     }

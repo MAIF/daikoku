@@ -80,5 +80,5 @@ tenant.mail.template=[email]
 mail.create.team.token.title=Confirmez votre mail.
 mail.create.team.token.body=Bonjour,\
 <br/>\
-Vous devez vérifer votre mail pour l'équipe [team].\
-<a href="[link]">Verify</a>
+Vous devez vérifier votre mail pour l'équipe [team].\
+<a href="[link]">Vérifier</a>

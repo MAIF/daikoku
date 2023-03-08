@@ -1252,9 +1252,17 @@
     "apiList.tag.search":"Search a tag",
     "apiList.category.search":"Search a category",
     "team.email.verification.send":"Mail sent to %s for verify this email address.",
-    "team.email.alreadyVerified":"This mail is verified",
+    "team.email.alreadyVerified":"This mail is already verified",
     "team.email.notVerified":"Click here for sending a validation email",
     "mailValidation.sent.title":"Mail sent",
     "mailValidation.sent.body":"An mail have been sent for validating this new email address.",
-    "team.validated.success": "Your email have been verified"
+    "team.validated.success": "Your email have been verified",
+    "team.email.notVerified.info": "Your email isn't verified. Send a mail for verifying it ",
+    "here": "here",
+    "Success":"Success",
+    "mail.sent": "Mail sent !",
+    "team.notFound": "Team not found.",
+    "token.missing": "Missing token.",
+    "token.notFound": "Token not found.",
+    "token.expired": "Token expired."
 }

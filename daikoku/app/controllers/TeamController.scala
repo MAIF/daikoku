@@ -9,7 +9,7 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.cypher.Cypher.{decrypt, encrypt}
+import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
@@ -38,7 +38,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   implicit val mat: Materializer = env.defaultMaterializer
   implicit val tr = translator
 
-  private lazy val secret = env.config.cypherSecret
+
 
   def team(teamId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
@@ -146,14 +146,14 @@ class TeamController(DaikokuAction: DaikokuAction,
               .save(emailVerif))
           } yield {
 
-            val cipheredValidationToken = encrypt(secret, emailVerif.randomId )
+            val cipheredValidationToken = encrypt(env.config.cypherSecret, emailVerif.randomId )
             for {
               title <- translator.translate("mail.create.team.token.title",
                 ctx.tenant)
               value <- translator.translate(
                 "mail.create.team.token.body",
                 ctx.tenant,
-                Map("team" -> team.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${team.id.value}/_verify?token=$cipheredValidationToken"))
+                Map("team" -> team.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"))
               )
             } yield {
               ctx.tenant.mailer
@@ -171,25 +171,30 @@ class TeamController(DaikokuAction: DaikokuAction,
       val teamRepo = env.dataStore.teamRepo.forTenant(ctx.tenant)
       val emailVerificationRepo = env.dataStore.emailVerificationRepo.forTenant(ctx.tenant)
 
-      teamRepo.findOneNotDeleted(Json.obj("_id" -> teamId)).flatMap {
-        case None => AppError.TeamNotFound.renderF()
-        case Some(team) if team.verified => AppError.TeamAlreadyVerified.renderF()
+      teamRepo.findByIdOrHrId(teamId).flatMap {
+        case None => Future(Status(302)(Json.obj("Location" -> s"/apis/?error=1"))
+          .withHeaders("Location" -> s"/apis/?error=1"))
+        case Some(team) if team.verified => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=2"))
+          .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=2"))
         case Some(team) => ctx.request.getQueryString("token") match {
 
-          case None => AppError.TokenNotFound.renderF()
+          case None => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=3"))
+            .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=3"))
           case Some(encryptedString) =>
-
-            val token = decrypt(secret, encryptedString)
+            val token = decrypt(env.config.cypherSecret, encryptedString)
             emailVerificationRepo.findOneNotDeleted(Json.obj("randomId" -> token)).flatMap {
-            case None => AppError.VerificationEmailNotFound.renderF()
+            case None => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=4"))
+              .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=4"))
             case Some(emailVerification) =>
               if (emailVerification.validUntil.isAfter(DateTime.now)) {
                 val newTeam = team.copy(verified = true)
                 teamRepo.save(newTeam)
                   .map(_ => Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?teamVerified=true"))
                     .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?teamVerified=true"))
+
               } else {
-                AppError.ExpiredVerificationEmail.renderF()
+                Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=5"))
+                  .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=5"))
               }
           }
         }
@@ -208,7 +213,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             team = team.id,
             creationDate = DateTime.now(),
             validUntil = DateTime.now().plusMinutes(15))
-          val cipheredValidationToken = encrypt(secret, emailVerif.randomId )
+          val cipheredValidationToken = encrypt(env.config.cypherSecret, emailVerif.randomId )
           implicit val language: String = ctx.user.defaultLanguage.getOrElse(
             ctx.tenant.defaultLanguage.getOrElse("en"))
           for {
@@ -217,7 +222,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             value <- translator.translate(
               "mail.create.team.token.body",
               ctx.tenant,
-              Map("team" -> team.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${team.id.value}/_verify?token=$cipheredValidationToken"))
+              Map("team" -> team.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"))
             )
           } yield {
             ctx.tenant.mailer
@@ -267,7 +272,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                       creationDate = DateTime.now(),
                       validUntil = DateTime.now().plusMinutes(15)
                     )
-                    val cipheredValidationToken = encrypt(secret, emailVerif.randomId )
+                    val cipheredValidationToken = encrypt(env.config.cypherSecret, emailVerif.randomId )
                     implicit val language: String = ctx.user.defaultLanguage.getOrElse(
                       ctx.tenant.defaultLanguage.getOrElse("en"))
                     for {
@@ -276,7 +281,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                       value <- translator.translate(
                         "mail.create.team.token.body",
                         ctx.tenant,
-                        Map("team" -> teamToSave.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${teamToSave.id.value}/_verify?token=$cipheredValidationToken"))
+                        Map("team" -> teamToSave.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${teamToSave.humanReadableId}/_verify?token=$cipheredValidationToken"))
                       )
                     } yield {
                       ctx.tenant.mailer

@@ -1,4 +1,4 @@
-package fr.maif.otoroshi.daikoku.cypher
+package fr.maif.otoroshi.daikoku.utils
 
 import javax.crypto.{Cipher, SecretKeyFactory}
 import javax.crypto.spec.{PBEKeySpec, SecretKeySpec}
