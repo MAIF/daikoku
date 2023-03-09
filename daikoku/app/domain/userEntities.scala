@@ -188,19 +188,6 @@ case class AccountCreation(
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
 
-case class EmailVerification(
-    id: DatastoreId,
-    deleted: Boolean = false,
-    randomId: String,
-    tenant: TenantId,
-    team: TeamId,
-    creationDate: DateTime,
-    validUntil: DateTime,
-) extends CanJson[EmailVerification] {
-  override def asJson: JsValue = json.EmailVerificationFormat.writes(this)
-}
-//TODO HERE
-
 sealed trait MessageType {
   def value: ValueType
 }

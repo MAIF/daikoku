@@ -48,6 +48,7 @@ object AppError {
   case object TeamForbidden extends AppError
   case class ParsingPayloadError(message: String) extends AppError
   case object NameAlreadyExists extends AppError
+  case object TeamAlreadyVerified extends AppError
 
 
 
@@ -90,6 +91,7 @@ object AppError {
     case Unauthorized                            => play.api.mvc.Results.Unauthorized(toJson(error))
     case ParsingPayloadError(message)            => BadRequest(toJson(error))
     case NameAlreadyExists                       => Conflict(toJson(error))
+    case TeamAlreadyVerified                     => Conflict(toJson(error))
 
   }
 
@@ -139,6 +141,7 @@ object AppError {
           case TranslationNotFound => "Translation not found"
           case Unauthorized        => "You're not authorized here"
           case NameAlreadyExists   => "Resource with same name already exists"
+          case TeamAlreadyVerified => "This team is already verified"
           case _                   => ""
         }))
     }

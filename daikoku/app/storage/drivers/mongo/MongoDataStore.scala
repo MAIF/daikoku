@@ -392,8 +392,6 @@ class MongoDataStore(context: Context, env: Env)
       t => new MongoTenantEmailVerificationRepo(env, reactiveMongoApi, t)
     )
   }
-  //TODO HERE
-
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -436,7 +434,6 @@ class MongoDataStore(context: Context, env: Env)
 
   override def emailVerificationRepo: EmailVerificationRepo = _emailVerificationRepo
 
-  //TODO HERE
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
 
