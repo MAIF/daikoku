@@ -1264,5 +1264,7 @@
     "team.notFound": "Team not found.",
     "token.missing": "Missing token.",
     "token.notFound": "Token not found.",
-    "token.expired": "Token expired."
+    "token.expired": "Token expired.",
+    "user.unauthorised": "You are not authorised to do this action."
+
 }

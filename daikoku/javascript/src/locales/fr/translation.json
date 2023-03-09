@@ -1267,5 +1267,6 @@
   "team.notFound": "Equipe introuvable.",
   "token.missing": "Jeton manquant.",
   "token.notFound": "Jeton introuvable.",
-  "token.expired": "Ce jeton a expiré."
+  "token.expired": "Ce jeton a expiré.",
+  "user.unauthorised": "Vous n'êtes pas autorisé à faire cette action."
 }

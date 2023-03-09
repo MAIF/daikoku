@@ -458,7 +458,8 @@ class MockController(DaikokuAction: DaikokuAction,
       avatar = Some(
         s"https://www.gravatar.com/avatar/${email.md5}?size=128&d=robohash"),
       users = Set(userWithPermission),
-      authorizedOtoroshiGroups = Set.empty
+      authorizedOtoroshiGroups = Set.empty,
+      verified = true
     )
     val user = User(
       id = userId,

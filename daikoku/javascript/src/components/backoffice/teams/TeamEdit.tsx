@@ -207,6 +207,8 @@ export const TeamEdit = () => {
       toastr.error(translate('Error'), translate('token.notFound'))
     } else if (params.get("error") === "5") {
       toastr.error(translate('Error'), translate('token.expired'))
+    } else if (params.get("error") === "6") {
+      toastr.error(translate('Error'), translate('user.unauthorised'))
     }
   }, []);
   const save = (data: ITeamSimple, contact: string) => {

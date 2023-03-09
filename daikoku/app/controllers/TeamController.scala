@@ -142,6 +142,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             _ <- EitherT.liftF(env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)
               .save(teamToSave))
+
             _ <- EitherT.liftF(env.dataStore.emailVerificationRepo.forTenant(ctx.tenant.id)
               .save(emailVerif))
           } yield {
@@ -176,6 +177,8 @@ class TeamController(DaikokuAction: DaikokuAction,
           .withHeaders("Location" -> s"/apis/?error=1"))
         case Some(team) if team.verified => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=2"))
           .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=2"))
+        case Some(team) if !team.users.exists(user => user.userId.value == ctx.user.id.value) => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=6"))
+          .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=6"))
         case Some(team) => ctx.request.getQueryString("token") match {
 
           case None => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=3"))
@@ -207,7 +210,6 @@ class TeamController(DaikokuAction: DaikokuAction,
       env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(teamId).flatMap {
         case Some(team) if team.verified => AppError.TeamAlreadyVerified.renderF()
         case Some(team) =>
-
           val emailVerif = EmailVerification(
             id = DatastoreId(BSONObjectID.generate().stringify),
             randomId = IdGenerator.token,
@@ -228,6 +230,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             )
             _ <- ctx.tenant.mailer
               .send(title, Seq(team.contact), value, ctx.tenant)
+            _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).deleteLogically(Json.obj("teamId" -> team.id.value))
             _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).save(emailVerif)
           } yield {
             Created(emailVerif.asJson)
@@ -286,6 +289,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                       )
                       _ <- ctx.tenant.mailer.send(title, Seq(teamToSave.contact), value, ctx.tenant)
                       _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).save(emailVerif)
+                      _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).deleteLogically(Json.obj("teamId" -> team.id.value))
                       _ <- env.dataStore.teamRepo
                         .forTenant(ctx.tenant.id)
                         .save(teamToSave)
@@ -301,35 +305,6 @@ class TeamController(DaikokuAction: DaikokuAction,
                         Ok(teamToSave.asJson)
                       }
                   }
-                    /*val emailVerif = EmailVerification(
-                      id = DatastoreId(BSONObjectID.generate().stringify),
-                      randomId = IdGenerator.token,
-                      tenant = ctx.tenant.id,
-                      team = teamToSave.id,
-                      creationDate = DateTime.now(),
-                      validUntil = DateTime.now().plusMinutes(15)
-                    )
-                    val cipheredValidationToken = encrypt(env.config.cypherSecret, emailVerif.randomId )
-                    for {
-                      title <- translator.translate("mail.create.team.token.title",
-                        ctx.tenant)
-                      value <- translator.translate(
-                        "mail.create.team.token.body",
-                        ctx.tenant,
-                        Map("team" -> teamToSave.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${teamToSave.humanReadableId}/_verify?token=$cipheredValidationToken"))
-                      )
-                    } yield {
-                      ctx.tenant.mailer.send(title, Seq(teamToSave.contact), value, ctx.tenant)
-
-                    }
-                    env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).save(emailVerif)
-                  }
-                  env.dataStore.teamRepo
-                    .forTenant(ctx.tenant.id)
-                    .save(teamToSave)
-                    .map { _ =>
-                      Ok(teamToSave.asJson)
-                    } */
                     case None =>
                   FastFuture.successful(
                     NotFound(Json.obj("error" -> "team not found")))
