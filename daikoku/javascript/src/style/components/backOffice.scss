@@ -18,3 +18,28 @@
     display: none
   }
 }
+
+// ************************
+// *** TEAM BACK OFFICE ***
+// ************************
+
+// *****************
+// *** DASHBOARD ***
+// *****************
+
+.tbo__dasboard {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: start;
+
+
+  .widget {
+    width: calc(30% - 20px);
+    height: 200px;
+    overflow-y: scroll;
+    border: 1px solid tomato;
+    border-radius: 4px;
+    padding: 15px;
+  }
+}

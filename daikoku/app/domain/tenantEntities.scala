@@ -554,7 +554,7 @@ case class CmsPage(
     handlebars.registerHelper(s"daikoku-${name}s", (_: CmsPage, options: Options) => {
       val visibility = options.hash.getOrDefault("visibility", "All").asInstanceOf[String]
       Await.result(CommonServices.getVisibleApis()(ctxUserContext, env, ec), 10.seconds) match {
-        case Left(apis) =>
+        case Right(apis) =>
           apis
             .filter(api => if(visibility == "All") true else api.api.visibility.name == visibility)
             .map(api => renderString(ctx,
@@ -564,7 +564,7 @@ case class CmsPage(
               jsonToCombine = jsonToCombine ++ Map("api" -> api.api.asJson)
             ))
             .mkString("\n")
-        case Right(error) => AppError.render(error)
+        case Left(error) => AppError.render(error)
       }
     })
     handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
@@ -602,8 +602,8 @@ case class CmsPage(
     })
     handlebars.registerHelper(s"daikoku-json-${name}s", (_: CmsPage, _: Options) =>
       Await.result(CommonServices.getVisibleApis()(ctxUserContext, env, ec).map {
-        case Left(apis) => JsArray(apis.map(_.api.asJson))
-        case Right(error) => toJson(error)
+        case Right(apis) => JsArray(apis.map(_.api.asJson))
+        case Left(error) => toJson(error)
       }, 10.seconds)
     )
   }
@@ -634,8 +634,7 @@ case class CmsPage(
 
     handlebars.registerHelper(s"daikoku-owned-teams", (_: CmsPage, options: Options) => {
       Await.result(CommonServices.myTeams()(ctxUserContext, env, ec), 10.seconds) match {
-        case Left(teams) =>
-          teams
+        case Right(teams) => teams
             .map(team => renderString(ctx,
               parentId,
               options.fn.text(),
@@ -643,7 +642,7 @@ case class CmsPage(
               jsonToCombine = jsonToCombine ++ Map("team" -> team.asJson)
             )(env, ec, messagesApi))
             .mkString("\n")
-        case Right(error) => AppError.render(error)
+        case Left(error) => AppError.render(error)
       }
     })
     handlebars.registerHelper(s"daikoku-owned-team", (_: String, options: Options) => {
@@ -664,8 +663,8 @@ case class CmsPage(
             case _ => AppError.TeamUnauthorized
           }
       }, 10.seconds) match {
-        case Left(e) => e
-        case Right(error) => toJson(error)
+        case Right(e) => e
+        case Left(error) => toJson(error)
       }
     })
     handlebars.registerHelper(s"daikoku-json-owned-team", (id: String, options: Options) => {
@@ -684,8 +683,8 @@ case class CmsPage(
     })
     handlebars.registerHelper(s"daikoku-json-owned-teams", (_: CmsPage, _: Options) =>
       Await.result(CommonServices.myTeams()(ctxUserContext, env, ec).map {
-        case Left(teams) => JsArray(teams.map(_.asJson))
-        case Right(error) => toJson(error)
+        case Right(teams) => JsArray(teams.map(_.asJson))
+        case Left(error) => toJson(error)
       }, 10.seconds)
     )
   }

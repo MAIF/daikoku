@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { useSelector } from 'react-redux';
 import { Link, Route, Routes } from 'react-router-dom';
@@ -20,6 +20,10 @@ import {
   TeamMembers,
 } from '../backoffice';
 import { IState, IStateError, ITeamSimple } from '../../types';
+import { Spinner } from '../utils';
+import { getApolloContext, gql } from '@apollo/client';
+import { useQuery } from '@tanstack/react-query';
+import { isError } from 'lodash';
 
 const BackOfficeContent = (props) => {
   return (
@@ -33,6 +37,9 @@ type TeamHome = ITeamSimple & {
   subscriptionsCount: number
   notificationCount: number
 }
+
+
+
 const TeamBackOfficeHome = () => {
   const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   useTeamBackOffice(currentTeam);
@@ -53,62 +60,129 @@ const TeamBackOfficeHome = () => {
 
   return (<div className="row">
     <div className="col">
-      <h1>
-        {currentTeam.name}
-        <a className="ms-1 btn btn-sm btn-access-negative" title="View this Team" href={`/${currentTeam._humanReadableId}`}>
-          <i className="fas fa-eye"></i>
-        </a>
-      </h1>
-      <div className="d-flex justify-content-center align-items-center col-12 mt-5">
-        <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
-          <Link to={`/${currentTeam._humanReadableId}/settings/apis`} className="home-tile">
-            <span className="home-tile-number">{team.apisCount}</span>
-            <span className="home-tile-text">
-              <Translation i18nkey="apis published" count={team.apisCount}>
-                apis published
-              </Translation>
-            </span>
-          </Link>
-          <Link to={`/${currentTeam._humanReadableId}/settings/apikeys`} className="home-tile">
-            <span className="home-tile-number">{team.subscriptionsCount}</span>
-            <span className="home-tile-text">
-              <Translation i18nkey="apis subcriptions" count={team.subscriptionsCount}>
-                apis subcriptions
-              </Translation>
-            </span>
-          </Link>
-          <Link
-            to={currentTeam.type === 'Personal' ? '#' : `/${currentTeam._humanReadableId}/settings/members`}
-            className="home-tile">
-            {currentTeam.type !== 'Personal' ? (<>
-              <span className="home-tile-number">{team.users.length}</span>
-              <span className="home-tile-text">
-                <Translation i18nkey="members" count={team.users.length}>
-                  members
-                </Translation>
-              </span>
-            </>) : (<>
-              <span className="home-tile-number">{1}</span>
-              <span className="home-tile-text">
-                <Translation i18nkey="members" count={1}>
-                  members
-                </Translation>
-              </span>
-            </>)}
-          </Link>
-          <Link to={'/notifications'} className="home-tile">
-            <span className="home-tile-number">{team.notificationCount}</span>
-            <span className="home-tile-text">
-              <Translation i18nkey="unread notifications" count={team.notificationCount}>
-                unread notifications
-              </Translation>
-            </span>
-          </Link>
-        </div>
+      <div className="col-12 mt-5 tbo__dasboard">
+        <LastDemandsExt team={currentTeam}/>
+        <LastDemands team={currentTeam}/>
       </div>
     </div>
   </div>);
 };
+
+type LastDemandsProps = {
+  team: ITeamSimple
+}
+const LastDemandsExt = (props: LastDemandsProps) => {
+  const { client } = useContext(getApolloContext());
+
+  const GET_LAST_DEMANDS = gql`
+    query GetLastDemands($teamId: String!, $limit: Int, $offset: Int) {
+      subscriptionDemandsForAdmin(teamId: $teamId , limit: $limit, offset: $offset) {
+        count
+        subscriptionDemands {
+          api {
+            name
+          }
+          plan {
+            customName
+            type
+          }
+          state
+          team {
+            name
+          }
+          from {
+            name
+          }
+          date
+        }
+      }
+    }
+  `
+
+  const {isLoading, isError, data} = useQuery(["widget", "widget_last_demands_ext"],  () => client?.query({
+    query: GET_LAST_DEMANDS,
+    variables: {teamId: props.team._id, offset: 0, limit: 5}
+  }))
+
+
+  return (
+    <Widget isLoading={isLoading} isError={isError} size="small" title="In Progress demands">
+      <div>
+      {data?.data && data.data.subscriptionDemandsForAdmin.count === 0 && <span>no demands</span>}
+      {data?.data && data.data.subscriptionDemandsForAdmin.count > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands.map((d: any) => {
+        return (
+          <span>{d.api.name}</span>
+        )
+      })}
+      </div>
+    </Widget>
+  )
+}
+const LastDemands = (props: LastDemandsProps) => {
+  const GET_TEAM_LAST_DEMANDS = gql`
+    query GetTeamLastDemands($teamId: String!, $limit: Int, $offset: Int) {
+      teamSubscriptionDemands(teamId: $teamId , limit: $limit, offset: $offset) {
+        count
+        subscriptionDemands {
+          api {
+            name
+          }
+          plan {
+            customName
+            type
+          }
+          state
+          team {
+            name
+          }
+          from {
+            name
+          }
+          date
+        }
+      }
+    }
+  `
+  const { client } = useContext(getApolloContext());
+  const {isLoading, isError, data} = useQuery(["widget", "widget_team_last_demands"],  () => client?.query({
+    query: GET_TEAM_LAST_DEMANDS,
+    variables: {teamId: props.team._id, offset: 0, limit: 5}
+  }))
+
+  return (
+    <Widget isLoading={isLoading} isError={isError} size="small" title="My InProgress demands">
+      <div>
+      {data?.data && data.data.teamSubscriptionDemands.count === 0 && <span>no demands</span>}
+      {data?.data && data.data.teamSubscriptionDemands.count > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d: any) => {
+        return (
+          <span>{d.api.name}</span>
+        )
+      })}
+      </div>
+    </Widget>
+  )
+}
+
+type WidgetProps = {
+  isLoading: boolean
+  isError: boolean
+  size: "small" | "large"
+  title: string
+}
+const Widget = (props: PropsWithChildren<WidgetProps>) => {
+  const isOk = !props.isLoading && !isError
+  return (
+    <div className={classNames("widget", props.size)}>
+      <h4>{props.title}</h4>
+      {props.isLoading && <Spinner />}
+      {props.isError && <div className='error'>oops</div>}
+      {!isOk && <>{props.children}</>}
+    </div>
+  )
+}
+
+
+
 
 type TeamBackOfficeProps = {
   isLoading: boolean

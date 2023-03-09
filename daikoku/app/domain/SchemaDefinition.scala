@@ -7,10 +7,11 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
@@ -760,6 +761,16 @@ object SchemaDefinition {
         ctx._1.teamRepo.forTenant(ctx._2.tenant).findById(teamId)))
         .map(teams => teams.flatten)
       )(HasId[Team, TeamId](_.id))
+    lazy val apisFetcher = Fetcher(
+      (ctx: (DataStore, DaikokuActionContext[JsValue]), apis: Seq[ApiId]) => Future.sequence(apis.map(apiId =>
+        ctx._1.apiRepo.forTenant(ctx._2.tenant).findById(apiId)))
+        .map(apis => apis.flatten)
+      )(HasId[Api, ApiId](_.id))
+    lazy val usersFetcher = Fetcher(
+      (ctx: (DataStore, DaikokuActionContext[JsValue]), users: Seq[UserId]) => Future.sequence(users.map(userId =>
+        ctx._1.userRepo.findById(userId)))
+        .map(users => users.flatten)
+      )(HasId[User, UserId](_.id))
 
     lazy val ApiType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api](
       "Api",
@@ -812,8 +823,8 @@ object SchemaDefinition {
           ctx.value.apis match {
             case None => FastFuture.successful(None)
             case Some(apis) => CommonServices.getApisByIds(apis.toSeq.map(_.value))(ctx.ctx._2, env, e).map {
-              case Left(apis) => Some(apis)
-              case Right(_) => None
+              case Right(apis) => Some(apis)
+              case Left(_) => None
             }
           }
         }),
@@ -1266,12 +1277,18 @@ object SchemaDefinition {
         Field("id", StringType, resolve = _.value.id.value),
         Field("tenant", StringType, resolve = _.value.id.value),
         Field("deleted", BooleanType, resolve = _.value.deleted),
-        Field("api", StringType, resolve = _.value.api.value),
-        Field("plan", StringType, resolve = _.value.plan.value),
+        Field("api", ApiType, resolve = ctx => apisFetcher.defer(ctx.value.api)),
+        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findOneNotDeleted(Json.obj(
+          "api" -> ctx.value.api.asJson
+        )).map {
+          case Some(api) => api.possibleUsagePlans.find(_.id == ctx.value.plan)
+          case None => None
+        }),
         Field("steps", ListType(SubscriptionDemandStepType), resolve = _.value.steps),
         Field("state", StringType, resolve = _.value.state.name),
-        Field("team", StringType, resolve = _.value.team.value),
-        Field("from", StringType, resolve = _.value.from.value),
+        Field("team", TeamObjectType, resolve = ctx => teamsFetcher.defer(ctx.value.team)),
+        Field("from", UserType, resolve = ctx => usersFetcher.defer(ctx.value.from)),
+        Field("date", DateTimeUnitype, resolve = _.value.date),
         Field("motivation", OptionType(StringType), resolve = _.value.motivation),
         Field("parentSubscriptionId", OptionType(StringType), resolve = _.value.parentSubscriptionId.map(_.value)),
       )
@@ -1299,20 +1316,20 @@ object SchemaDefinition {
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
     val TEAM_ID_NOT_OPT = Argument("teamId", StringType, description = "The id of the team")
-    val API_IDS = Argument("apiIds", ListInputType(StringType), description = "The ids of apis to filter request")
+    val API_IDS = Argument("apiIds", OptionInputType(ListInputType(StringType)), description = "The ids of apis to filter request (optional)")
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
           CommonServices.myTeams()(ctx.ctx._2, env, e).map {
-            case Left(value) => value
-            case Right(r) => throw NotAuthorizedError(r.toString)
+            case Right(value) => value
+            case Left(r) => throw NotAuthorizedError(r.toString)
           })
     )
 
     def getVisibleApis(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: Option[String] = None) = {
       CommonServices.getVisibleApis(teamId)(ctx.ctx._2, env, e).map {
-        case Left(value) => value
-        case Right(r) => throw NotAuthorizedError(r.toString)
+        case Right(value) => value
+        case Left(r) => throw NotAuthorizedError(r.toString)
       }
     }
 
@@ -1324,8 +1341,8 @@ object SchemaDefinition {
 
     def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, apiSubOnly: Boolean, limit: Int, offset: Int) = {
       CommonServices.getApisWithSubscriptions(teamId, research, limit, offset, apiSubOnly)(ctx.ctx._2, env, e).map {
-        case Left(value) => value
-        case Right(r) => throw NotAuthorizedError(r.toString)
+        case Right(value) => value
+        case Left(r) => throw NotAuthorizedError(r.toString)
       }
     }
 
@@ -1342,8 +1359,8 @@ object SchemaDefinition {
             "_deleted" -> ctx.arg(DELETED)
           ))
         }.map {
-          case Left(value) => value
-          case Right(r) => throw NotAuthorizedError(r.toString)
+          case Right(value) => value
+          case Left(r) => throw NotAuthorizedError(r.toString)
         }
       })
     )
@@ -1353,27 +1370,56 @@ object SchemaDefinition {
         _TeamMemberOnly(ctx.arg(TEAM_ID_NOT_OPT), AuditTrailEvent("*** TODO ***"))(ctx.ctx._2) { team =>
           val tenant = ctx.ctx._2.tenant
           val dataStore = ctx.ctx._1
-          val apiIds: JsArray = JsArray(ctx.arg(API_IDS).map(JsString))
+          val apiIds = ctx.arg(API_IDS)
 
-          def testApisTeam(apis: Seq[Api]): EitherT[Future, AppError, Unit] = {
+          def testApisTeam(apis: Seq[Api], team: Team): EitherT[Future, AppError, Unit] = {
             if (apis.exists(_.team != team.id)) EitherT.leftT[Future, Unit](AppError.ForbiddenAction)
             else EitherT.pure[Future, AppError](())
           }
 
+          val apiFilter = if (apiIds.isEmpty) Json.obj() else Json.obj("_id" -> Json.obj("$in" -> apiIds.get))
+
           val value: EitherT[Future, AppError, (Seq[SubscriptionDemand], Long)] = for {
-            apis <- EitherT.liftF(dataStore.apiRepo.forTenant(tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> apiIds))))
-            _ <- testApisTeam(apis)
+            apis <- EitherT.liftF(dataStore.apiRepo.forTenant(tenant).findNotDeleted(Json.obj("team" -> team.id.asJson) ++ apiFilter))
+            _ <- testApisTeam(apis, team)
             demands <- EitherT.liftF(dataStore.subscriptionDemandRepo.forTenant(tenant).findWithPagination(Json.obj(
-              "deleted" -> false,
-              "api" -> Json.obj("$in" -> apiIds)
-            ), ctx.arg(OFFSET), ctx.arg(LIMIT), Json.obj("date" -> 1).some))
+              "_deleted" -> false,
+              "$or" -> Json.arr(
+                Json.obj("state" -> SubscriptionDemandState.InProgress.name),
+                Json.obj("state" -> SubscriptionDemandState.Waiting.name)
+              ),
+              "api" -> Json.obj("$in" -> JsArray(apis.map(_.id.asJson)))
+            ), ctx.arg(OFFSET), ctx.arg(LIMIT)))
           } yield demands
 
           value.value
 
-      }.map {
+        }.map {
           case Left(error) => throw NotAuthorizedError((error.toJson() \ "error").as[String])
           case Right(demands) => SubscriptionDemandWithCount(demands._1, demands._2)
+        }
+      }
+    ))
+
+    def teamSubscriptionDemands(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("teamSubscriptionDemands", graphQlSubscriptionDemandWithCount, arguments = TEAM_ID_NOT_OPT :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
+        _TeamMemberOnly(ctx.arg(TEAM_ID_NOT_OPT), AuditTrailEvent("*** TODO ***"))(ctx.ctx._2) { team =>
+          val tenant = ctx.ctx._2.tenant
+          val dataStore = ctx.ctx._1
+
+          dataStore.subscriptionDemandRepo.forTenant(tenant).findWithPagination(Json.obj(
+              "_deleted" -> false,
+              "team" -> team.id.asJson,
+              "$or" -> Json.arr(
+                Json.obj("state" -> SubscriptionDemandState.InProgress.name),
+                Json.obj("state" -> SubscriptionDemandState.Waiting.name)
+              ),
+            ), ctx.arg(OFFSET), ctx.arg(LIMIT))
+            .map { case (demands, count) => SubscriptionDemandWithCount(demands, count) }
+            .map(Right(_))
+      }.map {
+          case Right(demands) => demands
+          case Left(error) => throw NotAuthorizedError((error.toJson() \ "error").as[String])
         }
       }
     ))
@@ -1443,9 +1489,15 @@ object SchemaDefinition {
 
     (
       Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ apiWithSubscriptionsQueryFields() ++ subscriptionDemandsForTeamAdmin() ++ cmsPageFields():_*)
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++
+          teamQueryFields() ++
+          apiQueryFields()++
+          apiWithSubscriptionsQueryFields() ++
+          subscriptionDemandsForTeamAdmin() ++
+          teamSubscriptionDemands() ++
+          cmsPageFields():_*)
       )),
-      DeferredResolver.fetchers(teamsFetcher)
+      DeferredResolver.fetchers(teamsFetcher, usersFetcher, apisFetcher)
     )
   }
 }
