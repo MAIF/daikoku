@@ -635,14 +635,16 @@ object json {
         JsSuccess(
           SimpleSMTPSettings(
             host = (json \ "host").as[String],
-            port = (json \ "port").as[String],
+            port = (json \ "port").asOpt[String].getOrElse((json \ "port").as[Int].toString),
             fromTitle = (json \ "fromTitle").as[String],
             fromEmail = (json \ "fromEmail").as[String],
             template = (json \ "template").asOpt[String]
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e => 
+          AppLogger.error(e.getMessage)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: SimpleSMTPSettings): JsValue = Json.obj(
@@ -668,7 +670,9 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e => 
+          AppLogger.error(e.getMessage)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: SendgridSettings): JsValue = Json.obj(
