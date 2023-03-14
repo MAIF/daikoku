@@ -635,14 +635,16 @@ object json {
         JsSuccess(
           SimpleSMTPSettings(
             host = (json \ "host").as[String],
-            port = (json \ "port").asOpt[String].getOrElse((json \ "port").as[Int].toString),
+            port = (json \ "port")
+              .asOpt[String]
+              .getOrElse((json \ "port").as[Int].toString),
             fromTitle = (json \ "fromTitle").as[String],
             fromEmail = (json \ "fromEmail").as[String],
             template = (json \ "template").asOpt[String]
           )
         )
       } recover {
-        case e => 
+        case e =>
           AppLogger.error(e.getMessage)
           JsError(e.getMessage)
       } get
@@ -670,7 +672,7 @@ object json {
           )
         )
       } recover {
-        case e => 
+        case e =>
           AppLogger.error(e.getMessage)
           JsError(e.getMessage)
       } get
