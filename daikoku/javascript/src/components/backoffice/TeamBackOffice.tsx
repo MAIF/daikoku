@@ -170,13 +170,12 @@ type WidgetProps = {
   title: string
 }
 const Widget = (props: PropsWithChildren<WidgetProps>) => {
-  const isOk = !props.isLoading && !isError
   return (
     <div className={classNames("widget", props.size)}>
       <h4>{props.title}</h4>
       {props.isLoading && <Spinner />}
       {props.isError && <div className='error'>oops</div>}
-      {!isOk && <>{props.children}</>}
+      {!props.isLoading && !props.isError && <>{props.children}</>}
     </div>
   )
 }

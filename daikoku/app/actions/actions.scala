@@ -168,7 +168,6 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
   override protected def executionContext: ExecutionContext = ec
 }
 
-//todo: maybe some refactoring
 class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
     extends ActionBuilder[DaikokuActionContext, AnyContent] {
 

@@ -4,28 +4,19 @@ import akka.http.scaladsl.util.FastFuture
 import akka.util.ByteString
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
 import play.api.i18n.I18nSupport
 import play.api.libs.streams.Accumulator
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import play.api.mvc.{
-  AbstractController,
-  AnyContent,
-  BodyParser,
-  ControllerComponents,
-  Result
-}
+import play.api.mvc.{AbstractController, AnyContent, BodyParser, ControllerComponents, Result}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -222,6 +213,8 @@ class NotificationController(
       import cats.data._
       import cats.implicits._
 
+      implicit val c = ctx
+
       PublicUserAccess(
         AuditTrailEvent(
           s"@{user.name} has accepted a notification ($notificationId)"))(ctx) {
@@ -242,32 +235,20 @@ class NotificationController(
               case ApiSubscriptionDemand(apiId,
                                          planId,
                                          requestedteamId,
+                                         demand,
+                                         step,
                                          apiKeyId,
                                          _) =>
                 EitherT(
                   acceptApiSubscription(
+                    demand,
+                    step,
                     requestedteamId,
                     apiId,
                     planId,
                     ctx.tenant,
                     ctx.user,
-                    notification.sender,
-                    apiKeyId,
-                    ctx.request.body
-                      .asOpt[JsObject]
-                      .flatMap(o => (o \ "customMetadata").asOpt[JsObject]),
-                    ctx.request.body
-                      .asOpt[JsObject]
-                      .flatMap(o => (o \ "customMaxPerSecond").asOpt[Long]),
-                    ctx.request.body
-                      .asOpt[JsObject]
-                      .flatMap(o => (o \ "customMaxPerDay").asOpt[Long]),
-                    ctx.request.body
-                      .asOpt[JsObject]
-                      .flatMap(o => (o \ "customMaxPerMonth").asOpt[Long]),
-                    ctx.request.body
-                      .asOpt[JsObject]
-                      .flatMap(o => (o \ "customReadOnly").asOpt[Boolean])
+                    notification.sender
                   ))
               case TeamInvitation(_, user) if user != ctx.user.id =>
                 EitherT.leftT[Future, Unit](ForbiddenAction)
@@ -414,7 +395,7 @@ class NotificationController(
                           Map("user" -> user.name, "teamName" -> team.name))
                     }
               }
-          case ApiSubscriptionDemand(apiId, _, _, _, _) =>
+          case ApiSubscriptionDemand(apiId, _, _, _, _, _, _) =>
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(apiId)
@@ -464,7 +445,7 @@ class NotificationController(
         }
 
         (notification.action match {
-          case ApiSubscriptionDemand(apiId, plan, t, _, _) =>
+          case ApiSubscriptionDemand(apiId, plan, t, _, _, _, _) =>
             val newNotification = Notification(
               id = NotificationId(BSONObjectID.generate().stringify),
               tenant = ctx.tenant.id,
@@ -705,20 +686,20 @@ class NotificationController(
   }
 
   def acceptApiSubscription(
-      teamRequestId: TeamId,
+      subscriptionDemandId: SubscriptionDemandId,
+      subscriptionDemandStepId: SubscriptionDemandStepId,
+      teamRequestId : TeamId,
       apiId: ApiId,
       plan: UsagePlanId,
       tenant: Tenant,
       user: User,
-      sender: User,
-      apiKeyId: Option[ApiSubscriptionId],
-      customMetadata: Option[JsObject],
-      customMaxPerSecond: Option[Long],
-      customMaxPerDay: Option[Long],
-      customMaxPerMonth: Option[Long],
-      customReadOnly: Option[Boolean]): Future[Either[AppError, Unit]] = {
+      sender: User )(implicit ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, Unit]] = {
     import cats.data._
     import cats.implicits._
+    import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
+
+    implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+    implicit val currentUser: User = user
 
     val r: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
@@ -741,44 +722,43 @@ class NotificationController(
                            .toSeq))))
       )
       //todo: get plan "name" for mail body
-      _ <- EitherT(
-        apiService
-          .subscribeToApi(tenant,
-                          user,
-                          api,
-                          plan.value,
-                          team,
-                          apiKeyId,
-                          customMetadata,
-                          customMaxPerSecond,
-                          customMaxPerDay,
-                          customMaxPerMonth,
-                          customReadOnly))
-      newNotification = Notification(
-        id = NotificationId(BSONObjectID.generate().stringify),
-        tenant = tenant.id,
-        team = Some(team.id),
-        sender = user,
-        notificationType = NotificationType.AcceptOnly,
-        action = NotificationAction.ApiSubscriptionAccept(apiId, plan, team.id)
-      )
-      _ <- EitherT.liftF(
-        env.dataStore.notificationRepo.forTenant(tenant).save(newNotification)
-      )
-      _ <- EitherT.liftF(
-        Future.sequence((administrators ++ Seq(sender)).map(admin => {
-          implicit val language: String = admin.defaultLanguage.getOrElse(
-            tenant.defaultLanguage.getOrElse("en"))
-          (for {
-            title <- translator.translate("mail.acceptation.title", tenant)
-            body <- translator.translate(
-              "mail.api.subscription.acceptation.body",
-              tenant,
-              Map("user" -> sender.name, "apiName" -> api.name))
-          } yield {
-            tenant.mailer.send(title, Seq(admin.email), body, tenant)
-          }).flatten
-        })))
+      demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj(
+        "_id" -> subscriptionDemandId.asJson,
+      )), AppError.EntityNotFound("Subscription demand"))
+
+      demand1: SubscriptionDemand = demand.copy(steps = demand.steps.map(s => if (s.id == subscriptionDemandStepId) s.copy(state = SubscriptionDemandState.Accepted) else s))
+      log = AppLogger.warn(s"$demand")
+      _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).save(
+        demand1
+      ))
+
+      _ <- apiService.runSubscriptionProcess(demand.id, ctx.tenant)
+      //todo: send following notif after process is ok
+//      newNotification = Notification(
+//        id = NotificationId(BSONObjectID.generate().stringify),
+//        tenant = tenant.id,
+//        team = Some(team.id),
+//        sender = user,
+//        notificationType = NotificationType.AcceptOnly,
+//        action = NotificationAction.ApiSubscriptionAccept(apiId, plan, team.id)
+//      )
+//      _ <- EitherT.liftF(
+//        env.dataStore.notificationRepo.forTenant(tenant).save(newNotification)
+//      )
+//      _ <- EitherT.liftF(
+//        Future.sequence((administrators ++ Seq(sender)).map(admin => {
+//          implicit val language: String = admin.defaultLanguage.getOrElse(
+//            tenant.defaultLanguage.getOrElse("en"))
+//          (for {
+//            title <- translator.translate("mail.acceptation.title", tenant)
+//            body <- translator.translate(
+//              "mail.api.subscription.acceptation.body",
+//              tenant,
+//              Map("user" -> sender.name, "apiName" -> api.name))
+//          } yield {
+//            tenant.mailer.send(title, Seq(admin.email), body, tenant)
+//          }).flatten
+//        })))
     } yield ()
 
     r.value

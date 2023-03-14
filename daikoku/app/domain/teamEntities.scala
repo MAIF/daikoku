@@ -183,6 +183,8 @@ object NotificationAction {
       api: ApiId,
       plan: UsagePlanId,
       team: TeamId,
+      demand: SubscriptionDemandId,
+      step: SubscriptionDemandStepId,
       parentSubscriptionId: Option[ApiSubscriptionId] = None,
       motivation: Option[String])
       extends NotificationAction

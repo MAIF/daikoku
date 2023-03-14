@@ -2398,7 +2398,7 @@ object json {
     override def reads(json: JsValue) = json.as[String] match {
       case "waiting" => JsSuccess(SubscriptionDemandState.Waiting)
       case "inProgress" => JsSuccess(SubscriptionDemandState.InProgress)
-      case "cancelled" => JsSuccess(SubscriptionDemandState.Cancelled)
+      case "canceled" => JsSuccess(SubscriptionDemandState.Canceled)
       case "accepted" => JsSuccess(SubscriptionDemandState.Accepted)
       case "refused" => JsSuccess(SubscriptionDemandState.Refused)
       case str => JsError(s"Bad SubscriptionDemandState value: $str")
@@ -2859,6 +2859,8 @@ object json {
             api = (json \ "api").as(ApiIdFormat),
             plan = (json \ "plan").as(UsagePlanIdFormat),
             team = (json \ "team").as(TeamIdFormat),
+            demand = (json \ "demand").as(SubscriptionDemandIdFormat),
+            step = (json \ "step").as(SubscriptionDemandStepIdFormat),
             parentSubscriptionId =
               (json \ "parentSubscriptionId").asOpt(ApiSubscriptionIdFormat),
             motivation = (json \ "motivation").asOpt[String]
@@ -2872,6 +2874,8 @@ object json {
       "api" -> ApiIdFormat.writes(o.api),
       "plan" -> UsagePlanIdFormat.writes(o.plan),
       "team" -> TeamIdFormat.writes(o.team),
+      "demand" -> SubscriptionDemandIdFormat.writes(o.demand),
+      "step" -> SubscriptionDemandStepIdFormat.writes(o.step),
       "parentSubscriptionId" -> o.parentSubscriptionId
         .map(ApiSubscriptionIdFormat.writes)
         .getOrElse(JsNull)

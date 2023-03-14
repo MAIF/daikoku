@@ -1,8 +1,8 @@
 package fr.maif.otoroshi.daikoku.utils
 
 import java.util.concurrent.ConcurrentHashMap
-
 import akka.http.scaladsl.model.Uri
+import fr.maif.otoroshi.daikoku.domain.Tenant
 import play.api.mvc.RequestHeader
 
 import scala.util.Try
@@ -37,6 +37,14 @@ object RequestImplicits {
         .get("Otoroshi-Proxied-Host")
         .orElse(requestHeader.headers.get("X-Forwarded-Host"))
         .getOrElse(requestHeader.host)
+    }
+
+    def getLanguage(tenant: Tenant): String = {
+      requestHeader.headers.toSimpleMap
+      .find (test => test._1 == "X-contact-language")
+      .map (h => h._2)
+      .orElse (tenant.defaultLanguage)
+      .getOrElse ("en")
     }
   }
 }

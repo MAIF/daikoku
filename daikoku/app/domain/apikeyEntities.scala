@@ -195,8 +195,8 @@ object SubscriptionDemandState {
     def name: String = "refused"
     def isClosed: Boolean = true
   }
-  case object Cancelled extends SubscriptionDemandState {
-    def name: String = "cancelled"
+  case object Canceled extends SubscriptionDemandState {
+    def name: String = "canceled"
     def isClosed: Boolean = true
   }
   case object InProgress extends SubscriptionDemandState {
@@ -213,12 +213,28 @@ object SubscriptionDemandState {
   }
 
   val values: Seq[SubscriptionDemandState] =
-    Seq(Accepted, Refused, Cancelled, InProgress)
+    Seq(Accepted, Refused, Canceled, InProgress)
+
+  def merge(states: Seq[SubscriptionDemandState]): SubscriptionDemandState = {
+    if (states.exists(_.name === Accepted.name)) {
+      Accepted
+    } else if (states.exists(_.name === Refused.name)) {
+      Refused
+    } else if (states.exists(_.name === Canceled.name)) {
+      Canceled
+    } else if (states.exists(_.name === Blocked.name)) {
+      Blocked
+    } else if (states.exists(_.name === InProgress.name)) {
+      InProgress
+    } else {
+      Waiting
+    }
+  }
 
   def apply(name: String): Option[SubscriptionDemandState] = name match {
     case "accepted"   => Accepted.some
     case "refused"    => Refused.some
-    case "cancelled"  => Cancelled.some
+    case "canceled"  => Canceled.some
     case "inProgress" => InProgress.some
     case "waiting"    => Waiting.some
     case _            => None
@@ -247,7 +263,7 @@ case class SubscriptionDemandStep(id: SubscriptionDemandStepId,
                                   metadata: JsObject = Json.obj())
   extends CanJson[SubscriptionDemandStep] {
   override def asJson: JsValue = json.SubscriptionDemandStepFormat.writes(this)
-  def check() = {
+  def check(): EitherT[Future, AppError, Unit] = {
     state match {
       case SubscriptionDemandState.InProgress | SubscriptionDemandState.Waiting => EitherT.pure[Future, AppError](())
       case _ => EitherT.leftT[Future, Unit](AppError.EntityConflict("Subscription demand state"))
