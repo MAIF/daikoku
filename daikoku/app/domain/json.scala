@@ -2421,7 +2421,26 @@ object json {
       "from" -> o.from.asJson,
       "date" -> DateTimeFormat.writes(o.date),
       "motivation" -> o.motivation.map(JsString).getOrElse(JsNull).as[JsValue],
-      "parentSubscription" -> o.parentSubscriptionId.map(_.asJson).getOrElse(JsNull).as[JsValue])
+      "parentSubscription" -> o.parentSubscriptionId.map(_.asJson).getOrElse(JsNull).as[JsValue],
+      "customMetadata" -> o.customMetadata
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerSecond" -> o.customMaxPerSecond
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerDay" -> o.customMaxPerDay
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerMonth" -> o.customMaxPerMonth
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customReadOnly" -> o.customReadOnly
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue])
 
 
     override def reads(json: JsValue): JsResult[SubscriptionDemand] = Try {
@@ -2438,7 +2457,12 @@ object json {
           from = (json \ "from").as(UserIdFormat),
           date = (json \ "date").as(DateTimeFormat),
           motivation = (json \ "motivation").asOpt[String],
-          parentSubscriptionId = (json \ "parentSubscription").asOpt(ApiSubscriptionIdFormat)
+          parentSubscriptionId = (json \ "parentSubscription").asOpt(ApiSubscriptionIdFormat),
+          customMetadata = (json \ "customMetadata").asOpt[JsObject],
+          customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
+          customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
+          customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
+          customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
         )
       )
     } recover {
@@ -2475,7 +2499,7 @@ object json {
   val StepValidatorFormat = new Format[StepValidator] {
     override def writes(o: StepValidator): JsValue = Json.obj(
       "_id" -> o.id.asJson,
-      "-tenant" -> o.tenant.asJson,
+      "_tenant" -> o.tenant.asJson,
       "_deleted" -> o.deleted,
       "token" -> o.token,
       "step" -> o.step.asJson,

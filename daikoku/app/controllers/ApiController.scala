@@ -970,14 +970,14 @@ class ApiController(
 
   private def validateProcessWithStepValidator(validator: StepValidator, tenant: Tenant)(implicit language: String, currentUser: User) = {
     for {
-      _ <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant)
-        .findByIdNotDeleted((validator.metadata \ "teamId").as[String]), AppError.TeamNotFound)
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
         .findByIdNotDeleted(validator.subscriptionDemand), AppError.EntityNotFound("Subscription demand Validator"))
+      _ <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant)
+        .findByIdNotDeleted(demand.team), AppError.TeamNotFound)
       _ <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
       step <- EitherT.fromOption[Future](demand.steps.find(_.id == validator.step), AppError.EntityNotFound("Validation Step"))
       _ <- step.check()
-      updatedDemand = demand.copy(steps = demand.steps.filter(_.id != step.id) :+ step.copy(state = SubscriptionDemandState.Accepted))
+      updatedDemand = demand.copy(steps = demand.steps.map(s => if (s.id == step.id) s.copy(state = SubscriptionDemandState.Accepted) else s))
       _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(updatedDemand))
       result <- apiService.runSubscriptionProcess(demand.id, tenant)
     } yield result

@@ -781,7 +781,6 @@ class ApiService(env: Env,
 
   def runSubscriptionProcess(demandId: SubscriptionDemandId, tenant: Tenant)(implicit language: String, currentUser: User): EitherT[Future, AppError, Result] = {
     def runRightProcess(step: SubscriptionDemandStep, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
-      AppLogger.warn("run process")
       val run = step.step match {
         case ValidationStep.Email(_, emails, template) =>
 
@@ -837,27 +836,38 @@ class ApiService(env: Env,
 
     val value: EitherT[Future, AppError, SubscriptionDemand] = for {
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).findByIdNotDeleted(demandId), AppError.SubscriptionDemandNotFound)
+      log = AppLogger.warn(Json.prettyPrint(json.SubscriptionDemandFormat.writes(demand)))
       a: EitherT[Future, AppError, Unit] = if (demand.state.isClosed) EitherT.leftT[Future, Unit](AppError.SubscriptionDemandClosed) else EitherT.pure[Future, AppError](())
       _ <- a
     } yield demand
 
-    value.map(demand => (demand.steps.find(!_.state.isClosed), demand)).flatMap {
-      case (Some(step), demand) => runRightProcess(step, demand, tenant)
-      case (None, demand) => for {
-        result <- EitherT.liftF(_createOrExtendApiKey(
-          tenant = tenant,
-          apiId = demand.api.value,
-          planId = demand.plan.value,
-          teamId = demand.team.value,
-          parentSubscriptionId = demand.parentSubscriptionId,
-          customMetadata = ???,
-          customMaxPerSecond = ???,
-          customMaxPerDay = ???,
-          customMaxPerMonth = ???,
-          customReadOnly = ???
-        ))
-        _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(demand.copy(state = SubscriptionDemandState.Accepted)))
-      } yield result
+    value
+      .map(demand => {
+        val maybeStep: Option[SubscriptionDemandStep] = demand.steps.find(!_.state.isClosed)
+        AppLogger.warn(s"maybeStep ==> $maybeStep")
+        (maybeStep, demand)
+      })
+      .flatMap {
+        case (Some(step), demand) => runRightProcess(step, demand, tenant)
+        case (None, demand) => for {
+          from <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(demand.from), AppError.ApiNotFound)
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
+          team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.ApiNotFound)
+          subscription <- EitherT(subscribeToApi(tenant, from, api, demand.plan.value, team, demand.parentSubscriptionId))
+//          result <- EitherT.liftF(_createOrExtendApiKey(
+//            tenant = tenant,
+//            apiId = demand.api.value,
+//            planId = demand.plan.value,
+//            teamId = demand.team.value,
+//            parentSubscriptionId = demand.parentSubscriptionId,
+//            customMetadata = demand.customMetadata,
+//            customMaxPerSecond = demand.customMaxPerSecond,
+//            customMaxPerDay = demand.customMaxPerDay,
+//            customMaxPerMonth = demand.customMaxPerMonth,
+//            customReadOnly = demand.customReadOnly
+//          ))
+          _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(demand.copy(state = SubscriptionDemandState.Accepted)))
+        } yield Ok(subscription.asSafeJson)
     }
   }
 
@@ -1017,18 +1027,16 @@ class ApiService(env: Env,
                     id = SubscriptionDemandStepId(IdGenerator.token),
                     state = SubscriptionDemandState.Waiting,
                     step = step,
-                    metadata = Json.obj(
-                      "customMetadata" -> customMetadata.getOrElse(JsNull).as[JsValue],
-                      "customMaxPerSecond" -> customMaxPerSecond.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
-                      "customMaxPerDay" -> customMaxPerDay.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
-                      "customMaxPerMonth" -> customMaxPerMonth.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
-                      "customReadOnly" -> customReadOnly.map(JsBoolean(_)).getOrElse(JsNull).as[JsValue],
-                    )
                   )),
                   team = team.id,
                   from = user.id,
                   motivation = motivation,
-                  parentSubscriptionId = apiKeyId
+                  parentSubscriptionId = apiKeyId,
+                  customMetadata = customMetadata,
+                  customMaxPerSecond = customMaxPerSecond,
+                  customMaxPerDay = customMaxPerDay,
+                  customMaxPerMonth = customMaxPerMonth,
+                  customReadOnly = customReadOnly
                 )))
               result <- runSubscriptionProcess(demanId, tenant)(language, user)
             } yield result

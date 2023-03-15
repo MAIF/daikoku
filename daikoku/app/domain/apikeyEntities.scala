@@ -216,7 +216,9 @@ object SubscriptionDemandState {
     Seq(Accepted, Refused, Canceled, InProgress)
 
   def merge(states: Seq[SubscriptionDemandState]): SubscriptionDemandState = {
-    if (states.exists(_.name === Accepted.name)) {
+    if (states.exists(_.name === InProgress.name)) {
+      InProgress
+    } else if (states.forall(_.name === Accepted.name)) {
       Accepted
     } else if (states.exists(_.name === Refused.name)) {
       Refused
@@ -224,8 +226,6 @@ object SubscriptionDemandState {
       Canceled
     } else if (states.exists(_.name === Blocked.name)) {
       Blocked
-    } else if (states.exists(_.name === InProgress.name)) {
-      InProgress
     } else {
       Waiting
     }
@@ -252,7 +252,12 @@ case class SubscriptionDemand(id: SubscriptionDemandId,
                               from: UserId,
                               date: DateTime = DateTime.now,
                               motivation: Option[String],
-                              parentSubscriptionId: Option[ApiSubscriptionId])
+                              parentSubscriptionId: Option[ApiSubscriptionId],
+                              customReadOnly: Option[Boolean],
+                              customMetadata: Option[JsObject],
+                              customMaxPerSecond: Option[Long],
+                              customMaxPerDay: Option[Long],
+                              customMaxPerMonth: Option[Long])
   extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }
