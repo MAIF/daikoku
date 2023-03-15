@@ -276,7 +276,6 @@ class PaymentClient(
           .post(body)
       )
       .flatMap(res => {
-        AppLogger.warn(res.statusText)
         if (res.status == 200 || res.status == 201) {
           val url = (res.json \ "url").as[String]
           AppLogger.warn(url)

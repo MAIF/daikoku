@@ -836,7 +836,6 @@ class ApiService(env: Env,
 
     val value: EitherT[Future, AppError, SubscriptionDemand] = for {
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).findByIdNotDeleted(demandId), AppError.SubscriptionDemandNotFound)
-      log = AppLogger.warn(Json.prettyPrint(json.SubscriptionDemandFormat.writes(demand)))
       a: EitherT[Future, AppError, Unit] = if (demand.state.isClosed) EitherT.leftT[Future, Unit](AppError.SubscriptionDemandClosed) else EitherT.pure[Future, AppError](())
       _ <- a
     } yield demand
@@ -844,7 +843,6 @@ class ApiService(env: Env,
     value
       .map(demand => {
         val maybeStep: Option[SubscriptionDemandStep] = demand.steps.find(!_.state.isClosed)
-        AppLogger.warn(s"maybeStep ==> $maybeStep")
         (maybeStep, demand)
       })
       .flatMap {

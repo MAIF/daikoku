@@ -727,7 +727,6 @@ class NotificationController(
       )), AppError.EntityNotFound("Subscription demand"))
 
       demand1: SubscriptionDemand = demand.copy(steps = demand.steps.map(s => if (s.id == subscriptionDemandStepId) s.copy(state = SubscriptionDemandState.Accepted) else s))
-      log = AppLogger.warn(s"$demand")
       _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).save(
         demand1
       ))

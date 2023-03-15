@@ -1245,8 +1245,6 @@ object json {
       } recover {
         case e =>
           AppLogger.warn("Pay per use")
-          AppLogger.warn(Json.prettyPrint(json))
-          AppLogger.warn(Json.prettyPrint((json \ "paymentSettings").as[JsValue]))
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
       } get
