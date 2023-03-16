@@ -7,6 +7,8 @@ import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
+import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.mvc.Result
@@ -67,7 +69,8 @@ class PaymentClient(
     }
 
   def checkoutSubscription(tenant: Tenant,
-                           subscriptionDemand: SubscriptionDemand
+                           subscriptionDemand: SubscriptionDemand,
+                           step: SubscriptionDemandStep,
                           ): EitherT[Future, AppError, Result] = {
     for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(subscriptionDemand.api), AppError.ApiNotFound)
@@ -76,11 +79,18 @@ class PaymentClient(
       user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(subscriptionDemand.from), AppError.UserNotFound)
       plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscriptionDemand.plan), AppError.PlanNotFound)
       settings <- EitherT.fromOption[Future](plan.paymentSettings, AppError.ThirdPartyPaymentSettingsNotFound)
-      checkoutUrl <- createSessionCheckout(tenant, api, team, apiTeam, subscriptionDemand, settings, user)
+      checkoutUrl <- createSessionCheckout(tenant, api, team, apiTeam, subscriptionDemand, settings, user, step)
     } yield Ok(Json.obj("checkoutUrl" -> checkoutUrl))
   }
 
-  def createSessionCheckout(tenant: Tenant, api: Api, team: Team, apiTeam: Team, demand: SubscriptionDemand, settings: PaymentSettings, user: User) = {
+  def createSessionCheckout(tenant: Tenant,
+                            api: Api,
+                            team: Team,
+                            apiTeam: Team,
+                            demand: SubscriptionDemand,
+                            settings: PaymentSettings,
+                            user: User,
+                            step: SubscriptionDemandStep) = {
     settings match {
       case p: PaymentSettings.Stripe =>
         implicit val stripeSettings: StripeSettings =
@@ -95,7 +105,8 @@ class PaymentClient(
           apiTeam,
           demand,
           p,
-          user
+          user,
+          step
         )
     }
   }
@@ -239,11 +250,22 @@ class PaymentClient(
       apiTeam: Team,
       subscriptionDemand: SubscriptionDemand,
       settings: PaymentSettings.Stripe,
-      user: User
+      user: User,
+      step: SubscriptionDemandStep
   )(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, String] = {
-    //todo: success url must be just an UI to explain how does it work
+
+    val stepValidator = StepValidator(
+      id = DatastoreId(IdGenerator.token),
+      tenant = tenant.id,
+      token = IdGenerator.token,
+      step = step.id,
+      subscriptionDemand = subscriptionDemand.id,
+    )
+
+    val cipheredValidationToken = encrypt(env.config.cypherSecret, stepValidator.token, tenant)
+
     val baseBody = Map(
       "metadata[tenant]" -> subscriptionDemand.tenant.value,
       "metadata[api]" -> subscriptionDemand.api.value,
@@ -258,7 +280,7 @@ class PaymentClient(
       "locale" -> user.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en").toLowerCase,
       "success_url" -> env.getDaikokuUrl(
         tenant,
-        s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
+        s"/api/subscription/_validate?token=$cipheredValidationToken"
       ),
       "cancel_url" -> env.getDaikokuUrl(
         tenant,
@@ -269,6 +291,12 @@ class PaymentClient(
     val body = settings.priceIds.additionalPriceId
       .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
       .getOrElse(baseBody)
+
+    for {
+      _ <- EitherT.liftF(env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator))
+
+
+    } yield ???
 
     EitherT
       .liftF(

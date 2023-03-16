@@ -242,9 +242,6 @@ class ApiService(env: Env,
               _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo
                 .forTenant(tenant.id)
                 .save(apiSubscription))
-              //todo: start checkout session if plan is paied plan with payment settings
-//              apiTeam <- EitherT.fromOptionF(ev.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team), AppError.TeamNotFound)
-//              _ <- paymentClient.checkoutSubscription(tenant, apiSubscription, plan, api, team, apiTeam, user)
             } yield apiSubscription
         }.value
     }
@@ -798,11 +795,11 @@ class ApiService(env: Env,
               )
 
               val cipheredValidationToken = encrypt(env.config.cypherSecret, stepValidator.token, tenant)
-              val urlAccept = s"/api/subscription/_validate?token=$cipheredValidationToken"
-              val urlDecline = s"/api/subscription/_decline?token=$cipheredValidationToken"
+              val pathAccept = s"/api/subscription/_validate?token=$cipheredValidationToken"
+              val pathDecline = s"/api/subscription/_decline?token=$cipheredValidationToken"
 
               translator.translate("mail.subscription.validation.body", tenant,
-                Map("urlAccept" -> urlAccept, "urlDecline" -> urlDecline))
+                Map("urlAccept" -> env.getDaikokuUrl(tenant, pathAccept), "urlDecline" -> env.getDaikokuUrl(tenant, pathDecline)))
                 .flatMap(body => env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator).map(_ => body))
                 .flatMap(body => tenant.mailer.send(title, Seq(email), body, tenant))
             })))
@@ -823,7 +820,8 @@ class ApiService(env: Env,
         )
         case ValidationStep.Payment(_, _) => paymentClient.checkoutSubscription(
           tenant = tenant,
-          subscriptionDemand = demand
+          subscriptionDemand = demand,
+          step = step
         )
       }
 

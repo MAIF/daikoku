@@ -927,17 +927,18 @@ class ApiController(
         validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
           .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
         _ <- validateProcessWithStepValidator(validator, ctx.tenant)
-      } yield Ok(
+      } yield if (ctx.user.isGuest) Ok(
         views.html.response(
           None,
           ctx.request.domain,
           env,
-          ctx.tenant))).leftMap( error => Ok(
-        views.html.response(
-          error.getErrorMessage().some,
-          ctx.request.domain,
-          env,
-          ctx.tenant))).merge
+          ctx.tenant)) else Redirect(s"/apis"))
+        .leftMap(error => Ok(
+          views.html.response(
+            error.getErrorMessage().some,
+            ctx.request.domain,
+            env,
+            ctx.tenant))).merge
     }
   }
 
