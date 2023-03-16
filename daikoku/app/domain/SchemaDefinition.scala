@@ -1021,6 +1021,13 @@ object SchemaDefinition {
       )
     )
 
+    lazy val NotificationSenderType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationSender](
+      ObjectTypeDescription("A notification sender object"),
+      ReplaceField("id", Field("id", OptionType(StringType), resolve = _.value.id.map(_.value))),
+      ReplaceField("email", Field("email", StringType, resolve = _.value.email)),
+      ReplaceField("name", Field("name", StringType, resolve = _.value.name)),
+    )
+
     lazy val  NotificationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Notification](
       ObjectTypeDescription("A default notification object"),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
@@ -1031,7 +1038,7 @@ object SchemaDefinition {
         case Some(team) => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)
         case None => None
       })),
-      ReplaceField("sender", Field("sender", UserType, resolve = _.value.sender)),
+      ReplaceField("sender", Field("sender", NotificationSenderType, resolve = _.value.sender)),
       ReplaceField("date", Field("date", DateTimeUnitype, resolve = _.value.date)),
       ReplaceField("notificationType", Field("notificationType", NotificationInterfaceType, resolve = _.value.notificationType)),
       ReplaceField("status", Field("status", NotificationStatusType, resolve = _.value.status, possibleTypes = List(NotificationStatusAcceptedType, NotificationStatusRejectedType, NotificationStatusPendingType))),

@@ -232,7 +232,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             id = NotificationId(BSONObjectID.generate().stringify),
             tenant = ctx.tenant.id,
             team = Some(team.id),
-            sender = ctx.user,
+            sender = ctx.user.asNotificationSender,
             action = NotificationAction.TeamAccess(team.id)
           )
 
@@ -377,7 +377,7 @@ class TeamController(DaikokuAction: DaikokuAction,
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = ctx.tenant.id,
       team = None,
-      sender = ctx.user,
+      sender = ctx.user.asNotificationSender,
       action = NotificationAction.TeamInvitation(team.id, userId)
     )
 
@@ -476,7 +476,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                       id = notificationId,
                       tenant = ctx.tenant.id,
                       team = None,
-                      sender = ctx.user,
+                      sender = ctx.user.asNotificationSender,
                       action = NotificationAction.TeamInvitation(team.id,
                                                                  invitedUser.id)
                     ))

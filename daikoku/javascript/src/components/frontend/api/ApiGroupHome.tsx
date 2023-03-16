@@ -24,7 +24,7 @@ export const ApiGroupHome = ({ }) => {
   const [apiGroup, setApiGroup] = useState<any>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
-  const [myTeams, setMyTeams] = useState([]);
+  const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
 
   const params = useParams();
@@ -167,44 +167,28 @@ export const ApiGroupHome = ({ }) => {
     });
   };
 
-  const askForApikeys = ({team, plan}: {team: string, plan: IUsagePlan}) => {
+  const askForApikeys = ({ team, plan }: { team: string, plan: IUsagePlan }) => {
     const planName = formatPlanType(plan, translate);
 
     return Services.askForApiKey(apiGroup._id, team, plan._id)
-      .then((results) => {
-        if (results.error) {
-          return toastr.error(translate('Error'), results.error);
+      .then((result) => {
+        if (isError(result)) {
+          return toastr.error(translate('Error'), result.error);
+        } else if (Services.isCheckoutUrl(result)) {
+          window.location.href = result.checkoutUrl
+        } else if (result.creation === 'done') {
+          const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
+          return toastr.success(
+            translate('Done'),
+            translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] })
+          );
+        } else if (result.creation === 'waiting') {
+          const teamName = myTeams.find((t) => t._id === team)!.name;
+          return toastr.info(
+            translate('Pending request'),
+            translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] })
+          );
         }
-        return results.forEach((result: any) => {
-          if (result.error) {
-            return toastr.error(translate('Error'), result.error);
-          } else if (result.creation === 'done') {
-            const team: any = myTeams.find((t) => (t as any)._id === result.subscription.team);
-            return toastr.success(
-              translate('Done'),
-              translate(
-                {
-                  key: 'subscription.plan.accepted',
-                  replacements: [
-                    planName,
-                    team.name
-                  ]
-                }
-              )
-            );
-          } else if (result.creation === 'waiting') {
-            const team: any = myTeams.find((t) => (t as any)._id === result.subscription.team);
-            return toastr.info(
-              translate('Pending request'),
-              translate(
-                {
-                  key: 'subscription.plan.waiting',
-                  replacements: [planName, team.name]
-                }
-              )
-            );
-          }
-        });
       })
       .then(() => updateSubscriptions(apiGroup));
   };

@@ -117,17 +117,47 @@ export const getMySubscriptions = (
 ): Promise<{ subscriptions: Array<ISubscription>; requests: Array<INotification> }> =>
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
+type CreationDone = { creation: 'done', subscription: ISubscription}
+type CreationWaiting = { creation: 'waiting' }
+type CheckoutUrl = { checkoutUrl: string }
+
+export function isCheckoutUrl(obj: any): obj is CheckoutUrl {
+  return (<CheckoutUrl>obj).checkoutUrl !== undefined;
+}
+
+export function isCreationDone(obj: any): obj is CreationDone {
+  return (<CreationDone>obj).creation === 'done';
+}
+
+export function isCreationWaiting(obj: any): obj is CreationWaiting {
+  return (<CreationWaiting>obj).creation === 'waiting';
+}
+
+type SubscriptionReturn = ResponseError | CreationWaiting | CreationDone | CheckoutUrl
+
 export const askForApiKey = (
   apiId: string,
   teamId: string,
   planId: string,
   motivation?: string
-): Promise<any> => {
+): Promise<SubscriptionReturn> => {
   return customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/_subscribe`, {
     method: 'POST',
     body: JSON.stringify({ motivation }),
   });
 };
+
+export const extendApiKey = (
+  apiId: string,
+  apiKeyId: string,
+  teamId: string,
+  planId: string,
+  motivation?: string
+): Promise<SubscriptionReturn> =>
+  customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivation }),
+  });
 
 export const initApiKey = (api: any, team: any, plan: string, apikey: any) =>
   customFetch(`/api/apis/${api}/subscriptions/_init`, {
@@ -996,18 +1026,6 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
   customFetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
     method: 'POST',
     body: JSON.stringify({ version }),
-  });
-
-export const extendApiKey = (
-  apiId: string,
-  apiKeyId: string,
-  teamId: string,
-  planId: string,
-  motivation?: string
-) =>
-  customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
-    method: 'PUT',
-    body: JSON.stringify({ motivation }),
   });
 
 export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscriptionWithApiInfo>> =>

@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.headers.Language
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{Flow, Source}
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
@@ -506,7 +507,7 @@ class ApiService(env: Env,
                 .stringify),
               tenant = tenant.id,
               team = Some(subscription.team),
-              sender = user,
+              sender = user.asNotificationSender,
               action = NotificationAction
                 .ApiKeyRefresh(
                   subscription.customName.getOrElse(apiKey.clientName),
@@ -666,7 +667,7 @@ class ApiService(env: Env,
           id = NotificationId(BSONObjectID.generate().stringify),
           tenant = tenant.id,
           team = Some(subscription.team),
-          sender = user,
+          sender = user.asNotificationSender,
           notificationType = NotificationType.AcceptOnly,
           action = NotificationAction.ApiKeyDeletionInformation(apiOrGroupName, subscription.apiKey.clientId)
         ))
@@ -738,7 +739,7 @@ class ApiService(env: Env,
         id = NotificationId(BSONObjectID.generate().stringify),
         tenant = tenant.id,
         team = Some(api.team),
-        sender = user,
+        sender = user.asNotificationSender,
         action = NotificationAction
           .ApiSubscriptionDemand(api.id, planId, teamId, demandId, stepId, apiKeyId, motivation)
       )
@@ -793,18 +794,20 @@ class ApiService(env: Env,
                 token = IdGenerator.token,
                 step = step.id,
                 subscriptionDemand = demand.id,
-                metadata = Json.obj("from" -> email)
+                metadata = Json.obj("email" -> email)
               )
 
               val cipheredValidationToken = encrypt(env.config.cypherSecret, stepValidator.token, tenant)
-              val url = s"/api/subscription/_validate?token=$cipheredValidationToken"
+              val urlAccept = s"/api/subscription/_validate?token=$cipheredValidationToken"
+              val urlDecline = s"/api/subscription/_decline?token=$cipheredValidationToken"
 
-              translator.translate("mail.subscription.validation.body", tenant, Map("urlAccept" -> url))
+              translator.translate("mail.subscription.validation.body", tenant,
+                Map("urlAccept" -> urlAccept, "urlDecline" -> urlDecline))
                 .flatMap(body => env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator).map(_ => body))
                 .flatMap(body => tenant.mailer.send(title, Seq(email), body, tenant))
             })))
           } yield {
-            Ok(Json.obj("mailSended" -> true))
+            Ok(Json.obj("creation" -> "waiting"))
           }
           value
         case ValidationStep.TeamAdmin(_, _) => notifyApiSubscription(
@@ -816,7 +819,7 @@ class ApiService(env: Env,
           planId = demand.plan,
           teamId = demand.team,
           apiKeyId = None,
-          motivation = None
+          motivation = demand.motivation
         )
         case ValidationStep.Payment(_, _) => paymentClient.checkoutSubscription(
           tenant = tenant,
@@ -848,23 +851,59 @@ class ApiService(env: Env,
       .flatMap {
         case (Some(step), demand) => runRightProcess(step, demand, tenant)
         case (None, demand) => for {
-          from <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(demand.from), AppError.ApiNotFound)
+          from <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(demand.from), AppError.UserNotFound)
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
           team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.ApiNotFound)
-          subscription <- EitherT(subscribeToApi(tenant, from, api, demand.plan.value, team, demand.parentSubscriptionId))
-//          result <- EitherT.liftF(_createOrExtendApiKey(
-//            tenant = tenant,
-//            apiId = demand.api.value,
-//            planId = demand.plan.value,
-//            teamId = demand.team.value,
-//            parentSubscriptionId = demand.parentSubscriptionId,
-//            customMetadata = demand.customMetadata,
-//            customMaxPerSecond = demand.customMaxPerSecond,
-//            customMaxPerDay = demand.customMaxPerDay,
-//            customMaxPerMonth = demand.customMaxPerMonth,
-//            customReadOnly = demand.customReadOnly
-//          ))
+          subscription <- EitherT(subscribeToApi(
+            tenant = tenant,
+            user = from,
+            api = api,
+            planId = demand.plan.value,
+            team = team,
+            parentSubscriptionId = demand.parentSubscriptionId,
+            customMetadata = demand.customMetadata,
+            customMaxPerSecond = demand.customMaxPerSecond,
+            customMaxPerDay = demand.customMaxPerDay,
+            customMaxPerMonth = demand.customMaxPerMonth,
+            customReadOnly = demand.customReadOnly
+          ))
+          administrators <- EitherT.liftF(
+            env.dataStore.userRepo
+              .find(
+                Json.obj("_deleted" -> false,
+                  "_id" -> Json.obj(
+                    "$in" -> JsArray(
+                      team.users
+                        .filter(_.teamPermission == Administrator)
+                        .map(_.asJson)
+                        .toSeq))))
+          )
           _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(demand.copy(state = SubscriptionDemandState.Accepted)))
+          newNotification = Notification(
+            id = NotificationId(BSONObjectID.generate().stringify),
+            tenant = tenant.id,
+            team = Some(team.id),
+            sender = currentUser.asNotificationSender,
+            notificationType = NotificationType.AcceptOnly,
+            action = NotificationAction.ApiSubscriptionAccept(demand.api, demand.plan, team.id)
+          )
+          _ <- EitherT.liftF(
+            env.dataStore.notificationRepo.forTenant(tenant).save(newNotification)
+          )
+          _ <- EitherT.liftF(
+            Future.sequence((administrators ++ Seq(from)).map(admin => {
+              implicit val language: String = admin.defaultLanguage.getOrElse(
+                tenant.defaultLanguage.getOrElse("en"))
+              (for {
+                title <- translator.translate("mail.acceptation.title", tenant)
+                body <- translator.translate(
+                  "mail.api.subscription.acceptation.body",
+                  tenant,
+                  Map("user" -> from.name, "apiName" -> api.name))
+              } yield {
+                tenant.mailer.send(title, Seq(admin.email), body, tenant)
+              }).flatten
+            })))
         } yield Ok(subscription.asSafeJson)
     }
   }
@@ -1010,7 +1049,8 @@ class ApiService(env: Env,
       case Some(plan) =>
 
         plan.subscriptionProcess match {
-          case Nil => EitherT(subscribeToApi(tenant, user, api, planId, team, apiKeyId)).map(s => Ok(s.asSafeJson))
+          case Nil => EitherT(subscribeToApi(tenant, user, api, planId, team, apiKeyId))
+            .map(s => Ok(Json.obj("creation" -> "done", "subscription" -> s.asSafeJson)))
           case steps =>
             val demanId = SubscriptionDemandId(BSONObjectID.generate().stringify)
             for {
@@ -1040,6 +1080,31 @@ class ApiService(env: Env,
             } yield result
         }
     }
+  }
+
+  def declineSubscriptionDemand(tenant: Tenant, demandId: SubscriptionDemandId, stepId: SubscriptionDemandStepId, sender: NotificationSender, maybeMessage: Option[String] = None): EitherT[Future, AppError, Unit] = {
+
+    for {
+      demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
+        .findByIdNotDeleted(demandId), AppError.EntityNotFound("Subscription demand"))
+      _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(demand.copy(
+        state = SubscriptionDemandState.Refused,
+        steps = demand.steps.map(s => if (s.id == stepId) s.copy(state = SubscriptionDemandState.Refused, metadata = Json.obj("by" -> sender.asJson)) else s)
+      )))
+
+      newNotification = Notification(
+        id = NotificationId(BSONObjectID.generate().stringify),
+        tenant = tenant.id,
+        team = demand.team.some,
+        sender = sender,
+        notificationType = NotificationType.AcceptOnly,
+        action = NotificationAction.ApiSubscriptionReject(maybeMessage,
+          demand.api,
+          demand.plan,
+          demand.team)
+      )
+      _ <- EitherT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(newNotification))
+    } yield ()
   }
 
 }

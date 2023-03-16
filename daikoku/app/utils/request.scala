@@ -3,6 +3,7 @@ package fr.maif.otoroshi.daikoku.utils
 import java.util.concurrent.ConcurrentHashMap
 import akka.http.scaladsl.model.Uri
 import fr.maif.otoroshi.daikoku.domain.Tenant
+import play.api.libs.json.{JsObject, JsValue, Reads}
 import play.api.mvc.RequestHeader
 
 import scala.util.Try
@@ -10,6 +11,12 @@ import scala.util.Try
 object RequestImplicits {
 
   private val uriCache = new ConcurrentHashMap[String, String]()
+
+  implicit class EnhancedRequestBody(val body: JsValue) extends AnyVal {
+    def getBodyField[T](fieldName: String)(implicit fjs: Reads[T]): Option[T] = body
+      .asOpt[JsObject]
+      .flatMap(o => (o \ fieldName).asOpt[T])
+  }
 
   implicit class EnhancedRequestHeader(val requestHeader: RequestHeader)
       extends AnyVal {
@@ -46,5 +53,6 @@ object RequestImplicits {
       .orElse (tenant.defaultLanguage)
       .getOrElse ("en")
     }
+
   }
 }

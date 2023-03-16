@@ -2501,7 +2501,8 @@ object json {
       "_deleted" -> o.deleted,
       "token" -> o.token,
       "step" -> o.step.asJson,
-      "subscriptionDemand" -> o.subscriptionDemand.asJson
+      "subscriptionDemand" -> o.subscriptionDemand.asJson,
+      "metadata" -> o.metadata
     )
 
     override def reads(json: JsValue): JsResult[StepValidator] = Try {
@@ -2512,7 +2513,8 @@ object json {
           deleted = (json \ "_deleted").as[Boolean],
           token = (json \ "token").as[String],
           step = (json \ "step").as(SubscriptionDemandStepIdFormat),
-          subscriptionDemand = (json \ "subscriptionDemand").as(SubscriptionDemandIdFormat)
+          subscriptionDemand = (json \ "subscriptionDemand").as(SubscriptionDemandIdFormat),
+          metadata = (json \ "metadata").as[JsObject]
         )
       )
     } recover {
@@ -3165,6 +3167,27 @@ object json {
       )
     }
 
+  val NotificationSenderFormat: Format[NotificationSender] = new Format[NotificationSender] {
+    override def reads(json: JsValue): JsResult[NotificationSender] = Try {
+      JsSuccess(
+        NotificationSender(
+          name = (json \ "name").as[String],
+          email = (json \ "email").as[String],
+          id = (json \ "id").asOpt(UserIdFormat)
+        )
+      )
+    } recover {
+      case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+    } get
+
+    override def writes(o: NotificationSender): JsValue = Json.obj(
+      "name" -> o.name,
+      "email" -> o.email,
+      "id" -> o.id.map(_.asJson).getOrElse(JsNull).as[JsValue]
+    )
+  }
   val NotificationFormat: Format[Notification] = new Format[Notification] {
     override def reads(json: JsValue): JsResult[Notification] =
       Try {
@@ -3174,9 +3197,8 @@ object json {
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             team = (json \ "team").asOpt(TeamIdFormat),
-            sender = (json \ "sender").as(UserFormat),
-            date =
-              (json \ "date").asOpt(DateTimeFormat).getOrElse(DateTime.now()),
+            sender = (json \ "sender").as(NotificationSenderFormat),
+            date = (json \ "date").asOpt(DateTimeFormat).getOrElse(DateTime.now()),
             status = (json \ "status").as(NotificationStatusFormat),
             action = (json \ "action").as(NotificationActionFormat),
             notificationType = (json \ "notificationType")
@@ -3196,7 +3218,7 @@ object json {
         .map(id => JsString(id.value))
         .getOrElse(JsNull)
         .as[JsValue],
-      "sender" -> UserFormat.writes(o.sender),
+      "sender" -> NotificationSenderFormat.writes(o.sender),
       "date" -> DateTimeFormat.writes(o.date),
       "action" -> NotificationActionFormat.writes(o.action),
       "status" -> NotificationStatusFormat.writes(o.status),

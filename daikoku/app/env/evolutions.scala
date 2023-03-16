@@ -4,7 +4,8 @@ import akka.Done
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
+import cats.implicits.catsSyntaxOptionId
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, NotificationFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
@@ -612,6 +613,55 @@ object evolution_1612 extends EvolutionScript {
     }
 }
 
+object evolution_1612_a extends EvolutionScript {
+  override def version: String = "16.1.2_a"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - Update notification to replace sender (previoulsy as complete User) to NotificationSender"
+      )
+
+      val source = dataStore.notificationRepo
+        .forAllTenant()
+        .streamAllRaw()(ec)
+        .mapAsync(1) { notification =>
+
+          val sender = (notification \ "sender").as(UserFormat)
+          val updatedNotif = notification.as[JsObject] + (
+            "sender" -> sender.asNotificationSender.asJson
+          )
+
+          NotificationFormat.reads(updatedNotif) match {
+            case JsSuccess(v, _) =>
+              dataStore.notificationRepo
+                .forAllTenant()
+                .save(v)(ec)
+            case JsError(errors) =>
+              AppLogger.error(s"Evolution $version errored : $errors")
+              FastFuture.successful(
+                AppLogger.error(s"Evolution $version : $errors")
+              )
+          }
+        }
+      source
+        .runWith(Sink.ignore)(mat)
+
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -622,7 +672,8 @@ object evolutions {
       evolution_157,
       evolution_157_b,
       evolution_157_c,
-      evolution_1612
+      evolution_1612,
+      evolution_1612_a,
     )
   def run(
       dataStore: DataStore,

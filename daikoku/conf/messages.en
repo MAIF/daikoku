@@ -87,4 +87,4 @@ mail.subscription.validation.body = Hello,\
     <br>\
     [body]\
     </div>\
-<a href="[urlAccept]">Accept</a> or <a href="[urlReject]">Reject</a>
+<a href="[urlAccept]">Accept</a> or <a href="[urlDecline]">Reject</a>

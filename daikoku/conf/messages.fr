@@ -77,3 +77,14 @@ Cliquez sur le lien suivant pour finaliser la crétation de votre compte.\
 <br/>\
 L'équipe [tenant]
 tenant.mail.template=[email]
+mail.subscription.validation.title = Validation de souscription
+mail.subscription.validation.body = Bonjour,\
+    <br/>\
+    Quelqu'un voudrait souscrire a l'API [apiName],\
+    <br>\
+    <div>\
+    [user] :\
+    <br>\
+    [body]\
+    </div>\
+<a href="[urlAccept]">Accept</a> or <a href="[urlDecline]">Reject</a>

@@ -841,6 +841,10 @@ class ApiController(
       }
     }
 
+  def getBodyField[T](body: JsValue, fieldName: String)(implicit fjs: Reads[T]): Option[T] = body
+    .asOpt[JsObject]
+    .flatMap(o => (o \ fieldName).asOpt[T])
+
   def extendApiKey(apiId: String, planId: String, teamId: String, apiKeyId: String) =
 
     DaikokuAction.async(parse.json) { ctx =>
@@ -854,27 +858,13 @@ class ApiController(
         implicit val language: String = ctx.request.getLanguage(ctx.tenant)
         implicit val currentUser: User = ctx.user
 
-        val customMetadata = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customMetadata").asOpt[JsObject])
+        val motivation = ctx.request.body.getBodyField[String]("motivation")
+        val customMaxPerSecond = ctx.request.body.getBodyField[Long]("customMaxPerSecond")
+        val customMaxPerDay = ctx.request.body.getBodyField[Long]("customMaxPerDay")
+        val customMaxPerMonth = ctx.request.body.getBodyField[Long]("customMaxPerMonth")
+        val customReadOnly = ctx.request.body.getBodyField[Boolean]("customReadOnly")
+        val customMetadata = ctx.request.body.getBodyField[JsObject]("customMetadata")
 
-        val customMaxPerSecond = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customMaxPerSecond").asOpt[Long])
-
-        val customMaxPerDay = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customMaxPerDay").asOpt[Long])
-
-        val customMaxPerMonth = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customMaxPerMonth").asOpt[Long])
-
-        val customReadOnly = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customReadOnly").asOpt[Boolean])
-
-        //todo: motivation ???
         apiService._createOrExtendApiKey(
           tenant = ctx.tenant,
           apiId = apiId,
@@ -885,6 +875,7 @@ class ApiController(
           customMaxPerDay = customMaxPerDay,
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
+          motivation = motivation,
           parentSubscriptionId = Some(ApiSubscriptionId(apiKeyId))
         )
       }
@@ -902,27 +893,13 @@ class ApiController(
         implicit val language: String = ctx.request.getLanguage(ctx.tenant)
         implicit val currentUser: User = ctx.user
 
-        val customMetadata = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customMetadata").asOpt[JsObject])
+        val motivation = ctx.request.body.getBodyField[String]("motivation")
+        val customMaxPerSecond = ctx.request.body.getBodyField[Long]("customMaxPerSecond")
+        val customMaxPerDay = ctx.request.body.getBodyField[Long]("customMaxPerDay")
+        val customMaxPerMonth = ctx.request.body.getBodyField[Long]("customMaxPerMonth")
+        val customReadOnly = ctx.request.body.getBodyField[Boolean]("customReadOnly")
+        val customMetadata = ctx.request.body.getBodyField[JsObject]("customMetadata")
 
-        val customMaxPerSecond = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customMaxPerSecond").asOpt[Long])
-
-        val customMaxPerDay = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customMaxPerDay").asOpt[Long])
-
-        val customMaxPerMonth = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customMaxPerMonth").asOpt[Long])
-
-        val customReadOnly = ctx.request.body
-          .asOpt[JsObject]
-          .flatMap(o => (o \ "customReadOnly").asOpt[Boolean])
-
-        //todo: motivation ???
         apiService._createOrExtendApiKey(
           tenant = ctx.tenant,
           apiId = apiId,
@@ -932,7 +909,8 @@ class ApiController(
           customMaxPerSecond = customMaxPerSecond,
           customMaxPerDay = customMaxPerDay,
           customMaxPerMonth = customMaxPerMonth,
-          customReadOnly = customReadOnly)
+          customReadOnly = customReadOnly,
+          motivation = motivation)
       }
     }
 
@@ -948,8 +926,18 @@ class ApiController(
         token <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant))
         validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
           .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
-        result <- validateProcessWithStepValidator(validator, ctx.tenant)
-      } yield result).leftMap(_.render()).merge
+        _ <- validateProcessWithStepValidator(validator, ctx.tenant)
+      } yield Ok(
+        views.html.response(
+          None,
+          ctx.request.domain,
+          env,
+          ctx.tenant))).leftMap( error => Ok(
+        views.html.response(
+          error.getErrorMessage().some,
+          ctx.request.domain,
+          env,
+          ctx.tenant))).merge
     }
   }
 
@@ -963,8 +951,18 @@ class ApiController(
         token <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant))
         validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
           .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
-        result <- declineProcessWithStepValidator(validator, ctx.tenant)
-      } yield result).leftMap(_.render()).merge
+        _ <- declineProcessWithStepValidator(validator, ctx.tenant)
+      } yield Ok(
+        views.html.response(
+          None,
+          ctx.request.domain,
+          env,
+          ctx.tenant))).leftMap(error => Ok(
+        views.html.response(
+          error.getErrorMessage().some,
+          ctx.request.domain,
+          env,
+          ctx.tenant))).merge
     }
   }
 
@@ -983,18 +981,15 @@ class ApiController(
     } yield result
   }
 
-  private def declineProcessWithStepValidator(validator: StepValidator, tenant: Tenant): EitherT[Future, AppError, Result] = {
+  private def declineProcessWithStepValidator(validator: StepValidator, tenant: Tenant): EitherT[Future, AppError, Unit] = {
     for {
-      _ <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant)
-        .findByIdNotDeleted((validator.metadata \ "teamId").as[String]), AppError.TeamNotFound)
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
         .findByIdNotDeleted(validator.subscriptionDemand), AppError.EntityNotFound("Subscription demand Validator"))
       _ <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
       step <- EitherT.fromOption[Future](demand.steps.find(_.id == validator.step), AppError.EntityNotFound("Validation Step"))
       _ <- step.check()
-      updatedDemand = demand.copy(steps = demand.steps.filter(_.id != step.id) :+ step.copy(state = SubscriptionDemandState.Refused))
-      _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(updatedDemand))
-    } yield Ok(Json.obj()) //todo: better redirection ;)
+      _ <- apiService.declineSubscriptionDemand(tenant, demand.id, step.id, NotificationSender((validator.metadata \ "email").as[String], (validator.metadata \ "email").as[String], None))
+    } yield ()
   }
 
   def getMyTeamsApiSubscriptions(apiId: String, version: String) =
@@ -1992,7 +1987,7 @@ class ApiController(
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = ctx.tenant.id,
       team = Some(api.team),
-      sender = ctx.user,
+      sender = ctx.user.asNotificationSender,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
     val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
@@ -2777,7 +2772,7 @@ class ApiController(
                                             BSONObjectID.generate().stringify
                                           ),
                                           tenant = ctx.tenant.id,
-                                          sender = ctx.user,
+                                          sender = ctx.user.asNotificationSender,
                                           action =
                                             NotificationAction.NewPostPublished(
                                               teamId,
@@ -3196,7 +3191,7 @@ class ApiController(
                                                           .stringify
                                                       ),
                                                       tenant = ctx.tenant.id,
-                                                      sender = ctx.user,
+                                                      sender = ctx.user.asNotificationSender,
                                                       action =
                                                         NotificationAction
                                                           .NewIssueOpen(
@@ -3275,7 +3270,7 @@ class ApiController(
                                                 .stringify
                                             ),
                                             tenant = ctx.tenant.id,
-                                            sender = ctx.user,
+                                            sender = ctx.user.asNotificationSender,
                                             action =
                                               NotificationAction.NewIssueOpen(
                                                 teamId,
@@ -3337,7 +3332,7 @@ class ApiController(
               Notification(
                 id = NotificationId(BSONObjectID.generate().stringify),
                 tenant = ctx.tenant.id,
-                sender = ctx.user,
+                sender = ctx.user.asNotificationSender,
                 action =
                   NotificationAction.NewCommentOnIssue(teamId, apiName, linkTo),
                 notificationType = NotificationType.AcceptOnly,
@@ -3856,7 +3851,7 @@ class ApiController(
             id = NotificationId(BSONObjectID.generate().stringify),
             tenant = ctx.tenant.id,
             team = Some(newTeam.id),
-            sender = ctx.user,
+            sender = ctx.user.asNotificationSender,
             action = NotificationAction.TransferApiOwnership(newTeam.id, api.id)
           )
           _ <- EitherT.liftF[Future, Result, Boolean](

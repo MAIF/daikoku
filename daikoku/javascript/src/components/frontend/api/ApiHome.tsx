@@ -129,7 +129,7 @@ export const ApiHome = ({
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
-  const [myTeams, setMyTeams] = useState<Array<any>>([]);
+  const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
 
@@ -265,22 +265,21 @@ export const ApiHome = ({
           : Services.askForApiKey(api!._id, team, plan._id, motivation)
       ).then((result) => {
 
-        if (result.error) {
+        if (isError(result)) {
           return toastr.error(translate('Error'), result.error);
-        } else if (result.checkoutUrl) {
+        } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
         } else if (result.creation === 'done') {
-          const team: any = myTeams.find((t) => t._id === result.subscription.team);
-
+          const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
           return toastr.success(
             translate('Done'),
-            translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
+            translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] })
           );
         } else if (result.creation === 'waiting') {
-          const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
+          const teamName = myTeams.find((t) => t._id === team)!.name;
           return toastr.info(
             translate('Pending request'),
-            translate({ key: 'subscription.plan.waiting', replacements: [planName, team.name] })
+            translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] })
           );
         }
 
