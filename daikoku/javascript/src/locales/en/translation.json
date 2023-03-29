@@ -1260,5 +1260,11 @@
     "api.created": "Created",
     "api.published": "Published",
     "api.deprecated": "Deprecated",
-    "api.blocked": "Blocked"
+    "api.blocked": "Blocked",
+    "subscription.process.creation.title": "Validation step creation",
+    "subscription.process.type.selection": "Please select a type of validation",
+    "subscription.process.team.admin": "Team admin",
+    "subscription.process.email": "Email",
+    "subscription.process.add.label": "Add a new step",
+    "Process": "Process"
 }

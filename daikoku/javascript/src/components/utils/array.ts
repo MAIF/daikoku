@@ -17,3 +17,14 @@ export const insertArrayIndex = (item: any, array: Array<any>, index: number) =>
   return arrayCopy;
 };
 
+function insertIf(condition: boolean, element: any): Array<any> {
+  return condition ? [element] : [];
+}
+export const addArrayIf = (condition: boolean, array: Array<any>, element: any) => {
+  return [
+    ...insertIf(condition, element),
+    ...array,
+  ];
+  
+}
+

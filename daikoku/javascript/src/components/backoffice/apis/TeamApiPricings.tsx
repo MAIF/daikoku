@@ -23,7 +23,7 @@ import {
   renderPricing,
   team
 } from '../../utils';
-import { insertArrayIndex } from '../../utils/array';
+import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { Droppable, FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 
 const SUBSCRIPTION_PLAN_TYPES = {
@@ -496,18 +496,18 @@ export const TeamApiPricings = (props: Props) => {
       props.injectSubMenu(<div className='entry__submenu d-flex flex-column'>
         <span
           className={classNames('submenu__entry__link', { active: selectedTab === 'settings' })}
-          onClick={() => setSelectedTab('settings')}>Settings</span>
+          onClick={() => setSelectedTab('settings')}>{translate('Settings')}</span>
         {mode === possibleMode.edition && paidPlans.includes(planForEdition!.type) && (
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'payment' })}
-            onClick={() => setSelectedTab('payment')}>Payment</span>
+            onClick={() => setSelectedTab('payment')}>{translate('Payment')}</span>
         )}
         {mode === possibleMode.edition && (
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'subscription-process' })}
-            onClick={() => setSelectedTab('subscription-process')}>Process</span>
+            onClick={() => setSelectedTab('subscription-process')}>{translate('Process')}</span>
         )}
         {mode === possibleMode.edition && (
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'security' })}
-            onClick={() => setSelectedTab('security')}>Security</span>
+            onClick={() => setSelectedTab('security')}>{translate('Security')}</span>
         )}
       </div>)
     } else {
@@ -1336,6 +1336,14 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
   }
 
   const addProcess = () => {
+
+    const alreadyStepAdmin = props.value.subscriptionProcess.some(isValidationStepTeamAdmin)
+
+
+    const options = addArrayIf(!alreadyStepAdmin, [
+      { value: 'email', label: translate('subscription.process.email') }
+    ], { value: 'teamAdmin', label: translate('subscription.process.team.admin') })
+
     openFormModal({
       title: translate('subscription.process.creation.title'),
       schema: {
@@ -1343,10 +1351,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           type: type.string,
           format: format.buttonsSelect,
           label: translate('subscription.process.type.selection'),
-          options: [
-            { value: 'teamAdmin', label: translate('subscription.process.team.admin') }, //this option is avalaibale only if not already selected
-            { value: 'email', label: translate('subscription.process.email') },
-          ]
+          options
         }
       },
       onSubmit: (data: IValidationStep) => editProcess(data.type),
@@ -1365,7 +1370,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
     <>
       <div>
         <button onClick={() => addProcess()} type="button" className="btn btn-outline-primary me-1">
-          {translate('add a new step')}
+          {translate('subscription.process.add.label')}
         </button>
       </div>
       <div className='col-12 mt-2 d-flex flex-row justify-content-center'>
