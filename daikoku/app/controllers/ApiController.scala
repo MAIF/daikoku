@@ -22,6 +22,7 @@ import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
+import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient, Translator}
@@ -964,6 +965,24 @@ class ApiController(
           ctx.request.domain,
           env,
           ctx.tenant))).merge
+    }
+  }
+
+  def runProcess(teamId: String, demandId: String) = DaikokuAction.async { ctx =>
+    TeamMemberOnly( AuditTrailEvent(s"Subscription process for demand @{demand.id} has been re-run by @{user.name}"))(teamId, ctx) { team =>
+      ctx.setCtxValue("demand.id", demandId)
+      implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+      implicit val currentUser: User = ctx.user
+
+      val from = env.getDaikokuUrl(
+        ctx.tenant,
+        s"/${team.humanReadableId}/settings"
+      )
+
+      (for {
+        demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findByIdNotDeleted(demandId), AppError.EntityNotFound("Subscription demand"))
+        result <- apiService.runSubscriptionProcess(demand.id, ctx.tenant, from.some)
+      } yield result).value
     }
   }
 

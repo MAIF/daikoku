@@ -777,7 +777,7 @@ class ApiService(env: Env,
     ))
   }
 
-  def runSubscriptionProcess(demandId: SubscriptionDemandId, tenant: Tenant)(implicit language: String, currentUser: User): EitherT[Future, AppError, Result] = {
+  def runSubscriptionProcess(demandId: SubscriptionDemandId, tenant: Tenant, from: Option[String] = None)(implicit language: String, currentUser: User): EitherT[Future, AppError, Result] = {
     def runRightProcess(step: SubscriptionDemandStep, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
       val run = step.step match {
         case ValidationStep.Email(_, emails, template) =>
@@ -821,7 +821,8 @@ class ApiService(env: Env,
         case ValidationStep.Payment(_, _) => paymentClient.checkoutSubscription(
           tenant = tenant,
           subscriptionDemand = demand,
-          step = step
+          step = step,
+          from = from
         )
       }
 

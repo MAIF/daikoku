@@ -1426,3 +1426,6 @@ export const deletePlan = (teamId: string, apiId: string, version: string, plan:
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
     method: 'DELETE'
   })
+
+export const rerunProcess = (teamId: string, demandId: string) => 
+  customFetch(`/api/subscription/team/${teamId}/demands/${demandId}/_run`)

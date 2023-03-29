@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation, useParams, useMatch, Link } from 'react-router-dom';
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
-import { Plus } from 'react-feather';
+import Plus from 'react-feather/dist/icons/plus';
 import { useDispatch, useSelector } from 'react-redux';
 
 import * as Services from '../../../services';

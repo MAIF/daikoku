@@ -1,3 +1,5 @@
+@import '../variables';
+
 .back-office-overlay {
   position: fixed;
   width: 100%;
@@ -6,7 +8,7 @@
   left: 0;
   right: 0;
   bottom: 0;
- // background-color: rgba(0,0,0,0.5);
+  // background-color: rgba(0,0,0,0.5);
   z-index: 2;
   cursor: pointer;
 
@@ -36,10 +38,25 @@
 
   .widget {
     width: calc(30% - 20px);
-    height: 200px;
+    height: 300px;
     overflow-y: scroll;
-    border: 1px solid tomato;
     border-radius: 4px;
-    padding: 15px;
+    // padding: 15px;
+    background-color: $menu-text-hover-bg-color;
+    color: $menu-text-hover-color;
+  }
+
+  .widget-body {
+    overflow-y: scroll;
+  }
+
+  .widget-title {
+    padding: 0.5rem 1rem;
+    border-bottom: 0.5rem solid $body-bg-color;
+  }
+
+  .widget-list-item {
+    padding: 0.5rem 1rem;
+    border-bottom: 0.2rem solid $body-bg-color;
   }
 }

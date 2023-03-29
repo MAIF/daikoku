@@ -940,12 +940,13 @@ object SchemaDefinition {
           resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
         Field("team", OptionType(TeamObjectType),
           resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.team)),
-        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
+        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx => {
           ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
             .map {
-              case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
+              case Some(api) =>api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
               case None => None
-            },
+            }
+        },
           possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
             PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
         Field("parentSubscriptionId", OptionType(ApiSubscriptionType), resolve = ctx => ctx.value.parentSubscriptionId match {
@@ -1285,12 +1286,12 @@ object SchemaDefinition {
         Field("tenant", StringType, resolve = _.value.id.value),
         Field("deleted", BooleanType, resolve = _.value.deleted),
         Field("api", ApiType, resolve = ctx => apisFetcher.defer(ctx.value.api)),
-        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findOneNotDeleted(Json.obj(
-          "api" -> ctx.value.api.asJson
-        )).map {
-          case Some(api) => api.possibleUsagePlans.find(_.id == ctx.value.plan)
-          case None => None
-        }),
+        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
+          .map {
+            case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
+            case None => None
+          }, possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
+          PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
         Field("steps", ListType(SubscriptionDemandStepType), resolve = _.value.steps),
         Field("state", StringType, resolve = _.value.state.name),
         Field("team", TeamObjectType, resolve = ctx => teamsFetcher.defer(ctx.value.team)),

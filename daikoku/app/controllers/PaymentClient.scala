@@ -71,6 +71,7 @@ class PaymentClient(
   def checkoutSubscription(tenant: Tenant,
                            subscriptionDemand: SubscriptionDemand,
                            step: SubscriptionDemandStep,
+                           from: Option[String] = None
                           ): EitherT[Future, AppError, Result] = {
     for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(subscriptionDemand.api), AppError.ApiNotFound)
@@ -79,7 +80,7 @@ class PaymentClient(
       user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(subscriptionDemand.from), AppError.UserNotFound)
       plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscriptionDemand.plan), AppError.PlanNotFound)
       settings <- EitherT.fromOption[Future](plan.paymentSettings, AppError.ThirdPartyPaymentSettingsNotFound)
-      checkoutUrl <- createSessionCheckout(tenant, api, team, apiTeam, subscriptionDemand, settings, user, step)
+      checkoutUrl <- createSessionCheckout(tenant, api, team, apiTeam, subscriptionDemand, settings, user, step, from)
     } yield Ok(Json.obj("checkoutUrl" -> checkoutUrl))
   }
 
@@ -90,7 +91,8 @@ class PaymentClient(
                             demand: SubscriptionDemand,
                             settings: PaymentSettings,
                             user: User,
-                            step: SubscriptionDemandStep) = {
+                            step: SubscriptionDemandStep,
+                            from: Option[String] = None) = {
     settings match {
       case p: PaymentSettings.Stripe =>
         implicit val stripeSettings: StripeSettings =
@@ -106,7 +108,8 @@ class PaymentClient(
           demand,
           p,
           user,
-          step
+          step,
+          from
         )
     }
   }
@@ -251,7 +254,8 @@ class PaymentClient(
       subscriptionDemand: SubscriptionDemand,
       settings: PaymentSettings.Stripe,
       user: User,
-      step: SubscriptionDemandStep
+      step: SubscriptionDemandStep,
+      from: Option[String] = None
   )(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, String] = {
@@ -280,18 +284,19 @@ class PaymentClient(
       "locale" -> user.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en").toLowerCase,
       "success_url" -> env.getDaikokuUrl(
         tenant,
-        s"/api/subscription/_validate?token=$cipheredValidationToken"
+        s"/api/subscription/_validate?token=$cipheredValidationToken" //todo: add callback
       ),
-      "cancel_url" -> env.getDaikokuUrl(
+      "cancel_url" -> from.getOrElse(env.getDaikokuUrl(
         tenant,
         s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion}/pricing"
-      )
+      ))
     )
 
     val body = settings.priceIds.additionalPriceId
       .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
       .getOrElse(baseBody)
 
+    //FIXME: clean this shitting code
     for {
       _ <- EitherT.liftF(env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator))
 
@@ -306,7 +311,6 @@ class PaymentClient(
       .flatMap(res => {
         if (res.status == 200 || res.status == 201) {
           val url = (res.json \ "url").as[String]
-          AppLogger.warn(url)
           //todo: handle real redirection to checkout page
           EitherT.pure(url)
         } else {

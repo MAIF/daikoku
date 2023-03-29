@@ -1,10 +1,12 @@
-import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
+import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
+
 import { useTeamBackOffice } from '../../contexts';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
+import { IState, IStateError, ITeamSimple } from '../../types';
 import {
   TeamApi,
   TeamApiGroup,
@@ -17,13 +19,9 @@ import {
   TeamConsumption,
   TeamEdit,
   TeamIncome,
-  TeamMembers,
+  TeamMembers
 } from '../backoffice';
-import { IState, IStateError, ITeamSimple } from '../../types';
-import { Spinner } from '../utils';
-import { getApolloContext, gql } from '@apollo/client';
-import { useQuery } from '@tanstack/react-query';
-import { isError } from 'lodash';
+import { LastDemands, LastDemandsExt } from './widgets';
 
 const BackOfficeContent = (props) => {
   return (
@@ -46,6 +44,7 @@ const TeamBackOfficeHome = () => {
 
   const { Translation } = useContext(I18nContext);
   const [team, setTeam] = useState<TeamHome>();
+  const [mode, setMode] = useState<'producer' | 'consumer'>('consumer');
 
   useEffect(() => {
     Services.teamHome(currentTeam._id)
@@ -60,125 +59,19 @@ const TeamBackOfficeHome = () => {
 
   return (<div className="row">
     <div className="col">
+      <div className='d-flex flex-row justify-content-center gap-1'>
+        <button className={classNames('btn btn-outline-primary', { active: mode === 'producer' })} onClick={() => setMode('producer')}>Producer</button>
+        <button className={classNames('btn btn-outline-primary', { active: mode === 'consumer' })} onClick={() => setMode('consumer')}>Consumer</button>
+      </div>
       <div className="col-12 mt-5 tbo__dasboard">
-        <LastDemandsExt team={currentTeam}/>
-        <LastDemands team={currentTeam}/>
+        {mode === 'producer' && <ProducerDashboard />}
+        {mode === 'consumer' && <ConsumerDashboard />}
       </div>
     </div>
   </div>);
 };
 
-type LastDemandsProps = {
-  team: ITeamSimple
-}
-const LastDemandsExt = (props: LastDemandsProps) => {
-  const { client } = useContext(getApolloContext());
 
-  const GET_LAST_DEMANDS = gql`
-    query GetLastDemands($teamId: String!, $limit: Int, $offset: Int) {
-      subscriptionDemandsForAdmin(teamId: $teamId , limit: $limit, offset: $offset) {
-        count
-        subscriptionDemands {
-          api {
-            name
-          }
-          plan {
-            customName
-            type
-          }
-          state
-          team {
-            name
-          }
-          from {
-            name
-          }
-          date
-        }
-      }
-    }
-  `
-
-  const {isLoading, isError, data} = useQuery(["widget", "widget_last_demands_ext"],  () => client?.query({
-    query: GET_LAST_DEMANDS,
-    variables: {teamId: props.team._id, offset: 0, limit: 5}
-  }))
-
-
-  return (
-    <Widget isLoading={isLoading} isError={isError} size="small" title="In Progress demands">
-      <div>
-      {data?.data && data.data.subscriptionDemandsForAdmin.count === 0 && <span>no demands</span>}
-      {data?.data && data.data.subscriptionDemandsForAdmin.count > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands.map((d: any) => {
-        return (
-          <span>{d.api.name}</span>
-        )
-      })}
-      </div>
-    </Widget>
-  )
-}
-const LastDemands = (props: LastDemandsProps) => {
-  const GET_TEAM_LAST_DEMANDS = gql`
-    query GetTeamLastDemands($teamId: String!, $limit: Int, $offset: Int) {
-      teamSubscriptionDemands(teamId: $teamId , limit: $limit, offset: $offset) {
-        count
-        subscriptionDemands {
-          api {
-            name
-          }
-          plan {
-            customName
-            type
-          }
-          state
-          team {
-            name
-          }
-          from {
-            name
-          }
-          date
-        }
-      }
-    }
-  `
-  const { client } = useContext(getApolloContext());
-  const {isLoading, isError, data} = useQuery(["widget", "widget_team_last_demands"],  () => client?.query({
-    query: GET_TEAM_LAST_DEMANDS,
-    variables: {teamId: props.team._id, offset: 0, limit: 5}
-  }))
-
-  return (
-    <Widget isLoading={isLoading} isError={isError} size="small" title="My InProgress demands">
-      <div>
-      {data?.data && data.data.teamSubscriptionDemands.count === 0 && <span>no demands</span>}
-      {data?.data && data.data.teamSubscriptionDemands.count > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d: any) => {
-        return (
-          <span>{d.api.name}</span>
-        )
-      })}
-      </div>
-    </Widget>
-  )
-}
-
-type WidgetProps = {
-  isLoading: boolean
-  isError: boolean
-  size: "small" | "large"
-  title: string
-}
-const Widget = (props: PropsWithChildren<WidgetProps>) => {
-  return (
-    <div className={classNames("widget", props.size)}>
-      <h4>{props.title}</h4>
-      {props.isLoading && <Spinner />}
-      {props.isError && <div className='error'>oops</div>}
-      {!props.isLoading && !props.isError && <>{props.children}</>}
-    </div>
-  )
-}
 
 
 
@@ -186,9 +79,7 @@ const Widget = (props: PropsWithChildren<WidgetProps>) => {
 type TeamBackOfficeProps = {
   isLoading: boolean
 }
-export const TeamBackOffice = ({
-  isLoading,
-}: TeamBackOfficeProps) => {
+export const TeamBackOffice = ({ isLoading }: TeamBackOfficeProps) => {
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const error = useSelector<IState, IStateError>((s) => s.error);
 
@@ -234,3 +125,27 @@ export const TeamBackOffice = ({
     </div>
   );
 };
+
+type ProducerDashboardType = {
+
+}
+const ProducerDashboard = (props: ProducerDashboardType) => {
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  return (
+    <>
+      <LastDemandsExt team={currentTeam} />
+    </>
+  )
+}
+
+type ConsumerDashboardType = {
+
+}
+const ConsumerDashboard = (props: ConsumerDashboardType) => {
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  return (
+    <>
+      <LastDemands team={currentTeam} />
+    </>
+  )
+}
