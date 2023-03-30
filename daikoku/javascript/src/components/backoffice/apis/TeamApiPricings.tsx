@@ -15,7 +15,7 @@ import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import { ITeamSimple } from '../../../types';
-import { IApi, isError, ISubscription, isValidationStepEmail, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepTeamAdmin, UsagePlanVisibility } from '../../../types/api';
+import { IApi, isError, isValidationStepEmail, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepTeamAdmin, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
   BeautifulTitle, formatPlanType, IMultistepsformStep,
@@ -518,8 +518,8 @@ export const TeamApiPricings = (props: Props) => {
 
   useEffect(() => {
     if (mode === possibleMode.creation) {
-      setPlanForEdition(undefined);
-      setMode(possibleMode.list);
+      setPlanForEdition(planForEdition);
+      setMode(possibleMode.edition);
     }
   }, [props.api]);
 
@@ -673,6 +673,7 @@ export const TeamApiPricings = (props: Props) => {
     const service = creation ? Services.createPlan : Services.updatePlan
     return service(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
+        console.debug({response})
         if (isError(response)) {
           toastr.error(translate('Error'), translate(response.error))
         } else {
@@ -1273,7 +1274,7 @@ type SubProcessProps = {
   tenant: ITenantFull
 }
 
-type emailOption = { option: 'all' | 'oneOf' }
+type EmailOption = { option: 'all' | 'oneOf' }
 
 const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
@@ -1313,7 +1314,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
               defaultValue: 'oneOf'
             }
           },
-          onSubmit: (data: IValidationStepEmail & emailOption) => {
+          onSubmit: (data: IValidationStepEmail & EmailOption) => {
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32) }
               props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }) })
@@ -1335,10 +1336,36 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
     }
   }
 
+  const editMailStep = (value: IValidationStepEmail) => {
+    return openFormModal({
+      title: translate('subscription.process.update.email.step.title'),
+      schema: {
+        emails: {
+          type: type.string,
+          array: true,
+        },
+        message: {
+          type: type.string,
+          format: format.text
+        }
+      },
+      onSubmit: (data: IValidationStepEmail) => {
+        props.savePlan({ 
+          ...props.value, 
+          subscriptionProcess:  props.value.subscriptionProcess.map(p => {
+            if (p.id === data.id) {
+              return data
+            }
+            return p
+          })})
+      },
+      actionLabel: translate('Update'),
+      value
+    })
+  }
+
   const addProcess = () => {
-
     const alreadyStepAdmin = props.value.subscriptionProcess.some(isValidationStepTeamAdmin)
-
 
     const options = addArrayIf(!alreadyStepAdmin, [
       { value: 'email', label: translate('subscription.process.email') }
@@ -1362,7 +1389,6 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
 
   const deleteStep = (deletedStepId: UniqueIdentifier) => {
     const subscriptionProcess = props.value.subscriptionProcess.filter(step => step.id !== deletedStepId)
-    console.debug({old: props.value.subscriptionProcess, deletedStepId, subscriptionProcess})
     props.savePlan({ ...props.value, subscriptionProcess })
   }
 
@@ -1379,26 +1405,30 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           items={props.value.subscriptionProcess}
           onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
           renderItem={(item) => {
-            const RenderedStep = () => <ValidationStep
-              step={item}
-              tenant={props.tenant} />
-            if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) { 
+            if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
               return (
                 <FixedItem id={item.id}>
-                  <RenderedStep />
+                  <ValidationStep
+                    step={item}
+                    tenant={props.tenant} />
                 </FixedItem>
               )
             } else if (isValidationStepPayment(item)) {
               return (
                 <FixedItem id={item.id}>
-                  <RenderedStep />
+                  <ValidationStep
+                    step={item}
+                    tenant={props.tenant} />
                 </FixedItem>
               )
             } else {
               return (
                 <SortableItem
+                  action={isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}>edit</button> : <></>}
                   id={item.id}>
-                  <RenderedStep />
+                  <ValidationStep
+                    step={item}
+                    tenant={props.tenant} />
                 </SortableItem>
               )
             }
@@ -1413,6 +1443,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
 type ValidationStepProps = {
   step: IValidationStep,
   tenant: ITenantFull,
+  update?: () => void
 }
 
 const ValidationStep = (props: ValidationStepProps) => {
@@ -1421,8 +1452,8 @@ const ValidationStep = (props: ValidationStepProps) => {
     const thirdPartyPaymentSettings = props.tenant.thirdPartyPaymentSettings.find(setting => setting._id == step.thirdPartyPaymentSettingsId)
     return (
       <div className='d-flex flex-column validation-step'>
-        <span>Payment Step</span>
-        <div className="d-flex flex-row">
+        <span className='validation-step__type'>Payment</span>
+        <div className="d-flex flex-row validation-step__infos">
           <span>{thirdPartyPaymentSettings?.name}</span>
           <span>{thirdPartyPaymentSettings?.type}</span>
         </div>
@@ -1432,8 +1463,8 @@ const ValidationStep = (props: ValidationStepProps) => {
   } else if (isValidationStepEmail(step)) {
     return (
       <div className='d-flex flex-column validation-step'>
-        <span>Email Step</span>
-        <div className="d-flex flex-row">
+        <span className='validation-step__type'>Email</span>
+        <div className="d-flex flex-row validation-step__infos">
           <span>{step.emails[0]}</span>
           {step.emails.length > 1 && <span>{` + ${step.emails.length - 1}`}</span>}
         </div>
@@ -1442,7 +1473,7 @@ const ValidationStep = (props: ValidationStepProps) => {
   } else if (isValidationStepTeamAdmin(step)) {
     return (
       <div className='d-flex flex-column validation-step'>
-        <span>Admin validation Step</span>
+        <span className='validation-step__type'>Admin.</span>
       </div>
     )
   } else {

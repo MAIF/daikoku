@@ -9,10 +9,10 @@
 .sortable-item {
   position: relative;
   display: flex;
-  justify-content: space-between;
+  // justify-content: space-between;
   flex-grow: 1;
-  align-items: center;
-  padding: 18px 20px;
+  // align-items: center;
+  // padding: 18px 20px;
   background-color: #fff;
   box-shadow: 0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05),
     0 1px calc(3px / var(--scale-x, 1)) 0 rgba(34, 33, 81, 0.15);
@@ -42,8 +42,40 @@
   }
 }
 
+.sortable-item__action {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  display: none;
+}
+
+.sortable-item:hover .sortable-item__action {
+  display: block;
+}
+
+.sortable-item:hover .drag-handle {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
 .drag-handle {
+  padding: 18px 20px;
+  border-radius: 4px;
   flex-grow: 1;
+}
+
+.sortable-item__draggable-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.validation-step__type {
+  font-weight: bold;
+}
+
+.validation-step__infos {
+  font-style: italic;
+  font-size: 13px;
 }
 
 //*****************
@@ -101,4 +133,3 @@
     }
   }
 }
-

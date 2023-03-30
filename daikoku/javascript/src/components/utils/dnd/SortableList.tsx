@@ -13,7 +13,7 @@ import React, { createContext, PropsWithChildren, ReactNode, useContext, useEffe
 import { CSS } from '@dnd-kit/utilities';
 import classNames from 'classnames';
 import { nanoid } from 'nanoid';
-import Trash  from 'react-feather/dist/icons/trash'
+import Trash from 'react-feather/dist/icons/trash'
 
 
 // *********************
@@ -92,7 +92,7 @@ export const SortableList = <T extends BaseItem>(props: SortableListProps<T>) =>
         <SortableOverlay>
           {activeItem ? props.renderItem(activeItem) : null}
         </SortableOverlay>
-        <Droppable key={droppableId} id={droppableId} dragging={isDragging}/>
+        <Droppable key={droppableId} id={droppableId} dragging={isDragging} />
       </div>
     </DndContext>
   );
@@ -148,24 +148,29 @@ export const SortableItem = (props: PropsWithChildren<SortableItemProps>) => {
   const style = {
     opacity: isDragging ? 0.4 : undefined,
     transform: CSS.Translate.toString(transform),
-    transition
+    transition,
+    
   };
 
   return (
-    <SortableItemContext.Provider value={context}>
-      <li className="sortable-item sorted-list__step" ref={setNodeRef} style={style}>
-        <DraggableContent>
-          {props.children}
-        </DraggableContent>
+    <li className="sortable-item sorted-list__step d-flex flex-column">
+      {props.action && <div className='sortable-item__action'>
         {props.action}
-      </li>
-    </SortableItemContext.Provider>
+      </div>}
+      <SortableItemContext.Provider value={context}>
+        <div className='sortable-item__draggable-container' ref={setNodeRef} style={style}>
+          <DraggableContent>
+            {props.children}
+          </DraggableContent>
+        </div>
+      </SortableItemContext.Provider>
+    </li>
   );
 }
 
 export const FixedItem = (props: PropsWithChildren<SortableItemProps>) => {
   return (
-    <li className="sortable-item fixed sorted-list__step">
+    <li className="drag-handle sortable-item fixed sorted-list__step d-flex flex-column">
       {props.children}
     </li>
   );

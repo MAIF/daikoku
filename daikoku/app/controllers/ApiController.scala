@@ -3982,7 +3982,7 @@ class ApiController(
             }
             .map{case (oldPlan, plan) =>
               if (oldPlan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty) && plan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.nonEmpty)) {
-                plan.addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), plan.paymentSettings.get.thirdPartyPaymentSettingsId), 0.some)
+                plan.addSubscriptionStep(ValidationStep.TeamAdmin(IdGenerator.token(32), api.team))
               } else {
                 plan
               }
