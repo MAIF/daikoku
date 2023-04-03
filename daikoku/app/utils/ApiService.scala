@@ -848,6 +848,48 @@ class ApiService(env: Env,
         (maybeStep, demand)
       })
       .flatMap {
+        case (Some(step), demand) if step.step.name == "payment" && demand.steps.size > 1 =>
+          val value1: EitherT[Future, AppError, (Option[SubscriptionDemandStep], SubscriptionDemand)] =
+              for {
+                _ <- EitherT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(
+                  Notification(
+                    id = NotificationId(BSONObjectID.generate().stringify),
+                    tenant = tenant.id,
+                    team = demand.team.some,
+                    sender = currentUser.asNotificationSender,
+                    date = DateTime.now(),
+                    notificationType = NotificationType.AcceptOnly,
+                    action = NotificationAction.CheckoutForSubscription(demandId))
+                ))
+                team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.TeamNotFound)
+                api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
+                plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == demand.plan), AppError.PlanNotFound)
+                maybeAdmins = team.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId)
+                recipent <- EitherT.liftF(env.dataStore.userRepo.find(Json.obj("_id" -> Json.obj("$in" -> maybeAdmins.map(_.asJson)))))
+                title <- EitherT.liftF(translator.translate(
+                  "mail.checkout.title",
+                  tenant,
+                  Map.empty))
+                body <- EitherT.liftF(translator.translate(
+                  "mail.checkout.body",
+                  tenant,
+                  Map(
+                    "api.name" -> api.name,
+                    "api.plan" -> plan.customName.getOrElse(plan.typeName),
+                    "link" -> env.getDaikokuUrl(tenant, s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run")
+                  )))
+                _ <- EitherT.liftF(tenant.mailer.send(
+                  title = title,
+                  to = recipent.map(_.email),
+                  body = body,
+                  tenant = tenant))
+              } yield (step.some, demand)
+          value1
+        case tuple =>
+          val value1: EitherT[Future, AppError, (Option[SubscriptionDemandStep], SubscriptionDemand)] = EitherT.pure(tuple)
+          value1
+      }
+      .flatMap {
         case (Some(step), demand) => runRightProcess(step, demand, tenant)
         case (None, demand) => for {
           from <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(demand.from), AppError.UserNotFound)

@@ -288,7 +288,7 @@ class PaymentClient(
       ),
       "cancel_url" -> from.getOrElse(env.getDaikokuUrl(
         tenant,
-        s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion}/pricing"
+        s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing"
       ))
     )
 

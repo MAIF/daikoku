@@ -229,6 +229,9 @@ object NotificationAction {
 
   case class TransferApiOwnership(team: TeamId, api: ApiId)
       extends NotificationAction
+
+  case class CheckoutForSubscription(demand: SubscriptionDemandId)
+    extends NotificationAction
 }
 
 sealed trait NotificationType {
