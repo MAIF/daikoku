@@ -38,6 +38,9 @@ export const TeamList = () => {
                 toastr.error(translate('Error'), r.error)
               } else {
                 queryClient.invalidateQueries(['teams']);
+                toastr.info(
+                  translate("mailValidation.sent.title"),
+                  translate("mailValidation.sent.body"))
                 toastr.success(translate('Success'), translate({ key: "team.created.success", replacements: [data.name] }))
               }
             }),

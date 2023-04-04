@@ -16,6 +16,7 @@ sealed trait AppError {
 
 object AppError {
   case object ApiVersionConflict extends AppError
+  case object TeamNameAlreadyExists extends AppError
   case object ApiNotFound extends AppError
   case object PageNotFound extends AppError
   case object ApiGroupNotFound extends AppError
@@ -47,11 +48,15 @@ object AppError {
   case object TeamForbidden extends AppError
   case class ParsingPayloadError(message: String) extends AppError
   case object NameAlreadyExists extends AppError
+  case object TeamAlreadyVerified extends AppError
+
+
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
   def render(error: AppError): mvc.Result = error match {
     case ApiVersionConflict       => Conflict(toJson(ApiVersionConflict))
+    case TeamNameAlreadyExists    => Conflict(toJson(TeamNameAlreadyExists))
     case ApiNotFound              => NotFound(toJson(error))
     case PageNotFound             => NotFound(toJson(error))
     case ApiGroupNotFound         => NotFound(toJson(error))
@@ -86,6 +91,8 @@ object AppError {
     case Unauthorized                            => play.api.mvc.Results.Unauthorized(toJson(error))
     case ParsingPayloadError(message)            => BadRequest(toJson(error))
     case NameAlreadyExists                       => Conflict(toJson(error))
+    case TeamAlreadyVerified                     => Conflict(toJson(error))
+
   }
 
   def toJson(error: AppError) = {
@@ -97,6 +104,7 @@ object AppError {
       case err =>
         Json.obj("error" -> (err match {
           case ApiVersionConflict       => "This version already existed"
+          case TeamNameAlreadyExists    => "The name of this team already exists"
           case ApiNotFound              => "API not found"
           case PageNotFound             => "Page not found"
           case ApiGroupNotFound         => "API group not found"
@@ -133,6 +141,7 @@ object AppError {
           case TranslationNotFound => "Translation not found"
           case Unauthorized        => "You're not authorized here"
           case NameAlreadyExists   => "Resource with same name already exists"
+          case TeamAlreadyVerified => "This team is already verified"
           case _                   => ""
         }))
     }

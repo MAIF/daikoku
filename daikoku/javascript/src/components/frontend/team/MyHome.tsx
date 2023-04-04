@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useContext } from 'react';
+import {useContext} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate} from 'react-router-dom';
 
 
 import { I18nContext, updateTeam } from '../../../core';
@@ -12,7 +12,6 @@ import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
 
 export const MyHome = () => {
-
 
 
   const dispatch = useDispatch();

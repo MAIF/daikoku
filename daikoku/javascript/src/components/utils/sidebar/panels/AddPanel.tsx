@@ -34,6 +34,9 @@ export const AddPanel = () => {
             } else {
               queryClient.invalidateQueries({queryKey: ['teams']})
               queryClient.invalidateQueries(['myTeams'])
+              toastr.info(
+                translate("mailValidation.sent.title"),
+                translate("mailValidation.sent.body"))
               toastr.success(translate('Success'), translate({ key: "Team %s created successfully", replacements: [data.name] }))
             }
           }),

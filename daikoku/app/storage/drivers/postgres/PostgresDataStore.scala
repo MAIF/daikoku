@@ -211,6 +211,15 @@ case class PostgresTenantCapableOperationRepo(
   override def repo(): PostgresRepo[Operation, DatastoreId] = _repo()
 }
 
+case class PostgresTenantCapableEmailVerificationRepo(
+    _repo: () => PostgresRepo[EmailVerification, DatastoreId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[EmailVerification, DatastoreId]
+) extends PostgresTenantCapableRepo[EmailVerification, DatastoreId]
+    with EmailVerificationRepo {
+  override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[EmailVerification, DatastoreId] = _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[EmailVerification, DatastoreId] = _repo()
+}
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption,
@@ -320,7 +329,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "api_issues" -> true,
     "evolutions" -> false,
     "cmspages" -> true,
-    "operations" -> true
+    "operations" -> true,
+    "email_verifications" -> true,
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -484,6 +494,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       () => new PostgresOperationRepo(env, reactivePg),
       t => new PostgresTenantOperationRepo(env, reactivePg, t)
     )
+  private val _emailVerificationRepo: EmailVerificationRepo =
+    PostgresTenantCapableEmailVerificationRepo(
+      () => new PostgresEmailVerificationRepo(env, reactivePg),
+      t => new PostgresTenantEmailVerificationRepo(env, reactivePg, t)
+    )
+
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -523,6 +539,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def evolutionRepo: EvolutionRepo = _evolutionRepo
 
   override def operationRepo: OperationRepo = _operationRepo
+
+  override def emailVerificationRepo: EmailVerificationRepo = _emailVerificationRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -818,6 +836,19 @@ class PostgresTenantOperationRepo(env: Env,
   override def extractId(value: Operation): String = value.id.value
 }
 
+class PostgresTenantEmailVerificationRepo(env: Env,
+                                          reactivePg: ReactivePg,
+                                          tenant: TenantId)
+extends PostgresTenantAwareRepo[EmailVerification, DatastoreId](env,
+                                                                reactivePg,
+                                                                tenant) {
+  override def tableName: String = "email_verifications"
+  override def format: Format[EmailVerification] = json.EmailVerificationFormat
+
+  override def extractId(value: EmailVerification): String = value.id.value
+
+}
+
 class PostgresTenantCmsPageRepo(env: Env,
                                 reactivePg: ReactivePg,
                                 tenant: TenantId)
@@ -993,6 +1024,13 @@ class PostgresOperationRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[Operation] = json.OperationFormat
 
   override def extractId(value: Operation): String = value.id.value
+}
+
+class PostgresEmailVerificationRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[EmailVerification, DatastoreId](env, reactivePg) {
+  override def tableName: String = "email_verifications"
+  override def format: Format[EmailVerification] = json.EmailVerificationFormat
+  override def extractId(value: EmailVerification): String = value.id.value
 }
 
 class PostgresApiRepo(env: Env, reactivePg: ReactivePg)

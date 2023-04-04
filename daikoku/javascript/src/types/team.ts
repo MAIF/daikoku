@@ -16,6 +16,7 @@ export interface ITeamSimple {
   users: Array<TeamUser>;
   apiKeyVisibility: TeamPermission;
   apisCreationPermission?: boolean;
+  verified: boolean
 }
 
 export interface ITeamFull extends ITeamSimple {

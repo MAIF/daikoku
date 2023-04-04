@@ -105,7 +105,8 @@ case class Team(
     apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
       TeamApiKeyVisibility.User),
     metadata: Map[String, String] = Map.empty,
-    apisCreationPermission: Option[Boolean] = None
+    apisCreationPermission: Option[Boolean] = None,
+    verified: Boolean = false
 ) extends CanJson[User] {
   override def asJson: JsValue = json.TeamFormat.writes(this)
   def humanReadableId = name.urlPathSegmentSanitized
@@ -128,7 +129,8 @@ case class Team(
       "apisCreationPermission" -> apisCreationPermission
         .map(JsBoolean)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "verified" -> verified
     )
   }
   def includeUser(userId: UserId): Boolean = {
@@ -144,6 +146,17 @@ case class Team(
 
 sealed trait NotificationStatus
 
+case class EmailVerification(
+                              id: DatastoreId,
+                              deleted: Boolean = false,
+                              randomId: String,
+                              tenant: TenantId,
+                              team: TeamId,
+                              creationDate: DateTime,
+                              validUntil: DateTime,
+                            ) extends CanJson[EmailVerification] {
+  override def asJson: JsValue = json.EmailVerificationFormat.writes(this)
+}
 object NotificationStatus {
   case class Pending() extends NotificationStatus with Product with Serializable
   case class Accepted(date: DateTime = DateTime.now())

@@ -256,7 +256,7 @@ object CommonServices {
   case class ApiWithTranslation(api: Api, translation: JsObject)
 
   def apiOfTeam(teamId: String, apiId: String, version: String)
-               (implicit ctx: DaikokuActionContext[_], env: Env, ec: ExecutionContext): Future[Either[ApiWithTranslation, AppError]]=
+               (implicit ctx: DaikokuActionContext[_], env: Env, ec: ExecutionContext): Future[Either[AppError,ApiWithTranslation ]]=
     _TeamMemberOnly(
       teamId,
       AuditTrailEvent(s"@{user.name} has accessed one api @{api.name} - @{api.id} of @{team.name} - @{team.id}"))(ctx) { team =>
@@ -286,9 +286,9 @@ object CommonServices {
                     case (k, v) => Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
                   }.fold(Json.obj())(_ deepMerge _)
                 val translation = Json.obj("translation" -> translationAsJsObject)
-                FastFuture.successful(Left(ApiWithTranslation(api, translation)))
+                FastFuture.successful(Right(ApiWithTranslation(api, translation)))
               })
-          case None => FastFuture.successful(Right(AppError.ApiNotFound))
+          case None => FastFuture.successful(Left(AppError.ApiNotFound))
         }
     }
 
