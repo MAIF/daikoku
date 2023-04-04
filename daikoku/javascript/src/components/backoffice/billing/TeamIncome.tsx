@@ -56,7 +56,7 @@ export const TeamIncome = () => {
       ([
         consumptions,
         {
-          data: { visibleApis },
+          data: { visibleApis: { apis } },
         },
         teams,
       ]) => {
@@ -65,7 +65,7 @@ export const TeamIncome = () => {
           ...state,
           consumptions,
           consumptionsByApi,
-          apis: visibleApis.map(({
+          apis: apis.map(({
             api
           }: any) => api),
           teams,

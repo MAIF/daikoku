@@ -1427,6 +1427,22 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .flatMapConcat(res => Source(res.toList))
   }
 
+  override def streamAllRawFormatted(query: JsObject = Json.obj())(
+      implicit ec: ExecutionContext): Source[Of, NotUsed] = {
+    logger.debug(
+      s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
+
+    Source
+      .future(
+        reactivePg
+          .querySeq(s"SELECT * FROM $tableName") { row =>
+            row.optJsObject("content")
+          }
+      )
+      .flatMapConcat(res =>
+        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
+  }
+
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = {
     val (sql, params) = convertQuery(query)
@@ -1667,8 +1683,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           } else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC LIMIT ${Integer
-              .valueOf(pageSize)} OFFSET ${Integer.valueOf(page * pageSize)}",
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
+              .mkString(",")} ASC ${if (pageSize > 0)
+              s"LIMIT ${Integer.valueOf(pageSize)}"
+            else ""} OFFSET ${Integer.valueOf(page * pageSize)}",
             params.map {
               case x: String => x.replace("\"", "")
               case x         => x

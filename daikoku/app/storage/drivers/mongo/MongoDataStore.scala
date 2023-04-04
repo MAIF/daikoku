@@ -1209,6 +1209,19 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
       })
       .flatMapConcat(seq => Source(seq.toList))
 
+  override def streamAllRawFormatted(query: JsObject = Json.obj())(
+      implicit ec: ExecutionContext): Source[Of, NotUsed] =
+    Source
+      .future(collection.flatMap { col =>
+        logger.debug(s"$collectionName.streamAllRaw(${Json.prettyPrint(query)}")
+        col
+          .find(query, None)
+          .cursor[JsObject](ReadPreference.primaryPreferred)
+          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+      })
+      .flatMapConcat(res =>
+        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
+
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = collection.flatMap {
     col =>

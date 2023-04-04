@@ -1263,5 +1263,7 @@
     "mail.sent": "Mail sent !",
     "token.missing": "Missing token.",
     "token.notFound": "Token not found.",
-    "token.expired": "Token expired."
+    "token.expired": "Token expired.",
+    "fastMode.onlySubs.info": "with only subscribed ",
+    "fastMode.planSearch.info": "and plans with a name like"
 }

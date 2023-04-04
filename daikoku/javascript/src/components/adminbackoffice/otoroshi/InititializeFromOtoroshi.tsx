@@ -97,8 +97,8 @@ export const InitializeFromOtoroshi = () => {
           }
         `,
     })
-      .then(({ data: { visibleApis } }) =>
-        visibleApis.map(({ api }: any) => ({
+      .then(({ data: { visibleApis: { apis } } }) =>
+        apis.map(({ api }: any) => ({
           ...api,
           team: api.team._id,
         }))
@@ -146,9 +146,10 @@ export const InitializeFromOtoroshi = () => {
   };
 
   const afterCreation = () => {
-    getVisibleApis().then((apis) => {
+    getVisibleApis()
+    .then((apis) => {
       setStep(1);
-      // setApis(apis);
+      // setApis({apis});
       setCreatedApis([]);
       toastr.success(translate('Success'), translate('Apis successfully created'));
     });
