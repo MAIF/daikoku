@@ -30,6 +30,7 @@ import {
   IApiDoc,
   ISubscriptionWithApiInfo,
   IUsagePlan,
+  ISubscriptionDemand,
 } from '../types/api';
 
 const HEADERS = {
@@ -114,7 +115,7 @@ export const getTeamSubscriptionsWithPlan = (
 export const getMySubscriptions = (
   apiId: string,
   version: string
-): Promise<{ subscriptions: Array<ISubscription>; requests: Array<INotification> }> =>
+): Promise<{ subscriptions: Array<ISubscription>, requests: Array<ISubscriptionDemand> }> =>
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
 type CreationDone = { creation: 'done', subscription: ISubscription}

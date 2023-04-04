@@ -1036,17 +1036,13 @@ class ApiController(
                   "team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))
                 )
               )
-            pendingRequests <- env.dataStore.notificationRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "action.type" -> "ApiSubscription",
-                  "status.status" -> "Pending",
-                  "action.api" -> api.id.value,
-                  "action.team" -> Json
-                    .obj("$in" -> JsArray(teams.map(_.id.asJson)))
-                )
-              )
+            pendingRequests <- env.dataStore.subscriptionDemandRepo.
+              forTenant(ctx.tenant)
+              .findNotDeleted(Json.obj(
+                "api" -> api.id.asJson,
+                "team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))),
+                "state" -> SubscriptionDemandState.InProgress.name
+            ))
           } yield {
             Ok(
               Json.obj(

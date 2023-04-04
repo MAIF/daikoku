@@ -16,7 +16,7 @@ import StarsButton from './StarsButton';
 
 import 'highlight.js/styles/monokai.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { IApi, INotification, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
+import { IApi, INotification, isError, IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan } from '../../../types';
 
 (window as any).hljs = hljs;
 
@@ -127,7 +127,7 @@ export const ApiHome = ({
 }: ApiHomeProps) => {
   const [api, setApi] = useState<IApi>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<ISubscriptionDemand>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
   const [showAccessModal, setAccessModalError] = useState<any>();
@@ -372,7 +372,7 @@ export const ApiHome = ({
       <div className="container">
         <div className="row pt-3">
           {params.tab === 'description' && (<ApiDescription api={api} />)}
-          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} pendingSubscriptions={pendingSubscriptions} />)}
+          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
           {params.tab === 'documentation' && <ApiDocumentation api={api} />}
           {params.tab === 'testing' && (<ApiSwagger api={api} teamId={teamId} ownerTeam={ownerTeam} testing={(api as any).testing} tenant={tenant} connectedUser={connectedUser} />)}
           {params.tab === 'swagger' && (<ApiRedoc api={api} teamId={teamId} />)}

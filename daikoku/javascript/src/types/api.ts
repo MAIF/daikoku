@@ -410,3 +410,34 @@ export interface IApiPost {
   lastModificationAt: string;
   content: string;
 }
+
+
+type ISubscriptionDemandState = 'accepted' | 'refused' | 'canceled' | 'inProgress' | 'waiting' | 'blocked'
+
+
+interface SubscriptionDemandStep {
+  id: string,
+  state: ISubscriptionDemandState,
+  step: IValidationStep,
+  metadata: object
+}
+
+export interface ISubscriptionDemand {
+  _id: string,
+  _tenant: string,
+  _deleted: boolean,
+  api: string,
+  plan: string,
+  steps: Array<SubscriptionDemandStep>,
+  state: ISubscriptionDemandState,
+  team: string,
+  from: string,
+  date: string,
+  motivation?: string,
+  parentSubscriptionId?: string,
+  customReadOnly?: boolean,
+  customMetadata?: object,
+  customMaxPerSecond?: number,
+  customMaxPerDay?: number,
+  customMaxPerMonth?: number
+}

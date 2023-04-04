@@ -9,7 +9,7 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
+import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
 import { INotification } from '../../../types';
 import {
   access,
@@ -36,7 +36,7 @@ type ApiPricingCardProps = {
   myTeams: Array<ITeamSimple>,
   ownerTeam: ITeamSimple,
   subscriptions: Array<ISubscription>,
-  pendingSubscriptions: Array<INotification>,
+  inProgressDemands: Array<ISubscriptionDemand>,
 }
 
 const ApiPricingCard = (props: ApiPricingCardProps) => {
@@ -132,7 +132,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const isPending = !difference(
     allPossibleTeams,
-    props.pendingSubscriptions.map((s) => s.action.team)
+    props.inProgressDemands.map((s) => s.team)
   ).length;
 
   const isAccepted = !allPossibleTeams.length;
@@ -179,11 +179,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           </span>
         </div>
         <div className="d-flex justify-content-between align-items-center">
-          {plan.otoroshiTarget && !isAccepted && isPending && (
-            <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
-              <Translation i18nkey="Request in progress">Request in progress</Translation>
-            </button>
-          )}
           {!otoroshiTargetIsDefined && props.api.visibility !== 'AdminOnly' && (
             <span className="badge bg-danger">{translate('otoroshi.missing.target')}</span>
           )}
@@ -201,7 +196,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                 )}
               >
                 {(props.api.visibility === 'AdminOnly' ||
-                  (plan.otoroshiTarget && !isAccepted && !isPending)) && (
+                  (plan.otoroshiTarget && !isAccepted)) && (
                     <ActionWithTeamSelector
                       title={translate('team.selection.title')}
                       description={translate(
@@ -212,7 +207,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                         .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
                         .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
                         .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-                      pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
+                      pendingTeams={props.inProgressDemands.map((s) => s.team)}
                       acceptedTeams={props.subscriptions
                         .filter((f) => !f._deleted)
                         .map((subs) => subs.team)}
@@ -256,7 +251,7 @@ type ApiPricingProps = {
   myTeams: Array<ITeamSimple>
   ownerTeam: ITeamSimple
   subscriptions: Array<ISubscription>,
-  pendingSubscriptions: Array<INotification>,
+  inProgressDemands: Array<ISubscriptionDemand>,
   askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
 }
 export function ApiPricing(props: ApiPricingProps) {
@@ -285,8 +280,8 @@ export function ApiPricing(props: ApiPricingProps) {
                 subscriptions={props.subscriptions.filter(
                   (subs) => subs.api === props.api._id && subs.plan === plan._id
                 )}
-                pendingSubscriptions={props.pendingSubscriptions.filter(
-                  (subs) => subs.action.api === props.api._id && subs.action.plan === plan._id
+                inProgressDemands={props.inProgressDemands.filter(
+                  (demand) => demand.api === props.api._id && demand.plan === plan._id
                 )}
                 askForApikeys={props.askForApikeys}
               />

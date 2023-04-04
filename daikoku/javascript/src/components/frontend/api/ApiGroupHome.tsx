@@ -18,12 +18,12 @@ import { useApiGroupFrontOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 import { formatPlanType } from '../../utils/formatters';
-import { INotification, isError, IState, ISubscription, ITeamSimple, IUsagePlan, IUserSimple } from '../../../types';
+import { INotification, isError, IState, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, IUserSimple } from '../../../types';
 
 export const ApiGroupHome = ({ }) => {
   const [apiGroup, setApiGroup] = useState<any>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<ISubscriptionDemand>>([]);
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
 
@@ -161,10 +161,11 @@ export const ApiGroupHome = ({ }) => {
   }, [params.apiGroupId]);
 
   const updateSubscriptions = (group: any) => {
-    return Services.getMySubscriptions(group._id, group.currentVersion).then((s) => {
-      setSubscriptions(s.subscriptions);
-      setPendingSubscriptions(s.requests);
-    });
+    return Services.getMySubscriptions(group._id, group.currentVersion)
+      .then((s) => {
+        setSubscriptions(s.subscriptions);
+        setPendingSubscriptions(s.requests);
+      });
   };
 
   const askForApikeys = ({ team, plan }: { team: string, plan: IUsagePlan }) => {
@@ -223,7 +224,7 @@ export const ApiGroupHome = ({ }) => {
               ownerTeam={ownerTeam}
               subscriptions={subscriptions}
               askForApikeys={askForApikeys}
-              pendingSubscriptions={pendingSubscriptions}
+              inProgressDemands={pendingSubscriptions}
             />
           )}
           {params.tab === 'documentation' && (
