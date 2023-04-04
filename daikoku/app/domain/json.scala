@@ -2700,6 +2700,7 @@ object json {
         case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
         case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
         case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
+        case "CheckoutForSubscription" => CheckoutForSubscriptionFormat.reads(json)
         case str                    => JsError(s"Bad notification value: $str")
       }
 
@@ -2756,7 +2757,10 @@ object json {
           TransferApiOwnershipFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "TransferApiOwnership"
           )
-
+        case p: CheckoutForSubscription =>
+          CheckoutForSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "CheckoutForSubscription"
+          )
       }
     }
 
@@ -2799,6 +2803,31 @@ object json {
       "team" -> o.team.value
     )
 
+  }
+
+  val CheckoutForSubscriptionFormat = new Format[CheckoutForSubscription] {
+    override def reads(json: JsValue): JsResult[CheckoutForSubscription] =
+      Try {
+        JsSuccess(
+          CheckoutForSubscription(
+            demand = (json \ "demand").as(SubscriptionDemandIdFormat),
+            api = (json \ "api").as(ApiIdFormat),
+            plan = (json \ "plan").as(UsagePlanIdFormat),
+            step = (json \ "step").as(SubscriptionDemandStepIdFormat)
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: CheckoutForSubscription): JsValue = Json.obj(
+      "demand" -> o.demand.value,
+      "api" -> o.api.asJson,
+      "plan" -> o.plan.asJson,
+      "step" -> o.step.asJson
+    )
   }
 
   val NewIssueOpenFormat = new Format[NewIssueOpen] {
@@ -3207,7 +3236,9 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: Notification): JsValue = Json.obj(

@@ -848,7 +848,7 @@ class ApiService(env: Env,
         (maybeStep, demand)
       })
       .flatMap {
-        case (Some(step), demand) if step.step.name == "payment" && demand.steps.size > 1 =>
+        case (Some(step), demand) if step.step.name == "payment" && demand.steps.size > 1 && step.state.name == "waiting" =>
           val value1: EitherT[Future, AppError, (Option[SubscriptionDemandStep], SubscriptionDemand)] =
               for {
                 _ <- EitherT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(
@@ -859,7 +859,7 @@ class ApiService(env: Env,
                     sender = currentUser.asNotificationSender,
                     date = DateTime.now(),
                     notificationType = NotificationType.AcceptOnly,
-                    action = NotificationAction.CheckoutForSubscription(demandId))
+                    action = NotificationAction.CheckoutForSubscription(demandId, demand.api, demand.plan, step.id))
                 ))
                 team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.TeamNotFound)
                 api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)

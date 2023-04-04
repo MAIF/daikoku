@@ -230,7 +230,7 @@ object NotificationAction {
   case class TransferApiOwnership(team: TeamId, api: ApiId)
       extends NotificationAction
 
-  case class CheckoutForSubscription(demand: SubscriptionDemandId)
+  case class CheckoutForSubscription(demand: SubscriptionDemandId, api: ApiId, plan: UsagePlanId, step: SubscriptionDemandStepId)
     extends NotificationAction
 }
 

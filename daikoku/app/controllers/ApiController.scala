@@ -918,7 +918,6 @@ class ApiController(
   def validateProcess() = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(
       AuditTrailEvent(s"Subscription process has been validated by @{validator.name}"))(ctx) {
-      //todo: get validator name
       import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
       implicit val language: String = ctx.request.getLanguage(ctx.tenant)
       implicit val currentUser: User = ctx.user
@@ -997,6 +996,14 @@ class ApiController(
       _ <- step.check()
       updatedDemand = demand.copy(steps = demand.steps.map(s => if (s.id == step.id) s.copy(state = SubscriptionDemandState.Accepted) else s))
       _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(updatedDemand))
+      _ <- EitherT.liftF(env.dataStore.notificationRepo.forTenant(tenant)
+        .updateManyByQuery(Json.obj(
+          "action.type" -> "CheckoutForSubscription",
+          "action.demand" -> demand.id.asJson,
+          "action.step" -> step.id.asJson
+        ), Json.obj(
+          "$set" -> Json.obj("status" -> json.NotificationStatusFormat.writes(NotificationStatus.Accepted()))
+        )))
       result <- apiService.runSubscriptionProcess(demand.id, tenant)
     } yield result
   }
