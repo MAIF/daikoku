@@ -530,13 +530,22 @@ object evolution_1612_b extends EvolutionScript {
 
       val eventualLong = dataStore.teamRepo
         .forAllTenant()
-        .updateManyByQuery(Json.obj(),
+        .updateManyByQuery(Json.obj("$or" -> Json.arr(
+          Json.obj("type" -> "Personal"),
+          Json.obj("type" -> "Admin")
+        )),
           Json.obj(
             "$set" -> Json.obj(
+              "verified" -> true,
+            ))).flatMap(_ =>
+        dataStore.teamRepo.forAllTenant().updateManyByQuery(Json.obj("type" -> "Organization")
+          , Json.obj(
+            "$set" -> Json.obj(
               "verified" -> false,
-            )))
+            ))
+        )
+      )
 
-      //todo: passer les personalTeam a verified true
 
       Source
         .future(eventualLong)
