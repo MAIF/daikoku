@@ -1266,5 +1266,7 @@
   "mail.sent": "Mail envoyé !",
   "token.missing": "Jeton manquant.",
   "token.notFound": "Jeton introuvable.",
-  "token.expired": "Ce jeton a expiré."
+  "token.expired": "Ce jeton a expiré.",
+  "fastMode.onlySubs.info": "avec seulement les souscrites ",
+  "fastMode.planSearch.info": "et les plans nommés comme"
 }

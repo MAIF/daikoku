@@ -1,0 +1,16 @@
+.select-sm {
+    .reactSelect__indicator {
+      padding: 0;
+    }
+    .reactSelect__control {
+      min-height: auto;
+    }
+    .reactSelect__value-container, .reactSelect__input-container{
+      padding-top: 0px;
+      padding-bottom: 0px;
+    }
+    .reactSelect__menu{
+      margin-top: 0px;
+    }
+  }
+  

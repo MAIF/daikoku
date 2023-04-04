@@ -49,6 +49,9 @@ trait Repo[Of, Id <: ValueType] {
   def streamAllRaw(query: JsObject = Json.obj())(
       implicit ec: ExecutionContext): Source[JsValue, NotUsed]
 
+  def streamAllRawFormatted(query: JsObject = Json.obj())(
+      implicit ec: ExecutionContext): Source[Of, NotUsed]
+
   def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
       implicit ec: ExecutionContext): Future[Seq[Of]]
 
