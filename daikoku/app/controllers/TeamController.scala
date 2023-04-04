@@ -262,7 +262,6 @@ class TeamController(DaikokuAction: DaikokuAction,
                   val isTeamContactChanged = team.contact != teamWithEdits.contact
                   val teamToSave = teamWithEdits.copy(verified = !isTeamContactChanged)
                   if(isTeamContactChanged) {
-                    System.out.println("here")
                     implicit val language: String = ctx.user.defaultLanguage.getOrElse(
                       ctx.tenant.defaultLanguage.getOrElse("en"))
                     for {
