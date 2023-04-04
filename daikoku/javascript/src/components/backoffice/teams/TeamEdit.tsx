@@ -207,8 +207,6 @@ export const TeamEdit = () => {
       toastr.error(translate('Error'), translate('token.notFound'))
     } else if (params.get("error") === "5") {
       toastr.error(translate('Error'), translate('token.expired'))
-    } else if (params.get("error") === "6") {
-      toastr.error(translate('Error'), translate('user.unauthorised'))
     }
   }, []);
   const save = (data: ITeamSimple, contact: string) => {
@@ -236,20 +234,22 @@ export const TeamEdit = () => {
   return (
     <div>
       {!currentTeam.verified && !alreadyClicked &&
-      <div className="alert alert-danger" role="alert">
-        {translate('team.email.notVerified.info')} <a href="#" onClick={() => {
-        Services.sendEmailVerification(currentTeam._id)
-          .then((r) => {
-            if (isError(r)) {
-              toastr.success(translate("Error"), r.error)
-            } else {
-              setAlreadyClicked(true)
-              toastr.success(
-                translate("Success"),
-                translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] }))
-            }
-          })}} className="alert-link">{translate('here')}</a>.
-      </div> }
+          <div className="alert alert-warning" role="alert">
+            {translate('team.email.notVerified.info')}
+            <button className="btn btn-outline-warning d-flex align-items-end" onClick={() => {
+              Services.sendEmailVerification(currentTeam._id)
+                .then((r) => {
+                  if (isError(r)) {
+                    toastr.success(translate("Error"), r.error)
+                  } else {
+                    setAlreadyClicked(true)
+                    toastr.success(
+                      translate("Success"),
+                      translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] })
+                    )
+                  }
+                })}}>{translate('team.email.notVerified')}</button>
+          </div>}
       {!currentTeam.verified && alreadyClicked &&
           <div className="alert alert-success" role="alert">
             {translate('mail.sent')}

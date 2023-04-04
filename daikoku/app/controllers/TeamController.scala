@@ -145,21 +145,17 @@ class TeamController(DaikokuAction: DaikokuAction,
 
             _ <- EitherT.liftF(env.dataStore.emailVerificationRepo.forTenant(ctx.tenant.id)
               .save(emailVerif))
+            cipheredValidationToken = encrypt(env.config.cypherSecret, emailVerif.randomId )
+            title <-  EitherT.liftF(translator.translate("mail.create.team.token.title",
+              ctx.tenant))
+            value <- EitherT.liftF(translator.translate(
+              "mail.create.team.token.body",
+              ctx.tenant,
+              Map("team" -> team.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken")))
+            )
+            _ <- EitherT.liftF(ctx.tenant.mailer
+                .send(title, Seq(team.contact), value, ctx.tenant))
           } yield {
-
-            val cipheredValidationToken = encrypt(env.config.cypherSecret, emailVerif.randomId )
-            for {
-              title <- translator.translate("mail.create.team.token.title",
-                ctx.tenant)
-              value <- translator.translate(
-                "mail.create.team.token.body",
-                ctx.tenant,
-                Map("team" -> team.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"))
-              )
-            } yield {
-              ctx.tenant.mailer
-                .send(title, Seq(team.contact), value, ctx.tenant)
-            }
             Created(teamToSave.asJson)
           }
           res.leftMap(AppError.render).merge
@@ -168,47 +164,48 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def verifyContactEmail(teamId: String): Action[AnyContent] = DaikokuActionMaybeWithGuest.async { ctx =>
-    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(ctx) {
+    TeamMemberOnly(AuditTrailEvent(s"@{user.name} has searched @{search}"))(teamId, ctx) { team =>
       val teamRepo = env.dataStore.teamRepo.forTenant(ctx.tenant)
       val emailVerificationRepo = env.dataStore.emailVerificationRepo.forTenant(ctx.tenant)
 
-      teamRepo.findByIdOrHrId(teamId).flatMap {
-        case None => Future(Status(302)(Json.obj("Location" -> s"/apis/?error=1"))
-          .withHeaders("Location" -> s"/apis/?error=1"))
-        case Some(team) if team.verified => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=2"))
-          .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=2"))
-        case Some(team) if !team.users.exists(user => user.userId.value == ctx.user.id.value) => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=6"))
-          .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=6"))
-        case Some(team) => ctx.request.getQueryString("token") match {
 
-          case None => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=3"))
-            .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=3"))
+      if (team.verified) EitherT.pure[Future, AppError](Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=2"))
+        .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=2")).value
+      else ctx.request.getQueryString("token") match {
+          case None => Future(Right(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=3"))
+            .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=3")))
           case Some(encryptedString) =>
             val token = decrypt(env.config.cypherSecret, encryptedString)
             emailVerificationRepo.findOneNotDeleted(Json.obj("randomId" -> token)).flatMap {
-            case None => Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=4"))
-              .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=4"))
+            case None => Future(Right(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=4"))
+              .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=4")))
             case Some(emailVerification) =>
               if (emailVerification.validUntil.isAfter(DateTime.now)) {
                 val newTeam = team.copy(verified = true)
-                teamRepo.save(newTeam)
-                  .map(_ => Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?teamVerified=true"))
-                    .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?teamVerified=true"))
+                val result: EitherT[Future, AppError, Result] = (for {
+                  _ <- EitherT.liftF(teamRepo.save(newTeam))
+                  _ <- EitherT.liftF(emailVerificationRepo.deleteById(emailVerification.id))
+                } yield {
+                  Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?teamVerified=true"))
+                    .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?teamVerified=true")
+                })
 
+
+                result.value
               } else {
-                Future(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=5"))
-                  .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=5"))
+                Future(Right(Status(302)(Json.obj("Location" -> s"/${team.humanReadableId}/settings/edition/?error=5"))
+                  .withHeaders("Location" -> s"/${team.humanReadableId}/settings/edition/?error=5")))
               }
           }
         }
-      }
+
     }
   }
 
   def sendEmailVerification(teamId: String): Action[AnyContent] = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent("@{user.name} has sent a mail for validating contact email @{team.name} - @{team.id}"))(ctx) {
+    TeamMemberOnly(AuditTrailEvent("@{user.name} has sent a mail for validating contact email @{team.name} - @{team.id}"))(teamId, ctx) { team =>
       env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(teamId).flatMap {
-        case Some(team) if team.verified => AppError.TeamAlreadyVerified.renderF()
+        case Some(team) if team.verified => Future(Left(AppError.TeamAlreadyVerified))
         case Some(team) =>
           val emailVerif = EmailVerification(
             id = DatastoreId(BSONObjectID.generate().stringify),
@@ -233,9 +230,9 @@ class TeamController(DaikokuAction: DaikokuAction,
             _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).deleteLogically(Json.obj("teamId" -> team.id.value))
             _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).save(emailVerif)
           } yield {
-            Created(emailVerif.asJson)
+            Right(Created(emailVerif.asJson))
           }
-        case None => AppError.TeamNotFound.renderF()
+        case None => Future(Left(AppError.TeamNotFound))
       }
     }
   }
@@ -249,9 +246,6 @@ class TeamController(DaikokuAction: DaikokuAction,
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(teamId)
               .flatMap {
-                case Some(team) if team.`type` == TeamType.Admin =>
-                  FastFuture.successful(Forbidden(Json.obj(
-                    "error" -> "You're not authorized to update this team")))
                 case Some(team) if team.`type` == TeamType.Personal =>
                   FastFuture.successful(Forbidden(Json.obj(
                     "error" -> "You're not authorized to update this team")))
@@ -266,8 +260,9 @@ class TeamController(DaikokuAction: DaikokuAction,
                           team.apisCreationPermission)
 
                   val isTeamContactChanged = team.contact != teamWithEdits.contact
-                  val teamToSave = teamWithEdits.copy(verified = isTeamContactChanged)
+                  val teamToSave = teamWithEdits.copy(verified = !isTeamContactChanged)
                   if(isTeamContactChanged) {
+                    System.out.println("here")
                     implicit val language: String = ctx.user.defaultLanguage.getOrElse(
                       ctx.tenant.defaultLanguage.getOrElse("en"))
                     for {
@@ -288,9 +283,9 @@ class TeamController(DaikokuAction: DaikokuAction,
                         Map("team" -> teamToSave.name, "link" -> env.getDaikokuUrl(ctx.tenant, s"/api/teams/${teamToSave.humanReadableId}/_verify?token=$cipheredValidationToken"))
                       )
                       _ <- ctx.tenant.mailer.send(title, Seq(teamToSave.contact), value, ctx.tenant)
-                      _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).save(emailVerif)
                       _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).deleteLogically(Json.obj("teamId" -> team.id.value))
-                      _ <- env.dataStore.teamRepo
+                      _ <- env.dataStore.emailVerificationRepo.forTenant(ctx.tenant).save(emailVerif)
+                      _<- env.dataStore.teamRepo
                         .forTenant(ctx.tenant.id)
                         .save(teamToSave)
 
@@ -685,12 +680,12 @@ class TeamController(DaikokuAction: DaikokuAction,
       // TODO: verify if the behavior is correct
       case team if team.includeUser(UserId(id)) =>
         env.dataStore.userRepo.findByIdNotDeleted(id).map {
-          case None       => Left(NotFound(Json.obj("error" -> "User not found")))
-          case Some(user) => Left(Ok(user.asSimpleJson))
+          case None       => Left(AppError.UserNotFound)
+          case Some(user) => Right(Ok(user.asSimpleJson))
         }
       case _ =>
         FastFuture.successful(
-          Left(NotFound(Json.obj("error" -> "Member is not part of the team"))))
+          Left(AppError.UserNotFound))
     }
   }
 
@@ -737,7 +732,7 @@ class TeamController(DaikokuAction: DaikokuAction,
       } yield {
         ctx.setCtxValue("team.id", team.id)
         ctx.setCtxValue("team.name", team.name)
-        Left(
+        Right(
           Ok(
             team.asJson.as[JsObject] ++ Json.obj(
               "apisCount" -> apis.size,

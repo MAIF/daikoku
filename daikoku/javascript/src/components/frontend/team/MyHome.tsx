@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import {useContext, useEffect} from 'react';
+import {useContext} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {useLocation, useNavigate} from 'react-router-dom';
+import { useNavigate} from 'react-router-dom';
 
 
 import { I18nContext, updateTeam } from '../../../core';
@@ -10,11 +10,9 @@ import { converter } from '../../../services/showdown';
 import { IApiWithAuthorization, isError, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
 import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
-import {toastr} from "react-redux-toastr";
 
 export const MyHome = () => {
 
-  const { search } = useLocation();
 
   const dispatch = useDispatch();
   const connectedUser = useSelector<IState, IUserSimple>(s => s.context.connectedUser)
@@ -28,12 +26,7 @@ export const MyHome = () => {
 
   const { translate } = useContext(I18nContext);
 
-  useEffect(() => {
-    const params = new URLSearchParams(search);
-    if (params.get("error") === "1") {
-      toastr.error(translate('Error'), translate('team.notFound'))
-    }
-  }, []);
+
 
 
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {

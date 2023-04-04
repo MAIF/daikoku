@@ -219,7 +219,7 @@ class ApiController(
         ctx.setCtxValue("team.name", team.name)
         ctx.setCtxValue("team.id", team.id)
 
-        FastFuture.successful(Left(Ok(team.toUiPayload)))
+        FastFuture.successful(Right(Ok(team.toUiPayload)))
       }
     }
 
@@ -274,7 +274,7 @@ class ApiController(
               "$in" -> JsArray((parentSubs ++ subscriptions).map(_.api.asJson))
             )))
         } yield {
-          Left(Ok(JsArray(apis.map(_.asJson))))
+          Right(Ok(JsArray(apis.map(_.asJson))))
         }
       }
     }
@@ -348,7 +348,7 @@ class ApiController(
           Ok(betterApis)
         }
 
-        r.value.map(_.merge).map(a => Left(a))
+        r.value.map(_.merge).map(a => Right(a))
       }
     }
 
@@ -1939,8 +1939,8 @@ class ApiController(
       CommonServices
         .apiOfTeam(teamId, apiId, version)(ctx, env, ec)
         .map {
-          case Left(api)    => Ok(api.api.asJson.as[JsObject] ++ api.translation)
-          case Right(error) => AppError.render(error)
+          case Right(api)    => Ok(api.api.asJson.as[JsObject] ++ api.translation)
+          case Left(error) => AppError.render(error)
         }
     }
 
@@ -1958,7 +1958,7 @@ class ApiController(
             )
           )
           .map { apis =>
-            Left(Ok(JsArray(apis.map(_.asJson))))
+            Right(Ok(JsArray(apis.map(_.asJson))))
           }
       }
     }
@@ -2687,7 +2687,7 @@ class ApiController(
       }
     }
 
-  def search() = // TODO PRENDRE EXEMEPLELPLEPLE
+  def search() =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(
         ctx
