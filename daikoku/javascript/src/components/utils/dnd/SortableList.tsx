@@ -28,9 +28,8 @@ interface BaseItem {
 interface SortableListProps<T extends BaseItem> {
   items: Array<T>;
   onChange: (items: T[]) => void;
-  renderItem: (item: T) => ReactNode;
+  renderItem: (item: T, idx: number) => ReactNode;
   className?: string
-  delete: (id: UniqueIdentifier) => void
 }
 export const SortableList = <T extends BaseItem>(props: SortableListProps<T>) => {
   const [active, setActive] = useState<Active | null>(null);
@@ -50,8 +49,6 @@ export const SortableList = <T extends BaseItem>(props: SortableListProps<T>) =>
     })
   );
 
-  const droppableId = useMemo(() => nanoid(32), [])
-
   return (
     <DndContext
       sensors={sensors}
@@ -66,12 +63,7 @@ export const SortableList = <T extends BaseItem>(props: SortableListProps<T>) =>
 
           setParent(over ? over.id : null)
 
-          if (over.id === droppableId) {
-            props.delete(active.id)
-          } else {
-            props.onChange(arrayMove(props.items, activeIndex, overIndex));
-          }
-
+          props.onChange(arrayMove(props.items, activeIndex, overIndex));
         }
         setActive(null);
         setIsDragging(false)
@@ -85,14 +77,13 @@ export const SortableList = <T extends BaseItem>(props: SortableListProps<T>) =>
         <SortableContext items={props.items}>
           <ul className="sortable-list sorted-list" role="application">
             {props.items.map((item, idx) => (
-              <React.Fragment key={item.id}>{props.renderItem(item)}</React.Fragment>
+              <React.Fragment key={item.id}>{props.renderItem(item, idx)}</React.Fragment>
             ))}
           </ul>
         </SortableContext>
         <SortableOverlay>
-          {activeItem ? props.renderItem(activeItem) : null}
+          {activeItem ? props.renderItem(activeItem, 0) : null}
         </SortableOverlay>
-        <Droppable key={droppableId} id={droppableId} dragging={isDragging} />
       </div>
     </DndContext>
   );
@@ -123,6 +114,7 @@ const SortableItemContext = createContext<Context>({
 interface SortableItemProps {
   id: UniqueIdentifier;
   action?: ReactNode | undefined
+  className?: string
 }
 export const SortableItem = (props: PropsWithChildren<SortableItemProps>) => {
   const {
@@ -149,11 +141,11 @@ export const SortableItem = (props: PropsWithChildren<SortableItemProps>) => {
     opacity: isDragging ? 0.4 : undefined,
     transform: CSS.Translate.toString(transform),
     transition,
-    
+
   };
 
   return (
-    <li className="sortable-item sorted-list__step d-flex flex-column">
+    <li className={classNames("sortable-item sorted-list__step d-flex flex-column", props.className)}>
       {props.action && <div className='sortable-item__action'>
         {props.action}
       </div>}
@@ -239,24 +231,3 @@ const droppable = (
     </g>
   </svg>
 );
-
-export function Droppable(props: DroppableProps) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: props.id,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={classNames(
-        'droppable', {
-        over: isOver,
-        dragging: props.dragging
-      }
-      )}
-      aria-label="Droppable region"
-    >
-      <Trash />
-    </div>
-  );
-}

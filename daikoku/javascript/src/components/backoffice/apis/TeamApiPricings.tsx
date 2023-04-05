@@ -9,6 +9,9 @@ import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import Settings from 'react-feather/dist/icons/settings'
+import Trash from 'react-feather/dist/icons/trash'
+import Plus from 'react-feather/dist/icons/plus'
 
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
@@ -24,7 +27,7 @@ import {
   team
 } from '../../utils';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
-import { Droppable, FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
+import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -673,7 +676,6 @@ export const TeamApiPricings = (props: Props) => {
     const service = creation ? Services.createPlan : Services.updatePlan
     return service(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
-        console.debug({response})
         if (isError(response)) {
           toastr.error(translate('Error'), translate(response.error))
         } else {
@@ -1350,14 +1352,15 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
         }
       },
       onSubmit: (data: IValidationStepEmail) => {
-        props.savePlan({ 
-          ...props.value, 
-          subscriptionProcess:  props.value.subscriptionProcess.map(p => {
+        props.savePlan({
+          ...props.value,
+          subscriptionProcess: props.value.subscriptionProcess.map(p => {
             if (p.id === data.id) {
               return data
             }
             return p
-          })})
+          })
+        })
       },
       actionLabel: translate('Update'),
       value
@@ -1404,7 +1407,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           className='sortable-list'
           items={props.value.subscriptionProcess}
           onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
-          renderItem={(item) => {
+          renderItem={(item, idx) => {
             if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
               return (
                 <FixedItem id={item.id}>
@@ -1423,17 +1426,26 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
               )
             } else {
               return (
-                <SortableItem
-                  action={isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}>edit</button> : <></>}
-                  id={item.id}>
-                  <ValidationStep
-                    step={item}
-                    tenant={props.tenant} />
-                </SortableItem>
+                <>
+                  <SortableItem
+                    action={
+                      <div className={classNames('d-flex flex-row', {
+                        'justify-content-between': isValidationStepEmail(item),
+                        'justify-content-end': !isValidationStepEmail(item),
+                      })}>
+                        {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
+                        <button className='btn btn-sm btn-outline-danger' onClick={() => deleteStep(item.id)}><Trash size={15} /></button>
+                      </div>}
+                    id={item.id}>
+                    <ValidationStep
+                      step={item}
+                      tenant={props.tenant} />
+                  </SortableItem>
+                  <button className='btn btn-outline-primary sortable-list-btn' onClick={() => console.debug({item, idx})}><Plus /></button>
+                </>
               )
             }
           }}
-          delete={deleteStep}
         />
       </div>
     </>

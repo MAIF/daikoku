@@ -46,6 +46,7 @@
   position: absolute;
   top: -10px;
   right: -10px;
+  left: -10px;
   display: none;
 }
 
@@ -131,5 +132,38 @@
       opacity: 0.2;
       transform: translate3d(-50%, 100%, 0) scale(0.8);
     }
+  }
+}
+
+//**************
+//*** BUTTON ***
+//**************
+
+.sortable-list-item-wrapper {
+  position: relative;
+
+  .sortable-list-btn-previous,
+  .sortable-list-btn-next {
+    display: none;
+  }
+
+  &:hover {
+    .sortable-list-btn-previous,
+    .sortable-list-btn-next {
+      display: block;
+      position: absolute;
+      top: 50%;
+    }
+
+    .sortable-list-btn-previous {
+      left: -10px;
+    }
+
+    
+    .sortable-list-btn-next {
+      right: 10px;
+    }
+
+
   }
 }
