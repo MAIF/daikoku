@@ -73,7 +73,7 @@ export const SortableList = <T extends BaseItem>(props: SortableListProps<T>) =>
         setIsDragging(false)
       }}
     >
-      <div className='d-flex flex-column'>
+      <div>
         <SortableContext items={props.items}>
           <ul className="sortable-list sorted-list" role="application">
             {props.items.map((item, idx) => (

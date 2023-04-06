@@ -44,9 +44,9 @@
 
 .sortable-item__action {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  left: -10px;
+  top: 10px;
+  right: 10px;
+  left: 10px;
   display: none;
 }
 
@@ -62,6 +62,8 @@
   padding: 18px 20px;
   border-radius: 4px;
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .sortable-item__draggable-container {
@@ -72,11 +74,6 @@
 
 .validation-step__type {
   font-weight: bold;
-}
-
-.validation-step__infos {
-  font-style: italic;
-  font-size: 13px;
 }
 
 //*****************
@@ -139,31 +136,69 @@
 //*** BUTTON ***
 //**************
 
-.sortable-list-item-wrapper {
-  position: relative;
+.sortable-list-btn {
+  padding: 2px;
+  width: 26px;
+  display: flex;
+  align-items: center;
+  margin: 5px;
+  
+  &:hover {
+    color: #fff;
+  }
+}
 
-  .sortable-list-btn-previous,
-  .sortable-list-btn-next {
-    display: none;
+//**************
+//*** TEST ***
+//**************
+
+.validation-step__type {
+  border: 2px solid tomato;
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  top: -20px;
+  left: calc(50% - 18px);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: tomato;
+  color: #fff
+}
+
+.sortable-item {
+  border: 2px solid tomato;
+  height: 200px;
+  width: 120px
+}
+
+.validation-step {
+  flex-grow: 1;
+  
+
+  .validation-step__index {
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
   }
 
-  &:hover {
-    .sortable-list-btn-previous,
-    .sortable-list-btn-next {
-      display: block;
-      position: absolute;
-      top: 50%;
-    }
-
-    .sortable-list-btn-previous {
-      left: -10px;
-    }
-
+  .validation-step__name {
+    font-size: 12px;
+    font-weight: bold;
+    text-transform:uppercase;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
     
-    .sortable-list-btn-next {
-      right: 10px;
-    }
+  }
 
+  .validation-step__infos {
+    font-size: 11px;
+    font-style: italic;
 
+    overflow: scroll;
+    flex-grow: 1;
   }
 }

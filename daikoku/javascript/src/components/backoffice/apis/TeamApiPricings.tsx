@@ -12,6 +12,9 @@ import CreatableSelect from 'react-select/creatable';
 import Settings from 'react-feather/dist/icons/settings'
 import Trash from 'react-feather/dist/icons/trash'
 import Plus from 'react-feather/dist/icons/plus'
+import AtSign from 'react-feather/dist/icons/at-sign'
+import CreditCard from 'react-feather/dist/icons/credit-card'
+import User from 'react-feather/dist/icons/user'
 
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
@@ -1195,27 +1198,20 @@ export const TeamApiPricings = (props: Props) => {
     <div className="album">
       <div className="container">
         <div className="d-flex mb-3">
-          <button onClick={createNewPlan} type="button" className="btn btn-outline-primary me-1">
+         {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-primary me-1">
             {translate('add a new plan')}
-          </button>
-          {!!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
+          </button>}
+          {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
             {translate('import a plan')}
           </button>)}
           {planForEdition && mode !== possibleMode.list && (<div className="flex-grow-1 d-flex justify-content-end">
             <button onClick={cancelEdition} type="button" className="btn btn-outline-danger me-1" style={{ marginTop: 0 }}>
-              {translate('Cancel')}
+              {translate('Back')}
             </button>
           </div>)}
         </div>
         {planForEdition && mode !== possibleMode.list && (<div className="row">
-          <div className="col-md-4">
-            <Card
-              plan={planForEdition}
-              isDefault={planForEdition._id === props.api.defaultUsagePlan}
-              creation={true} />
-
-          </div>
-          <div className="col-md-8">
+          <div className="col-md-12">
             {selectedTab === 'settings' && <MultiStepForm<IUsagePlan>
               value={planForEdition}
               steps={steps}
@@ -1282,20 +1278,19 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
   const { openFormModal, close } = useContext(ModalContext);
 
-  const addStepToRightPlace = (process: Array<IValidationStep>, step: IValidationStep): Array<IValidationStep> => {
+  const addStepToRightPlace = (process: Array<IValidationStep>, step: IValidationStep, index: number): Array<IValidationStep> => {
     if (step.type === 'teamAdmin') {
       return insertArrayIndex(step, process, 0)
-    } else if (step.type === 'email' && process[process.length - 1].type === 'payment') {
-      return insertArrayIndex(step, process, process.length - 1)
     } else if (step.type === 'email') {
-      return insertArrayIndex(step, process, process.length)
+      return insertArrayIndex(step, process, index)
     } else {
       return process
     }
   }
 
 
-  const editProcess = (name: string) => {
+  const editProcess = (name: string, index: number) => {
+    //todo: use the index !!
     switch (name) {
       case 'email':
         return openFormModal({
@@ -1303,7 +1298,11 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           schema: {
             emails: {
               type: type.string,
+              format: format.email,
               array: true,
+              constraints: [
+                constraints.email()
+              ]
             },
             message: {
               type: type.string,
@@ -1319,10 +1318,10 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           onSubmit: (data: IValidationStepEmail & EmailOption) => {
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32) }
-              props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }) })
+              props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }, index) })
             } else {
               const steps: Array<IValidationStepEmail> = data.emails.map(email => ({ type: 'email', emails: [email], message: data.message, id: nanoid(32) }))
-              const subscriptionProcess = steps.reduce((process, step) => addStepToRightPlace(process, step), props.value.subscriptionProcess)
+              const subscriptionProcess = steps.reduce((process, step) => addStepToRightPlace(process, step, index), props.value.subscriptionProcess)
               props.savePlan({ ...props.value, subscriptionProcess })
 
             }
@@ -1367,7 +1366,8 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
     })
   }
 
-  const addProcess = () => {
+  //todo
+  const addProcess = (index: number) => {
     const alreadyStepAdmin = props.value.subscriptionProcess.some(isValidationStepTeamAdmin)
 
     const options = addArrayIf(!alreadyStepAdmin, [
@@ -1384,7 +1384,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           options
         }
       },
-      onSubmit: (data: IValidationStep) => editProcess(data.type),
+      onSubmit: (data: IValidationStep) => editProcess(data.type, index),
       actionLabel: translate('Create'),
       noClose: true
     })
@@ -1396,66 +1396,61 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
   }
 
   return (
-    <>
-      <div>
-        <button onClick={() => addProcess()} type="button" className="btn btn-outline-primary me-1">
-          {translate('subscription.process.add.label')}
-        </button>
-      </div>
-      <div className='col-12 mt-2 d-flex flex-row justify-content-center'>
-        <SortableList
-          className='sortable-list'
-          items={props.value.subscriptionProcess}
-          onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
-          renderItem={(item, idx) => {
-            if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
-              return (
-                <FixedItem id={item.id}>
-                  <ValidationStep
-                    step={item}
-                    tenant={props.tenant} />
-                </FixedItem>
-              )
-            } else if (isValidationStepPayment(item)) {
-              return (
-                <FixedItem id={item.id}>
-                  <ValidationStep
-                    step={item}
-                    tenant={props.tenant} />
-                </FixedItem>
-              )
-            } else {
-              return (
-                <>
-                  <SortableItem
-                    action={
-                      <div className={classNames('d-flex flex-row', {
-                        'justify-content-between': isValidationStepEmail(item),
-                        'justify-content-end': !isValidationStepEmail(item),
-                      })}>
-                        {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
-                        <button className='btn btn-sm btn-outline-danger' onClick={() => deleteStep(item.id)}><Trash size={15} /></button>
-                      </div>}
-                    id={item.id}>
-                    <ValidationStep
-                      step={item}
-                      tenant={props.tenant} />
-                  </SortableItem>
-                  <button className='btn btn-outline-primary sortable-list-btn' onClick={() => console.debug({item, idx})}><Plus /></button>
-                </>
-              )
-            }
-          }}
-        />
-      </div>
-    </>
+    <SortableList
+      items={props.value.subscriptionProcess}
+      onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
+      renderItem={(item, idx) => {
+        if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
+          return (
+            <FixedItem id={item.id}>
+              <ValidationStep
+                index={idx + 1}
+                step={item}
+                tenant={props.tenant} />
+            </FixedItem>
+          )
+        } else if (isValidationStepPayment(item)) {
+          return (
+            <FixedItem id={item.id}>
+              <ValidationStep
+                index={idx + 1}
+                step={item}
+                tenant={props.tenant} />
+            </FixedItem>
+          )
+        } else {
+          return (
+            <>
+              <SortableItem
+                className="validation-step-container"
+                action={
+                  <div className={classNames('d-flex flex-row', {
+                    'justify-content-between': isValidationStepEmail(item),
+                    'justify-content-end': !isValidationStepEmail(item),
+                  })}>
+                    {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
+                    <button className='btn btn-sm btn-outline-danger' onClick={() => deleteStep(item.id)}><Trash size={15} /></button>
+                  </div>}
+                id={item.id}>
+                <ValidationStep
+                  index={idx + 1}
+                  step={item}
+                  tenant={props.tenant} />
+              </SortableItem>
+              {/* <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button> */}
+            </>
+          )
+        }
+      }}
+    />
   )
 }
 
 type ValidationStepProps = {
   step: IValidationStep,
   tenant: ITenantFull,
-  update?: () => void
+  update?: () => void,
+  index: number
 }
 
 const ValidationStep = (props: ValidationStepProps) => {
@@ -1464,7 +1459,9 @@ const ValidationStep = (props: ValidationStepProps) => {
     const thirdPartyPaymentSettings = props.tenant.thirdPartyPaymentSettings.find(setting => setting._id == step.thirdPartyPaymentSettingsId)
     return (
       <div className='d-flex flex-column validation-step'>
-        <span className='validation-step__type'>Payment</span>
+        <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
+        <span className='validation-step__name'>lorem ipsum</span>
+        <span className='validation-step__type'><CreditCard /></span>
         <div className="d-flex flex-row validation-step__infos">
           <span>{thirdPartyPaymentSettings?.name}</span>
           <span>{thirdPartyPaymentSettings?.type}</span>
@@ -1475,7 +1472,9 @@ const ValidationStep = (props: ValidationStepProps) => {
   } else if (isValidationStepEmail(step)) {
     return (
       <div className='d-flex flex-column validation-step'>
-        <span className='validation-step__type'>Email</span>
+        <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
+        <span className='validation-step__name'>lorem ipsum</span>
+        <span className='validation-step__type'><AtSign /></span>
         <div className="d-flex flex-row validation-step__infos">
           <span>{step.emails[0]}</span>
           {step.emails.length > 1 && <span>{` + ${step.emails.length - 1}`}</span>}
@@ -1485,7 +1484,9 @@ const ValidationStep = (props: ValidationStepProps) => {
   } else if (isValidationStepTeamAdmin(step)) {
     return (
       <div className='d-flex flex-column validation-step'>
-        <span className='validation-step__type'>Admin.</span>
+        <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
+        <span className='validation-step__name'>lorem ipsum</span>
+        <span className='validation-step__type'><User /></span>
       </div>
     )
   } else {
