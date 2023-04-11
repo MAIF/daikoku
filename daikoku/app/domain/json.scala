@@ -543,21 +543,24 @@ object json {
 
   val ValidationStepFormat = new Format[ValidationStep] {
     override def writes(o: ValidationStep): JsValue = o match {
-      case ValidationStep.Email(id, emails, message) => Json.obj(
+      case ValidationStep.Email(id, emails, message, title) => Json.obj(
         "type" -> "email",
         "id" -> id,
         "emails" -> emails,
+        "title" -> title,
         "message" -> message.map(JsString).getOrElse(JsNull).as[JsValue]
       )
-      case ValidationStep.TeamAdmin(id, team) => Json.obj(
+      case ValidationStep.TeamAdmin(id, team, title) => Json.obj(
         "type" -> "teamAdmin",
         "id" -> id,
-        "team" -> team.asJson
+        "team" -> team.asJson,
+        "title" -> title
       )
-      case ValidationStep.Payment(id, thirdPartyPaymentSettingsId) => Json.obj(
+      case ValidationStep.Payment(id, thirdPartyPaymentSettingsId, title) => Json.obj(
         "type" -> "payment",
         "id" -> id,
-        "thirdPartyPaymentSettingsId" -> thirdPartyPaymentSettingsId.asJson
+        "thirdPartyPaymentSettingsId" -> thirdPartyPaymentSettingsId.asJson,
+        "title" -> title
       )
     }
 
@@ -566,15 +569,18 @@ object json {
       case "email" => JsSuccess(ValidationStep.Email(
         id = (json \ "id").as[String],
         emails = (json \ "emails").as[Seq[String]],
-        message = (json \ "message").asOpt[String]
+        message = (json \ "message").asOpt[String],
+        title = (json \ "title").as[String],
       ))
       case "teamAdmin" => JsSuccess(ValidationStep.TeamAdmin(
         id = (json \ "id").as[String],
-        team = (json \ "team").as(TeamIdFormat)
-    ))
+        team = (json \ "team").as(TeamIdFormat),
+        title = (json \ "title").as[String],
+      ))
       case "payment" => JsSuccess(ValidationStep.Payment(
         id = (json \ "id").as[String],
-        thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat)))
+        thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat),
+        title = (json \ "title").as[String]))
       case str => JsError(s"Bad UsagePlanVisibility value: $str")
     }
   }

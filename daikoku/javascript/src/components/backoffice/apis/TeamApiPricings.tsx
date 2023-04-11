@@ -1198,7 +1198,7 @@ export const TeamApiPricings = (props: Props) => {
     <div className="album">
       <div className="container">
         <div className="d-flex mb-3">
-         {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-primary me-1">
+          {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-primary me-1">
             {translate('add a new plan')}
           </button>}
           {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
@@ -1296,6 +1296,12 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
         return openFormModal({
           title: translate('subscription.process.add.email.step.title'),
           schema: {
+            title: {
+              type: type.string,
+              constraints: [
+                constraints.required(translate('constraints.required.value'))
+              ]
+            },
             emails: {
               type: type.string,
               format: format.email,
@@ -1317,10 +1323,10 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           },
           onSubmit: (data: IValidationStepEmail & EmailOption) => {
             if (data.option === 'oneOf') {
-              const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32) }
+              const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32), title: data.title }
               props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }, index) })
             } else {
-              const steps: Array<IValidationStepEmail> = data.emails.map(email => ({ type: 'email', emails: [email], message: data.message, id: nanoid(32) }))
+              const steps: Array<IValidationStepEmail> = data.emails.map(email => ({ type: 'email', emails: [email], message: data.message, id: nanoid(32), title: data.title }))
               const subscriptionProcess = steps.reduce((process, step) => addStepToRightPlace(process, step, index), props.value.subscriptionProcess)
               props.savePlan({ ...props.value, subscriptionProcess })
 
@@ -1437,7 +1443,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
                   step={item}
                   tenant={props.tenant} />
               </SortableItem>
-              {/* <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button> */}
+              <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
             </>
           )
         }
@@ -1460,20 +1466,19 @@ const ValidationStep = (props: ValidationStepProps) => {
     return (
       <div className='d-flex flex-column validation-step'>
         <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
-        <span className='validation-step__name'>lorem ipsum</span>
+        <span className='validation-step__name'>{step.title}</span>
         <span className='validation-step__type'><CreditCard /></span>
         <div className="d-flex flex-row validation-step__infos">
           <span>{thirdPartyPaymentSettings?.name}</span>
           <span>{thirdPartyPaymentSettings?.type}</span>
         </div>
-
       </div>
     )
   } else if (isValidationStepEmail(step)) {
     return (
       <div className='d-flex flex-column validation-step'>
         <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
-        <span className='validation-step__name'>lorem ipsum</span>
+        <span className='validation-step__name'>{step.title}</span>
         <span className='validation-step__type'><AtSign /></span>
         <div className="d-flex flex-row validation-step__infos">
           <span>{step.emails[0]}</span>
@@ -1485,7 +1490,7 @@ const ValidationStep = (props: ValidationStepProps) => {
     return (
       <div className='d-flex flex-column validation-step'>
         <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
-        <span className='validation-step__name'>lorem ipsum</span>
+        <span className='validation-step__name'>{step.title}</span>
         <span className='validation-step__type'><User /></span>
       </div>
     )

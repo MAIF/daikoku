@@ -1,16 +1,17 @@
 .sortable-list {
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 2x;
   padding: 0;
   list-style: none;
+  align-items: center;
 }
 
 .sortable-item {
   position: relative;
   display: flex;
   // justify-content: space-between;
-  flex-grow: 1;
+  // flex-grow: 1;
   // align-items: center;
   // padding: 18px 20px;
   background-color: #fff;
@@ -64,6 +65,7 @@
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  cursor: grab;
 }
 
 .sortable-item__draggable-container {
@@ -111,11 +113,11 @@
   }
 
   &.over {
-    box-shadow: inset tomato 0 0 0 3px, rgba(201, 211, 219, 0.5) 20px 14px 24px;
+    box-shadow: inset $navbar-bg-color 0 0 0 3px, rgba(201, 211, 219, 0.5) 20px 14px 24px;
 
     >svg {
       opacity: 1;
-      color: tomato;
+      color: $navbar-bg-color;
     }
 
     &.dropped {
@@ -138,7 +140,8 @@
 
 .sortable-list-btn {
   padding: 2px;
-  width: 26px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   margin: 5px;
@@ -153,7 +156,7 @@
 //**************
 
 .validation-step__type {
-  border: 2px solid tomato;
+  border: 2px solid $navbar-bg-color;
   position: absolute;
   display: flex;
   justify-content: center;
@@ -163,12 +166,12 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: tomato;
-  color: #fff
+  background-color: $navbar-bg-color;
+  color: $navbar-brand-color
 }
 
 .sortable-item {
-  border: 2px solid tomato;
+  border: 2px solid $navbar-bg-color;
   height: 200px;
   width: 120px
 }

@@ -780,7 +780,7 @@ class ApiService(env: Env,
   def runSubscriptionProcess(demandId: SubscriptionDemandId, tenant: Tenant, from: Option[String] = None)(implicit language: String, currentUser: User): EitherT[Future, AppError, Result] = {
     def runRightProcess(step: SubscriptionDemandStep, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
       val run = step.step match {
-        case ValidationStep.Email(_, emails, template) =>
+        case ValidationStep.Email(_, emails, template, _) =>
 
           val value: EitherT[Future, AppError, Result] = for {
             title <- EitherT.liftF(translator.translate("mail.subscription.validation.title", tenant))
@@ -798,6 +798,7 @@ class ApiService(env: Env,
               val pathAccept = s"/api/subscription/_validate?token=$cipheredValidationToken"
               val pathDecline = s"/api/subscription/_decline?token=$cipheredValidationToken"
 
+              //FIXME: use template
               translator.translate("mail.subscription.validation.body", tenant,
                 Map("urlAccept" -> env.getDaikokuUrl(tenant, pathAccept), "urlDecline" -> env.getDaikokuUrl(tenant, pathDecline)))
                 .flatMap(body => env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator).map(_ => body))
@@ -807,7 +808,7 @@ class ApiService(env: Env,
             Ok(Json.obj("creation" -> "waiting"))
           }
           value
-        case ValidationStep.TeamAdmin(_, _) => notifyApiSubscription(
+        case ValidationStep.TeamAdmin(_, _, _) => notifyApiSubscription(
           demandId = demand.id,
           stepId = step.id,
           tenantId = tenant.id,
@@ -818,7 +819,7 @@ class ApiService(env: Env,
           apiKeyId = None,
           motivation = demand.motivation
         )
-        case ValidationStep.Payment(_, _) => paymentClient.checkoutSubscription(
+        case ValidationStep.Payment(_, _, _) => paymentClient.checkoutSubscription(
           tenant = tenant,
           subscriptionDemand = demand,
           step = step,

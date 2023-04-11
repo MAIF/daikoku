@@ -110,7 +110,8 @@ export interface IValidationStep {
 
 export interface IValidationStepEmail extends IValidationStep {
   emails: Array<string>,
-  message
+  message: string
+  title: string
 }
 
 export function isValidationStepEmail(item: any): item is IValidationStepEmail {
@@ -119,6 +120,7 @@ export function isValidationStepEmail(item: any): item is IValidationStepEmail {
 
 export interface IValidationStepTeamAdmin extends IValidationStep {
   team: string
+  title?: string
 }
 
 export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {
@@ -131,6 +133,7 @@ export function isValidationStepPayment(item: any): item is IValidationStepPayme
 
 export interface IValidationStepPayment extends IValidationStep {
   thirdPartyPaymentSettingsId: string
+  title?: string
 }
 export interface IBaseUsagePlan {
   _id: string;

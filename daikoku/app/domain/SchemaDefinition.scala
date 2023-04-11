@@ -301,18 +301,21 @@ object SchemaDefinition {
       Interfaces(ValidationStepInterfaceType),
       ObjectTypeDescription("A validation Step by email"),
       ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id)),
+      ReplaceField("title", Field("title", StringType, resolve = ctx => ctx.value.title)),
       ReplaceField("emails", Field("emails", ListType(StringType), resolve = ctx => ctx.value.emails)),
     ))
     lazy val ValidationStepAdmin = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.TeamAdmin](
       Interfaces(ValidationStepInterfaceType),
       ObjectTypeDescription("A validation Step by team admins"),
       ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id)),
+      ReplaceField("title", Field("title", StringType, resolve = ctx => ctx.value.title)),
       ReplaceField("team", Field("team", StringType, resolve = ctx => ctx.value.team.value)),
     ))
     lazy val ValidationStepPayment = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.Payment](
       Interfaces(ValidationStepInterfaceType),
       ObjectTypeDescription("A validation Step by payment"),
       ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id)),
+      ReplaceField("title", Field("title", StringType, resolve = ctx => ctx.value.title)),
       ReplaceField("thirdPartyPaymentSettingsId", Field("thirdPartyPaymentSettingsId", StringType, resolve = ctx => ctx.value.thirdPartyPaymentSettingsId.value)),
     ))
 

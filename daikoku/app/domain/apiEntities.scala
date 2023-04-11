@@ -857,18 +857,19 @@ case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
 sealed trait ValidationStep {
   def id: String
   def name: String
+  def title: String
   def asJson: JsValue = json.ValidationStepFormat.writes(this)
 }
 
 object ValidationStep {
-  case class Email(id: String, emails: Seq[String], message: Option[String]) extends ValidationStep {
+  case class Email(id: String, emails: Seq[String], message: Option[String], title: String) extends ValidationStep {
     def name: String = "email"
   }
 
-  case class TeamAdmin(id: String, team: TeamId) extends ValidationStep {
+  case class TeamAdmin(id: String, team: TeamId, title: String = "Administrator") extends ValidationStep {
     def name: String = "teamAdmin"
   }
-  case class Payment(id: String, thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId) extends ValidationStep {
+  case class Payment(id: String, thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId, title: String = "Payment") extends ValidationStep {
     def name: String = "payment"
   }
 }
