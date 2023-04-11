@@ -512,6 +512,52 @@ object evolution_157_c extends EvolutionScript {
     }
 }
 
+object evolution_1612_a extends EvolutionScript {
+  override def version: String = "16.1.2_a"
+
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext, OtoroshiClient) => Future[Done] = {
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - set is default to true")
+
+      implicit val execContext: ExecutionContext = ec
+
+      val future: Future[Long] = for {
+        apiWithParents <- dataStore.apiRepo.forAllTenant().findNotDeleted(Json.obj(
+          "parent" -> Json.obj("$exists" -> true),
+          "isDefault" -> true
+        ))
+        parents = apiWithParents.map(_.parent.get).distinct
+        res <- dataStore.apiRepo
+          .forAllTenant()
+          .updateManyByQuery(Json.obj(
+            "parent" -> JsNull,
+            "_id" -> Json.obj("$nin" -> JsArray(parents.map(_.asJson)))
+          ),
+            Json.obj(
+              "$set" -> Json.obj(
+                "isDefault" -> true,
+              )))
+      } yield res
+
+
+
+
+      Source
+        .future(future)
+        .runWith(Sink.ignore)(mat)
+
+    }
+  }
+}
+
+
 object evolution_1612_b extends EvolutionScript {
   override def version: String = "16.1.2_b"
 
@@ -558,13 +604,14 @@ object evolution_1612_b extends EvolutionScript {
 object evolutions {
   val list: List[EvolutionScript] =
     List(evolution_102,
-         evolution_150,
-         evolution_151,
-         evolution_155,
-         evolution_157,
-         evolution_157_b,
-         evolution_157_c,
-         evolution_1612_b)
+      evolution_150,
+      evolution_151,
+      evolution_155,
+      evolution_157,
+      evolution_157_b,
+      evolution_157_c,
+      evolution_1612_a,
+      evolution_1612_b)
   def run(
       dataStore: DataStore,
       otoroshiClient: OtoroshiClient

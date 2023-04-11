@@ -616,7 +616,7 @@ case class Api(
     description: String,
     currentVersion: Version = Version("1.0.0"),
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
-    isDefault: Boolean = false,
+    isDefault: Boolean = true,
     lastUpdate: DateTime,
     published: Boolean = false,
     testing: Testing = Testing(),
