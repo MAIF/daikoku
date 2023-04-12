@@ -969,6 +969,7 @@
   "mail.new.issue.title": "sujet du mail suite à la creation d'une issue",
   "mail.api.transfer.ownership.acceptation.body": "Corps du mail d'invitation au transfert de propriété d'API",
   "mail.api.transfer.ownership.acceptation.title": "titre du mail d'invitation au transfert de propriété d'API",
+  "mailing_internalization.message_key": "Clé du message",
   "mailing_internalization.message_text": "Description du message",
   "mailing_internalization.required_variables": "Variables requises",
   "mailing_internalization.translation_updated": "Traduction sauvegardée",
@@ -1271,5 +1272,9 @@
   "fastMode.planSearch.info": "et les plans nommés comme",
   "authorized.groups": "Services groupes",
   "authorized.services": "Services",
-  "authorized.routes": "Routes"
+  "authorized.routes": "Routes",
+  "login.placeholder": "Courriel",
+  "login.label": "Courriel",
+  "password.label": "Mot de passe",
+  "login.btn.label": "Se connecter"
 }

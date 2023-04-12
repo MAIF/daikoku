@@ -293,6 +293,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", r"/robot.txt") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
+                  case ("get", r"/api/translations/_all") =>
+                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", r"/reset") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case (_, path) if path.startsWith("/api/2fa") =>
@@ -414,7 +416,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         )
                     )
                   case (_, _) =>
-                    AppLogger.debug("No session id found")
+                    AppLogger.info("no session found")
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                 }
               case Some(sessionId) =>

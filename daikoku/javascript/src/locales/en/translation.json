@@ -976,6 +976,7 @@
     "mail.new.issue.title": "Title of the email following the creation of a new issue",
     "mail.api.transfer.ownership.acceptation.body": "Body of the email following the transfer ownership of an API",
     "mail.api.transfer.ownership.acceptation.title": "Title of the email following the transfer ownership of an API",
+    "mailing_internalization.message_key": "Message key",
     "mailing_internalization.message_text": "Message text",
     "mailing_internalization.required_variables": "Required variables",
     "mailing_internalization.translation_updated": "Translation updated",
@@ -1268,5 +1269,9 @@
     "fastMode.planSearch.info": "and plans with a name like",
     "authorized.groups": "Services  groups",
     "authorized.services": "Services",
-    "authorized.routes": "Routes"
+    "authorized.routes": "Routes",
+    "login.placeholder": "Email adress",
+    "login.label": "Email adress",
+    "password.label": "Password",
+    "login.btn.label": "Login"
 }

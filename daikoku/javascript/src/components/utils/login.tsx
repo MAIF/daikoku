@@ -3,7 +3,7 @@ import * as Services from '../../services/index';
 import { I18nContext } from '../../core';
 
 export function LoginPage(props: any) {
-  const { Translation } = useContext(I18nContext);
+  const { Translation, translate } = useContext(I18nContext);
 
   const [state, setState] = useState<any>({
     username: '',
@@ -70,7 +70,7 @@ export function LoginPage(props: any) {
           )}
           <div className="mb-3">
             <label className="control-label mb-2">
-              <Translation i18nkey="Email address">Email address</Translation>
+              <Translation i18nkey="login.label">Email address</Translation>
             </label>
             <input
               type="text"
@@ -82,7 +82,7 @@ export function LoginPage(props: any) {
           </div>
           <div className="mb-3">
             <label className="control-label mb-2">
-              <Translation i18nkey="Password">Password</Translation>
+              <Translation i18nkey="password.label">Password</Translation>
             </label>
             <input
               type="password"
@@ -94,7 +94,7 @@ export function LoginPage(props: any) {
           </div>
           <div className="mb-3 d-grid gap-1">
             <button type="submit" className="btn btn-success">
-              <Translation i18nkey="Login">Login</Translation>
+              <Translation i18nkey="login.btn.label">Login</Translation>
             </button>
           </div>
           {props.provider == 'Local' && (
