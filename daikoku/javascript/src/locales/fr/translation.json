@@ -1268,5 +1268,12 @@
   "token.notFound": "Jeton introuvable.",
   "token.expired": "Ce jeton a expiré.",
   "fastMode.onlySubs.info": "avec seulement les souscrites ",
-  "fastMode.planSearch.info": "et les plans nommés comme"
+  "fastMode.planSearch.info": "et les plans nommés comme",
+  "api.delete.subscription": "Supprimer la souscription",
+  "api.delete.subscription.form": "Formulaire de suppression de la souscription",
+  "api.delete.subscription.howToDelete": "Tapez : \"%s\" pour supprimer la souscription.",
+  "api.delete.subscription.deleted": "Souscription supprimée.",
+  "api.delete.subscription.impossible.nothing": "Entrez le nom de la souscription pour la supprimer.",
+  "api.delete.subscription.impossible.incorrect": "Le nom est faux."
+
 }

@@ -15,11 +15,10 @@ import { Table, SwitchButton, TableRef } from '../../inputs';
 import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import { Form, format, type } from "@maif/react-forms";
+import {constraints, format, type, type as formType} from "@maif/react-forms";
 import { IApi, ISafeSubscription, isError, IState, ITeamSimple, IUsagePlan } from "../../../types";
-import { string } from "prop-types";
 import { ModalContext } from '../../../contexts';
-import { createColumnHelper, sortingFns } from '@tanstack/react-table';
+import { createColumnHelper } from '@tanstack/react-table';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 
 type TeamApiSubscriptionsProps = {
@@ -140,8 +139,13 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
             </button>
           </BeautifulTitle>
           <BeautifulTitle title={translate('Refresh secret')}>
-            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-danger" onClick={() => regenerateSecret(sub)}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-outline-danger me-1" onClick={() => regenerateSecret(sub)}>
               <i className="fas fa-sync" />
+            </button>
+          </BeautifulTitle>
+          <BeautifulTitle title={translate('api.delete.subscription')}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-outline-danger" onClick={() => deleteSubscription(sub)}>
+              <i className="fas fa-trash-alt"></i>
             </button>
           </BeautifulTitle>
         </div>);
@@ -172,6 +176,42 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         }
       });
   };
+
+  const deleteSubscription = (sub: ISafeSubscription) => {
+    const regex = RegExp('^' +sub.apiKey.clientName + '$')
+    openFormModal({
+      title: translate('api.delete.subscription.form'),
+      schema:{
+        deletion: {
+          type: formType.string,
+          label: translate(
+            {
+              key: 'api.delete.subscription.howToDelete',
+              replacements: [
+                sub.apiKey.clientName
+              ]
+            }),
+          constraints: [constraints.matches(regex, translate('api.delete.subscription.impossible.incorrect')), constraints.required(translate('api.delete.subscription.impossible.nothing'))]
+        }
+      },
+      onSubmit: () => {
+        Services.deleteApiSubscription(sub.team, sub._id).then(
+          (res) => {
+            if (!isError(res)) {
+              toastr.success(translate('deletion successful'), translate('api.delete.subscription.deleted'));
+              tableRef.current?.update();
+            } else {
+              toastr.error(
+                translate('Error'),
+                res.error
+              )
+            }
+          })
+      },
+      actionLabel: translate('api.delete.subscription')
+    })
+  }
+
 
   const options = api.possibleUsagePlans.flatMap(plan => {
     return [

@@ -89,6 +89,7 @@ GET     /api/me/subscriptions/:apiId/:version                   fr.maif.otoroshi
 PUT     /api/apis/:apiId/subscriptions/:apiKeyId                fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, apiKeyId)
 POST    /api/apis/:apiId/subscriptions                          fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
 GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId   fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version, planId: Option[String] ?= None)
+DELETE  /api/subscriptions/:subscriptionId/teams/:teamId/_delete fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiSubscription(teamId, subscriptionId)
 
 GET     /api/subscriptions/teams/:teamId                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionsOfTeam(teamId)
 GET     /api/apis/:apiId/pages/:id/content                      fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPageRemoteContent(apiId, id)

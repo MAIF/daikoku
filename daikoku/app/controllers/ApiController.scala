@@ -360,7 +360,7 @@ class ApiController(
         env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
       error: EitherT[Future, Result, Seq[Notification]] = EitherT
         .leftT[Future, Seq[Notification]](AppError.render(ApiNotFound))
-      value: EitherT[Future, Result, Seq[Notification]] = EitherT.liftF(
+      value: EitherT[Future, Nothing, Seq[Notification]] = EitherT.liftF(
         env.dataStore.notificationRepo
           .forTenant(ctx.tenant.id)
           .findNotDeleted(
@@ -1806,7 +1806,7 @@ class ApiController(
 
   def deleteApiSubscription(teamId: String, subscriptionId: String) =
     DaikokuAction.async { ctx =>
-      TeamAdminOnly(
+      TeamApiEditorOnly(
         AuditTrailEvent(
           s"@{user.name} has deleted api subscription @{subscription.id} of @{team.name} - @{team.id}"
         )

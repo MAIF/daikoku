@@ -1265,5 +1265,11 @@
     "token.notFound": "Token not found.",
     "token.expired": "Token expired.",
     "fastMode.onlySubs.info": "with only subscribed ",
-    "fastMode.planSearch.info": "and plans with a name like"
+    "fastMode.planSearch.info": "and plans with a name like",
+    "api.delete.subscription": "Delete subscription",
+    "api.delete.subscription.form": "Subscription deletion form",
+    "api.delete.subscription.howToDelete": "type : \"%s\" for deleting the subscription.",
+    "api.delete.subscription.deleted": "Subscription deleted.",
+    "api.delete.subscription.impossible.nothing": "Enter the name of the subscription for deleting it.",
+    "api.delete.subscription.impossible.incorrect": "The name is wrong."
 }

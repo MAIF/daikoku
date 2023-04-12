@@ -1000,6 +1000,11 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
     body: JSON.stringify({ version }),
   });
 
+export const deleteApiSubscription = (teamId: string, subscriptionId: string ): Promise<ResponseError | any> =>
+  customFetch(`/api/subscriptions/${subscriptionId}/teams/${teamId}/_delete`,{
+    method: 'DELETE'
+  })
+
 export const extendApiKey = (
   apiId: string,
   apiKeyId: string,
