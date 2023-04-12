@@ -75,6 +75,11 @@ export function EditFrontOfficeTranslations(props: any) {
 
   const columnHelper = createColumnHelper<MessageWithTranslations>()
   const columns = [
+    columnHelper.accessor(row => row.translations[0].key, {
+      header: translate('mailing_internalization.message_key'),
+      meta: { style: { textAlign: 'left' } },
+      sortingFn: 'basic'
+    }),
     columnHelper.accessor(row => translate(row.message), {
       header: translate('mailing_internalization.message_text'),
       meta: { style: { textAlign: 'left' } },

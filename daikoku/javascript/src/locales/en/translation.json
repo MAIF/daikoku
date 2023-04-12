@@ -919,7 +919,7 @@
     "send_grid.from_email": "Sender email",
     "audittrail.export.label": "Export audit trail",
     "Authorized entities": "Authorized entities",
-    "Authorized.entities.placeholder": "Select Otoroshi service groups and/or services",
+    "Authorized.entities.placeholder": "Select Otoroshi service groups, services and/or routes",
     "teamapi.new_version": "New version",
     "authorized.entities.help": "Select Otoroshi service groups and/or services on which the key is authorized",
     "apikey_select_modal.title": "Get an API key",
@@ -976,6 +976,7 @@
     "mail.new.issue.title": "Title of the email following the creation of a new issue",
     "mail.api.transfer.ownership.acceptation.body": "Body of the email following the transfer ownership of an API",
     "mail.api.transfer.ownership.acceptation.title": "Title of the email following the transfer ownership of an API",
+    "mailing_internalization.message_key": "Message key",
     "mailing_internalization.message_text": "Message text",
     "mailing_internalization.required_variables": "Required variables",
     "mailing_internalization.translation_updated": "Translation updated",
@@ -1271,5 +1272,12 @@
     "api.delete.subscription.howToDelete": "type : \"%s\" for deleting the subscription.",
     "api.delete.subscription.deleted": "Subscription deleted.",
     "api.delete.subscription.impossible.nothing": "Enter the name of the subscription for deleting it.",
-    "api.delete.subscription.impossible.incorrect": "The name is wrong."
+    "api.delete.subscription.impossible.incorrect": "The name is wrong.",
+    "authorized.groups": "Services  groups",
+    "authorized.services": "Services",
+    "authorized.routes": "Routes",
+    "login.placeholder": "Email adress",
+    "login.label": "Email adress",
+    "password.label": "Password",
+    "login.btn.label": "Login"
 }

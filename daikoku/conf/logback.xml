@@ -31,6 +31,7 @@
   <logger name="CommonMongoRepo" level="INFO" />
   <logger name="daikoku-spec-helper" level="INFO" /><!---->
   <logger name="daikoku-action-maybe-without-user" level="INFO" />
+  <logger name="daikoku-action" level="INFO" />
   <logger name="audit-actor" level="INFO" />
   <logger name="AuditTrailPurgeJob" level="INFO" />
   <logger name="otoroshi-reactive-pg-kv" level="INFO" />

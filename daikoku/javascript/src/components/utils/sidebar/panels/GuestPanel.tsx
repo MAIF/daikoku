@@ -14,8 +14,8 @@ export const GuestPanel = () => {
   const schema = {
     username: {
       type: type.string,
-      label: translate('Email address'),
-      placeholder: translate('Email address'),
+      label: translate('login.label'),
+      placeholder: translate('login.placeholder'),
       format: format.email,
       constraints: [
         constraints.required(translate('constraints.required.email')),
@@ -24,7 +24,7 @@ export const GuestPanel = () => {
     },
     password: {
       type: type.string,
-      label: translate('Password'),
+      label: translate('password.label'),
       format: format.password,
       constraints: [constraints.required(translate('constraints.required.password'))],
     },
@@ -43,6 +43,8 @@ export const GuestPanel = () => {
       }
     });
   };
+
+  console.debug(translate('login.label'))
 
   return (
     <div className="ms-3 mt-2 col-8 d-flex flex-column panel">

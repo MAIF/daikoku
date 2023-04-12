@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useContext, useEffect, useState } from 'react';
+import React, { FunctionComponent, PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { Option } from '../components/utils/Option';
 import * as Services from '../services';
 import translationEng from '../locales/en/translation.json';
@@ -70,6 +70,7 @@ export const I18nProvider = ({
   const currentLanguage = Option(user?.defaultLanguage).getOrElse(tenantDefaultLanguage);
 
   const [language, setLanguage] = useState(currentLanguage);
+  const [loadingConf, setLoadingConf] = useState(true)
   const [isTranslationMode, setTranslationMode] = useState(
     tenant.tenantMode && tenant.tenantMode === 'Translation'
   );
@@ -84,9 +85,10 @@ export const I18nProvider = ({
             tmp[capitalize(translation.language)].translations[translation.key] = translation.value;
           });
           setTranslations(tmp);
+          setLoadingConf(false)
         }
       });
-  });
+  }, []);
 
   const capitalize = (l: any) => (l || 'En').charAt(0).toUpperCase() + (l || 'En').slice(1);
 
@@ -94,7 +96,7 @@ export const I18nProvider = ({
     i18nkey: string,
     language: string,
     plural?: boolean,
-    defaultTranslation?: string,
+    defaultTranslation?: React.ReactNode,
     extraConf?: any,
     replacements?: Array<string>
   ) => {
@@ -120,6 +122,7 @@ export const I18nProvider = ({
       }
       return newValue;
     };
+
 
     if (typeof resultWithExtra === 'string') {
       return replaceChar(resultWithExtra, replacements);
@@ -154,6 +157,13 @@ export const I18nProvider = ({
     return translateBase(params.key, language, params.plural, params.defaultResponse, undefined, params.replacements);
   }
 
+  type TranslationProps = {
+    i18nkey: string
+    extraConf: any,
+    count: number,
+    isPlural: boolean,
+    replacements: Array<string>
+  }
   const Translation = ({
     i18nkey,
     extraConf,
@@ -161,7 +171,7 @@ export const I18nProvider = ({
     count,
     isPlural,
     replacements
-  }: any) => {
+  }: PropsWithChildren<TranslationProps>) => {
     const [showEditButton, setShowEditButton] = useState(false);
 
     const { language } = useContext(I18nContext);
