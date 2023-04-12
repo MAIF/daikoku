@@ -912,7 +912,7 @@
   "send_grid.from_email": "Email de l'expéditeur",
   "audittrail.export.label": "Exporter la piste d'audit",
   "Authorized entities": "Entités otoroshi autorisées",
-  "Authorized.entities.placeholder": "Sélectionnez les groupes de services et/ou les services Otoroshi",
+  "Authorized.entities.placeholder": "Sélectionnez les groupes de services, les services et/ou les routes Otoroshi",
   "teamapi.new_version": "Nouvelle version",
   "authorized.entities.help": "Sélectionnez les groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera autorisée à accéder",
   "apikey_select_modal.title": "Récupération d'une clé d'API",
@@ -1268,5 +1268,8 @@
   "token.notFound": "Jeton introuvable.",
   "token.expired": "Ce jeton a expiré.",
   "fastMode.onlySubs.info": "avec seulement les souscrites ",
-  "fastMode.planSearch.info": "et les plans nommés comme"
+  "fastMode.planSearch.info": "et les plans nommés comme",
+  "authorized.groups": "Services groupes",
+  "authorized.services": "Services",
+  "authorized.routes": "Routes"
 }

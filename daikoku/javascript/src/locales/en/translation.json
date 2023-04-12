@@ -919,7 +919,7 @@
     "send_grid.from_email": "Sender email",
     "audittrail.export.label": "Export audit trail",
     "Authorized entities": "Authorized entities",
-    "Authorized.entities.placeholder": "Select Otoroshi service groups and/or services",
+    "Authorized.entities.placeholder": "Select Otoroshi service groups, services and/or routes",
     "teamapi.new_version": "New version",
     "authorized.entities.help": "Select Otoroshi service groups and/or services on which the key is authorized",
     "apikey_select_modal.title": "Get an API key",
@@ -1265,5 +1265,8 @@
     "token.notFound": "Token not found.",
     "token.expired": "Token expired.",
     "fastMode.onlySubs.info": "with only subscribed ",
-    "fastMode.planSearch.info": "and plans with a name like"
+    "fastMode.planSearch.info": "and plans with a name like",
+    "authorized.groups": "Services  groups",
+    "authorized.services": "Services",
+    "authorized.routes": "Routes"
 }

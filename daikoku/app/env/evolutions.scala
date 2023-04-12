@@ -557,7 +557,6 @@ object evolution_1612_a extends EvolutionScript {
   }
 }
 
-
 object evolution_1612_b extends EvolutionScript {
   override def version: String = "16.1.2_b"
 
@@ -601,6 +600,54 @@ object evolution_1612_b extends EvolutionScript {
   }
 }
 
+object evolution_1612_c extends EvolutionScript {
+  override def version: String = "16.1.2_c"
+
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext, OtoroshiClient) => Future[Done] = {
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - add routes in authorized entities")
+
+      implicit val execContext: ExecutionContext = ec
+
+      dataStore.apiRepo
+        .forAllTenant()
+        .streamAllRaw()
+        .mapAsync(10)(jsValue => {
+          val plans = (jsValue \ "possibleUsagePlans").as[JsArray].value
+            .map(plan => {
+              val maybeOtoroshiTarget = (plan \ "otoroshiTarget").asOpt[JsObject]
+
+              val maybeAuthorizedEntities = maybeOtoroshiTarget
+                .flatMap(target => {
+                  val maybeAuthorizedEntities = (target \ "authorizedEntities").asOpt[JsObject]
+
+                  maybeAuthorizedEntities
+                    .map(entities => entities + ("routes" -> Json.arr()))
+                })
+
+              val updatedOtorohiTarget = maybeOtoroshiTarget.map(_ + ("authorizedEntities" -> maybeAuthorizedEntities.getOrElse(JsNull)))
+
+              plan.as[JsObject] + ("otoroshiTarget" -> updatedOtorohiTarget.getOrElse(JsNull))
+            })
+
+          val goodApi = jsValue.as[JsObject] ++ Json.obj("possibleUsagePlans" -> plans)
+          dataStore.apiRepo
+            .forAllTenant()
+            .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)(ec)
+        })
+        .runWith(Sink.ignore)(mat)
+    }
+  }
+}
+
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(evolution_102,
@@ -611,7 +658,8 @@ object evolutions {
       evolution_157_b,
       evolution_157_c,
       evolution_1612_a,
-      evolution_1612_b)
+      evolution_1612_b,
+      evolution_1612_c)
   def run(
       dataStore: DataStore,
       otoroshiClient: OtoroshiClient
