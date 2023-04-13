@@ -63,7 +63,7 @@ export const teamUnreadNotificationsCount = (teamId: any) =>
   );
 export const myAllNotifications = (page = 0, pageSize = 10) =>
   customFetch(`/api/me/notifications/all?page=${page}&pageSize=${pageSize}`);
-export const myNotifications = (page = 0, pageSize = 10) =>
+export const myNotifications = (page: number = 0, pageSize: number = 10): Promise<{notifications: Array<INotification>, count: number}> =>
   customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`);
 
 export const myUnreadNotificationsCount = () =>

@@ -8,7 +8,7 @@ import { SimpleNotification } from './SimpleNotification';
 import { updateNotifications, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
-import { isError } from '../../../types';
+import { INotification, isError } from '../../../types';
 
 export const NotificationList = () => {
   useUserBackOffice();
@@ -68,12 +68,12 @@ export const NotificationList = () => {
       ]) => {
         setState({
           ...state,
-          untreatedNotifications: notifications.notifications.filter((n: any) => isUntreatedNotification(n)
+          untreatedNotifications: notifications.notifications.filter((n) => isUntreatedNotification(n)
           ),
           notifications: notifications.notifications,
           count: notifications.count,
           untreatedCount: notifications.count,
-          // page: state.page + 1,
+          page: state.page + 1,
           teams,
           apis: apis.map(({
             api
