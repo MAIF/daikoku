@@ -322,7 +322,8 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 
 trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
 
-trait EmailVerificationRepo extends TenantCapableRepo[EmailVerification, DatastoreId]
+trait EmailVerificationRepo
+    extends TenantCapableRepo[EmailVerification, DatastoreId]
 
 trait DataStore {
   def start(): Future[Unit]

@@ -50,8 +50,6 @@ object AppError {
   case object NameAlreadyExists extends AppError
   case object TeamAlreadyVerified extends AppError
 
-
-
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
   def render(error: AppError): mvc.Result = error match {

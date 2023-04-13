@@ -286,13 +286,14 @@ case class MongoTenantCapableOperationRepo(
 
 case class MongoTenantCapableEmailVerificationRepo(
     _repo: () => MongoRepo[EmailVerification, DatastoreId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[EmailVerification, DatastoreId]
+    _tenantRepo: TenantId => MongoTenantAwareRepo[EmailVerification,
+                                                  DatastoreId]
 ) extends MongoTenantCapableRepo[EmailVerification, DatastoreId]
     with EmailVerificationRepo {
   override def repo(): MongoRepo[EmailVerification, DatastoreId] = _repo()
 
   override def tenantRepo(
-    tenant: TenantId): MongoTenantAwareRepo[EmailVerification, DatastoreId] =
+      tenant: TenantId): MongoTenantAwareRepo[EmailVerification, DatastoreId] =
     _tenantRepo(tenant)
 }
 
@@ -432,7 +433,8 @@ class MongoDataStore(context: Context, env: Env)
 
   override def operationRepo: OperationRepo = _operationRepo
 
-  override def emailVerificationRepo: EmailVerificationRepo = _emailVerificationRepo
+  override def emailVerificationRepo: EmailVerificationRepo =
+    _emailVerificationRepo
 
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
@@ -707,7 +709,10 @@ class MongoTenantOperationRepo(env: Env,
 class MongoTenantEmailVerificationRepo(env: Env,
                                        reactiveMongoApi: ReactiveMongoApi,
                                        tenant: TenantId)
-extends MongoTenantAwareRepo[EmailVerification,DatastoreId](env, reactiveMongoApi, tenant) {
+    extends MongoTenantAwareRepo[EmailVerification, DatastoreId](
+      env,
+      reactiveMongoApi,
+      tenant) {
   override def collectionName: String = "EmailVerifications"
   override def format: Format[EmailVerification] = json.EmailVerificationFormat
 

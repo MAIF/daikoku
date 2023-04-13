@@ -3151,34 +3151,35 @@ object json {
       )
     }
 
-  val EmailVerificationFormat: Format[EmailVerification] = new Format[EmailVerification] {
-    override def reads(json: JsValue): JsResult[EmailVerification] =
-      Try{
-        JsSuccess(
-          EmailVerification(
-            id = (json \ "_id").as(DatastoreIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
-            randomId = (json \ "randomId").as[String],
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            team = (json \ "teamId").as(TeamIdFormat),
-            creationDate = (json \ "creationDate").as(DateTimeFormat),
-            validUntil = (json \ "validUntil").as(DateTimeFormat)
+  val EmailVerificationFormat: Format[EmailVerification] =
+    new Format[EmailVerification] {
+      override def reads(json: JsValue): JsResult[EmailVerification] =
+        Try {
+          JsSuccess(
+            EmailVerification(
+              id = (json \ "_id").as(DatastoreIdFormat),
+              deleted = (json \ "_deleted").as[Boolean],
+              randomId = (json \ "randomId").as[String],
+              tenant = (json \ "_tenant").as(TenantIdFormat),
+              team = (json \ "teamId").as(TeamIdFormat),
+              creationDate = (json \ "creationDate").as(DateTimeFormat),
+              validUntil = (json \ "validUntil").as(DateTimeFormat)
+            )
           )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
 
-    override def writes(o: EmailVerification): JsValue = Json.obj(
-      "_id" -> o.id.value,
-      "_deleted" -> o.deleted,
-      "randomId" -> o.randomId,
-      "_tenant" -> o.tenant.value,
-      "teamId" -> o.team.value,
-      "creationDate" -> DateTimeFormat.writes(o.creationDate),
-      "validUntil" -> DateTimeFormat.writes(o.validUntil)
-    )
-  }
+      override def writes(o: EmailVerification): JsValue = Json.obj(
+        "_id" -> o.id.value,
+        "_deleted" -> o.deleted,
+        "randomId" -> o.randomId,
+        "_tenant" -> o.tenant.value,
+        "teamId" -> o.team.value,
+        "creationDate" -> DateTimeFormat.writes(o.creationDate),
+        "validUntil" -> DateTimeFormat.writes(o.validUntil)
+      )
+    }
 
   val TranslationFormat: Format[Translation] = new Format[Translation] {
     override def reads(json: JsValue): JsResult[Translation] =

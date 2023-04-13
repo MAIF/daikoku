@@ -1,24 +1,44 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
+import com.dimafeng.testcontainers.{
+  Container,
+  ForAllTestContainer,
+  GenericContainer,
+  MultipleContainers,
+  PostgreSQLContainer
+}
 import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import controllers.AppError.{
+  SubscriptionAggregationDisabled,
+  SubscriptionParentExisted
+}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, OtoroshiApiKeyFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  ApiSubscriptionFormat,
+  OtoroshiApiKeyFormat,
+  SeqApiSubscriptionFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
@@ -731,9 +751,10 @@ class ApiControllerSpec()
         subscriptions = Seq(payPerUserSub),
         consumptions = Seq(yesterdayConsumption)
       ).map(_ => {
-      val session = loginWithBlocking(userAdmin, tenant)
+        val session = loginWithBlocking(userAdmin, tenant)
         val resp = httpJsonCallBlocking(
-          path = s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
+          path =
+            s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
           method = "DELETE"
         )(tenant, session)
         resp.status mustBe 200
@@ -749,7 +770,10 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer.copy(users = Set(UserWithPermission(userTeamUserId, TeamPermission.Administrator)))),
+        teams = Seq(
+          teamOwner,
+          teamConsumer.copy(users = Set(
+            UserWithPermission(userTeamUserId, TeamPermission.Administrator)))),
         apis = Seq(defaultApi, secondApi)
       )
 
@@ -1771,7 +1795,8 @@ class ApiControllerSpec()
       ).map(_ => {
         val session = loginWithBlocking(userApiEditor, tenant)
         val resp = httpJsonCallBlocking(
-          path = s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
+          path =
+            s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
           method = "DELETE"
         )(tenant, session)
         resp.status mustBe 200

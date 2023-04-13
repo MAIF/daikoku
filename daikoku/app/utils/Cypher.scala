@@ -22,7 +22,7 @@ object Cypher {
     new SecretKeySpec(key, "AES")
   }
 
-  def decrypt( secret: String, encryptedString: String): String = {
+  def decrypt(secret: String, encryptedString: String): String = {
     val secretKey = getKey(secret)
     val tokenBytes = java.util.Base64.getUrlDecoder.decode(encryptedString)
     val cipher: Cipher = Cipher.getInstance("AES")

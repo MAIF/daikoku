@@ -556,8 +556,8 @@ object authorizations {
         env: Env): Future[Result] = {
       _TeamMemberOnly(teamId, audit)(ctx)(f)
         .map {
-          case Right(value)  => value
-          case Left(value) => AppError.render(value)
+          case Right(value) => value
+          case Left(value)  => AppError.render(value)
         }
     }
 

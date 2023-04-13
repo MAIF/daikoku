@@ -213,10 +213,13 @@ case class PostgresTenantCapableOperationRepo(
 
 case class PostgresTenantCapableEmailVerificationRepo(
     _repo: () => PostgresRepo[EmailVerification, DatastoreId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[EmailVerification, DatastoreId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[EmailVerification,
+                                                     DatastoreId]
 ) extends PostgresTenantCapableRepo[EmailVerification, DatastoreId]
     with EmailVerificationRepo {
-  override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[EmailVerification, DatastoreId] = _tenantRepo(tenant)
+  override def tenantRepo(tenant: TenantId)
+    : PostgresTenantAwareRepo[EmailVerification, DatastoreId] =
+    _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[EmailVerification, DatastoreId] = _repo()
 }
@@ -500,7 +503,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       t => new PostgresTenantEmailVerificationRepo(env, reactivePg, t)
     )
 
-
   override def tenantRepo: TenantRepo = _tenantRepo
 
   override def userRepo: UserRepo = _userRepo
@@ -540,7 +542,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
 
   override def operationRepo: OperationRepo = _operationRepo
 
-  override def emailVerificationRepo: EmailVerificationRepo = _emailVerificationRepo
+  override def emailVerificationRepo: EmailVerificationRepo =
+    _emailVerificationRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -842,9 +845,9 @@ class PostgresTenantOperationRepo(env: Env,
 class PostgresTenantEmailVerificationRepo(env: Env,
                                           reactivePg: ReactivePg,
                                           tenant: TenantId)
-extends PostgresTenantAwareRepo[EmailVerification, DatastoreId](env,
-                                                                reactivePg,
-                                                                tenant) {
+    extends PostgresTenantAwareRepo[EmailVerification, DatastoreId](env,
+                                                                    reactivePg,
+                                                                    tenant) {
   override def tableName: String = "email_verifications"
   override def format: Format[EmailVerification] = json.EmailVerificationFormat
 

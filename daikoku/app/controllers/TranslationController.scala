@@ -3,7 +3,11 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
 import controllers.AppError.TranslationNotFound
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Translation}
@@ -18,13 +22,13 @@ import play.api.i18n.{I18nSupport, Lang}
 import reactivemongo.bson.BSONObjectID
 
 class TranslationController(
-                             DaikokuAction: DaikokuAction,
-                             DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
-                             DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
-                             env: Env,
-                             cc: ControllerComponents,
-                             translator: Translator)
-  extends AbstractController(cc)
+    DaikokuAction: DaikokuAction,
+    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
+    env: Env,
+    cc: ControllerComponents,
+    translator: Translator)
+    extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext

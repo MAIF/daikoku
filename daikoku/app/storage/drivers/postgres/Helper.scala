@@ -186,19 +186,21 @@ object Helper {
             case Some((key: String, v: JsValue)) if key == "$exists" =>
               val (a, b) = _convertTuple(value.fields.head, params)
               val res = v match {
-                case JsTrue => (
-                  s"(content ->> ${getParam(b.size)} IS NOT NULL)",
-                  b ++ Seq(_removeQuotes(field._1),
-                    _removeQuotes(value.fields.head._2))
-                )
-                case JsFalse => (
-                  s"(content ->> ${getParam(b.size)} IS NULL)",
-                  b ++ Seq(_removeQuotes(field._1),
-                    _removeQuotes(value.fields.head._2))
-                )
+                case JsTrue =>
+                  (
+                    s"(content ->> ${getParam(b.size)} IS NOT NULL)",
+                    b ++ Seq(_removeQuotes(field._1),
+                             _removeQuotes(value.fields.head._2))
+                  )
+                case JsFalse =>
+                  (
+                    s"(content ->> ${getParam(b.size)} IS NULL)",
+                    b ++ Seq(_removeQuotes(field._1),
+                             _removeQuotes(value.fields.head._2))
+                  )
                 case _ =>
-                logger.error("WRONG VALUE - $exists needs boolean value")
-                ("1 = 1", params)
+                  logger.error("WRONG VALUE - $exists needs boolean value")
+                  ("1 = 1", params)
 
               }
               res

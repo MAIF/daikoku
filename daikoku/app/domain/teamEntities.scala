@@ -147,14 +147,14 @@ case class Team(
 sealed trait NotificationStatus
 
 case class EmailVerification(
-                              id: DatastoreId,
-                              deleted: Boolean = false,
-                              randomId: String,
-                              tenant: TenantId,
-                              team: TeamId,
-                              creationDate: DateTime,
-                              validUntil: DateTime,
-                            ) extends CanJson[EmailVerification] {
+    id: DatastoreId,
+    deleted: Boolean = false,
+    randomId: String,
+    tenant: TenantId,
+    team: TeamId,
+    creationDate: DateTime,
+    validUntil: DateTime,
+) extends CanJson[EmailVerification] {
   override def asJson: JsValue = json.EmailVerificationFormat.writes(this)
 }
 object NotificationStatus {

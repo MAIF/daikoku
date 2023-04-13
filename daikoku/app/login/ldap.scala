@@ -171,10 +171,12 @@ object LdapSupport {
             val item = groupSearch.next()
             val attrs = item.getAttributes
             attrs.getAll.asScala.toSeq
-              .filter(a => a.getID == "uniqueMember" || a.getID == "member" || a.getID == "memberUid")
+              .filter(a =>
+                a.getID == "uniqueMember" || a.getID == "member" || a.getID == "memberUid")
               .flatMap { attr =>
                 if (attr.getID == "memberUid") {
-                  attr.getAll.asScala.toSeq.map(a => s"uid=${a.toString},${userBase.map(ub => s"$ub,").getOrElse("")}$searchBase")
+                  attr.getAll.asScala.toSeq.map(a =>
+                    s"uid=${a.toString},${userBase.map(ub => s"$ub,").getOrElse("")}$searchBase")
                 } else {
                   attr.getAll.asScala.toSeq.map(_.toString)
                 }
@@ -422,7 +424,7 @@ object LdapSupport {
           _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
         case e: NamingException =>
           AppLogger.error(e.getMessage, e)
-          Left (e.getMessage)
+          Left(e.getMessage)
         case e =>
           throw e
           Left(s"bind failed - check your fields")
