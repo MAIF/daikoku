@@ -649,7 +649,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       notificationRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
       translationRepo.forAllTenant(),
-      messageRepo.forAllTenant()
+      messageRepo.forAllTenant(),
+      operationRepo.forAllTenant(),
+      emailVerificationRepo.forAllTenant(),
+      cmsRepo.forAllTenant(),
     )
 
     if (exportAuditTrail) {

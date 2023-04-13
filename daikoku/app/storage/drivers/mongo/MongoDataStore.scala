@@ -460,7 +460,8 @@ class MongoDataStore(context: Context, env: Env)
       userRepo,
       passwordResetRepo,
       accountCreationRepo,
-      userSessionRepo
+      userSessionRepo,
+      evolutionRepo
     )
     collections ++= List(
       teamRepo.forAllTenant(),
@@ -474,7 +475,8 @@ class MongoDataStore(context: Context, env: Env)
       translationRepo.forAllTenant(),
       messageRepo.forAllTenant(),
       operationRepo.forAllTenant(),
-      emailVerificationRepo.forAllTenant()
+      emailVerificationRepo.forAllTenant(),
+      cmsRepo.forAllTenant(),
     )
 
     if (exportAuditTrail) {
