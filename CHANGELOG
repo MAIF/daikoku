@@ -413,3 +413,24 @@ We'd like to thank all the contributors who worked on this release!
 
 - Api pricings page crash for apigroups [#504](https://github.com/MAIF/daikoku/issues/504)
 
+## [v16.1.2] - 2023-04-13
+
+## :star: New Features
+
+- support memberUid based ldap groups [#545](https://github.com/MAIF/daikoku/issues/545)
+- customizable login form labels [#543](https://github.com/MAIF/daikoku/issues/543)
+- add documentation for fast mode [#528](https://github.com/MAIF/daikoku/issues/528)
+- Add the ability to a API admin to delete (disable & archive) a subscription [#527](https://github.com/MAIF/daikoku/issues/527)
+- Email validation for team contact [#519](https://github.com/MAIF/daikoku/issues/519)
+- Add filters in fast mode [#508](https://github.com/MAIF/daikoku/issues/508)
+
+## :beetle: Bug Fixes
+
+- Some notifications could not be appear in notification list [#547](https://github.com/MAIF/daikoku/issues/547)
+- create an evolution to add routes in usage plan's otoroshi target [#536](https://github.com/MAIF/daikoku/issues/536)
+- the explication message for subscription modal is wrong (user can't get multiple key anymore ) [#533](https://github.com/MAIF/daikoku/issues/533)
+- missing error message with incorrect password (ldap connection) [#530](https://github.com/MAIF/daikoku/issues/530)
+- Some mongo table are not migrate by api [#529](https://github.com/MAIF/daikoku/issues/529)
+- a new user have an empty page in home page [#525](https://github.com/MAIF/daikoku/issues/525)
+- aggregation key process is not accessible with fast mode [#506](https://github.com/MAIF/daikoku/issues/506)
+
