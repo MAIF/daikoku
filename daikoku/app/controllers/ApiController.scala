@@ -1508,7 +1508,7 @@ class ApiController(
             .forTenant(ctx.tenant)
             .findNotDeleted(
               Json.obj("_id" -> Json.obj(
-                "in" -> JsArray((subscriptions ++ parentSubs).map(_.api.asJson))
+                "$in" -> JsArray((subscriptions ++ parentSubs).map(_.api.asJson))
               )))
         } yield {
           Ok(

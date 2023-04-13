@@ -239,8 +239,9 @@ class TeamController(DaikokuAction: DaikokuAction,
   def updateTeam(teamId: String): Action[JsValue] = DaikokuAction.async(parse.json) { ctx =>
     TeamAdminOrTenantAdminOnly(AuditTrailEvent(
       "@{user.name} has updated team @{team.name} - @{team.id}"))(teamId, ctx) {
-      _ =>
+      team =>
         json.TeamFormat.reads(ctx.request.body) match {
+          case JsSuccess(_, _) if team.`type` == TeamType.Admin => AppError.ForbiddenAction.renderF()
           case JsSuccess(newTeam, _) =>
             env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)

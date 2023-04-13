@@ -1,44 +1,24 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{
-  Container,
-  ForAllTestContainer,
-  GenericContainer,
-  MultipleContainers,
-  PostgreSQLContainer
-}
+import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
 import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{
-  SubscriptionAggregationDisabled,
-  SubscriptionParentExisted
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiFormat,
-  ApiSubscriptionFormat,
-  OtoroshiApiKeyFormat,
-  SeqApiSubscriptionFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, OtoroshiApiKeyFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
@@ -262,7 +242,6 @@ class ApiControllerSpec()
         body = Some(json.SeqApiFormat.writes(apis))
       )(tenant, session)
 
-      AppLogger.info(Json.stringify(resp.json))
       resp.status mustBe 201
       val result = resp.json
         .as[JsArray]
@@ -743,6 +722,7 @@ class ApiControllerSpec()
         from = DateTime.now().minusDays(1).withTimeAtStartOfDay(),
         to = DateTime.now().withTimeAtStartOfDay()
       )
+
       setupEnv(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
@@ -750,13 +730,14 @@ class ApiControllerSpec()
         apis = Seq(defaultApi),
         subscriptions = Seq(payPerUserSub),
         consumptions = Seq(yesterdayConsumption)
-      ).map(_ => true)
+      ).map(_ => {
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking(
-        path = s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
-        method = "DELETE"
-      )(tenant, session)
-      resp.status mustBe 200
+        val resp = httpJsonCallBlocking(
+          path = s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
+          method = "DELETE"
+        )(tenant, session)
+        resp.status mustBe 200
+      })
     }
 
     "not update an api of a team which he is not a member" in {
@@ -768,7 +749,7 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner),
+        teams = Seq(teamOwner, teamConsumer.copy(users = Set(UserWithPermission(userTeamUserId, TeamPermission.Administrator)))),
         apis = Seq(defaultApi, secondApi)
       )
 
@@ -1787,13 +1768,14 @@ class ApiControllerSpec()
         apis = Seq(defaultApi),
         subscriptions = Seq(payPerUserSub),
         consumptions = Seq(yesterdayConsumption)
-      ).map(_ => true)
-      val session = loginWithBlocking(userApiEditor, tenant)
-      val resp = httpJsonCallBlocking(
-        path = s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
-        method = "DELETE"
-      )(tenant, session)
-      resp.status mustBe 200
+      ).map(_ => {
+        val session = loginWithBlocking(userApiEditor, tenant)
+        val resp = httpJsonCallBlocking(
+          path = s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
+          method = "DELETE"
+        )(tenant, session)
+        resp.status mustBe 200
+      })
     }
 
     "not delete an api of a team which he's not a member" in {

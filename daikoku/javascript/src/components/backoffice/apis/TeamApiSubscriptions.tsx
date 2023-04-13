@@ -15,8 +15,8 @@ import { Table, SwitchButton, TableRef } from '../../inputs';
 import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import {constraints, format, type, type as formType} from "@maif/react-forms";
-import { IApi, ISafeSubscription, isError, IState, ITeamSimple, IUsagePlan } from "../../../types";
+import { constraints, format, type, type as formType } from "@maif/react-forms";
+import { IApi, ISafeSubscription, isError, IState, ISubscription, ITeamSimple, IUsagePlan } from "../../../types";
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
@@ -165,8 +165,20 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     creationMode: false
   });
 
-  const regenerateSecret = (sub: any) => {
-    confirm({ message: translate('secret.refresh.confirm') })
+  const regenerateSecret = (sub: ISafeSubscription) => {
+    const team = Option(teams.find((t) => t._id === sub.team))
+    .map((t: ITeamSimple) => t.name)
+    .getOrElse('--')
+
+    const plan = Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
+    .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+    .getOrElse('--')
+
+    confirm({ 
+      message: translate({key: 'secret.refresh.confirm', replacements: [team, plan]}),
+      okLabel: translate('Yes'),
+      cancelLabel: translate('No'),
+     })
       .then((ok) => {
         if (ok) {
           Services.regenerateApiKeySecret(currentTeam._id, sub._id).then(() => {
@@ -178,25 +190,23 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   };
 
   const deleteSubscription = (sub: ISafeSubscription) => {
-    const regex = RegExp('^' +sub.apiKey.clientName + '$')
-    openFormModal({
-      title: translate('api.delete.subscription.form'),
-      schema:{
-        deletion: {
-          type: formType.string,
-          label: translate(
-            {
-              key: 'api.delete.subscription.howToDelete',
-              replacements: [
-                sub.apiKey.clientName
-              ]
-            }),
-          constraints: [constraints.matches(regex, translate('api.delete.subscription.impossible.incorrect')), constraints.required(translate('api.delete.subscription.impossible.nothing'))]
-        }
-      },
-      onSubmit: () => {
-        Services.deleteApiSubscription(sub.team, sub._id).then(
-          (res) => {
+    const team = Option(teams.find((t) => t._id === sub.team))
+    .map((t: ITeamSimple) => t.name)
+    .getOrElse('--')
+
+    const plan = Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
+    .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+    .getOrElse('--')
+
+    confirm({
+      title: translate('api.delete.subscription.form.title'),
+      message: translate({key: 'api.delete.subscription.message', replacements: [team, plan]}),
+      okLabel: translate('Yes'),
+      cancelLabel: translate('No'),
+    }).then((ok) => {
+      if (ok) {
+        Services.deleteApiSubscription(sub.team, sub._id)
+          .then((res) => {
             if (!isError(res)) {
               toastr.success(translate('deletion successful'), translate('api.delete.subscription.deleted'));
               tableRef.current?.update();
@@ -207,8 +217,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
               )
             }
           })
-      },
-      actionLabel: translate('api.delete.subscription')
+      }
     })
   }
 
