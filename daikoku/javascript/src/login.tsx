@@ -6,7 +6,6 @@ import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';
 
 import 'bootstrap';
-import '@fortawesome/fontawesome-free/css/all.css';
 
 import { LoginPage } from './components/utils/login';
 import { I18nProvider } from './contexts/i18n-context';

@@ -12,7 +12,6 @@ import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';
 
 import 'bootstrap';
-import '@fortawesome/fontawesome-free/css/all.css';
 
 import { DaikokuHomeApp } from './apps/DaikokuHomeApp';
 
