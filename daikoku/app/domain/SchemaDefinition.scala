@@ -324,7 +324,8 @@ object SchemaDefinition {
         Field("apiKeyVisibility", OptionType(StringType), resolve = _.value.apiKeyVisibility.map(_.name)),
         Field("metadata", MapType, resolve = _.value.metadata),
         Field("_humanReadableId", StringType, resolve = _.value.humanReadableId),
-        Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission)
+        Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission),
+        Field("verified", BooleanType, resolve = _.value.verified)
       )
     )
     lazy val CurrencyType = ObjectType (
