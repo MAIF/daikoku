@@ -177,7 +177,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
               onChange={(e) => { changeApiV(e!.value) }}
             />}
         </div>
-        <div className="d-flex flex-column fast_api">
+        <div className="d-flex flex-column fast_api" id="usage-plans__list">
           {selectedApi.subscriptionsWithPlan
             .map(subPlan => {
               const plan = selectedApi.api.possibleUsagePlans.find((pPlan) => pPlan._id === subPlan.planId)!
@@ -193,7 +193,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
                 return;
               }
               return (
-                <div className="fast__hover plan cursor-pointer" key={plan._id}>
+                <div className="fast__hover plan cursor-pointer" key={plan._id} data-usage-plan={plan.customName}>
                   <div className="mx-3 d-flex justify-content-between my-1">
                     <div className="flex-grow-1" onClick={() => props.showPlan(plan)}
                       style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
