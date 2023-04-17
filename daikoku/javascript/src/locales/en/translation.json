@@ -1160,7 +1160,7 @@
     "Consumptions": "Consumptions",
     "team.transfer.notified": "Team has been notified. please wait until acceptation",
     "new.owner": "New owner team",
-    "type.api.name.confirmation": "Please type %s to confirm",
+    "type.api.name.confirmation": "Please type '%s' to confirm",
     "constraints.required.team": "Team is required",
     "constraints.type.api.name": "Please type %s to valid the transfer",
     "Set image from asset": "Set image from asset",

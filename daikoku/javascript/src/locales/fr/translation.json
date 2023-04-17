@@ -1162,7 +1162,7 @@
   "Consumptions": "Consommations",
   "team.transfer.notified": "L'équipe a été notifiée. merci d'attendre l'acceptation",
   "new.owner": "Nouvelle équipe",
-  "type.api.name.confirmation": "Veuillez saisir %s pour confirmer",
+  "type.api.name.confirmation": "Veuillez saisir '%s' pour confirmer",
   "constraints.required.team": "L'équipe est requise",
   "constraints.type.api.name": "Veuillez saisir %s pour valider le transfert",
   "Set image from asset": "Définir l'image depuis un asset",
