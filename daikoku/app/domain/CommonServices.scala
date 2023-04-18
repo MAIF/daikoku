@@ -109,9 +109,9 @@ object CommonServices {
           "_deleted" -> false,
           "parent" -> JsNull, //FIXME : could be a problem if parent is not published [#517]
           "name" -> Json.obj("$regex" -> research))
-        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(apiFilter ++ subsOnlyFilter ++ tagFilter ++ catFilter, offset, limit, Some(Json.obj("name" -> 1)))
-          //"state" -> ApiState.publishedJsonFilter  todo ????
-        allApisFilter = Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))), "published" -> true) //++ tagFilter ++ catFilter
+        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(apiFilter ++ subsOnlyFilter, offset, limit, Some(Json.obj("name" -> 1)))
+        allApisFilter = Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))),
+          "state" -> ApiState.publishedJsonFilter)
         allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter ++ subsOnlyFilter, sort = Some(Json.obj("name" -> 1)))
         teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))))
         notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,

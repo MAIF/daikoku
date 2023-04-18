@@ -1299,5 +1299,9 @@
     "subscription.process.team.admin": "Team admin",
     "subscription.process.email": "Email",
     "subscription.process.add.label": "Add a new step",
-    "Process": "Process"
+    "Process": "Process",
+    "api.pricings.no.step.explanation": "It's seems that there is no process subscription request validation process",
+    "api.pricings.add.first.step.btn.label": "Add a first validation step",
+    "api.documentation.clone.page.modal.title": "Cloning documentation pages",
+    "api.documentation.clone.page.placeholder": "Select all pages to clone"
 }

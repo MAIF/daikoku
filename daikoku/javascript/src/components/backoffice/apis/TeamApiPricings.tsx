@@ -1206,6 +1206,7 @@ export const TeamApiPricings = (props: Props) => {
 
   return (<div className="d-flex col flex-column pricing-content">
     <div className="album">
+      {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left fa-lg cursor-pointer" style={{ marginTop: 0 }} />}
       <div className="container">
         <div className="d-flex mb-3">
           {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-primary me-1">
@@ -1214,7 +1215,6 @@ export const TeamApiPricings = (props: Props) => {
           {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
             {translate('import a plan')}
           </button>)}
-          {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left quit" style={{ marginTop: 0 }}/>}
         </div>
         {planForEdition && mode !== possibleMode.list && (<div className="row">
           <div className="col-md-12">
@@ -1325,7 +1325,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
             }
           },
           onSubmit: (data: IValidationStepEmail & EmailOption) => {
-            console.debug({data})
+            console.debug({ data })
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32), title: data.title }
               props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }, index) })
@@ -1408,8 +1408,10 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
   if (!props.value.subscriptionProcess.length) {
     return (
       <div className='d-flex flex-column align-items-center'>
-        <div>it's look like  that there is non process to valid a subscription demand</div>
-        <button className='btn btn-outline-secondary' onClick={() => addProcess(0)}>Add your first Step</button>
+        <div> {translate('api.pricings.no.step.explanation')}</div>
+        <button className='btn btn-outline-secondary my-2' onClick={() => addProcess(0)}>
+          {translate('api.pricings.add.first.step.btn.label')}
+        </button>
       </div>
     )
   }
