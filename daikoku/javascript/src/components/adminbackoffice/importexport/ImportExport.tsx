@@ -10,7 +10,7 @@ import { useDaikokuBackOffice } from '../../../contexts';
 export const ImportExport = () => {
   useDaikokuBackOffice();
 
-    const { translate, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   let input: any;
 
@@ -54,58 +54,58 @@ export const ImportExport = () => {
 
   const { processing, error, onSuccessMessage } = migration;
   return (
-        <Can I={manage} a={daikoku} dispatchError>
-            <div className="row">
-                <div className="col">
-                    <h1>
-                        <Translation i18nkey="Import / Export">Import / Export</Translation>
+    <Can I={manage} a={daikoku} dispatchError>
+      <div className="row">
+        <div className="col">
+          <h1>
+            <Translation i18nkey="Import / Export">Import / Export</Translation>
           </h1>
-                    <div className="section p-3">
-                        <a
+          <div className="section p-3">
+            <a
               href={`/api/state/export?download=true&export-audit-trail=${!!exportAuditTrail}`}
               target="_blank"
               className="btn btn-outline-primary"
             >
-                            <i className="fas fa-download me-1" />
-                            <Translation i18nkey="download state">download state</Translation>
+              <i className="fas fa-download me-1" />
+              <Translation i18nkey="download state">download state</Translation>
             </a>
-                        <button
+            <button
               type="button"
               style={{ marginLeft: 10 }}
               onClick={importState}
               className="btn btn-outline-primary"
             >
-                            <i className="fas fa-upload me-1" />
+              <i className="fas fa-upload me-1" />
               {uploading ? translate('importing ...') : translate('import state')}
             </button>
-                        <div className="d-flex justify-content-start align-items-center mt-2">
-                            <label className="me-3">{translate('audittrail.export.label')}</label>
-                            <BooleanInput onChange={setExportAuditTrail} value={exportAuditTrail} />
+            <div className="d-flex justify-content-start align-items-center mt-2">
+              <label className="me-3">{translate('audittrail.export.label')}</label>
+              <BooleanInput onChange={setExportAuditTrail} value={exportAuditTrail} />
             </div>
-                        <input
+            <input
               type="file"
               className="hide"
               ref={(r) => (input = r)}
               onChange={actuallyImportState}
             />
           </div>
-                    <h2 className="my-2">
-                        <Translation i18nkey="Mongo migration">Mongo migration</Translation>
+          <h2 className="my-2">
+            <Translation i18nkey="Mongo migration">Mongo migration</Translation>
           </h2>
-                    <div className="section p-3">
-                        <button type="button" onClick={migrate} className="btn btn-outline-primary">
-                            <i className="fas fa-database me-1" />
+          <div className="section p-3">
+            <button type="button" onClick={migrate} className="btn btn-outline-primary">
+              <i className="fas fa-database me-1" />
               {processing
                 ? translate('migration in progress ...')
                 : translate('migrate database')}
             </button>
             {error.length > 0 && (
-                            <div className="alert alert-danger my-0 mt-3" role="alert">
+              <div className="alert alert-danger my-0 mt-3" role="alert">
                 {error}
               </div>
             )}
             {onSuccessMessage.length > 0 && (
-                            <div className="alert alert-success my-0 mt-3" role="alert">
+              <div className="alert alert-success my-0 mt-3" role="alert">
                 {onSuccessMessage}
               </div>
             )}

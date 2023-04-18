@@ -143,7 +143,8 @@ object utils {
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
         cmsPages: Seq[CmsPage] = Seq.empty,
-        operations: Seq[Operation] = Seq.empty
+        operations: Seq[Operation] = Seq.empty,
+        subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty
     ) = {
       Await.result(
         setupEnv(
@@ -162,7 +163,8 @@ object utils {
           issues,
           posts,
           cmsPages,
-          operations
+          operations,
+          subscriptionDemand
         ),
         1.second
       )
@@ -184,7 +186,8 @@ object utils {
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
         cmsPages: Seq[CmsPage] = Seq.empty,
-        operations: Seq[Operation] = Seq.empty
+        operations: Seq[Operation] = Seq.empty,
+        subscriptionDemand: Seq[SubscriptionDemand] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -303,6 +306,14 @@ object utils {
           .mapAsync(1)(
             i =>
               daikokuComponents.env.dataStore.operationRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(subscriptionDemand.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.subscriptionDemandRepo
                 .forAllTenant()
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)

@@ -1,44 +1,25 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{
-  Container,
-  ForAllTestContainer,
-  GenericContainer,
-  MultipleContainers,
-  PostgreSQLContainer
-}
+import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
 import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{
-  SubscriptionAggregationDisabled,
-  SubscriptionParentExisted
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiFormat,
-  ApiSubscriptionFormat,
-  OtoroshiApiKeyFormat,
-  SeqApiSubscriptionFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, OtoroshiApiKeyFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
@@ -1331,7 +1312,7 @@ class ApiControllerSpec()
         id = NotificationId("untreated-notification"),
         tenant = tenant.id,
         team = Some(teamOwnerId),
-        sender = user,
+        sender = NotificationSender(user.name, user.email, user.id.some),
         notificationType = AcceptOrReject,
         action = ApiAccess(defaultApi.id, teamConsumerId)
       )
@@ -1369,7 +1350,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = Seq(ValidationStep.TeamAdmin(defaultApi.team)),
+                subscriptionProcess = Seq(ValidationStep.TeamAdmin(id = IdGenerator.token, team = defaultApi.team, title = "team.name")),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1379,9 +1360,11 @@ class ApiControllerSpec()
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(
-              defaultApi.id,
-              UsagePlanId("3"),
-              teamConsumerId,
+              api = defaultApi.id,
+              plan = UsagePlanId("3"),
+              team = teamConsumerId,
+              demand = SubscriptionDemandId(IdGenerator.token),
+              step = SubscriptionDemandStepId(IdGenerator.token),
               motivation = Some("motivation")
             )
           )
@@ -2187,13 +2170,15 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = user,
+            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
               teamConsumerId,
-              motivation = Some("motivation")
+              motivation = Some("motivation"),
+              demand = SubscriptionDemandId(IdGenerator.token),
+              step = SubscriptionDemandStepId(IdGenerator.token),
             )
           )
         )
@@ -2251,13 +2236,15 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = user,
+            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
               teamConsumerId,
-              motivation = Some("motivation")
+              motivation = Some("motivation"),
+                demand = SubscriptionDemandId(IdGenerator.token),
+              step = SubscriptionDemandStepId(IdGenerator.token),
             )
           )
         )
@@ -2297,13 +2284,15 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = user,
+            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
               teamConsumerId,
-              motivation = Some("motivation")
+              motivation = Some("motivation"),
+              demand = SubscriptionDemandId(IdGenerator.token),
+              step = SubscriptionDemandStepId(IdGenerator.token),
             )
           )
         )
@@ -2428,7 +2417,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess =  Seq(ValidationStep.TeamAdmin(defaultApi.team)),
+                subscriptionProcess =  Seq(ValidationStep.TeamAdmin(id = IdGenerator.token, team = defaultApi.team, title = "Admin")),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )

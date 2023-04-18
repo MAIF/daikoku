@@ -2136,7 +2136,9 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: Team): JsValue = Json.obj(
@@ -2165,7 +2167,7 @@ object json {
   }
 
   val ApiFormat = new Format[Api] {
-    override def reads(json: JsValue): JsResult[Api] =
+    override def reads(json: JsValue): JsResult[Api] = {
       Try {
         JsSuccess(
           Api(
@@ -2227,6 +2229,7 @@ object json {
           AppLogger.error(e.toString, e)
           JsError(e.getMessage)
       } get
+    }
 
     override def writes(o: Api): JsValue = Json.obj(
       "_id" -> ApiIdFormat.writes(o.id),

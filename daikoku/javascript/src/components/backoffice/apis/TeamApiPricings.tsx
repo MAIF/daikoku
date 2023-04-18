@@ -1204,11 +1204,7 @@ export const TeamApiPricings = (props: Props) => {
           {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
             {translate('import a plan')}
           </button>)}
-          {planForEdition && mode !== possibleMode.list && (<div className="flex-grow-1 d-flex justify-content-end">
-            <button onClick={cancelEdition} type="button" className="btn btn-outline-danger me-1" style={{ marginTop: 0 }}>
-              {translate('Back')}
-            </button>
-          </div>)}
+          {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left quit" style={{ marginTop: 0 }}/>}
         </div>
         {planForEdition && mode !== possibleMode.list && (<div className="row">
           <div className="col-md-12">
@@ -1306,9 +1302,6 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
               type: type.string,
               format: format.email,
               array: true,
-              constraints: [
-                constraints.email()
-              ]
             },
             message: {
               type: type.string,
@@ -1322,6 +1315,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
             }
           },
           onSubmit: (data: IValidationStepEmail & EmailOption) => {
+            console.debug({data})
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32), title: data.title }
               props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }, index) })
@@ -1335,7 +1329,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           actionLabel: translate('Create')
         })
       case 'teamAdmin': {
-        const step: IValidationStepTeamAdmin = { type: 'teamAdmin', team: props.team._id, id: nanoid(32) }
+        const step: IValidationStepTeamAdmin = { type: 'teamAdmin', team: props.team._id, id: nanoid(32), title: 'Admin' }
         return props.savePlan({ ...props.value, subscriptionProcess: [step, ...props.value.subscriptionProcess] })
           .then(() => close())
 
@@ -1399,6 +1393,15 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const deleteStep = (deletedStepId: UniqueIdentifier) => {
     const subscriptionProcess = props.value.subscriptionProcess.filter(step => step.id !== deletedStepId)
     props.savePlan({ ...props.value, subscriptionProcess })
+  }
+
+  if (!props.value.subscriptionProcess.length) {
+    return (
+      <div className='d-flex flex-column align-items-center'>
+        <div>it's look like  that there is non process to valid a subscription demand</div>
+        <button className='btn btn-outline-secondary' onClick={() => addProcess(0)}>Add your first Step</button>
+      </div>
+    )
   }
 
   return (
