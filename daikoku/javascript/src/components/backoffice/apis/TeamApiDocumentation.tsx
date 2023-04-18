@@ -26,7 +26,7 @@ const mimeTypes = [
   { label: '.gif	fichier Graphics Interchange Format (GIF)', value: 'image/gif' },
   { label: '.html	fichier HyperText Markup Language (HTML)', value: 'text/html' },
   { label: '.jpg	image JPEG', value: 'image/jpeg' },
-  { label: '.md	Markown file', value: 'text/markdown' },
+  { label: '.md	Markdown file', value: 'text/markdown' },
   { label: '.mpeg	vidéo MPEG', value: 'video/mpeg' },
   {
     label: '.odp OpenDocument presentation document ',

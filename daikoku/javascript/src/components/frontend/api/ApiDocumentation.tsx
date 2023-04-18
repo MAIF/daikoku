@@ -277,7 +277,7 @@ const mimeTypes = [
   },
   { label: '.jpg JPEG image', value: 'image/jpeg', render: (url: any) => <Image url={url} /> },
   {
-    label: '.md	Markown file',
+    label: '.md	Markdown file',
     value: 'text/markdown',
     render: (url: any, content: any) => <Markdown url={url} content={content} />,
   },
