@@ -108,6 +108,7 @@ object AppError {
     case NameAlreadyExists => Conflict(toJson(error))
     case ThirdPartyPaymentSettingsNotFound => NotFound(toJson(error))
     case SecurityError(security) => play.api.mvc.Results.Unauthorized(toJson(error))
+    case TeamAlreadyVerified => Conflict(toJson(error))
   }
 
   def getErrorMessage(error: AppError) =

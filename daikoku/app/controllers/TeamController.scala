@@ -161,7 +161,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                 .forTenant(ctx.tenant.id)
                 .save(emailVerif))
             cipheredValidationToken = encrypt(env.config.cypherSecret,
-                                              emailVerif.randomId)
+              emailVerif.randomId,
+              ctx.tenant)
             title <- EitherT.liftF(
               translator.translate("mail.create.team.token.title", ctx.tenant))
             value <- EitherT.liftF(
@@ -209,7 +210,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                 .withHeaders(
                   "Location" -> s"/${team.humanReadableId}/settings/edition/?error=3")))
             case Some(encryptedString) =>
-              val token = decrypt(env.config.cypherSecret, encryptedString)
+              val token = decrypt(env.config.cypherSecret, encryptedString, ctx.tenant)
               emailVerificationRepo
                 .findOneNotDeleted(Json.obj("randomId" -> token))
                 .flatMap {
@@ -267,7 +268,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                 validUntil = DateTime.now().plusMinutes(15)
               )
               val cipheredValidationToken =
-                encrypt(env.config.cypherSecret, emailVerif.randomId)
+                encrypt(env.config.cypherSecret, emailVerif.randomId, ctx.tenant)
               implicit val language: String = ctx.user.defaultLanguage
                 .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
               for {
@@ -345,7 +346,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                         )
                         cipheredValidationToken = encrypt(
                           env.config.cypherSecret,
-                          emailVerif.randomId)
+                          emailVerif.randomId,
+                          ctx.tenant)
                         value <- translator.translate(
                           "mail.create.team.token.body",
                           ctx.tenant,

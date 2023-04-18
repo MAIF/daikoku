@@ -86,7 +86,8 @@ object CommonServices {
       }
     }
   }
-  def getApisWithSubscriptions(teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, apiSubOnly: Boolean)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AccessibleApisWithNumberOfApis, AppError]] = {
+  def getApisWithSubscriptions(teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, apiSubOnly: Boolean)
+                              (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, AccessibleApisWithNumberOfApis]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
       val tagFilter = selectedTag match {
         case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
@@ -141,7 +142,7 @@ object CommonServices {
   }
 
   def getVisibleApis[A](teamId: Option[String] = None, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, groupOpt: Option[String] = None)
-                       (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[ApiWithCount, AppError]] = {
+                       (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, ApiWithCount]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
       val userIsAdmin = ctx.user.isDaikokuAdmin || ctx.isTenantAdmin
 
