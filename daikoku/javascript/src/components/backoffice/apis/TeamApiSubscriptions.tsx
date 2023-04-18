@@ -135,7 +135,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         return (<div className="btn-group">
           <BeautifulTitle title={translate('Update metadata')}>
             <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative me-1" onClick={() => updateMeta(sub)}>
-              <i className="fas fa-edit" />
+              <i className="fas fa-pen" />
             </button>
           </BeautifulTitle>
           <BeautifulTitle title={translate('Refresh secret')}>

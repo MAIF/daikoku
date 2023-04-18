@@ -57,7 +57,7 @@ export const TenantOtoroshis = () => {
                   className="btn btn-outline-primary me-1"
                   title={translate('Edit this settings')}
                 >
-                  <i className="fas fa-edit" />
+                  <i className="fas fa-pen" />
                 </button>
               </Link>
             )}

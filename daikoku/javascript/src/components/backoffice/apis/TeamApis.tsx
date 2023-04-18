@@ -95,7 +95,7 @@ export const TeamApis = () => {
                 className="btn btn-sm btn-outline-primary me-1"
                 title="Edit this Api"
               >
-                <i className="fas fa-edit" />
+                <i className="fas fa-pen" />
               </Link>
               {api.visibility !== 'AdminOnly' && (
                 <button
