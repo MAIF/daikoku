@@ -1033,16 +1033,16 @@ export const deleteApiSubscription = (
   });
 
 export const extendApiKey = (
-  apiId: string,
-  apiKeyId: string,
-  teams: Array<string>,
-  plan: string,
-  motivation?: string
-) =>
-  customFetch(`/api/apis/${apiId}/subscriptions/${apiKeyId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ plan, teams, motivation }),
-  });
+    apiId: string,
+    apiKeyId: string,
+    teamId: string,
+    planId: string,
+    motivation?: string
+): Promise<SubscriptionReturn> =>
+    customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
+        method: 'PUT',
+        body: JSON.stringify({ motivation }),
+    });
 
 export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscriptionWithApiInfo>> =>
   customFetch(`/api/subscriptions/teams/${teamId}`);

@@ -751,7 +751,7 @@ object evolution_1612_c extends EvolutionScript {
 
 
 object evolution_1612_d extends EvolutionScript {
-  override def version: String = "16.1.2_a"
+  override def version: String = "16.1.2_d"
 
   override def script: (
       Option[DatastoreId],
@@ -783,6 +783,7 @@ object evolution_1612_d extends EvolutionScript {
 
           NotificationFormat.reads(updatedNotif) match {
             case JsSuccess(v, _) =>
+              AppLogger.warn(s"notif ok")
               dataStore.notificationRepo
                 .forAllTenant()
                 .save(v)(ec)
