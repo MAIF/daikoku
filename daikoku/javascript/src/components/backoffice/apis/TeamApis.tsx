@@ -37,7 +37,7 @@ export const TeamApis = () => {
           return (
             <div className="d-flex flex-row justify-content-between">
               <span>{info.getValue()}</span>
-              <div className="iconized">G</div>
+              <div className="badge iconized">API Group</div>
             </div>
           );
         }
