@@ -284,6 +284,19 @@ case class MongoTenantCapableOperationRepo(
     _tenantRepo(tenant)
 }
 
+case class MongoTenantCapableEmailVerificationRepo(
+    _repo: () => MongoRepo[EmailVerification, DatastoreId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[EmailVerification,
+                                                  DatastoreId]
+) extends MongoTenantCapableRepo[EmailVerification, DatastoreId]
+    with EmailVerificationRepo {
+  override def repo(): MongoRepo[EmailVerification, DatastoreId] = _repo()
+
+  override def tenantRepo(
+      tenant: TenantId): MongoTenantAwareRepo[EmailVerification, DatastoreId] =
+    _tenantRepo(tenant)
+}
+
 case class MongoTenantCapableSubscriptionDemandRepo(
     _repo: () => MongoRepo[SubscriptionDemand, SubscriptionDemandId],
     _tenantRepo: TenantId => MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId]
@@ -398,6 +411,13 @@ class MongoDataStore(context: Context, env: Env)
     )
   }
 
+  private val _emailVerificationRepo: EmailVerificationRepo = {
+    MongoTenantCapableEmailVerificationRepo(
+      () => new MongoEmailVerificationRepo(env, reactiveMongoApi),
+      t => new MongoTenantEmailVerificationRepo(env, reactiveMongoApi, t)
+    )
+  }
+
   private val _subscriptionDemandRepo: SubscriptionDemandRepo = {
     MongoTenantCapableSubscriptionDemandRepo(
       () => new MongoSubscriptionDemandRepo(env, reactiveMongoApi),
@@ -450,6 +470,9 @@ class MongoDataStore(context: Context, env: Env)
 
   override def operationRepo: OperationRepo = _operationRepo
 
+  override def emailVerificationRepo: EmailVerificationRepo =
+    _emailVerificationRepo
+
   override def subscriptionDemandRepo: SubscriptionDemandRepo = _subscriptionDemandRepo
 
   override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
@@ -480,7 +503,8 @@ class MongoDataStore(context: Context, env: Env)
       userRepo,
       passwordResetRepo,
       accountCreationRepo,
-      userSessionRepo
+      userSessionRepo,
+      evolutionRepo
     )
     collections ++= List(
       teamRepo.forAllTenant(),
@@ -493,7 +517,9 @@ class MongoDataStore(context: Context, env: Env)
       consumptionRepo.forAllTenant(),
       translationRepo.forAllTenant(),
       messageRepo.forAllTenant(),
-      operationRepo.forAllTenant()
+      operationRepo.forAllTenant(),
+      emailVerificationRepo.forAllTenant(),
+      cmsRepo.forAllTenant(),
     )
 
     if (exportAuditTrail) {
@@ -535,6 +561,7 @@ class MongoDataStore(context: Context, env: Env)
       _ <- translationRepo.forAllTenant().deleteAll()
       - <- messageRepo.forAllTenant().deleteAll()
       _ <- operationRepo.forAllTenant().deleteAll()
+      _ <- emailVerificationRepo.forAllTenant().deleteAll()
       _ <- source
         .via(Framing.delimiter(ByteString("\n"), 1000000000, true))
         .map(_.utf8String)
@@ -602,6 +629,10 @@ class MongoDataStore(context: Context, env: Env)
             operationRepo
               .forAllTenant()
               .save(OperationFormat.reads(payload).get)
+          case ("emailVerifications", payload) =>
+            messageRepo
+              .forAllTenant()
+              .save(MessageFormat.reads(payload).get)
           case (typ, _) =>
             logger.info(s"Unknown type: $typ")
             FastFuture.successful(false)
@@ -734,6 +765,19 @@ class MongoTenantStepValidatorRepo(env: Env, reactiveMongoApi: ReactiveMongoApi,
   override def format: Format[StepValidator] = json.StepValidatorFormat
 
   override def extractId(value: StepValidator): String = value.id.value
+}
+
+class MongoTenantEmailVerificationRepo(env: Env,
+                                       reactiveMongoApi: ReactiveMongoApi,
+                                       tenant: TenantId)
+    extends MongoTenantAwareRepo[EmailVerification, DatastoreId](
+      env,
+      reactiveMongoApi,
+      tenant) {
+  override def collectionName: String = "EmailVerifications"
+  override def format: Format[EmailVerification] = json.EmailVerificationFormat
+
+  override def extractId(value: EmailVerification): String = value.id.value
 }
 
 class MongoTenantApiSubscriptionRepo(env: Env,
@@ -897,6 +941,16 @@ class MongoOperationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[Operation] = json.OperationFormat
 
   override def extractId(value: Operation): String = value.id.value
+}
+
+class MongoEmailVerificationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[EmailVerification, DatastoreId](env, reactiveMongoApi) {
+
+  override def collectionName: String = "EmailVerifications"
+
+  override def format: Format[EmailVerification] = json.EmailVerificationFormat
+
+  override def extractId(value: EmailVerification): String = value.id.value
 }
 
 class MongoSubscriptionDemandRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
@@ -1240,6 +1294,19 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
           .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
       })
       .flatMapConcat(seq => Source(seq.toList))
+
+  override def streamAllRawFormatted(query: JsObject = Json.obj())(
+      implicit ec: ExecutionContext): Source[Of, NotUsed] =
+    Source
+      .future(collection.flatMap { col =>
+        logger.debug(s"$collectionName.streamAllRaw(${Json.prettyPrint(query)}")
+        col
+          .find(query, None)
+          .cursor[JsObject](ReadPreference.primaryPreferred)
+          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+      })
+      .flatMapConcat(res =>
+        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
 
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = collection.flatMap {

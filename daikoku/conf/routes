@@ -89,6 +89,7 @@ GET     /api/me/subscriptions/:apiId/:version                   fr.maif.otoroshi
 PUT     /api/apis/:apiId/plan/:planId/team/:teamId/:apiKeyId/_extends   fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, planId, teamId, apiKeyId)
 POST    /api/apis/:apiId/plan/:planId/team/:teamId/_subscribe           fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId, planId, teamId)
 GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId   fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version, planId: Option[String] ?= None)
+DELETE  /api/subscriptions/:subscriptionId/teams/:teamId/_delete fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiSubscription(teamId, subscriptionId)
 GET     /api/subscription/_validate                             fr.maif.otoroshi.daikoku.ctrls.ApiController.validateProcess()
 GET     /api/subscription/_decline                              fr.maif.otoroshi.daikoku.ctrls.ApiController.declineProcess()
 GET     /api/subscription/team/:teamId/demands/:demandId/_run   fr.maif.otoroshi.daikoku.ctrls.ApiController.runProcess(teamId, demandId)
@@ -210,6 +211,9 @@ GET     /api/teams/:teamId/notifications/all            fr.maif.otoroshi.daikoku
 GET     /api/teams/:teamId/notifications                fr.maif.otoroshi.daikoku.ctrls.NotificationController.untreatedNotificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
 PUT     /api/notifications/:id/accept                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotification(id)
 PUT     /api/notifications/:id/reject                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.rejectNotification(id)
+
+GET     /api/teams/:teamId/_verify                      fr.maif.otoroshi.daikoku.ctrls.TeamController.verifyContactEmail(teamId)
+PUT     /api/teams/:teamId/_sendEmail                   fr.maif.otoroshi.daikoku.ctrls.TeamController.sendEmailVerification(teamId )
 
 POST    /api/oidc/_fetchConfig                          fr.maif.otoroshi.daikoku.ctrls.TenantController.fetchOpenIdConfiguration()
 GET     /api/tenants/simplified                         fr.maif.otoroshi.daikoku.ctrls.TenantController.tenantList()

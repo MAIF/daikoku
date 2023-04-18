@@ -84,11 +84,18 @@
     "content": "# Team billing\n\nTeam billing page is basically the same view than @ref:[Team income](../producerusage/4-income.md) with consumer point of view.\n"
   },
   {
+    "name": "5-fastmode.md",
+    "id": "/consumerusage/5-fastmode.md",
+    "url": "/consumerusage/5-fastmode.html",
+    "title": "Fast mode",
+    "content": "# Fast mode\n\nThe fast mode page allows for API key requests to be made more quickly.\n\nFirst, it is necessary to select a team for which a request is desired, then the process can be facilitated by using a filtering system. Only the APIs that are visible to the team are displayed.\n\nFinally, additional information about a plan can be displayed by clicking above, and the API keys can be viewed by clicking the \"view API keys\" button."
+  },
+  {
     "name": "index.md",
     "id": "/consumerusage/index.md",
     "url": "/consumerusage/index.html",
     "title": "Using Daikoku as api consumer",
-    "content": "# Using Daikoku as api consumer\n\nNow we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku as consumer.\n\n\n@@@ index\n\n* [Subscribe api](./1-subscribe.md)\n* [Managing apikeys](./2-apikeys.md)\n* [Aggregation of api keys](./3-aggregation-of-apikeys.md)\n* [Team billing](./4-billing.md)\n\n@@@\n"
+    "content": "# Using Daikoku as api consumer\n\nNow we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku as consumer.\n\n\n@@@ index\n\n* [Subscribe api](./1-subscribe.md)\n* [Managing apikeys](./2-apikeys.md)\n* [Aggregation of api keys](./3-aggregation-of-apikeys.md)\n* [Team billing](./4-billing.md)\n* [Fast Mode](./5-fastmode.md)\n\n@@@\n"
   },
   {
     "name": "index.md",

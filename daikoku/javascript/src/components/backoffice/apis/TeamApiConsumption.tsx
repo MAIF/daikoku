@@ -6,8 +6,7 @@ import classNames from 'classnames';
 import find from 'lodash/find';
 
 import * as Services from '../../../services';
-
-import {OtoroshiStatsVizualization, renderPlanInfo} from '../..';
+import {OtoroshiStatsVizualization, renderPlanInfo} from '../../utils';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
 import { isError, ITeamSimple } from '../../../types';

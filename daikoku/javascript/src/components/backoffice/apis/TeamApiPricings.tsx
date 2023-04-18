@@ -187,7 +187,7 @@ const OtoroshiEntitiesSelector = ({
     <div className="col-12 d-flex flex-row mt-1">
       <div className="d-flex flex-column flex-grow-1">
         <strong className="font-italic">
-          <Translation i18nkey="Authorized Groups">Authorized Groups</Translation>
+          <Translation i18nkey="authorized.groups">Services Groups</Translation>
         </strong>
         {!!value &&
           value.filter((x: any) => x.type === 'group')
@@ -197,10 +197,20 @@ const OtoroshiEntitiesSelector = ({
       </div>
       <div className="d-flex flex-column flex-grow-1">
         <strong className="font-italic">
-          <Translation i18nkey="Authorized Services">Authorized Services</Translation>
+          <Translation i18nkey="authorized.services">Services</Translation>
         </strong>
         {!!value &&
           value.filter((x: any) => x.type === 'service')
+            .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
+              {g.label}
+            </span>))}
+      </div>
+      <div className="d-flex flex-column flex-grow-1">
+        <strong className="font-italic">
+          <Translation i18nkey="authorized.routes">Routes</Translation>
+        </strong>
+        {!!value &&
+          value.filter((x: any) => x.type === 'route')
             .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
               {g.label}
             </span>))}

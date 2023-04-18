@@ -27,7 +27,6 @@ import {
   ISubscription,
   ResponseDone,
   IApiPost,
-  IApiDoc,
   ISubscriptionWithApiInfo,
   IUsagePlan,
   ISubscriptionDemand,
@@ -67,7 +66,10 @@ export const teamUnreadNotificationsCount = (teamId: any) =>
   );
 export const myAllNotifications = (page = 0, pageSize = 10) =>
   customFetch(`/api/me/notifications/all?page=${page}&pageSize=${pageSize}`);
-export const myNotifications = (page = 0, pageSize = 10) =>
+export const myNotifications = (
+  page: number = 0,
+  pageSize: number = 10
+): Promise<{ notifications: Array<INotification>; count: number }> =>
   customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`);
 
 export const myUnreadNotificationsCount = () =>
@@ -147,18 +149,6 @@ export const askForApiKey = (
     body: JSON.stringify({ motivation }),
   });
 };
-
-export const extendApiKey = (
-  apiId: string,
-  apiKeyId: string,
-  teamId: string,
-  planId: string,
-  motivation?: string
-): Promise<SubscriptionReturn> =>
-  customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
-    method: 'PUT',
-    body: JSON.stringify({ motivation }),
-  });
 
 export const initApiKey = (api: any, team: any, plan: string, apikey: any) =>
   customFetch(`/api/apis/${api}/subscriptions/_init`, {
@@ -250,6 +240,11 @@ export const createTeam = (team: ITeamSimple) =>
   customFetch('/api/teams', {
     method: 'POST',
     body: JSON.stringify(team),
+  });
+
+export const sendEmailVerification = (teamId: String) =>
+  customFetch(`/api/teams/${teamId}/_sendEmail`, {
+    method: 'PUT',
   });
 
 export const updateTeam = (team: ITeamSimple) =>
@@ -1029,6 +1024,26 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
     body: JSON.stringify({ version }),
   });
 
+export const deleteApiSubscription = (
+  teamId: string,
+  subscriptionId: string
+): Promise<ResponseError | any> =>
+  customFetch(`/api/subscriptions/${subscriptionId}/teams/${teamId}/_delete`, {
+    method: 'DELETE',
+  });
+
+export const extendApiKey = (
+  apiId: string,
+  apiKeyId: string,
+  teams: Array<string>,
+  plan: string,
+  motivation?: string
+) =>
+  customFetch(`/api/apis/${apiId}/subscriptions/${apiKeyId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ plan, teams, motivation }),
+  });
+
 export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscriptionWithApiInfo>> =>
   customFetch(`/api/subscriptions/teams/${teamId}`);
 
@@ -1220,52 +1235,67 @@ export const graphql = {
       }
     `),
   myVisibleApis: gql(`
-    query AllVisibleApis ($teamId: String) {
-      visibleApis (teamId: $teamId) {
-        api {
-          name
-          _humanReadableId
-          _id
-          tags
-          categories
-          stars
-          smallDescription
-          isDefault
-          visibility
-          image
-          possibleUsagePlans {
-            _id
-            customName
-            currency {
-              code
-            }
-            type
-          }
-          currentVersion
-          team {
-            _id
-            _humanReadableId
+    query AllVisibleApis ($teamId: String, $research: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
+      visibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
+        apis {
+          api {
             name
-            avatar
-          }
-          apis {
-            api {
+            _humanReadableId
+            _id
+            tags
+            categories
+            stars
+            parent {
+              _id
+              currentVersion
+            }
+            smallDescription
+            isDefault
+            visibility
+            image
+            possibleUsagePlans {
+              _id
+              customName
+              currency {
+                code
+              }
+              type
+            }
+            currentVersion
+            team {
               _id
               _humanReadableId
               name
+              avatar
+            }
+            apis {
+              api {
+                _id
+                _humanReadableId
+                name
+              }
             }
           }
+          authorizations {
+            team
+            authorized
+            pending
+          }
         }
-        authorizations {
-          team
-          authorized
-          pending
-        }
+        result
       }
     }`),
+  getAllTags: gql(`
+    query getAllTags ($research: String){
+      allTags (research: $research)
+    }`),
+  getAllCategories: gql(`
+    query getAllCategories ($research: String){
+      allCategories (research: $research)
+    }`),
   getApisWithSubscription: gql(`
-    query AccessibleApis ($teamId: String!, $research: String, $apisubonly: Boolean, $limit: Int, $offset: Int) {
-      accessibleApis (teamId: $teamId, research: $research, apisubonly: $apisubonly , limit: $limit, offset: $offset) {
+    query AccessibleApis ($teamId: String!, $research: String, $selectedTag: String, $selectedCategory: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
+      accessibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
         apis {
           api {
             name
@@ -1428,5 +1458,5 @@ export const deletePlan = (teamId: string, apiId: string, version: string, plan:
     method: 'DELETE'
   })
 
-export const rerunProcess = (teamId: string, demandId: string) => 
+export const rerunProcess = (teamId: string, demandId: string) =>
   customFetch(`/api/subscription/team/${teamId}/demands/${demandId}/_run`)

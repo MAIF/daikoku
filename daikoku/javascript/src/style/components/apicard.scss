@@ -242,3 +242,13 @@ a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
     top: 29px;
   }
 }
+
+.pricing-content {
+  gap: 20px;
+}
+
+.usage-plan__card {
+  padding: 0;
+  border: none;
+  width: calc(33% - 10px);
+}

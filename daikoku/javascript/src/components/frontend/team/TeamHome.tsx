@@ -1,10 +1,9 @@
 import { getApolloContext } from '@apollo/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useContext } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {useContext} from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
-import { updateUser } from '../../../core';
 import * as Services from '../../../services';
 import { IApiWithAuthorization, isError, IState, IStateContext, ITeamSimple } from '../../../types';
 import { Can, read, Spinner, team as TEAM } from '../../utils';
@@ -14,48 +13,20 @@ export const TeamHome = () => {
   const navigate = useNavigate();
   const params = useParams();
 
-  const dispatch = useDispatch();
   const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context);
 
   const { client } = useContext(getApolloContext());
 
-  const queryClient = useQueryClient();
 
   const queryTeam = useQuery(['team'], () => Services.team(params.teamId!));
   const queryMyTeams = useQuery(['my-team'], () => client!.query<{myTeams: Array<ITeamSimple>}>({
     query: Services.graphql.myTeams,
   }));
   const queryTeams = useQuery(['teams'], () => Services.teams());
-  const queryApis = useQuery(['apis'], () => client!.query({
-    query: Services.graphql.myVisibleApis,
-    variables: { teamId: params.teamId },
-  }));
-
-  const askForApiAccess = (api: IApiWithAuthorization, teams: Array<string>) => {
-    return Services.askForApiAccess(teams, api._id)
-      .then(() => queryClient.invalidateQueries(['apis']));
-  };
-
-  const toggleStar = (api: IApiWithAuthorization) => {
-    Services.toggleStar(api._id)
-      .then((res) => {
-        if (!isError(res)) {
-          const alreadyStarred = connectedUser.starredApis.includes(api._id);
-          queryClient.invalidateQueries(['apis'])
-
-          dispatch(updateUser({
-            ...connectedUser,
-            starredApis: alreadyStarred
-              ? connectedUser.starredApis.filter((id) => id !== api._id)
-              : [...connectedUser.starredApis, api._id],
-          }));
-        }
-      });
-  };
-
-  const redirectToApiPage = (api: IApiWithAuthorization) => {
+  const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
+    const api = apiWithAutho.api
     if (queryTeams.data && !isError(queryTeams.data)) {
-      if (api.visibility === 'Public' || api.authorizations.some(a => a.authorized)) {
+      if (api.visibility === 'Public' || apiWithAutho.authorizations.some(a => a.authorized)) {
         const apiOwner = queryTeams.data.find((t) => t._id === api.team._id);
 
         const route = (version: string) => `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}/description`;
@@ -65,11 +36,10 @@ export const TeamHome = () => {
 
   };
 
-  const redirectToTeamPage = (team: ITeamSimple) => {
-    navigate(`/${team._humanReadableId}`);
-  };
 
-  const redirectToEditPage = (api: IApiWithAuthorization) => {
+
+  const redirectToEditPage = (apiWithAutho: IApiWithAuthorization) => {
+    const api =apiWithAutho.api
     navigate(`/${params.teamId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`);
   };
 
@@ -77,9 +47,9 @@ export const TeamHome = () => {
     navigate(`/${team._humanReadableId}/settings`);
   };
 
-  if (queryApis.isLoading || queryMyTeams.isLoading || queryTeam.isLoading || queryTeams.isLoading) {
+  if ( queryMyTeams.isLoading || queryTeam.isLoading || queryTeams.isLoading) {
     return <Spinner />;
-  } else if (queryApis.data && queryMyTeams.data && queryTeam.data && queryTeams.data) {
+  } else if ( queryMyTeams.data && queryTeam.data && queryTeams.data) {
     if (isError(queryTeam.data) || isError(queryTeams.data)) {
       return <></> //FIXME
     }
@@ -112,10 +82,6 @@ export const TeamHome = () => {
           </div>
         </section>
         <ApiList
-          apis={queryApis.data.data.visibleApis.map(({
-            api,
-            authorizations
-          }) => ({ ...api, authorizations }))}
           teams={queryTeams.data}
           myTeams={queryMyTeams.data.data.myTeams.map(({
             users,
@@ -128,13 +94,10 @@ export const TeamHome = () => {
             }: any) => ({ ...user, teamPermission })),
           }))}
           teamVisible={false}
-          askForApiAccess={askForApiAccess}
-          toggleStar={toggleStar}
           redirectToApiPage={redirectToApiPage}
           redirectToEditPage={redirectToEditPage}
-          redirectToTeamPage={redirectToTeamPage}
-          showTeam={false}
-          team={queryTeams.data.find((team) => team._humanReadableId === params.teamId)} />
+          team={queryTeams.data.find((team) => team._humanReadableId === params.teamId)}
+        />
       </main>
     );
   } else {

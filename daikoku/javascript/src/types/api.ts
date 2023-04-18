@@ -52,12 +52,26 @@ export interface IApi extends IBaseApi {
   team: string;
 }
 
-export interface IApiWithAuthorization extends IApiWithSimpleTeam {
+/*export interface IApiWithAuthorization extends IApiWithSimpleTeam {
   authorizations: Array<{
     team: string;
     authorized: boolean;
     pending: boolean;
   }>;
+}*/
+
+export interface IApiWithAuthorization {
+  api: IApiWithSimpleTeam;
+  authorizations: Array<{
+    team: string;
+    authorized: boolean;
+    pending: boolean;
+  }>;
+}
+
+export interface IApiAuthoWithCount {
+  apis: Array<IApiWithAuthorization>;
+  result: number;
 }
 
 export interface ITesting {

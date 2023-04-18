@@ -2,7 +2,7 @@ import { getApolloContext } from '@apollo/client';
 import { constraints, format, type as formType } from '@maif/react-forms';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
-import { useContext } from 'react';
+import React, { useContext } from 'react';
 import { useSelector } from 'react-redux';
 
 import { ModalContext } from '../../../contexts';
@@ -147,7 +147,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
   return (
-    <div className="card mb-4 shadow-sm">
+    <div className="col-md-4 card mb-4 shadow-sm usage-plan__card" data-usage-plan={plan.customName}>
       <div className="card-img-top card-link card-skin" data-holder-rendered="true">
         <span>{plan.customName || formatPlanType(plan, translate)}</span>
       </div>
@@ -266,11 +266,11 @@ export function ApiPricing(props: ApiPricingProps) {
   });
 
   return (
-    <div className="d-flex col flex-column pricing-content">
-      <div className="album">
-        <div className="container">
-          <div className="row">
-            {possibleUsagePlans.map((plan) => <div key={plan._id} className="col-md-4">
+    <div className="d-flex flex-row pricing-content" id="usage-plans__list">
+      {/* <div className="album"> */}
+        {/* <div className="container">
+          <div className="row"> */}
+            {possibleUsagePlans.map((plan) => <React.Fragment key={plan._id}>
               <ApiPricingCard
                 api={props.api}
                 key={plan._id}
@@ -285,10 +285,10 @@ export function ApiPricing(props: ApiPricingProps) {
                 )}
                 askForApikeys={props.askForApikeys}
               />
-            </div>)}
-          </div>
-        </div>
-      </div>
+            </React.Fragment>)}
+          {/* </div>
+        </div> */}
+      {/* </div> */}
     </div>
   );
 }

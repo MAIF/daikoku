@@ -160,6 +160,7 @@ object LdapSupport {
 
   private def getUsersInGroup(optFilter: Option[String],
                               ctx: InitialLdapContext,
+                              userBase: Option[String],
                               searchBase: String,
                               searchControls: SearchControls): Seq[String] = {
     Try {
@@ -170,9 +171,15 @@ object LdapSupport {
             val item = groupSearch.next()
             val attrs = item.getAttributes
             attrs.getAll.asScala.toSeq
-              .filter(a => a.getID == "uniqueMember" || a.getID == "member")
+              .filter(a =>
+                a.getID == "uniqueMember" || a.getID == "member" || a.getID == "memberUid")
               .flatMap { attr =>
-                attr.getAll.asScala.toSeq.map(_.toString)
+                if (attr.getID == "memberUid") {
+                  attr.getAll.asScala.toSeq.map(a =>
+                    s"uid=${a.toString},${userBase.map(ub => s"$ub,").getOrElse("")}$searchBase")
+                } else {
+                  attr.getAll.asScala.toSeq.map(_.toString)
+                }
               }
           } else
             Seq.empty[String]
@@ -254,11 +261,13 @@ object LdapSupport {
             val usersInGroup: Seq[String] =
               getUsersInGroup(ldapConfig.groupFilter,
                               ctx,
+                              ldapConfig.userBase,
                               ldapConfig.searchBase,
                               searchControls)
             val usersInAdminGroup: Seq[String] =
               getUsersInGroup(ldapConfig.adminGroupFilter,
                               ctx,
+                              ldapConfig.userBase,
                               ldapConfig.searchBase,
                               searchControls)
 
@@ -413,6 +422,9 @@ object LdapSupport {
         case _: ServiceUnavailableException | _: CommunicationException |
             _: TimeoutException =>
           _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
+        case e: NamingException =>
+          AppLogger.error(e.getMessage, e)
+          Left(e.getMessage)
         case e =>
           throw e
           Left(s"bind failed - check your fields")
@@ -548,6 +560,7 @@ object LdapSupport {
         val usersInAdminGroup: Seq[String] =
           getUsersInGroup(ldapConfig.adminGroupFilter,
                           ctx,
+                          ldapConfig.userBase,
                           ldapConfig.searchBase,
                           searchControls)
 

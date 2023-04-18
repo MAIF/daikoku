@@ -49,6 +49,9 @@ trait Repo[Of, Id <: ValueType] {
   def streamAllRaw(query: JsObject = Json.obj())(
       implicit ec: ExecutionContext): Source[JsValue, NotUsed]
 
+  def streamAllRawFormatted(query: JsObject = Json.obj())(
+      implicit ec: ExecutionContext): Source[Of, NotUsed]
+
   def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
       implicit ec: ExecutionContext): Future[Seq[Of]]
 
@@ -323,6 +326,9 @@ trait SubscriptionDemandRepo extends TenantCapableRepo[SubscriptionDemand, Subsc
 
 trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId]
 
+trait EmailVerificationRepo
+    extends TenantCapableRepo[EmailVerification, DatastoreId]
+
 trait DataStore {
   def start(): Future[Unit]
 
@@ -365,6 +371,8 @@ trait DataStore {
   def cmsRepo: CmsPageRepo
 
   def operationRepo: OperationRepo
+
+  def emailVerificationRepo: EmailVerificationRepo
 
   def evolutionRepo: EvolutionRepo
 

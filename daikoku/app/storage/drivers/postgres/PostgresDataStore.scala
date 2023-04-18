@@ -211,6 +211,18 @@ case class PostgresTenantCapableOperationRepo(
   override def repo(): PostgresRepo[Operation, DatastoreId] = _repo()
 }
 
+case class PostgresTenantCapableEmailVerificationRepo(
+    _repo: () => PostgresRepo[EmailVerification, DatastoreId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[EmailVerification,
+                                                     DatastoreId]
+) extends PostgresTenantCapableRepo[EmailVerification, DatastoreId]
+    with EmailVerificationRepo {
+  override def tenantRepo(tenant: TenantId)
+    : PostgresTenantAwareRepo[EmailVerification, DatastoreId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[EmailVerification, DatastoreId] = _repo()
+}
 case class PostgresTenantCapableSubscriptionDemandRepo(
     _repo: () => PostgresRepo[SubscriptionDemand, SubscriptionDemandId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId]
@@ -340,6 +352,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "api_issues" -> true,
     "evolutions" -> false,
     "cmspages" -> true,
+    "operations" -> true,
+    "email_verifications" -> true,
     "operations" -> true,
     "subscription_demands" -> true,
     "step_validators" -> true
@@ -506,6 +520,11 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       () => new PostgresOperationRepo(env, reactivePg),
       t => new PostgresTenantOperationRepo(env, reactivePg, t)
     )
+  private val _emailVerificationRepo: EmailVerificationRepo =
+    PostgresTenantCapableEmailVerificationRepo(
+      () => new PostgresEmailVerificationRepo(env, reactivePg),
+      t => new PostgresTenantEmailVerificationRepo(env, reactivePg, t)
+    )
 
   private val _subscriptionDemandRepo: SubscriptionDemandRepo =
     PostgresTenantCapableSubscriptionDemandRepo(
@@ -557,6 +576,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def evolutionRepo: EvolutionRepo = _evolutionRepo
 
   override def operationRepo: OperationRepo = _operationRepo
+
+  override def emailVerificationRepo: EmailVerificationRepo =
+    _emailVerificationRepo
 
   override def subscriptionDemandRepo: SubscriptionDemandRepo = _subscriptionDemandRepo
 
@@ -669,7 +691,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       notificationRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
       translationRepo.forAllTenant(),
-      messageRepo.forAllTenant()
+      messageRepo.forAllTenant(),
+      operationRepo.forAllTenant(),
+      emailVerificationRepo.forAllTenant(),
+      cmsRepo.forAllTenant(),
     )
 
     if (exportAuditTrail) {
@@ -854,6 +879,19 @@ class PostgresTenantOperationRepo(env: Env,
   override def format: Format[Operation] = json.OperationFormat
 
   override def extractId(value: Operation): String = value.id.value
+}
+
+class PostgresTenantEmailVerificationRepo(env: Env,
+                                          reactivePg: ReactivePg,
+                                          tenant: TenantId)
+    extends PostgresTenantAwareRepo[EmailVerification, DatastoreId](env,
+                                                                    reactivePg,
+                                                                    tenant) {
+  override def tableName: String = "email_verifications"
+  override def format: Format[EmailVerification] = json.EmailVerificationFormat
+
+  override def extractId(value: EmailVerification): String = value.id.value
+
 }
 
 class PostgresTenantSubscriptionDemandRepo(env: Env,
@@ -1053,6 +1091,13 @@ class PostgresOperationRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[Operation] = json.OperationFormat
 
   override def extractId(value: Operation): String = value.id.value
+}
+
+class PostgresEmailVerificationRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[EmailVerification, DatastoreId](env, reactivePg) {
+  override def tableName: String = "email_verifications"
+  override def format: Format[EmailVerification] = json.EmailVerificationFormat
+  override def extractId(value: EmailVerification): String = value.id.value
 }
 
 class PostgresSubscriptionDemandRepo(env: Env, reactivePg: ReactivePg)
@@ -1467,6 +1512,22 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .flatMapConcat(res => Source(res.toList))
   }
 
+  override def streamAllRawFormatted(query: JsObject = Json.obj())(
+      implicit ec: ExecutionContext): Source[Of, NotUsed] = {
+    logger.debug(
+      s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
+
+    Source
+      .future(
+        reactivePg
+          .querySeq(s"SELECT * FROM $tableName") { row =>
+            row.optJsObject("content")
+          }
+      )
+      .flatMapConcat(res =>
+        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
+  }
+
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = {
     val (sql, params) = convertQuery(query)
@@ -1707,8 +1768,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           } else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC LIMIT ${Integer
-              .valueOf(pageSize)} OFFSET ${Integer.valueOf(page * pageSize)}",
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
+              .mkString(",")} ASC ${if (pageSize > 0)
+              s"LIMIT ${Integer.valueOf(pageSize)}"
+            else ""} OFFSET ${Integer.valueOf(page * pageSize)}",
             params.map {
               case x: String => x.replace("\"", "")
               case x         => x

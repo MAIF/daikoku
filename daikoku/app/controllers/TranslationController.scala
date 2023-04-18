@@ -5,7 +5,8 @@ import controllers.AppError
 import controllers.AppError.TranslationNotFound
 import fr.maif.otoroshi.daikoku.actions.{
   DaikokuAction,
-  DaikokuActionMaybeWithGuest
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser
 }
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
@@ -14,6 +15,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
 import fr.maif.otoroshi.daikoku.domain.json._
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Translator
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, Lang}
@@ -22,6 +24,7 @@ import reactivemongo.bson.BSONObjectID
 class TranslationController(
     DaikokuAction: DaikokuAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     env: Env,
     cc: ControllerComponents,
     translator: Translator)
@@ -100,18 +103,15 @@ class TranslationController(
   }
 
   def getAllTranslations() =
-    DaikokuActionMaybeWithGuest.async { ctx =>
-      UberPublicUserAccess(
-        AuditTrailEvent(s"@{user.name} has requested all translations"))(ctx) {
-        env.dataStore.translationRepo
-          .forTenant(ctx.tenant.id)
-          .findAll()
-          .map(translations => {
-            Ok(
-              Json.obj(
-                "translations" -> translations.map(TranslationFormat.writes)))
-          })
-      }
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+      env.dataStore.translationRepo
+        .forTenant(ctx.tenant.id)
+        .findAll()
+        .map(translations => {
+          Ok(
+            Json.obj(
+              "translations" -> translations.map(TranslationFormat.writes)))
+        })
     }
 
   def saveTranslation() = DaikokuAction.async(parse.json) { ctx =>

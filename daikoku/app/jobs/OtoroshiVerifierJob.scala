@@ -1,11 +1,10 @@
 package jobs
 
-import java.util.concurrent.atomic.AtomicReference
+import akka.Done
+import akka.actor.Cancellable
+import akka.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.syntax.option._
-import cats.data.OptionT
-import akka.actor.Cancellable
-import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
@@ -16,24 +15,18 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.ApiSubscriptionyRotationFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{
-  ConsoleMailer,
-  IdGenerator,
-  Mailer,
-  OtoroshiClient,
-  Translator
-}
-import jobs.LongExtensions.HumanReadableExtension
+import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 object LongExtensions {
   implicit class HumanReadableExtension(duration: Long) {
@@ -184,90 +177,95 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
   }
 
   private def verifyIfOtoroshiGroupsStillExists(
-      query: JsObject = Json.obj()): Future[Unit] = {
+      query: JsObject = Json.obj()): Future[Done] = {
     def checkEntities(entities: AuthorizedEntities,
                       otoroshi: OtoroshiSettings,
-                      api: Api): Unit = {
-      entities.groups.map(
-        group =>
-          client
-            .getServiceGroup(group.value)(otoroshi)
-            .andThen {
-              case Failure(_) =>
-                sendErrorNotification(
-                  NotificationAction.OtoroshiSyncApiError(
-                    api,
-                    s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"),
-                  api.team,
-                  api.tenant
-                )
-          }) ++
-        entities.services.map(service =>
-          client
-            .getServices()(otoroshi)
-            .andThen {
-              case Failure(_) =>
-                sendErrorNotification(
-                  NotificationAction.OtoroshiSyncApiError(
-                    api,
-                    s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"),
-                  api.team,
-                  api.tenant)
-          }) ++
-        entities.routes.map(
-          route =>
+                      api: Api): Future[Unit] = {
+      Future
+        .sequence(
+          entities.groups.map(group =>
             client
-              .getRoutes()(otoroshi)
+              .getServiceGroup(group.value)(otoroshi)
+              .map(_ => ())
               .andThen {
                 case Failure(_) =>
+                  AppLogger.error(
+                    s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore")
                   sendErrorNotification(
                     NotificationAction.OtoroshiSyncApiError(
                       api,
-                      s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore"),
+                      s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"),
                     api.team,
-                    api.tenant)
-            })
+                    api.tenant
+                  )
+            }) ++
+            entities.services.map(service =>
+              client
+                .getServices()(otoroshi)
+                .andThen {
+                  case Failure(_) =>
+                    AppLogger.error(
+                      s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore")
+                    sendErrorNotification(
+                      NotificationAction.OtoroshiSyncApiError(
+                        api,
+                        s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"),
+                      api.team,
+                      api.tenant)
+              }) ++
+            entities.routes.map(route =>
+              client
+                .getRoutes()(otoroshi)
+                .andThen {
+                  case Failure(_) =>
+                    AppLogger.error(
+                      s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore")
+                    sendErrorNotification(
+                      NotificationAction.OtoroshiSyncApiError(
+                        api,
+                        s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore"),
+                      api.team,
+                      api.tenant)
+              }))
+        .map(_ => ())
     }
 
-    env.dataStore.apiRepo.forAllTenant().findNotDeleted(query).map { apis =>
-      apis.map { api =>
-        env.dataStore.tenantRepo.findByIdNotDeleted(api.tenant).map {
-          case None =>
-            sendErrorNotification(NotificationAction.OtoroshiSyncApiError(
-                                    api,
-                                    "Tenant does not exist anymore"),
-                                  api.team,
-                                  api.tenant)
-          case Some(tenant) =>
-            api.possibleUsagePlans.map { plan =>
-              plan.otoroshiTarget match {
-                case None =>
-                  () // sendErrorNotification(NotificationAction.OtoroshiSyncApiError(api, "No Otoroshi target specified"), api.team, api.tenant)
-                case Some(target) =>
-                  tenant.otoroshiSettings
-                    .find(_.id == target.otoroshiSettings) match {
-                    case None =>
-                      sendErrorNotification(
-                        NotificationAction.OtoroshiSyncApiError(
-                          api,
-                          "Otoroshi settings does not exist anymore"),
-                        api.team,
-                        api.tenant)
-                    case Some(otoroshi) =>
-                      target.authorizedEntities match {
-                        case None => ()
-                        case Some(authorizedEntities)
-                            if authorizedEntities.isEmpty =>
-                          ()
-                        case Some(authorizedEntities) =>
-                          checkEntities(authorizedEntities, otoroshi, api)
-                      }
-                  }
-              }
-            }
-        }
+    val par = 10
+    env.dataStore.apiRepo
+      .forAllTenant()
+      .streamAllRawFormatted(Json.obj("_deleted" -> false) ++ query)
+      .mapAsync(par)(api =>
+        env.dataStore.tenantRepo
+          .findByIdNotDeleted(api.tenant)
+          .map(tenant => (tenant, api)))
+      .collect {
+        case (Some(tenant), api) => (tenant, api)
       }
-    }
+      .flatMapConcat {
+        case (tenant, api) =>
+          Source(api.possibleUsagePlans.map(plan => (tenant, api, plan)))
+      }
+      .map {
+        case (tenant, api, plan) =>
+          (tenant,
+           api,
+           plan,
+           tenant.otoroshiSettings.find(os =>
+             plan.otoroshiTarget.exists(ot => ot.otoroshiSettings == os.id)))
+      }
+      .collect {
+        case (tenant, api, plan, Some(settings))
+            if plan.otoroshiTarget.exists(
+              _.authorizedEntities.exists(!_.isEmpty)) =>
+          (tenant, api, plan, settings)
+      }
+      .mapAsync(par) {
+        case (_, api, plan, settings) =>
+          checkEntities(plan.otoroshiTarget.get.authorizedEntities.get,
+                        settings,
+                        api)
+      }
+      .runWith(Sink.ignore)(env.defaultMaterializer)
   }
 
   /**

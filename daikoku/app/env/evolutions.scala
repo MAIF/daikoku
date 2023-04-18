@@ -4,11 +4,10 @@ import akka.Done
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, NotificationFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import org.joda.time.DateTime
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
@@ -542,18 +541,18 @@ object evolution_1612 extends EvolutionScript {
   override def version: String = "16.1.2"
 
   override def script: (
-      Option[DatastoreId],
+    Option[DatastoreId],
       DataStore,
       Materializer,
       ExecutionContext,
       OtoroshiClient
-  ) => Future[Done] =
+    ) => Future[Done] =
     (
-        _: Option[DatastoreId],
-        dataStore: DataStore,
-        mat: Materializer,
-        ec: ExecutionContext,
-        _: OtoroshiClient
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
     ) => {
       AppLogger.info(
         s"Begin evolution $version - Update Apis to add property state & update all subscription process"
@@ -573,21 +572,21 @@ object evolution_1612 extends EvolutionScript {
             .as[JsArray]
             .value
 
-           val updatedPlans =  plans.map(oldPlan => {
-              val subscriptionProcess = (oldPlan \ "subscriptionProcess").asOpt[String] match {
-                case Some("Manual") => Seq(
-                    ValidationStep
-                      .TeamAdmin(
-                        id = IdGenerator.token(32),
-                        team = (value \ "team").as(TeamIdFormat))
-                  )
-                case _ => Seq.empty
-              }
+          val updatedPlans =  plans.map(oldPlan => {
+            val subscriptionProcess = (oldPlan \ "subscriptionProcess").asOpt[String] match {
+              case Some("Manual") => Seq(
+                ValidationStep
+                  .TeamAdmin(
+                    id = IdGenerator.token(32),
+                    team = (value \ "team").as(TeamIdFormat))
+              )
+              case _ => Seq.empty
+            }
 
 
-              oldPlan.as[JsObject] ++ Json
-                .obj("subscriptionProcess" -> json.SeqValidationStepFormat.writes(subscriptionProcess))
-            })
+            oldPlan.as[JsObject] ++ Json
+              .obj("subscriptionProcess" -> json.SeqValidationStepFormat.writes(subscriptionProcess))
+          })
 
           val updatedApi = value.as[JsObject] ++ Json.obj(
             "state" -> state.name,
@@ -614,6 +613,144 @@ object evolution_1612 extends EvolutionScript {
 }
 
 object evolution_1612_a extends EvolutionScript {
+  override def version: String = "16.1.2_a"
+
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext, OtoroshiClient) => Future[Done] = {
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - set is default to true")
+
+      implicit val execContext: ExecutionContext = ec
+
+      val future: Future[Long] = for {
+        apiWithParents <- dataStore.apiRepo.forAllTenant().findNotDeleted(Json.obj(
+          "parent" -> Json.obj("$exists" -> true),
+          "isDefault" -> true
+        ))
+        parents = apiWithParents.map(_.parent.get).distinct
+        res <- dataStore.apiRepo
+          .forAllTenant()
+          .updateManyByQuery(Json.obj(
+            "parent" -> JsNull,
+            "_id" -> Json.obj("$nin" -> JsArray(parents.map(_.asJson)))
+          ),
+            Json.obj(
+              "$set" -> Json.obj(
+                "isDefault" -> true,
+              )))
+      } yield res
+
+
+
+
+      Source
+        .future(future)
+        .runWith(Sink.ignore)(mat)
+
+    }
+  }
+}
+
+object evolution_1612_b extends EvolutionScript {
+  override def version: String = "16.1.2_b"
+
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext, OtoroshiClient) => Future[Done] = {
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - flag all team as unverified")
+
+      implicit val execContext: ExecutionContext = ec
+
+      val eventualLong = dataStore.teamRepo
+        .forAllTenant()
+        .updateManyByQuery(Json.obj("$or" -> Json.arr(
+          Json.obj("type" -> "Personal"),
+          Json.obj("type" -> "Admin")
+        )),
+          Json.obj(
+            "$set" -> Json.obj(
+              "verified" -> true,
+            ))).flatMap(_ =>
+        dataStore.teamRepo.forAllTenant().updateManyByQuery(Json.obj("type" -> "Organization")
+          , Json.obj(
+            "$set" -> Json.obj(
+              "verified" -> false,
+            ))
+        )
+      )
+
+
+      Source
+        .future(eventualLong)
+        .runWith(Sink.ignore)(mat)
+
+    }
+  }
+}
+
+object evolution_1612_c extends EvolutionScript {
+  override def version: String = "16.1.2_c"
+
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext, OtoroshiClient) => Future[Done] = {
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - add routes in authorized entities")
+
+      implicit val execContext: ExecutionContext = ec
+
+      dataStore.apiRepo
+        .forAllTenant()
+        .streamAllRaw()
+        .mapAsync(10)(jsValue => {
+          val plans = (jsValue \ "possibleUsagePlans").as[JsArray].value
+            .map(plan => {
+              val maybeOtoroshiTarget = (plan \ "otoroshiTarget").asOpt[JsObject]
+
+              val maybeAuthorizedEntities = maybeOtoroshiTarget
+                .flatMap(target => {
+                  val maybeAuthorizedEntities = (target \ "authorizedEntities").asOpt[JsObject]
+
+                  maybeAuthorizedEntities
+                    .map(entities => entities + ("routes" -> Json.arr()))
+                })
+
+              val updatedOtorohiTarget = maybeOtoroshiTarget.map(_ + ("authorizedEntities" -> maybeAuthorizedEntities.getOrElse(JsNull)))
+
+              plan.as[JsObject] + ("otoroshiTarget" -> updatedOtorohiTarget.getOrElse(JsNull))
+            })
+
+          val goodApi = jsValue.as[JsObject] ++ Json.obj("possibleUsagePlans" -> plans)
+          dataStore.apiRepo
+            .forAllTenant()
+            .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)(ec)
+        })
+        .runWith(Sink.ignore)(mat)
+    }
+  }
+}
+
+
+
+
+object evolution_1612_d extends EvolutionScript {
   override def version: String = "16.1.2_a"
 
   override def script: (
@@ -674,6 +811,9 @@ object evolutions {
       evolution_157_c,
       evolution_1612,
       evolution_1612_a,
+      evolution_1612_b,
+      evolution_1612_c,
+      evolution_1612_d,
     )
   def run(
       dataStore: DataStore,

@@ -15,11 +15,10 @@ import { Table, SwitchButton, TableRef } from '../../inputs';
 import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import { Form, format, type } from "@maif/react-forms";
-import { IApi, ISafeSubscription, isError, IState, ITeamSimple, IUsagePlan } from "../../../types";
-import { string } from "prop-types";
+import { constraints, format, type, type as formType } from "@maif/react-forms";
+import { IApi, ISafeSubscription, isError, IState, ISubscription, ITeamSimple, IUsagePlan } from "../../../types";
 import { ModalContext } from '../../../contexts';
-import { createColumnHelper, sortingFns } from '@tanstack/react-table';
+import { createColumnHelper } from '@tanstack/react-table';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 
 type TeamApiSubscriptionsProps = {
@@ -140,8 +139,13 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
             </button>
           </BeautifulTitle>
           <BeautifulTitle title={translate('Refresh secret')}>
-            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-danger" onClick={() => regenerateSecret(sub)}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-outline-danger me-1" onClick={() => regenerateSecret(sub)}>
               <i className="fas fa-sync" />
+            </button>
+          </BeautifulTitle>
+          <BeautifulTitle title={translate('api.delete.subscription')}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-outline-danger" onClick={() => deleteSubscription(sub)}>
+              <i className="fas fa-trash-alt"></i>
             </button>
           </BeautifulTitle>
         </div>);
@@ -161,8 +165,20 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     creationMode: false
   });
 
-  const regenerateSecret = (sub: any) => {
-    confirm({ message: translate('secret.refresh.confirm') })
+  const regenerateSecret = (sub: ISafeSubscription) => {
+    const team = Option(teams.find((t) => t._id === sub.team))
+    .map((t: ITeamSimple) => t.name)
+    .getOrElse('--')
+
+    const plan = Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
+    .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+    .getOrElse('--')
+
+    confirm({ 
+      message: translate({key: 'secret.refresh.confirm', replacements: [team, plan]}),
+      okLabel: translate('Yes'),
+      cancelLabel: translate('No'),
+     })
       .then((ok) => {
         if (ok) {
           Services.regenerateApiKeySecret(currentTeam._id, sub._id).then(() => {
@@ -172,6 +188,39 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         }
       });
   };
+
+  const deleteSubscription = (sub: ISafeSubscription) => {
+    const team = Option(teams.find((t) => t._id === sub.team))
+    .map((t: ITeamSimple) => t.name)
+    .getOrElse('--')
+
+    const plan = Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
+    .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+    .getOrElse('--')
+
+    confirm({
+      title: translate('api.delete.subscription.form.title'),
+      message: translate({key: 'api.delete.subscription.message', replacements: [team, plan]}),
+      okLabel: translate('Yes'),
+      cancelLabel: translate('No'),
+    }).then((ok) => {
+      if (ok) {
+        Services.deleteApiSubscription(sub.team, sub._id)
+          .then((res) => {
+            if (!isError(res)) {
+              toastr.success(translate('deletion successful'), translate('api.delete.subscription.deleted'));
+              tableRef.current?.update();
+            } else {
+              toastr.error(
+                translate('Error'),
+                res.error
+              )
+            }
+          })
+      }
+    })
+  }
+
 
   const options = api.possibleUsagePlans.flatMap(plan => {
     return [

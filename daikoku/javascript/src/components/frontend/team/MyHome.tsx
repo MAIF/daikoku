@@ -1,21 +1,17 @@
-import { getApolloContext } from '@apollo/client';
 import { useQuery } from '@tanstack/react-query';
-import { useContext, useEffect, useState } from 'react';
+import {useContext} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate} from 'react-router-dom';
 
 
-import { I18nContext, updateTeam, updateUser } from '../../../core';
+import { I18nContext, updateTeam } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApiWithAuthorization, IApiWithSimpleTeam, isError, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
-import { ApiList } from '../../frontend';
+import { IApiWithAuthorization, isError, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
+import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
 
 export const MyHome = () => {
-  const [loading, setLoading] = useState(false)
-  const [apis, setApis] = useState<Array<IApiWithAuthorization>>([]);
 
 
   const dispatch = useDispatch();
@@ -23,85 +19,18 @@ export const MyHome = () => {
   const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
   const apiCreationPermitted = useSelector<IState, boolean>(s => s.context.apiCreationPermitted)
 
-  const { client } = useContext(getApolloContext());
-
-  // const myTeamRequest = useQuery(['myTeams'], () => client?.query<{ myTeams: Array<ITeamSimple> }>({
-  //   query: Services.graphql.myTeams
-  // }))
-
   const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
   const teamsRequest = useQuery(['teams'], () => Services.teams())
 
-  const location = useLocation();
   const navigate = useNavigate();
 
   const { translate } = useContext(I18nContext);
 
 
-  const fetchData = () => {
-    if (!client) {
-      return; //todo handle error
-    }
-    setLoading(true)
-    Promise.all([
-      client.query<{ visibleApis: Array<{ api: IApiWithAuthorization, authorizations: any }> }>({
-        query: Services.graphql.myVisibleApis,
-      })
-    ]).then(
-      ([
-        {
-          data: { visibleApis },
-        },
-      ]) => {
-        setApis(
-          visibleApis.map(({
-            api,
-            authorizations
-          }) => ({ ...api, authorizations })),
-        );
-        setLoading(false)
-      }
-    );
-  };
 
-  useEffect(() => {
-    fetchData();
-  }, [connectedUser._id, location.pathname]);
 
-  const askForApiAccess = (api: any, teams: any) =>
-    Services.askForApiAccess(teams, api._id)
-      .then(() => {
-        toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [api.name] }));
-        fetchData();
-      });
-
-  const toggleStar = (api: any) => {
-    Services.toggleStar(api._id).then((res) => {
-      if (!isError(res)) {
-        const alreadyStarred = connectedUser.starredApis.includes(api._id);
-
-        setApis(
-          apis.map((a) => {
-            if (a._id === api._id) a.stars += alreadyStarred ? -1 : 1;
-            return a;
-          }),
-        );
-
-        dispatch(updateUser({
-          ...connectedUser,
-          starredApis: alreadyStarred
-            ? connectedUser.starredApis.filter((id: any) => id !== api._id)
-            : [...connectedUser.starredApis, api._id],
-        }));
-      }
-    });
-  };
-
-  const redirectToTeamPage = (team: any) => {
-    navigate(`/${team._humanReadableId}`);
-  };
-
-  const redirectToApiPage = (api: IApiWithSimpleTeam) => {
+  const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
+    const api = apiWithAutho.api
     const apiOwner = (teamsRequest.data as ITeamSimple[]).find((t) => (t as any)._id === api.team._id);
 
     const route = (version: string) => api.apis
@@ -118,7 +47,8 @@ export const MyHome = () => {
     }
   };
 
-  const redirectToEditPage = (api: IApiWithAuthorization, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => {
+  const redirectToEditPage = (apiWithAutho: IApiWithAuthorization, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => {
+    const api = apiWithAutho.api
     const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === team._id);
 
     if (adminTeam && CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
@@ -159,16 +89,11 @@ export const MyHome = () => {
           </div>
         </section>
         <ApiList
-          apis={apis}
           teams={teamsRequest.data}
           myTeams={myTeamsRequest.data}
           teamVisible={true}
-          askForApiAccess={askForApiAccess}
-          toggleStar={toggleStar}
           redirectToApiPage={redirectToApiPage}
           redirectToEditPage={redirectToEditPage}
-          redirectToTeamPage={redirectToTeamPage}
-          showTeam={true}
         />
       </main>
     );

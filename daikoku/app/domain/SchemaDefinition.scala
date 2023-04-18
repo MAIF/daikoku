@@ -358,7 +358,8 @@ object SchemaDefinition {
         Field("apiKeyVisibility", OptionType(StringType), resolve = _.value.apiKeyVisibility.map(_.name)),
         Field("metadata", MapType, resolve = _.value.metadata),
         Field("_humanReadableId", StringType, resolve = _.value.humanReadableId),
-        Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission)
+        Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission),
+        Field("verified", BooleanType, resolve = _.value.verified)
       )
     )
     lazy val CurrencyType = ObjectType (
@@ -822,7 +823,7 @@ object SchemaDefinition {
             case None => None
           }
         ),
-        Field("apis", OptionType(ListType(GraphQLApiType)), resolve = ctx => {
+        Field("apis", OptionType(ListType(ApiWithAuthorizationType)), resolve = ctx => {
           ctx.value.apis match {
             case None => FastFuture.successful(None)
             case Some(apis) => CommonServices.getApisByIds(apis.toSeq.map(_.value))(ctx.ctx._2, env, e).map {
@@ -836,11 +837,17 @@ object SchemaDefinition {
 
     lazy val  AuthorizationApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationApi]()
 
-    lazy val GraphQLApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithAuthorizations](
+    lazy val ApiWithAuthorizationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithAuthorizations](
       ObjectTypeDescription("A Daikoku api with the list of teams authorizations"),
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
-      ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations))
+      ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations)),
     )
+    lazy val ApiWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithCount](
+      ObjectTypeDescription("An object composed of an array of apis with autho and the total count of them"),
+      ReplaceField("apis", Field("apis", ListType(ApiWithAuthorizationType), resolve = _.value.apis)),
+      ReplaceField("result", Field("result", LongType, resolve = _.value.result))
+    )
+
 
     lazy val subscriptionsWithPlanType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionsWithPlan]()
 
@@ -1318,11 +1325,14 @@ object SchemaDefinition {
       description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
     val OFFSET: Argument[Int] = Argument("offset", IntType,
       description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
-    val APISUBONLY: Argument[Boolean] = Argument("apisubonly", BooleanType,
+    val GROUP_ID = Argument("groupId", OptionInputType(StringType), description = "The id of API group")
+    val API_SUB_ONLY: Argument[Boolean] = Argument("apiSubOnly", BooleanType,
       description = "The condition if you want to see only subscribed Apis.",
       defaultValue = false)
     val RESEARCH: Argument[String] = Argument("research", StringType,
-      description ="This his a the string of a research", defaultValue = "")
+      description ="This is a the string of a research", defaultValue = "")
+    val SELECTED_TAG = Argument("selectedTag", OptionInputType(StringType), description = "A tag of an Api")
+    val SELECTED_CAT = Argument("selectedCategory", OptionInputType(StringType), description = "A category of an Api" )
     val DELETED: Argument[Boolean] = Argument("deleted", BooleanType, description = "If enabled, the page is considered deleted", defaultValue = false)
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
@@ -1337,29 +1347,45 @@ object SchemaDefinition {
           })
     )
 
-    def getVisibleApis(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: Option[String] = None) = {
-      CommonServices.getVisibleApis(teamId)(ctx.ctx._2, env, e).map {
+    def getVisibleApis(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: Option[String] = None, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, groupOpt: Option[String] = None) = {
+      CommonServices.getVisibleApis(teamId, research, selectedTag, selectedCat, limit, offset, groupOpt )(ctx.ctx._2, env, e).map {
         case Right(value) => value
         case Left(r) => throw NotAuthorizedError(r.toString)
       }
     }
 
+
     def apiQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("visibleApis", ListType(GraphQLApiType), arguments = TEAM_ID :: Nil, resolve = ctx => {
-        getVisibleApis(ctx, ctx.arg(TEAM_ID))
+      Field("visibleApis", ApiWithCountType, arguments = TEAM_ID :: RESEARCH :: SELECTED_TAG :: SELECTED_CAT :: LIMIT :: OFFSET :: GROUP_ID :: Nil, resolve = ctx => {
+        getVisibleApis(ctx, ctx.arg(TEAM_ID), ctx.arg(RESEARCH), ctx.arg(SELECTED_TAG), ctx.arg(SELECTED_CAT), ctx.arg(LIMIT), ctx.arg(OFFSET), ctx.arg(GROUP_ID))
       })
     )
 
-    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, apiSubOnly: Boolean, limit: Int, offset: Int) = {
-      CommonServices.getApisWithSubscriptions(teamId, research, limit, offset, apiSubOnly)(ctx.ctx._2, env, e).map {
+
+
+    def getAllTagsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("allTags", ListType(StringType), arguments = RESEARCH :: Nil ,resolve = ctx => {
+        CommonServices.getAllTags(ctx.arg(RESEARCH))(ctx.ctx._2, env, e)
+      })
+    )
+
+    def  getAllCategoriesQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("allCategories", ListType(StringType), arguments = RESEARCH :: Nil , resolve = ctx => {
+        CommonServices.getAllCategories( ctx.arg(RESEARCH))(ctx.ctx._2, env, e)
+      })
+    )
+
+
+    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, apiSubOnly: Boolean, limit: Int, offset: Int) = {
+      CommonServices.getApisWithSubscriptions(teamId, research, selectedTag, selectedCat, limit, offset, apiSubOnly)(ctx.ctx._2, env, e).map {
         case Right(value) => value
         case Left(r) => throw NotAuthorizedError(r.toString)
       }
     }
 
     def apiWithSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("accessibleApis", GraphQlAccessibleApisWithNumberOfApis, arguments = TEAM_ID_NOT_OPT :: RESEARCH :: APISUBONLY :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
-        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT),ctx.arg(RESEARCH), ctx.arg(APISUBONLY),ctx.arg(LIMIT), ctx.arg(OFFSET))
+      Field("accessibleApis", GraphQlAccessibleApisWithNumberOfApis, arguments = TEAM_ID_NOT_OPT :: RESEARCH :: SELECTED_TAG :: SELECTED_CAT :: API_SUB_ONLY :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
+        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT),ctx.arg(RESEARCH), ctx.arg(SELECTED_TAG), ctx.arg(SELECTED_CAT),ctx.arg(API_SUB_ONLY),ctx.arg(LIMIT), ctx.arg(OFFSET))
       })
     )
 
@@ -1506,6 +1532,8 @@ object SchemaDefinition {
           apiWithSubscriptionsQueryFields() ++
           subscriptionDemandsForTeamAdmin() ++
           teamSubscriptionDemands() ++
+          getAllTagsQueryFields() ++
+          getAllCategoriesQueryFields() ++
           cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher, usersFetcher, apisFetcher)

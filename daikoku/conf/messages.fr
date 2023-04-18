@@ -77,6 +77,11 @@ Cliquez sur le lien suivant pour finaliser la crétation de votre compte.\
 <br/>\
 L'équipe [tenant]
 tenant.mail.template=[email]
+mail.create.team.token.title=Confirmez votre mail.
+mail.create.team.token.body=Bonjour,\
+<br/>\
+Vous devez vérifier votre mail pour l'équipe [team].\
+<a href="[link]">Vérifier</a>
 mail.subscription.validation.title = Validation de souscription
 mail.subscription.validation.body = Bonjour,\
     <br/>\

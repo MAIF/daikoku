@@ -164,7 +164,8 @@ class Config(val underlying: Configuration) {
     .getOrElse("secret")
 
   lazy val cypherSecret: String = underlying
-    .getOptional[String]("daikoku.cypherSecret").getOrElse("cypherSecret")
+    .getOptional[String]("daikoku.cypherSecret")
+    .getOrElse("cypherSecret")
 
   lazy val signingKey: String =
     underlying.get[String]("daikoku.signingKey")

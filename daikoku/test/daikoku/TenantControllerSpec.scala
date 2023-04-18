@@ -96,6 +96,7 @@ class TenantControllerSpec()
             |      _id
             |      type
             |      contact
+            |      verified
             |      users {
             |        user {
             |          userId: id

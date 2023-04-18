@@ -741,7 +741,7 @@ case class Api(
     description: String,
     currentVersion: Version = Version("1.0.0"),
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
-    isDefault: Boolean = false,
+    isDefault: Boolean = true,
     lastUpdate: DateTime,
     testing: Testing = Testing(),
     documentation: ApiDocumentation,
@@ -842,6 +842,7 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
 case class ApiWithAuthorizations(api: Api,
                                  authorizations: Seq[AuthorizationApi] =
                                    Seq.empty)
+case class ApiWithCount(apis: Seq[ApiWithAuthorizations], result: Long)
 case class SubscriptionsWithPlan(planId: String,
                                  isPending: Boolean,
                                  subscriptionsCount: Int)

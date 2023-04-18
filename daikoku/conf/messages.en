@@ -61,10 +61,10 @@ mail.create.post.body=A new post on the API [apiName] has been created. Click on
 mail.new.message.body=Hello,\
   <br/>\
   You''ve got a message,\
-  <br>\
+  <br/>\
   <div>\
   [user] :\
-  <br>\
+  <br/>\
   [body]\
   </div>\
 <a href="[link]">Respond</a>
@@ -77,6 +77,11 @@ Please click on the following link to finalize your account creation process\
 <br/>\
 The [tenant] team
 tenant.mail.template=[email]
+mail.create.team.token.title=Confirm your mail.
+mail.create.team.token.body=Hello,\
+<br/>\
+You need to verify your mail for the team [team].\
+<a href="[link]">Verify</a>
 mail.subscription.validation.title = Validate a subscription
 mail.subscription.validation.body = Hello,\
     <br/>\
