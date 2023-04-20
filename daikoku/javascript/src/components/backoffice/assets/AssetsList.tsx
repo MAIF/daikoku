@@ -435,7 +435,7 @@ export const AssetsList = ({
               actionLabel: translate('Add asset')
             })}>
 
-            {translate("add asset")}
+            {translate("Add asset")}
           </button>
         </div>
       </div>
