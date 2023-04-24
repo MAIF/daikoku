@@ -1,27 +1,53 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
-import sortBy from 'lodash/sortBy';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
-import { PaginatedComponent, AvatarWithAction, Can, manage, tenant, Spinner } from '../../utils';
+import { AvatarWithAction, Can, manage, tenant } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
-import { isError, ITeamSimple } from '../../../types';
+import { ITeamSimple, ITeamVisibility} from '../../../types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {getApolloContext} from "@apollo/client";
+import Pagination from "react-paginate";
+import debounce from "lodash/debounce";
 
 export const TeamList = () => {
-  const dispatch = useDispatch();
   useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
-  const teamRequest = useQuery(['teams'], () => Services.teams());
+  const { client } = useContext(getApolloContext());
 
-  const [search, setSearch] = useState<string>();
+  const [search, setSearch] = useState<string>("");
+  const limit = 8;
+  const [page, setPage] = useState<number>(0);
+  const [offset, setOffset] = useState<number>(0)
+  const dataRequest = useQuery<{teams: Array<ITeamVisibility>, result: number}>({
+    queryKey: ["data",
+      search,
+      limit,
+      offset],
+    queryFn: ({ queryKey }) => {
+      return client!.query<{ teamsPagination: { teams: Array<ITeamVisibility>, result: number}}>({
+        query: Services.graphql.getAllTeams,
+        fetchPolicy: "no-cache",
+        variables: {
+          research: queryKey[1],
+          limit: queryKey[2],
+          offset: queryKey[3]
+        }
+      }).then(({data: {teamsPagination}}) => {
+
+        return teamsPagination
+      })
+    },
+    enabled: !!client,
+    cacheTime: 0
+  })
+
 
   const navigate = useNavigate();
 
@@ -62,20 +88,29 @@ export const TeamList = () => {
       });
   };
 
+  const handleChange = (e) => {
+    setPage(0)
+    setOffset(0)
+    setSearch(e.target.value);
+  };
 
-  if (teamRequest.isLoading) {
-    return <Spinner />
-  } else if (teamRequest.data) {
+  const debouncedResults = useMemo(() => {
+    return debounce(handleChange, 500);
+  }, []);
 
-    if (isError(teamRequest.data)) {
-      return <p>{teamRequest.data.error}</p>;
-    }
+  useEffect(() => {
+    return () => {
+      debouncedResults.cancel();
+    };
+  },[]);
 
-    const filteredTeams = search
-      ? teamRequest.data.filter(({ name }) => name.toLowerCase().includes(search))
-      : teamRequest.data;
 
-    const actions = (team: ITeamSimple) => {
+
+
+
+
+
+    const actions = (team: ITeamVisibility) => {
       const basicActions = [
         {
           action: () => deleteTeam(team._id),
@@ -118,6 +153,12 @@ export const TeamList = () => {
         },
       ];
     };
+    const handlePageClick = (data) => {
+      setPage(data.selected);
+      setOffset(data.selected)
+    };
+
+
 
     return (<Can I={manage} a={tenant} dispatchError>
       <div className="row">
@@ -135,22 +176,38 @@ export const TeamList = () => {
             <input
               placeholder={translate('Find a team')}
               className="form-control"
-              onChange={(e) => setSearch(e.target.value)} />
+              onChange={(e) => {
+                debouncedResults(e)
+              }} />
           </div>
         </div>
-        <PaginatedComponent items={sortBy(filteredTeams, [(team) => team.name.toLowerCase()])} count={8} formatter={(team: ITeamSimple) => {
-          return (<AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
-            <span className="team__name text-truncate">{team.name}</span>
-          </>} actions={actions(team)} />);
-        }} />
+        {!dataRequest.isLoading && !dataRequest.isError && dataRequest.data &&
+            <div className="d-flex flex-wrap section">{
+              dataRequest.data.teams.map((teamp) => {
+                return (
+                  <AvatarWithAction key={teamp._id} avatar={teamp.avatar} infos={<>
+                    <span className=" section team__name text-truncate">{teamp.name}</span>
+                  </>} actions={actions(teamp)} />)
+              })}
+              <div className="apis__pagination d-flex justify-content-center" style={{ width: '100%' }}>
+                <Pagination
+                    previousLabel={ translate('Previous')}
+                    nextLabel={ translate('Next')}
+                    breakLabel={'...'}
+                    breakClassName={'break'}
+                    pageCount={Math.ceil(dataRequest.data.result / limit)}
+                    marginPagesDisplayed={1}
+                    pageRangeDisplayed={5}
+                    onPageChange={(data) => handlePageClick(data)}
+                    containerClassName={'pagination'}
+                    pageClassName={'page-selector'}
+                    forcePage={page}
+                    activeClassName={'active'} />
+              </div>
+            </div>}
       </div>
     </Can>);
-  } else {
-    //FIXME: better display of error
-    return (
-      <div>Error while fetching teams</div>
-    )
-  }
+
 
 
 };

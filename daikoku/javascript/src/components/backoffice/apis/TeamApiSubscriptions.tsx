@@ -20,6 +20,7 @@ import { IApi, ISafeSubscription, isError, IState, ISubscription, ITeamSimple, I
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
+import {getApolloContext} from "@apollo/client";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -28,12 +29,39 @@ type SubriptionsFilter = {
   metadata: Array<{ key: string, value: string }>,
   tags: Array<string>
 }
+type LimitedTeam = {
+  _id: string
+  customName?: string
+}
+type ApiSubscriptionGql = {
+  _id: String
+  apiKey: {
+    clientName: string
+    clientId: string
+    clientSecret: string
+  }
+  plan: LimitedTeam
+  team: {
+    _id: string
+    name: string
+    type: string
+  }
+  createdAt: string
+  api: {
+    _id: string
+  }
+  customName: string
+  enabled: boolean
+  customMetadata?: JSON
+  tags: Array<string>
+  metadata?: JSON
+}
 export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const dispatch = useDispatch();
 
-  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
-  const [loading, setLoading] = useState(true);
+  const { client } = useContext(getApolloContext());
+
   const [filters, setFilters] = useState<SubriptionsFilter>()
   const tableRef = useRef<TableRef>()
 
@@ -41,14 +69,6 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const { confirm, openFormModal, openSubMetadataModal, } = useContext(ModalContext);
 
   useEffect(() => {
-    Services.teams()
-      .then((teams) => {
-        if (!isError(teams)) {
-          setTeams(teams);
-        }
-        setLoading(false);
-      });
-
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
   }, []);
 
@@ -59,19 +79,20 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   }, [api])
 
 
-  const columnHelper = createColumnHelper<ISafeSubscription>()
+
+  const columnHelper = createColumnHelper<ApiSubscriptionGql>()
   const columns = [
-    columnHelper.accessor(row => row.team === currentTeam._id ? row.customName || row.apiKey.clientName : row.apiKey.clientName, {
+    columnHelper.accessor(row => row.team._id === currentTeam._id ? row.customName || row.apiKey.clientName : row.apiKey.clientName, {
       id: 'name',
       header: translate('Name'),
       meta: { style: { textAlign: 'left' } },
       cell: (info) => {
         const sub = info.row.original
-        return sub.team === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
+        return sub.team._id === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
       },
       filterFn: (row, _, value) => {
         const sub = row.original
-        const displayed: string = sub.team === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
+        const displayed: string = sub.team._id === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
 
         return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
       },
@@ -80,12 +101,11 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     columnHelper.accessor('plan', {
       header: translate('Plan'),
       meta: { style: { textAlign: 'left' } },
-      cell: (info) => Option(api.possibleUsagePlans.find((pp) => pp._id === info.getValue()))
+      cell: (info) => Option(api.possibleUsagePlans.find((pp) => pp._id === info.getValue()._id))
         .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
         .getOrNull(),
       filterFn: (row, columnId, value) => {
-        const cell = row.getValue(columnId)
-        const displayed: string = Option(api.possibleUsagePlans.find((pp) => pp._id === cell))
+        const displayed: string = Option(api.possibleUsagePlans.find((pp) => pp._id === row.original.plan._id))
           .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
           .getOrElse("")
 
@@ -95,14 +115,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     columnHelper.accessor('team', {
       header: translate('Team'),
       meta: { style: { textAlign: 'left' } },
-      cell: (info) => Option(teams.find((t) => t._id === info.getValue()))
-        .map((t: ITeamSimple) => t.name)
-        .getOrElse('unknown team'),
+      cell: (info) => info.getValue().name,
       filterFn: (row, columnId, value) => {
-        const cell = row.getValue(columnId)
-        const displayed: string = Option(teams.find((t) => t._id === cell))
-          .map((t: ITeamSimple) => t.name)
-          .getOrElse('unknown team')
+        const displayed: string = row.original.team.name
 
         return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
       }
@@ -153,14 +168,14 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     }),
   ]
 
-  const updateMeta = (sub: ISafeSubscription) => openSubMetadataModal({
+  const updateMeta = (sub: ApiSubscriptionGql) => openSubMetadataModal({
     save: (updates: CustomSubscriptionData) => {
       Services.updateSubscription(currentTeam, { ...sub, ...updates })
         .then(() => tableRef.current?.update());
     },
-    api: sub.api,
-    plan: sub.plan,
-    team: teams.find((t) => t._id === sub.team),
+    api: sub.api._id,
+    plan: sub.plan._id,
+    team: sub.team,
     subscription: sub,
     creationMode: false
   });
@@ -229,9 +244,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     ]
   });
 
+
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
-      {!loading && (
         <div className="px-2">
           <div className='d-flex flex-row justify-content-start align-items-center mb-2'>
             <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
@@ -280,30 +295,40 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
               defaultSort="name"
               columns={columns}
               fetchItems={() => {
-                return Services.apiSubscriptions(api._id, currentTeam._id, api.currentVersion)
-                  .then(subscriptions => {
-                    if (!filters) {
-                      return subscriptions
-                    } else {
-                      return subscriptions.filter(subscription => {
-                        const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) }
-                        if (!Object.keys(meta).length) {
-                          return false;
-                        } else {
-                          return filters.metadata.every(item => {
-                            const value = meta[item.key]
-                            return value && value.includes(item.value)
-                          }) && filters.tags.every(tag => subscription.tags.includes(tag))
-                        }
-                      })
-                    }
-                  })
+                return client!.query<{ apiApiSubscriptions: Array<ApiSubscriptionGql>; }>({
+                  query: Services.graphql.getApiSubscriptions,
+                  fetchPolicy: "no-cache",
+                  variables: {
+                    apiId: api._id,
+                    teamId: currentTeam._id,
+                    version: api.currentVersion
+                  }
+                }).then(({data: {apiApiSubscriptions}}) => {
+
+                  return apiApiSubscriptions;
+                }).then(subs => {
+                  if (!filters) {
+                    return subs
+                  } else {
+                    return subs.filter(subscription => {
+                      const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) }
+                      if (!Object.keys(meta).length) {
+                        return false;
+                      } else {
+                        return filters.metadata.every(item => {
+                          const value = meta[item.key]
+                          return value && value.includes(item.value)
+                        }) && filters.tags.every(tag => subscription.tags.includes(tag))
+                      }
+                    })
+                  }
+                })
               }}
               ref={tableRef}
             />
           </div>
         </div>
-      )}
+
     </Can>
   );
 };
