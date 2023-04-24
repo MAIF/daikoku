@@ -12,6 +12,7 @@ import fr.maif.otoroshi.daikoku.utils.S3Configuration
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
+import play.api.mvc.Results
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
@@ -56,7 +57,7 @@ object SchemaDefinition {
 
   implicit val JsonType = ScalarType[JsValue]("Json",
     description = Some("Raw JSON value"),
-    coerceOutput = (value, _) => Json.stringify(value),
+    coerceOutput = (value, _) => value,
     coerceUserInput = {
       case v: String => Right(JsString(v))
       case v: Boolean => Right(JsBoolean(v))
@@ -649,6 +650,8 @@ object SchemaDefinition {
         Field("rotation", OptionType(ApiSubscriptionRotationType), resolve = _.value.rotation),
         Field("integrationToken", StringType, resolve = _.value.integrationToken),
         Field("customMetadata", OptionType(JsonType), resolve = _.value.customMetadata),
+        Field("metadata", OptionType(JsonType), resolve = _.value.metadata),
+        Field("tags", OptionType(ListType(StringType)), resolve = _.value.tags),
         Field("customMaxPerSecond", OptionType(LongType), resolve = _.value.customMaxPerSecond),
         Field("customMaxPerDay", OptionType(LongType), resolve = _.value.customMaxPerDay),
         Field("customMaxPerMonth", OptionType(LongType), resolve = _.value.customMaxPerMonth),
@@ -763,6 +766,12 @@ object SchemaDefinition {
     lazy val ApiWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithCount](
       ObjectTypeDescription("An object composed of an array of apis with autho and the total count of them"),
       ReplaceField("apis", Field("apis", ListType(ApiWithAuthorizationType), resolve = _.value.apis)),
+      ReplaceField("result", Field("result", LongType, resolve = _.value.result))
+    )
+
+    lazy val TeamWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]),TeamWithCount](
+      ObjectTypeDescription("An object composed of an array of teams with the total count of them"),
+      ReplaceField("teams", Field("teams", ListType(TeamObjectType), resolve = _.value.teams)),
       ReplaceField("result", Field("result", LongType, resolve = _.value.result))
     )
 
@@ -1038,7 +1047,8 @@ object SchemaDefinition {
       ReplaceField("quotas", Field("quotas", ApiKeyQuotasType, resolve = _.value.quotas)),
       ReplaceField("billing", Field("billing", ApiKeyBillingType, resolve = _.value.billing)),
       ReplaceField("from", Field("from", DateTimeUnitype, resolve = _.value.from)),
-      ReplaceField("to", Field("to", DateTimeUnitype, resolve = _.value.to))
+      ReplaceField("to", Field("to", DateTimeUnitype, resolve = _.value.to)),
+      ReplaceField("clientId", Field("clientId", StringType, resolve = _.value.clientId))
     )
 
     val  PasswordResetType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), PasswordReset](
@@ -1204,6 +1214,9 @@ object SchemaDefinition {
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
     val TEAM_ID_NOT_OPT = Argument("teamId", StringType, description = "The id of the team")
+    val FROM = Argument("from", OptionInputType(LongType), description = "Date from")
+    val TO = Argument("to", OptionInputType(LongType), description = "Date to")
+    val VERSION = Argument("version", StringType, description = "a version")
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
@@ -1212,6 +1225,48 @@ object SchemaDefinition {
             case Right(r) => throw NotAuthorizedError(r.toString)
           })
     )
+
+    def allTeams(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], research: String, limit: Int, offset: Int) = {
+      CommonServices.allTeams(research, limit, offset)(ctx.ctx._2, env, e).map {
+        case Left(value) => throw NotAuthorizedError(value.toString)
+        case Right(value) => value
+
+      }
+    }
+    def allTeamsQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("teamsPagination", TeamWithCountType, arguments = RESEARCH :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
+        allTeams(ctx, ctx.arg(RESEARCH), ctx.arg(LIMIT), ctx.arg(OFFSET))
+      })
+    )
+
+    def getApiConsumption(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], apiId: String, teamId: String, from: Option[Long], to: Option[Long]) = {
+      CommonServices.getApiConsumption(apiId, teamId, from, to)(ctx.ctx._2, env, e).map {
+        case Left(value) => throw NotAuthorizedError(value.toString)
+        case Right(value) => value
+      }
+    }
+
+    def ApiConsumptionQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("apiConsumptions", ListType(ApiKeyConsumptionType), arguments = ID :: TEAM_ID_NOT_OPT :: FROM :: TO :: Nil, resolve = ctx => {
+        getApiConsumption(ctx, ctx.arg(ID), ctx.arg(TEAM_ID_NOT_OPT) , ctx.arg(FROM), ctx.arg(TO))
+
+
+      })
+    )
+
+    def getApiSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], apiId: String, teamId: String, version: String) = {
+      CommonServices.getApiSubscriptions(teamId, apiId, version)(ctx.ctx._2, env, e).map {
+        case Left(value) => throw NotAuthorizedError(value.toString)
+        case Right(value) => value
+      }
+    }
+
+    def apiSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("apiApiSubscriptions", ListType(ApiSubscriptionType), arguments = ID :: TEAM_ID_NOT_OPT :: VERSION :: Nil, resolve = ctx => {
+        getApiSubscriptions(ctx, ctx.arg(ID), ctx.arg(TEAM_ID_NOT_OPT), ctx.arg(VERSION))
+      })
+    )
+
 
     def getVisibleApis(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: Option[String] = None, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, groupOpt: Option[String] = None) = {
       CommonServices.getVisibleApis(teamId, research, selectedTag, selectedCat, limit, offset, groupOpt )(ctx.ctx._2, env, e).map {
@@ -1262,8 +1317,8 @@ object SchemaDefinition {
             "_deleted" -> ctx.arg(DELETED)
           ))
         }.map {
-          case Left(value) => value
-          case Right(r) => throw NotAuthorizedError(r.toString)
+          case Right(value) => value
+          case Left(r) => throw NotAuthorizedError(r.toString)
         }
       })
     )
@@ -1333,7 +1388,7 @@ object SchemaDefinition {
 
     (
       Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ getAllTagsQueryFields() ++ getAllCategoriesQueryFields() ++ apiWithSubscriptionsQueryFields() ++ cmsPageFields():_*)
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ getAllTagsQueryFields() ++ getAllCategoriesQueryFields() ++ apiWithSubscriptionsQueryFields() ++ ApiConsumptionQuery() ++ apiSubscriptionsQueryFields() ++ allTeamsQuery() ++ cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher)
     )

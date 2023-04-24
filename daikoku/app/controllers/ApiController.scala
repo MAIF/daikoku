@@ -282,7 +282,6 @@ class ApiController(
   def getTeamVisibleApis(teamId: String, apiId: String, version: String) =
     DaikokuAction.async { ctx =>
       import cats.implicits._
-
       TeamMemberOnly(
         AuditTrailEvent(
           s"@{user.name} is accessing team @{team.name} visible api @{api.name} ($version)"
@@ -4039,13 +4038,13 @@ class ApiController(
           s"@{user.name} has transfer ownership of api @{api.name} to @{newTeam.name}"
         )
       )(teamId, ctx) { _ =>
-        val newTeamId: String = (ctx.request.body \ "team").as[String]
+        val newTeamName: String = (ctx.request.body \ "team").as[String]
 
         (for {
           newTeam <- EitherT.fromOptionF(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(newTeamId),
+              .findOneNotDeleted(Json.obj("name" -> newTeamName)),
             AppError.render(TeamNotFound)
           )
           api <- EitherT.fromOptionF(

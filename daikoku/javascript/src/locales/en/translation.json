@@ -1159,7 +1159,7 @@
     "Tags and categories": "Tags and categories",
     "Consumptions": "Consumptions",
     "team.transfer.notified": "Team has been notified. please wait until acceptation",
-    "new.owner": "New owner team",
+    "new.owner": "Type the name of the new owner",
     "type.api.name.confirmation": "Please type %s to confirm",
     "constraints.required.team": "Team is required",
     "constraints.type.api.name": "Please type %s to valid the transfer",
@@ -1281,5 +1281,11 @@
     "login.placeholder": "Email adress",
     "login.label": "Email adress",
     "password.label": "Password",
-    "login.btn.label": "Login"
+    "login.btn.label": "Login",
+    "api.delete.subscription": "Delete subscription",
+    "api.delete.subscription.form": "Subscription deletion form",
+    "api.delete.subscription.howToDelete": "type : \"%s\" for deleting the subscription.",
+    "api.delete.subscription.deleted": "Subscription deleted.",
+    "api.delete.subscription.impossible.nothing": "Enter the name of the subscription for deleting it.",
+    "api.delete.subscription.impossible.incorrect": "The name is wrong."
 }

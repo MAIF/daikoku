@@ -7,13 +7,54 @@ import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
 import { isError, ITeamSimple } from '../../../types';
+import {Moment} from "moment/moment";
+import {getApolloContext} from "@apollo/client";
 
+type IGlobalInformations= {
+  avgDuration?: number,
+  avgOverhead?: number,
+  dataIn: number,
+  dataOut: number,
+  hits: number
+}
+type IgqlConsumption = {
+  globalInformations: IGlobalInformations,
+  api: {
+    _id: string
+  }
+  clientId: string
+
+  billing: {
+    hits: number,
+    total: number
+  }
+  from: Moment
+  plan: {
+    _id: string
+    customName: string
+    type: string
+  }
+
+  team: {
+    name: string
+  }
+  tenant: {
+    _id: string
+  }
+  to: Moment
+  _id: string
+
+
+}
 export const TeamPlanConsumption = ({
   apiGroup
 }: any) => {
   const { currentTeam } = useSelector((state) => (state as any).context);
 
   const { translate } = useContext(I18nContext);
+
+  const { client } = useContext(getApolloContext());
+
   const urlMatching = !!apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
     : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
@@ -114,15 +155,21 @@ export const TeamPlanConsumption = ({
       </div>
       <OtoroshiStatsVizualization
         sync={() => Services.syncApiConsumption(match?.params.apiId, currentTeam._id)}
-        fetchData={(from: any, to: any) => {
-          return Services.apiConsumption(
-            match?.params.apiId,
-            match?.params.planId,
-            currentTeam._id,
-            from.valueOf(),
-            to.valueOf()
-          );
-        }}
+        fetchData={(from: Moment , to: Moment ) =>
+          client!.query<{ apiConsumptions: Array<IgqlConsumption>}>({
+            query: Services.graphql.getApiConsumptions,
+            fetchPolicy: "no-cache",
+            variables: {
+              apiId: match?.params.apiId,
+              teamId: currentTeam._id,
+              from: from.valueOf(),
+              to: to.from.valueOf(),
+              planId: match?.params.planId
+            }
+          }).then(({data: {apiConsumptions}}) => {
+            return apiConsumptions
+          })
+        }
         mappers={mappers}
       />
     </div>

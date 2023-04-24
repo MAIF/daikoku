@@ -5,11 +5,13 @@ import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
+import org.joda.time.DateTime
 import play.api.libs.json._
+import play.api.mvc.Results
+import play.api.mvc.Results.{NotFound, Ok}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -303,6 +305,90 @@ object CommonServices {
           .findNotDeleted(Json.obj("users.userId" -> ctx.user.id.value))
         )
         .map(teams => teams.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0))
+    }
+  }
+
+  def allTeams(research: String, limit: Int, offset: Int)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _TenantAdminAccessTenant(AuditTrailEvent("@{user.name} has accessed to all teams list"))(ctx) {
+      for {
+        teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findWithPagination(Json.obj("name" -> Json.obj("$regex" -> research)), offset, limit, Some(Json.obj("_humanReadableId" -> 1)))
+      } yield {
+        TeamWithCount(teams._1, teams._2)
+      }
+    }
+  }
+
+  def getApiConsumption(apiId: String, teamId: String, from: Option[Long], to: Option[Long], planId: Option[String])(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, Seq[ApiKeyConsumption]]] = {
+    _TeamAdminOnly(teamId, AuditTrailEvent(s"@{user.name} has accessed to api consumption for api @{apiId}"))(ctx) { team =>
+      ctx.setCtxValue("apiId", apiId)
+      val fromTimestamp = from.getOrElse(
+        DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+      val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
+      val planIdFilters = planId match {
+        case Some(value) => Json.obj("plan" -> value)
+        case None => Json.obj()
+      }
+      for {
+        api <- env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findOneNotDeleted(
+            Json.obj("team" -> team.id.value,
+              "$or" -> Json.arr(Json.obj("_id" -> apiId),
+                Json.obj("_humanReadableId" -> apiId))))
+        apiId = api.map(api => api.id.value).get
+        consumptions <- env.dataStore.consumptionRepo
+          .forTenant(ctx.tenant.id)
+          .find(
+            Json.obj("api" -> apiId,
+              "from" -> Json.obj("$gte" -> fromTimestamp),
+              "plan" ->,
+              "to" -> Json.obj("$lte" -> toTimestamp)) ++ planIdFilters,
+            Some(Json.obj("from" -> 1))
+          )
+      } yield {
+        Right(consumptions)
+      }
+
+    }
+  }
+
+  def getApiSubscriptions(teamId: String, apiId: String, version: String)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _TeamApiEditorOnly(AuditTrailEvent(
+      s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx) { _ =>
+      for {
+        api <- env.dataStore.apiRepo
+          .findByVersion(ctx.tenant, apiId, version)
+        apiId = api.map((api) => api.id.value).get
+        subs <- env.dataStore.apiSubscriptionRepo
+          .forTenant(ctx.tenant)
+          .findNotDeleted(Json.obj("api" -> apiId))
+      } yield {
+        Right(subs)
+      }
+    }
+  }
+
+  def getApiPlanConsumption(teamId: String, apiId: String, planId: String, from: Option[Long], to: Option[Long])(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _TeamAdminOnly(teamId, AuditTrailEvent(s"@{user.name} has accessed to api consumption for api @{apiId}"))(ctx) { team =>
+      val fromTimestamp = from.getOrElse(
+        DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+      val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
+      for {
+        api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOneNotDeleted(
+              Json.obj("team" -> team.id.value,
+              "$or" -> Json.arr(Json.obj("_id" -> apiId),
+              Json.obj("_humanReadableId" -> apiId))))
+        apiId = api.map(api => api.id.value).get
+        consumptions <- env.dataStore.consumptionRepo.forTenant(ctx.tenant.id).find(
+              Json.obj("api" -> apiId,
+              "plan" -> planId,
+              "from" -> Json.obj("$gte" -> fromTimestamp),
+              "to" -> Json.obj("$lte" -> toTimestamp)),
+              Some(Json.obj("from" -> 1))
+        )
+      } yield {
+        Right(consumptions)
+      }
     }
   }
 

@@ -14,6 +14,7 @@ import {
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
+import {string} from "prop-types";
 
 export interface IBaseModalProps {
   close: () => void;
@@ -91,16 +92,39 @@ export type TestingApiKeyModalProps = {
   config: any;
   metadata: any;
 };
-
+type LimitedTeam = {
+  _id: string
+  name?: string
+}
+type ApiSubscriptionGql = {
+  _id: String
+  apiKey: {
+    clientName: string
+    clientId: string
+    clientSecret: string
+  }
+  plan: LimitedTeam
+  team: {
+    _id: string
+    name: string
+    type: string
+  }
+  createdAt: string
+  api: {
+    _id: string
+  }
+  customName: string
+  enabled: boolean
+}
 export type SubscriptionMetadataModalProps = {
   api: string;
   creationMode?: boolean;
   plan?: string;
   save: ((sub: CustomSubscriptionData) => Promise<void>) | ((sub: CustomSubscriptionData) => void);
-  team?: ITeamSimple;
+  team?: ITeamSimple | LimitedTeam;
   notification?: INotification;
   config?: any;
-  subscription?: ISafeSubscription;
+  subscription?: ISafeSubscription | ApiSubscriptionGql;
   description?: any;
   noClose?: boolean;
 };

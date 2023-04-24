@@ -533,8 +533,10 @@ export const apiConsumption = (apiId: any, planId: any, teamId: any, from: any, 
     }
   );
 
-export const apiGlobalConsumption = (apiId: any, teamId: any, from: any, to: any) =>
+/* export const apiGlobalConsumption = (apiId: any, teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`);
+  UNUSED FROM NOW
+  */
 
 export const apiSubscriptions = (
   apiId: string,
@@ -704,7 +706,7 @@ export const updateSubscriptionCustomName = (team: any, subscription: any, custo
     body: JSON.stringify({ customName }),
   });
 
-export const updateSubscription = (team: ITeamSimple, subscription: ISafeSubscription) =>
+export const updateSubscription = (team: ITeamSimple, subscription: ISafeSubscription | any) =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
     method: 'PUT',
     body: JSON.stringify(subscription),
@@ -1272,6 +1274,86 @@ export const graphql = {
     query getAllCategories ($research: String){
       allCategories (research: $research)
     }`),
+  getAllTeams: gql(`
+  query getAllteams ($research: String, $limit: Int, $offset: Int) {
+    teamsPagination (research: $research, limit: $limit, offset: $offset){
+      teams {
+        _id
+        _humanReadableId
+        name
+        type
+        avatar
+      }
+      result
+    }
+  }`),
+  getApiConsumptions: gql(`
+  query getApiConsumptions ($apiId: String!, $teamId: String!, $from: Long, $to: Long, $planId: Long) {
+    apiConsumptions (id: $apiId, teamId: $teamId, from: $from, to: $to, planId: $planId) {
+      _id
+      clientId
+      tenant {
+        id
+      }
+      team {
+        _id
+        name
+      }
+      api {
+        _id
+      }
+      plan {
+        _id
+        customName
+        type
+      }
+      globalInformations {
+        hits
+        dataIn
+        dataOut
+        avgDuration
+        avgOverhead
+      }
+      billing {
+        hits
+        total
+      }
+      from
+      to
+    }
+  }`),
+  getApiSubscriptions: gql(`
+    query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!) {
+      apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version) {
+        _id
+        apiKey {
+          clientName
+          clientId
+          clientSecret
+        }
+        plan {
+          _id
+          customName
+          type
+        }
+        team {
+          _id
+          name
+          type
+        }
+        createdAt
+        api {
+          _id
+          name
+        }
+        customName
+        enabled
+        tags
+        metadata
+        customMetadata
+      }
+    }
+    `),
   getApisWithSubscription: gql(`
     query AccessibleApis ($teamId: String!, $research: String, $selectedTag: String, $selectedCategory: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
       accessibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
@@ -1408,8 +1490,8 @@ export const uploadZip = (file: any) => {
   });
 };
 
-export const transferApiOwnership = (newTeamId: any, teamId: any, apiId: any) =>
+export const transferApiOwnership = (newTeamName: any, teamId: any, apiId: any) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/_transfer`, {
     method: 'POST',
-    body: JSON.stringify({ team: newTeamId }),
+    body: JSON.stringify({ team: newTeamName }),
   });

@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { Histogram, RoundChart } from './Recharts';
 //@ts-ignore
-import moment from 'moment';
+import moment, {Moment} from 'moment';
 import Select from 'react-select';
 import maxBy from 'lodash/maxBy';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
@@ -93,8 +93,44 @@ const periods = (translate: any) => ({
     value: 'BILLING',
   })
 });
+type IGlobalInformations= {
+  avgDuration?: number,
+  avgOverhead?: number,
+  dataIn: number,
+  dataOut: number,
+  hits: number
+}
+type IgqlConsumption = {
+  globalInformations: IGlobalInformations,
+  api: {
+    _id: string
+  }
+  billing: {
+    hits: number,
+    total: number
+  }
+  from: Moment
+  plan: {
+    _id: string
+  }
+  team: {
+    name: string
+  }
+  tenant: {
+    _id: string
+  }
+  to: Moment
+  _id: string
 
-export function OtoroshiStatsVizualization(props: any) {
+
+}
+type Iprops = {
+  sync: () => Promise<string>
+  fetchData: (from: Moment, to: Moment) => Promise<Array<IgqlConsumption>>
+  mappers: any
+  forConsumer?: boolean
+}
+export function OtoroshiStatsVizualization(props: Iprops) {
   const { translate } = useContext(I18nContext);
   const [state, setState] = useState<any>({
     tab: 0,
@@ -251,11 +287,11 @@ export function OtoroshiStatsVizualization(props: any) {
           classNamePrefix="reactSelect"
         />
         <span className="col period-display">{state.period.format(state.consumptions)}</span>
-        {props.sync && (
+
           <button className="btn btn-access-negative" onClick={sync}>
             <i className="fas fa-sync-alt" />
           </button>
-        )}
+
       </div>
 
       <div className="row mt-4">
