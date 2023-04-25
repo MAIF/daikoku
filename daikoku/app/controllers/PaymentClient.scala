@@ -1,7 +1,13 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import cats.data.EitherT
+import akka.http.scaladsl.util.FastFuture
+import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
+import com.stripe.Stripe
+import com.stripe.model.{Customer, UsageRecord}
+import com.stripe.model.checkout.Session
+import com.stripe.net.RequestOptions
+import com.stripe.param.UsageRecordCreateOnSubscriptionItemParams
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain._
@@ -9,7 +15,8 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
-import play.api.libs.json.{JsObject, Json}
+import org.joda.time.DateTime
+import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
@@ -32,7 +39,7 @@ class PaymentClient(
     s"${api.name}::${api.currentVersion.value}/${plan.customName.getOrElse(plan.typeName)}"
 
 
-  def stripeClient(
+  private def stripeClient(
       path: String
   )(implicit stripeSettings: StripeSettings): WSRequest = {
     ws.url(s"$STRIPE_URL$path")
@@ -284,7 +291,7 @@ class PaymentClient(
       "locale" -> user.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en").toLowerCase,
       "success_url" -> env.getDaikokuUrl(
         tenant,
-        s"/api/subscription/_validate?token=$cipheredValidationToken" //todo: add callback
+        s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" //todo: add callback
       ),
       "cancel_url" -> from.getOrElse(env.getDaikokuUrl(
         tenant,
@@ -319,5 +326,69 @@ class PaymentClient(
           )
         }
       })
+  }
+
+  def getSubscription(maybeSessionId: Option[String], settings: PaymentSettings, tenant: Tenant): Future[Option[String]] =
+    settings match {
+      case p: PaymentSettings.Stripe =>
+        implicit val stripeSettings: StripeSettings = tenant.thirdPartyPaymentSettings
+            .find(_.id == p.thirdPartyPaymentSettingsId)
+            .get
+            .asInstanceOf[StripeSettings]
+        getStripeSubscription(maybeSessionId)
+    }
+
+  def getStripeSubscription(maybeSessionId: Option[String])(implicit stripeSettings: StripeSettings): Future[Option[String]] = {
+    maybeSessionId match {
+      case Some(sessionId) =>
+        for {
+          session <- stripeClient(s"/v1/checkout/sessions/$sessionId").get()
+          sub = (session.json \ "subscription").as[String]
+          subscription <- stripeClient(s"/v1/subscriptions/$sub").get()
+        } yield {
+          (subscription.json \ "items").asOpt[JsObject]
+            .flatMap(items => (items \ "data").as[JsArray].value
+              .find(element => (element \ "plan" \ "usage_type").as[String] == "metered")
+              .map(element => (element \ "id").as[String]))
+        }
+      case None => FastFuture.successful(None)
+    }
+  }
+
+  def syncWithThirdParty(consumption: ApiKeyConsumption, plan: UsagePlan): Future[Unit] = {
+    plan.paymentSettings match {
+      case Some(paymentSettings) =>
+        (for {
+        subscription <- OptionT(env.dataStore.apiSubscriptionRepo.forTenant(consumption.tenant).findOneNotDeleted(Json.obj("apiKey.clientId" -> consumption.clientId)))
+        tenant <- OptionT(env.dataStore.tenantRepo.findByIdNotDeleted(consumption.tenant))
+        setting <- OptionT.fromOption[Future](tenant.thirdPartyPaymentSettings.find(_.id == paymentSettings.thirdPartyPaymentSettingsId))
+      } yield {
+        setting match {
+          case s: ThirdPartyPaymentSettings.StripeSettings =>
+            implicit val stripeSettings: StripeSettings = s
+            syncConsumptionWithStripe(subscription, consumption)
+          case _ =>
+            FastFuture.successful(())
+        }
+      }).value.map(_ => ())
+      case None => FastFuture.successful(())
+    }
+  }
+
+  def syncConsumptionWithStripe(apiSubscription: ApiSubscription, consumption: ApiKeyConsumption)(implicit stripeSettings: StripeSettings) = {
+    apiSubscription.thirdPartySubscription match {
+      case Some(sub) =>
+        val body = Map(
+          "quantity" -> consumption.hits.toString,
+          "timestamp" -> (consumption.from.getMillis / 1000).toString
+        )
+
+        stripeClient(s"/v1/subscription_items/$sub/usage_records")
+          .post(body)
+      case None => FastFuture.successful(())
+    }
+
+
+
   }
 }

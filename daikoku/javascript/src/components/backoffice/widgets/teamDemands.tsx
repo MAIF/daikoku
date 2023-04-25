@@ -65,7 +65,7 @@ export const LastDemands = (props: LastDemandsProps) => {
       <div className='d-flex flex-column gap-1'>
         {data?.data && data.data.teamSubscriptionDemands.count === 0 && <span>no demands</span>}
         {data?.data && data.data.teamSubscriptionDemands.count > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d: any) => {
-
+          console.debug(d)
           const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress').step.name === 'payment'
 
           return (

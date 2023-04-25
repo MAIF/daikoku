@@ -2357,7 +2357,8 @@ object json {
             customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
-            parent = (json \ "parent").asOpt(ApiSubscriptionIdFormat)
+            parent = (json \ "parent").asOpt(ApiSubscriptionIdFormat),
+            thirdPartySubscription = (json \ "thirdPartySubscription").asOpt[String]
           )
         )
       } recover {
@@ -2405,6 +2406,10 @@ object json {
         .as[JsValue],
       "parent" -> o.parent
         .map(ApiSubscriptionIdFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "thirdPartySubscription" -> o.thirdPartySubscription
+        .map(JsString)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -3339,6 +3344,17 @@ object json {
     )
   }
 
+  val ApiKeyConsumptionStateFormat: Format[ApiKeyConsumptionState] = new Format[ApiKeyConsumptionState] {
+    override def reads(json: JsValue): JsResult[ApiKeyConsumptionState] = json.as[String] match {
+      case "completed" => JsSuccess(ApiKeyConsumptionState.Completed)
+      case "inProgress" => JsSuccess(ApiKeyConsumptionState.InProgress)
+      case str => JsError(s"Bad TeamPermission value: $str")
+    }
+
+
+    override def writes(o: ApiKeyConsumptionState): JsValue = JsString(o.name)
+  }
+
   val ConsumptionFormat: Format[ApiKeyConsumption] =
     new Format[ApiKeyConsumption] {
       override def reads(json: JsValue): JsResult[ApiKeyConsumption] =
@@ -3346,6 +3362,7 @@ object json {
           JsSuccess(
             ApiKeyConsumption(
               id = (json \ "_id").as(DatastoreIdFormat),
+              deleted = (json \ "_deleted").as[Boolean],
               tenant = (json \ "_tenant").as(TenantIdFormat),
               team = (json \ "team").as(TeamIdFormat),
               api = (json \ "api").as(ApiIdFormat),
@@ -3357,15 +3374,20 @@ object json {
               quotas = (json \ "quotas").as(ApiKeyQuotasFormat),
               billing = (json \ "billing").as(ApiKeyBillingFormat),
               from = (json \ "from").as(DateTimeFormat),
-              to = (json \ "to").as(DateTimeFormat)
+              to = (json \ "to").as(DateTimeFormat),
+              state = (json \ "state").as(ApiKeyConsumptionStateFormat)
             )
           )
         } recover {
-          case e => JsError(e.getMessage)
+          case e =>
+            AppLogger.error("Error from ConsumptionFormat")
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
         } get
 
       override def writes(o: ApiKeyConsumption): JsValue = Json.obj(
         "_id" -> DatastoreIdFormat.writes(o.id),
+        "_deleted" -> o.deleted,
         "_tenant" -> TenantIdFormat.writes(o.tenant),
         "team" -> TeamIdFormat.writes(o.team),
         "api" -> ApiIdFormat.writes(o.api),
@@ -3377,7 +3399,8 @@ object json {
         "quotas" -> ApiKeyQuotasFormat.writes(o.quotas),
         "billing" -> ApiKeyBillingFormat.writes(o.billing),
         "from" -> DateTimeFormat.writes(o.from),
-        "to" -> DateTimeFormat.writes(o.to)
+        "to" -> DateTimeFormat.writes(o.to),
+        "state" -> ApiKeyConsumptionStateFormat.writes(o.state)
       )
     }
   val GlobalConsumptionInformationsFormat

@@ -266,7 +266,7 @@ export function ApiPricing(props: ApiPricingProps) {
   });
 
   return (
-    <div className="d-flex flex-row pricing-content" id="usage-plans__list">
+    <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
       {/* <div className="album"> */}
         {/* <div className="container">
           <div className="row"> */}

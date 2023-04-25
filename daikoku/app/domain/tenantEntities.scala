@@ -115,14 +115,18 @@ object ItemType {
   case object Subscription extends ItemType {
     def name: String = "Subscription"
   }
+  case object ApiKeyConsumption extends ItemType {
+    def name: String = "ApiKeyConsumption"
+  }
   val values: Seq[ItemType] =
     Seq(User, Team, Api, Subscription)
   def apply(name: String): Option[ItemType] = name match {
-    case "User"           => User.some
-    case "Team"           => Team.some
-    case "Api"            => Api.some
-    case "Subscription"   => Subscription.some
-    case _                => None
+    case "User"               => User.some
+    case "Team"               => Team.some
+    case "Api"                => Api.some
+    case "Subscription"       => Subscription.some
+    case "ApiKeyConsumption"  => ApiKeyConsumption.some
+    case _                    => None
   }
 }
 
@@ -135,10 +139,15 @@ object OperationAction {
     def name: String = "DELETE"
   }
 
-  val values: Seq[OperationAction] = Seq(Delete)
+  case object Sync extends OperationAction {
+    def name: String = "SYNC"
+  }
+
+  val values: Seq[OperationAction] = Seq(Delete, Sync)
 
   def apply(name: String): Option[OperationAction] = name match {
     case "DELETE" => Delete.some
+    case "SYNC" => Sync.some
     case _        => None
   }
 }

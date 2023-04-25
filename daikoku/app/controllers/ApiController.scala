@@ -920,12 +920,16 @@ class ApiController(
       import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
       implicit val language: String = ctx.request.getLanguage(ctx.tenant)
       implicit val currentUser: User = ctx.user
+
+      val maybeSessionId = ctx.request.getQueryString("session_id")
+
       (for {
         encryptedToken <- EitherT.fromOption[Future](ctx.request.getQueryString("token"), AppError.EntityNotFound("token from query"))
         token <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant))
         validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
           .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
-        _ <- validateProcessWithStepValidator(validator, ctx.tenant)
+
+        _ <- validateProcessWithStepValidator(validator, ctx.tenant, maybeSessionId)
       } yield if (ctx.user.isGuest) Ok(
         views.html.response(
           None,
@@ -984,7 +988,7 @@ class ApiController(
     }
   }
 
-  private def validateProcessWithStepValidator(validator: StepValidator, tenant: Tenant)(implicit language: String, currentUser: User) = {
+  private def validateProcessWithStepValidator(validator: StepValidator, tenant: Tenant, maybeSessionId: Option[String] = None)(implicit language: String, currentUser: User) = {
     for {
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
         .findByIdNotDeleted(validator.subscriptionDemand), AppError.EntityNotFound("Subscription demand Validator"))
@@ -1003,7 +1007,7 @@ class ApiController(
         ), Json.obj(
           "$set" -> Json.obj("status" -> json.NotificationStatusFormat.writes(NotificationStatus.Accepted()))
         )))
-      result <- apiService.runSubscriptionProcess(demand.id, tenant)
+      result <- apiService.runSubscriptionProcess(demand.id, tenant, maybeSessionId = maybeSessionId)
     } yield result
   }
 

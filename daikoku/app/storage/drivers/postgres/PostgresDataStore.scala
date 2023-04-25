@@ -285,14 +285,13 @@ case class PostgresTenantCapableConsumptionRepo(
 
     reactivePg
       .querySeq(
-        s"SELECT _id, content->>'clientId', MAX(content->>'from') FROM ${rep.tableName} " +
+        s"SELECT content->>'clientId' as client_id, MAX(content->>'from') as max_from FROM ${rep.tableName} " +
           s"WHERE $sql " +
-          "GROUP BY content->>'clientId', _id",
-        params) { row =>
-        Json
+          "GROUP BY content->>'clientId'",
+        params) { row => Json
           .obj(
-            "clientId" -> row.getString(1),
-            "from" -> String.valueOf(row.getValue(2))
+            "clientId" -> row.getString("client_id"),
+            "from" -> String.valueOf(row.getValue("max_from"))
           )
           .some
       }

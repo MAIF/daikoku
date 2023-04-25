@@ -3,6 +3,7 @@ package jobs
 import akka.actor.Cancellable
 import akka.http.scaladsl.util.FastFuture
 import cats.data.OptionT
+import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
@@ -15,10 +16,11 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
-class DeletionJob(
+class QueueJob(
     env: Env,
     apiKeyStatsJob: ApiKeyStatsJob,
-    apiService: ApiService
+    apiService: ApiService,
+    paymentClient: PaymentClient
 ) {
   private val logger = Logger("OtoroshiDeletionJob")
 
@@ -275,27 +277,15 @@ class DeletionJob(
   private def syncConsumption(o: Operation): Future[Unit] = {
     //todo: delete the operation id success
     //todo: flag operation Errored if something happened
-    def syncWithThirdParty(consumption: ApiKeyConsumption, plan: UsagePlan): Future[Unit] = {
-      plan.paymentSettings match {
-        case Some(paymentSettings) => (for {
-          tenant <- OptionT(env.dataStore.tenantRepo.findByIdNotDeleted(o.tenant))
-          setting <- OptionT.fromOption[Future](tenant.thirdPartyPaymentSettings.find(_.id == paymentSettings.thirdPartyPaymentSettingsId))
-        } yield setting match {
-          case ThirdPartyPaymentSettings.StripeSettings(id, name, publicKey, secretKey) =>
-            FastFuture.successful(AppLogger.warn(s"SYNC with strip ${name} consumption ${consumption.id} count ${consumption.hits} for ${consumption.from.toString("dd/MM/YYYY")}"))
-          case _ => FastFuture.successful(())
-        }).value.map(_ => ())
-        case None => FastFuture.successful(())
-      }
-    }
-
-
+    //todo: use eitherT instead of OptionT
     (for {
       consumption <- OptionT(env.dataStore.consumptionRepo.forTenant(o.tenant).findByIdNotDeleted(o.itemId))
       api <- OptionT(env.dataStore.apiRepo.forTenant(o.tenant).findByIdNotDeleted(consumption.api))
       plan <- OptionT.fromOption[Future](api.possibleUsagePlans.find(_.id == consumption.plan))
-      _ <- OptionT.liftF(syncWithThirdParty(consumption, plan))
-    } yield AppLogger.warn("[SYNC] :: sync with stripe")).value.map(_ => ())
+      _ <- OptionT.liftF(paymentClient.syncWithThirdParty(consumption, plan))
+      _ <- OptionT.liftF(env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
+    } yield ())
+      .value.map(_ => ())
   }
 
   def deleteFirstOperation(): Future[Unit] = {

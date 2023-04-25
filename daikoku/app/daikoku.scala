@@ -30,7 +30,7 @@ import io.vertx.sqlclient.PoolOptions
 import jobs.{
   ApiKeyStatsJob,
   AuditTrailPurgeJob,
-  DeletionJob,
+  QueueJob,
   OtoroshiVerifierJob
 }
 import play.api.ApplicationLoader.Context
@@ -67,7 +67,7 @@ package object modules {
     implicit lazy val env: Env = wire[DaikokuEnv]
 
     lazy val verifier = wire[OtoroshiVerifierJob]
-    lazy val deletor = wire[DeletionJob]
+    lazy val deletor = wire[QueueJob]
     lazy val statsJob = wire[ApiKeyStatsJob]
     lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
 

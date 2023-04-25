@@ -18,6 +18,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
+import sangria.macros.derive
 import sangria.macros.derive._
 import sangria.marshalling.FromInput
 import sangria.schema.{Context, _}
@@ -1128,7 +1129,8 @@ object SchemaDefinition {
       ReplaceField("quotas", Field("quotas", ApiKeyQuotasType, resolve = _.value.quotas)),
       ReplaceField("billing", Field("billing", ApiKeyBillingType, resolve = _.value.billing)),
       ReplaceField("from", Field("from", DateTimeUnitype, resolve = _.value.from)),
-      ReplaceField("to", Field("to", DateTimeUnitype, resolve = _.value.to))
+      ReplaceField("to", Field("to", DateTimeUnitype, resolve = _.value.to)),
+      ReplaceField("state", Field("state", StringType, resolve = _.value.state.name))
     )
 
     val  PasswordResetType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), PasswordReset](

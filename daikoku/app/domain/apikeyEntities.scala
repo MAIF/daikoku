@@ -73,7 +73,8 @@ case class ApiSubscription(
     customMaxPerDay: Option[Long] = None,
     customMaxPerMonth: Option[Long] = None,
     customReadOnly: Option[Boolean] = None,
-    parent: Option[ApiSubscriptionId] = None
+    parent: Option[ApiSubscriptionId] = None,
+    thirdPartySubscription: Option[String] = None
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(permission: TeamPermission,
@@ -136,8 +137,22 @@ case class ActualOtoroshiApiKey(
                    clientSecret = clientSecret)
 }
 
+sealed trait ApiKeyConsumptionState {
+  def name: String
+}
+
+object ApiKeyConsumptionState {
+  case object Completed extends ApiKeyConsumptionState {
+    def name: String = "completed"
+  }
+  case object InProgress extends ApiKeyConsumptionState {
+    def name: String = "inProgress"
+  }
+}
+
 case class ApiKeyConsumption(
     id: DatastoreId,
+    deleted: Boolean = false,
     tenant: TenantId,
     team: TeamId,
     api: ApiId,
@@ -148,9 +163,11 @@ case class ApiKeyConsumption(
     quotas: ApiKeyQuotas,
     billing: ApiKeyBilling,
     from: DateTime,
-    to: DateTime)
+    to: DateTime,
+    state: ApiKeyConsumptionState)
     extends CanJson[ApiKeyConsumption] {
   override def asJson: JsValue = json.ConsumptionFormat.writes(this)
+  def isComplete = state == ApiKeyConsumptionState.Completed
 }
 
 case class ApiKeyGlobalConsumptionInformations(hits: Long,

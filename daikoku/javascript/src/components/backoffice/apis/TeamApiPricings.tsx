@@ -1304,6 +1304,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           schema: {
             title: {
               type: type.string,
+              defaultValue: "Email",
               constraints: [
                 constraints.required(translate('constraints.required.value'))
               ]
@@ -1417,53 +1418,57 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
   }
 
   return (
-    <SortableList
-      items={props.value.subscriptionProcess}
-      onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
-      renderItem={(item, idx) => {
-        if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
-          return (
-            <FixedItem id={item.id}>
-              <ValidationStep
-                index={idx + 1}
-                step={item}
-                tenant={props.tenant} />
-            </FixedItem>
-          )
-        } else if (isValidationStepPayment(item)) {
-          return (
-            <FixedItem id={item.id}>
-              <ValidationStep
-                index={idx + 1}
-                step={item}
-                tenant={props.tenant} />
-            </FixedItem>
-          )
-        } else {
-          return (
-            <>
-              <SortableItem
-                className="validation-step-container"
-                action={
-                  <div className={classNames('d-flex flex-row', {
-                    'justify-content-between': isValidationStepEmail(item),
-                    'justify-content-end': !isValidationStepEmail(item),
-                  })}>
-                    {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
-                    <button className='btn btn-sm btn-outline-danger' onClick={() => deleteStep(item.id)}><Trash size={15} /></button>
-                  </div>}
-                id={item.id}>
+    <div className='d-flex flex-row align-items-center'>
+      <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(0)}><Plus /></button>
+      <SortableList
+        items={props.value.subscriptionProcess}
+        onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
+        className="flex-grow-1"
+        renderItem={(item, idx) => {
+          if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
+            return (
+              <FixedItem id={item.id}>
                 <ValidationStep
                   index={idx + 1}
                   step={item}
                   tenant={props.tenant} />
-              </SortableItem>
-              <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
-            </>
-          )
-        }
-      }}
-    />
+              </FixedItem>
+            )
+          } else if (isValidationStepPayment(item)) {
+            return (
+              <FixedItem id={item.id}>
+                <ValidationStep
+                  index={idx + 1}
+                  step={item}
+                  tenant={props.tenant} />
+              </FixedItem>
+            )
+          } else {
+            return (
+              <>
+                <SortableItem
+                  className="validation-step-container"
+                  action={
+                    <div className={classNames('d-flex flex-row', {
+                      'justify-content-between': isValidationStepEmail(item),
+                      'justify-content-end': !isValidationStepEmail(item),
+                    })}>
+                      {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
+                      <button className='btn btn-sm btn-outline-danger' onClick={() => deleteStep(item.id)}><Trash size={15} /></button>
+                    </div>}
+                  id={item.id}>
+                  <ValidationStep
+                    index={idx + 1}
+                    step={item}
+                    tenant={props.tenant} />
+                </SortableItem>
+                <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
+              </>
+            )
+          }
+        }}
+      />
+    </div>
   )
 }
 
