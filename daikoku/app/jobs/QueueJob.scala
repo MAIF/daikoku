@@ -2,44 +2,18 @@ package jobs
 
 import akka.actor.Cancellable
 import akka.http.scaladsl.util.FastFuture
-import akka.kafka.Subscription
 import cats.data.OptionT
-import fr.maif.otoroshi.daikoku.domain.{
-  Api,
-  ApiSubscription,
-  ItemType,
-  NotificationAction,
-  Operation,
-  OperationAction,
-  OperationStatus,
-  Team,
-  Tenant,
-  TenantId,
-  User,
-  UserId,
-  json
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{
-  ApiService,
-  IdGenerator,
-  OtoroshiClient,
-  Translator
-}
+import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.ApiService
 import org.joda.time.DateTime
 import play.api.Logger
-import play.api.libs.json.{
-  JsArray,
-  JsError,
-  JsNumber,
-  JsString,
-  JsSuccess,
-  Json
-}
+import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class DeletionJob(
     env: Env,
@@ -298,6 +272,32 @@ class DeletionJob(
       })
   }
 
+  private def syncConsumption(o: Operation): Future[Unit] = {
+    //todo: delete the operation id success
+    //todo: flag operation Errored if something happened
+    def syncWithThirdParty(consumption: ApiKeyConsumption, plan: UsagePlan): Future[Unit] = {
+      plan.paymentSettings match {
+        case Some(paymentSettings) => (for {
+          tenant <- OptionT(env.dataStore.tenantRepo.findByIdNotDeleted(o.tenant))
+          setting <- OptionT.fromOption[Future](tenant.thirdPartyPaymentSettings.find(_.id == paymentSettings.thirdPartyPaymentSettingsId))
+        } yield setting match {
+          case ThirdPartyPaymentSettings.StripeSettings(id, name, publicKey, secretKey) =>
+            FastFuture.successful(AppLogger.warn(s"SYNC with strip ${name} consumption ${consumption.id} count ${consumption.hits} for ${consumption.from.toString("dd/MM/YYYY")}"))
+          case _ => FastFuture.successful(())
+        }).value.map(_ => ())
+        case None => FastFuture.successful(())
+      }
+    }
+
+
+    (for {
+      consumption <- OptionT(env.dataStore.consumptionRepo.forTenant(o.tenant).findByIdNotDeleted(o.itemId))
+      api <- OptionT(env.dataStore.apiRepo.forTenant(o.tenant).findByIdNotDeleted(consumption.api))
+      plan <- OptionT.fromOption[Future](api.possibleUsagePlans.find(_.id == consumption.plan))
+      _ <- OptionT.liftF(syncWithThirdParty(consumption, plan))
+    } yield AppLogger.warn("[SYNC] :: sync with stripe")).value.map(_ => ())
+  }
+
   def deleteFirstOperation(): Future[Unit] = {
     env.dataStore.operationRepo
       .forAllTenant()
@@ -317,6 +317,9 @@ class DeletionJob(
               deleteTeam(operation)
             case (ItemType.User, OperationAction.Delete) =>
               deleteUser(operation)
+            case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
+              syncConsumption(operation)
+            case (_, _) => FastFuture.successful(())
           }).flatMap(_ => deleteFirstOperation())
         case None =>
           FastFuture.successful(())
