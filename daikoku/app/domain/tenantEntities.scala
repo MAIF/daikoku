@@ -118,6 +118,9 @@ object ItemType {
   case object ApiKeyConsumption extends ItemType {
     def name: String = "ApiKeyConsumption"
   }
+  case object ThirdPartySubscription extends ItemType {
+    def name: String = "ThirdPartySubscription"
+  }
   val values: Seq[ItemType] =
     Seq(User, Team, Api, Subscription)
   def apply(name: String): Option[ItemType] = name match {
@@ -126,6 +129,7 @@ object ItemType {
     case "Api"                => Api.some
     case "Subscription"       => Subscription.some
     case "ApiKeyConsumption"  => ApiKeyConsumption.some
+    case "ThirdPartySubscription" => ThirdPartySubscription.some
     case _                    => None
   }
 }

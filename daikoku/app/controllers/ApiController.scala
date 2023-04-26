@@ -1440,9 +1440,11 @@ class ApiController(
     DaikokuAction.async { ctx =>
       TeamApiKeyAction(
         AuditTrailEvent(
-          s"@{user.name} has archived api subscription @{subscription.id} of @{team.name} - @{team.id}"
+          s"@{user.name} has @{action} api subscription @{subscription.id} of @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
+        ctx.setCtxValue("@action", if (enabled.getOrElse(false)) "disabled" else "enabled")
+
         apiSubscriptionAction(
           ctx.tenant,
           team,

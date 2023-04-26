@@ -69,7 +69,7 @@ class DeletionService(env: Env) {
   /**
     * delete logically all subscriptions
     * add for each subscriptions an operation in queue to process a complete deletion of each Api
-    * (disable apikey in otoroshi, compute consumptions, delete notifications)
+    * (disable apikey in otoroshi, compute consumptions, close third-party subscription, delete notifications)
     *
     * @param subscriptions Sequence of ApiSubscriptions
     * @param tenant Tenant where delete those ApiSubscriptions
@@ -99,6 +99,25 @@ class DeletionService(env: Env) {
     } yield ()
 
     EitherT.liftF(r)
+  }
+
+  def closeThirdPartySubscriptions(subscriptions: Seq[ApiSubscription], tenant: Tenant): EitherT[Future, AppError, Unit] = {
+    val thirdPartySubs = subscriptions.filter(_.thirdPartySubscriptionInformations.isDefined).distinct
+    val operations = thirdPartySubs
+      .map(
+        s =>
+          Operation(
+            DatastoreId(BSONObjectID.generate().stringify),
+            tenant = tenant.id,
+            itemId = s.id.value,
+            itemType = ItemType.ThirdPartySubscription,
+            action = OperationAction.Delete
+          ))
+
+    AppLogger.debug(
+      s"[deletion service] :: add **third-aprty subscriptions**[${thirdPartySubs.map(_.id).mkString(",")}] to deletion queue")
+
+    EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).insertMany(operations).map(_ => ()))
   }
 
   /**
@@ -234,6 +253,7 @@ class DeletionService(env: Env) {
           .find(Json.obj(
             "api" -> Json.obj("$in" -> JsArray(apis.map(_.id.asJson))))))
       _ <- deleteSubscriptions(subscriptions ++ apiSubscriptions, tenant)
+      _ <- closeThirdPartySubscriptions(subscriptions ++ apiSubscriptions, tenant)
       _ <- deleteApis(apis, tenant)
       _ <- deleteTeam(team, tenant)
     } yield ()

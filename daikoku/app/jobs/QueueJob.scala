@@ -2,7 +2,8 @@ package jobs
 
 import akka.actor.Cancellable
 import akka.http.scaladsl.util.FastFuture
-import cats.data.OptionT
+import cats.data.{EitherT, OptionT}
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -45,6 +46,10 @@ class QueueJob(
   def stop(): Unit = {
     Option(ref.get()).foreach(_.cancel())
   }
+
+  //*************************
+  //*** ELEMENTS DELETION ***
+  //*************************
 
   private def deleteApiNotifications(api: Api): Future[Boolean] = {
     env.dataStore.notificationRepo
@@ -205,8 +210,9 @@ class QueueJob(
       //todo: send notification & mail ?
       _ <- OptionT.liftF(
         apiKeyStatsJob.syncForSubscription(subscription, tenant))
-      _ <- OptionT.liftF(
-        apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
+      //todo: delete apikey in oto & daikoku instead ???
+      _ <- OptionT.liftF(apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
+      _ <- OptionT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteByIdLogically(subscription.id))
       _ <- OptionT.liftF(
         env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
       _ <- OptionT.liftF(deleteSubscriptionNotifications(subscription))
@@ -274,9 +280,12 @@ class QueueJob(
       })
   }
 
+  //***************************
+  //*** THIRD PARTY PAYMENT ***
+  //***************************
+
+
   private def syncConsumption(o: Operation): Future[Unit] = {
-    //todo: delete the operation id success
-    //todo: flag operation Errored if something happened
     //todo: use eitherT instead of OptionT
     (for {
       consumption <- OptionT(env.dataStore.consumptionRepo.forTenant(o.tenant).findByIdNotDeleted(o.itemId))
@@ -287,6 +296,25 @@ class QueueJob(
     } yield ())
       .value.map(_ => ())
   }
+
+  private def deleteThirdPartySubscription(o: Operation): Future[Unit] = {
+    (for {
+      apiSubscription <- EitherT.fromOptionF(env.dataStore.apiSubscriptionRepo.forTenant(o.tenant).findById(o.itemId), AppError.EntityNotFound("api subscription"))
+      _ <- paymentClient.deleteThirdPartySubscription(apiSubscription)
+    } yield ()).value.map {
+      case Left(value) =>
+        AppLogger.error(s"[QUEUE JOB] :: ${o.id} :: ERROR : ${value.getErrorMessage()}")
+        env.dataStore.operationRepo
+          .forTenant(o.tenant)
+          .save(o.copy(status = OperationStatus.Error))
+
+      case Right(_) => env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+    }.flatten.map(_ => ())
+  }
+
+  //***************************
+  //***************************
+
 
   def deleteFirstOperation(): Future[Unit] = {
     env.dataStore.operationRepo
@@ -309,6 +337,8 @@ class QueueJob(
               deleteUser(operation)
             case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
               syncConsumption(operation)
+            case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
+              deleteThirdPartySubscription(operation)
             case (_, _) => FastFuture.successful(())
           }).flatMap(_ => deleteFirstOperation())
         case None =>

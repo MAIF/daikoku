@@ -17,7 +17,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
@@ -388,7 +388,7 @@ class PaymentClient(
     }
   }
 
-  def syncConsumptionWithStripe(apiSubscription: ApiSubscription, consumption: ApiKeyConsumption)(implicit stripeSettings: StripeSettings) = {
+  private def syncConsumptionWithStripe(apiSubscription: ApiSubscription, consumption: ApiKeyConsumption)(implicit stripeSettings: StripeSettings) = {
 
     apiSubscription.thirdPartySubscriptionInformations match {
       case Some(informations) => informations match {
@@ -403,6 +403,59 @@ class PaymentClient(
       }
 
       case None => FastFuture.successful(())
+    }
+  }
+
+  def deleteThirdPartySubscription(apiSubscription: ApiSubscription): EitherT[Future, AppError, JsValue] = {
+    for {
+      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(apiSubscription.tenant).findById(apiSubscription.api), AppError.ApiNotFound)
+      plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == apiSubscription.plan), AppError.PlanNotFound)
+      tenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(api.tenant), AppError.TenantNotFound)
+      settings <- EitherT.fromOption[Future](plan.paymentSettings.flatMap(s => tenant.thirdPartyPaymentSettings.find(_.id == s.thirdPartyPaymentSettingsId)), AppError.EntityNotFound("payment settings"))
+      result <- settings match {
+        case p: StripeSettings => deleteStripeSubscription(apiSubscription)(p)
+      }
+    } yield result
+  }
+
+  private def deleteStripeSubscription(apiSubscription: ApiSubscription)(implicit stripeSettings: StripeSettings): EitherT[Future, AppError, JsValue] = {
+    apiSubscription.thirdPartySubscriptionInformations match {
+      case Some(informations) => informations match {
+        case StripeSubscriptionInformations(subscriptionId, _, _) =>
+          EitherT.liftF(stripeClient(s"/v1/subscriptions/$subscriptionId")
+            .delete().map(_.json))
+      }
+
+      case None => EitherT.left[JsValue](FastFuture.successful(AppError.EntityNotFound("stripe settings")))
+    }
+  }
+
+  def toggleStateThirdPartySubscription(apiSubscription: ApiSubscription): EitherT[Future, AppError, JsValue] = {
+    for {
+      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(apiSubscription.tenant).findById(apiSubscription.api), AppError.ApiNotFound)
+      plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == apiSubscription.plan), AppError.PlanNotFound)
+      tenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(api.tenant), AppError.TenantNotFound)
+      settings <- EitherT.fromOption[Future](plan.paymentSettings.flatMap(s => tenant.thirdPartyPaymentSettings.find(_.id == s.thirdPartyPaymentSettingsId)), AppError.EntityNotFound("payment settings"))
+      value <- settings match {
+        case p: StripeSettings => toggleStateStripeSubscription(apiSubscription)(p)
+      }
+    } yield value
+  }
+
+  private def toggleStateStripeSubscription(apiSubscription: ApiSubscription)(implicit stripeSettings: StripeSettings): EitherT[Future, AppError, JsValue] = {
+    apiSubscription.thirdPartySubscriptionInformations match {
+      case Some(informations) => informations match {
+        case StripeSubscriptionInformations(subscriptionId, _, _) =>
+          val body = if (apiSubscription.enabled)
+            Map("pause_collection" -> "")
+          else
+            Map("pause_collection[behavior]" -> "void")
+
+          EitherT.liftF(stripeClient(s"/v1/subscriptions/$subscriptionId")
+            .post(body).map(_.json))
+      }
+
+      case None => EitherT.left[JsValue](FastFuture.successful(AppError.EntityNotFound("stripe settings")))
     }
   }
 }

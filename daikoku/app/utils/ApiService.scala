@@ -404,6 +404,8 @@ class ApiService(env: Env,
                     enabled: Boolean): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
+    val updatedSubscription = subscription.copy(enabled = enabled)
+
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
       tenant.otoroshiSettings.find(_.id == id)
     } match {
@@ -436,10 +438,11 @@ class ApiService(env: Env,
               EitherT.liftF(
                 otoroshiClient.updateApiKey(apiKey.copy(enabled = enabled)))
           }
+          _ <- paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
           _ <- EitherT.liftF(
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant.id)
-              .save(subscription.copy(enabled = enabled))
+              .save(updatedSubscription)
           )
         } yield {
           Json.obj("done" -> true,
