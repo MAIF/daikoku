@@ -974,99 +974,99 @@ class ApiService(env: Env,
     import cats.implicits._
 
     def controlApiAndPlan(api: Api, plan: UsagePlan): EitherT[Future, AppError, Unit] = {
-        if (!api.isPublished) {
-          EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
-        } else if (api.visibility == ApiVisibility.AdminOnly && !currentUser.isDaikokuAdmin) {
-          EitherT.leftT[Future, Unit](AppError.ForbiddenAction)
-        } else {
-          EitherT.pure(())
-        }
+      if (!api.isPublished) {
+        EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
+      } else if (api.visibility == ApiVisibility.AdminOnly && !currentUser.isDaikokuAdmin) {
+        EitherT.leftT[Future, Unit](AppError.ForbiddenAction)
+      } else {
+        EitherT.pure(())
       }
+    }
 
-      def controlTeam(team: Team, api: Api, plan: UsagePlan): EitherT[Future, AppError, Unit] = {
-        if (!currentUser.isDaikokuAdmin && !team.includeUser(currentUser.id)) {
-          EitherT.leftT[Future, Unit](AppError.TeamUnauthorized)
-        } else if (team.id != api.team && api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id)) {
-          EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
-        } else if (team.id != api.team && plan.visibility == UsagePlanVisibility.Private && !plan.authorizedTeams.contains(team.id)) {
-          EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
-        } else if (tenant.subscriptionSecurity.forall(t => t) && team.`type` == TeamType.Personal) {
-          EitherT.leftT[Future, Unit](AppError.SecurityError("Subscription security"))
-        } else {
-          EitherT.pure(())
-        }
+    def controlTeam(team: Team, api: Api, plan: UsagePlan): EitherT[Future, AppError, Unit] = {
+      if (!currentUser.isDaikokuAdmin && !team.includeUser(currentUser.id)) {
+        EitherT.leftT[Future, Unit](AppError.TeamUnauthorized)
+      } else if (team.id != api.team && api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id)) {
+        EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
+      } else if (team.id != api.team && plan.visibility == UsagePlanVisibility.Private && !plan.authorizedTeams.contains(team.id)) {
+        EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
+      } else if (tenant.subscriptionSecurity.forall(t => t) && team.`type` == TeamType.Personal) {
+        EitherT.leftT[Future, Unit](AppError.SecurityError("Subscription security"))
+      } else {
+        EitherT.pure(())
       }
+    }
 
-      def controlSubscriptionExtension(plan: UsagePlan, team: Team): EitherT[Future, AppError, Unit] = {
-        EitherT(parentSubscriptionId match {
-          case Some(apiKey) =>
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant)
-              .findByIdNotDeleted(apiKey.value)
-              .flatMap {
-                case Some(sub) if sub.parent.isDefined => FastFuture.successful(Left(AppError.SubscriptionParentExisted))
-                case Some(_) if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity
-                  .exists(a => !a) => FastFuture.successful(Left(AppError.SecurityError("Subscription Aggregation")))
-                case Some(sub) if sub.team != team.id => FastFuture.successful(Left(SubscriptionAggregationTeamConflict))
-                case Some(sub) => env.dataStore.apiRepo
-                  .forTenant(tenant)
-                  .findByIdNotDeleted(sub.api)
-                  .map {
-                    case Some(parentApi) => parentApi.possibleUsagePlans.find(p => p.id == sub.plan) match {
-                      case Some(parentPlan)
-                        if parentPlan.otoroshiTarget
-                          .map(
-                            _.otoroshiSettings
-                          ) != plan.otoroshiTarget
-                          .map(
-                            _.otoroshiSettings
-                          ) => Left(AppError.SubscriptionAggregationOtoroshiConflict)
-                      case _ => Right(())
-                    }
-                    case None => Left(AppError.ApiNotFound)
+    def controlSubscriptionExtension(plan: UsagePlan, team: Team): EitherT[Future, AppError, Unit] = {
+      EitherT(parentSubscriptionId match {
+        case Some(apiKey) =>
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findByIdNotDeleted(apiKey.value)
+            .flatMap {
+              case Some(sub) if sub.parent.isDefined => FastFuture.successful(Left(AppError.SubscriptionParentExisted))
+              case Some(_) if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity
+                .exists(a => !a) => FastFuture.successful(Left(AppError.SecurityError("Subscription Aggregation")))
+              case Some(sub) if sub.team != team.id => FastFuture.successful(Left(SubscriptionAggregationTeamConflict))
+              case Some(sub) => env.dataStore.apiRepo
+                .forTenant(tenant)
+                .findByIdNotDeleted(sub.api)
+                .map {
+                  case Some(parentApi) => parentApi.possibleUsagePlans.find(p => p.id == sub.plan) match {
+                    case Some(parentPlan)
+                      if parentPlan.otoroshiTarget
+                        .map(
+                          _.otoroshiSettings
+                        ) != plan.otoroshiTarget
+                        .map(
+                          _.otoroshiSettings
+                        ) => Left(AppError.SubscriptionAggregationOtoroshiConflict)
+                    case _ => Right(())
                   }
-              }
-          case None => FastFuture.successful(Right(()))
-        })
-      }
+                  case None => Left(AppError.ApiNotFound)
+                }
+            }
+        case None => FastFuture.successful(Right(()))
+      })
+    }
 
-      val value: EitherT[Future, AppError, Result] = for {
-        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant.id).findByIdNotDeleted(apiId),
-          AppError.ApiNotFound)
-        plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(pp => pp.id.value == planId),
-          AppError.PlanNotFound)
-        _ <- controlApiAndPlan(api, plan)
-        team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
-          AppError.TeamNotFound)
-        _ <- controlTeam(team, api, plan)
-        _ <- EitherT(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findOneNotDeleted(
-          Json.obj(
-            "team" -> team.id.asJson,
-            "api" -> api.id.asJson,
-            "plan" -> plan.id.asJson
-          )
-        ).map {
-          case Some(_) => Left(AppError.SubscriptionConflict)
-          case None => Right(())
-        })
-        _ <- controlSubscriptionExtension(plan, team)
-        result <- applyProcessForApiSubscription(
-          tenant,
-          currentUser,
-          api,
-          plan.id.value,
-          team,
-          parentSubscriptionId,
-          motivation,
-          customMetadata,
-          customMaxPerSecond,
-          customMaxPerDay,
-          customMaxPerMonth,
-          customReadOnly
+    val value: EitherT[Future, AppError, Result] = for {
+      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant.id).findByIdNotDeleted(apiId),
+        AppError.ApiNotFound)
+      plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(pp => pp.id.value == planId),
+        AppError.PlanNotFound)
+      _ <- controlApiAndPlan(api, plan)
+      team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
+        AppError.TeamNotFound)
+      _ <- controlTeam(team, api, plan)
+      _ <- EitherT(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findOneNotDeleted(
+        Json.obj(
+          "team" -> team.id.asJson,
+          "api" -> api.id.asJson,
+          "plan" -> plan.id.asJson
         )
-      } yield result
+      ).map {
+        case Some(_) => Left(AppError.SubscriptionConflict)
+        case None => Right(())
+      })
+      _ <- controlSubscriptionExtension(plan, team)
+      result <- applyProcessForApiSubscription(
+        tenant,
+        currentUser,
+        api,
+        plan.id.value,
+        team,
+        parentSubscriptionId,
+        motivation,
+        customMetadata,
+        customMaxPerSecond,
+        customMaxPerDay,
+        customMaxPerMonth,
+        customReadOnly
+      )
+    } yield result
 
-      value.leftMap(_.render()).merge
+    value.leftMap(_.render()).merge
   }
 
   def applyProcessForApiSubscription(

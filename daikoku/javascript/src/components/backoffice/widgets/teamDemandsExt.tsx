@@ -69,7 +69,6 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
         {data?.data && data.data.subscriptionDemandsForAdmin.count > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands
           .map((d: any) => {
             const actualStep = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress')
-            console.debug({actualStep})
             const reRunable = actualStep.step.name !== 'payment'
 
             return (

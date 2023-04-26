@@ -174,13 +174,18 @@ class PaymentClient(
           payperUsePrice <- postStripePrice(
             Map(
               "product" -> productId,
-              "unit_amount" -> (p.costPerAdditionalRequest * 100).longValue.toString,
               "currency" -> plan.currency.code,
               "nickname" -> planName,
               "metadata[plan]" -> plan.id.value,
               "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
               "recurring[usage_type]" -> "metered",
-              "recurring[aggregate_usage]" -> "sum"
+              "recurring[aggregate_usage]" -> "sum",
+              "tiers_mode" -> "graduated",
+              "billing_scheme" -> "tiered",
+              "tiers[0][unit_amount]" -> "0",
+              "tiers[0][up_to]" -> p.maxRequestPerMonth.getOrElse(0L).toString,
+              "tiers[1][unit_amount]" -> (p.costPerAdditionalRequest * 100).longValue.toString,
+              "tiers[1][up_to]" -> "inf"
             )
           )
         } yield PaymentSettings.Stripe(
@@ -387,8 +392,5 @@ class PaymentClient(
           .post(body)
       case None => FastFuture.successful(())
     }
-
-
-
   }
 }

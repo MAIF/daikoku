@@ -44,8 +44,6 @@ export const GuestPanel = () => {
     });
   };
 
-  console.debug(translate('login.label'))
-
   return (
     <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
       <div className="mb-3" style={{ height: '40px' }}></div>

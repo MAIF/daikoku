@@ -251,7 +251,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
         val id = maybeLastConsumption
           .map {
-            case c if !c.isComplete && c.from == from => c.id
+            case c if !c.isComplete && c.from.withTimeAtStartOfDay() == from => c.id
             case _ => DatastoreId(IdGenerator.token(24))
           }.getOrElse(DatastoreId(IdGenerator.token(24)))
 

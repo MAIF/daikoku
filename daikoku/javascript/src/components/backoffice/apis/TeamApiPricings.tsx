@@ -1326,7 +1326,6 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
             }
           },
           onSubmit: (data: IValidationStepEmail & EmailOption) => {
-            console.debug({ data })
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32), title: data.title }
               props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }, index) })

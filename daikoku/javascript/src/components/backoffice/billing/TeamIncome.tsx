@@ -109,7 +109,6 @@ export const TeamIncome = () => {
             <div className="row month__and__total">
               <div className="col-12 month__selector d-flex align-items-center">
                 <MonthPicker updateDate={(date: dayjs.Dayjs) => {
-                  console.debug({date})
                   setDate(date);
                   getBillingData(date);
                 }} value={date} />
