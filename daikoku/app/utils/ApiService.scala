@@ -147,7 +147,7 @@ class ApiService(env: Env,
                      customMaxPerDay: Option[Long] = None,
                      customMaxPerMonth: Option[Long] = None,
                      customReadOnly: Option[Boolean] = None,
-                     thirdPartySubscription: Option[String]): Future[Either[AppError, ApiSubscription]] = {
+                     thirdPartySubscriptionInformations: Option[ThirdPartySubscriptionInformations]): Future[Either[AppError, ApiSubscription]] = {
     val defaultPlanOpt =
       api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
     val askedUsagePlan = api.possibleUsagePlans.find(p => p.id.value == planId)
@@ -215,7 +215,7 @@ class ApiService(env: Env,
               customMaxPerMonth = customMaxPerMonth,
               customReadOnly = customReadOnly,
               parent = parentSubscriptionId,
-              thirdPartySubscription = thirdPartySubscription
+              thirdPartySubscriptionInformations = thirdPartySubscriptionInformations
             )
 
             val otoroshiApiKeyActionResult: EitherT[Future, AppError, ActualOtoroshiApiKey] = maybeParentSub match {
@@ -899,7 +899,7 @@ class ApiService(env: Env,
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
           team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.ApiNotFound)
           plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == demand.plan), AppError.PlanNotFound)
-          maybeSubscription <- EitherT.liftF(plan.paymentSettings match {
+          maybeSubscriptionInformations <- EitherT.liftF(plan.paymentSettings match {
             case Some(settings) => paymentClient.getSubscription(maybeSessionId, settings, tenant)
             case None => FastFuture.successful(None)
           })
@@ -915,7 +915,7 @@ class ApiService(env: Env,
             customMaxPerDay = demand.customMaxPerDay,
             customMaxPerMonth = demand.customMaxPerMonth,
             customReadOnly = demand.customReadOnly,
-            thirdPartySubscription = maybeSubscription
+            thirdPartySubscriptionInformations = maybeSubscriptionInformations
           ))
           administrators <- EitherT.liftF(
             env.dataStore.userRepo
@@ -1099,7 +1099,7 @@ class ApiService(env: Env,
       case Some(plan) =>
 
         plan.subscriptionProcess match {
-          case Nil => EitherT(subscribeToApi(tenant, user, api, planId, team, apiKeyId, thirdPartySubscription = None))
+          case Nil => EitherT(subscribeToApi(tenant, user, api, planId, team, apiKeyId, thirdPartySubscriptionInformations = None))
             .map(s => Ok(Json.obj("creation" -> "done", "subscription" -> s.asSafeJson)))
           case steps =>
             val demanId = SubscriptionDemandId(BSONObjectID.generate().stringify)

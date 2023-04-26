@@ -11,6 +11,7 @@ import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Re
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
+import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -2358,11 +2359,13 @@ object json {
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
             parent = (json \ "parent").asOpt(ApiSubscriptionIdFormat),
-            thirdPartySubscription = (json \ "thirdPartySubscription").asOpt[String]
+            thirdPartySubscriptionInformations = (json \ "thirdPartySubscriptionInformations").asOpt(ThirdPartySubscriptionInformationsFormat)
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: ApiSubscription): JsValue = Json.obj(
@@ -2408,12 +2411,44 @@ object json {
         .map(ApiSubscriptionIdFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue],
-      "thirdPartySubscription" -> o.thirdPartySubscription
-        .map(JsString)
+      "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
+        .map(ThirdPartySubscriptionInformationsFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
   }
+
+  val ThirdPartySubscriptionInformationsFormat =  new Format[ThirdPartySubscriptionInformations] {
+    override def reads(json: JsValue): JsResult[ThirdPartySubscriptionInformations] = (json \ "type").as[String] match {
+      case "stripe" => StripeSubscriptionInformationsFormat.reads(json)
+    }
+
+    override def writes(o: ThirdPartySubscriptionInformations): JsValue = o match {
+      case i: StripeSubscriptionInformations => StripeSubscriptionInformationsFormat.writes(i).as[JsObject] + ("type" -> JsString("stripe"))
+    }
+  }
+  val StripeSubscriptionInformationsFormat = new Format[StripeSubscriptionInformations] {
+    override def reads(json: JsValue): JsResult[StripeSubscriptionInformations] = Try {
+      JsSuccess(
+        StripeSubscriptionInformations(
+          subscriptionId = (json \ "subscriptionId").as[String],
+          primaryElementId =  (json \ "primaryElementId").asOpt[String],
+          meteredElementId =  (json \ "meteredElementId").asOpt[String]
+        )
+      )
+    } recover {
+    case e =>
+      AppLogger.error(e.getMessage, e)
+      JsError(e.getMessage)
+  } get
+
+    override def writes(o: StripeSubscriptionInformations): JsValue = Json.obj(
+      "subscriptionId" -> o.subscriptionId,
+      "primaryElementId" -> o.primaryElementId,
+      "meteredElementId" -> o.meteredElementId
+    )
+  }
+
 
   val SubscriptionDemandStateFormat = new Format[SubscriptionDemandState] {
     override def reads(json: JsValue) = json.as[String] match {

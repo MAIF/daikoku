@@ -74,7 +74,7 @@ case class ApiSubscription(
     customMaxPerMonth: Option[Long] = None,
     customReadOnly: Option[Boolean] = None,
     parent: Option[ApiSubscriptionId] = None,
-    thirdPartySubscription: Option[String] = None
+    thirdPartySubscriptionInformations: Option[ThirdPartySubscriptionInformations] = None
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(permission: TeamPermission,
@@ -196,6 +196,16 @@ case class ApiKeyQuotas(authorizedCallsPerSec: Long,
 case class ApiKeyBilling(hits: Long, total: BigDecimal)
     extends CanJson[ApiKeyBilling] {
   override def asJson: JsValue = json.ApiKeyBillingFormat.writes(this)
+}
+
+sealed trait ThirdPartySubscriptionInformations
+
+object ThirdPartySubscriptionInformations {
+  case class StripeSubscriptionInformations(
+      subscriptionId: String,
+      primaryElementId: Option[String],
+      meteredElementId: Option[String]) extends ThirdPartySubscriptionInformations {
+  }
 }
 
 sealed trait SubscriptionDemandState {

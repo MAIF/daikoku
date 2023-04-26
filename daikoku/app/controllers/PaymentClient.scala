@@ -10,6 +10,7 @@ import com.stripe.net.RequestOptions
 import com.stripe.param.UsageRecordCreateOnSubscriptionItemParams
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
+import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
@@ -333,17 +334,17 @@ class PaymentClient(
       })
   }
 
-  def getSubscription(maybeSessionId: Option[String], settings: PaymentSettings, tenant: Tenant): Future[Option[String]] =
+  def getSubscription(maybeSessionId: Option[String], settings: PaymentSettings, tenant: Tenant): Future[Option[ThirdPartySubscriptionInformations]] =
     settings match {
       case p: PaymentSettings.Stripe =>
         implicit val stripeSettings: StripeSettings = tenant.thirdPartyPaymentSettings
             .find(_.id == p.thirdPartyPaymentSettingsId)
             .get
             .asInstanceOf[StripeSettings]
-        getStripeSubscription(maybeSessionId)
+        getStripeSubscriptionInformations(maybeSessionId)
     }
 
-  def getStripeSubscription(maybeSessionId: Option[String])(implicit stripeSettings: StripeSettings): Future[Option[String]] = {
+  def getStripeSubscriptionInformations(maybeSessionId: Option[String])(implicit stripeSettings: StripeSettings): Future[Option[StripeSubscriptionInformations]] = {
     maybeSessionId match {
       case Some(sessionId) =>
         for {
@@ -351,10 +352,17 @@ class PaymentClient(
           sub = (session.json \ "subscription").as[String]
           subscription <- stripeClient(s"/v1/subscriptions/$sub").get()
         } yield {
-          (subscription.json \ "items").asOpt[JsObject]
-            .flatMap(items => (items \ "data").as[JsArray].value
-              .find(element => (element \ "plan" \ "usage_type").as[String] == "metered")
-              .map(element => (element \ "id").as[String]))
+          StripeSubscriptionInformations(
+            subscriptionId = (subscription.json \ "id").as[String],
+            primaryElementId = (subscription.json \ "items").asOpt[JsObject]
+              .flatMap(items => (items \ "data").as[JsArray].value
+                .find(element => (element \ "plan" \ "usage_type").as[String] != "metered")
+                .map(element => (element \ "id").as[String])),
+            meteredElementId = (subscription.json \ "items").asOpt[JsObject]
+              .flatMap(items => (items \ "data").as[JsArray].value
+                .find(element => (element \ "plan" \ "usage_type").as[String] == "metered")
+                .map(element => (element \ "id").as[String]))
+          ).some
         }
       case None => FastFuture.successful(None)
     }
@@ -381,15 +389,19 @@ class PaymentClient(
   }
 
   def syncConsumptionWithStripe(apiSubscription: ApiSubscription, consumption: ApiKeyConsumption)(implicit stripeSettings: StripeSettings) = {
-    apiSubscription.thirdPartySubscription match {
-      case Some(sub) =>
-        val body = Map(
-          "quantity" -> consumption.hits.toString,
-          "timestamp" -> (consumption.from.getMillis / 1000).toString
-        )
 
-        stripeClient(s"/v1/subscription_items/$sub/usage_records")
-          .post(body)
+    apiSubscription.thirdPartySubscriptionInformations match {
+      case Some(informations) => informations match {
+        case StripeSubscriptionInformations(_, _, meteredElementId) if meteredElementId.isDefined =>
+          val body = Map(
+            "quantity" -> consumption.hits.toString,
+            "timestamp" -> (consumption.from.getMillis / 1000).toString
+          )
+
+          stripeClient(s"/v1/subscription_items/${meteredElementId.get}/usage_records")
+            .post(body)
+      }
+
       case None => FastFuture.successful(())
     }
   }

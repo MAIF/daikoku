@@ -295,14 +295,15 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
           )
           _ <- env.dataStore.consumptionRepo.forTenant(tenant).save(apiKeyConsumption)
           _ <- apiKeyConsumption.state match {
-            case ApiKeyConsumptionState.Completed => env.dataStore.operationRepo.forTenant(tenant)
-              .save(Operation(
-                DatastoreId(IdGenerator.token(24)),
-                tenant = tenant.id,
-                itemId = id.value,
-                itemType = ItemType.ApiKeyConsumption,
-                action = OperationAction.Sync
-              ))
+            case ApiKeyConsumptionState.Completed =>
+              env.dataStore.operationRepo.forTenant(tenant)
+                .save(Operation(
+                  DatastoreId(IdGenerator.token(24)),
+                  tenant = tenant.id,
+                  itemId = id.value,
+                  itemType = ItemType.ApiKeyConsumption,
+                  action = OperationAction.Sync
+                ))
             case ApiKeyConsumptionState.InProgress => FastFuture.successful(())
           }
         } yield {
