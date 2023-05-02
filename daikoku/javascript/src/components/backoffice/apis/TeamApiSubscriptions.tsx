@@ -232,8 +232,8 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
       {!loading && (
-        <div className="row">
-          <div className='d-flex flex-row justify-content-start align-items-center'>
+        <div className="px-2">
+          <div className='d-flex flex-row justify-content-start align-items-center mb-2'>
             <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
               actionLabel: translate("Filter"),
               onSubmit: data => {

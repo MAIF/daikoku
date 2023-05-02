@@ -1109,7 +1109,7 @@ export const TeamApiPricings = (props: Props) => {
     <div className="album">
       <div className="container">
         <div className="d-flex mb-3">
-          <button onClick={createNewPlan} type="button" className="btn btn-outline-primary me-1">
+          <button onClick={createNewPlan} type="button" className="btn btn-outline-success btn-sm me-1">
             {translate('add a new plan')}
           </button>
           {!!props.value.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
