@@ -1150,7 +1150,7 @@
   "create": "Créer",
   "search.placeholder": "Rechercher une API, équipe, etc...",
   "incorrect.email.or.password": "Adresse e-mail et/ou mot de passe incorrects",
-  "transfer.api.ownership.title": "Transfère de propriété",
+  "transfer.api.ownership.title": "Transfert de propriété",
   "transfer.api.ownership.description": "Transférer l'API à une autre équipe",
   "Transfer": "Transférer",
   "delete.api.title": "Supprimer l'API",
