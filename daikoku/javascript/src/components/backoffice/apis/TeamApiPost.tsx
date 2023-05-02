@@ -167,9 +167,9 @@ export function TeamApiPost({
   return (
     <div>
       <div className="p-3">
-        <div className="d-flex align-items-center justify-content-end">
+        <div className="d-flex align-items-center justify-content-end mb-2">
           <button
-            className="btn btn-outline-success"
+            className="btn btn-outline-success btn-sm"
             onClick={() => openFormModal({
               title: translate('team_api_post.new'),
               schema,
