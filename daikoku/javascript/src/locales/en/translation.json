@@ -1257,7 +1257,7 @@
     "apiList.category.search":"Search a category",
     "team.email.verification.send":"Mail sent to %s for verify this email address.",
     "team.email.alreadyVerified":"This mail is already verified",
-    "team.email.notVerified":"Send a mail.",
+    "team.email.notVerified":"Send a mail",
     "mailValidation.sent.title":"Mail sent",
     "mailValidation.sent.body":"An mail have been sent for validating this new email address.",
     "team.validated.success": "Your email have been verified",
