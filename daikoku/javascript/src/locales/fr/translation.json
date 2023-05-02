@@ -1255,7 +1255,7 @@
   "set.font.family": "la police de style",
   "select.team.placeholder": "Sélectionner une équipe",
   "otoroshi.missing.target": "Cible Otoroshi manquante",
-  "otoroshi.missing.entities": "entités Otoroshi manquantes",
+  "otoroshi.missing.entities": "Entités Otoroshi manquantes",
   "apiList.tag.search":"Recherchez un tag",
   "apiList.category.search":"Recherchez une catégorie",
   "team.email.verification.send": "Mail envoyé à %s pour vérifier cette adresse email.",
