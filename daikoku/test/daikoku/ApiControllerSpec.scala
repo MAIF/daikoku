@@ -2032,7 +2032,6 @@ class ApiControllerSpec()
       )(tenant, session)
       acceptNotif.status mustBe 200
       (acceptNotif.json \ "done").as[Boolean] mustBe true
-
       val respVerif =
         httpJsonCallBlocking(
           path =
