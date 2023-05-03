@@ -1271,13 +1271,9 @@
     "token.expired": "Token expired.",
     "fastMode.onlySubs.info": "with only subscribed ",
     "fastMode.planSearch.info": "and plans with a name like",
-    "api.delete.subscription": "Delete subscription",
     "api.delete.subscription.form.title": "Subscription deletion",
     "api.delete.subscription.message": "You are about to delete the subscription of team %s for plan %s. This action cannot be undone. Are you sure you want to delete this subscription?",
     "secret.refresh.confirm": "You are about to refresh the secret the subscription of team %s for plan %s. This action cannot be undone. Are you sure you want to refresh the secret ?",
-    "api.delete.subscription.deleted": "Subscription deleted.",
-    "api.delete.subscription.impossible.nothing": "Enter the name of the subscription for deleting it.",
-    "api.delete.subscription.impossible.incorrect": "The name is wrong.",
     "authorized.groups": "Services  groups",
     "authorized.services": "Services",
     "authorized.routes": "Routes",
@@ -1290,5 +1286,6 @@
     "api.delete.subscription.howToDelete": "type : \"%s\" for deleting the subscription.",
     "api.delete.subscription.deleted": "Subscription deleted.",
     "api.delete.subscription.impossible.nothing": "Enter the name of the subscription for deleting it.",
-    "api.delete.subscription.impossible.incorrect": "The name is wrong."
+    "api.delete.subscription.impossible.incorrect": "The name is wrong.",
+    "secret.refresh.success": "Refresh secret success"
 }

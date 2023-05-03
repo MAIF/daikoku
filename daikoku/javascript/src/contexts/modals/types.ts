@@ -116,13 +116,42 @@ type ApiSubscriptionGql = {
   customName: string
   enabled: boolean
 }
+type NotificationGQL = {
+  _id: string
+  action: {
+    message?: string
+    motivation?: string
+    api?: {
+      _id: string
+      name: string
+    }
+    team?: LimitedTeam
+    plan?: {
+      _id: string
+      customName?: string
+      typeName: string
+    }
+    user?: {
+      id: string
+      name: string
+    }
+    parentSubscriptionId?: {
+      _id: string
+      apiKey: {
+        clientName: string;
+        clientId: string;
+        clientSecret: string;
+      }
+    }
+  }
+}
 export type SubscriptionMetadataModalProps = {
   api: string;
   creationMode?: boolean;
   plan?: string;
   save: ((sub: CustomSubscriptionData) => Promise<void>) | ((sub: CustomSubscriptionData) => void);
   team?: ITeamSimple | LimitedTeam;
-  notification?: INotification;
+  notification?: INotification | NotificationGQL;
   config?: any;
   subscription?: ISafeSubscription | ApiSubscriptionGql;
   description?: any;

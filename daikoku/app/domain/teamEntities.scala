@@ -144,7 +144,9 @@ case class Team(
 
 // ############# Notifications ###########
 
-sealed trait NotificationStatus
+sealed trait NotificationStatus {
+  def status: String
+}
 
 case class EmailVerification(
     id: DatastoreId,
@@ -158,15 +160,23 @@ case class EmailVerification(
   override def asJson: JsValue = json.EmailVerificationFormat.writes(this)
 }
 object NotificationStatus {
-  case class Pending() extends NotificationStatus with Product with Serializable
+  case class Pending() extends NotificationStatus with Product with Serializable {
+    def status: String = "Pending"
+  }
   case class Accepted(date: DateTime = DateTime.now())
       extends NotificationStatus
       with Product
-      with Serializable
+      with Serializable {
+    def status: String = "Accepted"
+
+  }
   case class Rejected(date: DateTime = DateTime.now())
       extends NotificationStatus
       with Product
-      with Serializable
+      with Serializable {
+    def status: String = "Rejected"
+
+  }
 }
 
 sealed trait NotificationAction

@@ -1278,9 +1278,6 @@
   "api.delete.subscription.form.title": "Suppression d'une souscription",
   "api.delete.subscription.message": "Vous êtes sur le point de supprimer la souscription de l'équipe %s pour le plan %s. cette action ne peut être annulée. Êtes-vous sûr de vouloir la supprimer ?",
   "secret.refresh.confirm": "Vous êtes sur le point d'actualiser le secret de la souscription de l'équipe %s pour le plan %s. Cette action ne peut être annulée. Êtes vous sûr d'actualiser ce secret ?",
-  "api.delete.subscription.deleted": "Souscription supprimée.",
-  "api.delete.subscription.impossible.nothing": "Entrez le nom de la souscription pour la supprimer.",
-  "api.delete.subscription.impossible.incorrect": "Le nom est faux.",
   "authorized.groups": "Services groupes",
   "authorized.services": "Services",
   "authorized.routes": "Routes",
@@ -1288,11 +1285,10 @@
   "login.label": "Courriel",
   "password.label": "Mot de passe",
   "login.btn.label": "Se connecter",
-  "api.delete.subscription": "Supprimer la souscription",
   "api.delete.subscription.form": "Formulaire de suppression de la souscription",
   "api.delete.subscription.howToDelete": "Tapez : \"%s\" pour supprimer la souscription.",
   "api.delete.subscription.deleted": "Souscription supprimée.",
   "api.delete.subscription.impossible.nothing": "Entrez le nom de la souscription pour la supprimer.",
-  "api.delete.subscription.impossible.incorrect": "Le nom est faux."
-
+  "api.delete.subscription.impossible.incorrect": "Le nom est faux.",
+  "secret.refresh.success": "Succès du rafraichissement du secret"
 }

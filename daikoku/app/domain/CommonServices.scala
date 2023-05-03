@@ -5,13 +5,11 @@ import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
 import org.joda.time.DateTime
 import play.api.libs.json._
-import play.api.mvc.Results
-import play.api.mvc.Results.{NotFound, Ok}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -341,7 +339,6 @@ object CommonServices {
           .find(
             Json.obj("api" -> apiId,
               "from" -> Json.obj("$gte" -> fromTimestamp),
-              "plan" ->,
               "to" -> Json.obj("$lte" -> toTimestamp)) ++ planIdFilters,
             Some(Json.obj("from" -> 1))
           )
@@ -368,28 +365,59 @@ object CommonServices {
     }
   }
 
-  def getApiPlanConsumption(teamId: String, apiId: String, planId: String, from: Option[Long], to: Option[Long])(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
-    _TeamAdminOnly(teamId, AuditTrailEvent(s"@{user.name} has accessed to api consumption for api @{apiId}"))(ctx) { team =>
+  def getTeamIncome(teamId: String,
+                    from: Option[Long],
+                    to: Option[Long])(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _TeamAdminOnly(teamId, AuditTrailEvent(s"@{user.name} has accessed to team billing for @{team.name}"))(ctx) { team =>
       val fromTimestamp = from.getOrElse(
         DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
-      val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
+      val toTimestamp = to.getOrElse(
+        DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
       for {
-        api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOneNotDeleted(
-              Json.obj("team" -> team.id.value,
-              "$or" -> Json.arr(Json.obj("_id" -> apiId),
-              Json.obj("_humanReadableId" -> apiId))))
-        apiId = api.map(api => api.id.value).get
-        consumptions <- env.dataStore.consumptionRepo.forTenant(ctx.tenant.id).find(
-              Json.obj("api" -> apiId,
-              "plan" -> planId,
-              "from" -> Json.obj("$gte" -> fromTimestamp),
-              "to" -> Json.obj("$lte" -> toTimestamp)),
-              Some(Json.obj("from" -> 1))
-        )
+        ownApis <- env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findNotDeleted(Json.obj("team" -> team.id.value))
+        revenue <- env.dataStore.consumptionRepo
+          .getLastConsumptionsForTenant(
+            ctx.tenant.id,
+            Json.obj(
+              "api" -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
+              "from" -> Json.obj("$gte" -> fromTimestamp,
+                "$lte" -> toTimestamp),
+              "to" -> Json.obj("$gte" -> fromTimestamp,
+                "$lte" -> toTimestamp)
+            )
+          )
       } yield {
-        Right(consumptions)
+        Right(revenue)
       }
     }
   }
 
+  def getMyNotification(page: Int, pageSize: Int)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _PublicUserAccess(AuditTrailEvent(
+      s"@{user.name} has accessed to his count of unread notifications"))(ctx) {
+      for {
+        myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+        notificationRepo <- env.dataStore.notificationRepo
+          .forTenantF(ctx.tenant.id)
+        notifications <- notificationRepo.findWithPagination(
+          Json.obj(
+            "$or" -> Json.arr(
+              Json.obj(
+                "team" -> Json.obj("$in" -> JsArray(myTeams
+                  .filter(t => t.admins().contains(ctx.user.id))
+                  .map(_.id.asJson)))),
+              Json.obj("action.user" -> ctx.user.id.asJson)
+            ),
+            "status.status" -> NotificationStatus.Pending.toString
+          ),
+          page,
+          pageSize
+        )
+      } yield {
+        Right(NotificationWithCount(notifications._1, notifications._2))
+      }
+    }
+  }
 }

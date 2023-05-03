@@ -209,6 +209,41 @@ object authorizations {
       }
     }
 
+    def _PublicUserAccess[T, B](audit: AuditEvent)(
+      ctx: DaikokuActionContext[T])(f: => Future[Either[AppError, B]])(
+                                 implicit ec: ExecutionContext,
+                                 env: Env): Future[Either[AppError, B]] = {
+      if (ctx.user.isDaikokuAdmin) {
+        f.andThen {
+          case _ =>
+            audit.logTenantAuditEvent(ctx.tenant,
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.AuthorizedDaikokuAdmin)
+        }
+      } else if (ctx.user.tenants.contains(ctx.tenant.id)) {
+        f.andThen {
+          case _ =>
+            audit.logTenantAuditEvent(ctx.tenant,
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.AuthorizedPublic)
+        }
+      } else {
+        audit.logTenantAuditEvent(ctx.tenant,
+          ctx.user,
+          ctx.session,
+          ctx.request,
+          ctx.ctx,
+          AuthorizationLevel.NotAuthorized)
+        FastFuture.successful(Left(Unauthorized))
+      }
+    }
+
     def TenantAdminAccessTenant[T](audit: AuditEvent)(
         ctx: DaikokuActionContext[T])(f: => Future[Result])(
         implicit ec: ExecutionContext,

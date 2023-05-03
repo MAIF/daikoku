@@ -1,4 +1,4 @@
-import { IFastTeam } from './team';
+import {IFastTeam, ITeamVisibility} from './team';
 
 interface IBaseApi {
   _id: string;
@@ -39,13 +39,9 @@ export interface IIssuesTag {
 }
 
 export interface IApiWithSimpleTeam extends IBaseApi {
-  team: {
-    _humanReadableId: string;
-    _id: string;
-    avatar: string;
-    name: string;
-  };
+  team: ITeamVisibility
 }
+
 export interface IApi extends IBaseApi {
   team: string;
 }

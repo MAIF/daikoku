@@ -6,7 +6,7 @@ import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._TenantAdminAccessTenant
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{NotificationTypeFormat, TenantIdFormat, UsagePlanFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
 import org.joda.time.format.ISODateTimeFormat
@@ -15,11 +15,12 @@ import play.api.libs.json._
 import play.api.mvc.Results
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
-import sangria.macros.derive._
+import sangria.macros.derive.{deriveObjectType, _}
 import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
-import storage._
+import storage.{DataStore, _}
 
+import java.lang.reflect
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -769,6 +770,12 @@ object SchemaDefinition {
       ReplaceField("result", Field("result", LongType, resolve = _.value.result))
     )
 
+    lazy val NotificationWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationWithCount](
+      ObjectTypeDescription("An object composed of an array of notification and a total count of them"),
+      ReplaceField("notifications", Field("notifications", ListType(NotificationType), resolve = _.value.notifications)),
+      ReplaceField("result", Field("result", LongType, resolve = _.value.result))
+    )
+
     lazy val TeamWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]),TeamWithCount](
       ObjectTypeDescription("An object composed of an array of teams with the total count of them"),
       ReplaceField("teams", Field("teams", ListType(TeamObjectType), resolve = _.value.teams)),
@@ -795,30 +802,36 @@ object SchemaDefinition {
       "The status of a notification",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus](
         Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
-      )
+      ),
     )
 
-    lazy val  NotificationStatusAcceptedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Accepted](
-      Interfaces(NotificationStatusType),
-      ObjectTypeDescription("An accepted notification status"),
-      ReplaceField("date",
-        Field("date", DateTimeUnitype, resolve = _.value.date)
+    lazy val  NotificationStatusAcceptedType = new PossibleObject(ObjectType(
+      "NotificationStatusAccepted",
+      "An accepted notification status",
+      interfaces[ (DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Accepted](NotificationStatusType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Accepted](
+        Field("date", DateTimeUnitype, resolve = _.value.date),
+        Field("status", StringType, resolve = _.value.status)
+      )
+
+    ))
+
+    lazy val  NotificationStatusRejectedType = new PossibleObject(ObjectType(
+      "NotificationStatusRejected",
+      "A rejected notification status",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Rejected](NotificationStatusType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Rejected](
+        Field("date", DateTimeUnitype, resolve = _.value.date),
+        Field("status", StringType, resolve = _.value.status)
       )
     ))
 
-    lazy val  NotificationStatusRejectedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Rejected](
-      Interfaces(NotificationStatusType),
-      ObjectTypeDescription("A rejected notification status"),
-      ReplaceField("date",
-        Field("date", DateTimeUnitype, resolve = _.value.date)
-      )
-    ))
-
-    lazy val  NotificationStatusPendingType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Pending](
-      Interfaces(NotificationStatusType),
-      ObjectTypeDescription("A pending notification status"),
-      AddFields(
-        Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
+    lazy val  NotificationStatusPendingType = new PossibleObject(ObjectType(
+      "NotificationStatusPending",
+      "A pending notification status",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Pending](NotificationStatusType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Pending](
+        Field("status", StringType, resolve = _.value.status)
       )
     ))
 
@@ -826,15 +839,17 @@ object SchemaDefinition {
       "NotificationAction",
       "An action of notification",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationAction](
-        Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
+        Field("_generated", StringType, resolve = _.value.toString), // TODO - can't generate interface without fields
       )
     )
+
     lazy val  OtoroshiSyncNotificationActionType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncNotificationAction] = InterfaceType(
       "OtoroshiSyncNotificationAction",
       "A Otoroshi notification triggered when the synchronization with an otoroshi is done",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncNotificationAction](
         Field("message", StringType, resolve = _.value.message)
-      )
+      ),
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncNotificationAction](NotificationActionType)
     )
 
     lazy val ApiAccessType = new PossibleObject(ObjectType(
@@ -888,7 +903,9 @@ object SchemaDefinition {
         Field("parentSubscriptionId", OptionType(ApiSubscriptionType), resolve = ctx => ctx.value.parentSubscriptionId match {
           case Some(parent) => ctx.ctx._1.apiSubscriptionRepo.forTenant(ctx.ctx._2.tenant).findById(parent)
           case None => None
-        })
+        }),
+        Field("motivation", OptionType(StringType), resolve = ctx => ctx.value.motivation)
+
       )
     ))
     lazy val TransferApiOwnershipType = new PossibleObject(ObjectType(
@@ -900,6 +917,7 @@ object SchemaDefinition {
           resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.team)),
         Field("api", OptionType(ApiType),
           resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
+
       )
 
     ))
@@ -912,6 +930,54 @@ object SchemaDefinition {
         Field("message", StringType, resolve = _.value.message)
       )
     ))
+    lazy val  ApiSubscriptionRejectType = new PossibleObject(ObjectType(
+      "ApiSubscriptionReject",
+      "A notification triggered when a when your api subscription is reject",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionReject](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionReject](
+        Field("message", StringType, resolve = _.value.message.getOrElse("")),
+        Field("team", OptionType(TeamObjectType),
+          resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.team)),
+        Field("api", OptionType(ApiType),
+          resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
+        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
+          ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
+            .map {
+              case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
+              case None => None
+            },
+          possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
+            PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType))
+    )))
+    lazy val ApiSubscriptionAcceptType = new PossibleObject(ObjectType(
+      "ApiSubscriptionAccept",
+      "A notification triggered when a when your api subscription is reject",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionAccept](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionAccept](
+        Field("team", OptionType(TeamObjectType),
+          resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.team)),
+        Field("api", OptionType(ApiType),
+          resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
+        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
+          ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
+            .map {
+              case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
+              case None => None
+            },
+          possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
+            PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType))
+      )))
+
+
+    lazy val NewIssueOpenType = new PossibleObject(ObjectType(
+      "NewIssueOpen",
+      "An Otoroshi notification triggered when a new issue has been created",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), NewIssueOpen](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), NewIssueOpen](
+        Field("apiName", StringType, resolve = _.value.apiName),
+        Field("linkTo", StringType, resolve = _.value.linkTo)
+      )
+    ))
     lazy val  OtoroshiSyncApiErrorType = new PossibleObject(ObjectType(
       "OtoroshiSyncApiError",
       "An Otoroshi notification triggered when syncing an API with an otoroshi failed",
@@ -921,36 +987,67 @@ object SchemaDefinition {
         Field("message", StringType, resolve = _.value.message)
       )
     ))
-    lazy val  ApiKeyDeletionInformationType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyDeletionInformation](
-      ObjectTypeDescription("An Otoroshi notification triggered when an api key has been deleted"),
-      Interfaces(NotificationActionType)
+
+    lazy val NewPostPublishedType = new PossibleObject(ObjectType(
+      "NewPostPublished",
+      "An Otoroshi notification triggered when a new post has been pusblished",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), NewPostPublished](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), NewPostPublished](
+        Field("apiName", StringType, resolve = _.value.apiName),
+        Field("team", OptionType(TeamObjectType),
+          resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.teamId)),
+      )
     ))
-    lazy val  ApiKeyRotationInProgressType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationInProgress](
-      ObjectTypeDescription("An Otoroshi notification triggered when the credentials of an api key is in rotation progress"),
-      Interfaces(NotificationActionType)
+
+    lazy val ApiKeyRefreshType = new PossibleObject(ObjectType(
+      "ApiKeyRefresh",
+      "An Otoroshi notification triggered when an api key has been refreshed",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefresh](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefresh](
+        Field("subscriptionName", StringType, resolve = _.value.subscription),
+        Field("apiName", StringType,
+          resolve = _.value.api),
+        Field("planName", StringType, resolve = _.value.plan)
+      )
     ))
-    lazy val  ApiKeyRotationEndedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationEnded](
-      ObjectTypeDescription("An Otoroshi notification triggered when the credentials of an api key has been rotated"),
-      Interfaces(NotificationActionType)
+
+      lazy val ApiKeyDeletionInformationType = new PossibleObject(ObjectType(
+        "ApiKeyDeletionInformation",
+        "An Otoroshi notification triggered when an api key has been refreshed",
+        interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiKeyDeletionInformation](NotificationActionType),
+        fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyDeletionInformation](
+          Field("clientId", StringType, resolve = _.value.clientId),
+          Field("apiName", StringType,
+            resolve = _.value.api)
+        )
+      ))
+
+    lazy val ApiKeyRotationInProgressType = new PossibleObject(ObjectType(
+      "ApiKeyRotationInProgress",
+      "An Otoroshi notification triggered when the credentials of an api key is in rotation progress",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationInProgress](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationInProgress](
+        Field("clientId", StringType, resolve = _.value.clientId),
+        Field("apiName", StringType, resolve = _.value.api),
+        Field("planName", StringType, resolve = _.value.plan)
+      )
     ))
-    lazy val  ApiKeyRefreshType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefresh](
-      ObjectTypeDescription("An Otoroshi notification triggered when an api key has been refreshed"),
-      Interfaces(NotificationActionType)
-    ))
-    lazy val  NewPostPublishedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewPostPublished](
-      ObjectTypeDescription("An Otoroshi notification triggered when a new post has been pusblished"),
-      Interfaces(NotificationActionType)
-    ))
-    lazy val  NewIssueOpenType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewIssueOpen](
-      ObjectTypeDescription("An Otoroshi notification triggered when a new issue has been created"),
-      Interfaces(NotificationActionType)
+    lazy val ApiKeyRotationEndedType = new PossibleObject(ObjectType(
+      "ApiKeyRotationEnded",
+      "An Otoroshi notification triggered when the credentials of an api key has been rotated",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationEnded](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationEnded](
+        Field("clientId", StringType, resolve = _.value.clientId),
+        Field("apiName", StringType, resolve = _.value.api),
+        Field("planName", StringType, resolve = _.value.plan)
+      )
     ))
     lazy val  NewCommentOnIssueType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewCommentOnIssue](
       ObjectTypeDescription("An Otoroshi notification triggered when a new comment has been written"),
       Interfaces(NotificationActionType)
     ))
 
-    lazy val  NotificationInterfaceType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationType] = InterfaceType(
+    lazy val NotificationInterfaceType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationType] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationType](
       "NotificationType",
       "Interface of a notification",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationType](
@@ -973,7 +1070,7 @@ object SchemaDefinition {
       ReplaceField("notificationType", Field("notificationType", NotificationInterfaceType, resolve = _.value.notificationType)),
       ReplaceField("status", Field("status", NotificationStatusType, resolve = _.value.status, possibleTypes = List(NotificationStatusAcceptedType, NotificationStatusRejectedType, NotificationStatusPendingType))),
       ReplaceField("action", Field("action", NotificationActionType, resolve = _.value.action, possibleTypes = List(ApiAccessType, TeamAccessType, TeamInvitationType, ApiSubscriptionDemandType, OtoroshiSyncSubscriptionErrorType, OtoroshiSyncApiErrorType,
-        ApiKeyDeletionInformationType, ApiKeyRotationInProgressType, ApiKeyRotationEndedType, ApiKeyRefreshType, NewPostPublishedType, NewIssueOpenType, NewCommentOnIssueType, TransferApiOwnershipType
+        ApiKeyDeletionInformationType, ApiKeyRotationInProgressType, ApiKeyRotationEndedType, ApiKeyRefreshType, NewPostPublishedType, NewIssueOpenType, NewCommentOnIssueType, TransferApiOwnershipType, ApiSubscriptionRejectType, ApiSubscriptionAcceptType
       ))),
     )
 
@@ -1214,7 +1311,10 @@ object SchemaDefinition {
     val IDS = Argument("ids", OptionInputType(ListInputType(StringType)), description = "List of filtered ids (if empty, no filter)")
     val TEAM_ID = Argument("teamId", OptionInputType(StringType), description = "The id of the team")
     val TEAM_ID_NOT_OPT = Argument("teamId", StringType, description = "The id of the team")
+    val PLAN_ID_OPT = Argument("planIdOpt", OptionInputType(StringType), description = "The optional id of a plan")
     val FROM = Argument("from", OptionInputType(LongType), description = "Date from")
+    val PAGE_NUMBER = Argument("pageNumber", OptionInputType(IntType), description = "The number of the current page", defaultValue = 0)
+    val PAGE_SIZE = Argument("pageSize", OptionInputType(IntType), description = "The number of items displayed on the current page", defaultValue = 10)
     val TO = Argument("to", OptionInputType(LongType), description = "Date to")
     val VERSION = Argument("version", StringType, description = "a version")
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
@@ -1239,18 +1339,43 @@ object SchemaDefinition {
       })
     )
 
-    def getApiConsumption(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], apiId: String, teamId: String, from: Option[Long], to: Option[Long]) = {
-      CommonServices.getApiConsumption(apiId, teamId, from, to)(ctx.ctx._2, env, e).map {
+    def getApiConsumption(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], apiId: String, teamId: String, from: Option[Long], to: Option[Long], planId: Option[String]) = {
+      CommonServices.getApiConsumption(apiId, teamId, from, to, planId)(ctx.ctx._2, env, e).map {
         case Left(value) => throw NotAuthorizedError(value.toString)
         case Right(value) => value
       }
     }
 
-    def ApiConsumptionQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("apiConsumptions", ListType(ApiKeyConsumptionType), arguments = ID :: TEAM_ID_NOT_OPT :: FROM :: TO :: Nil, resolve = ctx => {
-        getApiConsumption(ctx, ctx.arg(ID), ctx.arg(TEAM_ID_NOT_OPT) , ctx.arg(FROM), ctx.arg(TO))
+    def apiConsumptionQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("apiConsumptions", ListType(ApiKeyConsumptionType), arguments = ID :: TEAM_ID_NOT_OPT :: FROM :: TO :: PLAN_ID_OPT :: Nil, resolve = ctx => {
+        getApiConsumption(ctx, ctx.arg(ID), ctx.arg(TEAM_ID_NOT_OPT) , ctx.arg(FROM), ctx.arg(TO), ctx.arg(PLAN_ID_OPT))
 
+      })
+    )
 
+    def getTeamIncome(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, from: Option[Long], to: Option[Long]) = {
+      CommonServices.getTeamIncome(teamId, from, to)(ctx.ctx._2, env, e).map {
+        case Left(value) => throw NotAuthorizedError(value.toString)
+        case Right(value) => value
+      }
+    }
+
+    def teamIncomeQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("teamIncomes", ListType(ApiKeyConsumptionType), arguments = TEAM_ID_NOT_OPT :: FROM :: TO :: Nil, resolve = ctx => {
+        getTeamIncome(ctx, ctx.arg(TEAM_ID_NOT_OPT), ctx.arg(FROM), ctx.arg(TO))
+      })
+    )
+
+    def getMyNotification(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], page: Int, pageSize: Int) = {
+      CommonServices.getMyNotification(page, pageSize)(ctx.ctx._2, env, e).map {
+        case Left(value) => throw NotAuthorizedError(value.toString)
+        case Right(value) => value
+      }
+    }
+
+    def myNotificationQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+      Field("myNotifications", NotificationWithCountType, arguments = PAGE_NUMBER :: PAGE_SIZE :: Nil, resolve = ctx => {
+        getMyNotification(ctx, ctx.arg(PAGE_NUMBER), ctx.arg(PAGE_SIZE))
       })
     )
 
@@ -1388,7 +1513,7 @@ object SchemaDefinition {
 
     (
       Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ getAllTagsQueryFields() ++ getAllCategoriesQueryFields() ++ apiWithSubscriptionsQueryFields() ++ ApiConsumptionQuery() ++ apiSubscriptionsQueryFields() ++ allTeamsQuery() ++ cmsPageFields():_*)
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields()++ getAllTagsQueryFields() ++ getAllCategoriesQueryFields() ++ apiWithSubscriptionsQueryFields() ++ apiConsumptionQuery() ++ apiSubscriptionsQueryFields() ++ teamIncomeQuery() ++ myNotificationQuery() ++ allTeamsQuery() ++ cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher)
     )

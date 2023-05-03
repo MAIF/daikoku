@@ -535,7 +535,7 @@ export const apiConsumption = (apiId: any, planId: any, teamId: any, from: any, 
 
 /* export const apiGlobalConsumption = (apiId: any, teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`);
-  UNUSED FROM NOW
+  UNUSED FROM NOW BUT DON'T KNOW IF I HAVE TO REMOVE IT :)
   */
 
 export const apiSubscriptions = (
@@ -570,8 +570,10 @@ export const getTeamConsumptions = (teamId: any, from: any, to: any) =>
 export const getTeamBillings = (teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/billings?from=${from}&to=${to}`);
 
-export const getTeamIncome = (teamId: any, from: any, to: any) =>
+/*export const getTeamIncome = (teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/income?from=${from}&to=${to}`);
+  UNUSED FROM NOW BUT DON'T KNOW IF I HAVE TO REMOVE IT :)
+  */
 
 export const getApiCategories = () => customFetch('/api/categories');
 
@@ -1248,6 +1250,7 @@ export const graphql = {
               _humanReadableId
               name
               avatar
+              type
             }
             apis {
               api {
@@ -1287,9 +1290,30 @@ export const graphql = {
       result
     }
   }`),
+  getTeamIncome: gql(`
+  query getTeamIncome ($teamId: String!, $from: Long, $to: Long) {
+    teamIncomes (teamId: $teamId, from: $from, to: $to) {
+      api {
+        _id
+        name
+      }
+      plan {
+        _id
+      }
+      team {
+        name
+      }
+      billing {
+        hits
+        total
+      }
+      from
+      to
+    }
+  }`),
   getApiConsumptions: gql(`
-  query getApiConsumptions ($apiId: String!, $teamId: String!, $from: Long, $to: Long, $planId: Long) {
-    apiConsumptions (id: $apiId, teamId: $teamId, from: $from, to: $to, planId: $planId) {
+  query getApiConsumptions ($apiId: String!, $teamId: String!, $from: Long, $to: Long, $planId: String) {
+    apiConsumptions (id: $apiId, teamId: $teamId, from: $from, to: $to, planIdOpt: $planId) {
       _id
       clientId
       tenant {
@@ -1351,6 +1375,176 @@ export const graphql = {
         tags
         metadata
         customMetadata
+      }
+    }
+    `),
+  getMyNotifications: gql(`
+    query getMyNotifications ($pageNumber : Int, $pageSize: Int) {
+      myNotifications (pageNumber: $pageNumber, pageSize: $pageSize) {
+        notifications {
+          _id
+          tenant {
+            id
+          }
+          team {
+            _id
+            name
+          }
+          sender {
+            id
+            name
+          }
+          action {
+            ... on ApiAccess {
+              api {
+                _id
+                name
+              }
+              team {
+                _id
+                name
+              }
+            }
+            ... on TeamAccess {
+              team {
+                _id
+                name
+              }
+            }
+            ... on TeamInvitation {
+              team {
+                _id
+                name
+              }
+              user {
+                id
+                name
+              }
+            }
+            ... on ApiSubscriptionDemand {
+              api {
+                _id
+                name
+              }
+              team {
+                _id
+                name
+                type
+              }
+              plan {
+                _id
+                customName
+                typeName
+              }
+              parentSubscriptionId {
+                _id
+                apiKey {
+                  clientName
+                  clientId
+                  clientSecret
+                }
+              }
+              motivation
+            }
+            ... on NewCommentOnIssue {
+              linkTo
+              apiName
+            }
+            ... on NewPostPublished {
+              apiName
+              team {
+                name
+              }
+            }
+            ... on ApiKeyRefresh {
+              subscriptionName
+              apiName
+              planName
+            }
+            ... on ApiKeyDeletionInformation {
+              apiName
+              clientId
+            }
+            ... on TransferApiOwnership {
+              api {
+                _id
+                name
+              }
+              team {
+                _id
+                name
+              }
+            }
+            ... on ApiSubscriptionAccept {
+              team {
+                _id
+                name
+              }
+              api {
+                _id
+                name
+              }
+              plan {
+                _id
+                customName
+                typeName
+              }
+            }
+            ... on ApiSubscriptionReject {
+              team {
+                _id
+                name
+              }
+              api {
+                _id
+                name
+              }
+              plan {
+                _id
+                customName
+                typeName
+              }
+              message
+            }
+            ... on OtoroshiSyncSubscriptionError {
+              message
+            }
+            ... on ApiKeyRotationInProgress {
+              clientId
+              apiName
+              planName
+            }
+            ... on ApiKeyRotationEnded {
+              clientId
+              apiName
+              planName
+            }
+            ... on NewIssueOpen {
+              linkTo
+              apiName
+            }
+          }
+          date
+          notificationType {
+            value
+          }
+          status {
+            ... on NotificationStatusAccepted {
+              date
+              status
+            }
+            ... on NotificationStatusRejected {
+              date
+              status
+            }
+            ... on NotificationStatusPending {
+              status
+            }
+
+          }
+          
+        }
+        result
       }
     }
     `),
