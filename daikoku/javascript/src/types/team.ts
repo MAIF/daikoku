@@ -26,8 +26,8 @@ export interface ITeamVisibility {
   name: string;
   avatar: string;
 
-
 }
+
 export interface ITeamFull extends ITeamSimple {
   _deleted: boolean;
   metadata: object;

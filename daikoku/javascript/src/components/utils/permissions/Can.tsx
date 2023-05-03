@@ -4,7 +4,16 @@ import { useDispatch } from 'react-redux';
 
 import { Option } from '..';
 import { setError } from '../../../core';
-import { IState, IStateContext, ITeamSimple, ITenant, IUserSimple, TeamPermission, TeamUser } from '../../../types';
+import {
+  IState,
+  IStateContext,
+  ITeamSimple,
+  ITeamVisibility,
+  ITenant,
+  IUserSimple,
+  TeamPermission,
+  TeamUser
+} from '../../../types';
 import { doNothing } from './actions';
 import { permissions, TPermission, TPermissions } from './permissions';
 import { tenant } from './subjects';
@@ -13,7 +22,7 @@ export const CanIDoAction = (
   user: IUserSimple,
   action: number,
   what: string,
-  team?: ITeamSimple,
+  team?: ITeamSimple | ITeamVisibility,
   isTenantAdmin?: boolean,
   whichOne?: any,
   currentTenant?: any
@@ -35,7 +44,7 @@ export const CanIDoAction = (
       .map((perm: TPermission) =>
         Option(perm.condition).fold(
           () => perm.action,
-          (condition: (t?: ITeamSimple) => boolean) => (condition(team) ? perm.action : doNothing)
+          (condition: (t?: ITeamSimple | ITeamVisibility) => boolean) => (condition(team) ? perm.action : doNothing)
         )
       )
       .fold(
@@ -63,7 +72,7 @@ export const Can = ({
 }: {
   I: number;
   a: string;
-  team?: ITeamSimple;
+  team?: ITeamSimple | ITeamVisibility;
   teams?: Array<ITeamSimple>;
   dispatchError?: boolean;
   children: ReactNode;

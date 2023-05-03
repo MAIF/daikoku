@@ -1819,6 +1819,15 @@ class ApiController(
 
             for {
               _ <- apiKeyStatsJob.syncForSubscription(subscription, ctx.tenant)
+              notif = Notification(
+                id = NotificationId(BSONObjectID.generate().stringify),
+                tenant = ctx.tenant.id,
+                team = Some(subscription.team),
+                sender = ctx.user,
+                notificationType = NotificationType.AcceptOnly,
+                action = NotificationAction.ApiKeyDeletionInformation(api.name, subscription.apiKey.clientId)
+              )
+              _ <- env.dataStore.notificationRepo.forTenant(ctx.tenant).save(notif)
               delete <- apiService
                 .deleteApiKey(ctx.tenant, subscription, plan, team)
                 .flatMap(delete => {

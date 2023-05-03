@@ -22,17 +22,13 @@ export const TeamHome = () => {
   const queryMyTeams = useQuery(['my-team'], () => client!.query<{myTeams: Array<ITeamSimple>}>({
     query: Services.graphql.myTeams,
   }));
-  const queryTeams = useQuery(['teams'], () => Services.teams());
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
-    if (queryTeams.data && !isError(queryTeams.data)) {
       if (api.visibility === 'Public' || apiWithAutho.authorizations.some(a => a.authorized)) {
-        const apiOwner = queryTeams.data.find((t) => t._id === api.team._id);
-
-        const route = (version: string) => `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}/description`;
+        const route = (version: string) => `/${api.team._humanReadableId}/${api._humanReadableId}/${version}/description`;
         navigate(route(api.currentVersion));
       }
-    }
+
 
   };
 
@@ -47,10 +43,10 @@ export const TeamHome = () => {
     navigate(`/${team._humanReadableId}/settings`);
   };
 
-  if ( queryMyTeams.isLoading || queryTeam.isLoading || queryTeams.isLoading) {
+  if ( queryMyTeams.isLoading || queryTeam.isLoading) {
     return <Spinner />;
-  } else if ( queryMyTeams.data && queryTeam.data && queryTeams.data) {
-    if (isError(queryTeam.data) || isError(queryTeams.data)) {
+  } else if ( queryMyTeams.data && queryTeam.data ) {
+    if (isError(queryTeam.data)) {
       return <></> //FIXME
     }
 
@@ -82,7 +78,6 @@ export const TeamHome = () => {
           </div>
         </section>
         <ApiList
-          teams={queryTeams.data}
           myTeams={queryMyTeams.data.data.myTeams.map(({
             users,
             ...data
@@ -96,7 +91,7 @@ export const TeamHome = () => {
           teamVisible={false}
           redirectToApiPage={redirectToApiPage}
           redirectToEditPage={redirectToEditPage}
-          team={queryTeams.data.find((team) => team._humanReadableId === params.teamId)}
+          teamId={params.teamId}
         />
       </main>
     );

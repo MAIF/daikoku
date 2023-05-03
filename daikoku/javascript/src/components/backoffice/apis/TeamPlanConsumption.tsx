@@ -65,15 +65,15 @@ export const TeamPlanConsumption = ({
   const mappers = [
     {
       type: 'LineChart',
-      label: (data: any) => {
-        const totalHits = data.reduce((acc: any, cons: any) => acc + cons.hits, 0);
+      label: (data: Array<IgqlConsumption>) => {
+        const totalHits = data.reduce((acc: number, cons: IgqlConsumption) => acc + cons.globalInformations.hits, 0).toString();
         return translate({ key: 'data.in.plus.hits', replacements: [totalHits] });
       },
       title: translate('Data In'),
-      formatter: (data: any) => data.reduce((acc: any, item: any) => {
+      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: any, item: IgqlConsumption) => {
         const date = moment(item.to).format('DD MMM.');
         const value = acc.find((a: any) => a.date === date) || { count: 0 };
-        return [...acc.filter((a: any) => a.date !== date), { date, count: value.count + item.hits }];
+        return [...acc.filter((a: any) => a.date !== date), { date, count: value.count + item.globalInformations.hits }];
       }, []),
       xAxis: 'date',
       yAxis: 'count',
@@ -82,15 +82,13 @@ export const TeamPlanConsumption = ({
       type: 'RoundChart',
       label: translate('Hits by apikey'),
       title: translate('Hits by apikey'),
-      formatter: (data: any) => data.reduce((acc: any, item: any) => {
+      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: Array<{clientId: string, name: string, count: number}> , item: IgqlConsumption) => {
         const value = acc.find((a: any) => a.name === item.clientId) || { count: 0 };
 
-        const team: any = teams.find((t: any) => t._id === item.team);
-        const name = team?.name;
 
         return [
           ...acc.filter((a: any) => a.name !== item.clientId),
-          { clientId: item.clientId, name, count: value.count + item.hits },
+          { clientId: item.clientId, name: item.team.name, count: value.count + item.globalInformations.hits },
         ];
       }, []),
       dataKey: 'count',
@@ -116,7 +114,7 @@ export const TeamPlanConsumption = ({
     );
   };
 
-  const sumGlobalInformations = (data: any) => {
+  const sumGlobalInformations = (data: Array<IgqlConsumption>) => {
     const globalInformations = data.map((d: any) => d.globalInformations);
 
     const value = globalInformations.reduce((acc: any, item: any) => {
@@ -135,13 +133,6 @@ export const TeamPlanConsumption = ({
   };
 
   useEffect(() => {
-    Services.teams()
-      .then(res => {
-        if (!isError(res)) {
-          setTeams(res)
-        }
-      });
-
     document.title = `${currentTeam.name} - ${translate('Plan consumption')}`;
   }, []);
 

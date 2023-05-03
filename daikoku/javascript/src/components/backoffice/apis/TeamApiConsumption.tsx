@@ -59,7 +59,7 @@ export const TeamApiConsumption = ({
   api,
   apiGroup
 }: any) => {
-  const [state, setState] = useState({
+  const [state] = useState({
     consumptions: null,
     period: {
       from: moment().startOf('day'),

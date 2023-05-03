@@ -14,9 +14,8 @@ import * as Services from '../../../services';
 import { Table, SwitchButton, TableRef } from '../../inputs';
 import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
-import { constraints, format, type, type as formType } from "@maif/react-forms";
-import { IApi, ISafeSubscription, isError, IState, ISubscription, ITeamSimple, IUsagePlan } from "../../../types";
+import { format, type} from "@maif/react-forms";
+import { IApi, isError, IState, ITeamSimple, IUsagePlan } from "../../../types";
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
@@ -25,16 +24,18 @@ import {getApolloContext} from "@apollo/client";
 type TeamApiSubscriptionsProps = {
   api: IApi,
 }
-type SubriptionsFilter = {
+type SubscriptionsFilter = {
   metadata: Array<{ key: string, value: string }>,
   tags: Array<string>
 }
 type LimitedTeam = {
   _id: string
   customName?: string
+  type: string
+
 }
 type ApiSubscriptionGql = {
-  _id: String
+  _id: string
   apiKey: {
     clientName: string
     clientId: string
@@ -58,11 +59,10 @@ type ApiSubscriptionGql = {
 }
 export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
-  const dispatch = useDispatch();
 
   const { client } = useContext(getApolloContext());
 
-  const [filters, setFilters] = useState<SubriptionsFilter>()
+  const [filters, setFilters] = useState<SubscriptionsFilter>()
   const tableRef = useRef<TableRef>()
 
   const { translate, language, Translation } = useContext(I18nContext);
@@ -180,17 +180,13 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     creationMode: false
   });
 
-  const regenerateSecret = (sub: ISafeSubscription) => {
-    const team = Option(teams.find((t) => t._id === sub.team))
-    .map((t: ITeamSimple) => t.name)
-    .getOrElse('--')
+  const regenerateSecret = (sub: ApiSubscriptionGql) => {
 
-    const plan = Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
-    .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
-    .getOrElse('--')
+    const plan = sub.plan
+
 
     confirm({ 
-      message: translate({key: 'secret.refresh.confirm', replacements: [team, plan]}),
+      message: translate({key: 'secret.refresh.confirm', replacements: [sub.team.name, plan.customName ? plan.customName : plan.type]}),
       okLabel: translate('Yes'),
       cancelLabel: translate('No'),
      })
@@ -204,23 +200,17 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       });
   };
 
-  const deleteSubscription = (sub: ISafeSubscription) => {
-    const team = Option(teams.find((t) => t._id === sub.team))
-    .map((t: ITeamSimple) => t.name)
-    .getOrElse('--')
+  const deleteSubscription = (sub: ApiSubscriptionGql) => {
 
-    const plan = Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
-    .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
-    .getOrElse('--')
 
     confirm({
       title: translate('api.delete.subscription.form.title'),
-      message: translate({key: 'api.delete.subscription.message', replacements: [team, plan]}),
+      message: translate({key: 'api.delete.subscription.message', replacements: [sub.team.name, sub.plan.customName ? sub.plan.customName : sub.plan.type]}),
       okLabel: translate('Yes'),
       cancelLabel: translate('No'),
     }).then((ok) => {
       if (ok) {
-        Services.deleteApiSubscription(sub.team, sub._id)
+        Services.deleteApiSubscription(sub.team._id, sub._id)
           .then((res) => {
             if (!isError(res)) {
               toastr.success(translate('deletion successful'), translate('api.delete.subscription.deleted'));

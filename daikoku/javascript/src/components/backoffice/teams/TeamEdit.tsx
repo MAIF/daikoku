@@ -153,7 +153,7 @@ export const TeamEditForm = ({
         Services.deleteTeam(team._id)
           .then((r) => {
             if (isError(r)) {
-              toastr.success(translate("Error"), r.error)
+              toastr.error(translate("Error"), r.error)
             } else {
               navigate("/apis")
               toastr.success(translate("Success"), translate({ key: 'team.deleted.success', replacements: [team.name] }))
