@@ -1,22 +1,20 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
-import controllers.AppError.{ForbiddenAction, NotApiEditor, TeamForbidden, TeamMemberForbidden, TeamNotFound, Unauthorized}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuTenantActionContext}
+import controllers.AppError.{ForbiddenAction, TeamForbidden, TeamNotFound, Unauthorized}
+import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import play.api.libs.json.Json
 import play.api.mvc.{Result, Results}
 import reactivemongo.bson.BSONObjectID
 
-import scala.collection.concurrent.TrieMap
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -669,7 +667,7 @@ object authorizations {
               ctx.request,
               ctx.ctx,
               AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(Left(NotApiEditor))
+            FastFuture.successful(Left(ForbiddenAction))
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
               ctx.user,
@@ -826,7 +824,7 @@ object authorizations {
               ctx.request,
               ctx.ctx,
               AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(Left(TeamMemberForbidden))
+            FastFuture.successful(Left(ForbiddenAction))
 
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,

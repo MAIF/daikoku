@@ -49,8 +49,6 @@ object AppError {
   case class ParsingPayloadError(message: String) extends AppError
   case object NameAlreadyExists extends AppError
   case object TeamAlreadyVerified extends AppError
-  case object TeamMemberForbidden extends AppError
-  case object NotApiEditor extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
@@ -92,8 +90,6 @@ object AppError {
     case ParsingPayloadError(message)            => BadRequest(toJson(error))
     case NameAlreadyExists                       => Conflict(toJson(error))
     case TeamAlreadyVerified                     => Conflict(toJson(error))
-    case TeamMemberForbidden                     => Forbidden(toJson(error))
-    case NotApiEditor                            => Forbidden(toJson(error))
   }
 
   def toJson(error: AppError) = {
@@ -143,8 +139,6 @@ object AppError {
           case Unauthorized        => "You're not authorized here"
           case NameAlreadyExists   => "Resource with same name already exists"
           case TeamAlreadyVerified => "This team is already verified"
-          case TeamMemberForbidden => "You're not a team admin"
-          case NotApiEditor        => "You're not an API editor"
           case _                   => ""
         }))
     }

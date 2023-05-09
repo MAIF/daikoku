@@ -12,7 +12,6 @@ import fr.maif.otoroshi.daikoku.utils.S3Configuration
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
-import play.api.mvc.Results
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive.{deriveObjectType, _}
@@ -20,7 +19,6 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import storage.{DataStore, _}
 
-import java.lang.reflect
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
