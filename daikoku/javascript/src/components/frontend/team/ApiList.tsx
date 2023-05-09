@@ -36,13 +36,12 @@ const LIST = 'LIST';
 
 
 type TApiList = {
-  teams: Array<ITeamSimple>,
-  team?: ITeamSimple,
+  teamId?: string,
   groupView?: boolean,
   myTeams?: Array<ITeamSimple>,
   teamVisible: boolean,
   redirectToApiPage: (api: IApiWithAuthorization) => void,
-  redirectToEditPage: (api: IApiWithAuthorization, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => void,
+  redirectToEditPage: (api: IApiWithAuthorization) => void,
   apiGroupId?: string
 }
 
@@ -82,7 +81,7 @@ export const ApiList = (props: TApiList) => {
 
   const dataRequest = useQuery({
     queryKey: ["data",
-      props.team?._id,
+      props.teamId,
       searched,
       selectedTag?.value,
       selectedCategory?.value,
@@ -352,11 +351,11 @@ export const ApiList = (props: TApiList) => {
                         user={user}
                         apiWithAutho={sameApis}
                         teamVisible={props.teamVisible}
-                        team={props.teams.find((t) => t._id === apiWithAuth.api.team._id)}
+                        team={apiWithAuth.api.team}
                         myTeams={props.myTeams || []}
                         askForApiAccess={(teams) => askForApiAccess(apiWithAuth, teams)}
                         redirectToApiPage={() => props.redirectToApiPage(apiWithAuth)}
-                        redirectToEditPage={() => props.redirectToEditPage(apiWithAuth, props.teams, props.myTeams || [])}
+                        redirectToEditPage={() => props.redirectToEditPage(apiWithAuth)}
                         handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
                         toggleStar={() => toggleStar(apiWithAuth)}
                         handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
@@ -390,7 +389,7 @@ export const ApiList = (props: TApiList) => {
         </div>
         {!props.groupView && (
           <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
-            {!props.team && !connectedUser.isGuest && (
+            {!props.teamId && !connectedUser.isGuest && (
               <YourTeams teams={props.myTeams || []} redirectToTeam={redirectToTeam} />
             )}
             {!!bestTags.data && !!bestTags.data.length && (

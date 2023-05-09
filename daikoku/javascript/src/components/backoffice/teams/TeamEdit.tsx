@@ -9,7 +9,7 @@ import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { I18nContext, TranslateParams, updateTeam } from '../../../core';
 import * as Services from '../../../services';
-import { isError, IState, ITeamSimple } from '../../../types';
+import {isError, IState, ITeamSimple, ITeamVisibility} from '../../../types';
 
 
 type AvatarProps = {
@@ -76,7 +76,7 @@ const Avatar = ({
   );
 };
 
-export const teamSchema = (team: ITeamSimple, translate: (props: string | TranslateParams) => string) => ({
+export const teamSchema = (team: ITeamSimple | ITeamVisibility, translate: (props: string | TranslateParams) => string) => ({
   name: {
     type: type.string,
     label: translate('Name'),
@@ -153,7 +153,7 @@ export const TeamEditForm = ({
         Services.deleteTeam(team._id)
           .then((r) => {
             if (isError(r)) {
-              toastr.success(translate("Error"), r.error)
+              toastr.error(translate("Error"), r.error)
             } else {
               navigate("/apis")
               toastr.success(translate("Success"), translate({ key: 'team.deleted.success', replacements: [team.name] }))

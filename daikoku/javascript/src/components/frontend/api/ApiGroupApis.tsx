@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { updateTeam } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { isError, IState, IStateContext, ITeamSimple } from '../../../types';
+import {IApiWithAuthorization, IState, IStateContext, ITeamSimple} from '../../../types';
 import { ApiList } from '../team';
 import { api as API, CanIDoAction, manage } from '../../utils';
 
@@ -18,7 +18,6 @@ export const ApiGroupApis = ({
   const { connectedUser, apiCreationPermitted } = useSelector<IState, IStateContext>((s) => s.context);
   const dispatch = useDispatch();
 
-  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
 
   const { client } = useContext(getApolloContext());
@@ -28,14 +27,10 @@ export const ApiGroupApis = ({
       return;
     }
     Promise.all([
-      Services.teams(),
       client.query<{ myTeams: Array<ITeamSimple> }>({
         query: Services.graphql.myTeams,
       }),
-    ]).then(([t, { data }]) => {
-      if (!isError(t)) {
-        setTeams(t);
-      }
+    ]).then(([ { data }]) => {
       setMyTeams(
         data.myTeams.map(({
           users,
@@ -51,21 +46,19 @@ export const ApiGroupApis = ({
     });
   }, [apiGroup]);
 
-  const redirectToApiPage = (api: any) => {
-    navigate(`${api._humanReadableId}/${api.currentVersion}/description`);
+  const redirectToApiPage = (apiWithAuthorization: IApiWithAuthorization) => {
+    navigate(`${apiWithAuthorization.api._humanReadableId}/${apiWithAuthorization.api.currentVersion}/description`);
   };
 
 
 
-  const redirectToEditPage = (api: any) => {
-    const adminTeam: any = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === (team as any)._id);
-
-    if (CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
-      Promise.resolve(dispatch(updateTeam(adminTeam)))
+  const redirectToEditPage = (apiWithAuthorization: IApiWithAuthorization) => {
+    if (CanIDoAction(connectedUser, manage, API, apiWithAuthorization.api.team, apiCreationPermitted)) {
+      Promise.resolve(dispatch(updateTeam(apiWithAuthorization.api.team)))
         .then(() => {
-          const url = api.apis
-            ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-            : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+          const url = apiWithAuthorization.api.apis
+            ? `/${apiWithAuthorization.api.team._humanReadableId}/settings/apigroups/${apiWithAuthorization.api._humanReadableId}/infos`
+            : `/${apiWithAuthorization.api.team._humanReadableId}/settings/apis/${apiWithAuthorization.api._humanReadableId}/${apiWithAuthorization.api.currentVersion}/infos`;
           navigate(url);
         });
     }
@@ -88,7 +81,6 @@ export const ApiGroupApis = ({
         </div>
       </section>
       <ApiList
-        teams={teams}
         myTeams={myTeams}
         teamVisible={true}
         redirectToApiPage={redirectToApiPage}

@@ -8,27 +8,109 @@ import { SimpleNotification } from './SimpleNotification';
 import { updateNotifications, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
-import { INotification, isError } from '../../../types';
+import { isError } from '../../../types';
 
+type NotificationsGQL = {
+  notifications: Array<NotificationGQL>
+  result: number
+}
+type LimitedTeam = {
+  _id: string
+  name?: string
+  type: string
+}
+
+type NotificationGQL = {
+  _id: string
+  action: {
+    message?: string
+    motivation?: string
+    api?: {
+      _id: string
+      name: string
+    }
+    apiName?: string
+    subscriptionName?: string
+    planName?: string
+    linkTo?: string
+    clientId?: string
+    __typename: string
+    team?: LimitedTeam
+    plan?: {
+      _id: string
+      customName?: string
+      typeName: string
+    }
+    user?: {
+      id: string
+      name: string
+    }
+    parentSubscriptionId?: {
+      _id: string
+      apiKey: {
+        clientName: string;
+        clientId: string;
+        clientSecret: string;
+      }
+    }
+  }
+  date: number
+  notificationType: {
+    value: string
+  }
+  sender: {
+    id: string
+    name: string
+  }
+  status: {
+    date?: number
+    status: string
+  }
+  team: {
+    _id: string
+    name: string
+  }
+  tenant: {
+    id: string
+  }
+
+}
 export const NotificationList = () => {
   useUserBackOffice();
   const dispatch = useDispatch();
+  const [notifs, setNotif]= useState<NotificationsGQL>()
 
   const { translate, Translation } = useContext(I18nContext);
   const { alert } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
-  const [state, setState] = useState<any>({
+  const [state, setState] = useState<{
+    notifications: Array<NotificationGQL>
+    untreatedNotifications: Array<NotificationGQL>
+    teams: Array<any>
+    apis: Array<any>
+    tab: string
+    page: number
+    pageSize: number
+    count: number
+    untreatedCount: number
+    loading: boolean
+    nextIsPending: boolean
+  }>({
     notifications: [],
+    untreatedNotifications: [],
     teams: [],
     tab: 'unread',
     page: 0,
     pageSize: 10,
     count: 0,
     untreatedCount: 0,
+    loading: true,
+    nextIsPending: false,
+    apis: []
   });
 
-  const isUntreatedNotification = (n: any) => n.status.status === 'Pending';
+  const isUntreatedNotification = (n: NotificationGQL) => n.status.status=== 'Pending';
 
   useEffect(() => {
     //FIXME: handle case if client is not defined
@@ -36,48 +118,30 @@ export const NotificationList = () => {
       return;
     }
     Promise.all([
-      Services.myNotifications(state.page, state.pageSize),
-      Services.teams(),
-      client.query({
-        query: gql`
-          query NotificationList {
-            visibleApis {
-              apis {
-                api {
-                  _id
-                  name
-                  possibleUsagePlans {
-                    _id
-                    type
-                    customName
-                  }
-                }
-                }
-            }
-          }
-        `,
+      client!.query<{ myNotifications: NotificationsGQL}>({
+        query: Services.graphql.getMyNotifications,
         fetchPolicy: "no-cache",
-      }),
+        variables: {
+          pageNumber: state.page ,
+          pageSize: state.pageSize
+        }
+      }).then(({data: {myNotifications}}) => {
+        return myNotifications
+      })
     ]).then(
       ([
         notifications,
-        teams,
-        {
-          data: { visibleApis: {apis} },
-        },
+
       ]) => {
         setState({
           ...state,
           untreatedNotifications: notifications.notifications.filter((n) => isUntreatedNotification(n)
           ),
           notifications: notifications.notifications,
-          count: notifications.count,
-          untreatedCount: notifications.count,
+          count: notifications.result,
+          untreatedCount: notifications.result,
           page: state.page + 1,
-          teams,
-          apis: apis.map(({
-            api
-          }: any) => api),
+          loading: false
         });
       }
     );
@@ -105,17 +169,39 @@ export const NotificationList = () => {
           return Promise.resolve();
         }
       })
-      .then(() => Services.myNotifications(0, state.notifications.length))
-      .then(({ notifications, count }) =>
+      .then(() => client!.query<{ myNotifications: NotificationsGQL}>({
+        query: Services.graphql.getMyNotifications,
+        fetchPolicy: "no-cache",
+        variables: {
+          pageNumber: 0 ,
+          pageSize: state.notifications.length
+        }
+      }).then(({data: {myNotifications}}) => {
+        return myNotifications
+      }))
+      .then(({ notifications, result}) =>
         setState({
           ...state,
           notifications,
-          count,
-          untreatedCount: count,
-          untreatedNotifications: notifications.filter((n: any) => isUntreatedNotification(n)),
+          count: result,
+          untreatedCount: result,
+          untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
         })
       );
   };
+
+  useEffect(() => {
+    client!.query<{ myNotifications: NotificationsGQL}>({
+      query: Services.graphql.getMyNotifications,
+      fetchPolicy: "no-cache",
+      variables: {
+        pageNumber: 0 ,
+        pageSize: 10
+      }
+    }).then(({data: {myNotifications}}) => {
+      return myNotifications
+    })
+  }, [])
 
   const rejectNotification = (notificationId: string, message?: string) => {
     setState({
@@ -126,14 +212,23 @@ export const NotificationList = () => {
       }),
     });
     Services.rejectNotificationOfTeam(notificationId, message)
-      .then(() => Services.myNotifications(0, state.notifications.length))
-      .then(({ notifications, count }) => {
+      .then(() => client!.query<{ myNotifications: NotificationsGQL}>({
+        query: Services.graphql.getMyNotifications,
+        fetchPolicy: "no-cache",
+        variables: {
+          pageNumber: 0 ,
+          pageSize: state.notifications.length
+        }
+      }).then(({data: {myNotifications}}) => {
+        return myNotifications
+      }))
+      .then(({ notifications, result }) => {
         setState({
           ...state,
           notifications,
-          count,
-          untreatedCount: count,
-          untreatedNotifications: notifications.filter((n: any) => isUntreatedNotification(n)),
+          count : result,
+          untreatedCount: result,
+          untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
         });
       });
   };
@@ -145,12 +240,21 @@ export const NotificationList = () => {
           .then(({ notifications, count }) => setState({ ...state, notifications, count, loading: false }));
       }
       else {
-        Services.myNotifications(state.page, state.pageSize)
-          .then(({ notifications, count }) => setState({
+        client!.query<{ myNotifications: NotificationsGQL}>({
+          query: Services.graphql.getMyNotifications,
+          fetchPolicy: "no-cache",
+          variables: {
+            pageNumber: state.page ,
+            pageSize: state.pageSize
+          }
+        }).then(({data: {myNotifications}}) => {
+          return myNotifications
+        })
+          .then(({ notifications, result }) => setState({
             ...state,
             notifications,
-            count,
-            untreatedCount: count,
+            count: result,
+            untreatedCount: result,
             loading: false,
           }));
       }
@@ -165,12 +269,21 @@ export const NotificationList = () => {
   const getMoreNotifications = () => {
     if (state.tab === 'unread') {
       setState({ ...state, nextIsPending: true });
-      Services.myNotifications(state.page, state.pageSize).then(({ notifications, count }) =>
+      client!.query<{ myNotifications: NotificationsGQL}>({
+        query: Services.graphql.getMyNotifications,
+        fetchPolicy: "no-cache",
+        variables: {
+          pageNumber: state.page ,
+          pageSize: state.pageSize
+        }
+      }).then(({data: {myNotifications}}) => {
+        return myNotifications
+      }).then(({ notifications, result }) =>
         setState({
           ...state,
           notifications: [...state.notifications, ...notifications],
-          count,
-          untreatedCount: count,
+          count: result,
+          untreatedCount: result,
           page: state.page + 1,
           nextIsPending: false,
         })
@@ -189,11 +302,11 @@ export const NotificationList = () => {
     }
   };
 
-  if (!state.teams.length) {
+  if (!state.notifications.length) {
     return null;
   }
 
-  const notifByTeams = groupBy(state.notifications, 'team');
+  const notifByTeams = groupBy(state.notifications, 'team._id');
   return <>
     <div className="row">
       <h1>
@@ -214,7 +327,7 @@ export const NotificationList = () => {
           <div className="home-tiles">
             {Object.keys(notifByTeams).map((key) => {
               const notifs = notifByTeams[key];
-              const team = state.teams.find((t: any) => t._id === key);
+              const team = notifs[0].team
               return (<div key={key}>
                 <h2>{team ? team.name : translate('Personal')}</h2>
                 {notifs
@@ -227,8 +340,7 @@ export const NotificationList = () => {
                       notification={notification}
                       accept={(values?: object) => acceptNotification(notification._id, values)}
                       reject={(message?: string) => rejectNotification(notification._id, message)}
-                      getTeam={(id: any) => state.teams.find((team: any) => team._id === id)}
-                      getApi={(id: any) => state.apis.find((a) => a._id === id)} />))}
+                    />))}
               </div>);
             })}
           </div>
