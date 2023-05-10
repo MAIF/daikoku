@@ -668,18 +668,20 @@ object json {
           SendgridSettings(
             apikey = (json \ "apikey").as[String],
             fromEmail = (json \ "fromEmail").as[String],
+            fromTitle = (json \ "fromTitle").as[String],
             template = (json \ "template").asOpt[String]
           )
         )
       } recover {
         case e =>
-          AppLogger.error(e.getMessage)
+          AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
       } get
 
     override def writes(o: SendgridSettings): JsValue = Json.obj(
       "type" -> "sendgrid",
       "apikey" -> o.apikey,
+      "fromTitle" -> o.fromTitle,
       "fromEmail" -> o.fromEmail,
       "template" -> o.template
         .map(JsString.apply)
