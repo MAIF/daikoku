@@ -1,5 +1,7 @@
 package fr.maif.otoroshi.daikoku.domain
 
+import cats.implicits.catsSyntaxOptionId
+
 import java.util.concurrent.TimeUnit
 import com.auth0.jwt.JWT
 import controllers.AppError
@@ -2359,11 +2361,18 @@ object json {
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
             parent = (json \ "parent").asOpt(ApiSubscriptionIdFormat),
-            thirdPartySubscriptionInformations = (json \ "thirdPartySubscriptionInformations").asOpt(ThirdPartySubscriptionInformationsFormat)
+            thirdPartySubscriptionInformations = (json \ "thirdPartySubscriptionInformations") match {
+              case JsDefined(value) => value match {
+                case JsNull => None
+                case _ => ThirdPartySubscriptionInformationsFormat.reads(value).get.some
+              }
+              case _: JsUndefined => None
+            }
           )
         )
       } recover {
         case e =>
+          AppLogger.error("ApiSubscriptionFormat error")
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
       } get
@@ -2419,8 +2428,11 @@ object json {
   }
 
   val ThirdPartySubscriptionInformationsFormat =  new Format[ThirdPartySubscriptionInformations] {
-    override def reads(json: JsValue): JsResult[ThirdPartySubscriptionInformations] = (json \ "type").as[String] match {
-      case "stripe" => StripeSubscriptionInformationsFormat.reads(json)
+    override def reads(json: JsValue): JsResult[ThirdPartySubscriptionInformations] = {
+      AppLogger.warn(Json.stringify(json))
+      (json \ "type").as[String] match {
+        case "stripe" => StripeSubscriptionInformationsFormat.reads(json)
+      }
     }
 
     override def writes(o: ThirdPartySubscriptionInformations): JsValue = o match {

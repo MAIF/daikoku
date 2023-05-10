@@ -1,11 +1,13 @@
 package fr.maif.otoroshi.daikoku.utils
 
+import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.libs.json.{JsArray, Json}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
@@ -67,16 +69,18 @@ class DeletionService(env: Env) {
   }
 
   /**
-    * delete logically all subscriptions
-    * add for each subscriptions an operation in queue to process a complete deletion of each Api
-    * (disable apikey in otoroshi, compute consumptions, close third-party subscription, delete notifications)
-    *
-    * @param subscriptions Sequence of ApiSubscriptions
-    * @param tenant Tenant where delete those ApiSubscriptions
-    * @return EitherT of AppError or Unit (actually a RightT[Unit])
-    */
-  def deleteSubscriptions(subscriptions: Seq[ApiSubscription],
-                          tenant: Tenant): EitherT[Future, AppError, Unit] = {
+   * delete logically all subscriptions
+   * add for each subscriptions an operation in queue to process a complete deletion of each Api
+   * (disable apikey in otoroshi, compute consumptions, close third-party subscription, delete notifications)
+   *
+   * @param subscriptions Sequence of ApiSubscriptions
+   * @param tenant        Tenant where delete those ApiSubscriptions
+   * @param plan          [[Option]] of a deleted [[UsagePlan]] (in this case, it's impossible de get paymentSettings)
+   * @return EitherT of AppError or Unit (actually a RightT[Unit])
+   */
+  private def deleteSubscriptions(subscriptions: Seq[ApiSubscription],
+                                  tenant: Tenant,
+                                  plan: Option[UsagePlan] = None): EitherT[Future, AppError, Unit] = {
     val operations = subscriptions.distinct
       .map(
         s =>
@@ -85,23 +89,21 @@ class DeletionService(env: Env) {
             tenant = tenant.id,
             itemId = s.id.value,
             itemType = ItemType.Subscription,
-            action = OperationAction.Delete
-        ))
+            action = OperationAction.Delete,
+            payload = plan.map(_.asJson.as[JsObject])
+          ))
 
-    AppLogger.debug(
-      s"[deletion service] :: add **subscriptions**[${subscriptions.map(_.id).mkString(",")}] to deletion queue")
-    val r = for {
-      _ <- env.dataStore.apiSubscriptionRepo
+    AppLogger.debug(s"[deletion service] :: add **subscriptions**[${subscriptions.map(_.id).mkString(",")}] to deletion queue")
+    for {
+      _ <- EitherT.liftF(env.dataStore.apiSubscriptionRepo
         .forTenant(tenant)
         .deleteLogically(Json.obj("_id" ->
-          Json.obj("$in" -> JsArray(subscriptions.map(_.id.asJson).distinct))))
-      _ <- env.dataStore.operationRepo.forTenant(tenant).insertMany(operations)
+          Json.obj("$in" -> JsArray(subscriptions.map(_.id.asJson).distinct)))))
+      _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).insertMany(operations))
     } yield ()
-
-    EitherT.liftF(r)
   }
 
-  def closeThirdPartySubscriptions(subscriptions: Seq[ApiSubscription], tenant: Tenant): EitherT[Future, AppError, Unit] = {
+  private def closeThirdPartySubscriptions(subscriptions: Seq[ApiSubscription], tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val thirdPartySubs = subscriptions.filter(_.thirdPartySubscriptionInformations.isDefined).distinct
     val operations = thirdPartySubs
       .map(
@@ -115,7 +117,7 @@ class DeletionService(env: Env) {
           ))
 
     AppLogger.debug(
-      s"[deletion service] :: add **third-aprty subscriptions**[${thirdPartySubs.map(_.id).mkString(",")}] to deletion queue")
+      s"[deletion service] :: add **third-party subscriptions**[${thirdPartySubs.map(_.id).mkString(",")}] to deletion queue")
 
     EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).insertMany(operations).map(_ => ()))
   }
@@ -125,10 +127,10 @@ class DeletionService(env: Env) {
     * add for each apis an operation in queue to process a complete deletion of each Api
     * (delete doc, issues, posts & notifications)
     * @param apis A sequence of Api to delete
-    * @param tenant the tennat where delete those apis
+    * @param tenant the tenant where delete those apis
     * @return an EitherT of AppError or Unit (actually a RightT[Unit])
     */
-  def deleteApis(apis: Seq[Api],
+  private def deleteApis(apis: Seq[Api],
                  tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val operations = apis.distinct
       .map(
@@ -159,8 +161,8 @@ class DeletionService(env: Env) {
     * Flag a user as deleted if there is no other account in another tenant
     * Add team (and him probably) to deletion queue to process complete deletion
     *
-    * @param userId user to delete
-    * @param tenant tenant
+    * @param userId [[UserId]]
+    * @param tenant [[TenantId]]
     * @return an EitherT of AppError or Unit
     */
   def deleteUserByQueue(userId: String,
@@ -196,8 +198,8 @@ class DeletionService(env: Env) {
     * Flag a user as deleted and delete his all teams in all possible tenants
     * Add him and his personal teams to deletion queue to process complete deletion
     *
-    * @param userId user to delete
-    * @param tenant tenant
+    * @param userId [[UserId]]
+    * @param tenant [[TenantId]]
     * @return an EitherT of AppError or Unit
     */
   def deleteCompleteUserByQueue(
@@ -226,8 +228,8 @@ class DeletionService(env: Env) {
   /**
     * Flag a team as deleted and delete his subscriptions, apis and those apis subscriptions
     * add team, subs and apis to deletion queue to process complete deletion
-    * @param id team id
-    * @param tenant tenant
+    * @param id [[TeamId]]
+    * @param tenant [[TenantId]]
     * @return an EitherT of AppError or Unit
     */
   def deleteTeamByQueue(id: TeamId,
@@ -247,15 +249,36 @@ class DeletionService(env: Env) {
         env.dataStore.apiRepo
           .forTenant(tenant)
           .find(Json.obj("team" -> team.id.asJson)))
-      apiSubscriptions <- EitherT.liftF(
+      _ <- deleteSubscriptions(subscriptions, tenant)
+      _ <- closeThirdPartySubscriptions(subscriptions, tenant)
+      _ <- EitherT.liftF(Future.sequence(apis.map(api => deleteApiByQueue(api.id, tenant.id).value)))
+      _ <- deleteTeam(team, tenant)
+    } yield ()
+  }
+
+  /**
+   * Flag an api as deleted and delete his subscriptions
+   * add api & subs to deletion queue to process complete deletion
+   *
+   * @param id     [[ApiId]]
+   * @param tenant [[TenantId]]
+   * @return an EitherT of AppError or Unit
+   */
+  def deleteApiByQueue(id: ApiId,
+                       tenant: TenantId): EitherT[Future, AppError, Unit] = {
+    for {
+      tenant <- EitherT.fromOptionF(
+        env.dataStore.tenantRepo.findByIdNotDeleted(tenant),
+        AppError.TenantNotFound)
+      api <- EitherT.fromOptionF(
+        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(id),
+        AppError.TeamNotFound)
+      subscriptions <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .find(Json.obj(
-            "api" -> Json.obj("$in" -> JsArray(apis.map(_.id.asJson))))))
-      _ <- deleteSubscriptions(subscriptions ++ apiSubscriptions, tenant)
-      _ <- closeThirdPartySubscriptions(subscriptions ++ apiSubscriptions, tenant)
-      _ <- deleteApis(apis, tenant)
-      _ <- deleteTeam(team, tenant)
+          .find(Json.obj("api" -> api.id.asJson)))
+      _ <- deleteSubscriptions(subscriptions, tenant)
+      _ <- deleteApis(Seq(api), tenant)
     } yield ()
   }
 }

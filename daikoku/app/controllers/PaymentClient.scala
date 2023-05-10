@@ -76,6 +76,26 @@ class PaymentClient(
         )
     }
 
+  def deleteThirdPartyProduct(paymentSettings: PaymentSettings,
+                              tenantId: TenantId): EitherT[Future, AppError, JsValue] = {
+    EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(tenantId), AppError.TenantNotFound)
+      .flatMap(_.thirdPartyPaymentSettings.find(_.id == paymentSettings.thirdPartyPaymentSettingsId) match {
+        case Some(settings) => settings match {
+          case s: StripeSettings =>
+            implicit val stripeSettings: StripeSettings = s
+            deleteStripeProduct(paymentSettings)
+        }
+        case None => EitherT.leftT[Future, JsValue](AppError.ThirdPartyPaymentSettingsNotFound)
+      })
+  }
+
+  private def deleteStripeProduct(paymentSettings: PaymentSettings)(implicit settings: StripeSettings): EitherT[Future, AppError, JsValue] = {
+    paymentSettings match {
+      case PaymentSettings.Stripe(_, productId, _) =>
+        EitherT.liftF(stripeClient(s"/v1/products/$productId").delete().map(_.json))
+    }
+  }
+
   def checkoutSubscription(tenant: Tenant,
                            subscriptionDemand: SubscriptionDemand,
                            step: SubscriptionDemandStep,
@@ -419,9 +439,11 @@ class PaymentClient(
   }
 
   private def deleteStripeSubscription(apiSubscription: ApiSubscription)(implicit stripeSettings: StripeSettings): EitherT[Future, AppError, JsValue] = {
+    AppLogger.debug(s"[PAYMENT CLIENT] :: delete sub :: ${apiSubscription.id}")
     apiSubscription.thirdPartySubscriptionInformations match {
       case Some(informations) => informations match {
         case StripeSubscriptionInformations(subscriptionId, _, _) =>
+          AppLogger.debug(s"[PAYMENT CLIENT] :: delete stripe sub :: $subscriptionId")
           EitherT.liftF(stripeClient(s"/v1/subscriptions/$subscriptionId")
             .delete().map(_.json))
       }

@@ -7,7 +7,7 @@ type Props = {
   type: ButtonType,
   onPress: () => Promise<any>,
   onSuccess?: () => void,
-  feedbackTimeout: number,
+  feedbackTimeout?: number,
   className?: string,
   disabled: boolean,
   style?: { [key: string]: string },
@@ -18,20 +18,33 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
   const [color, setColor] = useState<ButtonType>(props.type);
   const id = useMemo(() => nanoid(), [])
 
+  // useEffect(() => {
+  //   let timeout;
+
+  //   if (result !== 'waiting') {
+  //     setUploading(false);
+  //     timeout = setTimeout(() => {
+  //       onResult('waiting');
+  //     }, props.feedbackTimeout);
+  //   }
+
+  //   return () => {
+  //     if (timeout) clearTimeout(timeout);
+  //   };
+  // }, [result]);
+
   useEffect(() => {
     let timeout;
 
-    if (result !== 'waiting') {
-      setUploading(false);
-      timeout = setTimeout(() => {
-        onResult('waiting');
-      }, props.feedbackTimeout);
+    if (result === "success" || result === "failed") {
+      setUploading(false)
+      timeout = setTimeout(() => onResult("waiting"), props.feedbackTimeout)
     }
-
     return () => {
       if (timeout) clearTimeout(timeout);
     };
-  }, [result]);
+
+  }, [result])
 
   const failed = result === 'failed';
   const successed = result === 'success';
@@ -90,13 +103,16 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
         }
       }}>
       {loading && (
-        <i
-          className="fas fa-spinner fa-spin fa-sm"
-          style={{
-            opacity: loading ? 1 : 0,
-            transition: 'opacity 2s',
-          }}
-        />
+        <>
+          <i
+            className="fas fa-spinner fa-spin fa-sm"
+            style={{
+              opacity: loading ? 1 : 0,
+              transition: 'opacity 2s',
+            }}
+          />
+          {props.children}
+        </>
       )}
       {successed && (
         <i

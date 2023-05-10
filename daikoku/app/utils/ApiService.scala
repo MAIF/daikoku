@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.http.scaladsl.model.headers.Language
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{Flow, Source}
-import cats.data.EitherT
+import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
@@ -622,7 +622,7 @@ class ApiService(env: Env,
             customMetadata = parentSubscription.customMetadata,
           )))), ApiNotFound)
       childsKeys <- EitherT.liftF(Future.sequence(childsSubscription.map(s => env.dataStore.apiRepo.forTenant(tenant)
-        .findByIdNotDeleted(s.api.asInstanceOf[ApiId])
+        .findByIdNotDeleted(s.api)
         .map(_.flatMap(api => api.possibleUsagePlans
           .find(p => p.id == s.plan)
           .map(plan => createOtoroshiApiKey(
@@ -662,10 +662,10 @@ class ApiService(env: Env,
     } yield apikey).value
   }
 
-  def deleteApiSubscriptionsAsFlow(tenant: Tenant, apiOrGroupName: String, user: User) = Flow[(UsagePlan, Seq[ApiSubscription])]
-    .map(tuple => {
-      tuple._2.map(subscription => {
-        (tuple._1, subscription, Notification(
+  def deleteApiSubscriptionsAsFlow(tenant: Tenant, apiOrGroupName: String, user: User): Flow[(UsagePlan, Seq[ApiSubscription]), Any, NotUsed] = Flow[(UsagePlan, Seq[ApiSubscription])]
+    .map { case (plan, subscriptions) =>
+      subscriptions.map(subscription => {
+        (plan, subscription, Notification(
           id = NotificationId(BSONObjectID.generate().stringify),
           tenant = tenant.id,
           team = Some(subscription.team),
@@ -674,52 +674,38 @@ class ApiService(env: Env,
           action = NotificationAction.ApiKeyDeletionInformation(apiOrGroupName, subscription.apiKey.clientId)
         ))
       })
-    })
+    }
     .flatMapConcat(seq => Source(seq.toList))
-    //todo: update to 5 parallelism if team.subscriptions is no more used
-    .mapAsync(1)(sub => {
-      val plan = sub._1
-      val subscription = sub._2
-      val notification = sub._3
+    .mapAsync(1) { case (plan, subscription, notification) =>
 
-      //FIXME: handle third party payment subscriptions
 
-      plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
-        tenant.otoroshiSettings.find(_.id == id)
-      } match {
-        case None => FastFuture.successful(false)
-        case Some(otoSettings) =>
-          implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-          env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team).flatMap {
-            case None => FastFuture.successful(false)
-            case Some(subscriberTeam) => for {
-              _       <- env.dataStore.notificationRepo.forTenant(tenant).save(notification)
-              _       <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
-              childs  <- env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-                .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
-            } yield subscription.parent match {
-              case Some(_)                    => for {
-                _ <- extractSubscriptionFromAggregation(subscription, tenant, user)
-                _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteByIdLogically(subscription.id)
+      def deaggregateSubsAndDelete(subscription: ApiSubscription, childs: Seq[ApiSubscription], subscriberTeam: Team)(implicit otoroshiSettings: OtoroshiSettings) = {
+        subscription.parent match {
+          case Some(_) => extractSubscriptionFromAggregation(subscription, tenant, user) //no need to delete key
+          case None if childs.nonEmpty =>
+            childs match {
+              case newParent :: newChilds => for {
+                _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).save(newParent.copy(parent = None))
+                _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).updateManyByQuery(
+                  Json.obj("_id" -> Json.obj("$in" -> JsArray(newChilds.map(_.id.asJson)))),
+                  Json.obj("$set" -> Json.obj("parent" -> newParent.id.asJson)))
+                _ <- otoroshiSynchronisator.verify(Json.obj("_id" -> newParent.id.asJson))
               } yield ()
-              case None if childs.nonEmpty    =>
-                childs match {
-                  case newParent :: newChilds => for {
-                    subRepo <- env.dataStore.apiSubscriptionRepo.forTenantF(tenant)
-                    _ <- subRepo.save(newParent.copy(parent = None))
-                    _ <- subRepo.updateManyByQuery(
-                      Json.obj("_id" -> Json.obj("$in" -> JsArray(newChilds.map(_.id.asJson)))),
-                      Json.obj("$set" -> Json.obj("parent" -> newParent.id.asJson)))
-                    _ <- subRepo.deleteByIdLogically(subscription.id)
-                    _ <- otoroshiSynchronisator.verify(Json.obj("_id" -> newParent.id.asJson))
-
-                  } yield ()
-                }
-              case _ => deleteApiKey(tenant, subscription, plan, subscriberTeam)
             }
-          }
+          case _ => deleteApiKey(tenant, subscription, plan, subscriberTeam)
+        }
       }
-    })
+
+      (for {
+        otoroshiSettings <- OptionT.fromOption[Future](plan.otoroshiTarget.map(_.otoroshiSettings).flatMap(id => tenant.otoroshiSettings.find(_.id == id)))
+        subscriberTeam <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team))
+        _ <- OptionT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(notification))
+        _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant))
+        childs <- OptionT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
+        _ <- OptionT.liftF(deaggregateSubsAndDelete(subscription, childs, subscriberTeam)(otoroshiSettings))
+      //FIXME: handle third party payment subscriptions ==> sync consumption before deletion
+      } yield ()).value
+    }
 
   def notifyApiSubscription(demandId: SubscriptionDemandId,
                             stepId: SubscriptionDemandStepId,

@@ -90,7 +90,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       }
 
   def syncForSubscription(subscription: ApiSubscription,
-                          tenant: Tenant): Future[Seq[ApiKeyConsumption]] = {
+                          tenant: Tenant,
+                          completed: Boolean = false): Future[Seq[ApiKeyConsumption]] = {
     (for {
       lastConsumption <- env.dataStore.consumptionRepo
         .getLastConsumption(
@@ -103,9 +104,10 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       api match {
         case Some(api) =>
           syncConsumptionStatsForSubscription(subscription,
-                                              tenant,
-                                              Some(api),
-                                              lastConsumption)
+            tenant,
+            Some(api),
+            lastConsumption,
+            completed = completed)
         case None => FastFuture.successful(Seq.empty[ApiKeyConsumption])
       }
     }).flatten
@@ -214,10 +216,11 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
    *
    */
   private def syncConsumptionStatsForSubscription(subscription: ApiSubscription,
-                                tenant: Tenant,
-                                maybeApi: Option[Api],
-                                maybeLastConsumption: Option[ApiKeyConsumption]
-                               ): Future[Seq[ApiKeyConsumption]] = {
+                                                  tenant: Tenant,
+                                                  maybeApi: Option[Api],
+                                                  maybeLastConsumption: Option[ApiKeyConsumption],
+                                                  completed: Boolean = false
+                                                 ): Future[Seq[ApiKeyConsumption]] = {
     (for {
       api <- maybeApi
       plan <- api.possibleUsagePlans.find(_.id == subscription.plan)
@@ -247,7 +250,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
         (from, to)
       }).mapAsync(1) { case (from, to) =>
-        val isCompleteConsumption = Days.daysBetween(from, to).getDays == 1
+        val isCompleteConsumption = completed || Days.daysBetween(from, to).getDays == 1
 
         val id = maybeLastConsumption
           .map {

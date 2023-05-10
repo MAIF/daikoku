@@ -25,7 +25,7 @@ import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
-import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient, Translator}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, DeletionService, IdGenerator, OtoroshiClient, Translator}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -51,15 +51,14 @@ class ApiController(
     cc: ControllerComponents,
     otoroshiSynchronisator: OtoroshiVerifierJob,
     translator: Translator,
-    paymentClient: PaymentClient
+    paymentClient: PaymentClient,
+    deletionService: DeletionService
 ) extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
   implicit val tr = translator
-
-  private lazy val secret = new SecretKeySpec("secret".getBytes, "AES")
 
   val logger = Logger("ApiController")
 
@@ -2078,12 +2077,8 @@ class ApiController(
           .findOneNotDeleted(
             Json.obj("_id" -> apiId, "team" -> team.id.asJson)
           ) flatMap {
-          case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
-            FastFuture.successful(
-              Forbidden(
-                Json.obj("error" -> "You're not authorized to delete this api")
-              )
-            )
+          case None => AppError.ApiNotFound.renderF()
+          case Some(api) if api.visibility == ApiVisibility.AdminOnly => AppError.ForbiddenAction.renderF()
           case Some(api) =>
             Source(api.possibleUsagePlans.toList)
               .mapAsync(1)(plan => {
@@ -2107,10 +2102,6 @@ class ApiController(
                   .forTenant(ctx.tenant.id)
                   .deleteByIdLogically(apiId))
               .map(_ => Ok(Json.obj("done" -> true)))
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "Api not found"))
-            )
         }
       }
     }
@@ -4115,7 +4106,7 @@ class ApiController(
   def deletePlan(teamId: String, apiId: String, version: String, planId: String) =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
-        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+        AuditTrailEvent(s"@{user.name} has deleted plan @{plan.id} for api @{api.name}")
       )(teamId, ctx) { team =>
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
