@@ -1,7 +1,7 @@
 import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import { useContext } from 'react';
+import {useContext, useEffect, useState} from 'react';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
@@ -69,6 +69,8 @@ const AssetButton = (props: AssetButtonProps) => {
   const { translate } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext)
 
+
+
   return (
     <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
@@ -127,6 +129,15 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     'remoteContentHeaders',
     'content',
   ];
+  const [versions, setApiVersions] = useState<Array<string>>([]);
+
+  useEffect(() => {
+    Services.getAllApiVersions(props.team._id, params.apiId!)
+      .then((versions) =>
+        setApiVersions(versions
+        )
+      );
+  }, []);
 
   const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
     return {
@@ -346,9 +357,17 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 
   const deletePage = (page: IDocumentationPage) => {
+    const apiDocPageToList = (page: IDocumentationPage, list: Array<string>) => {
+      if (page.children.length) {
+        return [page, ...page.children.flatMap(child => apiDocPageToList(child, list) )]
+      } else {
+        return [page, ...list]
+      }
+    }
     if (apiQuery.data) {
-      Services.deleteDocPage(team._id, page.id)
-        .then(() => {
+      Promise.all([
+        apiDocPageToList(page, []).map((apiDoc => Services.deleteDocPage(team._id, apiDoc.id)))
+      ]).then(() => {
           toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
           queryClient.invalidateQueries(['details'])
         })
@@ -381,12 +400,14 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                   <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
                     <i className="fas fa-plus" />
                   </button>
-                  <button
-                    onClick={importPage}
-                    type="button"
-                    className="btn btn-sm btn-outline-primary">
-                    <i className="fas fa-download" />
-                  </button>
+                  {versions.length > 1 &&
+                    <button
+                      onClick={importPage}
+                      type="button"
+                      className="btn btn-sm btn-outline-primary">
+                      <i className="fas fa-download" />
+                    </button>
+                  }
                 </div>
               </div>
             </div>

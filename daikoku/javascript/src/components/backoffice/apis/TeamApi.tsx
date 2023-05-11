@@ -174,6 +174,7 @@ export const TeamApi = (props: { creation: boolean }) => {
   };
 
   const save = (editedApi: IApi) => {
+    console.log(editedApi)
     if (props.creation) {
       return Services.createTeamApi(currentTeam._id, editedApi)
         .then((createdApi) => {

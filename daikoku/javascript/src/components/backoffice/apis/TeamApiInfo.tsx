@@ -133,6 +133,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       array: true,
       label: translate('Tags'), //@ts-ignore //FIXME
       expert: true,
+      constraints: [constraints.required(translate("constraints.required.tag_name"))] //TODO fix constraints when array is set at true
     },
     categories: {
       type: type.string,

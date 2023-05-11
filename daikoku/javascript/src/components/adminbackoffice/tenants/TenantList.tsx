@@ -19,7 +19,7 @@ export const TenantList = () => {
   }, []);
 
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, alert } = useContext(ModalContext);
 
   const getTenants = () => Services.allTenants().then(setTenants);
 
@@ -35,13 +35,17 @@ export const TenantList = () => {
   };
 
   const removeTenant = (tenantId: string) => {
-    (confirm({ message: translate('delete.tenant.confirm') }))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteTenant(tenantId)
-            .then(() => getTenants());
-        }
-      });
+    if (tenants.length === 1 ) {
+      alert({ message: translate('delete.last.tenant.confirm')})
+    } else {
+      (confirm({ message: translate('delete.tenant.confirm') }))
+        .then((ok) => {
+          if (ok) {
+            Services.deleteTenant(tenantId)
+              .then(() => getTenants());
+          }
+        });
+    }
   };
 
   const filteredTenants = search

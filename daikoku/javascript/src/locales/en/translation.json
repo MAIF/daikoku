@@ -22,6 +22,7 @@
     "Logged in as": "Logged in as",
     "All teams": "All teams",
     "All organizations": "All organizations",
+    "All version": "All version",
     "settings": "settings",
     "Reset": "Reset",
     "Logout": "Logout",
@@ -190,6 +191,7 @@
     "Asset title": "Asset title",
     "Search ...": "Search ...",
     "delete.tenant.confirm": "Are you sure you want to delete this tenant?",
+    "delete.last.tenant.confirm":  "You can't delete the last tenant because Daikoku won't work without him.",
     "Create a new tenant": "Create a new tenant",
     "Find a tenant": "Find a tenant",
     "Remove tenant": "Remove tenant",
@@ -1006,6 +1008,7 @@
     "constraints.required.authorizedEntities": "Authorized entities are required",
     "constraints.required.value": "value is required",
     "constraints.required.domain": "Domain is required",
+    "constraints.required.tag_name": "Name for a tag is required",
     "constraints.format.url": "%s must be a valid URL",
     "constraints.matches.email": "Your mail must be a valid email address",
     "constraint.matches.password": "Your password must have 8 letters min with capital, number and special character (#$^+=!*()@%&)",
@@ -1281,5 +1284,7 @@
     "login.placeholder": "Email adress",
     "login.label": "Email adress",
     "password.label": "Password",
-    "login.btn.label": "Login"
+    "login.btn.label": "Login",
+    "api_documentation_modal.import.title": "Choose a documentation page to import from another version of this API.",
+    "issue.comments.number": " (%s) comments"
 }

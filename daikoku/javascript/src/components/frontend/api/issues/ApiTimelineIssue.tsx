@@ -5,7 +5,6 @@ import moment from 'moment';
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 //@ts-ignore
 import X from 'react-feather/dist/icons/x';
-import { useDispatch } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
@@ -15,7 +14,7 @@ import { I18nContext } from '../../../../core';
 import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
 import { Can, getColorByBgColor, randomColor } from '../../../utils';
-import { IApi, ITeamSimple, IUserSimple } from '../../../../types';
+import {IApi, ITeamSimple, IUserSimple} from '../../../../types';
 import { ModalContext } from '../../../../contexts';
 
 const styles = {

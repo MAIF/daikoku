@@ -1,4 +1,4 @@
-import { Form, format, FormRef, type } from '@maif/react-forms';
+import {constraints, Form, format, FormRef, type} from '@maif/react-forms';
 import { useContext, useRef } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 
@@ -113,15 +113,14 @@ export const AuditForm = (props: { tenant?: ITenantFull, updateTenant: UseMutati
         },
         alertsEmails: {
           type: type.string,
+          format: format.email,
           array: true,
           label: translate('Alerting'),
-          help: translate('alerting.help')
-          //todo: with a better version of react-form ...
-          // item: {
-          //   constraints:[
-          //     constraints.email(translate('constraints.matches.email'))
-          //   ]
-          // }
+          help: translate('alerting.help'),
+          constraints: [
+            constraints.required(translate('constraints.required.email')),
+            constraints.email(translate('constraints.matches.email')),
+          ],
         },
       }
     }
