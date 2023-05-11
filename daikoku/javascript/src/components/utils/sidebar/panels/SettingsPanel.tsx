@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import Sun from 'react-feather/dist/icons/sun'
+import Moon from 'react-feather/dist/icons/moon'
 
 import * as Services from '../../../../services';
 import { updateTenant } from '../../../../core/context/actions';
 import { I18nContext } from '../../../../contexts/i18n-context';
-import { CanIDoAction, manage, team } from '../../..';
 
-const DarkModeActivator = ({
-  initialDark
-}: any) => {
-  const { translate } = useContext(I18nContext);
-
+export const DarkModeActivator = () => {
   const DARK = 'DARK';
   const LIGHT = 'LIGHT';
 
-  const [theme, setTheme] = useState(initialDark || localStorage.getItem('theme') || LIGHT);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || LIGHT);
 
   useEffect(() => {
     if (theme === DARK) {
@@ -29,7 +26,7 @@ const DarkModeActivator = ({
 
   return (
     <div className="block__entry__link" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
-      {theme === DARK ? translate('Light mode') : translate('Dark mode')}
+      {theme === DARK ? <Sun/> : <Moon />}
     </div>
   );
 };
@@ -113,7 +110,6 @@ export const SettingsPanel = ({ }) => {
         <div className="mb-3 block">
           <div className="mb-1 block__category">{translate('actions')}</div>
           <div className="ms-2 block__entries block__border d-flex flex-column">
-            <DarkModeActivator />
             {connectedUser.isDaikokuAdmin && (
               <span className="block__entry__link" onClick={reset}>
                 {translate('Reset')}

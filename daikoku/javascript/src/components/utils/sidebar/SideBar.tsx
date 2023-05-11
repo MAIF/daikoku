@@ -2,14 +2,19 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames';
-import {Search, Plus, MessageSquare, Bell, ArrowLeft, Zap} from 'react-feather';
+import Search from 'react-feather/dist/icons/search'
+import Plus from 'react-feather/dist/icons/plus'
+import MessageSquare from 'react-feather/dist/icons/message-square'
+import ArrowLeft from 'react-feather/dist/icons/arrow-left'
+import Zap from 'react-feather/dist/icons/zap'
+import Bell from 'react-feather/dist/icons/bell'
 
 import * as Services from '../../../services';
 import { updateNotifications } from '../../../core';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { MessagesContext } from '../../backoffice';
 
-import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel } from './panels';
+import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel, DarkModeActivator } from './panels';
 import { Companion } from './companions';
 import { IState, IStateContext } from '../../../types';
 
@@ -36,9 +41,9 @@ export const SideBar = () => {
 
   useEffect(() => {
     Services.myUnreadNotificationsCount()
-      .then( (notifCount) => {
-          dispatch(updateNotifications(notifCount.count));
-        }
+      .then((notifCount) => {
+        dispatch(updateNotifications(notifCount.count));
+      }
       );
   }, []);
 
@@ -113,8 +118,8 @@ export const SideBar = () => {
               )}
               title={translate('fastMode.access')}
             >
-              <Zap 
-                  className="notification-link"/>
+              <Zap
+                className="notification-link" />
             </Link>
           )}
         </div>
@@ -152,21 +157,32 @@ export const SideBar = () => {
             </div>
           )}
           {!connectedUser.isGuest && (
-            <>
-              <div className="nav_item mb-3">
-                <Link
-                  className={classNames({
-                    'notification-link': true,
-                    'unread-notifications': !!unreadNotificationsCount,
-                  })}
-                  to="/notifications"
-                  title={translate('Access to the notifications')}
-                >
-                  <Bell />
-                </Link>
-              </div>
-            </>
+            <div className="nav_item mb-3">
+              <Link
+                className={classNames({
+                  'notification-link': true,
+                  'unread-notifications': !!unreadNotificationsCount,
+                })}
+                to="/notifications"
+                title={translate('Access to the notifications')}
+              >
+                <Bell />
+              </Link>
+            </div>
           )}
+          <div className="nav_item mb-3">
+            <Link
+              className={classNames({
+                'notification-link': true,
+                'unread-notifications': !!unreadNotificationsCount,
+              })}
+              to="/notifications"
+              title={translate('Access to the notifications')}
+            >
+              <DarkModeActivator />
+            </Link>
+          </div>
+
           <div className="nav_item mb-3" style={{ color: '#fff' }}>
             <img
               style={{ width: '35px', ...impersonatorStyle }}
