@@ -188,9 +188,9 @@ export const TeamMembersSimpleComponent = () => {
 
   const invitUser = (email: string): Promise<any> => {
     if (tenant && tenant.authProvider === 'LDAP') {
-      return addLdapUserToTeam(email);
+      return addLdapUserToTeam(email.toLocaleLowerCase());
     } else {
-      return Services.addUncheckedMembersToTeam(currentTeam._id, email)
+      return Services.addUncheckedMembersToTeam(currentTeam._id, email.toLocaleLowerCase())
         .then(() => updateMembers(currentTeam));
     }
   };

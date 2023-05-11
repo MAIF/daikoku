@@ -40,8 +40,8 @@ export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModa
               constraints: [
                 constraints.required(translate('constraints.required.email')),
                 constraints.email(translate('constraints.matches.email')),
-                constraints.test('test_members', translate('User already in team'), (email: string) => !props.members.some((f) => f.email === email)),
-                constraints.test('test_pending', translate('User already invited'), (email: string) => !props.pendingUsers.some((f) => f.email === email))
+                constraints.test('test_members', translate('User already in team'), (email: string) => !props.members.some((f) => f.email.toLocaleLowerCase() === email.toLocaleLowerCase())),
+                constraints.test('test_pending', translate('User already invited'), (email: string) => !props.pendingUsers.some((f) => f.email.toLocaleLowerCase() === email.toLocaleLowerCase()))
               ]
             }
           }}
