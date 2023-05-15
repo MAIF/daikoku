@@ -41,6 +41,10 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
       );
   }, []);
 
+  const chkr = (az: any) => {
+    console.log(az.length)
+    return true
+  }
   const importPages = () => {
     Services.importApiPages(props.teamId, props.api._id, pages.map((p) => p.value), props.api.currentVersion)
       .then(() => props.onClose())
@@ -50,7 +54,7 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{translate('api_select_modal.title')}</h5>
+        <h5 className="modal-title">{translate('api_documentation_modal.import.title')}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
       </div>
       <div className="modal-body">
@@ -70,6 +74,7 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
         <button type="button" className="btn btn-outline-success" onClick={importPages}>
           {translate('Select')}
         </button>
+
       </div>
     </div>
   );

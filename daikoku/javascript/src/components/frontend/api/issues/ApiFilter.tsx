@@ -110,7 +110,7 @@ export function ApiFilter({
           onChange={(apiVersion) => setSelectedVersion(apiVersion)}
           options={[
             ...availableApiVersions.map((iss) => ({ value: iss, label: `Version : ${iss}` })),
-            { value: 'all', label: 'All' },
+            { value: 'all version', label: 'All version' },
           ]}
           value={selectedVersion}
           className="input-select reactSelect ms-1"

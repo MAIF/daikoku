@@ -26,6 +26,7 @@ export function TeamApiIssueTags({
       ...api,
       issuesTags: [...api.issuesTags.filter((iss: any) => iss.id !== id)],
     });
+    setUpdated(true)
   }
 
   return (

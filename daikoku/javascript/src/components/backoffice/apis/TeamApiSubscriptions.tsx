@@ -14,7 +14,7 @@ import * as Services from '../../../services';
 import { Table, SwitchButton, TableRef } from '../../inputs';
 import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux';
-import { format, type} from "@maif/react-forms";
+import {  format, type } from "@maif/react-forms";
 import { IApi, isError, IState, ITeamSimple, IUsagePlan } from "../../../types";
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';

@@ -2102,13 +2102,13 @@ class ApiController(
                 )
               )
             createdPages <- Future.sequence(fromPages.map(page => {
-              val generatedId = BSONObjectID.generate().stringify
+              val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
               env.dataStore.apiDocumentationPageRepo
                 .forTenant(ctx.tenant.id)
-                .save(page.copy(id = ApiDocumentationPageId(generatedId)))
+                .save(page.copy(id = generatedId))
                 .flatMap(_ =>
                   FastFuture.successful(
-                    ApiDocumentationDetailPage(page.id, page.title, Seq.empty)
+                    ApiDocumentationDetailPage(generatedId, page.title, Seq.empty)
                 ))
             }))
             api <- env.dataStore.apiRepo.findByVersion(ctx.tenant,
@@ -2641,7 +2641,6 @@ class ApiController(
         ctx
       ) { team =>
         ctx.setCtxValue("page.id", pageId)
-
         env.dataStore.apiDocumentationPageRepo
           .forTenant(ctx.tenant.id)
           .deleteByIdLogically(pageId)
