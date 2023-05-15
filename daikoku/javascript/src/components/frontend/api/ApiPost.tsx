@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
+import moment from 'moment';
 
 type Pagination = {
   limit: number,
@@ -15,7 +16,7 @@ export function ApiPost({
 }: any) {
   const [posts, setPosts] = useState([]);
 
-  const { translate } = useContext(I18nContext);
+  const { translate, language } = useContext(I18nContext);
 
   const [pagination, setPagination] = useState<Pagination>({
     limit: 1,
@@ -41,8 +42,8 @@ export function ApiPost({
   }, [pagination.offset, pagination.limit]);
 
   function formatDate(lastModificationAt: any) {
-    const date = new Date(lastModificationAt);
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short' }).format(date);
+    moment.locale(language);
+    return moment(lastModificationAt).format(translate('moment.date.format'))
   }
 
   return (<div className="container-fluid">

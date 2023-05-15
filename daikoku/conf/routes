@@ -80,6 +80,7 @@ POST    /api/teams/:teamId/income/_sync                         fr.maif.otoroshi
 GET     /api/teams/:teamId/subscription/:id/consumption         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getSubscriptionConsumption(id, teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/apis/:apiId/plan/:planId/consumption fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getGroupConsumption(teamId, apiId, planId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/apis/:apiId/consumption              fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getApiConsumption(teamId, apiId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+### maybe deleting this route + change tests that use this links
 GET     /api/teams/:teamId/consumptions                         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.consumptions(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/billings                             fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.billings(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/income                               fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)

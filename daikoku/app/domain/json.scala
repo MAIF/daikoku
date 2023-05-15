@@ -668,18 +668,20 @@ object json {
           SendgridSettings(
             apikey = (json \ "apikey").as[String],
             fromEmail = (json \ "fromEmail").as[String],
+            fromTitle = (json \ "fromTitle").as[String],
             template = (json \ "template").asOpt[String]
           )
         )
       } recover {
         case e =>
-          AppLogger.error(e.getMessage)
+          AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
       } get
 
     override def writes(o: SendgridSettings): JsValue = Json.obj(
       "type" -> "sendgrid",
       "apikey" -> o.apikey,
+      "fromTitle" -> o.fromTitle,
       "fromEmail" -> o.fromEmail,
       "template" -> o.template
         .map(JsString.apply)
@@ -2783,20 +2785,19 @@ object json {
     new Format[NotificationStatus] {
       override def reads(json: JsValue): JsResult[NotificationStatus] =
         (json \ "status").as[String] match {
-          case "Pending"  => JsSuccess(Pending())
+          case "Pending"  => NotificationStatusPendingFormat.reads(json)
           case "Accepted" => NotificationStatusAcceptedFormat.reads(json)
           case "Rejected" => NotificationStatusRejectedFormat.reads(json)
           case str        => JsError(s"Bad notification status value: $str")
         }
 
       override def writes(o: NotificationStatus): JsValue = o match {
-        case status: Pending => Json.obj("status" -> "Pending")
+        case status: Pending =>
+          NotificationStatusPendingFormat.writes(status).as[JsObject]
         case status: Accepted =>
-          NotificationStatusAcceptedFormat.writes(status).as[JsObject] ++ Json
-            .obj("status" -> "Accepted")
+          NotificationStatusAcceptedFormat.writes(status).as[JsObject]
         case status: Rejected =>
-          NotificationStatusRejectedFormat.writes(status).as[JsObject] ++ Json
-            .obj("status" -> "Rejected")
+          NotificationStatusRejectedFormat.writes(status).as[JsObject]
       }
     }
 
@@ -2815,6 +2816,22 @@ object json {
       }
     }
 
+  val NotificationStatusPendingFormat: Format[Pending] =
+    new Format[Pending] {
+      override def reads(json: JsValue): JsResult[Pending] =
+        Try {
+          JsSuccess(
+            Pending()
+          )
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
+
+      override def writes(o: Pending): JsValue = Json.obj(
+        "status" -> o.status
+      )
+    }
+
   val NotificationStatusAcceptedFormat: Format[Accepted] =
     new Format[Accepted] {
       override def reads(json: JsValue): JsResult[Accepted] =
@@ -2829,7 +2846,8 @@ object json {
         } get
 
       override def writes(o: Accepted): JsValue = Json.obj(
-        "date" -> DateTimeFormat.writes(o.date)
+        "date" -> DateTimeFormat.writes(o.date),
+        "status" -> o.status
       )
     }
 
@@ -2847,7 +2865,8 @@ object json {
         } get
 
       override def writes(o: Rejected): JsValue = Json.obj(
-        "date" -> DateTimeFormat.writes(o.date)
+        "date" -> DateTimeFormat.writes(o.date),
+        "status" -> o.status
       )
     }
 

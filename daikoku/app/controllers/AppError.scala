@@ -90,7 +90,6 @@ object AppError {
     case ParsingPayloadError(message)            => BadRequest(toJson(error))
     case NameAlreadyExists                       => Conflict(toJson(error))
     case TeamAlreadyVerified                     => Conflict(toJson(error))
-
   }
 
   def toJson(error: AppError) = {

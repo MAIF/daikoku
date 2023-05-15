@@ -74,7 +74,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
     },
     homePageVisible: {
       type: type.bool,
-      label: translate('home page visible Enabled'), //todo translation
+      label: translate('tenant_edit.home_page.visibility'),
     },
     homeCmsPage: {
       type: type.string,

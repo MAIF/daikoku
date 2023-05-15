@@ -56,19 +56,10 @@ export function ApiFilter({
       isMulti: true,
       visible: CanIDoAction(connectedUser, manage, API, currentTeam),
     },
-    comments: {
-      type: type.object,
+    comment: {
+      type: type.string,
       label: translate('issues.new_comment'),
-      format: format.form,
-      array: true,
-      schema: {
-        content: {
-          type: type.string,
-          format: format.markdown,
-          label: null,
-        },
-      },
-      constraints: [constraints.length(1, 'Just one comment please')],
+      format: format.markdown
     },
   };
 
@@ -149,7 +140,7 @@ export function ApiFilter({
                 .then((newIssue) => openFormModal({
                   title: translate('issues.new_issue'),
                   schema,
-                  onSubmit: createIssue,
+                  onSubmit: d => createIssue({...d, comments: [{content: d.comment, by: connectedUser._id}]}),
                   value: newIssue,
                   actionLabel: translate('Create')
                 }))}>

@@ -2011,7 +2011,7 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/_transfer",
         method = "POST",
-        body = Some(Json.obj("team" -> teamConsumer.id.asJson))
+        body = Some(Json.obj("team" -> teamConsumer.name))
       )(tenant, session)
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true
@@ -2032,7 +2032,6 @@ class ApiControllerSpec()
       )(tenant, session)
       acceptNotif.status mustBe 200
       (acceptNotif.json \ "done").as[Boolean] mustBe true
-
       val respVerif =
         httpJsonCallBlocking(
           path =
@@ -2069,7 +2068,7 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/_transfer",
         method = "POST",
-        body = Some(Json.obj("team" -> teamConsumer.id.asJson))
+        body = Some(Json.obj("team" -> teamConsumer.name))
       )(tenant, session)
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true

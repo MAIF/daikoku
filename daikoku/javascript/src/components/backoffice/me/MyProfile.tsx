@@ -494,7 +494,7 @@ export const MyProfile = () => {
                       <div className="d-flex justify-content-end">
                         <button
                           type="button"
-                          className="btn btn-outline-success mb-2"
+                          className="btn btn-outline-success my-2"
                           onClick={valid}
                         >
                           <span>

@@ -251,7 +251,7 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
               ),
               "from" -> Json.obj(
                 "email" -> settings.fromEmail,
-                "name" -> settings.fromEmail
+                "name" -> settings.fromTitle
               ),
               "content" -> Json.arr(
                 Json.obj(

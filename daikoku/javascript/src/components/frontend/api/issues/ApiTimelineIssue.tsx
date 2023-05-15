@@ -338,7 +338,7 @@ function Comment({
               {showActions ? (
                 <div className="ml-auto">
                   <button className="btn btn-xs btn-outline-secondary me-1" onClick={editComment}>
-                    <i className="fas fa-edit align-self-center" />
+                    <i className="fas fa-pen align-self-center" />
                   </button>
                   {i !== 0 && (
                     <button className="btn btn-xs btn-outline-danger" onClick={removeComment}>

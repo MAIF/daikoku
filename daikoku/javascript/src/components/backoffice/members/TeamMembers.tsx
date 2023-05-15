@@ -45,7 +45,7 @@ export const TeamMembersSimpleComponent = () => {
   });
 
   const { translate, Translation } = useContext(I18nContext);
-  const { alert, openInvitationTeamModal } = useContext(ModalContext);
+  const { alert, openInvitationTeamModal, confirm } = useContext(ModalContext);
 
   useEffect(() => {
     updateMembers(currentTeam);
@@ -99,8 +99,7 @@ export const TeamMembersSimpleComponent = () => {
     ) {
       alert({ message: translate('remove.member.alert') });
     } else {
-      (window
-        .confirm(translate('remove.member.confirm')))//@ts-ignore
+      (confirm({message: translate('remove.member.confirm')}))//@ts-ignore
         .then((ok: boolean) => {
           if (ok) {
             const teamId = currentTeam._id;
@@ -189,9 +188,9 @@ export const TeamMembersSimpleComponent = () => {
 
   const invitUser = (email: string): Promise<any> => {
     if (tenant && tenant.authProvider === 'LDAP') {
-      return addLdapUserToTeam(email);
+      return addLdapUserToTeam(email.toLocaleLowerCase());
     } else {
-      return Services.addUncheckedMembersToTeam(currentTeam._id, email)
+      return Services.addUncheckedMembersToTeam(currentTeam._id, email.toLocaleLowerCase())
         .then(() => updateMembers(currentTeam));
     }
   };
@@ -316,8 +315,7 @@ export const TeamMembersSimpleComponent = () => {
           ? [
             {
               action: () => {
-                window
-                  .confirm(translate('team_member.confirm_remove_invitation'))
+                confirm({message: translate('team_member.confirm_remove_invitation')})
                   //@ts-ignore
                   .then((ok: boolean) => {
                     if (ok)

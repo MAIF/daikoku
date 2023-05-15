@@ -1,14 +1,13 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Form, constraints, type, format } from '@maif/react-forms';
 import { toastr } from 'react-redux-toastr';
-import sortBy from 'lodash/sortBy';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { ModalContext } from '../../../contexts';
-import { isError, IState, ITeamSimple } from '../../../types';
+import {  IState, ITeamSimple } from '../../../types';
 
 export const TeamApiSettings = ({
   api,
@@ -19,9 +18,8 @@ export const TeamApiSettings = ({
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const navigate = useNavigate();
 
-  const transferOwnership = ({
-    team
-  }: any) => {
+  const transferOwnership = ({team}: any) => {
+
     Services.transferApiOwnership(team, api.team, api._id).then((r) => {
       if (r.notify) {
         toastr.info(translate('Info'), translate('team.transfer.notified'));
@@ -37,20 +35,6 @@ export const TeamApiSettings = ({
     team: {
       type: type.string,
       label: translate('new.owner'),
-      format: format.select,
-      optionsFrom: Services.teams()
-        .then((teams) => {
-          if (!isError(teams)) {
-            return sortBy(teams.filter((team: any) => team._id !== api.team),'name')
-          } else {
-            return []
-          }
-        }
-        ),
-      transformer: (team: any) => ({
-        label: team.name,
-        value: team._id
-      }),
       constraints: [constraints.required(translate('constraints.required.team'))],
     },
     comfirm: {

@@ -20,7 +20,7 @@ const mimeTypes = [
   { label: '.jpg	image JPEG', value: 'image/jpeg' },
   { label: '.jpeg	image JPEG', value: 'image/jpeg' },
   { label: '.svg  image SVG', value: 'image/svg+xml' },
-  { label: '.md	Markown file', value: 'text/markdown' },
+  { label: '.md	Markdown file', value: 'text/markdown' },
   { label: '.mpeg	vidéo MPEG', value: 'video/mpeg' },
   {
     label: '.odp OpenDocument presentation document ',
@@ -435,7 +435,7 @@ export const AssetsList = ({
               actionLabel: translate('Add asset')
             })}>
 
-            {translate("add asset")}
+            {translate("Add asset")}
           </button>
         </div>
       </div>

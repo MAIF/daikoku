@@ -71,7 +71,7 @@ button {
   }
 }
 
-.btn-outline-success {
+.btn-outline-success, .btn-outline-success:focus {
   background-color: #fff;
   color: $success-color;
   border-color: $success-color;
@@ -83,7 +83,7 @@ button {
   }
 }
 
-.btn-outline-danger {
+.btn-outline-danger, .btn-outline-danger:focus {
   background-color: #fff;
   color: $danger-color;
   border-color: $danger-color;
@@ -95,7 +95,7 @@ button {
   }
 }
 
-.btn-outline-primary {
+.btn-outline-primary, .btn-outline-primary:focus {
   background-color: #fff;
   color: $info-color;
   border-color: $info-color;

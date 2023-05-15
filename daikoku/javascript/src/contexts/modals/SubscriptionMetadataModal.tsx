@@ -206,6 +206,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
         <>
           {!props.description && props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[
+
               props.team?.name,
               plan.customName || formatPlanType(plan, translate),
             ]}>

@@ -1,4 +1,4 @@
-import { ITeamSimple, ITenant, IUserSimple } from '../../types';
+import {ITeamSimple, ITeamVisibility, ITenant, IUserSimple} from '../../types';
 import {
   IMPERSONATE,
   LOGIN,
@@ -39,7 +39,7 @@ export const impersonate = ({ impersonator }: any) => ({
   impersonator,
 });
 
-export const updateTeam = (team: ITeamSimple) => ({
+export const updateTeam = (team: ITeamSimple | ITeamVisibility) => ({
   type: UPDATE_TEAM,
   team,
 });

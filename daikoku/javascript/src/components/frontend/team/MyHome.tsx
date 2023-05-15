@@ -7,7 +7,7 @@ import { useNavigate} from 'react-router-dom';
 import { I18nContext, updateTeam } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApiWithAuthorization, isError, IState, ITeamSimple, ITenant, IUserSimple } from '../../../types';
+import { IApiWithAuthorization, isError, IState, ITenant, IUserSimple } from '../../../types';
 import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
 
@@ -20,7 +20,6 @@ export const MyHome = () => {
   const apiCreationPermitted = useSelector<IState, boolean>(s => s.context.apiCreationPermitted)
 
   const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
-  const teamsRequest = useQuery(['teams'], () => Services.teams())
 
   const navigate = useNavigate();
 
@@ -31,11 +30,9 @@ export const MyHome = () => {
 
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
-    const apiOwner = (teamsRequest.data as ITeamSimple[]).find((t) => (t as any)._id === api.team._id);
-
     const route = (version: string) => api.apis
-      ? `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/apigroups/${api._humanReadableId}/apis`
-      : `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}/description`;
+      ? `/${api.team._humanReadableId}/apigroups/${api._humanReadableId}/apis`
+      : `/${api.team._humanReadableId}/${api._humanReadableId}/${version}/description`;
 
     if (api.isDefault) {
       navigate(route(api.currentVersion));
@@ -47,26 +44,25 @@ export const MyHome = () => {
     }
   };
 
-  const redirectToEditPage = (apiWithAutho: IApiWithAuthorization, teams: Array<ITeamSimple>, myTeams: Array<ITeamSimple>) => {
+  const redirectToEditPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
-    const adminTeam = (connectedUser.isDaikokuAdmin ? teams : myTeams).find((team) => api.team._id === team._id);
 
-    if (adminTeam && CanIDoAction(connectedUser, manage, API, adminTeam, apiCreationPermitted)) {
-      Promise.resolve(dispatch(updateTeam(adminTeam)))
+    if (api.team && CanIDoAction(connectedUser, manage, API, api.team, apiCreationPermitted)) {
+      Promise.resolve(dispatch(updateTeam(api.team)))
         .then(() => {
           const url = api.apis
-            ? `/${adminTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-            : `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+            ? `/${api.team._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+            : `/${api.team._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
           navigate(url);
         });
     }
   };
 
-  if (myTeamsRequest.isLoading || teamsRequest.isLoading) {
+  if (myTeamsRequest.isLoading ) {
     return (
       <Spinner />
     )
-  } else if (myTeamsRequest.data && teamsRequest.data && !isError(teamsRequest.data) && !isError(myTeamsRequest.data)) {
+  } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
     return (
       <main role="main">
         <section className="organisation__header col-12 mb-4 p-3">
@@ -89,7 +85,6 @@ export const MyHome = () => {
           </div>
         </section>
         <ApiList
-          teams={teamsRequest.data}
           myTeams={myTeamsRequest.data}
           teamVisible={true}
           redirectToApiPage={redirectToApiPage}
