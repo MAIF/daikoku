@@ -26,7 +26,7 @@ const mimeTypes = [
   { label: '.gif	fichier Graphics Interchange Format (GIF)', value: 'image/gif' },
   { label: '.html	fichier HyperText Markup Language (HTML)', value: 'text/html' },
   { label: '.jpg	image JPEG', value: 'image/jpeg' },
-  { label: '.md	Markown file', value: 'text/markdown' },
+  { label: '.md	Markdown file', value: 'text/markdown' },
   { label: '.mpeg	vidéo MPEG', value: 'video/mpeg' },
   {
     label: '.odp OpenDocument presentation document ',
@@ -373,19 +373,19 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   } else if (apiQuery.data && !isError(apiQuery.data)) {
     return (
       <div className="row">
-        <div className="col-12 col-sm-6 col-lg-6 p-1">
+        <div className="col-12 col-sm-6 col-lg-6">
           <div className="d-flex flex-column">
             <div className="">
               <div className="d-flex justify-content-between align-items-center">
-                <div className="btn-group">
-                  <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
+                <div className="btn-group ms-2">
+                  <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-success">
                     <i className="fas fa-plus" />
                   </button>
                   <button
                     onClick={importPage}
                     type="button"
                     className="btn btn-sm btn-outline-primary">
-                    <i className="fas fa-download" />
+                    <i className="fas fa-copy" />
                   </button>
                 </div>
               </div>

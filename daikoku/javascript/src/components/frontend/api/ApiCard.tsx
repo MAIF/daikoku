@@ -94,7 +94,7 @@ export const ApiCard = (props: {
                 className="btn btn-sm btn-access-negative btn-edit"
                 onClick={props.redirectToEditPage}
               >
-                <i className="fas fa-edit" />
+                <i className="fas fa-pen" />
               </button>
             </Can>
           </div>
@@ -135,7 +135,7 @@ export const ApiCard = (props: {
                 className="btn btn-sm btn-access-negative me-1 mb-1"
                 onClick={props.redirectToEditPage}
               >
-                <i className="fas fa-edit" />
+                <i className="fas fa-pen" />
               </button>
             </Can>
             {accessButton()}

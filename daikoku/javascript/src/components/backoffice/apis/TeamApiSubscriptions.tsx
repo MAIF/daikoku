@@ -150,7 +150,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         return (<div className="btn-group">
           <BeautifulTitle title={translate('Update metadata')}>
             <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative me-1" onClick={() => updateMeta(sub)}>
-              <i className="fas fa-edit" />
+              <i className="fas fa-pen" />
             </button>
           </BeautifulTitle>
           <BeautifulTitle title={translate('Refresh secret')}>
@@ -238,10 +238,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
 
-        <div className="row">
-          <div className='d-flex flex-row justify-content-start align-items-center'>
+        <div className="px-2">
+          <div className='d-flex flex-row justify-content-start align-items-center mb-2'>
             <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
-              actionLabel: "filter",
+              actionLabel: translate("Filter"),
               onSubmit: data => {
                 setFilters(data)
               },

@@ -18,7 +18,7 @@ export const AuditTrailList = () => {
   const table = useRef<TableRef>();
 
   const { alert } = useContext(ModalContext);
-  const { translate } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
 
   const [from, setFrom] = useState(dayjs().subtract(1, 'hour'));
   const [to, setTo] = useState(dayjs());
@@ -102,7 +102,7 @@ export const AuditTrailList = () => {
     <Can I={manage} a={tenant} dispatchError>
       <div className="row">
         <div className="col">
-          <h1>Audit trail </h1>
+          <h1><Translation i18nkey="Audit trail">Audit trail</Translation></h1>
           <div className="section">
             <div className="p-2">
               <Table

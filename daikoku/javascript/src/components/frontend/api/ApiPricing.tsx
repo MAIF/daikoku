@@ -177,17 +177,17 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             </Translation>
           </span>
         </div>
-        <div className="d-flex justify-content-between align-items-center">
+        <div className="d-flex justify-content-between align-items-center flex-wrap">
           {plan.otoroshiTarget && !isAccepted && isPending && (
             <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
               <Translation i18nkey="Request in progress">Request in progress</Translation>
             </button>
           )}
           {!otoroshiTargetIsDefined && props.api.visibility !== 'AdminOnly' && (
-            <span className="badge bg-danger">{translate('otoroshi.missing.target')}</span>
+            <span className="badge bg-danger m-1">{translate('otoroshi.missing.target')}</span>
           )}
           {!otoroshiEntitiesIsDefined && props.api.visibility !== 'AdminOnly' && (
-            <span className="badge bg-danger">{translate('otoroshi.missing.entities')}</span>
+            <span className="badge bg-danger m-1">{translate('otoroshi.missing.entities')}</span>
           )}
           {(otoroshiTargetIsDefined && otoroshiEntitiesIsDefined || props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&
@@ -270,7 +270,7 @@ export function ApiPricing(props: ApiPricingProps) {
   });
 
   return (
-    <div className="d-flex flex-row pricing-content" id="usage-plans__list">
+    <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
       {/* <div className="album"> */}
         {/* <div className="container">
           <div className="row"> */}
