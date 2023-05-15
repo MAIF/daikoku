@@ -121,8 +121,6 @@ type IgqlConsumption = {
   }
   to: Moment
   _id: string
-
-
 }
 type Iprops = {
   sync: () => Promise<string>
@@ -286,6 +284,7 @@ export function OtoroshiStatsVizualization(props: Iprops) {
           onChange={(period) => setState({ ...state, period })}
           classNamePrefix="reactSelect"
         />
+
         <span className="col ms-2 period-display">{state.period.format(state.consumptions)}</span>
           <button className="btn btn-access-negative" onClick={sync}>
             <i className="fas fa-sync-alt" />
