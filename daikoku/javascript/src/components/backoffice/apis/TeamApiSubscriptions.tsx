@@ -301,8 +301,6 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                   const filterByMetadata = (subscription: ApiSubscriptionGql) => {
                     const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) };
 
-                    console.debug({meta, filter: filters.metadata})
-
                     return !Object.keys(meta) || (!filters.metadata.length || filters.metadata.every(item => {
                       const value = meta[item.key]
                       return value && value.includes(item.value)
@@ -310,7 +308,6 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                   }
 
                   const filterByTags = (subscription: ApiSubscriptionGql) => {
-                    console.debug({tag: subscription.tags, filter: filters.tags})
                     return filters.tags.every(tag => subscription.tags.includes(tag))
                   }
 
