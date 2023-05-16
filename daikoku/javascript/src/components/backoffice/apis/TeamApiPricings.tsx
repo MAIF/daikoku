@@ -821,6 +821,9 @@ export const TeamApiPricings = (props: Props) => {
                   type: type.string,
                   array: true,
                   label: translate('Apikey tags'),
+                  constraints: [
+                    constraints.required(translate('constraints.required.value'))
+                  ]
                 },
                 restrictions: {
                   type: type.object,
@@ -1047,7 +1050,7 @@ export const TeamApiPricings = (props: Props) => {
           help: translate('aggregation_apikeys.security.help'),
           onChange: ({ value, setValue }: any) => {
             if (value)
-              confirm({message: translate('aggregation.api_key.security.notification')})
+              confirm({ message: translate('aggregation.api_key.security.notification') })
                 .then((ok) => {
                   if (ok) {
                     setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
@@ -1145,17 +1148,19 @@ export const TeamApiPricings = (props: Props) => {
           </div>
         </div>)}
         {mode === possibleMode.list && (<div className="row">
-          {props.value.possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-md-4">
-            <Card
-              api={props.value}
-              plan={plan}
-              isDefault={plan._id === props.value.defaultUsagePlan}
-              makeItDefault={() => makePlanDefault(plan)}
-              toggleVisibility={() => toggleVisibility(plan)}
-              deletePlan={() => deletePlan(plan)}
-              editPlan={() => editPlan(plan)}
-              duplicatePlan={() => clonePlanAndEdit(plan)} />
-          </div>)}
+          {props.value.possibleUsagePlans
+            .sort((a, b) => (a.customName || a.type).localeCompare(b.customName || b.type))
+            .map((plan) => <div key={plan._id} className="col-md-4">
+              <Card
+                api={props.value}
+                plan={plan}
+                isDefault={plan._id === props.value.defaultUsagePlan}
+                makeItDefault={() => makePlanDefault(plan)}
+                toggleVisibility={() => toggleVisibility(plan)}
+                deletePlan={() => deletePlan(plan)}
+                editPlan={() => editPlan(plan)}
+                duplicatePlan={() => clonePlanAndEdit(plan)} />
+            </div>)}
         </div>)}
       </div>
     </div>
