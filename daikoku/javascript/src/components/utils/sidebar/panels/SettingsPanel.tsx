@@ -7,8 +7,9 @@ import Moon from 'react-feather/dist/icons/moon'
 import * as Services from '../../../../services';
 import { updateTenant } from '../../../../core/context/actions';
 import { I18nContext } from '../../../../contexts/i18n-context';
+import classNames from 'classnames';
 
-export const DarkModeActivator = () => {
+export const DarkModeActivator = (props: {className: string}) => {
   const DARK = 'DARK';
   const LIGHT = 'LIGHT';
 
@@ -25,7 +26,7 @@ export const DarkModeActivator = () => {
   }, [theme]);
 
   return (
-    <div className="block__entry__link" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
+    <div className={classNames("block__entry__link cursor-pointer", props.className)} onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
       {theme === DARK ? <Sun/> : <Moon />}
     </div>
   );

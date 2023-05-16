@@ -47,6 +47,7 @@ type NotificationGQL = {
         clientSecret: string;
       }
     }
+    demand?: string
   }
   date: number
   notificationType: {
@@ -332,17 +333,14 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                 </div>
               )
             case 'CheckoutForSubscription':
-              const api = props.getApi(props.notification.action.api)
-              const maybePlan = api.possibleUsagePlans.find(p => p._id === props.notification.action.plan)
-              const planName = Option(maybePlan).map(p => p.customName).getOrElse(maybePlan?.type)
               return (
                 <div className='d-flex flex-row flex-grow-1 justify-content-between'>
-                  <div>{api.name}/{planName}</div>
+                  <div>{props.notification.action.apiName}/{props.notification.action.planName}</div>
                   <div className='d-flex flex-row flex-nowrap'>
                     <FeedbackButton
                       type="success"
                       className="ms-1"
-                      onPress={() => Services.rerunProcess(props.notification.team, props.notification.action.demand)
+                      onPress={() => Services.rerunProcess(props.notification.action.team?._id!, props.notification.action.demand!)
                         .then(r => window.location.href = r.checkoutUrl)}
                       onSuccess={() => console.debug("success")}
                       feedbackTimeout={100}

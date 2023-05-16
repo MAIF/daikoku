@@ -2,30 +2,24 @@ package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
-import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{NotificationTypeFormat, TenantIdFormat, UsagePlanFormat, UserIdFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
-import sangria.macros.derive.{deriveObjectType, _}
-import sangria.macros.derive
 import sangria.macros.derive._
-import sangria.marshalling.FromInput
 import sangria.schema.{Context, _}
-import sangria.util.tag.@@
 import sangria.validation.ValueCoercionViolation
-import storage.{DataStore, _}
+import storage._
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -1715,7 +1709,6 @@ object SchemaDefinition {
           teamSubscriptionDemands() ++
           getAllTagsQueryFields() ++
           getAllCategoriesQueryFields() ++
-          apiWithSubscriptionsQueryFields() ++
           apiConsumptionQuery() ++
           apiSubscriptionsQueryFields() ++
           teamIncomeQuery() ++

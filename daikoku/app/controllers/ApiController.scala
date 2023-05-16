@@ -1665,7 +1665,7 @@ class ApiController(
                 id = NotificationId(BSONObjectID.generate().stringify),
                 tenant = ctx.tenant.id,
                 team = Some(subscription.team),
-                sender = ctx.user,
+                sender = ctx.user.asNotificationSender,
                 notificationType = NotificationType.AcceptOnly,
                 action = NotificationAction.ApiKeyDeletionInformation(api.name, subscription.apiKey.clientId)
               )
