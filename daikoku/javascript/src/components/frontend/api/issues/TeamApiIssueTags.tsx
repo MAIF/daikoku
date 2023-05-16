@@ -1,13 +1,12 @@
-import React, { useContext, useEffect, useState } from 'react';
 import { constraints, type } from '@maif/react-forms';
 import uniq from 'lodash/uniq';
+import { useContext, useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
-import { useDispatch } from 'react-redux';
 
+import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../core';
 import { randomColor } from '../../../utils';
-import { ModalContext } from '../../../../contexts';
 
 export function TeamApiIssueTags({
   value,
@@ -19,14 +18,13 @@ export function TeamApiIssueTags({
   const { translate } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext);
 
-  const dispatch = useDispatch();
-
   function deleteTag(id: any) {
-    setApi({
+    const updatedApi = {
       ...api,
       issuesTags: [...api.issuesTags.filter((iss: any) => iss.id !== id)],
-    });
-    setUpdated(true)
+    }
+    onChange(updatedApi);
+    setApi(updatedApi);
   }
 
   return (
