@@ -41,6 +41,10 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
       );
   }, []);
 
+  const chkr = (az: any) => {
+    console.log(az.length)
+    return true
+  }
   const importPages = () => {
     Services.importApiPages(props.teamId, props.api._id, pages.map((p) => p.value), props.api.currentVersion)
       .then(() => props.onClose())
@@ -70,6 +74,7 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
         <button type="button" className="btn btn-outline-success" onClick={importPages}>
           {translate('Select')}
         </button>
+
       </div>
     </div>
   );

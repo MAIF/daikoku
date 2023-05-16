@@ -20,9 +20,8 @@ export const TeamApiSettings = ({
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const navigate = useNavigate();
 
-  const transferOwnership = ({
-    team
-  }: any) => {
+  const transferOwnership = ({team}: any) => {
+
     Services.transferApiOwnership(team, api.team, api._id).then((r) => {
       if (r.notify) {
         toastr.info(translate('Info'), translate('team.transfer.notified'));

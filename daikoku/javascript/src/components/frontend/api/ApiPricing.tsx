@@ -180,10 +180,10 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         </div>
         <div className="d-flex justify-content-between align-items-center">
           {!otoroshiTargetIsDefined && props.api.visibility !== 'AdminOnly' && (
-            <span className="badge bg-danger">{translate('otoroshi.missing.target')}</span>
+            <span className="badge bg-danger m-1">{translate('otoroshi.missing.target')}</span>
           )}
           {!otoroshiEntitiesIsDefined && props.api.visibility !== 'AdminOnly' && (
-            <span className="badge bg-danger">{translate('otoroshi.missing.entities')}</span>
+            <span className="badge bg-danger m-1">{translate('otoroshi.missing.entities')}</span>
           )}
           {(otoroshiTargetIsDefined && otoroshiEntitiesIsDefined || props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&

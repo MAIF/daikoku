@@ -148,15 +148,15 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
 
 // ######### Helpers ###############
 
-const ModalWrapper = (props: { children: JSX.Element }) => {
+const ModalWrapper = (props: { children: JSX.Element, closeModal: () => void }) => {
   return (
     <div>
-      <div className="modal show" style={{ display: 'block' }} tabIndex={-1} role="dialog">
-        <div className="modal-dialog modal-lg" role="document">
+      <div className="modal show" tabIndex={-1} role="dialog">
+        <div className="modal-backdrop show" onClick={props.closeModal} />
+        <div className="modal-dialog modal-lg" style={{zIndex: 10000}} role="document">
           {props.children}
         </div>
       </div>
-      <div className="modal-backdrop show" />
     </div>
   )
 }
@@ -179,7 +179,7 @@ const useModal = () => {
 
   const open = (content: JSX.Element) => {
     setModal(true)
-    setModalContent(<ModalWrapper>{content}</ModalWrapper>)
+    setModalContent(<ModalWrapper closeModal={close}>{content}</ModalWrapper>)
   };
   const close = () => {
     setModal(false)

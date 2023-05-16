@@ -843,6 +843,8 @@ case class ApiWithAuthorizations(api: Api,
                                  authorizations: Seq[AuthorizationApi] =
                                    Seq.empty)
 case class ApiWithCount(apis: Seq[ApiWithAuthorizations], result: Long)
+case class NotificationWithCount(notifications: Seq[Notification], result: Long)
+case class TeamWithCount(teams: Seq[Team], result: Long)
 case class SubscriptionsWithPlan(planId: String,
                                  isPending: Boolean,
                                  subscriptionsCount: Int)

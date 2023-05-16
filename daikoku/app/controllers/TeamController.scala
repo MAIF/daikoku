@@ -103,7 +103,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def teams() = DaikokuActionMaybeWithGuest.async { ctx =>
-    UberPublicUserAccess(AuditTrailEvent(
+    DaikokuAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed the list of teams for current tenant"))(ctx) {
       env.dataStore.teamRepo.forTenant(ctx.tenant.id).findAllNotDeleted() map {
         teams =>

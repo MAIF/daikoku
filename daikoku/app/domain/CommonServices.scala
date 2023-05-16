@@ -5,9 +5,10 @@ import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
+import org.joda.time.DateTime
 import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -306,4 +307,118 @@ object CommonServices {
     }
   }
 
+  def allTeams(research: String, limit: Int, offset: Int)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _TenantAdminAccessTenant(AuditTrailEvent("@{user.name} has accessed to all teams list"))(ctx) {
+      for {
+        teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findWithPagination(Json.obj("name" -> Json.obj("$regex" -> research)), offset, limit, Some(Json.obj("_humanReadableId" -> 1)))
+      } yield {
+        TeamWithCount(teams._1, teams._2)
+      }
+    }
+  }
+
+  def getApiConsumption(apiId: String, teamId: String, from: Option[Long], to: Option[Long], planId: Option[String])(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, Seq[ApiKeyConsumption]]] = {
+    _TeamAdminOnly(teamId, AuditTrailEvent(s"@{user.name} has accessed to api consumption for api @{apiId}"))(ctx) { team =>
+      ctx.setCtxValue("apiId", apiId)
+      val fromTimestamp = from.getOrElse(
+        DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+      val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
+      val planIdFilters = planId match {
+        case Some(value) => Json.obj("plan" -> value)
+        case None => Json.obj()
+      }
+      for {
+        api <- env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findOneNotDeleted(
+            Json.obj("team" -> team.id.value,
+              "$or" -> Json.arr(Json.obj("_id" -> apiId),
+                Json.obj("_humanReadableId" -> apiId))))
+        apiId = api.map(api => api.id.value).get
+        consumptions <- env.dataStore.consumptionRepo
+          .forTenant(ctx.tenant.id)
+          .find(
+            Json.obj("api" -> apiId,
+              "from" -> Json.obj("$gte" -> fromTimestamp),
+              "to" -> Json.obj("$lte" -> toTimestamp)) ++ planIdFilters,
+            Some(Json.obj("from" -> 1))
+          )
+      } yield {
+        Right(consumptions)
+      }
+
+    }
+  }
+
+  def getApiSubscriptions(teamId: String, apiId: String, version: String)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _TeamApiEditorOnly(AuditTrailEvent(
+      s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx) { _ =>
+      for {
+        api <- env.dataStore.apiRepo
+          .findByVersion(ctx.tenant, apiId, version)
+        apiId = api.map((api) => api.id.value).get
+        subs <- env.dataStore.apiSubscriptionRepo
+          .forTenant(ctx.tenant)
+          .findNotDeleted(Json.obj("api" -> apiId))
+      } yield {
+        Right(subs)
+      }
+    }
+  }
+
+  def getTeamIncome(teamId: String,
+                    from: Option[Long],
+                    to: Option[Long])(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _TeamAdminOnly(teamId, AuditTrailEvent(s"@{user.name} has accessed to team billing for @{team.name}"))(ctx) { team =>
+      val fromTimestamp = from.getOrElse(
+        DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+      val toTimestamp = to.getOrElse(
+        DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+      for {
+        ownApis <- env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findNotDeleted(Json.obj("team" -> team.id.value))
+        revenue <- env.dataStore.consumptionRepo
+          .getLastConsumptionsForTenant(
+            ctx.tenant.id,
+            Json.obj(
+              "api" -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
+              "from" -> Json.obj("$gte" -> fromTimestamp,
+                "$lte" -> toTimestamp),
+              "to" -> Json.obj("$gte" -> fromTimestamp,
+                "$lte" -> toTimestamp)
+            )
+          )
+      } yield {
+        Right(revenue)
+      }
+    }
+  }
+
+  def getMyNotification(page: Int, pageSize: Int)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
+    _PublicUserAccess(AuditTrailEvent(
+      s"@{user.name} has accessed to his count of unread notifications"))(ctx) {
+      for {
+        myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+        notificationRepo <- env.dataStore.notificationRepo
+          .forTenantF(ctx.tenant.id)
+        notifications <- notificationRepo.findWithPagination(
+          Json.obj(
+            "$or" -> Json.arr(
+              Json.obj(
+                "team" -> Json.obj("$in" -> JsArray(myTeams
+                  .filter(t => t.admins().contains(ctx.user.id))
+                  .map(_.id.asJson)))),
+              Json.obj("action.user" -> ctx.user.id.asJson)
+            ),
+            "status.status" -> NotificationStatus.Pending.toString
+          ),
+          page,
+          pageSize
+        )
+      } yield {
+        Right(NotificationWithCount(notifications._1, notifications._2))
+      }
+    }
+  }
 }

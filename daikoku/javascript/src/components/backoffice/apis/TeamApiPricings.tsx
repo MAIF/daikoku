@@ -924,6 +924,9 @@ export const TeamApiPricings = (props: Props) => {
                   type: type.string,
                   array: true,
                   label: translate('Apikey tags'),
+                  constraints: [
+                    constraints.required(translate('constraints.required.value'))
+                  ]
                 },
                 restrictions: {
                   type: type.object,
@@ -1209,7 +1212,7 @@ export const TeamApiPricings = (props: Props) => {
       {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left fa-lg cursor-pointer" style={{ marginTop: 0 }} />}
       <div className="container">
         <div className="d-flex mb-3">
-          {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-primary me-1">
+          {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-success btn-sm me-1">
             {translate('add a new plan')}
           </button>}
           {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>

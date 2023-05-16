@@ -452,6 +452,7 @@ case class SimpleSMTPSettings(host: String,
 }
 
 case class SendgridSettings(apikey: String,
+                            fromTitle: String,
                             fromEmail: String,
                             template: Option[String])
   extends MailerSettings

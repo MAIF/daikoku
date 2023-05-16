@@ -1,7 +1,7 @@
 import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import { useContext } from 'react';
+import {useContext, useEffect, useState} from 'react';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
@@ -26,7 +26,7 @@ const mimeTypes = [
   { label: '.gif	fichier Graphics Interchange Format (GIF)', value: 'image/gif' },
   { label: '.html	fichier HyperText Markup Language (HTML)', value: 'text/html' },
   { label: '.jpg	image JPEG', value: 'image/jpeg' },
-  { label: '.md	Markown file', value: 'text/markdown' },
+  { label: '.md	Markdown file', value: 'text/markdown' },
   { label: '.mpeg	vidéo MPEG', value: 'video/mpeg' },
   {
     label: '.odp OpenDocument presentation document ',
@@ -68,6 +68,8 @@ type AssetButtonProps = {
 const AssetButton = (props: AssetButtonProps) => {
   const { translate } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext)
+
+
 
   return (
     <div className="mb-3 row">
@@ -127,6 +129,15 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     'remoteContentHeaders',
     'content',
   ];
+  const [versions, setApiVersions] = useState<Array<string>>([]);
+
+  useEffect(() => {
+    Services.getAllApiVersions(props.team._id, params.apiId!)
+      .then((versions) =>
+        setApiVersions(versions
+        )
+      );
+  }, []);
 
   const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
     return {
@@ -346,9 +357,17 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 
   const deletePage = (page: IDocumentationPage) => {
+    const apiDocPageToList = (page: IDocumentationPage, list: Array<string>) => {
+      if (page.children.length) {
+        return [page, ...page.children.flatMap(child => apiDocPageToList(child, list) )]
+      } else {
+        return [page, ...list]
+      }
+    }
     if (apiQuery.data) {
-      Services.deleteDocPage(team._id, page.id)
-        .then(() => {
+      Promise.all([
+        apiDocPageToList(page, []).map((apiDoc => Services.deleteDocPage(team._id, apiDoc.id)))
+      ]).then(() => {
           toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
           queryClient.invalidateQueries(['details'])
         })
@@ -373,20 +392,22 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   } else if (apiQuery.data && !isError(apiQuery.data)) {
     return (
       <div className="row">
-        <div className="col-12 col-sm-6 col-lg-6 p-1">
+        <div className="col-12 col-sm-6 col-lg-6">
           <div className="d-flex flex-column">
             <div className="">
               <div className="d-flex justify-content-between align-items-center">
-                <div className="btn-group">
-                  <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-primary">
+                <div className="btn-group ms-2">
+                  <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-success">
                     <i className="fas fa-plus" />
                   </button>
-                  <button
-                    onClick={importPage}
-                    type="button"
-                    className="btn btn-sm btn-outline-primary">
-                    <i className="fas fa-download" />
-                  </button>
+                  {versions.length > 1 &&
+                    <button
+                      onClick={importPage}
+                      type="button"
+                      className="btn btn-sm btn-outline-primary">
+                      <i className="fas fa-download" />
+                    </button>
+                  }
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { IFastTeam } from './team';
+import {IFastTeam, ITeamVisibility} from './team';
 import { ThirdPartyPaymentType } from './tenant';
 
 export type ApiState = "created" | "published" | "deprecated" | "blocked" | "deleted"
@@ -41,13 +41,9 @@ export interface IIssuesTag {
 }
 
 export interface IApiWithSimpleTeam extends IBaseApi {
-  team: {
-    _humanReadableId: string;
-    _id: string;
-    avatar: string;
-    name: string;
-  };
+  team: ITeamVisibility
 }
+
 export interface IApi extends IBaseApi {
   team: string;
 }

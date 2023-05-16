@@ -271,7 +271,6 @@ class ApiController(
   def getTeamVisibleApis(teamId: String, apiId: String, version: String) =
     DaikokuAction.async { ctx =>
       import cats.implicits._
-
       TeamMemberOnly(
         AuditTrailEvent(
           s"@{user.name} is accessing team @{team.name} visible api @{api.name} ($version)"
@@ -1662,6 +1661,15 @@ class ApiController(
 
             for {
               _ <- apiKeyStatsJob.syncForSubscription(subscription, ctx.tenant)
+              notif = Notification(
+                id = NotificationId(BSONObjectID.generate().stringify),
+                tenant = ctx.tenant.id,
+                team = Some(subscription.team),
+                sender = ctx.user,
+                notificationType = NotificationType.AcceptOnly,
+                action = NotificationAction.ApiKeyDeletionInformation(api.name, subscription.apiKey.clientId)
+              )
+              _ <- env.dataStore.notificationRepo.forTenant(ctx.tenant).save(notif)
               delete <- apiService
                 .deleteApiKey(ctx.tenant, subscription, plan, team)
                 .flatMap(delete => {
@@ -1936,13 +1944,13 @@ class ApiController(
                 )
               )
             createdPages <- Future.sequence(fromPages.map(page => {
-              val generatedId = BSONObjectID.generate().stringify
+              val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
               env.dataStore.apiDocumentationPageRepo
                 .forTenant(ctx.tenant.id)
-                .save(page.copy(id = ApiDocumentationPageId(generatedId)))
+                .save(page.copy(id = generatedId))
                 .flatMap(_ =>
                   FastFuture.successful(
-                    ApiDocumentationDetailPage(page.id, page.title, Seq.empty)
+                    ApiDocumentationDetailPage(generatedId, page.title, Seq.empty)
                 ))
             }))
             api <- env.dataStore.apiRepo.findByVersion(ctx.tenant,
@@ -2467,7 +2475,6 @@ class ApiController(
         ctx
       ) { team =>
         ctx.setCtxValue("page.id", pageId)
-
         env.dataStore.apiDocumentationPageRepo
           .forTenant(ctx.tenant.id)
           .deleteByIdLogically(pageId)
@@ -3851,13 +3858,13 @@ class ApiController(
           s"@{user.name} has transfer ownership of api @{api.name} to @{newTeam.name}"
         )
       )(teamId, ctx) { _ =>
-        val newTeamId: String = (ctx.request.body \ "team").as[String]
+        val newTeamName: String = (ctx.request.body \ "team").as[String]
 
         (for {
           newTeam <- EitherT.fromOptionF(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(newTeamId),
+              .findOneNotDeleted(Json.obj("name" -> newTeamName)),
             AppError.render(TeamNotFound)
           )
           api <- EitherT.fromOptionF(
