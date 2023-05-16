@@ -1,25 +1,25 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import { getApolloContext } from "@apollo/client";
+import { format, type } from "@maif/react-forms";
+import { createColumnHelper } from '@tanstack/react-table';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
+import { ModalContext } from '../../../contexts';
+import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
+import { I18nContext } from '../../../core';
+import * as Services from '../../../services';
+import { IApi, IState, ITeamSimple, IUsagePlan, isError } from "../../../types";
+import { SwitchButton, Table, TableRef } from '../../inputs';
 import {
-  Can,
-  manage,
   api as API,
   BeautifulTitle,
-  formatPlanType,
+  Can,
   Option,
   formatDate,
+  formatPlanType,
+  manage,
 } from '../../utils';
-import * as Services from '../../../services';
-import { Table, SwitchButton, TableRef } from '../../inputs';
-import { I18nContext } from '../../../core';
-import { useSelector } from 'react-redux';
-import {  format, type } from "@maif/react-forms";
-import { IApi, isError, IState, ITeamSimple, IUsagePlan } from "../../../types";
-import { ModalContext } from '../../../contexts';
-import { createColumnHelper } from '@tanstack/react-table';
-import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
-import {getApolloContext} from "@apollo/client";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -78,7 +78,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     }
   }, [api])
 
-
+  useEffect(() => {
+    tableRef.current?.update()
+  }, [filters])
 
   const columnHelper = createColumnHelper<ApiSubscriptionGql>()
   const columns = [
@@ -184,12 +186,11 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
 
     const plan = sub.plan
 
-
-    confirm({ 
-      message: translate({key: 'secret.refresh.confirm', replacements: [sub.team.name, plan.customName ? plan.customName : plan.type]}),
+    confirm({
+      message: translate({ key: 'secret.refresh.confirm', replacements: [sub.team.name, plan.customName ? plan.customName : plan.type] }),
       okLabel: translate('Yes'),
       cancelLabel: translate('No'),
-     })
+    })
       .then((ok) => {
         if (ok) {
           Services.regenerateApiKeySecret(currentTeam._id, sub._id).then(() => {
@@ -201,11 +202,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   };
 
   const deleteSubscription = (sub: ApiSubscriptionGql) => {
-
-
     confirm({
       title: translate('api.delete.subscription.form.title'),
-      message: translate({key: 'api.delete.subscription.message', replacements: [sub.team.name, sub.plan.customName ? sub.plan.customName : sub.plan.type]}),
+      message: translate({ key: 'api.delete.subscription.message', replacements: [sub.team.name, sub.plan.customName ? sub.plan.customName : sub.plan.type] }),
       okLabel: translate('Yes'),
       cancelLabel: translate('No'),
     }).then((ok) => {
@@ -238,87 +237,93 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
 
-        <div className="px-2">
-          <div className='d-flex flex-row justify-content-start align-items-center mb-2'>
-            <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
-              actionLabel: translate("Filter"),
-              onSubmit: data => {
-                setFilters(data)
-              },
-              schema: {
-                metadata: {
-                  type: type.object,
-                  format: format.form,
-                  label: translate('Filter metadata'),
-                  array: true,
-                  schema: {
-                    key: {
-                      type: type.string,
-                      format: format.select,
-                      options: Array.from(new Set(options)),
-                      createOption: true
-                    },
-                    value: {
-                      type: type.string,
-                    }
+      <div className="px-2">
+        <div className='d-flex flex-row justify-content-start align-items-center mb-2'>
+          <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
+            actionLabel: translate("Filter"),
+            onSubmit: data => {
+              setFilters(data)
+            },
+            schema: {
+              metadata: {
+                type: type.object,
+                format: format.form,
+                label: translate('Filter metadata'),
+                array: true,
+                schema: {
+                  key: {
+                    type: type.string,
+                    format: format.select,
+                    options: Array.from(new Set(options)),
+                    createOption: true
+                  },
+                  value: {
+                    type: type.string,
                   }
-                },
-                tags: {
-                  type: type.string,
-                  format: format.select,
-                  label: translate('Filter tags'),
-                  isMulti: true,
-                  options: api.possibleUsagePlans.flatMap(pp => pp.otoroshiTarget?.apikeyCustomization.tags || [])
                 }
               },
-              title: translate("Filter data"),
-              value: filters
-            })}> {translate('Filter')} </button>
-            {!!filters && (
-              <div className="clear cursor-pointer ms-1" onClick={() => setFilters(undefined)}>
-                <i className="far fa-times-circle me-1" />
-                <Translation i18nkey="clear filter">clear filter</Translation>
-              </div>
-            )}
-          </div>
-          <div className="col-12">
-            <Table
-              defaultSort="name"
-              columns={columns}
-              fetchItems={() => {
-                return client!.query<{ apiApiSubscriptions: Array<ApiSubscriptionGql>; }>({
-                  query: Services.graphql.getApiSubscriptions,
-                  fetchPolicy: "no-cache",
-                  variables: {
-                    apiId: api._id,
-                    teamId: currentTeam._id,
-                    version: api.currentVersion
-                  }
-                }).then(({data: {apiApiSubscriptions}}) => {
-
-                  return apiApiSubscriptions;
-                }).then(subs => {
-                  if (!filters) {
-                    return subs
-                  } else {
-                    return subs.filter(subscription => {
-                      const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) }
-                      if (!Object.keys(meta).length) {
-                        return false;
-                      } else {
-                        return filters.metadata.every(item => {
-                          const value = meta[item.key]
-                          return value && value.includes(item.value)
-                        }) && filters.tags.every(tag => subscription.tags.includes(tag))
-                      }
-                    })
-                  }
-                })
-              }}
-              ref={tableRef}
-            />
-          </div>
+              tags: {
+                type: type.string,
+                format: format.select,
+                label: translate('Filter tags'),
+                isMulti: true,
+                createOption: true,
+                options: api.possibleUsagePlans.flatMap(pp => pp.otoroshiTarget?.apikeyCustomization.tags || []).filter(t => !t.startsWith('$'))
+              }
+            },
+            title: translate("Filter data"),
+            value: filters
+          })}> {translate('Filter')} </button>
+          {!!filters && (
+            <div className="clear cursor-pointer ms-1" onClick={() => setFilters(undefined)}>
+              <i className="far fa-times-circle me-1" />
+              <Translation i18nkey="clear filter">clear filter</Translation>
+            </div>
+          )}
         </div>
+        <div className="col-12">
+          <Table
+            defaultSort="name"
+            columns={columns}
+            fetchItems={() => {
+              return client!.query<{ apiApiSubscriptions: Array<ApiSubscriptionGql>; }>({
+                query: Services.graphql.getApiSubscriptions,
+                fetchPolicy: "no-cache",
+                variables: {
+                  apiId: api._id,
+                  teamId: currentTeam._id,
+                  version: api.currentVersion
+                }
+              }).then(({ data: { apiApiSubscriptions } }) => {
+                if (!filters || (!filters.tags.length && !Object.keys(filters.metadata).length)) {
+                  return apiApiSubscriptions
+                } else {
+                  const filterByMetadata = (subscription: ApiSubscriptionGql) => {
+                    const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) };
+
+                    console.debug({meta, filter: filters.metadata})
+
+                    return !Object.keys(meta) || (!filters.metadata.length || filters.metadata.every(item => {
+                      const value = meta[item.key]
+                      return value && value.includes(item.value)
+                    }))
+                  }
+
+                  const filterByTags = (subscription: ApiSubscriptionGql) => {
+                    console.debug({tag: subscription.tags, filter: filters.tags})
+                    return filters.tags.every(tag => subscription.tags.includes(tag))
+                  }
+
+                  return apiApiSubscriptions
+                  .filter(filterByMetadata)
+                  .filter(filterByTags)
+                }
+              })
+            }}
+            ref={tableRef}
+          />
+        </div>
+      </div>
 
     </Can>
   );
