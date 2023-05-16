@@ -179,7 +179,7 @@ export const useApiFrontOffice = (api: any, team: any) => {
             component: (
               <Can I={manage} a={API} team={team}>
                 <Link
-                  to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/${currentTab}`}
+                  to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/infos`}
                   className="btn btn-sm btn-access-negative mb-2"
                 >
                   {translate('Edit API')}
