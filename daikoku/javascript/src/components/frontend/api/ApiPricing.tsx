@@ -267,28 +267,24 @@ export function ApiPricing(props: ApiPricingProps) {
 
   return (
     <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
-      {/* <div className="album"> */}
-        {/* <div className="container">
-          <div className="row"> */}
-            {possibleUsagePlans.map((plan) => <React.Fragment key={plan._id}>
-              <ApiPricingCard
-                api={props.api}
-                key={plan._id}
-                plan={plan}
-                myTeams={props.myTeams}
-                ownerTeam={props.ownerTeam}
-                subscriptions={props.subscriptions.filter(
-                  (subs) => subs.api === props.api._id && subs.plan === plan._id
-                )}
-                inProgressDemands={props.inProgressDemands.filter(
-                  (demand) => demand.api === props.api._id && demand.plan === plan._id
-                )}
-                askForApikeys={props.askForApikeys}
-              />
-            </React.Fragment>)}
-          {/* </div>
-        </div> */}
-      {/* </div> */}
+      {possibleUsagePlans
+        .sort((a, b) => (a.customName || a.type).localeCompare(b.customDescription || b.type))
+        .map((plan) => <React.Fragment key={plan._id}>
+          <ApiPricingCard
+            api={props.api}
+            key={plan._id}
+            plan={plan}
+            myTeams={props.myTeams}
+            ownerTeam={props.ownerTeam}
+            subscriptions={props.subscriptions.filter(
+              (subs) => subs.api === props.api._id && subs.plan === plan._id
+            )}
+            inProgressDemands={props.inProgressDemands.filter(
+              (demand) => demand.api === props.api._id && demand.plan === plan._id
+            )}
+            askForApikeys={props.askForApikeys}
+          />
+        </React.Fragment>)}
     </div>
   );
 }

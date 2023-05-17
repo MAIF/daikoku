@@ -721,7 +721,8 @@ class ApiControllerSpec()
         ),
         billing = ApiKeyBilling(1000, BigDecimal(30)),
         from = DateTime.now().minusDays(1).withTimeAtStartOfDay(),
-        to = DateTime.now().withTimeAtStartOfDay()
+        to = DateTime.now().withTimeAtStartOfDay(),
+        state = ApiKeyConsumptionState.Completed
       )
 
       setupEnv(
@@ -1187,7 +1188,6 @@ class ApiControllerSpec()
         throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
         dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
         monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
-        tags = Seq(),
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None
@@ -1321,7 +1321,6 @@ class ApiControllerSpec()
         throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
         dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
         monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
-        tags = Seq(),
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None
@@ -1766,7 +1765,8 @@ class ApiControllerSpec()
         ),
         billing = ApiKeyBilling(1000, BigDecimal(30)),
         from = DateTime.now().minusDays(1).withTimeAtStartOfDay(),
-        to = DateTime.now().withTimeAtStartOfDay()
+        to = DateTime.now().withTimeAtStartOfDay(),
+        state = ApiKeyConsumptionState.Completed
       )
       setupEnv(
         tenants = Seq(tenant),

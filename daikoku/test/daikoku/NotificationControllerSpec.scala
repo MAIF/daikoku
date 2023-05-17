@@ -31,7 +31,7 @@ class NotificationControllerSpec()
     id = NotificationId("treated-notification"),
     tenant = tenant.id,
     team = Some(teamOwnerId),
-    sender = user,
+    sender = user.asNotificationSender,
     notificationType = AcceptOrReject,
     action = ApiAccess(defaultApi.id, teamConsumerId),
     status = Accepted()
@@ -40,7 +40,7 @@ class NotificationControllerSpec()
     id = NotificationId("untreated-notification"),
     tenant = tenant.id,
     team = Some(teamOwnerId),
-    sender = user,
+    sender = user.asNotificationSender,
     notificationType = AcceptOrReject,
     action = ApiAccess(defaultApi.id, teamConsumerId)
   )
@@ -1015,7 +1015,7 @@ class NotificationControllerSpec()
             id = NotificationId("untreated-team-invitation"),
             tenant = tenant.id,
             team = None,
-            sender = userAdmin,
+            sender = userAdmin.asNotificationSender,
             notificationType = AcceptOrReject,
             action = TeamInvitation(teamConsumerId, user.id)
           )
@@ -1066,7 +1066,7 @@ class NotificationControllerSpec()
             id = NotificationId("untreated-team-invitation"),
             tenant = tenant.id,
             team = None,
-            sender = userAdmin,
+            sender = userAdmin.asNotificationSender,
             notificationType = AcceptOrReject,
             action = TeamInvitation(teamConsumerId, user.id)
           )
@@ -1168,11 +1168,11 @@ class NotificationControllerSpec()
             team = teamOwner.id.some,
             sender = user,
             notificationType = AcceptOrReject,
-            action = ApiSubscriptionDemand(defaultApi.id,
-                                           defaultApi.defaultUsagePlan,
-                                           teamConsumerId,
-                                           None,
-                                           Some("please"))
+            action = ApiSubscriptionDemand(api = defaultApi.id,
+                                           plan = defaultApi.defaultUsagePlan,
+                                           team = teamConsumerId,
+                                           parentSubscriptionId = None,
+                                           motivation = Some("please"))
           )
         )
       )

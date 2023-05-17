@@ -272,7 +272,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
     * get subs base on query (by defaut all parent or unique keys)
     * get really parent subs (in case of query as a pointer to childs)
     * for each subs get aggregated key, get the oto key...process new key
-    * daikoku is the truth for everything but the oto key (clientName, clientId, clientSecret)
+    * daikoku is the truth for everything except the oto key (clientName, clientId, clientSecret)
     * tags and metadata unknown by DK are merged
     * save the new key in oto and the new secret in DK
     *
@@ -284,8 +284,10 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
     import cats.implicits._
 
     def getListFromMeta(key: String,
-                        metadata: Map[String, String]): Seq[String] = {
-      metadata.get(key).map(_.split('|').toSeq.map(_.trim)).getOrElse(Seq.empty)
+                        metadata: Map[String, String]): Set[String] = {
+      metadata.get(key)
+        .map(_.split('|').toSeq.map(_.trim).toSet)
+        .getOrElse(Set.empty)
     }
 
     def mergeMetaValue(key: String,
@@ -293,7 +295,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                        meta2: Map[String, String]): String = {
       val list1 = getListFromMeta(key, meta1)
       val list2 = getListFromMeta(key, meta2)
-      (list1 ++ list2).distinct.mkString(" | ")
+      (list1 ++ list2).mkString(" | ")
     }
 
     for {
@@ -393,8 +395,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                                         .findById(subscription.team),
                                       ())
           newApk <- EitherT(
-            Future
-              .sequence((aggregatedSubscriptions :+ subscription)
+            Future.sequence((aggregatedSubscriptions :+ subscription)
                 .map(sub => {
                   for {
                     api <- EitherT.fromOptionF(
@@ -418,8 +419,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                         api.team,
                         tenant.id)
                     )
-                    user <- EitherT
-                      .fromOptionF(env.dataStore.userRepo.findById(sub.by), ())
+                    user <- EitherT.fromOptionF(env.dataStore.userRepo.findById(sub.by), ())
                   } yield {
                     val ctx: Map[String, String] = Map(
                       "user.id" -> user.id.value,
@@ -441,19 +441,14 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                     // process new tags
                     // ********************
                     val planTags = plan.otoroshiTarget
-                      .flatMap(_.apikeyCustomization.tags.asOpt[Seq[String]])
-                      .getOrElse(Seq.empty[String])
+                      .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
+                      .getOrElse(Set.empty[String])
 
-                    val currentTags = apk.tags
-                    val metadataDkTagsLabel = "daikoku__tags"
+                    val tagsFromDk = getListFromMeta("daikoku__tags", apk.metadata)
+                    val newTagsFromDk = planTags.map(OtoroshiTarget.processValue(_, ctx))
 
-                    val tagsFromDk =
-                      getListFromMeta(metadataDkTagsLabel, apk.metadata)
-                    val newTagsFromDk =
-                      planTags.map(OtoroshiTarget.processValue(_, ctx))
-
-                    val newTags: Seq[String] =
-                      (currentTags.diff(tagsFromDk) ++ newTagsFromDk).distinct
+                    //todo: unnecessary ??
+                    //val newTags: Set[String] = apk.tags.diff(tagsFromDk) ++ newTagsFromDk
 
                     // ********************
                     // process new metadata
@@ -482,14 +477,14 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                     val newMeta = apk.metadata
                       .removedAll(metaFromDk.keys) ++ newMetaFromDk ++ Map(
                       "daikoku__metadata" -> newMetaFromDk.keys.mkString(" | "),
-                      metadataDkTagsLabel -> newTagsFromDk.mkString(" | "))
+                      "daikoku__tags" -> newTagsFromDk.mkString(" | "))
 
                     // ********************
                     // process new metadata
                     // ********************
 
                     apk.copy(
-                      tags = newTags,
+                      tags = newTagsFromDk,
                       metadata = newMeta,
                       constrainedServicesOnly =
                         otoroshiTarget.apikeyCustomization.constrainedServicesOnly,
@@ -536,7 +531,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                   (either1, either2) match {
                     case (Right(apikey1), Right(apikey2)) =>
                       Right(apikey1.copy(
-                        tags = (apikey1.tags ++ apikey2.tags).distinct,
+                        tags = apikey1.tags ++ apikey2.tags,
                         metadata = apikey1.metadata ++
                           apikey2.metadata ++
                           Map(

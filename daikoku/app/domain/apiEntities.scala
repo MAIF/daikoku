@@ -48,10 +48,10 @@ case class OtoroshiTarget(
       .mapValues(v => OtoroshiTarget.processValue(v, context))
       .toMap
   }
-  def processedTags(context: Map[String, String]): Seq[String] = {
+  def processedTags(context: Map[String, String]): Set[String] = {
     apikeyCustomization.tags
-      .asOpt[Seq[String]]
-      .getOrElse(Seq.empty[String])
+      .asOpt[Set[String]]
+      .getOrElse(Set.empty[String])
       .map(v => OtoroshiTarget.processValue(v, context))
   }
 }

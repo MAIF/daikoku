@@ -1475,7 +1475,6 @@ class MockController(DaikokuAction: DaikokuAction,
               dailyQuota = 10000,
               monthlyQuota = 300000,
               constrainedServicesOnly = true,
-              tags = Seq(),
               restrictions = ApiKeyRestrictions(),
               metadata = Map(),
               rotation = None

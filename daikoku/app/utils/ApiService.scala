@@ -35,7 +35,6 @@ class ApiService(env: Env,
                  otoroshiClient: OtoroshiClient,
                  messagesApi: MessagesApi,
                  translator: Translator,
-                 apiKeyStatsJob: ApiKeyStatsJob,
                  otoroshiSynchronisator: OtoroshiVerifierJob,
                  paymentClient: PaymentClient) {
 
@@ -44,8 +43,20 @@ class ApiService(env: Env,
   implicit val me = messagesApi
   implicit val tr = translator
 
-  private lazy val secret = new SecretKeySpec("secret".getBytes, "AES")
+  def getListFromStringMap(key: String,
+                      metadata: Map[String, String]): Set[String] = {
+    metadata.get(key)
+      .map(_.split('|').toSeq.map(_.trim).toSet)
+      .getOrElse(Set.empty)
+  }
 
+  def mergeStringMapValue(key: String,
+                     meta1: Map[String, String],
+                     meta2: Map[String, String]): String = {
+    val list1 = getListFromStringMap(key, meta1)
+    val list2 = getListFromStringMap(key, meta2)
+    (list1 ++ list2).mkString(" | ")
+  }
 
   def createOtoroshiApiKey(user: User, api: Api, plan: UsagePlan, team: Team, tenant: Tenant,
                            integrationToken: String,
@@ -83,6 +94,18 @@ class ApiService(env: Env,
       .map(
         t => ("user.metadata." + t._1, t._2)
       )
+
+    val processedMetadata = plan
+      .otoroshiTarget
+      .map(_.processedMetadata(ctx))
+      .getOrElse(Map.empty[String, String]) ++ customMetadata
+      .flatMap(_.asOpt[Map[String, String]])
+      .getOrElse(Map.empty[String, String])
+
+    val processedTags = plan.otoroshiTarget
+      .map(_.processedTags(ctx))
+      .getOrElse(Set.empty[String])
+
     val apiKey = ActualOtoroshiApiKey(
       clientId = otoroshiApiKey.clientId,
       clientSecret = otoroshiApiKey.clientSecret,
@@ -96,9 +119,7 @@ class ApiService(env: Env,
       readOnly = customReadOnly.getOrElse(plan.otoroshiTarget.exists(_.apikeyCustomization.readOnly)),
       constrainedServicesOnly = plan.otoroshiTarget.exists(
         _.apikeyCustomization.constrainedServicesOnly),
-      tags = plan.otoroshiTarget
-        .map(_.processedTags(ctx))
-        .getOrElse(Seq.empty[String]),
+      tags = processedTags,
       restrictions = plan.otoroshiTarget
         .map(_.apikeyCustomization.restrictions)
         .getOrElse(ApiKeyRestrictions()),
@@ -111,13 +132,10 @@ class ApiService(env: Env,
         "daikoku_created_for_team_id" -> team.id.value,
         "daikoku_created_for_team" -> team.name,
         "daikoku_created_on_tenant" -> tenant.id.value,
-        "daikoku_integration_token" -> integrationToken
-      ) ++ plan.otoroshiTarget
-        .map(_.processedMetadata(ctx))
-        .getOrElse(Map.empty[String, String])
-        ++ customMetadata
-        .flatMap(_.asOpt[Map[String, String]])
-        .getOrElse(Map.empty[String, String]),
+        "daikoku_integration_token" -> integrationToken,
+        "daikoku__metadata" -> processedMetadata.keys.mkString(" | "),
+        "daikoku__tags" -> processedTags.mkString(" | ")
+      ) ++ processedMetadata,
       rotation = plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
     )
 
@@ -218,6 +236,7 @@ class ApiService(env: Env,
               thirdPartySubscriptionInformations = thirdPartySubscriptionInformations
             )
 
+
             val otoroshiApiKeyActionResult: EitherT[Future, AppError, ActualOtoroshiApiKey] = maybeParentSub match {
               case Some(subscription) => EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId))
                 .flatMap(otoApiKey =>
@@ -227,14 +246,23 @@ class ApiService(env: Env,
                         groups = otoApiKey.authorizedEntities.groups ++ authorizedEntities.groups,
                         services = otoApiKey.authorizedEntities.services ++ authorizedEntities.services,
                         routes = otoApiKey.authorizedEntities.routes ++ authorizedEntities.routes),
-                      tags = Set.from(tunedApiKey.tags ++ otoApiKey.tags).toSeq, //todo: Set au lieu de de Seq
+                      tags = tunedApiKey.tags ++ otoApiKey.tags,
                       restrictions = ApiKeyRestrictions(
                         enabled = otoApiKey.restrictions.enabled && tunedApiKey.restrictions.enabled,
                         allowLast = otoApiKey.restrictions.allowLast || tunedApiKey.restrictions.allowLast,
                         allowed = tunedApiKey.restrictions.allowed ++ otoApiKey.restrictions.allowed,
                         forbidden = tunedApiKey.restrictions.forbidden ++ otoApiKey.restrictions.forbidden,
                         notFound = tunedApiKey.restrictions.forbidden ++ otoApiKey.restrictions.forbidden),
-                      metadata = tunedApiKey.metadata ++ otoApiKey.metadata)
+                      metadata = tunedApiKey.metadata ++ otoApiKey.metadata ++ Map(
+                        "daikoku__metadata" -> mergeStringMapValue(
+                          "daikoku__metadata",
+                          tunedApiKey.metadata,
+                          otoApiKey.metadata),
+                        "daikoku__tags" -> mergeStringMapValue("daikoku__tags",
+                          tunedApiKey.metadata,
+                          otoApiKey.metadata),
+                      )
+                    )
                   )))
               case None => EitherT(otoroshiClient.createApiKey(tunedApiKey))
             }
@@ -601,15 +629,23 @@ class ApiService(env: Env,
    */
   def extractSubscriptionFromAggregation(subscription: ApiSubscription, tenant: Tenant, user: User)(implicit o: OtoroshiSettings): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     (for {
+      //get parent ApiSubscription
       parentSubscriptionId <- EitherT.fromOption[Future](subscription.parent, MissingParentSubscription)
       parentSubscription <- EitherT.fromOptionF(env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).findByIdNotDeleted(parentSubscriptionId), MissingParentSubscription)
+
+      //get otoroshi aggregate apiKey
       oldApiKey <- EitherT(otoroshiClient.getApikey(parentSubscription.apiKey.clientId))
+
+      //get all child subscriptions except subscription to extract
       childsSubscription <- EitherT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-        .findNotDeleted(Json.obj("parent" -> parentSubscriptionId.asJson))
-        .map(_.filterNot(_.id == subscription.id)))
+        .findNotDeleted(Json.obj("parent" -> parentSubscriptionId.asJson, "_id" -> Json.obj("$ne" -> subscription.id.asJson))))
+
+      //get team
       team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant.id).findById(parentSubscription.team), TeamNotFound)
+
+      //create new OtoroshiApiKey from parent sub
       newParentKey <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant)
-        .findByIdNotDeleted(parentSubscription.api.asInstanceOf[ApiId])
+        .findByIdNotDeleted(parentSubscription.api)
         .map(_.flatMap(api => api.possibleUsagePlans
           .find(p => p.id == parentSubscription.plan)
           .map(plan => createOtoroshiApiKey(
@@ -621,6 +657,8 @@ class ApiService(env: Env,
             integrationToken = IdGenerator.token(64),
             customMetadata = parentSubscription.customMetadata,
           )))), ApiNotFound)
+
+      //create new OtoroshiApiKeys from childs (except subscription to extract)
       childsKeys <- EitherT.liftF(Future.sequence(childsSubscription.map(s => env.dataStore.apiRepo.forTenant(tenant)
         .findByIdNotDeleted(s.api)
         .map(_.flatMap(api => api.possibleUsagePlans
@@ -634,8 +672,14 @@ class ApiService(env: Env,
             integrationToken = IdGenerator.token(64),
             customMetadata = s.customMetadata,
           )))))))
-      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api.asInstanceOf[ApiId]), ApiNotFound)
+
+      //get api of subscription to extract
+      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api), ApiNotFound)
+
+      //get plan of subscription to extract
       plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscription.plan), PlanNotFound)
+
+      //compute new OtoroshiApiKey for subscription to extract
       apikey        <- EitherT.rightT[Future, AppError](createOtoroshiApiKey(
             user = user,
             api = api,
@@ -645,20 +689,33 @@ class ApiService(env: Env,
             integrationToken = IdGenerator.token(64),
             customMetadata = subscription.customMetadata,
           ))
+
+
+      //compute new aggregation, copy from old OtoroshiApiKey to keep informations like quotas
+      computedMetadata = newParentKey.metadata ++
+        childsKeys.foldLeft(Map.empty[String, String])((acc, curr) => acc ++ curr.map(_.metadata).getOrElse(Map.empty))
+      computedTags = newParentKey.tags ++ childsKeys.foldLeft(Set.empty[String])((acc, curr) => acc ++ curr.map(_.tags).getOrElse(Set.empty))
+
       newAggApiKey <- EitherT.rightT[Future, AppError](oldApiKey.copy(
         authorizedEntities = AuthorizedEntities(
           groups = newParentKey.authorizedEntities.groups ++ childsKeys.foldLeft(Set.empty[OtoroshiServiceGroupId])((acc, curr) => acc ++ curr.map(_.authorizedEntities.groups).getOrElse(Set.empty)),
           services = newParentKey.authorizedEntities.services ++ childsKeys.foldLeft(Set.empty[OtoroshiServiceId])((acc, curr) => acc ++ curr.map(_.authorizedEntities.services).getOrElse(Set.empty)),
           routes = newParentKey.authorizedEntities.routes ++ childsKeys.foldLeft(Set.empty[OtoroshiRouteId])((acc, curr) => acc ++ curr.map(_.authorizedEntities.routes).getOrElse(Set.empty))),
-        tags = Set.from(newParentKey.tags ++ childsKeys.foldLeft(Set.empty[String])((acc, curr) => acc ++ curr.map(_.tags).getOrElse(Set.empty))).toSeq,
+        tags = computedTags,
         restrictions = ApiKeyRestrictions(
           enabled = newParentKey.restrictions.enabled && childsKeys.foldLeft(false)((acc, curr) => acc && curr.exists(_.restrictions.enabled)),
           allowLast = newParentKey.restrictions.allowLast || childsKeys.foldLeft(true)((acc, curr) => acc || curr.forall(_.restrictions.allowLast)),
           allowed = newParentKey.restrictions.allowed ++ childsKeys.foldLeft(Seq.empty[ApiKeyRestrictionPath])((acc, curr) => acc ++ curr.map(_.restrictions.allowed).getOrElse(Seq.empty)),
           forbidden = newParentKey.restrictions.forbidden ++ childsKeys.foldLeft(Seq.empty[ApiKeyRestrictionPath])((acc, curr) => acc ++ curr.map(_.restrictions.forbidden).getOrElse(Seq.empty)),
           notFound = newParentKey.restrictions.notFound ++ childsKeys.foldLeft(Seq.empty[ApiKeyRestrictionPath])((acc, curr) => acc ++ curr.map(_.restrictions.notFound).getOrElse(Seq.empty))),
-        metadata = newParentKey.metadata ++ childsKeys.foldLeft(Map.empty[String, String])((acc, curr) => acc ++ curr.map(_.metadata).getOrElse(Map.empty))))
+        metadata = computedMetadata +
+          ("daikoku__tags" -> computedTags.mkString(" | ")) +
+          ("daikoku__metadata" -> computedMetadata.keySet.filterNot(_.startsWith("daikoku_")).mkString(" | "))))
+
+      //save new aggregate in otoroshi
       _ <- EitherT(otoroshiClient.updateApiKey(newAggApiKey))
+
+      //return extracted OtoroshiApiKey
     } yield apikey).value
   }
 
@@ -678,18 +735,32 @@ class ApiService(env: Env,
     .flatMapConcat(seq => Source(seq.toList))
     .mapAsync(1) { case (plan, subscription, notification) =>
 
-
       def deaggregateSubsAndDelete(subscription: ApiSubscription, childs: Seq[ApiSubscription], subscriberTeam: Team)(implicit otoroshiSettings: OtoroshiSettings) = {
         subscription.parent match {
-          case Some(_) => extractSubscriptionFromAggregation(subscription, tenant, user) //no need to delete key
+          case Some(_) => extractSubscriptionFromAggregation(subscription, tenant, user)
+            .map(_ => env.dataStore.apiSubscriptionRepo
+              .forTenant(tenant.id)
+              .deleteByIdLogically(subscription.id))
+          //no need to delete key (aggregate is saved and return new key, just we don't save it)
+          //just delete subsscription
           case None if childs.nonEmpty =>
             childs match {
               case newParent :: newChilds => for {
+                //save new parent by removing link with old parent
                 _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).save(newParent.copy(parent = None))
+
+                //save other sub from aggregation with link to new parent
                 _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).updateManyByQuery(
                   Json.obj("_id" -> Json.obj("$in" -> JsArray(newChilds.map(_.id.asJson)))),
                   Json.obj("$set" -> Json.obj("parent" -> newParent.id.asJson)))
+
+                //compute new tags, metadata...
                 _ <- otoroshiSynchronisator.verify(Json.obj("_id" -> newParent.id.asJson))
+                //delete extracted OtoroshiApiKey into Otoroshi
+                //delete extracted subscription
+                - <- env.dataStore.apiSubscriptionRepo
+                  .forTenant(tenant.id)
+                  .deleteByIdLogically(subscription.id)
               } yield ()
             }
           case _ => deleteApiKey(tenant, subscription, plan, subscriberTeam)
@@ -699,10 +770,10 @@ class ApiService(env: Env,
       (for {
         otoroshiSettings <- OptionT.fromOption[Future](plan.otoroshiTarget.map(_.otoroshiSettings).flatMap(id => tenant.otoroshiSettings.find(_.id == id)))
         subscriberTeam <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team))
-        _ <- OptionT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(notification))
-        _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant))
         childs <- OptionT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
+//        _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant))
         _ <- OptionT.liftF(deaggregateSubsAndDelete(subscription, childs, subscriberTeam)(otoroshiSettings))
+        _ <- OptionT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(notification))
       //FIXME: handle third party payment subscriptions ==> sync consumption before deletion
       } yield ()).value
     }

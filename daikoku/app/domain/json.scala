@@ -2357,7 +2357,7 @@ object json {
             integrationToken = (json \ "integrationToken").as[String],
             metadata = (json \ "metadata").asOpt[JsObject],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
-            tags = (json \ "tags").asOpt[Seq[String]],
+            tags = (json \ "tags").asOpt[Set[String]],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt(LongFormat),
             customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
@@ -2401,7 +2401,7 @@ object json {
       "integrationToken" -> o.integrationToken,
       "metadata" -> o.metadata,
       "customMetadata" -> o.customMetadata,
-      "tags" -> JsArray(o.tags.getOrElse(Seq.empty).map(JsString.apply)),
+      "tags" -> JsArray(o.tags.getOrElse(Set.empty).toSeq.map(JsString.apply)),
       "customMaxPerSecond" -> o.customMaxPerSecond
         .map(JsNumber(_))
         .getOrElse(JsNull)
@@ -2678,7 +2678,7 @@ object json {
         "monthlyQuota" -> apk.monthlyQuota,
         "metadata" -> JsObject(
           apk.metadata.view.mapValues(JsString.apply).toSeq),
-        "tags" -> JsArray(apk.tags.map(JsString.apply)),
+        "tags" -> JsArray(apk.tags.toSeq.map(JsString.apply)),
         "restrictions" -> apk.restrictions.asJson,
         "rotation" -> apk.rotation
           .map(ApiKeyRotationFormat.writes)
@@ -2714,9 +2714,8 @@ object json {
               .asOpt[Boolean]
               .getOrElse(false),
             tags = (json \ "tags")
-              .asOpt[JsArray]
-              .map(_.value.map(_.as[String]).toSeq)
-              .getOrElse(Seq.empty[String]),
+              .asOpt[Set[String]]
+              .getOrElse(Set.empty[String]),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
             rotation = (json \ "rotation").asOpt(ApiKeyRotationFormat)
           )

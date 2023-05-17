@@ -68,7 +68,7 @@ case class ApiSubscription(
     integrationToken: String,
     customMetadata: Option[JsObject] = None,
     metadata: Option[JsObject] = None,
-    tags: Option[Seq[String]] = None,
+    tags: Option[Set[String]] = None,
     customMaxPerSecond: Option[Long] = None,
     customMaxPerDay: Option[Long] = None,
     customMaxPerMonth: Option[Long] = None,
@@ -125,7 +125,7 @@ case class ActualOtoroshiApiKey(
     throttlingQuota: Long = RemainingQuotas.MaxValue,
     dailyQuota: Long = RemainingQuotas.MaxValue,
     monthlyQuota: Long = RemainingQuotas.MaxValue,
-    tags: Seq[String] = Seq.empty[String],
+    tags: Set[String] = Set.empty[String],
     metadata: Map[String, String] = Map.empty[String, String],
     restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
     rotation: Option[ApiKeyRotation])

@@ -164,7 +164,7 @@ object utils {
           posts,
           cmsPages,
           operations,
-          subscriptionDemand
+          subscriptionDemands
         ),
         1.second
       )

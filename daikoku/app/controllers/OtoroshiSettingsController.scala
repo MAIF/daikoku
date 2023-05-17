@@ -396,7 +396,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                       dailyQuota = maxPerDayOpt.getOrElse(10000L),
                       monthlyQuota = maxPerMonthOpt.getOrElse(300000L),
                       constrainedServicesOnly = true,
-                      tags = Seq(tag),
+                      tags = Set(tag),
                       restrictions = ApiKeyRestrictions(),
                       metadata = Map(
                         "daikoku_created_by" -> user.email,

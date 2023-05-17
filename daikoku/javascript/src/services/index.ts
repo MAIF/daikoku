@@ -1269,9 +1269,18 @@ export const graphql = {
             team {
               _id
               _humanReadableId
-              name
-              avatar
+              tenant {
+                id
+                name
+              }
               type
+              name
+              description
+              avatar
+              contact
+              apiKeyVisibility
+              apisCreationPermission
+              verified
             }
             apis {
               api {
