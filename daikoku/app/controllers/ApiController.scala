@@ -986,6 +986,21 @@ class ApiController(
     }
   }
 
+  def cancelProcess(teamId: String, demandId: String) = DaikokuAction.async { ctx =>
+    TeamAdminOnly(AuditTrailEvent(s"Subscription process for demand @{demand.id} has been canceled by @{user.name}"))(teamId, ctx){ team =>
+
+      ctx.setCtxValue("demand.id", demandId)
+
+      (for {
+        demand <- EitherT.fromOptionF[Future, AppError, SubscriptionDemand](env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findByIdNotDeleted(demandId), AppError.EntityNotFound("Subscription demand"))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).deleteById(demand.id))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.stepValidatorRepo.forTenant(ctx.tenant).delete(Json.obj("subscriptionDemand" -> demand.id.asJson)))
+      } yield Ok(Json.obj("done" -> true)))
+        .leftMap(_.render())
+        .merge
+    }
+  }
+
   private def validateProcessWithStepValidator(validator: StepValidator, tenant: Tenant, maybeSessionId: Option[String] = None)(implicit language: String, currentUser: User) = {
     for {
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)

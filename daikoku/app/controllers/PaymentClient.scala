@@ -445,7 +445,8 @@ class PaymentClient(
         case StripeSubscriptionInformations(subscriptionId, _, _) =>
           AppLogger.debug(s"[PAYMENT CLIENT] :: delete stripe sub :: $subscriptionId")
           EitherT.liftF(stripeClient(s"/v1/subscriptions/$subscriptionId")
-            .delete().map(_.json))
+            .delete()
+            .map(_.json))
       }
 
       case None => EitherT.left[JsValue](FastFuture.successful(AppError.EntityNotFound("stripe settings")))

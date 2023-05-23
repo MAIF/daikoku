@@ -1314,5 +1314,7 @@
     "api.pricings.no.step.explanation": "It's seems that there is no process subscription request validation process",
     "api.pricings.add.first.step.btn.label": "Add a first validation step",
     "api.documentation.clone.page.modal.title": "Cloning documentation pages",
-    "api.documentation.clone.page.placeholder": "Select all pages to clone"
+    "api.documentation.clone.page.placeholder": "Select all pages to clone",
+    "demand.delete.modal.message": "Are you sure you want to delete this subscription demand?",
+    "demand.delete.modal.title": "Deleting a subscription request"
 }

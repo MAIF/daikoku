@@ -35,6 +35,7 @@ class ApiService(env: Env,
                  otoroshiClient: OtoroshiClient,
                  messagesApi: MessagesApi,
                  translator: Translator,
+                 apiKeyStatsJob: ApiKeyStatsJob,
                  otoroshiSynchronisator: OtoroshiVerifierJob,
                  paymentClient: PaymentClient) {
 
@@ -771,10 +772,10 @@ class ApiService(env: Env,
         otoroshiSettings <- OptionT.fromOption[Future](plan.otoroshiTarget.map(_.otoroshiSettings).flatMap(id => tenant.otoroshiSettings.find(_.id == id)))
         subscriberTeam <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team))
         childs <- OptionT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
-//        _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant))
+        _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant))
         _ <- OptionT.liftF(deaggregateSubsAndDelete(subscription, childs, subscriberTeam)(otoroshiSettings))
+        _ <- OptionT.liftF(paymentClient.deleteThirdPartySubscription(apiSubscription = subscription).value)
         _ <- OptionT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(notification))
-      //FIXME: handle third party payment subscriptions ==> sync consumption before deletion
       } yield ()).value
     }
 

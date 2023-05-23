@@ -130,11 +130,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       .map((s) => s.team)
   );
 
-  const isPending = !difference(
-    allPossibleTeams,
-    props.inProgressDemands.map((s) => s.team)
-  ).length;
-
   const isAccepted = !allPossibleTeams.length;
 
   const { translate } = useContext(I18nContext);
