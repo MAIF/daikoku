@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Alert } from "./modals/Alert";
 import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
 import { ApiKeySelectModal, IApiKeySelectModalProps } from "./modals/ApiKeySelectModal";
-import { ApiSelectModal, IApiSelectModalProps } from "./modals/ApiSelectModal";
+import { ApiSelectModal, IApiSelectModalProps, IModalProps } from "./modals/ApiSelectModal";
 import { AssetSelectorModal } from "./modals/AssetsChooserModal";
 import { Confirm } from "./modals/Confirm";
 import { ContactModal } from "./modals/ContactModal";
@@ -34,6 +34,7 @@ import {
   TestingApiKeyModalProps,
   TModalContext
 } from "./modals/types";
+import { CustomModal } from "./modals/CustomModal";
 
 
 const init: TModalContext = {
@@ -53,6 +54,7 @@ const init: TModalContext = {
   openAssetSelectorModal: () => { },
   openApiSelectModal: () => { },
   openApiKeySelectModal: () => { },
+  openCustomModal: () => {},
   close: () => {}
 }
 
@@ -118,6 +120,7 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
   const openAssetSelectorModal = (props: IAssetSelectorModalProps) => open(<AssetSelectorModal {...props} close={close} />)
   const openApiSelectModal = (props: IApiSelectModalProps) => open(<ApiSelectModal {...props} close={close} />)
   const openApiKeySelectModal = (props: IApiKeySelectModalProps) => open(<ApiKeySelectModal {...props} close={close} />)
+  const openCustomModal = (props: IModalProps) => open(<CustomModal {...props} close={close} />)
 
 
   return (
@@ -138,6 +141,7 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
       openAssetSelectorModal,
       openApiSelectModal,
       openApiKeySelectModal,
+      openCustomModal,
       close
     }}>
       <Modal modal={modal} modalContent={modalContent} />

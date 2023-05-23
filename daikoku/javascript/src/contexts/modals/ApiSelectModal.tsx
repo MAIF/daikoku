@@ -7,6 +7,11 @@ import { IApi, IUsagePlan } from '../../types';
 import { IBaseModalProps } from './types';
 
 
+export interface IModalProps {
+  title: string;
+  content: JSX.Element;
+}
+
 export interface IApiSelectModalProps {
   teamId: string,
   api: IApi,

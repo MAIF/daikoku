@@ -19,6 +19,8 @@ import {
 } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
+import classNames from 'classnames';
+import { Link, useNavigate } from 'react-router-dom';
 
 
 export const currency = (plan?: IBaseUsagePlan) => {
@@ -41,7 +43,7 @@ type ApiPricingCardProps = {
 
 const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { Translation } = useContext(I18nContext);
-  const { openFormModal, openLoginOrRegisterModal, openApiKeySelectModal } = useContext(ModalContext);
+  const { openFormModal, openLoginOrRegisterModal, openApiKeySelectModal, openCustomModal, close } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
@@ -141,6 +143,25 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
     !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
+
+  const openNewModal = () => {
+    openCustomModal({
+      title: 'select team',
+      content: <TeamSelector
+        teams={authorizedTeams
+          .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
+          .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+        pendingTeams={props.inProgressDemands.map((s) => s.team)}
+        acceptedTeams={props.subscriptions
+          .filter((f) => !f._deleted)
+          .map((subs) => subs.team)}
+        allowMultipleDemand={plan.allowMultipleKeys}
+        showApiKeySelectModal={showApiKeySelectModal}
+      />
+    })
+  }
+
   return (
     <div className="col-md-4 card mb-4 shadow-sm usage-plan__card" data-usage-plan={plan.customName}>
       <div className="card-img-top card-link card-skin" data-holder-rendered="true">
@@ -190,6 +211,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
                 )}
               >
+
+                <button onClick={openNewModal}>test</button>
+
                 {(props.api.visibility === 'AdminOnly' ||
                   (plan.otoroshiTarget && !isAccepted)) && (
                     <ActionWithTeamSelector
@@ -240,6 +264,67 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     </div>
   );
 };
+
+type ITeamSelector = {
+  teams: Array<ITeamSimple>
+  pendingTeams: Array<string>
+  acceptedTeams: Array<string>
+  allowMultipleDemand?: boolean
+  showApiKeySelectModal: (teamId: string) => void
+}
+
+const TeamSelector = (props: ITeamSelector) => {
+  const { translate } = useContext(I18nContext);
+  const { close } = useContext(ModalContext);
+  const navigate = useNavigate();
+
+  return (
+    <div className="modal-body">
+      <div>
+        <div className='modal-description'>You are going to request an API key. For which team do you want it?</div>
+        <div className='team-selection__container'>
+          {
+            props.teams
+              .filter(t => !!props.allowMultipleDemand || !props.acceptedTeams.includes(t._id))
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(team => {
+                const allowed = props.allowMultipleDemand ||
+                (!props.pendingTeams.includes(team._id) && !props.acceptedTeams.includes(team._id) && team.verified)
+
+                return (
+                  <div
+                    key={team._id}
+                    className={classNames('team-selection team-selection__team', {
+                      selectable: allowed,
+                      'cursor-forbidden': !allowed,
+                    })}
+                    onClick={() => allowed ? props.showApiKeySelectModal(team._id) : () => {}}
+                  >
+                    {
+                      props.pendingTeams.includes(team._id) &&
+                      <button type="button" className="btn btn-sm btn-outline-secondary disabled">
+                        {translate("Request in progress")}
+                      </button>
+                    }
+                    {
+                      !team.verified &&
+                      <button type="button" className="btn btn-sm btn-outline-warning" onClick={() => {
+                        close()
+                        navigate(`/${team._humanReadableId}/settings/edition`)
+                      }}>
+                        {translate("Email not verified")}
+                      </button>
+                    }
+                    <span className="ms-2">{team.name}</span>
+                  </div>
+                )
+              })
+          }
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type ApiPricingProps = {
   api: IApi

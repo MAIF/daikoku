@@ -33,6 +33,7 @@ object AppError {
   case object SubscriptionDemandNotFound extends AppError
   case object SubscriptionDemandClosed extends AppError
   case object TeamUnauthorized extends AppError
+  case object TeamNotVerified extends AppError
   case object ApiUnauthorized extends AppError
   case object PlanUnauthorized extends AppError
   case object PlanNotFound extends AppError
@@ -79,6 +80,7 @@ object AppError {
     case NotificationNotFound     => NotFound(toJson(error))
     case OtoroshiSettingsNotFound => NotFound(toJson(error))
     case TeamUnauthorized => play.api.mvc.Results.Unauthorized(toJson(error))
+    case TeamNotVerified => play.api.mvc.Results.Unauthorized(toJson(error))
     case TeamForbidden => play.api.mvc.Results.Forbidden(toJson(error))
     case ApiUnauthorized =>
       play.api.mvc.Results
@@ -132,6 +134,7 @@ object AppError {
       case SubscriptionDemandClosed => "SubscriptionDemand is closed"
       case OtoroshiSettingsNotFound => "Otoroshi settings not found"
       case TeamUnauthorized => "You're not authorized on this team"
+      case TeamNotVerified => "team email is not verified"
       case ApiUnauthorized => "You're not authorized on this api"
       case PlanUnauthorized => "You're not authorized on this plan"
       case PlanNotFound => "Plan not found"
