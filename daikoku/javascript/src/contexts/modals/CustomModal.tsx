@@ -28,6 +28,7 @@ import { IBaseModalProps } from './types';
 export const CustomModal = ({
   title,
   content,
+  close
 }: IModalProps & IBaseModalProps) => {
 
 

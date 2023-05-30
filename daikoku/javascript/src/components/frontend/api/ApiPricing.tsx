@@ -144,7 +144,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
 
-  const openNewModal = () => {
+  const openTeamSelectorModal = () => {
     openCustomModal({
       title: 'select team',
       content: <TeamSelector
@@ -158,6 +158,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           .map((subs) => subs.team)}
         allowMultipleDemand={plan.allowMultipleKeys}
         showApiKeySelectModal={showApiKeySelectModal}
+        plan={props.plan}
       />
     })
   }
@@ -211,40 +212,17 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
                 )}
               >
-
-                <button onClick={openNewModal}>test</button>
-
                 {(props.api.visibility === 'AdminOnly' ||
                   (plan.otoroshiTarget && !isAccepted)) && (
-                    <ActionWithTeamSelector
-                      title={translate('team.selection.title')}
-                      description={translate(
-                        isAutomaticProcess
-                          ? 'team.selection.desc.get'
-                          : 'team.selection.desc.request')}
-                      teams={authorizedTeams
-                        .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-                        .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
-                        .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-                      pendingTeams={props.inProgressDemands.map((s) => s.team)}
-                      acceptedTeams={props.subscriptions
-                        .filter((f) => !f._deleted)
-                        .map((subs) => subs.team)}
-                      allowMultipleDemand={plan.allowMultipleKeys}
-                      allTeamSelector={false}
-                      action={(teams) => showApiKeySelectModal(teams[0])}
-                      actionLabel={translate(isAutomaticProcess ? 'Get API key' : 'Request API key')}
-                    >
-                      <button type="button" className="btn btn-sm btn-access-negative col-12">
-                        <Translation
-                          i18nkey={
-                            isAutomaticProcess ? 'Get API key' : 'Request API key'
-                          }
-                        >
-                          {isAutomaticProcess ? 'Get API key' : 'Request API key'}
-                        </Translation>
-                      </button>
-                    </ActionWithTeamSelector>
+                    <button type="button" className="btn btn-sm btn-access-negative col-12" onClick={openTeamSelectorModal}>
+                      <Translation
+                        i18nkey={
+                          isAutomaticProcess ? 'Get API key' : 'Request API key'
+                        }
+                      >
+                        {isAutomaticProcess ? 'Get API key' : 'Request API key'}
+                      </Translation>
+                    </button>
                   )}
               </Can>
             )}
@@ -252,9 +230,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             <button
               type="button"
               className="btn btn-sm btn-access-negative mx-auto mt-3"
-              onClick={() => openLoginOrRegisterModal({
-                tenant
-              })}
+              onClick={() => openLoginOrRegisterModal({ tenant})}
             >
               <Translation i18nkey="Get API key">Get API key</Translation>
             </button>
@@ -270,13 +246,16 @@ type ITeamSelector = {
   pendingTeams: Array<string>
   acceptedTeams: Array<string>
   allowMultipleDemand?: boolean
-  showApiKeySelectModal: (teamId: string) => void
+  showApiKeySelectModal: (teamId: string) => void,
+  plan: IUsagePlan
 }
 
 const TeamSelector = (props: ITeamSelector) => {
   const { translate } = useContext(I18nContext);
   const { close } = useContext(ModalContext);
   const navigate = useNavigate();
+
+  const displayVerifiedBtn = props.plan.subscriptionProcess.some(p => p.type === 'payment')
 
   return (
     <div className="modal-body">
@@ -289,7 +268,7 @@ const TeamSelector = (props: ITeamSelector) => {
               .sort((a, b) => a.name.localeCompare(b.name))
               .map(team => {
                 const allowed = props.allowMultipleDemand ||
-                (!props.pendingTeams.includes(team._id) && !props.acceptedTeams.includes(team._id) && team.verified)
+                  (!props.pendingTeams.includes(team._id) && !props.acceptedTeams.includes(team._id) && (!displayVerifiedBtn || team.verified))
 
                 return (
                   <div
@@ -298,7 +277,7 @@ const TeamSelector = (props: ITeamSelector) => {
                       selectable: allowed,
                       'cursor-forbidden': !allowed,
                     })}
-                    onClick={() => allowed ? props.showApiKeySelectModal(team._id) : () => {}}
+                    onClick={() => allowed ? props.showApiKeySelectModal(team._id) : () => { }}
                   >
                     {
                       props.pendingTeams.includes(team._id) &&
@@ -307,7 +286,7 @@ const TeamSelector = (props: ITeamSelector) => {
                       </button>
                     }
                     {
-                      !team.verified &&
+                      displayVerifiedBtn && !team.verified &&
                       <button type="button" className="btn btn-sm btn-outline-warning" onClick={() => {
                         close()
                         navigate(`/${team._humanReadableId}/settings/edition`)
