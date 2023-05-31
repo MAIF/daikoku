@@ -1,60 +1,55 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import maxBy from 'lodash/maxBy';
+import { useContext, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import dayjs from 'dayjs';
 
+import { useTeamBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import {
+  Can,
+  Spinner,
   formatCurrency,
   formatPlanType,
-  Can,
   read,
-  stat,
-  api as API,
-  CanIDoAction,
+  stat
 } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { I18nContext } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
-import dayjs from 'dayjs';
+import { IApi, IConsumption, IState, ITeamSimple, isError } from '../../../types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+type IConsumptionByApi = {
+  billing: { hits: number, total: number },
+  api: string
+}
 
 export const TeamBilling = () => {
-  const [state, setState] = useState<any>({
-    consumptions: [],
-    consumptionsByApi: [],
-    selectedApi: undefined,
-    loading: false,
-    date: dayjs(),
-  });
-
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  useTeamBackOffice(currentTeam);
 
   const { translate, Translation } = useContext(I18nContext);
 
-  useTeamBackOffice(currentTeam);
+  const [selectedApi, setSelectedApi] = useState<IApi>();
+  const [date, setDate] = useState(dayjs());
+
+  const queryClient = useQueryClient();
+  const queryBillings = useQuery(['billings'], () => Services.getTeamBillings(
+    currentTeam._id,
+    date.startOf('month').valueOf(),
+    date.endOf('month').valueOf()
+  ));
+  const queryApis = useQuery(['apis'], () => Services.subscribedApis(currentTeam._id))
 
   useEffect(() => {
-    getTeamBilling(currentTeam);
-
     document.title = `${currentTeam.name} - ${translate('Billing')}`;
   }, []);
 
-  const getTeamBilling = (team: any) => {
-    setState({ ...state, loading: true });
-    Promise.all([
-      Services.getTeamBillings(
-        team._id,
-        dayjs().startOf('month').valueOf(),
-        dayjs().endOf('month').valueOf()
-      ),
-      Services.subscribedApis(team._id),
-    ]).then(([consumptions, apis]) => {
-      const consumptionsByApi = getConsumptionsByApi(consumptions);
-      setState({ ...state, consumptions, consumptionsByApi, apis, loading: false });
-    });
-  };
+  useEffect(() => {
+    queryClient.invalidateQueries(['billings'])
+  }, [date])
 
-  const getConsumptionsByApi = (consumptions: any) => consumptions.reduce((acc: any, consumption: any) => {
+  const getConsumptionsByApi = (consumptions: Array<IConsumption>) => consumptions.reduce((acc: Array<IConsumptionByApi>, consumption) => {
     const api = acc.find((item: any) => item.api === consumption.api);
     const { hits, total } = api ? api.billing : { hits: 0, total: 0 };
     const billing = {
@@ -63,100 +58,157 @@ export const TeamBilling = () => {
     };
     const obj = { billing, api: consumption.api };
 
-    return [...acc.filter((item: any) => item.api !== consumption.api), obj];
+    return [...acc.filter((item) => item.api !== consumption.api), obj];
   }, []);
 
-  const getBilling = (date: any) => {
-    setState({ ...state, loading: true, selectedApi: undefined });
-    Services.getTeamBillings(
-      currentTeam._id,
-      date.startOf('month').valueOf(),
-      date.endOf('month').valueOf()
-    ).then((consumptions) =>
-      setState({
-        ...state,
-        date,
-        consumptions,
-        consumptionsByApi: getConsumptionsByApi(consumptions),
-        loading: false,
-      })
-    );
-  };
 
   const sync = () => {
-    setState({ ...state, loading: true });
     Services.syncTeamBilling(currentTeam._id)
-      .then(() =>
-        Services.getTeamBillings(
-          currentTeam._id,
-          state.date.startOf('month').valueOf(),
-          state.date.endOf('month').valueOf()
-        )
-      )
-      .then((consumptions) =>
-        setState({
-          ...state,
-          consumptions,
-          consumptionsByApi: getConsumptionsByApi(consumptions),
-          loading: false,
-        })
-      );
+      .then(() => queryClient.invalidateQueries(['billings']))
   };
 
-  const total = state.consumptions.reduce((acc: number, curr: any) => acc + (curr as any).billing.total, 0);
-  const mostRecentConsumption = maxBy(state.consumptions, (c) => (c as any).to);
-  const lastDate = mostRecentConsumption && dayjs((mostRecentConsumption as any).to).format('DD/MM/YYYY HH:mm');
 
-  return (<Can I={read} a={stat} team={currentTeam} dispatchError={true}>
-    <div className="row">
-      <div className="col">
-        <h1>
-          <Translation i18nkey="Billing">Billing</Translation>
-        </h1>
-        <div className="row">
-          <div className="col apis">
-            <div className="row month__and__total">
-              <div className="col-12 month__selector d-flex align-items-center">
-                <MonthPicker updateDate={getBilling} value={state.date} />
-                <button className="btn btn-sm btn-access-negative" onClick={sync}>
-                  <i className="fas fa-sync-alt ms-1" />
-                </button>
-                {lastDate ? (<i className="ms-1">
-                  <Translation i18nkey="date.update" replacements={[lastDate]}>
-                    upd. {lastDate}
-                  </Translation>
-                </i>) : <></>}
-              </div>
-            </div>
-            <div className="row api__billing__card__container section p-2">
-              <TheadBillingContainer label={translate('Subscribed Apis')} total={formatCurrency(total)} />
-              {!state.consumptionsByApi.length && <NoData />}
-              {state.consumptionsByApi
-                .sort((api1: any, api2: any) => api2.billing.total - api1.billing.total)
-                .map(({ api, billing }: any) => (<ApiTotal key={api} handleClick={() => setState({
-                  ...state,
-                  selectedApi: (state as any).apis.find((a: any) => a._id === api),
-                })} api={(state as any).apis.find((a: any) => a._id === api)} total={(billing as any).total} />))}
-              <TheadBillingContainer label={translate('Subscribed Apis')} total={formatCurrency(total)} />
-            </div>
+  const drawApis = () => {
+    if (queryApis.isLoading && queryBillings.isLoading) {
+      return (
+        <div className="row api__billing__card__container section p-2">
+          <Spinner />
+        </div>
+      )
+    } else if (queryApis.data && queryBillings.data) {
+      if (isError(queryApis.data)) {
+        return (
+          <div>{queryApis.data.error}</div>
+        )
+      } else if (isError(queryBillings.data)) {
+        return (
+          <div>{queryBillings.data.error}</div>
+        )
+      } else {
+        const consumptions = queryBillings.data;
+        const apis = queryApis.data;
+        const consumptionsByApi = getConsumptionsByApi(consumptions)
+        const total = consumptions.reduce((acc: number, curr) => acc + curr.billing.total, 0);
+
+        return (
+          <div className="row api__billing__card__container section p-2">
+            <TheadBillingContainer label={translate('Subscribed Apis')} total={formatCurrency(total)} />
+            {!consumptionsByApi.length && <NoData />}
+            {consumptionsByApi
+              .sort((api1, api2) => api2.billing.total - api1.billing.total)
+              .map((consumption) => {
+                const api = apis.find((a) => a._id === consumption.api)
+                return <ApiTotal
+                  key={consumption.api}
+                  handleClick={() => setSelectedApi(api)}
+                  api={api}
+                  total={consumption.billing.total} />
+              })}
+            <TheadBillingContainer label={translate('Subscribed Apis')} total={formatCurrency(total)} />
           </div>
-          <div className="col apikeys">
-            {state.selectedApi && (<div className="api-plans-consumptions section p-2">
-              <div className="api__plans__consumption__header">
-                <h3 className="api__name">{(state.selectedApi as any).name}</h3>
-                <i className="far fa-times-circle quit" onClick={() => setState({ ...state, selectedApi: undefined })} />
+        )
+      }
+    }
+  }
+
+  const drawApiConsumption = () => {
+
+    if (!selectedApi) {
+      return null
+    }
+
+    if (queryApis.isLoading && queryBillings.isLoading) {
+      return (
+        <div className="row api__billing__card__container section p-2">
+          <Spinner />
+        </div>
+      )
+    } else if (queryApis.data && queryBillings.data) {
+      if (isError(queryApis.data)) {
+        return (
+          <div>{queryApis.data.error}</div>
+        )
+      } else if (isError(queryBillings.data)) {
+        return (
+          <div>{queryBillings.data.error}</div>
+        )
+      } else {
+        const consumptions = queryBillings.data;
+        const apis = queryApis.data;
+        const consumptionsByApi = getConsumptionsByApi(consumptions)
+        const total = consumptions.reduce((acc: number, curr) => acc + curr.billing.total, 0);
+
+        return (
+          <div className="api-plans-consumptions section p-2">
+                <div className="api__plans__consumption__header">
+                  <h3 className="api__name">{selectedApi.name}</h3>
+                  <i className="far fa-times-circle quit" onClick={() => setSelectedApi(undefined)} />
+                </div>
+                {consumptions
+                  .filter((c) => c.api === selectedApi._id)
+                  .sort((c1, c2) => c2.billing.total - c1.billing.total)
+                  .map(({ plan, billing }: any, idx: number) => {
+                    const usagePlan = selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
+                    if (usagePlan) {
+                      return (<PriceCartridge
+                        key={idx}
+                        label={usagePlan.customName || formatPlanType(usagePlan, translate)}
+                        total={billing.total}
+                        currency={usagePlan.currency}
+                        fetchInvoices={() => Services.fetchInvoices(currentTeam._id, selectedApi._id, usagePlan._id, window.location.href)
+                          .then(({ url }) => window.location.href = url)} />);
+                    }
+                  })}
               </div>
-              {state.consumptions
-                .filter((c: any) => c.api === state.selectedApi._id)
-                .sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
-                .map(({ plan, billing }: any, idx: number) => {
-                  const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
-                  return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translate)} total={billing.total} currency={usagePlan.currency} />);
-                })}
-            </div>)}
+        )
+      }
+    }
+  }
+
+  const getLastDate = () => {
+    if (queryBillings.data && !isError(queryBillings.data)) {
+      const consumptions = queryBillings.data
+      const mostRecentConsumption = maxBy(consumptions, (c) => c.to);
+      const lastDate = mostRecentConsumption && dayjs(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
+
+      return (
+        <i className="ms-1">
+          <Translation i18nkey="date.update" replacements={[lastDate]}>
+            upd. {lastDate}
+          </Translation>
+        </i>
+      )
+    } else {
+      return <></>
+    }
+  }
+
+  return (
+    <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
+      <div className="row">
+        <div className="col">
+          <h1>
+            <Translation i18nkey="Billing">Billing</Translation>
+          </h1>
+          <div className="row">
+            <div className="col apis">
+              <div className="row month__and__total">
+                <div className="col-12 month__selector d-flex align-items-center">
+                  <MonthPicker updateDate={setDate} value={date} />
+                  <button className="btn btn-sm btn-access-negative" onClick={sync}>
+                    <i className="fas fa-sync-alt ms-1" />
+                  </button>
+                  {getLastDate()}
+                </div>
+              </div>
+              {drawApis()}
+            </div>
+            <div className="col apikeys">
+              {drawApiConsumption()}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </Can>);
+    </Can>
+  )
 };

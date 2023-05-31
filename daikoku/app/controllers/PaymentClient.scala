@@ -3,11 +3,6 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
-import com.stripe.Stripe
-import com.stripe.model.{Customer, UsageRecord}
-import com.stripe.model.checkout.Session
-import com.stripe.net.RequestOptions
-import com.stripe.param.UsageRecordCreateOnSubscriptionItemParams
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
@@ -16,7 +11,6 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
-import org.joda.time.DateTime
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.mvc.Result
@@ -30,6 +24,7 @@ class PaymentClient(
 
   type ProductId = String
   type PriceId = String
+  type CustomerId = String
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -308,55 +303,53 @@ class PaymentClient(
 
     val cipheredValidationToken = encrypt(env.config.cypherSecret, stepValidator.token, tenant)
 
-    val baseBody = Map(
-      "metadata[tenant]" -> subscriptionDemand.tenant.value,
-      "metadata[api]" -> subscriptionDemand.api.value,
-      "metadata[team]" -> subscriptionDemand.team.value,
-      "metadata[plan]" -> subscriptionDemand.plan.value,
-      "metadata[subscription_demand]" -> subscriptionDemand.id.value,
-      "line_items[0][price]" -> settings.priceIds.basePriceId,
-      "line_items[0][quantity]" -> "1",
-      "mode" -> "subscription",
-      "customer_email" -> team.contact,
-      "billing_address_collection " -> "required",
-      "locale" -> user.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en").toLowerCase,
-      "success_url" -> env.getDaikokuUrl(
-        tenant,
-        s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" //todo: add callback
-      ),
-      "cancel_url" -> from.getOrElse(env.getDaikokuUrl(
-        tenant,
-        s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing"
-      ))
-    )
+    createAndGetStripeClient(team)
+      .flatMap(stripeCustomer => {
+        val baseBody = Map(
+          "metadata[tenant]" -> subscriptionDemand.tenant.value,
+          "metadata[api]" -> subscriptionDemand.api.value,
+          "metadata[team]" -> subscriptionDemand.team.value,
+          "metadata[plan]" -> subscriptionDemand.plan.value,
+          "metadata[subscription_demand]" -> subscriptionDemand.id.value,
+          "line_items[0][price]" -> settings.priceIds.basePriceId,
+          "line_items[0][quantity]" -> "1",
+          "mode" -> "subscription",
+          "customer" -> stripeCustomer,
+          "billing_address_collection " -> "required",
+          "locale" -> user.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en").toLowerCase,
+          "success_url" -> env.getDaikokuUrl(
+            tenant,
+            s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" //todo: add callback
+          ),
+          "cancel_url" -> from.getOrElse(env.getDaikokuUrl(
+            tenant,
+            s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing"
+          ))
+        )
 
-    val body = settings.priceIds.additionalPriceId
-      .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
-      .getOrElse(baseBody)
+        val body = settings.priceIds.additionalPriceId
+          .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
+          .getOrElse(baseBody)
 
-    //FIXME: clean this shitting code
-    for {
-      _ <- EitherT.liftF(env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator))
-
-
-    } yield ???
-
-    EitherT
-      .liftF(
-        stripeClient("/v1/checkout/sessions")
-          .post(body)
-      )
-      .flatMap(res => {
-        if (res.status == 200 || res.status == 201) {
-          val url = (res.json \ "url").as[String]
-          //todo: handle real redirection to checkout page
-          EitherT.pure(url)
-        } else {
-          EitherT.leftT[Future, String](
-            AppError.OtoroshiError(res.json.as[JsObject])
-          )
-        }
+        for {
+          _ <- EitherT.liftF(env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator))
+          r <- EitherT.liftF(
+              stripeClient("/v1/checkout/sessions")
+                .post(body)
+            )
+            .flatMap(res => {
+              if (res.status == 200 || res.status == 201) {
+                val url = (res.json \ "url").as[String]
+                //todo: handle real redirection to checkout page
+                EitherT.pure[Future, AppError](url)
+              } else {
+                val r: EitherT[Future, AppError, CustomerId] = EitherT.leftT[Future, CustomerId](AppError.OtoroshiError(res.json.as[JsObject]))
+                r
+              }
+            })
+        } yield r
       })
+
   }
 
   def getSubscription(maybeSessionId: Option[String], settings: PaymentSettings, tenant: Tenant): Future[Option[ThirdPartySubscriptionInformations]] =
@@ -485,5 +478,98 @@ class PaymentClient(
 
       case None => EitherT.left[JsValue](FastFuture.successful(AppError.EntityNotFound("stripe settings")))
     }
+  }
+
+  def createAndGetStripeClient(team: Team)(implicit stripeSettings: StripeSettings): EitherT[Future, AppError, CustomerId] = {
+    if (!team.verified) {
+      EitherT.leftT(AppError.Unauthorized)
+    } else {
+      val bodySearch = Map(
+        "query" -> s"metadata['daikoku_id']:'${team.id.value}'"
+      )
+
+      val customerF = stripeClient("/v1/customers/search")
+        .withBody(bodySearch)
+        .get()
+        .map(_.json)
+        .map(r => (r \ "data").as[JsArray])
+        .map(_.value)
+        .flatMap {
+          case seq if seq.isEmpty =>
+            val bodyClient = Map(
+              "email" -> team.contact,
+              "name" -> team.name,
+              "metadata[daikoku_id]" -> team.id.value
+            )
+            stripeClient("/v1/customers")
+              .post(bodyClient)
+              .map(customer => (customer.json \ "id").as[CustomerId])
+          case seq => FastFuture.successful((seq.head \ "id").as[CustomerId])
+        }
+
+      EitherT.liftF(customerF)
+
+    }
+  }
+  def getStripeCustomer(team: Team)(implicit stripeSettings: StripeSettings): EitherT[Future, AppError, CustomerId] = {
+    if (!team.verified) {
+      EitherT.leftT(AppError.Unauthorized)
+    } else {
+      val bodySearch = Map(
+        "query" -> s"metadata['daikoku_id']:'${team.id.value}'"
+      )
+
+      EitherT(stripeClient("/v1/customers/search")
+        .withBody(bodySearch)
+        .get()
+        .map(_.json)
+        .map(r => (r \ "data").as[JsArray])
+        .map(_.value)
+        .map {
+          case seq if seq.isEmpty =>
+            Left(AppError.TeamNotFound)
+          case seq => Right((seq.head \ "id").as[CustomerId])
+        })
+
+    }
+  }
+
+  def getAllTeamInvoices(tenant: Tenant, plan: UsagePlan, team: Team, callback: String): EitherT[Future, AppError, String] = {
+    for {
+      settings <- EitherT.fromOption[Future](plan.paymentSettings.flatMap(s => tenant.thirdPartyPaymentSettings.find(_.id == s.thirdPartyPaymentSettingsId)), AppError.EntityNotFound("payment settings"))
+      portalUrl <- settings match {
+        case p: StripeSettings => getStripeInvoices(team, tenant, callback)(p)
+      }
+    } yield portalUrl
+
+  }
+
+  def getStripeInvoices(team: Team, tenant: Tenant, callback: String)(implicit stripeSettings: StripeSettings): EitherT[Future, AppError, String] = {
+
+    for {
+      customer <- getStripeCustomer(team)
+      bodyConf = Map(
+        "features[subscription_cancel][enabled]" -> "false",
+        "features[subscription_pause][enabled]" -> "false",
+        "features[invoice_history][enabled]" -> "true",
+        "features[payment_method_update][enabled]" -> "true",
+        "features[customer_update][enabled]" -> "true",
+        "features[customer_update][allowed_updates][0]" -> "name",
+        "features[customer_update][allowed_updates][1]" -> "email",
+        "features[customer_update][allowed_updates][2]" -> "address",
+        "features[customer_update][allowed_updates][3]" -> "phone",
+        "features[customer_update][allowed_updates][4]" -> "tax_id",
+        "business_profile[privacy_policy_url]" -> "https://example.com/privacy", //todo
+        "business_profile[terms_of_service_url]" -> "https://example.com/privacy" //todo
+      )
+      conf <- EitherT.liftF(stripeClient("/v1/billing_portal/configurations").post(bodyConf).map(_.json))
+      bodyPortal = Map(
+        "customer" -> customer,
+        "return_url" -> callback,
+        "configuration" -> (conf \ "id").as[String],
+        "locale" -> tenant.defaultLanguage.map(_.toLowerCase).getOrElse("en")
+      )
+      r <- EitherT.liftF(stripeClient("/v1/billing_portal/sessions").post(bodyPortal).map(_.json))
+    } yield (r \ "url").as[String]
   }
 }

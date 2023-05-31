@@ -30,6 +30,7 @@ import {
   ISubscriptionWithApiInfo,
   IUsagePlan,
   ISubscriptionDemand,
+  IConsumption,
 } from '../types/api';
 
 const HEADERS = {
@@ -120,7 +121,7 @@ export const getMySubscriptions = (
 ): Promise<{ subscriptions: Array<ISubscription>, requests: Array<ISubscriptionDemand> }> =>
   customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
-type CreationDone = { creation: 'done', subscription: ISubscription}
+type CreationDone = { creation: 'done', subscription: ISubscription }
 type CreationWaiting = { creation: 'waiting' }
 type CheckoutUrl = { checkoutUrl: string }
 
@@ -532,7 +533,7 @@ export const syncApiConsumption = (apiId: any, teamId: any) =>
     method: 'POST',
   });
 
-export const syncTeamBilling = (teamId: any) =>
+export const syncTeamBilling = (teamId: string): PromiseWithError<Array<IConsumption>> =>
   customFetch(`/api/teams/${teamId}/billing/_sync`, {
     method: 'POST',
   });
@@ -588,7 +589,7 @@ export const getSubscriptionInformations = (
 export const getTeamConsumptions = (teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/consumptions?from=${from}&to=${to}`);
 
-export const getTeamBillings = (teamId: any, from: any, to: any) =>
+export const getTeamBillings = (teamId: string, from: number, to: number): Promise<Array<IConsumption> | ResponseError> =>
   customFetch(`/api/teams/${teamId}/billings?from=${from}&to=${to}`);
 
 /*export const getTeamIncome = (teamId: any, from: any, to: any) =>
@@ -1037,16 +1038,16 @@ export const deleteApiSubscription = (
   });
 
 export const extendApiKey = (
-    apiId: string,
-    apiKeyId: string,
-    teamId: string,
-    planId: string,
-    motivation?: string
+  apiId: string,
+  apiKeyId: string,
+  teamId: string,
+  planId: string,
+  motivation?: string
 ): Promise<SubscriptionReturn> =>
-    customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
-        method: 'PUT',
-        body: JSON.stringify({ motivation }),
-    });
+  customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivation }),
+  });
 
 export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscriptionWithApiInfo>> =>
   customFetch(`/api/subscriptions/teams/${teamId}`);
@@ -1751,3 +1752,6 @@ export const cancelProcess = (teamId: string, demandId: string) =>
   customFetch(`/api/subscription/team/${teamId}/demands/${demandId}/_cancel`, {
     method: 'DELETE'
   })
+
+export const fetchInvoices = (teamId: string, apiId: string, planId: string, callback: string) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/plan/${planId}/invoices?callback=${callback}`)

@@ -2431,7 +2431,6 @@ object json {
 
   val ThirdPartySubscriptionInformationsFormat =  new Format[ThirdPartySubscriptionInformations] {
     override def reads(json: JsValue): JsResult[ThirdPartySubscriptionInformations] = {
-      AppLogger.warn(Json.stringify(json))
       (json \ "type").as[String] match {
         case "stripe" => StripeSubscriptionInformationsFormat.reads(json)
       }

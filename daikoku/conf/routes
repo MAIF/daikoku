@@ -83,6 +83,7 @@ GET     /api/teams/:teamId/apis/:apiId/consumption              fr.maif.otoroshi
 ### maybe deleting this route + change tests that use this links
 GET     /api/teams/:teamId/consumptions                         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.consumptions(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/billings                             fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.billings(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+GET     /api/teams/:teamId/apis/:apiId/plan/:planId/invoices    fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.invoices(teamId, apiId, planId)
 GET     /api/teams/:teamId/income                               fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/subscription/:subscriptionId/quotas  fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getApiKeyQuotasWithSubscriptionId(teamId, subscriptionId)
 

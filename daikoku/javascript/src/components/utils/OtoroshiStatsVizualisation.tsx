@@ -8,6 +8,7 @@ import maxBy from 'lodash/maxBy';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Spinner } from './Spinner';
 import { I18nContext } from '../../core';
+import { IConsumption, ResponseError } from '../../types';
 
 (Number.prototype as any).prettify = function () {
   return toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '');
@@ -123,7 +124,7 @@ type IgqlConsumption = {
   _id: string
 }
 type Iprops = {
-  sync: () => Promise<string>
+  sync: () => Promise<Array<IConsumption> | ResponseError>
   fetchData: (from: Moment, to: Moment) => Promise<Array<IgqlConsumption>>
   mappers: any
   forConsumer?: boolean

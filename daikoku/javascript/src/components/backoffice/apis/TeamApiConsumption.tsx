@@ -8,17 +8,10 @@ import * as Services from '../../../services';
 import {OtoroshiStatsVizualization, renderPlanInfo} from '../../utils';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
-import {IApi, ITeamSimple, IUsagePlan} from '../../../types';
+import {IApi, IGlobalInformations, ITeamSimple, IUsagePlan} from '../../../types';
 import {getApolloContext} from "@apollo/client";
 
 
-type IGlobalInformations= {
-  avgDuration?: number,
-  avgOverhead?: number,
-  dataIn: number,
-  dataOut: number,
-  hits: number
-}
 type IgqlConsumption = {
   globalInformations: IGlobalInformations,
   api: {
@@ -49,8 +42,8 @@ type IgqlConsumption = {
 
 }
 const sumGlobalInformations = (data: Array<IgqlConsumption>) => data
-  .map((d: IgqlConsumption) => d.globalInformations)
-  .reduce((acc: any, item: IGlobalInformations) => {
+  .map((d) => d.globalInformations)
+  .reduce((acc: any, item) => {
     Object.keys(item).forEach((key) => (acc[key] = (acc[key] || 0) + item[key]));
     return acc;
   }, {});

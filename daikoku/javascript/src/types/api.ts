@@ -1,4 +1,4 @@
-import {IFastTeam, ITeamSimple, ITeamVisibility} from './team';
+import { IFastTeam, ITeamSimple, ITeamVisibility } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 
 export type ApiState = "created" | "published" | "deprecated" | "blocked" | "deleted"
@@ -361,15 +361,15 @@ export interface ISubscriptionWithApiInfo extends ISubscription {
 }
 
 export interface IQuotas {
+  authorizedCallsPerSec: number;
   currentCallsPerSec: number;
   remainingCallsPerSec: number;
-  currentCallsPerDay: number;
   authorizedCallsPerDay: number;
+  currentCallsPerDay: number;
+  remainingCallsPerDay: number;
+  authorizedCallsPerMonth: number;
   currentCallsPerMonth: number;
   remainingCallsPerMonth: number;
-  authorizedCallsPerSec: number;
-  authorizedCallsPerMonth: number;
-  remainingCallsPerDay: number;
 }
 
 export interface ISubscriptionInformation {
@@ -453,4 +453,29 @@ export interface ISubscriptionDemand {
   customMaxPerSecond?: number,
   customMaxPerDay?: number,
   customMaxPerMonth?: number
+}
+
+export interface IGlobalInformations {
+  avgDuration?: number,
+  avgOverhead?: number,
+  dataIn: number,
+  dataOut: number,
+  hits: number
+}
+
+export interface IConsumption {
+  _id: string
+  _deleted: boolean
+  _tenant: string
+  team: string
+  api: string
+  plan: string
+  clientId: string
+  hits: number
+  globalInformation: IGlobalInformations
+  quotas: IQuotas
+  billing: { hits: number, total: number }
+  from: number
+  to: number
+  state: 'inProgress' | 'completed'
 }

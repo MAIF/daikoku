@@ -1,7 +1,9 @@
-import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
 import classNames from 'classnames';
 import React, { useContext } from 'react';
+import ExternalLink from 'react-feather/dist/icons/external-link'
+
 import { I18nContext } from '../../../core';
+import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
 
 export const ApiTotal = (props: any) => {
   return (
@@ -31,7 +33,14 @@ export const PriceCartridge = ({
       onClick={() => (handleClick ? handleClick() : {})}
       {...props}
     >
-      <span className="price__cartridge__label">{label}</span>
+      <span className="price__cartridge__label d-flex align-items-center">
+        {label}
+        <ExternalLink
+          className="ms-1 cursor-pointer"
+          style={{ height: '15px', width: '15px' }}
+          onClick={props.fetchInvoices} />
+      </span>
+
       <span className="price__cartridge__total currency">
         {formatCurrency(total)}
         <span className="unit">{getCurrencySymbol(currency.code)}</span>

@@ -357,8 +357,6 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         val maxPerMonthOpt =
           (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
 
-        AppLogger.warn(
-          s"$otoroshiSettingsOpt - $authorizedEntitiesOpt - $clientNameOpt - $tagOpt - $apiOpt")
         (otoroshiSettingsOpt,
          authorizedEntitiesOpt,
          clientNameOpt,
