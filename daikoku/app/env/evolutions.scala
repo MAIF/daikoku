@@ -4,10 +4,12 @@ import akka.Done
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
+import cats.data.OptionT
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, NotificationFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
@@ -537,81 +539,6 @@ object evolution_157_c extends EvolutionScript {
     }
 }
 
-object evolution_1613 extends EvolutionScript {
-  override def version: String = "16.1.3"
-
-  override def script: (
-    Option[DatastoreId],
-      DataStore,
-      Materializer,
-      ExecutionContext,
-      OtoroshiClient
-    ) => Future[Done] =
-    (
-      _: Option[DatastoreId],
-      dataStore: DataStore,
-      mat: Materializer,
-      ec: ExecutionContext,
-      _: OtoroshiClient
-    ) => {
-      AppLogger.info(
-        s"Begin evolution $version - Update Apis to add property state & update all subscription process"
-      )
-
-      val source = dataStore.apiRepo
-        .forAllTenant()
-        .streamAllRaw()(ec)
-        .mapAsync(1) { value =>
-          val state =
-            if ((value \ "published").asOpt[Boolean].getOrElse(false)) {
-              ApiState.Published
-            } else {
-              ApiState.Created
-            }
-          val plans = (value \ "possibleUsagePlans")
-            .as[JsArray]
-            .value
-
-          val updatedPlans =  plans.map(oldPlan => {
-            val subscriptionProcess = (oldPlan \ "subscriptionProcess").asOpt[String] match {
-              case Some("Manual") => Seq(
-                ValidationStep
-                  .TeamAdmin(
-                    id = IdGenerator.token(32),
-                    team = (value \ "team").as(TeamIdFormat))
-              )
-              case _ => Seq.empty
-            }
-
-
-            oldPlan.as[JsObject] ++ Json
-              .obj("subscriptionProcess" -> json.SeqValidationStepFormat.writes(subscriptionProcess))
-          })
-
-          val updatedApi = value.as[JsObject] ++ Json.obj(
-            "state" -> state.name,
-            "possibleUsagePlans" -> JsArray(updatedPlans)
-          )
-
-          ApiFormat.reads(updatedApi) match {
-            case JsSuccess(v, _) =>
-              dataStore.apiRepo
-                .forAllTenant()
-                .save(v)(ec)
-            case JsError(errors) =>
-              AppLogger.error(s"Evolution $version errored : $errors")
-              FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
-              )
-          }
-        }
-
-      source
-        .runWith(Sink.ignore)(mat)
-
-    }
-}
-
 object evolution_1612_a extends EvolutionScript {
   override def version: String = "16.1.2_a"
 
@@ -797,6 +724,166 @@ object evolution_1612_d extends EvolutionScript {
     }
 }
 
+object evolution_1613 extends EvolutionScript {
+  override def version: String = "16.1.3"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - Update Apis to add property state & update all subscription process"
+      )
+
+      val source = dataStore.apiRepo
+        .forAllTenant()
+        .streamAllRaw()(ec)
+        .mapAsync(1) { value =>
+          val state =
+            if ((value \ "published").asOpt[Boolean].getOrElse(false)) {
+              ApiState.Published
+            } else {
+              ApiState.Created
+            }
+          val plans = (value \ "possibleUsagePlans")
+            .as[JsArray]
+            .value
+
+          val updatedPlans =  plans.map(oldPlan => {
+            val subscriptionProcess = (oldPlan \ "subscriptionProcess").asOpt[String] match {
+              case Some("Manual") => Seq(
+                ValidationStep
+                  .TeamAdmin(
+                    id = IdGenerator.token(32),
+                    team = (value \ "team").as(TeamIdFormat))
+              )
+              case _ => Seq.empty
+            }
+
+
+            oldPlan.as[JsObject] ++ Json
+              .obj("subscriptionProcess" -> json.SeqValidationStepFormat.writes(subscriptionProcess))
+          })
+
+          val updatedApi = value.as[JsObject] ++ Json.obj(
+            "state" -> state.name,
+            "possibleUsagePlans" -> JsArray(updatedPlans)
+          )
+
+          ApiFormat.reads(updatedApi) match {
+            case JsSuccess(v, _) =>
+              dataStore.apiRepo
+                .forAllTenant()
+                .save(v)(ec)
+            case JsError(errors) =>
+              AppLogger.error(s"Evolution $version errored : $errors")
+              FastFuture.successful(
+                AppLogger.error(s"Evolution $version : $errors")
+              )
+          }
+        }
+
+      source
+        .runWith(Sink.ignore)(mat)
+
+    }
+}
+
+object evolution_1613_b extends EvolutionScript {
+  override def version: String = "16.1.3_b"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(s"Begin evolution $version - Update SubscriptionDemands notifications to real subscriptions demand")
+
+      implicit val executionContext: ExecutionContext = ec
+
+      dataStore.notificationRepo.forAllTenant()
+        .streamAllRaw(Json.obj("action.type" -> "ApiSubscription", "status.status" -> "Pending", "_deleted" -> false))
+        .mapAsync(1) { value =>
+
+          val tenant = (value \ "_tenant").as(json.TenantIdFormat)
+          val action = (value \ "action").as[JsObject]
+          val sender = (value \ "sender").as(json.UserFormat)
+          val date = (value \ "date").as(json.DateTimeFormat)
+          val apiId = (action \ "api").as(json.ApiIdFormat)
+          val planId = (action \ "plan").as(json.UsagePlanIdFormat)
+          val teamId = (action \ "team").as(json.TeamIdFormat)
+          val parentSubscriptionId = (action \ "parentSubscriptionId").asOpt(json.ApiSubscriptionIdFormat)
+          val motivation = (action \ "motivation").asOpt[String]
+
+          (for {
+            api <- OptionT(dataStore.apiRepo.forAllTenant().findById(apiId))
+            plan <- OptionT.fromOption[Future](api.possibleUsagePlans.find(_.id == planId))
+            demand = SubscriptionDemand(
+              id = SubscriptionDemandId(IdGenerator.token),
+              tenant = tenant,
+              api = api.id,
+              plan = plan.id,
+              steps = plan.subscriptionProcess.map(step => SubscriptionDemandStep(
+                id = SubscriptionDemandStepId(IdGenerator.token),
+                state = SubscriptionDemandState.InProgress,
+                step = step,
+              )),
+              state = SubscriptionDemandState.InProgress,
+              team = teamId,
+              from = sender.id,
+              date = date,
+              motivation = motivation,
+              parentSubscriptionId = parentSubscriptionId
+            )
+            _ <- OptionT.liftF(dataStore.subscriptionDemandRepo.forTenant(demand.tenant).save(demand))
+            _ <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(
+              Notification(
+                id = (value \ "_id").as(json.NotificationIdFormat),
+                tenant = tenant,
+                team = teamId.some,
+                sender = sender.asNotificationSender,
+                date = date,
+                notificationType = NotificationType.AcceptOrReject,
+                status = (value \ "_tenant").as(json.NotificationStatusFormat),
+                action = NotificationAction.ApiSubscriptionDemand(
+                  api = apiId,
+                  plan = planId,
+                  team = teamId,
+                  demand = demand.id,
+                  step = demand.steps.head.id,
+                  parentSubscriptionId = parentSubscriptionId,
+                  motivation = motivation
+                )
+              )
+            ))
+          } yield ()).value
+        }
+        .runWith(Sink.ignore)(mat)
+
+
+    }
+}
+
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -812,6 +899,7 @@ object evolutions {
       evolution_1612_c,
       evolution_1612_d,
       evolution_1613,
+      evolution_1613_b
     )
   def run(
       dataStore: DataStore,
