@@ -34,7 +34,7 @@ export const TeamBilling = () => {
   const [date, setDate] = useState(dayjs());
 
   const queryClient = useQueryClient();
-  const queryBillings = useQuery(['billings'], () => Services.getTeamBillings(
+  const queryBillings = useQuery(['billings', date], () => Services.getTeamBillings(
     currentTeam._id,
     date.startOf('month').valueOf(),
     date.endOf('month').valueOf()
@@ -134,9 +134,6 @@ export const TeamBilling = () => {
         )
       } else {
         const consumptions = queryBillings.data;
-        const apis = queryApis.data;
-        const consumptionsByApi = getConsumptionsByApi(consumptions)
-        const total = consumptions.reduce((acc: number, curr) => acc + curr.billing.total, 0);
 
         return (
           <div className="api-plans-consumptions section p-2">

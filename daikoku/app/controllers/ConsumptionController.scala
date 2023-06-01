@@ -374,28 +374,21 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
 
   def billings(teamId: String,
                from: Option[Long],
-               to: Option[Long]): Action[AnyContent] = DaikokuAction.async {
-    ctx =>
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed to team billing for @{team.name}"))(teamId,
-                                                                        ctx) {
-        team =>
-          val fromTimestamp = from.getOrElse(
-            DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
-          val toTimestamp = to.getOrElse(
-            DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+               to: Option[Long]): Action[AnyContent] = DaikokuAction.async { ctx =>
+    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has accessed to team billing for @{team.name}"))(teamId, ctx) { team =>
+      val fromTimestamp = from.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+      val toTimestamp = to.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
 
-          env.dataStore.consumptionRepo
-            .getLastConsumptionsForTenant(
-              ctx.tenant.id,
-              Json.obj("team" -> team.id.value,
-                       "from" -> Json.obj("$gte" -> fromTimestamp,
-                                          "$lte" -> toTimestamp),
-                       "to" -> Json.obj("$gte" -> fromTimestamp,
-                                        "$lte" -> toTimestamp))
-            )
-            .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
-      }
+      env.dataStore.consumptionRepo
+        .getLastConsumptionsForTenant(
+          ctx.tenant.id,
+          Json.obj(
+            "team" -> team.id.value,
+            "from" -> Json.obj("$gte" -> fromTimestamp),
+            "to" -> Json.obj("$lte" -> toTimestamp))
+        )
+        .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
+    }
   }
 
   def invoices(teamId: String,
