@@ -317,6 +317,8 @@ class PaymentClient(
           "customer" -> stripeCustomer,
           "billing_address_collection " -> "required",
           "locale" -> user.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en").toLowerCase,
+          "subscription_data[trial_settings][end_behavior][missing_payment_method]" -> "cancel",
+          "subscription_data[trial_period_days]" -> api.possibleUsagePlans.find(_.id == subscriptionDemand.plan).flatMap(_.trialPeriod.map(_.toDays)).getOrElse(0).toString,
           "success_url" -> env.getDaikokuUrl(
             tenant,
             s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" //todo: add callback

@@ -6,7 +6,7 @@ import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, 
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, Days}
 import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -99,6 +99,13 @@ object BillingTimeUnit {
 case class BillingDuration(value: Long, unit: BillingTimeUnit)
     extends CanJson[BillingDuration] {
   def asJson: JsValue = json.BillingDurationFormat.writes(this)
+  def toDays: Long = unit match {
+    case BillingTimeUnit.Day => value
+    case BillingTimeUnit.Hour => 1L
+    case BillingTimeUnit.Month => Days.daysBetween(DateTime.now(), DateTime.now().plusMonths(1)).getDays.longValue
+    case BillingTimeUnit.Year => 235L
+    case _ => 0L
+  }
 }
 
 sealed trait ApiVisibility {
