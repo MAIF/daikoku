@@ -695,6 +695,7 @@ export const TeamApiPricings = (props: Props) => {
           toastr.success(translate('Success'), creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
           setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
           props.setApi(response)
+          setCreation(false)
         }
       })
   };
