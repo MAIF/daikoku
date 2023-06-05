@@ -674,56 +674,6 @@ object evolution_1612_c extends EvolutionScript {
   }
 }
 
-object evolution_1612_d extends EvolutionScript {
-  override def version: String = "16.1.2_d"
-
-  override def script: (
-      Option[DatastoreId],
-      DataStore,
-      Materializer,
-      ExecutionContext,
-      OtoroshiClient
-  ) => Future[Done] =
-    (
-        _: Option[DatastoreId],
-        dataStore: DataStore,
-        mat: Materializer,
-        ec: ExecutionContext,
-        _: OtoroshiClient
-    ) => {
-      AppLogger.info(
-        s"Begin evolution $version - Update notification to replace sender (previoulsy as complete User) to NotificationSender"
-      )
-
-      val source = dataStore.notificationRepo
-        .forAllTenant()
-        .streamAllRaw()(ec)
-        .mapAsync(1) { notification =>
-
-          val sender = (notification \ "sender").as(UserFormat)
-          val updatedNotif = notification.as[JsObject] + (
-            "sender" -> sender.asNotificationSender.asJson
-          )
-
-          NotificationFormat.reads(updatedNotif) match {
-            case JsSuccess(v, _) =>
-              AppLogger.warn(s"notif ok")
-              dataStore.notificationRepo
-                .forAllTenant()
-                .save(v)(ec)
-            case JsError(errors) =>
-              AppLogger.error(s"Evolution $version errored : $errors")
-              FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
-              )
-          }
-        }
-      source
-        .runWith(Sink.ignore)(mat)
-
-    }
-}
-
 object evolution_1613 extends EvolutionScript {
   override def version: String = "16.1.3"
 
@@ -826,7 +776,7 @@ object evolution_1613_b extends EvolutionScript {
 
           val tenant = (value \ "_tenant").as(json.TenantIdFormat)
           val action = (value \ "action").as[JsObject]
-          val sender = (value \ "sender").as(json.UserFormat)
+          val sender = (value \ "sender").asOpt(json.UserFormat).map(_.asNotificationSender).getOrElse((value \ "sender").as(json.NotificationSenderFormat))
           val date = (value \ "date").as(json.DateTimeFormat)
           val apiId = (action \ "api").as(json.ApiIdFormat)
           val planId = (action \ "plan").as(json.UsagePlanIdFormat)
@@ -849,37 +799,34 @@ object evolution_1613_b extends EvolutionScript {
               )),
               state = SubscriptionDemandState.InProgress,
               team = teamId,
-              from = sender.id,
+              from = sender.id.get,
               date = date,
               motivation = motivation,
               parentSubscriptionId = parentSubscriptionId
             )
             _ <- OptionT.liftF(dataStore.subscriptionDemandRepo.forTenant(demand.tenant).save(demand))
-            _ <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(
-              Notification(
-                id = (value \ "_id").as(json.NotificationIdFormat),
-                tenant = tenant,
-                team = teamId.some,
-                sender = sender.asNotificationSender,
-                date = date,
-                notificationType = NotificationType.AcceptOrReject,
-                status = (value \ "_tenant").as(json.NotificationStatusFormat),
-                action = NotificationAction.ApiSubscriptionDemand(
-                  api = apiId,
-                  plan = planId,
-                  team = teamId,
-                  demand = demand.id,
-                  step = demand.steps.head.id,
-                  parentSubscriptionId = parentSubscriptionId,
-                  motivation = motivation
-                )
+            notif = Notification(
+              id = (value \ "_id").as(json.NotificationIdFormat),
+              tenant = tenant,
+              team = teamId.some,
+              sender = sender,
+              date = date,
+              notificationType = NotificationType.AcceptOrReject,
+              status = (value \ "status").as(json.NotificationStatusFormat),
+              action = NotificationAction.ApiSubscriptionDemand(
+                api = apiId,
+                plan = planId,
+                team = teamId,
+                demand = demand.id,
+                step = demand.steps.head.id,
+                parentSubscriptionId = parentSubscriptionId,
+                motivation = motivation
               )
-            ))
+            )
+            _ <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(notif))
           } yield ()).value
         }
         .runWith(Sink.ignore)(mat)
-
-
     }
 }
 
@@ -897,7 +844,6 @@ object evolutions {
       evolution_1612_a,
       evolution_1612_b,
       evolution_1612_c,
-      evolution_1612_d,
       evolution_1613,
       evolution_1613_b
     )
