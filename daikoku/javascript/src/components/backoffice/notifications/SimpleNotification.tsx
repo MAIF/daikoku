@@ -414,7 +414,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
       case 'ApiSubscriptionReject':
       case 'ApiSubscriptionAccept':
       case 'TeamInvitation':
-      case 'CheckoutForSubscription':
         return props.notification.action.team!.name;
       case 'ApiSubscriptionDemand':
         return `${sender.name}/${Option(props.notification.action.team!.name)

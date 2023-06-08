@@ -1,13 +1,13 @@
 package fr.maif.otoroshi.daikoku.utils
 
 import akka.http.scaladsl.util.FastFuture
-import cats.data.EitherT
+import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
@@ -105,21 +105,30 @@ class DeletionService(env: Env) {
 
   private def closeThirdPartySubscriptions(subscriptions: Seq[ApiSubscription], tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val thirdPartySubs = subscriptions.filter(_.thirdPartySubscriptionInformations.isDefined).distinct
-    val operations = thirdPartySubs
-      .map(
-        s =>
+
+    val value: Seq[Future[Operation]] = thirdPartySubs.map(subscription => {
+      (for {
+        api <- OptionT(env.dataStore.apiRepo.forTenant(subscription.tenant).findByIdNotDeleted(subscription.api))
+        plan <- OptionT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscription.plan))
+      } yield plan)
+        .value
+        .map(p =>
           Operation(
             DatastoreId(BSONObjectID.generate().stringify),
             tenant = tenant.id,
-            itemId = s.id.value,
+            itemId = subscription.id.value,
             itemType = ItemType.ThirdPartySubscription,
-            action = OperationAction.Delete
+            action = OperationAction.Delete,
+            payload = Json.obj(
+              "paymentSettings" -> p.flatMap(_.paymentSettings).map(_.asJson).getOrElse(JsNull).as[JsValue],
+              "thirdPartySubscriptionInformations" -> subscription.thirdPartySubscriptionInformations.map(_.asJson).getOrElse(JsNull).as[JsValue]
+            ).some
           ))
+    })
 
-    AppLogger.debug(
-      s"[deletion service] :: add **third-party subscriptions**[${thirdPartySubs.map(_.id).mkString(",")}] to deletion queue")
+    AppLogger.debug(s"[deletion service] :: add **third-party subscriptions**[${thirdPartySubs.map(_.id).mkString(",")}] to deletion queue")
 
-    EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).insertMany(operations).map(_ => ()))
+    EitherT.liftF(Future.sequence(value).map(operations => env.dataStore.operationRepo.forTenant(tenant).insertMany(operations).map(_ => ())))
   }
 
   /**

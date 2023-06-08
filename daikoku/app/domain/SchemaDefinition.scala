@@ -1123,6 +1123,17 @@ object SchemaDefinition {
       ObjectTypeDescription("An Otoroshi notification triggered when a new comment has been written"),
       Interfaces(NotificationActionType)
     ))
+    lazy val CheckoutForSubscriptionType = new PossibleObject(ObjectType(
+      "CheckoutForSubscription",
+      "A notification triggered when a checkout session is available",
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), CheckoutForSubscription](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), CheckoutForSubscription](
+        Field("plan", StringType, resolve = _.value.plan.value),
+        Field("step", StringType, resolve = _.value.step.value),
+        Field("demand", StringType, resolve = _.value.demand.value),
+        Field("api", StringType, resolve = _.value.api.value)
+      )
+    ))
 
     lazy val NotificationInterfaceType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationType] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationType](
       "NotificationType",
@@ -1154,7 +1165,8 @@ object SchemaDefinition {
       ReplaceField("notificationType", Field("notificationType", NotificationInterfaceType, resolve = _.value.notificationType)),
       ReplaceField("status", Field("status", NotificationStatusType, resolve = _.value.status, possibleTypes = List(NotificationStatusAcceptedType, NotificationStatusRejectedType, NotificationStatusPendingType))),
       ReplaceField("action", Field("action", NotificationActionType, resolve = _.value.action, possibleTypes = List(ApiAccessType, TeamAccessType, TeamInvitationType, ApiSubscriptionDemandType, OtoroshiSyncSubscriptionErrorType, OtoroshiSyncApiErrorType,
-        ApiKeyDeletionInformationType, ApiKeyRotationInProgressType, ApiKeyRotationEndedType, ApiKeyRefreshType, NewPostPublishedType, NewIssueOpenType, NewCommentOnIssueType, TransferApiOwnershipType, ApiSubscriptionRejectType, ApiSubscriptionAcceptType
+        ApiKeyDeletionInformationType, ApiKeyRotationInProgressType, ApiKeyRotationEndedType, ApiKeyRefreshType, NewPostPublishedType, NewIssueOpenType, NewCommentOnIssueType, TransferApiOwnershipType, ApiSubscriptionRejectType, ApiSubscriptionAcceptType,
+        CheckoutForSubscriptionType
       ))),
     )
 

@@ -17,6 +17,7 @@ import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class PaymentClient(
     env: Env
@@ -317,8 +318,6 @@ class PaymentClient(
           "customer" -> stripeCustomer,
           "billing_address_collection " -> "required",
           "locale" -> user.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en").toLowerCase,
-          "subscription_data[trial_settings][end_behavior][missing_payment_method]" -> "cancel",
-          "subscription_data[trial_period_days]" -> api.possibleUsagePlans.find(_.id == subscriptionDemand.plan).flatMap(_.trialPeriod.map(_.toDays)).getOrElse(0).toString,
           "success_url" -> env.getDaikokuUrl(
             tenant,
             s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" //todo: add callback
@@ -333,11 +332,18 @@ class PaymentClient(
           .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
           .getOrElse(baseBody)
 
+        val trialPeriod: Long = api.possibleUsagePlans.find(_.id == subscriptionDemand.plan).flatMap(_.trialPeriod.map(_.toDays)).getOrElse(0)
+
+        val finalBody = if (trialPeriod > 0) body +
+          ("subscription_data[trial_settings][end_behavior][missing_payment_method]" -> "cancel") +
+          ("subscription_data[trial_period_days]" -> api.possibleUsagePlans.find(_.id == subscriptionDemand.plan).flatMap(_.trialPeriod.map(_.toDays)).getOrElse(0).toString)
+        else body
+
         for {
           _ <- EitherT.liftF(env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator))
           r <- EitherT.liftF(
               stripeClient("/v1/checkout/sessions")
-                .post(body)
+                .post(finalBody)
             )
             .flatMap(res => {
               if (res.status == 200 || res.status == 201) {
@@ -388,69 +394,72 @@ class PaymentClient(
     }
   }
 
-  def syncWithThirdParty(consumption: ApiKeyConsumption, plan: UsagePlan): Future[Unit] = {
-    plan.paymentSettings match {
-      case Some(paymentSettings) =>
-        (for {
-        subscription <- OptionT(env.dataStore.apiSubscriptionRepo.forTenant(consumption.tenant).findOneNotDeleted(Json.obj("apiKey.clientId" -> consumption.clientId)))
+  def syncWithThirdParty(consumption: ApiKeyConsumption, maybePaymentSettings: Option[PaymentSettings], maybeInfos: Option[ThirdPartySubscriptionInformations]): Future[Unit] = {
+    AppLogger.debug("*** SYNC CONSUmPTION with THIRD PARTY***")
+    AppLogger.debug(Json.prettyPrint(consumption.asJson))
+    AppLogger.debug(s"$maybePaymentSettings")
+    AppLogger.debug(s"$maybeInfos")
+    AppLogger.debug("**********************************************")
+
+    (maybePaymentSettings, maybeInfos) match {
+      case (Some(paymentSettings), Some(infos)) => (for {
         tenant <- OptionT(env.dataStore.tenantRepo.findByIdNotDeleted(consumption.tenant))
         setting <- OptionT.fromOption[Future](tenant.thirdPartyPaymentSettings.find(_.id == paymentSettings.thirdPartyPaymentSettingsId))
       } yield {
-        setting match {
-          case s: ThirdPartyPaymentSettings.StripeSettings =>
+        (setting, infos) match {
+          case (s: ThirdPartyPaymentSettings.StripeSettings, i: StripeSubscriptionInformations) =>
             implicit val stripeSettings: StripeSettings = s
-            syncConsumptionWithStripe(subscription, consumption)
+            syncConsumptionWithStripe(consumption, i)
           case _ =>
             FastFuture.successful(())
         }
-      }).value.map(_ => ())
+      }).value
+        .map(_ => AppLogger.debug("sync with third party ok"))
+        .map(_ => ())
+      case _ => FastFuture.successful(())
+    }
+
+
+  }
+
+  private def syncConsumptionWithStripe(consumption: ApiKeyConsumption, informations: StripeSubscriptionInformations)(implicit stripeSettings: StripeSettings) = {
+    AppLogger.debug("*** Sync with stripe ***")
+    AppLogger.debug(s"*** Sync ${consumption.id} - ${informations.meteredElementId} - ${consumption.hits}")
+
+    informations.meteredElementId match {
+      case Some(meteredElementId) =>
+        val body = Map(
+          "quantity" -> consumption.hits.toString,
+          "timestamp" -> (consumption.from.getMillis / 1000).toString
+        )
+
+        stripeClient(s"/v1/subscription_items/${meteredElementId}/usage_records")
+          .post(body)
       case None => FastFuture.successful(())
     }
   }
 
-  private def syncConsumptionWithStripe(apiSubscription: ApiSubscription, consumption: ApiKeyConsumption)(implicit stripeSettings: StripeSettings) = {
-
-    apiSubscription.thirdPartySubscriptionInformations match {
-      case Some(informations) => informations match {
-        case StripeSubscriptionInformations(_, _, meteredElementId) if meteredElementId.isDefined =>
-          val body = Map(
-            "quantity" -> consumption.hits.toString,
-            "timestamp" -> (consumption.from.getMillis / 1000).toString
-          )
-
-          stripeClient(s"/v1/subscription_items/${meteredElementId.get}/usage_records")
-            .post(body)
-      }
-
-      case None => FastFuture.successful(())
+  def deleteThirdPartySubscription(subscription: ApiSubscription, maybePaymentSettings: Option[PaymentSettings], maybeInfos: Option[ThirdPartySubscriptionInformations]): EitherT[Future, AppError, JsValue] = {
+    (maybePaymentSettings, maybeInfos) match {
+      case (Some(paymentSettings), Some(infos)) => for {
+        tenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant), AppError.TenantNotFound)
+        setting <- EitherT.fromOption[Future](tenant.thirdPartyPaymentSettings.find(_.id == paymentSettings.thirdPartyPaymentSettingsId), AppError.EntityNotFound("Third party payment settings"))
+        r <- (setting, infos) match {
+          case (s: ThirdPartyPaymentSettings.StripeSettings, i: StripeSubscriptionInformations) => deleteStripeSubscription(i)(s)
+          case _ => EitherT.left[JsValue](AppError.EntityConflict("payment settings").future())
+        }
+      } yield r
+      case _ => EitherT.pure[Future, AppError](Json.obj())
     }
   }
 
-  def deleteThirdPartySubscription(apiSubscription: ApiSubscription): EitherT[Future, AppError, JsValue] = {
-    for {
-      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(apiSubscription.tenant).findById(apiSubscription.api), AppError.ApiNotFound)
-      plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == apiSubscription.plan), AppError.PlanNotFound)
-      tenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(api.tenant), AppError.TenantNotFound)
-      settings <- EitherT.fromOption[Future](plan.paymentSettings.flatMap(s => tenant.thirdPartyPaymentSettings.find(_.id == s.thirdPartyPaymentSettingsId)), AppError.EntityNotFound("payment settings"))
-      result <- settings match {
-        case p: StripeSettings => deleteStripeSubscription(apiSubscription)(p)
-      }
-    } yield result
-  }
+  private def deleteStripeSubscription(informations: StripeSubscriptionInformations)(implicit stripeSettings: StripeSettings):EitherT[Future, AppError, JsValue] = {
+    AppLogger.debug(s"[PAYMENT CLIENT] :: delete stripe sub :: ${informations.subscriptionId}")
 
-  private def deleteStripeSubscription(apiSubscription: ApiSubscription)(implicit stripeSettings: StripeSettings): EitherT[Future, AppError, JsValue] = {
-    AppLogger.debug(s"[PAYMENT CLIENT] :: delete sub :: ${apiSubscription.id}")
-    apiSubscription.thirdPartySubscriptionInformations match {
-      case Some(informations) => informations match {
-        case StripeSubscriptionInformations(subscriptionId, _, _) =>
-          AppLogger.debug(s"[PAYMENT CLIENT] :: delete stripe sub :: $subscriptionId")
-          EitherT.liftF(stripeClient(s"/v1/subscriptions/$subscriptionId")
-            .delete()
-            .map(_.json))
-      }
-
-      case None => EitherT.left[JsValue](FastFuture.successful(AppError.EntityNotFound("stripe settings")))
-    }
+    EitherT.liftF(stripeClient(s"/v1/subscriptions/${informations.subscriptionId}")
+      .withBody(Map("prorate" -> "true", "invoice_now" -> "true"))
+      .delete()
+      .map(_.json))
   }
 
   def toggleStateThirdPartySubscription(apiSubscription: ApiSubscription): EitherT[Future, AppError, JsValue] = {

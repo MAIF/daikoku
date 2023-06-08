@@ -198,7 +198,9 @@ case class ApiKeyBilling(hits: Long, total: BigDecimal)
   override def asJson: JsValue = json.ApiKeyBillingFormat.writes(this)
 }
 
-sealed trait ThirdPartySubscriptionInformations
+sealed trait ThirdPartySubscriptionInformations {
+  def asJson: JsValue = json.ThirdPartySubscriptionInformationsFormat.writes(this)
+}
 
 object ThirdPartySubscriptionInformations {
   case class StripeSubscriptionInformations(

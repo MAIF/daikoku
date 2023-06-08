@@ -921,6 +921,7 @@ class ApiController(
 
       val maybeSessionId = ctx.request.getQueryString("session_id")
 
+
       (for {
         encryptedToken <- EitherT.fromOption[Future](ctx.request.getQueryString("token"), AppError.EntityNotFound("token from query"))
         token <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant))
@@ -2653,18 +2654,17 @@ class ApiController(
     implicit val mat: Materializer = env.defaultMaterializer
 
     Source(plans.toList)
-      .mapAsync(1)(
-        plan =>
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findNotDeleted(
-              Json.obj(
-                "api" -> api.id.asJson,
-                "plan" -> Json
-                  .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
-              )
+      .mapAsync(1)(plan =>
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant)
+          .findNotDeleted(
+            Json.obj(
+              "api" -> api.id.asJson,
+              "plan" -> Json
+                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
             )
-            .map(seq => (plan, seq)))
+          )
+          .map(seq => (plan, seq)))
       .via(apiService.deleteApiSubscriptionsAsFlow(tenant, api.name, user))
       .runWith(Sink.ignore)
       .recover {
@@ -4147,7 +4147,7 @@ class ApiController(
   def setupPayment(teamId: String, apiId: String, version: String, planId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
-        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+        AuditTrailEvent(s"@{user.name} has setup payment for plan @{plan.id} of api @{api.name}")
       )(teamId, ctx) { team =>
         val paymentSettingsId = (ctx.request.body \ "paymentSettings" \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat)
         val base = ctx.request.body.as(BasePaymentInformationFormat)
@@ -4171,6 +4171,11 @@ class ApiController(
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id.value == planId), AppError.PlanNotFound)
+          _ <- plan.paymentSettings match {
+            case Some(_) => EitherT.leftT[Future, Unit](AppError.EntityConflict("Payment,  already setup"))
+            case None => EitherT.pure[Future, AppError](())
+          }
           ratedPlan <- getRatedPlan(api, planId, base)
           paymentSettings <- paymentClient.createProduct(ctx.tenant, api, ratedPlan, paymentSettingsId)
 

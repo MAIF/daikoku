@@ -25,7 +25,7 @@
   </appender>
 
   <logger name="play" level="INFO" />
-  <logger name="application" level="INFO" />
+  <logger name="application" level="DEBUG" />
   <logger name="MongoDataStore" level="INFO" />
   <logger name="MongoTenantAwareRepo" level="INFO" />
   <logger name="CommonMongoRepo" level="INFO" />

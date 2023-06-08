@@ -1,6 +1,6 @@
 package jobs
 
-import akka.actor.Cancellable
+import akka.actor.{ActorSystem, Cancellable}
 import akka.http.scaladsl.util.FastFuture
 import cats.data.{EitherT, OptionT}
 import controllers.AppError
@@ -14,8 +14,8 @@ import play.api.Logger
 import play.api.libs.json._
 
 import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class QueueJob(
     env: Env,
@@ -202,7 +202,7 @@ class QueueJob(
       //todo: send notification & mail ?
       _ <- EitherT.liftF(apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
       _ <- EitherT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant, completed = true))
-      - <- EitherT.liftF(paymentClient.deleteThirdPartySubscription(subscription).value)
+      - <- paymentClient.deleteThirdPartySubscription(subscription, plan.paymentSettings, subscription.thirdPartySubscriptionInformations)
       _ <- EitherT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteByIdLogically(subscription.id))
       _ <- EitherT.liftF(deleteSubscriptionNotifications(subscription))
     } yield ()
@@ -275,22 +275,42 @@ class QueueJob(
 
 
   private def syncConsumption(o: Operation): Future[Unit] = {
-    //todo: use eitherT instead of OptionT
+    AppLogger.debug("*** SYNC CONSUmPTION AS OPERATION***")
+    AppLogger.debug(Json.prettyPrint(o.asJson))
+    AppLogger.debug("**********************************************")
+
+
+    val settingsAndInfos = o.payload.map(payload => (
+      (payload \ "paymentSettings").asOpt(json.PaymentSettingsFormat),
+      (payload \ "thirdPartySubscriptionInformations").asOpt(json.ThirdPartySubscriptionInformationsFormat)))
+
     (for {
       consumption <- OptionT(env.dataStore.consumptionRepo.forTenant(o.tenant).findByIdNotDeleted(o.itemId))
-      api <- OptionT(env.dataStore.apiRepo.forTenant(o.tenant).findByIdNotDeleted(consumption.api))
-      plan <- OptionT.fromOption[Future](api.possibleUsagePlans.find(_.id == consumption.plan))
-      _ <- OptionT.liftF(paymentClient.syncWithThirdParty(consumption, plan))
+      _ <- OptionT(Future.sequence(settingsAndInfos.map {
+        case (settings, informations) => paymentClient.syncWithThirdParty(consumption, settings, informations)
+      }.toIterable).map(_.headOption))
       _ <- OptionT.liftF(env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
     } yield ())
       .value.map(_ => ())
   }
 
   private def deleteThirdPartySubscription(o: Operation): Future[Unit] = {
+    AppLogger.debug("*** DELETE THiRD PartY SubSCRIPTion AS OPERATION***")
+    AppLogger.debug(Json.prettyPrint(o.asJson))
+    AppLogger.debug("**********************************************")
+
+    val settingsAndInfos = o.payload.map(payload => (
+      (payload \ "paymentSettings").asOpt(json.PaymentSettingsFormat),
+      (payload \ "thirdPartySubscriptionInformations").asOpt(json.ThirdPartySubscriptionInformationsFormat)))
+
+
     (for {
       _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(o.tenant).save(o.copy(status = OperationStatus.InProgress)))
       apiSubscription <- EitherT.fromOptionF(env.dataStore.apiSubscriptionRepo.forTenant(o.tenant).findById(o.itemId), AppError.EntityNotFound("api subscription"))
-      _ <- paymentClient.deleteThirdPartySubscription(apiSubscription)
+      _ <- settingsAndInfos match {
+        case Some((settings, informations)) => paymentClient.deleteThirdPartySubscription(apiSubscription, settings, informations)
+        case _ => EitherT.left[JsValue](AppError.EntityConflict("operation payload").future())
+      }
     } yield ()).value.map {
       case Left(value) =>
         AppLogger.error(s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}")
@@ -317,6 +337,13 @@ class QueueJob(
   //***************************
   //***************************
 
+  private def awaitF(duration: FiniteDuration)(implicit actorSystem: ActorSystem, ec: ExecutionContext): Future[Unit] = {
+    val p = Promise[Unit]
+    actorSystem.scheduler.scheduleOnce(duration) {
+      p.trySuccess(())
+    }
+    p.future
+  }
 
   def deleteFirstOperation(): Future[Unit] = {
     env.dataStore.operationRepo
@@ -342,7 +369,9 @@ class QueueJob(
             case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
               syncConsumption(operation)
             case (_, _) => FastFuture.successful(())
-          }).flatMap(_ => deleteFirstOperation())
+          })
+            .flatMap(_ => awaitF(1.second)(env.defaultActorSystem, env.defaultExecutionContext))
+            .flatMap(_ => deleteFirstOperation())
         case None =>
           FastFuture.successful(())
       }

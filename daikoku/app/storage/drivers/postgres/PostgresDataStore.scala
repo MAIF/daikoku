@@ -282,11 +282,12 @@ case class PostgresTenantCapableConsumptionRepo(
     }
 
     val (sql, params) = convertQuery(filter)
+    val selector = if (sql == "") "" else s"WHERE $sql "
 
     reactivePg
       .querySeq(
         s"SELECT content->>'clientId' as client_id, MAX(content->>'from') as max_from FROM ${rep.tableName} " +
-          s"WHERE $sql " +
+           selector +
           "GROUP BY content->>'clientId'",
         params) { row => Json
           .obj(

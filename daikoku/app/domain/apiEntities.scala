@@ -102,7 +102,7 @@ case class BillingDuration(value: Long, unit: BillingTimeUnit)
   def toDays: Long = unit match {
     case BillingTimeUnit.Day => value
     case BillingTimeUnit.Hour => 1L
-    case BillingTimeUnit.Month => Days.daysBetween(DateTime.now(), DateTime.now().plusMonths(1)).getDays.longValue
+    case BillingTimeUnit.Month => Days.daysBetween(DateTime.now(), DateTime.now().plusMonths(value.intValue)).getDays.longValue
     case BillingTimeUnit.Year => 235L
     case _ => 0L
   }

@@ -702,6 +702,7 @@ export const TeamApiPricings = (props: Props) => {
 
   const setupPayment = (plan: IUsagePlan) => {
     //FIXME: beware of update --> display a message to explain what user is doing !!
+    console.debug({planForEdition})
     return Services.setupPayment(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
         if (isError(response)) {

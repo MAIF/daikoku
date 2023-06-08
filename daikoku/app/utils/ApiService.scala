@@ -14,7 +14,7 @@ import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.PublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
-import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, _}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
@@ -772,9 +772,21 @@ class ApiService(env: Env,
         otoroshiSettings <- OptionT.fromOption[Future](plan.otoroshiTarget.map(_.otoroshiSettings).flatMap(id => tenant.otoroshiSettings.find(_.id == id)))
         subscriberTeam <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team))
         childs <- OptionT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
-        _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant))
+        _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant, completed = true))
         _ <- OptionT.liftF(deaggregateSubsAndDelete(subscription, childs, subscriberTeam)(otoroshiSettings))
-        _ <- OptionT.liftF(paymentClient.deleteThirdPartySubscription(apiSubscription = subscription).value)
+//        _ <- OptionT.liftF(paymentClient.deleteThirdPartySubscription(apiSubscription = subscription).value) do not delete before run sync with third party
+        _ <- OptionT.liftF(env.dataStore.operationRepo.forTenant(tenant)
+          .save(Operation(
+            DatastoreId(IdGenerator.token(24)),
+            tenant = tenant.id,
+            itemId = subscription.id.value,
+            itemType = ItemType.ThirdPartySubscription,
+            action = OperationAction.Delete,
+            payload = Json.obj(
+              "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
+              "thirdPartySubscriptionInformations" -> subscription.thirdPartySubscriptionInformations.map(_.asJson).getOrElse(JsNull).as[JsValue]
+            ).some
+          )))
         _ <- OptionT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(notification))
       } yield ()).value
     }

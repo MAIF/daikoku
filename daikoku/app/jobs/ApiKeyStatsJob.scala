@@ -6,6 +6,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.BillingTimeUnit.{Day, Hour, Month, Year}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
@@ -238,7 +239,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
       Source(
         Days
-          .daysBetween(from, DateTime.now())
+          .daysBetween(from.withTimeAtStartOfDay(), DateTime.now())
           .getDays - 1 to -1 by -1
       ).map(nbDay => {
         val from = DateTime.now().minusDays(nbDay + 1).withTimeAtStartOfDay()
@@ -250,7 +251,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
         (from, to)
       }).mapAsync(1) { case (from, to) =>
-        val isCompleteConsumption = completed || Days.daysBetween(from, to).getDays == 1
+        val isCompleteConsumption = completed || Days.daysBetween(from.withTimeAtStartOfDay(), to).getDays == 1
 
         val id = maybeLastConsumption
           .map {
@@ -305,7 +306,11 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                   tenant = tenant.id,
                   itemId = id.value,
                   itemType = ItemType.ApiKeyConsumption,
-                  action = OperationAction.Sync
+                  action = OperationAction.Sync,
+                  payload = Json.obj(
+                    "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
+                    "thirdPartySubscriptionInformations" -> subscription.thirdPartySubscriptionInformations.map(_.asJson).getOrElse(JsNull).as[JsValue]
+                  ).some
                 ))
             case ApiKeyConsumptionState.InProgress => FastFuture.successful(())
           }
