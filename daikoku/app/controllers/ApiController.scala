@@ -944,6 +944,22 @@ class ApiController(
     }
   }
 
+  def abortProcess() = DaikokuAction.async { ctx =>
+    UberPublicUserAccess(
+      AuditTrailEvent(s"Subscription process has been refused by @{validator.name}"))(ctx) {
+      implicit val c = ctx
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](ctx.request.getQueryString("token"), AppError.EntityNotFound("token from query"))
+        token <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant))
+        validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
+          .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.stepValidatorRepo.forTenant(ctx.tenant).deleteByIdLogically(validator.id))
+      } yield Redirect("/apis"))
+        .leftMap(_.render())
+        .merge
+    }
+  }
+
   def declineProcess() = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(
       AuditTrailEvent(s"Subscription process has been refused by @{validator.name}"))(ctx) {
@@ -1022,6 +1038,7 @@ class ApiController(
           "$set" -> Json.obj("status" -> json.NotificationStatusFormat.writes(NotificationStatus.Accepted()))
         )))
       result <- apiService.runSubscriptionProcess(demand.id, tenant, maybeSessionId = maybeSessionId)
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.stepValidatorRepo.forTenant(tenant).deleteById(validator.id))
     } yield result
   }
 

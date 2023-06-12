@@ -339,6 +339,13 @@ class PaymentClient(
 
     createAndGetStripeClient(team)
       .flatMap(stripeCustomer => {
+        val callback = from.getOrElse(
+            env.getDaikokuUrl(
+              tenant,
+              s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing"
+            )
+        )
+
         val baseBody = Map(
           "metadata[tenant]" -> subscriptionDemand.tenant.value,
           "metadata[api]" -> subscriptionDemand.api.value,
@@ -355,10 +362,10 @@ class PaymentClient(
             tenant,
             s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" //todo: add callback
           ),
-          "cancel_url" -> from.getOrElse(env.getDaikokuUrl(
+          "cancel_url" -> env.getDaikokuUrl(
             tenant,
-            s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing"
-          ))
+            s"/api/subscription/_abort?token=$cipheredValidationToken&callback=$callback"
+          )
         )
 
         val body = settings.priceIds.additionalPriceId
@@ -490,7 +497,9 @@ class PaymentClient(
     AppLogger.debug(s"[PAYMENT CLIENT] :: delete stripe sub :: ${informations.subscriptionId}")
 
     EitherT.liftF(stripeClient(s"/v1/subscriptions/${informations.subscriptionId}")
-      .withBody(Map("prorate" -> "true", "invoice_now" -> "true"))
+      .withBody(Map(
+//        "prorate" -> "true",
+        "invoice_now" -> "true"))
       .delete()
       .map(_.json))
   }

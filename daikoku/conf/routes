@@ -93,6 +93,7 @@ POST    /api/apis/:apiId/plan/:planId/team/:teamId/_subscribe           fr.maif.
 GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId   fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version, planId: Option[String] ?= None)
 DELETE  /api/subscriptions/:subscriptionId/teams/:teamId/_delete fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiSubscription(teamId, subscriptionId)
 GET     /api/subscription/_validate                             fr.maif.otoroshi.daikoku.ctrls.ApiController.validateProcess()
+GET     /api/subscription/_abort                                fr.maif.otoroshi.daikoku.ctrls.ApiController.abortProcess()
 GET     /api/subscription/_decline                              fr.maif.otoroshi.daikoku.ctrls.ApiController.declineProcess()
 GET     /api/subscription/team/:teamId/demands/:demandId/_run   fr.maif.otoroshi.daikoku.ctrls.ApiController.runProcess(teamId, demandId)
 DELETE  /api/subscription/team/:teamId/demands/:demandId/_cancel   fr.maif.otoroshi.daikoku.ctrls.ApiController.cancelProcess(teamId, demandId)
