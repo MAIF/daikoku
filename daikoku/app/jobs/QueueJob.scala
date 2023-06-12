@@ -322,6 +322,30 @@ class QueueJob(
     }.flatten.map(_ => ())
   }
 
+  private def deleteThirdPartyProduct(o: Operation): Future[Unit] = {
+    AppLogger.debug("*** DELETE THiRD PartY product AS OPERATION***")
+    AppLogger.debug(Json.prettyPrint(o.asJson))
+    AppLogger.debug("**********************************************")
+
+    val maybeSettings: Option[PaymentSettings] = o.payload.flatMap(settings => (settings \ "paymentSettings").asOpt(json.PaymentSettingsFormat))
+
+    (for {
+      _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(o.tenant).save(o.copy(status = OperationStatus.InProgress)))
+      _ <- maybeSettings match {
+        case Some(settings) => paymentClient.deleteThirdPartyProduct(settings, o.tenant)
+        case _ => EitherT.left[JsValue](AppError.EntityConflict("operation payload").future())
+      }
+    } yield ()).value.map {
+      case Left(value) =>
+        AppLogger.error(s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}")
+        env.dataStore.operationRepo
+          .forTenant(o.tenant)
+          .save(o.copy(status = OperationStatus.Error))
+
+      case Right(_) => env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+    }.flatten.map(_ => ())
+  }
+
 //  private def deleteThirdPartyProduct(o: Operation): Future[Unit] = {
 //    env.dataStore.operationRepo.forTenant(o.tenant).save(o.copy(status = OperationStatus.InProgress))
 //      .flatMap(_ => o.payload match {
@@ -366,6 +390,8 @@ class QueueJob(
               deleteUser(operation)
             case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
               deleteThirdPartySubscription(operation)
+            case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>
+              deleteThirdPartyProduct(operation)
             case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
               syncConsumption(operation)
             case (_, _) => FastFuture.successful(())

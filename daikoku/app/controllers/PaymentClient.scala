@@ -17,7 +17,6 @@ import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 class PaymentClient(
     env: Env
@@ -79,16 +78,50 @@ class PaymentClient(
         case Some(settings) => settings match {
           case s: StripeSettings =>
             implicit val stripeSettings: StripeSettings = s
-            deleteStripeProduct(paymentSettings)
+            archiveStripeProduct(paymentSettings)
         }
         case None => EitherT.leftT[Future, JsValue](AppError.ThirdPartyPaymentSettingsNotFound)
       })
   }
 
-  private def deleteStripeProduct(paymentSettings: PaymentSettings)(implicit settings: StripeSettings): EitherT[Future, AppError, JsValue] = {
+  private def archiveStripePrices(paymentSettings: PaymentSettings)(implicit settings: StripeSettings): EitherT[Future, AppError, JsValue] = {
+    paymentSettings match {
+      case PaymentSettings.Stripe(_, _, priceIds) =>
+
+        for {
+          baseResponse <- EitherT(stripeClient(s"/v1/prices/${priceIds.basePriceId}").post(Map("active" -> "false")).map {
+            case response if response.status >= 400 => Left(AppError.PaymentError(response.json.as[JsObject]))
+            case response => Right(response.json)
+          })
+          additionalResponse <- priceIds.additionalPriceId match {
+            case Some(additionalPriceId) => EitherT(stripeClient(s"/v1/prices/$additionalPriceId").post(Map("active" -> "false")).map {
+              case response if response.status >= 400 => Left[AppError, JsValue](AppError.PaymentError(response.json.as[JsObject]))
+              case response => Right[AppError, JsValue](response.json)
+            })
+            case None => EitherT.pure[Future, AppError](Json.obj().as[JsValue])
+          }
+        } yield Json.obj(
+          "basePrice" -> baseResponse,
+          "additionnalPrice" -> additionalResponse,
+        )
+    }
+  }
+
+  private def archiveStripeProduct(paymentSettings: PaymentSettings)(implicit settings: StripeSettings): EitherT[Future, AppError, JsValue] = {
     paymentSettings match {
       case PaymentSettings.Stripe(_, productId, _) =>
-        EitherT.liftF(stripeClient(s"/v1/products/$productId").delete().map(_.json))
+        for {
+          pricesResponse <- archiveStripePrices(paymentSettings: PaymentSettings)
+          productResponse <- EitherT(stripeClient(s"/v1/products/$productId").post(Map("active" -> "false")).map {
+            case response if response.status >= 400 => Left[AppError, JsValue](AppError.PaymentError(response.json.as[JsObject]))
+            case response => Right[AppError, JsValue](response.json)
+          })
+        } yield Json.obj(
+          "prices" -> pricesResponse,
+          "product" -> productResponse,
+        )
+
+
     }
   }
 
