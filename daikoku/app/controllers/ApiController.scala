@@ -2130,14 +2130,24 @@ class ApiController(
                   )
                   .map(subs => (plan, subs))
               })
-              .via(
-                apiService.deleteApiSubscriptionsAsFlow(
-                  tenant = ctx.tenant,
-                  apiOrGroupName = api.name,
-                  user = ctx.user
-                )
-              )
-              .runWith(Sink.ignore)
+              .via(apiService.deleteApiSubscriptionsAsFlow(
+                tenant = ctx.tenant,
+                apiOrGroupName = api.name,
+                user = ctx.user
+              ))
+              .runWith(Sink.fold(Set.empty[UsagePlan])((set, plan) => set + plan))
+              .flatMap(plans => env.dataStore.operationRepo.forTenant(ctx.tenant).insertMany(
+                plans.map(plan => Operation(
+                  DatastoreId(IdGenerator.token(24)),
+                  tenant = ctx.tenant.id,
+                  itemId = plan.id.value,
+                  itemType = ItemType.ThirdPartyProduct,
+                  action = OperationAction.Delete,
+                  payload = Json.obj(
+                    "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
+                  ).some
+                )).toSeq
+              ))
               .flatMap(_ =>
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant.id)

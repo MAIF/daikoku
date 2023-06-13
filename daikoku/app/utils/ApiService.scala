@@ -720,7 +720,7 @@ class ApiService(env: Env,
     } yield apikey).value
   }
 
-  def deleteApiSubscriptionsAsFlow(tenant: Tenant, apiOrGroupName: String, user: User): Flow[(UsagePlan, Seq[ApiSubscription]), Any, NotUsed] = Flow[(UsagePlan, Seq[ApiSubscription])]
+  def deleteApiSubscriptionsAsFlow(tenant: Tenant, apiOrGroupName: String, user: User): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] = Flow[(UsagePlan, Seq[ApiSubscription])]
     .map { case (plan, subscriptions) =>
       subscriptions.map(subscription => {
         (plan, subscription, Notification(
@@ -774,7 +774,7 @@ class ApiService(env: Env,
         childs <- OptionT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
         _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant, completed = true))
         _ <- OptionT.liftF(deaggregateSubsAndDelete(subscription, childs, subscriberTeam)(otoroshiSettings))
-//        _ <- OptionT.liftF(paymentClient.deleteThirdPartySubscription(apiSubscription = subscription).value) do not delete before run sync with third party
+        //        _ <- OptionT.liftF(paymentClient.deleteThirdPartySubscription(apiSubscription = subscription).value) do not delete before run sync with third party
         _ <- OptionT.liftF(env.dataStore.operationRepo.forTenant(tenant)
           .save(Operation(
             DatastoreId(IdGenerator.token(24)),
@@ -789,6 +789,7 @@ class ApiService(env: Env,
           )))
         _ <- OptionT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(notification))
       } yield ()).value
+        .map(_ => plan)
     }
 
   def notifyApiSubscription(demandId: SubscriptionDemandId,
