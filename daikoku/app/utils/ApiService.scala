@@ -1,9 +1,10 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.headers.Language
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
@@ -774,23 +775,54 @@ class ApiService(env: Env,
         childs <- OptionT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
         _ <- OptionT.liftF(apiKeyStatsJob.syncForSubscription(subscription, tenant, completed = true))
         _ <- OptionT.liftF(deaggregateSubsAndDelete(subscription, childs, subscriberTeam)(otoroshiSettings))
-        //        _ <- OptionT.liftF(paymentClient.deleteThirdPartySubscription(apiSubscription = subscription).value) do not delete before run sync with third party
-        _ <- OptionT.liftF(env.dataStore.operationRepo.forTenant(tenant)
-          .save(Operation(
-            DatastoreId(IdGenerator.token(24)),
-            tenant = tenant.id,
-            itemId = subscription.id.value,
-            itemType = ItemType.ThirdPartySubscription,
-            action = OperationAction.Delete,
-            payload = Json.obj(
-              "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
-              "thirdPartySubscriptionInformations" -> subscription.thirdPartySubscriptionInformations.map(_.asJson).getOrElse(JsNull).as[JsValue]
-            ).some
-          )))
+        _ <- subscription.thirdPartySubscriptionInformations match {
+          case Some(thirdPartySubscriptionInformations) => OptionT.liftF(env.dataStore.operationRepo.forTenant(tenant)
+            .save(Operation(
+              DatastoreId(IdGenerator.token(24)),
+              tenant = tenant.id,
+              itemId = subscription.id.value,
+              itemType = ItemType.ThirdPartySubscription,
+              action = OperationAction.Delete,
+              payload = Json.obj(
+                "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
+                "thirdPartySubscriptionInformations" -> thirdPartySubscriptionInformations.asJson
+              ).some
+            )))
+          case None => OptionT.pure[Future](())
+        }
         _ <- OptionT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(notification))
       } yield ()).value
         .map(_ => plan)
     }
+
+  def deleteApiPlansSubscriptions(
+                                   plans: Seq[UsagePlan],
+                                   api: Api,
+                                   tenant: Tenant,
+                                   user: User
+                                 ): Future[Done] = {
+    implicit val mat: Materializer = env.defaultMaterializer
+
+    Source(plans.toList)
+      .mapAsync(1)(plan =>
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant)
+          .findNotDeleted(
+            Json.obj(
+              "api" -> api.id.asJson,
+              "plan" -> Json
+                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
+            )
+          )
+          .map(seq => (plan, seq)))
+      .via(deleteApiSubscriptionsAsFlow(tenant, api.name, user))
+      .runWith(Sink.ignore)
+      .recover {
+        case e =>
+          AppLogger.error(s"Error while deleting api subscriptions", e)
+          Done
+      }
+  }
 
   def notifyApiSubscription(demandId: SubscriptionDemandId,
                             stepId: SubscriptionDemandStepId,

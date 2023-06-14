@@ -7,7 +7,6 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.ApiService
 import org.joda.time.DateTime
 import play.api.Logger
@@ -52,6 +51,10 @@ class QueueJob(
   //*************************
 
   private def deleteApiNotifications(api: Api): Future[Boolean] = {
+    logger.debug("*** DeLEte api notifications AS OPERATION***")
+    logger.debug(Json.prettyPrint(api.asJson))
+    logger.debug("**********************************************")
+
     env.dataStore.notificationRepo
       .forTenant(api.tenant)
       .deleteLogically(Json.obj(
@@ -150,12 +153,16 @@ class QueueJob(
   }
 
   private def deleteApi(o: Operation): Future[Unit] = {
+    logger.debug("*** Delete APi AS OPERATION***")
+    logger.debug(Json.prettyPrint(o.asJson))
+    logger.debug("**********************************************")
+
     {
       (for {
         api <- OptionT(
           env.dataStore.apiRepo
             .forTenant(o.tenant)
-            .findByIdNotDeleted(o.itemId))
+            .findById(o.itemId))
         _ <- OptionT.liftF(
           env.dataStore.operationRepo
             .forTenant(o.tenant)
@@ -275,9 +282,9 @@ class QueueJob(
 
 
   private def syncConsumption(o: Operation): Future[Unit] = {
-    AppLogger.debug("*** SYNC CONSUmPTION AS OPERATION***")
-    AppLogger.debug(Json.prettyPrint(o.asJson))
-    AppLogger.debug("**********************************************")
+    logger.debug("*** SYNC CONSUmPTION AS OPERATION***")
+    logger.debug(Json.prettyPrint(o.asJson))
+    logger.debug("**********************************************")
 
 
     val settingsAndInfos = o.payload.map(payload => (
@@ -295,9 +302,9 @@ class QueueJob(
   }
 
   private def deleteThirdPartySubscription(o: Operation): Future[Unit] = {
-    AppLogger.debug("*** DELETE THiRD PartY SubSCRIPTion AS OPERATION***")
-    AppLogger.debug(Json.prettyPrint(o.asJson))
-    AppLogger.debug("**********************************************")
+    logger.debug("*** DELETE THiRD PartY SubSCRIPTion AS OPERATION***")
+    logger.debug(Json.prettyPrint(o.asJson))
+    logger.debug("**********************************************")
 
     val settingsAndInfos = o.payload.map(payload => (
       (payload \ "paymentSettings").asOpt(json.PaymentSettingsFormat),
@@ -313,7 +320,7 @@ class QueueJob(
       }
     } yield ()).value.map {
       case Left(value) =>
-        AppLogger.error(s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}")
+        logger.error(s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}")
         env.dataStore.operationRepo
           .forTenant(o.tenant)
           .save(o.copy(status = OperationStatus.Error))
@@ -323,9 +330,9 @@ class QueueJob(
   }
 
   private def deleteThirdPartyProduct(o: Operation): Future[Unit] = {
-    AppLogger.debug("*** DELETE THiRD PartY product AS OPERATION***")
-    AppLogger.debug(Json.prettyPrint(o.asJson))
-    AppLogger.debug("**********************************************")
+    logger.debug("*** DELETE THiRD PartY product AS OPERATION***")
+    logger.debug(Json.prettyPrint(o.asJson))
+    logger.debug("**********************************************")
 
     val maybeSettings: Option[PaymentSettings] = o.payload.flatMap(settings => (settings \ "paymentSettings").asOpt(json.PaymentSettingsFormat))
 
@@ -337,7 +344,7 @@ class QueueJob(
       }
     } yield ()).value.map {
       case Left(value) =>
-        AppLogger.error(s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}")
+        logger.error(s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}")
         env.dataStore.operationRepo
           .forTenant(o.tenant)
           .save(o.copy(status = OperationStatus.Error))

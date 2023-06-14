@@ -2672,35 +2672,6 @@ class ApiController(
       }
     }
 
-  def deleteApiPlansSubscriptions(
-      plans: Seq[UsagePlan],
-      api: Api,
-      tenant: Tenant,
-      user: User
-  ): Future[Done] = {
-    implicit val mat: Materializer = env.defaultMaterializer
-
-    Source(plans.toList)
-      .mapAsync(1)(plan =>
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> api.id.asJson,
-              "plan" -> Json
-                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
-            )
-          )
-          .map(seq => (plan, seq)))
-      .via(apiService.deleteApiSubscriptionsAsFlow(tenant, api.name, user))
-      .runWith(Sink.ignore)
-      .recover {
-        case e =>
-          AppLogger.error(s"Error while deleting api subscriptions", e)
-          Done
-      }
-  }
-
   def getApiSubscriptions(teamId: String, apiId: String, version: String) =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
@@ -4162,7 +4133,7 @@ class ApiController(
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
           plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id.value == planId), AppError.PlanNotFound)
           updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(pp => pp.id.value != planId))
-          _ <- EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, ctx.tenant, ctx.user))
+          _ <- EitherT.liftF(apiService.deleteApiPlansSubscriptions(Seq(plan), api, ctx.tenant, ctx.user))
           _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
           _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(ctx.tenant).save(
             Operation(

@@ -402,7 +402,7 @@ class TeamController(DaikokuAction: DaikokuAction,
 
         val value: EitherT[Future, AppError, Unit] = team.`type` match {
           case TeamType.Admin => EitherT.leftT(AppError.ForbiddenAction)
-          case _              => deletionService.deleteTeamByQueue(team.id, ctx.tenant.id)
+          case _              => deletionService.deleteTeamByQueue(team.id, ctx.tenant.id, ctx.user)
         }
 
         value
