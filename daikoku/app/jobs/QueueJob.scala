@@ -115,6 +115,15 @@ class QueueJob(
       ))
   }
 
+  private def deleteThirdPartyPaymentClient(team: Team) = {
+    env.dataStore.tenantRepo.findById(team.tenant).flatMap {
+      case Some(tenant) => Future.sequence(tenant.thirdPartyPaymentSettings.map {
+        case p: ThirdPartyPaymentSettings.StripeSettings => paymentClient.deleteStripeClient(team)(p)
+      })
+      case None => FastFuture.successful(())
+    }
+  }
+
   private def deleteUserNotifications(user: User,
                                       tenant: TenantId): Future[Boolean] = {
     env.dataStore.notificationRepo
@@ -239,6 +248,7 @@ class QueueJob(
       _ <- OptionT.liftF(
         env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
       _ <- OptionT.liftF(deleteTeamNotifications(team))
+//      _ <- OptionT.liftF(deleteThirdPartyPaymentClient(team))
     } yield ()).value
       .map(_ =>
         logger.debug(

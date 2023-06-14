@@ -564,6 +564,25 @@ class PaymentClient(
 
     }
   }
+
+  def deleteStripeClient(team: Team)(implicit stripeSettings: StripeSettings): Future[Unit] = {
+    val bodySearch = Map(
+        "query" -> s"metadata['daikoku_id']:'${team.id.value}'"
+      )
+
+    stripeClient("/v1/customers/search")
+        .withBody(bodySearch)
+        .get()
+        .map(_.json)
+        .map(r => (r \ "data").as[JsArray])
+        .map(_.value)
+        .flatMap {
+          case seq if seq.isEmpty => FastFuture.successful(())
+          case seq => stripeClient(s"/v1/customers/${(seq.head\"id").as[CustomerId]}").delete().map(_ => ())
+        }
+  }
+
+
   def getStripeCustomer(team: Team)(implicit stripeSettings: StripeSettings): EitherT[Future, AppError, CustomerId] = {
     if (!team.verified) {
       EitherT.leftT(AppError.Unauthorized)
