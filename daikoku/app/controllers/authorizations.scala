@@ -124,7 +124,7 @@ object authorizations {
     def _UberPublicUserAccess[T, B](audit: AuditEvent)(
         ctx: DaikokuActionContext[T])(f: => Future[B])(
         implicit ec: ExecutionContext,
-        env: Env): Future[Either[B, AppError]] = {
+        env: Env): Future[Either[AppError, B]] = {
       if (ctx.user.isDaikokuAdmin) {
         f.andThen {
             case _ =>
@@ -136,7 +136,7 @@ object authorizations {
                 ctx.ctx,
                 AuthorizationLevel.AuthorizedDaikokuAdmin)
           }
-          .flatMap(f => FastFuture.successful(Left(f)))
+          .flatMap(f => FastFuture.successful(Right(f)))
       } else if (ctx.user.tenants.contains(ctx.tenant.id)) {
         f.andThen {
             case _ =>
@@ -147,7 +147,7 @@ object authorizations {
                                         ctx.ctx,
                                         AuthorizationLevel.AuthorizedUberPublic)
           }
-          .flatMap(f => FastFuture.successful(Left(f)))
+          .flatMap(f => FastFuture.successful(Right(f)))
       } else {
         audit.logTenantAuditEvent(ctx.tenant,
                                   ctx.user,
@@ -156,7 +156,7 @@ object authorizations {
                                   ctx.ctx,
                                   AuthorizationLevel.NotAuthorized)
 
-        FastFuture.successful(Right(Unauthorized))
+        FastFuture.successful(Left(Unauthorized))
       }
     }
 
@@ -166,8 +166,8 @@ object authorizations {
         env: Env): Future[Result] = {
       _UberPublicUserAccess(audit)(ctx)(f)
         .map {
-          case Left(value)  => value
-          case Right(value) => AppError.render(value)
+          case Right(value)  => value
+          case Left(value) => AppError.render(value)
         }
     }
 
@@ -256,7 +256,7 @@ object authorizations {
     def _TenantAdminAccessTenant[T, B](audit: AuditEvent)(
         ctx: DaikokuActionContext[T])(f: => Future[B])(
         implicit ec: ExecutionContext,
-        env: Env): Future[Either[AppError,B]] = {
+        env: Env): Future[Either[AppError, B]] = {
       val tenant = ctx.tenant
       val session = UserSession(
         id = DatastoreId(BSONObjectID.generate().stringify),
@@ -581,8 +581,8 @@ object authorizations {
         env: Env): Future[Result] = {
       _TeamMemberOnly(teamId, audit)(ctx)(f)
         .map {
-          case Right(value) => value
-          case Left(value)  => AppError.render(value)
+          case Right(value)  => value
+          case Left(error) => AppError.render(error)
         }
     }
 

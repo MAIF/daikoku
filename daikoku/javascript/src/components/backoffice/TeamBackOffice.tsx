@@ -1,10 +1,12 @@
-import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
+import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
+
 import { useTeamBackOffice } from '../../contexts';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
+import { IState, IStateError, ITeamSimple } from '../../types';
 import {
   TeamApi,
   TeamApiGroup,
@@ -17,9 +19,9 @@ import {
   TeamConsumption,
   TeamEdit,
   TeamIncome,
-  TeamMembers,
+  TeamMembers
 } from '../backoffice';
-import { IState, IStateError, ITeamSimple } from '../../types';
+import { LastDemands, LastDemandsExt } from './widgets';
 
 const BackOfficeContent = (props) => {
   return (
@@ -33,12 +35,16 @@ type TeamHome = ITeamSimple & {
   subscriptionsCount: number
   notificationCount: number
 }
+
+
+
 const TeamBackOfficeHome = () => {
   const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   useTeamBackOffice(currentTeam);
 
   const { Translation } = useContext(I18nContext);
   const [team, setTeam] = useState<TeamHome>();
+  const [mode, setMode] = useState<'producer' | 'consumer'>('consumer');
 
   useEffect(() => {
     Services.teamHome(currentTeam._id)
@@ -53,69 +59,27 @@ const TeamBackOfficeHome = () => {
 
   return (<div className="row">
     <div className="col">
-      <h1>
-        {currentTeam.name}
-        <a className="ms-1 btn btn-sm btn-access-negative" title="View this Team" href={`/${currentTeam._humanReadableId}`}>
-          <i className="fas fa-eye"></i>
-        </a>
-      </h1>
-      <div className="d-flex justify-content-center align-items-center col-12 mt-5">
-        <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
-          <Link to={`/${currentTeam._humanReadableId}/settings/apis`} className="home-tile">
-            <span className="home-tile-number">{team.apisCount}</span>
-            <span className="home-tile-text">
-              <Translation i18nkey="apis published" count={team.apisCount}>
-                apis published
-              </Translation>
-            </span>
-          </Link>
-          <Link to={`/${currentTeam._humanReadableId}/settings/apikeys`} className="home-tile">
-            <span className="home-tile-number">{team.subscriptionsCount}</span>
-            <span className="home-tile-text">
-              <Translation i18nkey="apis subcriptions" count={team.subscriptionsCount}>
-                apis subcriptions
-              </Translation>
-            </span>
-          </Link>
-          <Link
-            to={currentTeam.type === 'Personal' ? '#' : `/${currentTeam._humanReadableId}/settings/members`}
-            className="home-tile">
-            {currentTeam.type !== 'Personal' ? (<>
-              <span className="home-tile-number">{team.users.length}</span>
-              <span className="home-tile-text">
-                <Translation i18nkey="members" count={team.users.length}>
-                  members
-                </Translation>
-              </span>
-            </>) : (<>
-              <span className="home-tile-number">{1}</span>
-              <span className="home-tile-text">
-                <Translation i18nkey="members" count={1}>
-                  members
-                </Translation>
-              </span>
-            </>)}
-          </Link>
-          <Link to={'/notifications'} className="home-tile">
-            <span className="home-tile-number">{team.notificationCount}</span>
-            <span className="home-tile-text">
-              <Translation i18nkey="unread notifications" count={team.notificationCount}>
-                unread notifications
-              </Translation>
-            </span>
-          </Link>
-        </div>
+      <div className='d-flex flex-row justify-content-center gap-1'>
+        <button className={classNames('btn btn-outline-primary', { active: mode === 'producer' })} onClick={() => setMode('producer')}>Producer</button>
+        <button className={classNames('btn btn-outline-primary', { active: mode === 'consumer' })} onClick={() => setMode('consumer')}>Consumer</button>
+      </div>
+      <div className="col-12 mt-5 tbo__dasboard">
+        {mode === 'producer' && <ProducerDashboard />}
+        {mode === 'consumer' && <ConsumerDashboard />}
       </div>
     </div>
   </div>);
 };
 
+
+
+
+
+
 type TeamBackOfficeProps = {
   isLoading: boolean
 }
-export const TeamBackOffice = ({
-  isLoading,
-}: TeamBackOfficeProps) => {
+export const TeamBackOffice = ({ isLoading }: TeamBackOfficeProps) => {
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const error = useSelector<IState, IStateError>((s) => s.error);
 
@@ -161,3 +125,27 @@ export const TeamBackOffice = ({
     </div>
   );
 };
+
+type ProducerDashboardType = {
+
+}
+const ProducerDashboard = (props: ProducerDashboardType) => {
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  return (
+    <>
+      <LastDemandsExt team={currentTeam} />
+    </>
+  )
+}
+
+type ConsumerDashboardType = {
+
+}
+const ConsumerDashboard = (props: ConsumerDashboardType) => {
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  return (
+    <>
+      <LastDemands team={currentTeam} />
+    </>
+  )
+}

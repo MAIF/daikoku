@@ -1,5 +1,6 @@
 package fr.maif.otoroshi.daikoku.domain
 
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -71,6 +72,9 @@ case class User(
         .getOrElse(JsNull)
         .as[JsValue]
     )
+  }
+  def asNotificationSender: NotificationSender = {
+    NotificationSender(this.name, this.email, this.id.some)
   }
 }
 

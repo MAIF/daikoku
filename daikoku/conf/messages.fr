@@ -82,3 +82,18 @@ mail.create.team.token.body=Bonjour,\
 <br/>\
 Vous devez vérifier votre mail pour l'équipe [team].\
 <a href="[link]">Vérifier</a>
+mail.subscription.validation.title = Validation de souscription
+mail.subscription.validation.body = Bonjour,\
+    <br/>\
+    Quelqu'un voudrait souscrire a l'API [apiName],\
+    <br>\
+    <div>\
+    [user] :\
+    <br>\
+    [body]\
+    </div>\
+<a href="[urlAccept]">Accept</a> or <a href="[urlDecline]">Reject</a>
+mail.checkout.title = Un paiement en attente
+mail.checkout.body = Votre demande de souscription pour l'api [api.name] et le plan [api.plan] a été accepté\
+Vous pouvez effectuer maintenant le reglement.\
+Vous pouvez finaliser votre demande : <a href="[link]">Reglement</a>

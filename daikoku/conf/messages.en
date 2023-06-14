@@ -82,3 +82,18 @@ mail.create.team.token.body=Hello,\
 <br/>\
 You need to verify your mail for the team [team].\
 <a href="[link]">Verify</a>
+mail.subscription.validation.title = Validate a subscription
+mail.subscription.validation.body = Hello,\
+    <br/>\
+    Somebody want to subscribe your API,\
+    <br>\
+    <div>\
+    [user] :\
+    <br>\
+    [body]\
+    </div>\
+<a href="[urlAccept]">Accept</a> or <a href="[urlDecline]">Reject</a>
+mail.checkout.title = You can checkout your subscription
+mail.checkout.body = Your subscription demand for [api.name]/[api.plan] has been accepted\
+you can now checkout.\
+please click the following link to <a href="[link]">Checkout</a>

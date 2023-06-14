@@ -85,7 +85,6 @@ object TenantHelper {
     env.config.tenantProvider match {
       case TenantProvider.Header => {
         val tenantId = TenantHelper.extractTenantId(request)(env)
-        AppLogger.warn(tenantId.value)
         env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
           case None =>
             Errors.craftResponseResult("Tenant does not exists (1)",

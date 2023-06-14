@@ -3,28 +3,21 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  TeamAdminOnly,
-  TeamApiKeyAction
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, TeamApiKeyAction}
 import fr.maif.otoroshi.daikoku.domain.OtoroshiSettings
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import jobs.ApiKeyStatsJob
 import org.joda.time.DateTime
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ConsumptionController(DaikokuAction: DaikokuAction,
                             env: Env,
                             cc: ControllerComponents,
+                            paymentClient: PaymentClient,
                             otoroshiClient: OtoroshiClient,
                             apiKeyStatsJob: ApiKeyStatsJob)
     extends AbstractController(cc) {
@@ -381,27 +374,44 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
 
   def billings(teamId: String,
                from: Option[Long],
-               to: Option[Long]): Action[AnyContent] = DaikokuAction.async {
+               to: Option[Long]): Action[AnyContent] = DaikokuAction.async { ctx =>
+    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has accessed to team billing for @{team.name}"))(teamId, ctx) { team =>
+      val fromTimestamp = from.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+      val toTimestamp = to.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+
+      env.dataStore.consumptionRepo
+        .getLastConsumptionsForTenant(
+          ctx.tenant.id,
+          Json.obj(
+            "team" -> team.id.value,
+            "from" -> Json.obj("$gte" -> fromTimestamp),
+            "to" -> Json.obj("$lte" -> toTimestamp))
+        )
+        .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
+    }
+  }
+
+  def invoices(teamId: String,
+               api: String,
+               plan: String): Action[AnyContent] = DaikokuAction.async {
     ctx =>
       TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed to team billing for @{team.name}"))(teamId,
-                                                                        ctx) {
-        team =>
-          val fromTimestamp = from.getOrElse(
-            DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
-          val toTimestamp = to.getOrElse(
-            DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+        s"@{user.name} has accessed to team invoices for @{team.name}"))(teamId, ctx) { team =>
 
-          env.dataStore.consumptionRepo
-            .getLastConsumptionsForTenant(
-              ctx.tenant.id,
-              Json.obj("team" -> team.id.value,
-                       "from" -> Json.obj("$gte" -> fromTimestamp,
-                                          "$lte" -> toTimestamp),
-                       "to" -> Json.obj("$gte" -> fromTimestamp,
-                                        "$lte" -> toTimestamp))
-            )
-            .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
+        val callback = ctx.request.getQueryString("callback").getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis"))
+        env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(api)
+          .map {
+            case Some(api) => api.possibleUsagePlans.find(_.id.value == plan)
+            case None => None
+          }
+          .map {
+            case Some(plan) => paymentClient.getAllTeamInvoices(ctx.tenant, plan, team, callback)
+              .map(url => Ok(Json.obj("url" -> url)))
+              .leftMap(_.render())
+              .merge
+            case None => FastFuture.successful(NotFound(Json.obj("error" -> "error"))) //FIXME
+          }
+          .flatten
       }
   }
 

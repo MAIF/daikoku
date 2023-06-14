@@ -182,7 +182,7 @@ export const useApiFrontOffice = (api: any, team: any) => {
                   to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/infos`}
                   className="btn btn-sm btn-access-negative mb-2"
                 >
-                  {translate('Edit API')}
+                  {translate('api.configuration.btn.label')}
                 </Link>
               </Can>
             ),
@@ -304,7 +304,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
                   to={`/${team?._humanReadableId}/settings/apigroups/${apigroup?._humanReadableId}/infos`}
                   className="btn btn-sm btn-access-negative mb-2"
                 >
-                  {translate('Edit APIs group')}
+                  {translate('apis.group.configuration.btn.label')}
                 </Link>
               </Can>
             ),
@@ -724,6 +724,11 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
                 label: translate('Bucket'),
                 action: () => navigateTo('settings/bucket'),
                 className: { active: subTab === 'bucket' },
+              },
+              payment: {
+                label: translate('Payment'),
+                action: () => navigateTo('settings/payment'),
+                className: { active: subTab === 'payment' },
               },
               security: {
                 label: translate('Security'),

@@ -60,6 +60,21 @@ export interface IBucketSettings {
   v4auth: boolean;
 }
 
+export enum ThirdPartyPaymentType {
+  stripe = 'Stripe'
+}
+
+export interface IThirdPartyPaymentSettings {
+  _id: string
+  name: string
+  type: ThirdPartyPaymentType
+}
+
+interface IThirdPartyPaymentStripe extends IThirdPartyPaymentSettings {
+  publicKey: string
+  secretKey: string
+}
+
 enum MailerType {
   console = 'console',
   mailgun = 'mailgun',
@@ -67,6 +82,7 @@ enum MailerType {
   sendgrid = 'sendgrid',
   smtpClient = 'smtpClient',
 }
+
 export interface IMailerSettings {
   type: MailerType;
   template?: string;
@@ -171,6 +187,7 @@ export interface ITenantFull extends ITenant {
   otoroshiSettings: Array<IOtoroshiSettings>;
   style: ITenantStyle;
   translation: any;
+  thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>
 }
 
 export type TranslationItem = string | { s: string; p: string };

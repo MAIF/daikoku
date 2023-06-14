@@ -54,13 +54,13 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{translate('api_documentation_modal.import.title')}</h5>
+        <h5 className="modal-title">{translate('api.documentation.clone.page.modal.title')}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
       </div>
       <div className="modal-body">
         <Select
           isMulti
-          placeholder={translate('Select all pages')}
+          placeholder={translate('api.documentation.clone.page.placeholder')}
           options={apis}
           //@ts-ignore
           onChange={setPages}

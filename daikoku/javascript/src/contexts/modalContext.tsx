@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Alert } from "./modals/Alert";
 import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
 import { ApiKeySelectModal, IApiKeySelectModalProps } from "./modals/ApiKeySelectModal";
-import { ApiSelectModal, IApiSelectModalProps } from "./modals/ApiSelectModal";
+import { ApiSelectModal, IApiSelectModalProps, IModalProps } from "./modals/ApiSelectModal";
 import { AssetSelectorModal } from "./modals/AssetsChooserModal";
 import { Confirm } from "./modals/Confirm";
 import { ContactModal } from "./modals/ContactModal";
@@ -34,6 +34,7 @@ import {
   TestingApiKeyModalProps,
   TModalContext
 } from "./modals/types";
+import { CustomModal } from "./modals/CustomModal";
 
 
 const init: TModalContext = {
@@ -53,6 +54,8 @@ const init: TModalContext = {
   openAssetSelectorModal: () => { },
   openApiSelectModal: () => { },
   openApiKeySelectModal: () => { },
+  openCustomModal: () => {},
+  close: () => {}
 }
 
 export const ModalContext = React.createContext<TModalContext>(init);
@@ -71,15 +74,15 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
     />)
   })
 
-  const confirm = (props: ConfirmModalProps) => new Promise<boolean>((success) => {
+  const confirm = (props: ConfirmModalProps) => new Promise<boolean>((resolve) => {
     open(<Confirm
       {...props}
       ok={() => {
-        success(true);
+        resolve(true);
         close();
       }}
       cancel={() => {
-        success(false);
+        resolve(false);
         close();
       }}
     />)
@@ -117,6 +120,7 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
   const openAssetSelectorModal = (props: IAssetSelectorModalProps) => open(<AssetSelectorModal {...props} close={close} />)
   const openApiSelectModal = (props: IApiSelectModalProps) => open(<ApiSelectModal {...props} close={close} />)
   const openApiKeySelectModal = (props: IApiKeySelectModalProps) => open(<ApiKeySelectModal {...props} close={close} />)
+  const openCustomModal = (props: IModalProps) => open(<CustomModal {...props} close={close} />)
 
 
   return (
@@ -136,7 +140,9 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
       openContactModal,
       openAssetSelectorModal,
       openApiSelectModal,
-      openApiKeySelectModal
+      openApiKeySelectModal,
+      openCustomModal,
+      close
     }}>
       <Modal modal={modal} modalContent={modalContent} />
       {props.children}

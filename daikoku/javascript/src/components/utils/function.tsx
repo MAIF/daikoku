@@ -1,6 +1,6 @@
-import {TOption, TOptions} from "../../types";
-import React, {useContext} from "react";
-import {I18nContext} from "../../contexts/i18n-context";
+import { IApi, IFastApi, IFastPlan, IUsagePlan, TOption, TOptions } from "../../types";
+import React, { useContext } from "react";
+import { I18nContext } from "../../contexts/i18n-context";
 
 export function partition(array: any, isValid: any) {
   return array.reduce(
@@ -30,7 +30,7 @@ export const getColorByBgColor = (bgColor: string) => {
  * returning a TOptions.
  */
 export const arrayStringToTOps = (array: string[]): TOptions => {
-  return array.map(string => stringToTOps(string) )
+  return array.map(string => stringToTOps(string))
 }
 
 /**
@@ -40,7 +40,7 @@ export const arrayStringToTOps = (array: string[]): TOptions => {
  * returning a TOption.
  */
 export const stringToTOps = (val: string): TOption => {
-  return {label: val, value: val}
+  return { label: val, value: val }
 }
 
 interface FilterType {
@@ -57,48 +57,55 @@ export const FilterPreview = (props: FilterType) => {
   const { translate, Translation } = useContext(I18nContext);
 
 
-  if (!props.selectedCategory?.value && !props.selectedTag?.value && !props.searched &&  !props.filterPlan && !props.seeOnlySubs) {
+  if (!props.selectedCategory?.value && !props.selectedTag?.value && !props.searched && !props.filterPlan && !props.seeOnlySubs) {
     return null;
   }
 
   return (
     <div className="d-flex justify-content-between">
-    <div className="preview">
-      <strong>{props.count}</strong> {`${translate('result')}${props.count > 1 ? 's' : ''}`}
-      &nbsp;
-      {!!props.searched && (
-        <span>
-          {translate('matching')} <strong>{props.searched}</strong>&nbsp;
-        </span>
-      )}
-      {props.selectedCategory?.value && (
-        <span>
-          {translate('categorised in')} <strong>{props.selectedCategory?.value}</strong>
-          &nbsp;
-        </span>
-      )}
-      {!!props.selectedTag?.value && (
-        <span>
-          {translate('tagged')} <strong>{props.selectedTag?.value}</strong>
-          &nbsp;
-        </span>
-      )}
-      {props.seeOnlySubs  === true && (
-        <span>
-          {translate('fastMode.onlySubs.info')}
-        </span>
-      )}
-      {!!props.filterPlan && (
-        <span>
-          {translate('fastMode.planSearch.info')} <strong>{props.filterPlan}</strong>
-        </span>
-      )}
-  </div>
-  <div className="clear cursor-pointer" onClick={props.clearFilter}>
-  <i className="far fa-times-circle me-1" />
-  <Translation i18nkey="clear filter">clear filter</Translation>
-  </div>
-  </div>
-);
+      <div className="preview">
+        <strong>{props.count}</strong> {`${translate('result')}${props.count > 1 ? 's' : ''}`}
+        &nbsp;
+        {!!props.searched && (
+          <span>
+            {translate('matching')} <strong>{props.searched}</strong>&nbsp;
+          </span>
+        )}
+        {props.selectedCategory?.value && (
+          <span>
+            {translate('categorised in')} <strong>{props.selectedCategory?.value}</strong>
+            &nbsp;
+          </span>
+        )}
+        {!!props.selectedTag?.value && (
+          <span>
+            {translate('tagged')} <strong>{props.selectedTag?.value}</strong>
+            &nbsp;
+          </span>
+        )}
+        {props.seeOnlySubs === true && (
+          <span>
+            {translate('fastMode.onlySubs.info')}
+          </span>
+        )}
+        {!!props.filterPlan && (
+          <span>
+            {translate('fastMode.planSearch.info')} <strong>{props.filterPlan}</strong>
+          </span>
+        )}
+      </div>
+      <div className="clear cursor-pointer" onClick={props.clearFilter}>
+        <i className="far fa-times-circle me-1" />
+        <Translation i18nkey="clear filter">clear filter</Translation>
+      </div>
+    </div>
+  );
+}
 
+export const isSubscriptionProcessIsAutomatic = (plan: IUsagePlan | IFastPlan) => {
+  return !plan.subscriptionProcess.length
+}
+
+export const isPublish = (api: IApi) => {
+  return api.state === 'published'
 }

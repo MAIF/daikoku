@@ -1,15 +1,15 @@
 package fr.maif.otoroshi.daikoku.env
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationFormat, ApiDocumentationPageFormat, ApiDocumentationPageIdFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TenantFormat, UserFormat}
-import fr.maif.otoroshi.daikoku.domain.{ApiDocumentationDetailPage, ApiDocumentationPageId, ApiId, CmsPage, CmsPageId, DatastoreId, Evolution, TenantId}
-import fr.maif.otoroshi.daikoku.env.evolution_157.version
-import fr.maif.otoroshi.daikoku.env.evolution_157_c.version
+import cats.data.OptionT
+import cats.implicits.catsSyntaxOptionId
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, NotificationFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
+import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
@@ -26,11 +26,11 @@ sealed trait EvolutionScript {
       ExecutionContext,
       OtoroshiClient
   ) => Future[Done]
-  def run(maybeId: Option[DatastoreId],
-          dataStore: DataStore,
-          otoroshiClient: OtoroshiClient)(implicit
-                                          mat: Materializer,
-                                          ec: ExecutionContext): Future[Done] =
+  def run(
+      maybeId: Option[DatastoreId],
+      dataStore: DataStore,
+      otoroshiClient: OtoroshiClient
+  )(implicit mat: Materializer, ec: ExecutionContext): Future[Done] =
     script(maybeId, dataStore, mat, ec, otoroshiClient)
 }
 
@@ -55,15 +55,16 @@ object evolution_102 extends EvolutionScript {
       dataStore.apiRepo
         .forAllTenant()
         .streamAllRaw()(ec)
-        .filter(
-          value =>
-            (value \ "possibleUsagePlans")
-              .as[JsArray]
-              .value
-              .exists(plan =>
-                (plan \ "otoroshiTarget" \ "serviceGroup")
-                  .asOpt[String]
-                  .isDefined))
+        .filter(value =>
+          (value \ "possibleUsagePlans")
+            .as[JsArray]
+            .value
+            .exists(plan =>
+              (plan \ "otoroshiTarget" \ "serviceGroup")
+                .asOpt[String]
+                .isDefined
+            )
+        )
         .mapAsync(10) { value =>
           val usagePlans = (value \ "possibleUsagePlans").as[JsArray]
           val newPlans = usagePlans.value.map(plan => {
@@ -197,8 +198,9 @@ object evolution_151 extends EvolutionScript {
                             )
                           )(ec)
                         dataStore.tenantRepo.save(
-                          tenant.copy(style = tenant.style.map(
-                            _.copy(homeCmsPage = Some(homeId))))
+                          tenant.copy(style =
+                            tenant.style.map(_.copy(homeCmsPage = Some(homeId)))
+                          )
                         )(ec)
                     }(ec)
                 case None => FastFuture.successful(())
@@ -339,44 +341,55 @@ object evolution_157 extends EvolutionScript {
           ApiSubscriptionFormat.reads(value) match {
             case JsSuccess(sub, _) =>
               AppLogger.info(
-                s"begin sync of ${sub.id} with api ${sub.api.asJson}")
+                s"begin sync of ${sub.id} with api ${sub.api.asJson}"
+              )
               (for {
                 api <- OptionT(
                   dataStore.apiRepo
                     .forTenant(sub.tenant)
-                    .findOne(Json.obj("_id" -> sub.api.asJson)))
+                    .findOne(Json.obj("_id" -> sub.api.asJson))
+                )
                 otoSettingsId <- OptionT.fromOption[Future](
                   api.possibleUsagePlans
                     .find(pp => pp.id == sub.plan)
                     .flatMap(pp => pp.otoroshiTarget)
-                    .map(_.otoroshiSettings))
+                    .map(_.otoroshiSettings)
+                )
                 tenant <- OptionT(
-                  dataStore.tenantRepo.findOne(
-                    Json.obj("_id" -> api.tenant.asJson)))
+                  dataStore.tenantRepo
+                    .findOne(Json.obj("_id" -> api.tenant.asJson))
+                )
                 otoSettings <- OptionT.fromOption[Future](
-                  tenant.otoroshiSettings.find(o => o.id == otoSettingsId))
+                  tenant.otoroshiSettings.find(o => o.id == otoSettingsId)
+                )
 
                 realApk <- OptionT.liftF(
-                  otoroshiClient.getApikey(sub.apiKey.clientId)(otoSettings))
+                  otoroshiClient.getApikey(sub.apiKey.clientId)(otoSettings)
+                )
 
-                metadata = realApk
-                  .leftMap(_ => Json.obj())
-                  .map(
-                    apk =>
+                metadata =
+                  realApk
+                    .leftMap(_ => Json.obj())
+                    .map(apk =>
                       JsObject(
                         (apk.metadata.filterNot(i =>
-                          i._1.startsWith("daikoku_")) -- sub.customMetadata
+                          i._1.startsWith("daikoku_")
+                        ) -- sub.customMetadata
                           .flatMap(_.asOpt[Map[String, String]])
                           .getOrElse(Map.empty[String, String])
-                          .keys).view.mapValues(i => JsString(i)).toSeq))
-                  .merge
+                          .keys).view.mapValues(i => JsString(i)).toSeq
+                      )
+                    )
+                    .merge
 
                 _ = AppLogger.info(
-                  s"${sub.id} :: api ${api.id} with metadata ${Json.stringify(metadata)}")
+                  s"${sub.id} :: api ${api.id} with metadata ${Json.stringify(metadata)}"
+                )
                 _ <- OptionT.liftF(
                   dataStore.apiSubscriptionRepo
                     .forTenant(sub.tenant)
-                    .save(sub.copy(metadata = Some(metadata))))
+                    .save(sub.copy(metadata = Some(metadata)))
+                )
               } yield ()).value
             case JsError(errors) =>
               FastFuture.successful(
@@ -391,9 +404,6 @@ object evolution_157 extends EvolutionScript {
 }
 
 object evolution_157_b extends EvolutionScript {
-
-  import cats.data.OptionT
-  import cats.implicits._
   override def version: String = "1.5.7_b"
 
   override def script: (
@@ -427,22 +437,26 @@ object evolution_157_b extends EvolutionScript {
 
           val newPages: Future[Seq[ApiDocumentationDetailPage]] =
             Future.sequence(
-              oldPages.map(
-                page =>
-                  dataStore.apiDocumentationPageRepo
-                    .forTenant(tenantId)
-                    .findById(page)
-                    .map {
-                      case Some(p) =>
-                        ApiDocumentationDetailPage(id = p.id,
-                                                   title = p.title,
-                                                   children = Seq.empty)
-                      case None =>
-                        ApiDocumentationDetailPage(
-                          id = ApiDocumentationPageId(page),
-                          title = "",
-                          children = Seq.empty)
-                  }))
+              oldPages.map(page =>
+                dataStore.apiDocumentationPageRepo
+                  .forTenant(tenantId)
+                  .findById(page)
+                  .map {
+                    case Some(p) =>
+                      ApiDocumentationDetailPage(
+                        id = p.id,
+                        title = p.title,
+                        children = Seq.empty
+                      )
+                    case None =>
+                      ApiDocumentationDetailPage(
+                        id = ApiDocumentationPageId(page),
+                        title = "",
+                        children = Seq.empty
+                      )
+                  }
+              )
+            )
 
           newPages.flatMap(n =>
             dataStore.apiRepo
@@ -451,8 +465,15 @@ object evolution_157_b extends EvolutionScript {
                 Json.obj(
                   "_id" -> apiId.asJson
                 ),
-                Json.obj("$set" -> Json.obj("documentation" -> (doc ++ Json.obj(
-                  "pages" -> SeqApiDocumentationDetailPageFormat.writes(n)))))))
+                Json.obj(
+                  "$set" -> Json.obj(
+                    "documentation" -> (doc ++ Json.obj(
+                      "pages" -> SeqApiDocumentationDetailPageFormat.writes(n)
+                    ))
+                  )
+                )
+              )
+          )
         }
 
       val recalcDocHumanReadableIdSource = dataStore.apiDocumentationPageRepo
@@ -480,11 +501,13 @@ object evolution_157_b extends EvolutionScript {
 object evolution_157_c extends EvolutionScript {
   override def version: String = "1.5.7_c"
 
-  override def script: (Option[DatastoreId],
-                        DataStore,
-                        Materializer,
-                        ExecutionContext,
-                        OtoroshiClient) => Future[Done] =
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
     (
         _: Option[DatastoreId],
         dataStore: DataStore,
@@ -493,17 +516,21 @@ object evolution_157_c extends EvolutionScript {
         _: OtoroshiClient
     ) => {
       AppLogger.info(
-        s"Begin evolution $version - remove all team.subscriptions")
+        s"Begin evolution $version - remove all team.subscriptions"
+      )
 
       implicit val execContext: ExecutionContext = ec
 
       val eventualLong = dataStore.teamRepo
         .forAllTenant()
-        .updateManyByQuery(Json.obj(),
-                           Json.obj(
-                             "$unset" -> Json.obj(
-                               "subscriptions" -> "",
-                             )))
+        .updateManyByQuery(
+          Json.obj(),
+          Json.obj(
+            "$unset" -> Json.obj(
+              "subscriptions" -> ""
+            )
+          )
+        )
 
       Source
         .future(eventualLong)
@@ -647,10 +674,167 @@ object evolution_1612_c extends EvolutionScript {
   }
 }
 
+object evolution_1613 extends EvolutionScript {
+  override def version: String = "16.1.3"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - Update Apis to add property state & update all subscription process"
+      )
+
+      val source = dataStore.apiRepo
+        .forAllTenant()
+        .streamAllRaw()(ec)
+        .mapAsync(1) { value =>
+          val state =
+            if ((value \ "published").asOpt[Boolean].getOrElse(false)) {
+              ApiState.Published
+            } else {
+              ApiState.Created
+            }
+          val plans = (value \ "possibleUsagePlans")
+            .as[JsArray]
+            .value
+
+          val updatedPlans =  plans.map(oldPlan => {
+            val subscriptionProcess = (oldPlan \ "subscriptionProcess").asOpt[String] match {
+              case Some("Manual") => Seq(
+                ValidationStep
+                  .TeamAdmin(
+                    id = IdGenerator.token(32),
+                    team = (value \ "team").as(TeamIdFormat))
+              )
+              case _ => Seq.empty
+            }
+
+
+            oldPlan.as[JsObject] ++ Json
+              .obj("subscriptionProcess" -> json.SeqValidationStepFormat.writes(subscriptionProcess))
+          })
+
+          val updatedApi = value.as[JsObject] ++ Json.obj(
+            "state" -> state.name,
+            "possibleUsagePlans" -> JsArray(updatedPlans)
+          )
+
+          ApiFormat.reads(updatedApi) match {
+            case JsSuccess(v, _) =>
+              dataStore.apiRepo
+                .forAllTenant()
+                .save(v)(ec)
+            case JsError(errors) =>
+              AppLogger.error(s"Evolution $version errored : $errors")
+              FastFuture.successful(
+                AppLogger.error(s"Evolution $version : $errors")
+              )
+          }
+        }
+
+      source
+        .runWith(Sink.ignore)(mat)
+
+    }
+}
+
+object evolution_1613_b extends EvolutionScript {
+  override def version: String = "16.1.3_b"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(s"Begin evolution $version - Update SubscriptionDemands notifications to real subscriptions demand")
+
+      implicit val executionContext: ExecutionContext = ec
+
+      dataStore.notificationRepo.forAllTenant()
+        .streamAllRaw(Json.obj("action.type" -> "ApiSubscription", "status.status" -> "Pending", "_deleted" -> false))
+        .mapAsync(1) { value =>
+
+          val tenant = (value \ "_tenant").as(json.TenantIdFormat)
+          val action = (value \ "action").as[JsObject]
+          val sender = (value \ "sender").asOpt(json.UserFormat).map(_.asNotificationSender).getOrElse((value \ "sender").as(json.NotificationSenderFormat))
+          val date = (value \ "date").as(json.DateTimeFormat)
+          val apiId = (action \ "api").as(json.ApiIdFormat)
+          val planId = (action \ "plan").as(json.UsagePlanIdFormat)
+          val teamId = (action \ "team").as(json.TeamIdFormat)
+          val parentSubscriptionId = (action \ "parentSubscriptionId").asOpt(json.ApiSubscriptionIdFormat)
+          val motivation = (action \ "motivation").asOpt[String]
+
+          (for {
+            api <- OptionT(dataStore.apiRepo.forAllTenant().findById(apiId))
+            plan <- OptionT.fromOption[Future](api.possibleUsagePlans.find(_.id == planId))
+            demand = SubscriptionDemand(
+              id = SubscriptionDemandId(IdGenerator.token),
+              tenant = tenant,
+              api = api.id,
+              plan = plan.id,
+              steps = plan.subscriptionProcess.map(step => SubscriptionDemandStep(
+                id = SubscriptionDemandStepId(IdGenerator.token),
+                state = SubscriptionDemandState.InProgress,
+                step = step,
+              )),
+              state = SubscriptionDemandState.InProgress,
+              team = teamId,
+              from = sender.id.get,
+              date = date,
+              motivation = motivation,
+              parentSubscriptionId = parentSubscriptionId
+            )
+            _ <- OptionT.liftF(dataStore.subscriptionDemandRepo.forTenant(demand.tenant).save(demand))
+            notif = Notification(
+              id = (value \ "_id").as(json.NotificationIdFormat),
+              tenant = tenant,
+              team = teamId.some,
+              sender = sender,
+              date = date,
+              notificationType = NotificationType.AcceptOrReject,
+              status = (value \ "status").as(json.NotificationStatusFormat),
+              action = NotificationAction.ApiSubscriptionDemand(
+                api = apiId,
+                plan = planId,
+                team = teamId,
+                demand = demand.id,
+                step = demand.steps.head.id,
+                parentSubscriptionId = parentSubscriptionId,
+                motivation = motivation
+              )
+            )
+            _ <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(notif))
+          } yield ()).value
+        }
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
 
 object evolutions {
   val list: List[EvolutionScript] =
-    List(evolution_102,
+    List(
+      evolution_102,
       evolution_150,
       evolution_151,
       evolution_155,
@@ -659,7 +843,10 @@ object evolutions {
       evolution_157_c,
       evolution_1612_a,
       evolution_1612_b,
-      evolution_1612_c)
+      evolution_1612_c,
+      evolution_1613,
+      evolution_1613_b
+    )
   def run(
       dataStore: DataStore,
       otoroshiClient: OtoroshiClient

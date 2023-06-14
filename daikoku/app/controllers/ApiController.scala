@@ -1,57 +1,44 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{
-  Flow,
-  GraphDSL,
-  JsonFraming,
-  Merge,
-  Partition,
-  Sink,
-  Source
-}
-import akka.stream.{FlowShape, Materializer}
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
+import cats.Id
 import cats.data.EitherT
-import cats.implicits.toTraverseOps
+import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
+import com.auth0.jwt.JWT
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
-import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.SubscriptionDemandState.{InProgress, Waiting}
+import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
+import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import fr.maif.otoroshi.daikoku.utils.{
-  ApiService,
-  IdGenerator,
-  OtoroshiClient,
-  Translator
-}
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
+import fr.maif.otoroshi.daikoku.utils.{ApiService, DeletionService, IdGenerator, OtoroshiClient, Translator}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.http.HttpEntity
-import play.api.i18n.{I18nSupport, Lang}
+import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.Future
-import scala.util.hashing.MurmurHash3
 import scala.util.{Failure, Success, Try}
 
 class ApiController(
@@ -63,7 +50,9 @@ class ApiController(
     otoroshiClient: OtoroshiClient,
     cc: ControllerComponents,
     otoroshiSynchronisator: OtoroshiVerifierJob,
-    translator: Translator
+    translator: Translator,
+    paymentClient: PaymentClient,
+    deletionService: DeletionService
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -347,8 +336,7 @@ class ApiController(
           Ok(betterApis)
         }
 
-        r.value.map(_.merge).map(a => Right(a))
-      }
+        r.value.map(_.merge).map(Right(_)) }
     }
 
   def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]) = {
@@ -390,7 +378,7 @@ class ApiController(
     } yield {
       if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
             .intersect(myTeams.map(_.id))
-            .nonEmpty) && (api.published || myTeams.exists(_.id == api.team))) {
+            .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))) {
         val betterApi = api
           .copy(possibleUsagePlans = api.possibleUsagePlans
             .filter(p =>
@@ -851,328 +839,218 @@ class ApiController(
       }
     }
 
-  def extendApiKey(apiId: String, apiKeyId: String) =
+  def getBodyField[T](body: JsValue, fieldName: String)(implicit fjs: Reads[T]): Option[T] = body
+    .asOpt[JsObject]
+    .flatMap(o => (o \ fieldName).asOpt[T])
+
+  def extendApiKey(apiId: String, planId: String, teamId: String, apiKeyId: String) =
+
     DaikokuAction.async(parse.json) { ctx =>
-      _createOrExtendApiKey(apiId, ctx, Some(ApiSubscriptionId(apiKeyId)))
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has asked for an apikey extension for @{api.name} - @{api.id}"
+        )
+      )(ctx) {
+        import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
+
+        implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+        implicit val currentUser: User = ctx.user
+
+        val motivation = ctx.request.body.getBodyField[String]("motivation")
+        val customMaxPerSecond = ctx.request.body.getBodyField[Long]("customMaxPerSecond")
+        val customMaxPerDay = ctx.request.body.getBodyField[Long]("customMaxPerDay")
+        val customMaxPerMonth = ctx.request.body.getBodyField[Long]("customMaxPerMonth")
+        val customReadOnly = ctx.request.body.getBodyField[Boolean]("customReadOnly")
+        val customMetadata = ctx.request.body.getBodyField[JsObject]("customMetadata")
+
+        apiService._createOrExtendApiKey(
+          tenant = ctx.tenant,
+          apiId = apiId,
+          planId = planId,
+          teamId = teamId,
+          customMetadata = customMetadata,
+          customMaxPerSecond = customMaxPerSecond,
+          customMaxPerDay = customMaxPerDay,
+          customMaxPerMonth = customMaxPerMonth,
+          customReadOnly = customReadOnly,
+          motivation = motivation,
+          parentSubscriptionId = Some(ApiSubscriptionId(apiKeyId))
+        )
+      }
     }
 
-  def askForApiKey(apiId: String) =
+  def askForApiKey(apiId: String, planId: String, teamId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      _createOrExtendApiKey(apiId, ctx)
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has asked for an apikey for @{api.name} - @{api.id}"
+        )
+      )(ctx) {
+        import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
+
+        implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+        implicit val currentUser: User = ctx.user
+
+        val motivation = ctx.request.body.getBodyField[String]("motivation")
+        val customMaxPerSecond = ctx.request.body.getBodyField[Long]("customMaxPerSecond")
+        val customMaxPerDay = ctx.request.body.getBodyField[Long]("customMaxPerDay")
+        val customMaxPerMonth = ctx.request.body.getBodyField[Long]("customMaxPerMonth")
+        val customReadOnly = ctx.request.body.getBodyField[Boolean]("customReadOnly")
+        val customMetadata = ctx.request.body.getBodyField[JsObject]("customMetadata")
+
+        apiService._createOrExtendApiKey(
+          tenant = ctx.tenant,
+          apiId = apiId,
+          planId = planId,
+          teamId = teamId,
+          customMetadata = customMetadata,
+          customMaxPerSecond = customMaxPerSecond,
+          customMaxPerDay = customMaxPerDay,
+          customMaxPerMonth = customMaxPerMonth,
+          customReadOnly = customReadOnly,
+          motivation = motivation)
+      }
     }
 
-  def _createOrExtendApiKey(
-      apiId: String,
-      ctx: DaikokuActionContext[JsValue],
-      parentSubscriptionId: Option[ApiSubscriptionId] = None
-  ) = {
-    import cats.implicits._
+  def validateProcess() = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(
+      AuditTrailEvent(s"Subscription process has been validated by @{validator.name}"))(ctx) {
+      import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
+      implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+      implicit val currentUser: User = ctx.user
 
-    implicit val c = ctx;
-    PublicUserAccess(
-      AuditTrailEvent(
-        s"@{user.name} has asked for an apikey for @{api.name} - @{api.id}"
+      val maybeSessionId = ctx.request.getQueryString("session_id")
+
+
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](ctx.request.getQueryString("token"), AppError.EntityNotFound("token from query"))
+        token <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant))
+        validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
+          .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
+
+        _ <- validateProcessWithStepValidator(validator, ctx.tenant, maybeSessionId)
+      } yield if (ctx.user.isGuest) Ok(
+        views.html.response(
+          None,
+          ctx.request.domain,
+          env,
+          ctx.tenant)) else Redirect(s"/apis"))
+        .leftMap(error => Ok(
+          views.html.response(
+            error.getErrorMessage().some,
+            ctx.request.domain,
+            env,
+            ctx.tenant))).merge
+    }
+  }
+
+  def abortProcess() = DaikokuAction.async { ctx =>
+    UberPublicUserAccess(
+      AuditTrailEvent(s"Subscription process has been refused by @{validator.name}"))(ctx) {
+      implicit val c = ctx
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](ctx.request.getQueryString("token"), AppError.EntityNotFound("token from query"))
+        token <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant))
+        validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
+          .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.stepValidatorRepo.forTenant(ctx.tenant).deleteByIdLogically(validator.id))
+      } yield Redirect("/apis"))
+        .leftMap(_.render())
+        .merge
+    }
+  }
+
+  def declineProcess() = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(
+      AuditTrailEvent(s"Subscription process has been refused by @{validator.name}"))(ctx) {
+      implicit val c = ctx
+      //todo: get validator name
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](ctx.request.getQueryString("token"), AppError.EntityNotFound("token from query"))
+        token <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant))
+        validator <- EitherT.fromOptionF(env.dataStore.stepValidatorRepo.forTenant(ctx.tenant)
+          .findOneNotDeleted(Json.obj("token" -> token)), AppError.EntityNotFound("token"))
+        _ <- declineProcessWithStepValidator(validator, ctx.tenant)
+      } yield Ok(
+        views.html.response(
+          None,
+          ctx.request.domain,
+          env,
+          ctx.tenant))).leftMap(error => Ok(
+        views.html.response(
+          error.getErrorMessage().some,
+          ctx.request.domain,
+          env,
+          ctx.tenant))).merge
+    }
+  }
+
+  def runProcess(teamId: String, demandId: String) = DaikokuAction.async { ctx =>
+    TeamMemberOnly( AuditTrailEvent(s"Subscription process for demand @{demand.id} has been re-run by @{user.name}"))(teamId, ctx) { team =>
+      ctx.setCtxValue("demand.id", demandId)
+      implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+      implicit val currentUser: User = ctx.user
+
+      val from = env.getDaikokuUrl(
+        ctx.tenant,
+        s"/${team.humanReadableId}/settings"
       )
-    )(ctx) {
-      val teams: Seq[String] = (ctx.request.body \ "teams").as[Seq[String]]
-      val planId: String = (ctx.request.body \ "plan").as[String]
-      val motivation: Option[String] =
-        (ctx.request.body \ "motivation").asOpt[String]
 
-      val results: EitherT[Future, Result, Result] = for {
-        api <- EitherT.fromOptionF(
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findByIdNotDeleted(apiId),
-          NotFound(Json.obj("error" -> "api not found"))
-        )
-        plan <- EitherT.fromOption[Future](
-          api.possibleUsagePlans.find(pp => pp.id.value == planId),
-          NotFound(Json.obj("error" -> "plan not found"))
-        )
-        unpublishedError: EitherT[Future, Result, Result] = EitherT
-          .leftT[Future, Result](
-            Forbidden(
-              Json.obj(
-                "error" -> "You're not authorized to subscribed to an unpublished api"
-              )
-            )
-          )
-        adminError: EitherT[Future, Result, Result] = EitherT
-          .leftT[Future, Result](
-            Forbidden(
-              Json.obj(
-                "error" -> "You're not authorized to subscribed to an admin api"
-              )
-            )
-          )
-        value: EitherT[Future, Result, Result] = EitherT
-          .liftF(
-            Future
-              .sequence(
-                teams
-                  .map(teamId =>
-                    env.dataStore.teamRepo
-                      .forTenant(ctx.tenant.id)
-                      .findByIdNotDeleted(teamId)
-                      .flatMap {
-                        case Some(team)
-                            if !ctx.user.isDaikokuAdmin && !team
-                              .includeUser(ctx.user.id) =>
-                          Future.successful(
-                            Json.obj(
-                              "error" -> s"You're not authorized on the team ${team.name}"
-                            )
-                          )
-                        case Some(team)
-                            if plan.visibility == Private && team.id != api.team =>
-                          Future.successful(
-                            Json.obj(
-                              "error" -> s"${team.name} is not authorized on this plan"
-                            )
-                          )
-                        case Some(team)
-                            if ctx.tenant.subscriptionSecurity
-                              .forall(t => t) && team.`type` == TeamType.Personal =>
-                          Future.successful(
-                            Json.obj(
-                              "error" -> s"${team.name} is not authorized to subscribe to an api"
-                            )
-                          )
-                        case Some(team) =>
-                          env.dataStore.apiSubscriptionRepo
-                            .forTenant(ctx.tenant)
-                            .findOneNotDeleted(
-                              Json.obj(
-                                "team" -> team.id.asJson,
-                                "api" -> api.id.asJson,
-                                "plan" -> plan.id.asJson
-                              )
-                            )
-                            .flatMap {
-                              case Some(_)
-                                  if !plan.allowMultipleKeys
-                                    .getOrElse(false) =>
-                                Future.successful(
-                                  AppError.toJson(SubscriptionConflict)
-                                )
-                              case _ =>
-                                def process() =
-                                  applyProcessForApiSubscription(
-                                    ctx.tenant,
-                                    ctx.user,
-                                    api,
-                                    plan.id.value,
-                                    team,
-                                    parentSubscriptionId,
-                                    motivation
-                                  ).leftMap(AppError.toJson).merge
-
-                                parentSubscriptionId match {
-                                  case Some(apiKey) =>
-                                    env.dataStore.apiSubscriptionRepo
-                                      .forTenant(ctx.tenant)
-                                      .findByIdNotDeleted(apiKey.value)
-                                      .flatMap {
-                                        case Some(sub)
-                                            if sub.parent.isDefined =>
-                                          FastFuture.successful(
-                                            AppError.toJson(
-                                              SubscriptionParentExisted
-                                            )
-                                          )
-                                        case Some(_)
-                                            if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity
-                                              .exists(a => !a) =>
-                                          FastFuture.successful(
-                                            AppError.toJson(
-                                              SubscriptionAggregationDisabled
-                                            )
-                                          )
-                                        case Some(sub) if sub.team != team.id =>
-                                          FastFuture.successful(
-                                            AppError.toJson(
-                                              SubscriptionAggregationTeamConflict
-                                            )
-                                          )
-                                        case Some(sub) =>
-                                          env.dataStore.apiRepo
-                                            .forTenant(ctx.tenant)
-                                            .findByIdNotDeleted(sub.api)
-                                            .flatMap {
-                                              case Some(parentApi) =>
-                                                parentApi.possibleUsagePlans
-                                                  .find(p => p.id == sub.plan) match {
-                                                  case Some(parentPlan)
-                                                      if parentPlan.otoroshiTarget
-                                                        .map(
-                                                          _.otoroshiSettings
-                                                        ) != plan.otoroshiTarget
-                                                        .map(
-                                                          _.otoroshiSettings
-                                                        ) =>
-                                                    FastFuture.successful(
-                                                      AppError.toJson(
-                                                        SubscriptionAggregationOtoroshiConflict
-                                                      )
-                                                    )
-                                                  case _ => process()
-                                                }
-                                              case None =>
-                                                FastFuture.successful(
-                                                  AppError.toJson(ApiNotFound)
-                                                )
-                                            }
-                                        case None =>
-                                          FastFuture.successful(
-                                            AppError
-                                              .toJson(SubscriptionNotFound)
-                                          )
-                                      }
-                                  case _ => process()
-                                }
-                            }
-                        case None =>
-                          Future
-                            .successful(Json.obj(teamId -> "team not found"))
-                    })
-              )
-              .map(objs => Ok(JsArray(objs)))
-          )
-        result <- if (!api.published) unpublishedError
-        else if (api.visibility == ApiVisibility.AdminOnly && !ctx.user.isDaikokuAdmin)
-          adminError
-        else value
-      } yield result
-
-      results.value
-        .map(_.merge)
+      (for {
+        demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findByIdNotDeleted(demandId), AppError.EntityNotFound("Subscription demand"))
+        result <- apiService.runSubscriptionProcess(demand.id, ctx.tenant, from.some)
+      } yield result).value
     }
   }
 
-  def applyProcessForApiSubscription(
-      tenant: Tenant,
-      user: User,
-      api: Api,
-      planId: String,
-      team: Team,
-      apiKeyId: Option[ApiSubscriptionId],
-      motivation: Option[String]
-  )(implicit
-    ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
-    import cats.implicits._
+  def cancelProcess(teamId: String, demandId: String) = DaikokuAction.async { ctx =>
+    TeamAdminOnly(AuditTrailEvent(s"Subscription process for demand @{demand.id} has been canceled by @{user.name}"))(teamId, ctx){ team =>
 
-    api.possibleUsagePlans.find(_.id.value == planId) match {
-      case None => EitherT.leftT[Future, JsObject](PlanNotFound)
-      case Some(_)
-          if api.visibility != ApiVisibility.Public && !api.authorizedTeams
-            .contains(team.id) && !user.isDaikokuAdmin =>
-        EitherT.leftT[Future, JsObject](ApiUnauthorized)
-      case Some(_)
-          if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin =>
-        EitherT.leftT[Future, JsObject](ApiUnauthorized)
-      case Some(plan)
-          if plan.visibility == UsagePlanVisibility.Private && api.team != team.id =>
-        EitherT.leftT[Future, JsObject](PlanUnauthorized)
-      case Some(plan) =>
-        plan.subscriptionProcess match {
-          case SubscriptionProcess.Manual =>
-            EitherT(
-              notifyApiSubscription(
-                tenant,
-                user,
-                api,
-                planId,
-                team,
-                apiKeyId,
-                motivation
-              )
-            )
-          case SubscriptionProcess.Automatic =>
-            EitherT(
-              apiService
-                .subscribeToApi(tenant, user, api, planId, team, apiKeyId)
-            )
-        }
+      ctx.setCtxValue("demand.id", demandId)
+
+      (for {
+        demand <- EitherT.fromOptionF[Future, AppError, SubscriptionDemand](env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findByIdNotDeleted(demandId), AppError.EntityNotFound("Subscription demand"))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).deleteById(demand.id))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.stepValidatorRepo.forTenant(ctx.tenant).delete(Json.obj("subscriptionDemand" -> demand.id.asJson)))
+      } yield Ok(Json.obj("done" -> true)))
+        .leftMap(_.render())
+        .merge
     }
   }
 
-  def notifyApiSubscription(
-      tenant: Tenant,
-      user: User,
-      api: Api,
-      planId: String,
-      team: Team,
-      apiKeyId: Option[ApiSubscriptionId],
-      motivation: Option[String]
-  )(implicit
-    ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
-    import cats.implicits._
-
-    val defaultPlanOpt =
-      api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
-    val askedUsagePlan = api.possibleUsagePlans.find(p => p.id.value == planId)
-    val plan: UsagePlan = askedUsagePlan
-      .orElse(defaultPlanOpt)
-      .getOrElse(api.possibleUsagePlans.head)
-
-    val notification = Notification(
-      id = NotificationId(BSONObjectID.generate().stringify),
-      tenant = tenant.id,
-      team = Some(api.team),
-      sender = user,
-      action = NotificationAction
-        .ApiSubscriptionDemand(api.id, plan.id, team.id, apiKeyId, motivation)
-    )
-
-    val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
-    val notificationUrl = env.getDaikokuUrl(tenant, "/notifications")
+  private def validateProcessWithStepValidator(validator: StepValidator, tenant: Tenant, maybeSessionId: Option[String] = None)(implicit language: String, currentUser: User) = {
     for {
-      _ <- env.dataStore.notificationRepo
-        .forTenant(tenant.id)
-        .save(notification)
-      maybeApiTeam <- env.dataStore.teamRepo
-        .forTenant(tenant.id)
-        .findByIdNotDeleted(api.team)
-      maybeAdmins <- maybeApiTeam.traverse(
-        apiTeam =>
-          env.dataStore.userRepo
-            .find(
-              Json.obj(
-                "_deleted" -> false,
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(apiTeam.admins().map(_.asJson).toSeq)
-                )
-              )
-          ))
-      _ <- maybeAdmins.traverse(admins =>
-        Future.sequence(admins.map(admin => {
-          implicit val language: String =
-            admin.defaultLanguage.getOrElse(tenantLanguage)
-          (for {
-            title <- translator.translate("mail.apikey.demand.title", tenant)
-            body <- translator.translate(
-              "mail.apikey.demand.body",
-              tenant,
-              Map(
-                "user" -> user.name,
-                "apiName" -> api.name,
-                "link" -> notificationUrl
-              )
-            )
-          } yield {
-            tenant.mailer.send(title, Seq(admin.email), body, tenant)
-          }).flatten
-        })))
-    } yield {
-      Right(
-        Json.obj(
-          "creation" -> "waiting",
-          "subscription" -> Json.obj("team" -> team.id.asJson, "plan" -> planId)
-        )
-      )
-    }
+      demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
+        .findByIdNotDeleted(validator.subscriptionDemand), AppError.EntityNotFound("Subscription demand Validator"))
+      _ <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant)
+        .findByIdNotDeleted(demand.team), AppError.TeamNotFound)
+      _ <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
+      step <- EitherT.fromOption[Future](demand.steps.find(_.id == validator.step), AppError.EntityNotFound("Validation Step"))
+      _ <- step.check()
+      updatedDemand = demand.copy(steps = demand.steps.map(s => if (s.id == step.id) s.copy(state = SubscriptionDemandState.Accepted) else s))
+      _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(updatedDemand))
+      _ <- EitherT.liftF(env.dataStore.notificationRepo.forTenant(tenant)
+        .updateManyByQuery(Json.obj(
+          "action.type" -> "CheckoutForSubscription",
+          "action.demand" -> demand.id.asJson,
+          "action.step" -> step.id.asJson
+        ), Json.obj(
+          "$set" -> Json.obj("status" -> json.NotificationStatusFormat.writes(NotificationStatus.Accepted()))
+        )))
+      result <- apiService.runSubscriptionProcess(demand.id, tenant, maybeSessionId = maybeSessionId)
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.stepValidatorRepo.forTenant(tenant).deleteById(validator.id))
+    } yield result
+  }
 
+  private def declineProcessWithStepValidator(validator: StepValidator, tenant: Tenant): EitherT[Future, AppError, Unit] = {
+    for {
+      demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
+        .findByIdNotDeleted(validator.subscriptionDemand), AppError.EntityNotFound("Subscription demand Validator"))
+      _ <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
+      step <- EitherT.fromOption[Future](demand.steps.find(_.id == validator.step), AppError.EntityNotFound("Validation Step"))
+      _ <- step.check()
+      _ <- apiService.declineSubscriptionDemand(tenant, demand.id, step.id, NotificationSender((validator.metadata \ "email").as[String], (validator.metadata \ "email").as[String], None))
+    } yield ()
   }
 
   def getMyTeamsApiSubscriptions(apiId: String, version: String) =
@@ -1182,7 +1060,6 @@ class ApiController(
           s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"
         )
       )(ctx) {
-
         def findSubscriptions(api: Api, teams: Seq[Team]): Future[Result] = {
           for {
             subscriptions <- env.dataStore.apiSubscriptionRepo
@@ -1193,17 +1070,13 @@ class ApiController(
                   "team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))
                 )
               )
-            pendingRequests <- env.dataStore.notificationRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "action.type" -> "ApiSubscription",
-                  "status.status" -> "Pending",
-                  "action.api" -> api.id.value,
-                  "action.team" -> Json
-                    .obj("$in" -> JsArray(teams.map(_.id.asJson)))
-                )
-              )
+            pendingRequests <- env.dataStore.subscriptionDemandRepo.
+              forTenant(ctx.tenant)
+              .findNotDeleted(Json.obj(
+                "api" -> api.id.asJson,
+                "team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))),
+                "state" -> SubscriptionDemandState.InProgress.name
+            ))
           } yield {
             Ok(
               Json.obj(
@@ -1598,9 +1471,11 @@ class ApiController(
     DaikokuAction.async { ctx =>
       TeamApiKeyAction(
         AuditTrailEvent(
-          s"@{user.name} has archived api subscription @{subscription.id} of @{team.name} - @{team.id}"
+          s"@{user.name} has @{action} api subscription @{subscription.id} of @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
+        ctx.setCtxValue("@action", if (enabled.getOrElse(false)) "disabled" else "enabled")
+
         apiSubscriptionAction(
           ctx.tenant,
           team,
@@ -1823,7 +1698,7 @@ class ApiController(
                 id = NotificationId(BSONObjectID.generate().stringify),
                 tenant = ctx.tenant.id,
                 team = Some(subscription.team),
-                sender = ctx.user,
+                sender = ctx.user.asNotificationSender,
                 notificationType = NotificationType.AcceptOnly,
                 action = NotificationAction.ApiKeyDeletionInformation(api.name, subscription.apiKey.clientId)
               )
@@ -2180,7 +2055,7 @@ class ApiController(
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = ctx.tenant.id,
       team = Some(api.team),
-      sender = ctx.user,
+      sender = ctx.user.asNotificationSender,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
     val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
@@ -2243,12 +2118,8 @@ class ApiController(
           .findOneNotDeleted(
             Json.obj("_id" -> apiId, "team" -> team.id.asJson)
           ) flatMap {
-          case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
-            FastFuture.successful(
-              Forbidden(
-                Json.obj("error" -> "You're not authorized to delete this api")
-              )
-            )
+          case None => AppError.ApiNotFound.renderF()
+          case Some(api) if api.visibility == ApiVisibility.AdminOnly => AppError.ForbiddenAction.renderF()
           case Some(api) =>
             Source(api.possibleUsagePlans.toList)
               .mapAsync(1)(plan => {
@@ -2259,23 +2130,29 @@ class ApiController(
                   )
                   .map(subs => (plan, subs))
               })
-              .via(
-                apiService.deleteApiSubscriptionsAsFlow(
-                  tenant = ctx.tenant,
-                  apiOrGroupName = api.name,
-                  user = ctx.user
-                )
-              )
-              .runWith(Sink.ignore)
+              .via(apiService.deleteApiSubscriptionsAsFlow(
+                tenant = ctx.tenant,
+                apiOrGroupName = api.name,
+                user = ctx.user
+              ))
+              .runWith(Sink.fold(Set.empty[UsagePlan])((set, plan) => set + plan))
+              .flatMap(plans => env.dataStore.operationRepo.forTenant(ctx.tenant).insertMany(
+                plans.map(plan => Operation(
+                  DatastoreId(IdGenerator.token(24)),
+                  tenant = ctx.tenant.id,
+                  itemId = plan.id.value,
+                  itemType = ItemType.ThirdPartyProduct,
+                  action = OperationAction.Delete,
+                  payload = Json.obj(
+                    "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
+                  ).some
+                )).toSeq
+              ))
               .flatMap(_ =>
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant.id)
                   .deleteByIdLogically(apiId))
               .map(_ => Ok(Json.obj("done" -> true)))
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "Api not found"))
-            )
         }
       }
     }
@@ -2424,17 +2301,17 @@ class ApiController(
                             .map(_.otoroshiSettings))) =>
                     AppError.renderF(AppError.ForbiddenAction)
                   case false =>
-                    val flippedPlans = api.possibleUsagePlans.filter(pp =>
-                      oldApi.possibleUsagePlans.exists(oldPp =>
-                        pp.id == oldPp.id && oldPp.visibility != pp.visibility))
-                    val untouchedPlans =
-                      api.possibleUsagePlans.diff(flippedPlans)
+//                    val flippedPlans = api.possibleUsagePlans.filter(pp =>
+//                      oldApi.possibleUsagePlans.exists(oldPp =>
+//                        pp.id == oldPp.id && oldPp.visibility != pp.visibility))
+//                    val untouchedPlans =
+//                      api.possibleUsagePlans.diff(flippedPlans)
 
-                    val newPlans = api.possibleUsagePlans.map(_.id)
-                    val oldPlans = oldApi.possibleUsagePlans.map(_.id)
-                    val deletedPlansId = oldPlans.diff(newPlans)
-                    val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
-                      deletedPlansId.contains(pp.id))
+//                    val newPlans = api.possibleUsagePlans.map(_.id)
+//                    val oldPlans = oldApi.possibleUsagePlans.map(_.id)
+//                    val deletedPlansId = oldPlans.diff(newPlans)
+//                    val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
+//                      deletedPlansId.contains(pp.id))
 
                     env.dataStore.apiRepo
                       .forTenant(ctx.tenant.id)
@@ -2449,42 +2326,42 @@ class ApiController(
                         case true => AppError.renderF(ApiVersionConflict)
                         case false =>
                           for {
-                            plans <- changePlansVisibility(
-                              flippedPlans,
-                              api,
-                              ctx.tenant
-                            )
-                            _ <- deleteApiPlansSubscriptions(
-                              deletedPlans,
-                              oldApi,
-                              ctx.tenant,
-                              ctx.user
-                            )
-                            apiToSave = api.copy(possibleUsagePlans =
-                              untouchedPlans ++ plans)
+//                            plans <- changePlansVisibility(
+//                              flippedPlans,
+//                              api,
+//                              ctx.tenant
+//                            )
+//                            _ <- deleteApiPlansSubscriptions(
+//                              deletedPlans,
+//                              oldApi,
+//                              ctx.tenant,
+//                              ctx.user
+//                            )
+//                            apiToSave = api.copy(possibleUsagePlans =
+//                              untouchedPlans ++ plans)
                             _ <- env.dataStore.apiRepo
                               .forTenant(ctx.tenant.id)
-                              .save(apiToSave)
+                              .save(api)
                             _ <- otoroshiSynchronisator.verify(
                               Json.obj("api" -> api.id.value)
                             ) //launch synhro to maybe update customeMetadata & authorizedEntities
-                            _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                            _ <- updateTagsOfIssues(ctx.tenant.id, api)
                             _ <- updateAllHumanReadableId(ctx,
-                                                          apiToSave,
-                                                          oldApi)
+                              api,
+                              oldApi)
                             _ <- turnOffDefaultVersion(
                               ctx,
-                              apiToSave,
+                              api,
                               oldApi,
-                              apiToSave.humanReadableId,
-                              apiToSave.currentVersion.value
+                              api.humanReadableId,
+                              api.currentVersion.value
                             )
-                            _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
+                            _ <- checkIssuesVersion(ctx, api, oldApi)
                           } yield {
                             ctx.setCtxValue("api.name", api.name)
                             ctx.setCtxValue("api.id", api.id)
 
-                            Ok(apiToSave.asJson)
+                            Ok(api.asJson)
                           }
                       }
                 }
@@ -2795,58 +2672,6 @@ class ApiController(
       }
     }
 
-  def changePlansVisibility(
-      plans: Seq[UsagePlan],
-      api: Api,
-      tenant: Tenant
-  ): Future[Seq[UsagePlan]] = {
-    Future.sequence(plans.map(plan => {
-      plan.visibility match {
-        case Public => FastFuture.successful(plan.removeAllAuthorizedTeams())
-        case Private =>
-          for {
-            subs <- env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant)
-              .findNotDeleted(
-                Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
-              )
-          } yield {
-            plan.addAutorizedTeams(subs.map(_.team).distinct)
-          }
-      }
-    }))
-  }
-
-  def deleteApiPlansSubscriptions(
-      plans: Seq[UsagePlan],
-      api: Api,
-      tenant: Tenant,
-      user: User
-  ): Future[Done] = {
-    implicit val mat: Materializer = env.defaultMaterializer
-
-    Source(plans.toList)
-      .mapAsync(1)(
-        plan =>
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findNotDeleted(
-              Json.obj(
-                "api" -> api.id.asJson,
-                "plan" -> Json
-                  .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
-              )
-            )
-            .map(seq => (plan, seq)))
-      .via(apiService.deleteApiSubscriptionsAsFlow(tenant, api.name, user))
-      .runWith(Sink.ignore)
-      .recover {
-        case e =>
-          AppLogger.error(s"Error while deleting api subscriptions", e)
-          Done
-      }
-  }
-
   def getApiSubscriptions(teamId: String, apiId: String, version: String) =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
@@ -2986,7 +2811,7 @@ class ApiController(
                                             BSONObjectID.generate().stringify
                                           ),
                                           tenant = ctx.tenant.id,
-                                          sender = ctx.user,
+                                          sender = ctx.user.asNotificationSender,
                                           action =
                                             NotificationAction.NewPostPublished(
                                               teamId,
@@ -3405,7 +3230,7 @@ class ApiController(
                                                           .stringify
                                                       ),
                                                       tenant = ctx.tenant.id,
-                                                      sender = ctx.user,
+                                                      sender = ctx.user.asNotificationSender,
                                                       action =
                                                         NotificationAction
                                                           .NewIssueOpen(
@@ -3484,7 +3309,7 @@ class ApiController(
                                                 .stringify
                                             ),
                                             tenant = ctx.tenant.id,
-                                            sender = ctx.user,
+                                            sender = ctx.user.asNotificationSender,
                                             action =
                                               NotificationAction.NewIssueOpen(
                                                 teamId,
@@ -3546,7 +3371,7 @@ class ApiController(
               Notification(
                 id = NotificationId(BSONObjectID.generate().stringify),
                 tenant = ctx.tenant.id,
-                sender = ctx.user,
+                sender = ctx.user.asNotificationSender,
                 action =
                   NotificationAction.NewCommentOnIssue(teamId, apiName, linkTo),
                 notificationType = NotificationType.AcceptOnly,
@@ -3782,7 +3607,6 @@ class ApiController(
                               id = generatedApiId,
                               parent = Some(api.id),
                               currentVersion = Version(newVersion),
-                              published = false,
                               isDefault = true,
                               testing = Testing(),
                               documentation = ApiDocumentation(
@@ -3800,7 +3624,8 @@ class ApiController(
                               possibleUsagePlans = Seq.empty,
                               defaultUsagePlan = UsagePlanId(""),
                               posts = Seq.empty,
-                              issues = Seq.empty
+                              issues = Seq.empty,
+                              state = ApiState.Created
                             )
                           )
                           .flatMap {
@@ -4065,7 +3890,7 @@ class ApiController(
             id = NotificationId(BSONObjectID.generate().stringify),
             tenant = ctx.tenant.id,
             team = Some(newTeam.id),
-            sender = ctx.user,
+            sender = ctx.user.asNotificationSender,
             action = NotificationAction.TransferApiOwnership(newTeam.id, api.id)
           )
           _ <- EitherT.liftF[Future, Result, Boolean](
@@ -4076,6 +3901,336 @@ class ApiController(
         } yield {
           Ok(Json.obj("notify" -> true))
         }).merge
+      }
+    }
+
+  def createNewPlan(teamId: String, apiId: String, version: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+      )(teamId, ctx) { team =>
+        val newPlan = ctx.request.body.as(UsagePlanFormat)
+
+        def addProcess(api: Api, plan: UsagePlan): EitherT[Future, AppError, Api] = {
+          val updatedPlan: UsagePlan = (plan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty), plan.paymentSettings) match {
+            case (true, None) => plan
+            case (true, Some(settings)) => plan.addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), settings.thirdPartyPaymentSettingsId))
+            case (false, Some(settings)) => plan
+            .addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), settings.thirdPartyPaymentSettingsId))
+            .addSubscriptionStep(ValidationStep.TeamAdmin(IdGenerator.token(32), api.team), 0.some)
+            case (false, None) => plan.addSubscriptionStep(ValidationStep.TeamAdmin(IdGenerator.token(32), api.team), 0.some)
+          }
+
+          EitherT.pure[Future, AppError](api.copy(possibleUsagePlans = api.possibleUsagePlans :+ updatedPlan))
+        }
+
+        val value: EitherT[Future, AppError, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          updatedApi <- addProcess(api, newPlan)
+          _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
+        } yield Ok(updatedApi.asJson)
+
+        value.leftMap(_.render()).merge
+      }
+    }
+
+  def updatePlan(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(s"@{user.name} has updated plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+      )(teamId, ctx) { team =>
+        val updatedPlan = ctx.request.body.as(UsagePlanFormat)
+
+        def getPlanAndCheckIt(api: Api, plan: UsagePlan): EitherT[Future, AppError, UsagePlan] = {
+          api.possibleUsagePlans.find(_.id == plan.id) match {
+            case Some(oldPlan) if oldPlan.id.value != planId =>  EitherT.leftT(AppError.PlanNotFound)
+            case Some(oldPlan) if oldPlan.otoroshiTarget.map(_.otoroshiSettings) != plan.otoroshiTarget.map(_.otoroshiSettings) => EitherT.leftT(AppError.ForbiddenAction)
+            //FIXME: Handle type changes
+            case Some(oldPlan) if oldPlan.typeName != plan.typeName => EitherT.leftT(AppError.ForbiddenAction)
+            //FIXME: Handle prices changes or payment settings deletion (addition is really forbidden)
+            case Some(oldPlan) if oldPlan.paymentSettings != plan.paymentSettings =>
+              EitherT.leftT(AppError.ForbiddenAction)
+            case Some(oldPlan) => oldPlan match {
+              case p: UsagePlan.QuotasWithLimits if p.costPerMonth != plan.costPerMonth => EitherT.leftT(AppError.ForbiddenAction)
+              case p: UsagePlan.QuotasWithoutLimits
+                if p.costPerMonth != plan.costPerMonth || p.costPerAdditionalRequest != oldPlan.asInstanceOf[UsagePlan.QuotasWithoutLimits].costPerAdditionalRequest =>
+                EitherT.leftT(AppError.ForbiddenAction)
+              case p: UsagePlan.PayPerUse
+                if p.costPerMonth != plan.costPerMonth || p.costPerRequest != oldPlan.asInstanceOf[UsagePlan.PayPerUse].costPerRequest =>
+                EitherT.leftT(AppError.ForbiddenAction)
+              case _ => EitherT.pure(plan)
+            }
+            case None => EitherT.leftT(AppError.PlanNotFound)
+          }
+        }
+
+        def handleVisibilityToggling(oldApi: Api, plan: UsagePlan): EitherT[Future, AppError, UsagePlan] = {
+          oldApi.possibleUsagePlans.find(_.id == plan.id) match {
+            case Some(oldPlan) if plan.visibility != oldPlan.visibility =>
+              plan.visibility match {
+                case UsagePlanVisibility.Public => EitherT.pure(plan.removeAllAuthorizedTeams())
+                case UsagePlanVisibility.Private =>
+                  val future: Future[Either[AppError, UsagePlan]] = env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+                    .findNotDeleted(Json.obj("api" -> oldApi.id.asJson, "plan" -> plan.id.asJson))
+                    .map(subs => subs.map(_.team).distinct)
+                    .map(x => Right(plan.addAutorizedTeams(x)))
+                  val value: EitherT[Future, AppError, UsagePlan] = EitherT(future)
+                  value
+              }
+            case Some(_) => EitherT.pure(plan)
+            case None => EitherT.leftT(AppError.PlanNotFound)
+          }
+        }
+
+        def handleProcess(api: Api, plan: UsagePlan): EitherT[Future, AppError, Api] = {
+          api.possibleUsagePlans.find(_.id == plan.id)
+            .map(oldPlan => {
+              if (oldPlan.paymentSettings.isEmpty && plan.paymentSettings.isDefined) {
+                (oldPlan, plan.addSubscriptionStep(ValidationStep.Payment(IdGenerator.token(32), plan.paymentSettings.get.thirdPartyPaymentSettingsId)))
+              } else {
+                (oldPlan, plan)
+              }
+            })
+            .map{case (oldPlan, plan) =>
+              if (oldPlan.paymentSettings.isDefined && plan.paymentSettings.isEmpty) {
+                (oldPlan, plan.removeSubscriptionStep(step => step.name == "payment"))
+              } else {
+                (oldPlan, plan)
+              }
+            }
+            .map{case (oldPlan, plan) =>
+              if (oldPlan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty) && plan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.nonEmpty)) {
+                plan.addSubscriptionStep(ValidationStep.TeamAdmin(IdGenerator.token(32), api.team))
+              } else {
+                plan
+              }
+            } match {
+            case Some(updatedPlan) => EitherT.pure[Future, AppError](api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(_.id != updatedPlan.id) :+ updatedPlan))
+            case None => EitherT.leftT[Future, Api](AppError.PlanNotFound)
+          }
+        }
+
+        def runDemandUpdate(api: Api, updatedPlan: UsagePlan):EitherT[Future, AppError, Unit] = {
+          import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
+
+          implicit val c: DaikokuActionContext[JsValue] = ctx
+          implicit val mat: Materializer = env.defaultMaterializer
+          implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+          implicit val currentUser: User = ctx.user
+
+          val res: Future[Either[AppError, Unit]] = env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
+            .streamAllRaw(Json.obj(
+              "api" -> api.id.asJson,
+              "plan" -> updatedPlan.id.asJson,
+              "$or" -> Json.arr(
+                Json.obj("state" -> SubscriptionDemandState.InProgress.name),
+                Json.obj("state" -> SubscriptionDemandState.Waiting.name),
+              )))
+            .map(json.SubscriptionDemandFormat.reads)
+            .collect { case JsSuccess(demand, _) => demand }
+            .mapAsync(1)(demand => {
+
+              val newSteps = updatedPlan.subscriptionProcess.map(validationStep => {
+                val demandStep = demand.steps.find(_.step.id == validationStep.id)
+
+                SubscriptionDemandStep(
+                  id = demandStep.map(_.id).getOrElse(SubscriptionDemandStepId(IdGenerator.token(32))),
+                  state = demandStep.map(_.state).getOrElse(SubscriptionDemandState.Waiting),
+                  step = validationStep,
+                  metadata = demandStep.map(_.metadata).getOrElse(Json.obj())
+                )
+              })
+
+              env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).save(demand.copy(steps = newSteps))
+            })
+            .runWith(Sink.ignore)
+            .map(_ => {
+              api.possibleUsagePlans.find(_.id == updatedPlan.id)
+                .map(plan =>
+                  updatedPlan.subscriptionProcess.foreach(step => {
+                    if (!plan.subscriptionProcess.exists(_.id == step.id)) {
+                      for {
+                        demands <- env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+                          "api" -> api.id.asJson,
+                          "plan" -> updatedPlan.id.asJson,
+                          "$or" -> Json.arr(
+                            Json.obj("state" -> SubscriptionDemandState.InProgress.name),
+                            Json.obj("state" -> SubscriptionDemandState.Waiting.name),
+                          )
+                        ))
+                        validators <- env.dataStore.stepValidatorRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+                          "subscriptionDemand" -> Json.obj("$in" -> JsArray(demands.map(_.id.asJson))),
+                          "step" -> step.id
+                        ))
+                        _ <- Future.sequence(validators.map(v => validateProcessWithStepValidator(v, ctx.tenant)).map(_.value))
+                      } yield ()
+                    } else if (!plan.subscriptionProcess.find(_.id == step.id).contains(step)) {
+                      for {
+                        demands <- env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+                          "api" -> api.id.asJson,
+                          "plan" -> updatedPlan.id.asJson,
+                          "$or" -> Json.arr(
+                            Json.obj("state" -> SubscriptionDemandState.InProgress.name),
+                            Json.obj("state" -> SubscriptionDemandState.Waiting.name),
+                          )
+                        ))
+                        validators <- env.dataStore.stepValidatorRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj(
+                          "subscriptionDemand" -> Json.obj("$in" -> JsArray(demands.map(_.id.asJson))),
+                          "step" -> step.id
+                        ))
+                        _ <- Future.sequence(demands
+                          .filter(d => validators.exists(_.subscriptionDemand == d.id))
+                          .map(d => apiService.runSubscriptionProcess(d.id, ctx.tenant))
+                          .map(_.value))
+                      } yield ()
+                    }
+                  })
+                ) match {
+                case _ => Right(())
+              }
+            })
+
+          val value: EitherT[Future, AppError, Unit] = EitherT(res)
+          value
+        }
+
+        val value: EitherT[Future, AppError, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
+            .updateManyByQuery(
+              Json.obj("api" -> api.id.asJson, "plan" -> planId, "state" -> SubscriptionDemandState.InProgress.name),
+              Json.obj(
+              "$set" -> Json.obj("state" -> SubscriptionDemandState.Blocked.name)
+            )))
+          _ <- getPlanAndCheckIt(api, updatedPlan)
+          _ <- handleVisibilityToggling(api, updatedPlan)
+          updatedApi <- handleProcess(api, updatedPlan)
+          _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
+          _ <- EitherT.liftF(otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)))
+          _ <- runDemandUpdate(api, updatedPlan)
+          //FIXME: attention, peut etre il y en a qui sont blocked de base
+          _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
+            .updateManyByQuery(
+              Json.obj("api" -> api.id.asJson, "plan" -> planId, "state" -> SubscriptionDemandState.Blocked.name),
+              Json.obj(
+                "$set" -> Json.obj("state" -> SubscriptionDemandState.InProgress.name)
+              )))
+        } yield Ok(updatedApi.asJson)
+
+        value.leftMap(_.render()).merge
+      }
+    }
+
+  def deletePlan(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(s"@{user.name} has deleted plan @{plan.id} for api @{api.name}")
+      )(teamId, ctx) { team =>
+        val value: EitherT[Future, AppError, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id.value == planId), AppError.PlanNotFound)
+          updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(pp => pp.id.value != planId))
+          _ <- EitherT.liftF(apiService.deleteApiPlansSubscriptions(Seq(plan), api, ctx.tenant, ctx.user))
+          _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
+          _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(ctx.tenant).save(
+            Operation(
+              DatastoreId(IdGenerator.token(24)),
+              tenant = ctx.tenant.id,
+              itemId = plan.id.value,
+              itemType = ItemType.ThirdPartyProduct,
+              action = OperationAction.Delete,
+              payload = Json.obj(
+                "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
+              ).some
+            )
+          ))
+        } yield Ok(updatedApi.asJson)
+
+        value.leftMap(_.render()).merge
+      }
+    }
+
+
+  def setupPayment(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(s"@{user.name} has setup payment for plan @{plan.id} of api @{api.name}")
+      )(teamId, ctx) { team =>
+        val paymentSettingsId = (ctx.request.body \ "paymentSettings" \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat)
+        val base = ctx.request.body.as(BasePaymentInformationFormat)
+
+        def getRatedPlan(api: Api, plan: String, base: BasePaymentInformation): EitherT[Future, AppError, UsagePlan] = {
+          api.possibleUsagePlans.find(_.id.value == plan) match {
+            case Some(p: UsagePlan.QuotasWithLimits) => EitherT.pure(p.mergeBase(base))
+            case Some(p: UsagePlan.QuotasWithoutLimits) =>
+              val costPerAdditionalRequest = (ctx.request.body \ "costPerAdditionalRequest").as[BigDecimal]
+              val ratedPlan = p.mergeBase(base).copy(costPerAdditionalRequest = costPerAdditionalRequest)
+              EitherT.pure(ratedPlan)
+            case Some(p: UsagePlan.PayPerUse) =>
+              val costPerRequest = (ctx.request.body \ "costPerRequest").as[BigDecimal]
+              val ratedPlan = p.mergeBase(base).copy(costPerRequest = costPerRequest)
+              EitherT.pure(ratedPlan)
+            case Some(_) => EitherT.leftT[Future, UsagePlan](AppError.PlanUnauthorized)
+            case None => EitherT.leftT[Future, UsagePlan](AppError.PlanNotFound)
+          }
+        }
+
+        val value: EitherT[Future, AppError, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id.value == planId), AppError.PlanNotFound)
+          _ <- plan.paymentSettings match {
+            case Some(_) => EitherT.leftT[Future, Unit](AppError.EntityConflict("Payment,  already setup"))
+            case None => EitherT.pure[Future, AppError](())
+          }
+          ratedPlan <- getRatedPlan(api, planId, base)
+          paymentSettings <- paymentClient.createProduct(ctx.tenant, api, ratedPlan, paymentSettingsId)
+
+          ratedPlanwithSettings = ratedPlan match {
+            case p: UsagePlan.QuotasWithLimits =>
+              p.copy(paymentSettings = paymentSettings.some)
+                .addSubscriptionStep(ValidationStep.Payment(
+                  id = IdGenerator.token(32),
+                  thirdPartyPaymentSettingsId = paymentSettings.thirdPartyPaymentSettingsId))
+            case p: UsagePlan.QuotasWithoutLimits =>
+              p.copy(paymentSettings = paymentSettings.some)
+                .addSubscriptionStep(ValidationStep.Payment(
+                  id = IdGenerator.token(32),
+                  thirdPartyPaymentSettingsId = paymentSettings.thirdPartyPaymentSettingsId
+                ))
+            case p: UsagePlan.PayPerUse =>
+              p.copy(paymentSettings = paymentSettings.some)
+                .addSubscriptionStep(ValidationStep.Payment(
+                  id = IdGenerator.token(32),
+                  thirdPartyPaymentSettingsId = paymentSettings.thirdPartyPaymentSettingsId
+                ))
+            case p: UsagePlan => p
+          }
+
+          apiToSave = api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(_.id != ratedPlan.id) :+ ratedPlanwithSettings)
+          _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(apiToSave))
+        } yield Ok(apiToSave.asJson)
+
+        value.leftMap(_.render()).merge
+      }
+    }
+  def stopPayment(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
+      )(teamId, ctx) { team =>
+
+        val value: EitherT[Future, Result, Result] = for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId), AppError.ApiNotFound.render())
+          //todo: save api
+          //todo: run job to "close payment"
+          //todo: close pricing in stripe ?
+        } yield (Ok(Json.obj()))
+
+        value.merge
       }
     }
 }

@@ -1,4 +1,7 @@
-import { constraints, format, type } from '@maif/react-forms';
+import { UniqueIdentifier } from '@dnd-kit/core';
+import { constraints, Form, format, Schema, type } from '@maif/react-forms';
+import { useQuery } from '@tanstack/react-query';
+import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
@@ -6,24 +9,28 @@ import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import Settings from 'react-feather/dist/icons/settings'
+import Trash from 'react-feather/dist/icons/trash'
+import Plus from 'react-feather/dist/icons/plus'
+import AtSign from 'react-feather/dist/icons/at-sign'
+import CreditCard from 'react-feather/dist/icons/credit-card'
+import User from 'react-feather/dist/icons/user'
 
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import { ITeamSimple } from '../../../types';
-import { IApi, IUsagePlan } from '../../../types/api';
-import { ITenant } from '../../../types/tenant';
+import { IApi, isError, isValidationStepEmail, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepTeamAdmin, UsagePlanVisibility } from '../../../types/api';
+import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
-  formatCurrency,
-  formatPlanType,
-  getCurrencySymbol,
-  IMultistepsformStep,
-  MultiStepForm,
-  newPossibleUsagePlan,
-  Option,
-  renderPricing
+  BeautifulTitle, formatPlanType, IMultistepsformStep,
+  MultiStepForm, Option,
+  renderPricing,
+  team
 } from '../../utils';
+import { addArrayIf, insertArrayIndex } from '../../utils/array';
+import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -218,6 +225,7 @@ const CustomMetadataInput = (props: {
   setValue?: (key: string, data: any) => void;
   translate: (key: string) => string
 }) => {
+  const { alert } = useContext(ModalContext);
 
   const changeValue = (possibleValues: any, key: any) => {
     const oldValue = Option(props.value?.find((x: any) => x.key === key)).getOrElse({ '': '' });
@@ -240,8 +248,8 @@ const CustomMetadataInput = (props: {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
       props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
-      props.setValue && props.setValue('subscriptionProcess', 'Manual');
-      toastr.info(props.translate('Info'), props.translate('custom.metadata.process.change.to.manual'));
+      //FIXME: add better info to user for the new subscription process
+      alert({ message: props.translate('custom.metadata.process.change.to.manual'), title: props.translate('Information') })
     }
   };
 
@@ -319,6 +327,16 @@ const CustomMetadataInput = (props: {
   );
 };
 
+type CardProps = {
+  plan: IUsagePlan
+  isDefault: boolean
+  makeItDefault?: () => void
+  toggleVisibility?: () => void
+  deletePlan?: () => void
+  editPlan?: () => void
+  duplicatePlan?: () => void
+  creation?: boolean
+}
 const Card = ({
   plan,
   isDefault,
@@ -328,36 +346,55 @@ const Card = ({
   editPlan,
   duplicatePlan,
   creation
-}: any) => {
+}: CardProps) => {
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
 
-  let pricing = renderPricing(plan, translate)
+  const pricing = renderPricing(plan, translate)
 
   const deleteWithConfirm = () => {
     confirm({ message: translate('delete.plan.confirm') })
       .then((ok) => {
-        if (ok) {
-          deletePlan();
+        if (ok && deletePlan) {
+          deletePlan()
         }
       });
   };
 
+  const noOtoroshi = !plan.otoroshiTarget || !plan.otoroshiTarget.authorizedEntities ||
+    (!plan.otoroshiTarget.authorizedEntities.groups.length &&
+      !plan.otoroshiTarget.authorizedEntities.services.length &&
+      !plan.otoroshiTarget.authorizedEntities.routes.length)
+
   return (
     <div className="card hoverable-card mb-4 shadow-sm" style={{ position: 'relative' }}>
-      {isDefault && (
-        <i
-          className="fas fa-star"
-          style={{
-            position: 'absolute',
-            fontSize: '20px',
-            top: '15px',
-            right: '15px',
-            zIndex: '100',
-          }}
-        />
+      {noOtoroshi && (
+        <BeautifulTitle className="" title={translate("warning.missing.otoroshi")} style={{
+          position: 'absolute',
+          fontSize: '20px',
+          bottom: '15px',
+          right: '15px',
+          zIndex: '100',
+          color: 'var(--error-color, #ff6347)'
+        }}>
+          <i className="fas fa-exclamation-triangle" />
+        </BeautifulTitle>
       )}
+      <div style={{
+        position: 'absolute',
+        fontSize: '20px',
+        top: '15px',
+        right: '15px',
+        zIndex: '100',
+      }}>
+        {plan.visibility === PRIVATE && (
+          <i className="fas fa-lock" />
+        )}
+        {isDefault && (
+          <i className="fas fa-star" />
+        )}
+      </div>
       {!creation && (
         <div
           className="dropdown"
@@ -437,33 +474,71 @@ const Card = ({
   );
 };
 
-const PUBLIC = 'Public';
-const PRIVATE = 'Private';
+const PUBLIC: UsagePlanVisibility = 'Public';
+const PRIVATE: UsagePlanVisibility = 'Private';
 
 type Props = {
-  value: IApi
+  api: IApi
   team: ITeamSimple
   tenant: ITenant
-  save: (api: IApi) => Promise<any>
+  setApi: (api: IApi) => void
+  setDefaultPlan: (plan: IUsagePlan) => void
   creation: boolean
   expertMode: boolean
-  injectSubMenu: (x: any) => void
+  injectSubMenu: (x: JSX.Element | null) => void
   openApiSelectModal?: () => void
 }
+type Tab = 'settings' | 'security' | 'payment' | 'subscription-process'
 export const TeamApiPricings = (props: Props) => {
-  const possibleMode = { list: 'LIST', creation: 'CREATION' };
+  const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
   const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
   const [mode, setMode] = useState('LIST');
   const [creation, setCreation] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<Tab>('settings')
 
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
+
+  const queryFullTenant = useQuery(['full-tenant'], () => Services.oneTenant(props.tenant._id))
 
   useEffect(() => {
     return () => {
       props.injectSubMenu(null);
     };
   }, []);
+
+  useEffect(() => {
+    if (mode !== possibleMode.list) {
+      props.injectSubMenu(<div className='entry__submenu d-flex flex-column'>
+        <span
+          className={classNames('submenu__entry__link', { active: selectedTab === 'settings' })}
+          onClick={() => setSelectedTab('settings')}>{translate('Settings')}</span>
+        {mode === possibleMode.edition && paidPlans.includes(planForEdition!.type) && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'payment' })}
+            onClick={() => setSelectedTab('payment')}>{translate('Payment')}</span>
+        )}
+        {mode === possibleMode.edition && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'subscription-process' })}
+            onClick={() => setSelectedTab('subscription-process')}>{translate('Process')}</span>
+        )}
+        {mode === possibleMode.edition && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'security' })}
+            onClick={() => setSelectedTab('security')}>{translate('Security')}</span>
+        )}
+      </div>)
+    } else {
+      props.injectSubMenu(null)
+    }
+
+  }, [mode, selectedTab])
+
+  useEffect(() => {
+    if (mode === possibleMode.creation) {
+      setPlanForEdition(planForEdition);
+      setMode(possibleMode.edition);
+    }
+  }, [props.api]);
+
 
   const pathes = {
     type: type.object,
@@ -509,9 +584,9 @@ export const TeamApiPricings = (props: Props) => {
 
   const quotasWithLimitsFlow = [
     {
-      label: translate('Quotas'),
+      label: translate('Third-party Payment'),
       collapsed: false,
-      flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
+      flow: ['paymentSettings'],
     },
     {
       label: translate('Billing'),
@@ -522,9 +597,9 @@ export const TeamApiPricings = (props: Props) => {
 
   const quotasWithoutLimitsFlow = [
     {
-      label: translate('Quotas'),
+      label: translate('Third-party Payment'),
       collapsed: false,
-      flow: ['maxPerSecond', 'maxPerDay', 'maxPerMonth'],
+      flow: ['paymentSettings'],
     },
     {
       label: translate('Billing'),
@@ -541,6 +616,11 @@ export const TeamApiPricings = (props: Props) => {
 
   const payPerUseFlow = [
     {
+      label: translate('Third-party Payment'),
+      collapsed: false,
+      flow: ['paymentSettings'],
+    },
+    {
       label: translate('Billing'),
       collapsed: false,
       flow: [
@@ -553,7 +633,7 @@ export const TeamApiPricings = (props: Props) => {
     },
   ];
 
-  const getRightBillingFlow = (plan: any) => {
+  const getRightBillingFlow = (plan: IUsagePlan) => {
     if (!plan) {
       return [];
     }
@@ -571,41 +651,33 @@ export const TeamApiPricings = (props: Props) => {
     }
   };
 
-  useEffect(() => {
-    if (mode === possibleMode.creation) {
-      setPlanForEdition(undefined);
-      setMode(possibleMode.list);
-    }
-  }, [props.value]);
 
-  const deletePlan = (plan: any) => {
-    let plans = cloneDeep(props.value.possibleUsagePlans).filter((p: any) => p._id !== plan._id);
-    const newValue = cloneDeep(props.value);
-    newValue.possibleUsagePlans = plans;
-    props.save(newValue);
+
+  const deletePlan = (plan: IUsagePlan) => {
+    Services.deletePlan(props.team._id, props.api._id, props.api.currentVersion, plan)
   };
 
   const createNewPlan = () => {
-    const newPlan = newPossibleUsagePlan('new plan');
-    setPlanForEdition(newPlan);
-    setMode(possibleMode.creation);
-    setCreation(true);
+    Services.fetchNewPlan('FreeWithQuotas')
+      .then(newPlan => {
+        setPlanForEdition(newPlan);
+        setMode(possibleMode.creation);
+        setSelectedTab('settings')
+        setCreation(true);
+      })
   };
-  const editPlan = (plan: any) => {
+  const editPlan = (plan: IUsagePlan) => {
     setCreation(false);
     setPlanForEdition(plan);
-    setMode(possibleMode.creation);
+    setMode(possibleMode.edition);
   };
 
-  const makePlanDefault = (plan: any) => {
-    if (props.value.defaultUsagePlan !== plan._id && plan.visibility !== PRIVATE) {
-      const updatedApi = { ...props.value, defaultUsagePlan: plan._id };
-      props.save(updatedApi);
-    }
+  const makePlanDefault = (plan: IUsagePlan) => {
+    props.setDefaultPlan(plan);
   };
 
-  const toggleVisibility = (plan: any) => {
-    if (props.value.defaultUsagePlan !== plan._id) {
+  const toggleVisibility = (plan: IUsagePlan) => {
+    if (props.api.defaultUsagePlan !== plan._id) {
       const originalVisibility = plan.visibility;
       const visibility = originalVisibility === PUBLIC ? PRIVATE : PUBLIC;
       const updatedPlan = { ...plan, visibility };
@@ -613,23 +685,42 @@ export const TeamApiPricings = (props: Props) => {
     }
   };
 
-  const savePlan = (updatedPlan: IUsagePlan) => {
-    const api = props.value;
-    const updatedApi: IApi = {
-      ...api,
-      possibleUsagePlans: [
-        ...api.possibleUsagePlans.filter((p: any) => p._id !== updatedPlan._id),
-        updatedPlan,
-      ],
-    };
-    return props.save(updatedApi);
+  const savePlan = (plan: IUsagePlan) => {
+    const service = creation ? Services.createPlan : Services.updatePlan
+    return service(props.team._id, props.api._id, props.api.currentVersion, plan)
+      .then(response => {
+        if (isError(response)) {
+          toastr.error(translate('Error'), translate(response.error))
+        } else {
+          toastr.success(translate('Success'), creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
+          setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
+          props.setApi(response)
+          setCreation(false)
+        }
+      })
   };
 
-  const clonePlanAndEdit = (plan: any) => {
-    const clone = {
+  const setupPayment = (plan: IUsagePlan) => {
+    //FIXME: beware of update --> display a message to explain what user is doing !!
+    console.debug({ planForEdition })
+    return Services.setupPayment(props.team._id, props.api._id, props.api.currentVersion, plan)
+      .then(response => {
+        if (isError(response)) {
+          toastr.error(translate('Error'), translate(response.error))
+        } else {
+          toastr.success(translate('Success'), translate('plan.payment.setup.successful'))
+          setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
+          props.setApi(response)
+        }
+      })
+  }
+
+  const clonePlanAndEdit = (plan: IUsagePlan) => {
+    const clone: IUsagePlan = {
       ...cloneDeep(plan),
       _id: nanoid(32),
       customName: `${plan.customName} (copy)`,
+      paymentSettings: undefined
     };
     setPlanForEdition(clone);
     setMode(possibleMode.creation);
@@ -638,9 +729,9 @@ export const TeamApiPricings = (props: Props) => {
 
   const importPlan = () => {
     openApiSelectModal({
-      api: props.value,
+      api: props.api,
       teamId: props.team._id,
-      onClose: (plan: any) => {
+      onClose: (plan) => {
         const clone = {
           ...cloneDeep(plan),
           _id: nanoid(32),
@@ -667,6 +758,13 @@ export const TeamApiPricings = (props: Props) => {
     'QuotasWithoutLimits',
     'PayPerUse',
   ];
+
+  const paidPlans = [
+    'QuotasWithLimits',
+    'QuotasWithoutLimits',
+    'PayPerUse',
+  ];
+
   const steps: Array<IMultistepsformStep<IUsagePlan>> = [
     {
       id: 'info',
@@ -676,15 +774,22 @@ export const TeamApiPricings = (props: Props) => {
           type: type.string,
           format: format.select,
           label: translate('Type'),
-          onChange: ({ rawValues, setValue, value }: { rawValues: any, setValue: (key: string, value: any) => void, value: string }) => {
-            const isDescIsDefault = Object.values(SUBSCRIPTION_PLAN_TYPES)
-              .map(({ defaultDescription }) => defaultDescription)
-              .some((d) => !rawValues.customDescription || d === rawValues.customDescription);
-            if (isDescIsDefault) {
-              //@ts-ignore //FIXME ???
-              const planType = SUBSCRIPTION_PLAN_TYPES[value]
-              setValue('customDescription', planType.defaultDescription);
-            }
+          onAfterChange: ({ rawValues, setValue, value, reset }: any) => {
+
+            Services.fetchNewPlan(value)
+              .then((newPlan => {
+                const isDescIsDefault = Object.values(SUBSCRIPTION_PLAN_TYPES)
+                  .map(({ defaultDescription }) => defaultDescription)
+                  .some((d) => !rawValues.customDescription || d === rawValues.customDescription);
+                let customDescription = rawValues.customDescription;
+                if (isDescIsDefault) {
+                  const planType = SUBSCRIPTION_PLAN_TYPES[value]
+                  customDescription = planType.defaultDescription;
+                }
+
+                reset({ ...newPlan, ...rawValues, type: value, customDescription })
+              }))
+
           },
           options: planTypes,
           transformer: (value: any) => ({
@@ -722,10 +827,10 @@ export const TeamApiPricings = (props: Props) => {
             otoroshiSettings: {
               type: type.string,
               format: format.select,
-              disabled: !creation && !!(planForEdition as any)?.otoroshiTarget?.otoroshiSettings,
+              disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translate('Otoroshi instances'),
               optionsFrom: Services.allSimpleOtoroshis(props.tenant._id),
-              transformer: (s: any) => ({
+              transformer: (s: IOtoroshiSettings) => ({
                 label: s.url,
                 value: s._id
               }),
@@ -734,15 +839,15 @@ export const TeamApiPricings = (props: Props) => {
               type: type.object,
               visible: ({ rawValues }) => !!rawValues.otoroshiTarget.otoroshiSettings,
               deps: ['otoroshiTarget.otoroshiSettings'],
-              render: (props: any) => OtoroshiEntitiesSelector({ ...props, translate }),
+              render: (props) => OtoroshiEntitiesSelector({ ...props, translate }),
               label: translate('Authorized entities'),
               placeholder: translate('Authorized.entities.placeholder'),
               help: translate('authorized.entities.help'),
             },
           },
-        },
+        }
       },
-      flow: ['otoroshiTarget'],
+      flow: ['otoroshiTarget', 'subscriptionProcess'],
     },
     {
       id: 'customization',
@@ -867,10 +972,9 @@ export const TeamApiPricings = (props: Props) => {
       },
     },
     {
-      id: 'quotasAndBilling',
-      label: translate('Quotas & Billing'),
-      disabled: (plan: any) => plan.type === 'FreeWithoutQuotas',
-      flow: getRightBillingFlow,
+      id: 'quotas',
+      label: translate('Quotas'),
+      disabled: (plan) => plan.type === 'FreeWithoutQuotas' || plan.type === 'PayPerUse',
       schema: {
         maxPerSecond: {
           type: type.number,
@@ -911,229 +1015,215 @@ export const TeamApiPricings = (props: Props) => {
             constraints.integer('constraints.integer'),
           ],
         },
-        costPerMonth: {
-          type: type.number,
-          label: ({ rawValues }: any) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
-          placeholder: translate('Cost per billing period'),
-          props: {
-            step: 1,
-            min: 0,
-          },
-          constraints: [constraints.positive('constraints.positive')],
-        },
-        costPerAdditionalRequest: {
-          type: type.number,
-          label: translate('Cost per add. req.'),
-          placeholder: translate('Cost per additionnal request'),
-          props: {
-            step: 1,
-            min: 0,
-          },
-          constraints: [constraints.positive('constraints.positive')],
-        },
-        costPerRequest: {
-          type: type.number,
-          label: translate('Cost per req.'),
-          placeholder: translate('Cost per request'),
-          props: {
-            step: 1,
-            min: 0,
-          },
-          constraints: [constraints.positive('constraints.positive')],
-        },
-        currency: {
-          type: type.object,
-          format: format.form,
-          label: null,
-          schema: {
-            code: {
-              type: type.string,
-              format: format.select,
-              label: translate('Currency'),
-              defaultValue: 'EUR',
-              options: currencies.map((c) => ({
-                label: `${c.name} (${c.symbol})`,
-                value: c.code,
-              })),
-            },
-          },
-        },
-        billingDuration: {
-          type: type.object,
-          format: format.form,
-          label: translate('Billing every'),
-          schema: {
-            value: {
-              type: type.number,
-              label: translate('Billing period'),
-              placeholder: translate('The Billing period'),
-              props: {
-                step: 1,
-                min: 0,
-              },
-              constraints: [
-                constraints.positive('constraints.positive'),
-                constraints.integer('constraints.integer'),
-                constraints.required('constraints.required.billing.period'),
-              ],
-            },
-            unit: {
-              type: type.string,
-              format: format.buttonsSelect,
-              label: translate('Billing period unit'),
-              options: [
-                { label: translate('Hours'), value: 'Hour' },
-                { label: translate('Days'), value: 'Day' },
-                { label: translate('Months'), value: 'Month' },
-                { label: translate('Years'), value: 'Year' },
-              ],
-              constraints: [
-                constraints.required('constraints.required.billing.period'),
-                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
-              ],
-            },
-          },
-        },
-        trialPeriod: {
-          type: type.object,
-          format: format.form,
-          label: translate('Trial'),
-          schema: {
-            value: {
-              type: type.number,
-              label: translate('Trial period'),
-              placeholder: translate('The trial period'),
-              props: {
-                step: 1,
-                min: 0,
-              },
-              constraints: [
-                constraints.integer(translate('constraints.integer')),
-                constraints.test('positive', translate('constraints.positive'), (v) => v >= 0),
-              ],
-            },
-            unit: {
-              type: type.string,
-              format: format.buttonsSelect,
-              label: translate('Trial period unit'),
-              options: [
-                { label: translate('Hours'), value: 'Hour' },
-                { label: translate('Days'), value: 'Day' },
-                { label: translate('Months'), value: 'Month' },
-                { label: translate('Years'), value: 'Year' },
-              ],
-              constraints: [
-                constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
-                // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period'))]) //FIXME
-              ],
-            },
-          },
-        },
       },
-    },
-    {
-      id: 'security',
-      label: translate('Settings'),
-      schema: {
-        otoroshiTarget: {
-          type: type.object,
-          visible: false,
-        },
-        autoRotation: {
-          type: type.bool,
-          label: translate('Force apikey auto-rotation'),
-        },
-        aggregationApiKeysSecurity: {
-          type: type.bool,
-          visible: !!props.tenant.aggregationApiKeysSecurity,
-          label: translate('aggregation api keys security'),
-          help: translate('aggregation_apikeys.security.help'),
-          onChange: ({ value, setValue }: any) => {
-            if (value)
-              confirm({ message: translate('aggregation.api_key.security.notification') })
-                .then((ok) => {
-                  if (ok) {
-                    setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
-                    setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false);
-                  }
-                });
-          },
-        },
-        allowMultipleKeys: {
-          type: type.bool,
-          label: translate('Allow multiple apiKey demands'),
-        },
-        subscriptionProcess: {
-          type: type.string,
-          format: format.buttonsSelect,
-          disabled: ({ rawValues }: any) => !!rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length,
-          label: ({ rawValues }: any) => translate('Subscription') +
-            (rawValues?.otoroshiTarget?.apikeyCustomization?.customMetadata?.length
-              ? ` (${translate('Subscription.manual.help')})`
-              : ''),
-          options: [
-            {
-              label: translate('Automatic'),
-              value: 'Automatic',
-            },
-            { label: translate('Manual'), value: 'Manual' },
-          ],
-          constraints: [
-            constraints.oneOf(['Automatic', 'Manual'], translate('constraints.oneof.sub.process')),
-          ],
-        },
-        integrationProcess: {
-          type: type.string,
-          format: format.buttonsSelect,
-          label: () => translate('Integration'),
-          options: [
-            {
-              label: translate('Automatic'),
-              value: 'Automatic',
-            },
-            { label: translate('ApiKey'), value: 'ApiKey' },
-          ], //@ts-ignore //FIXME
-          expert: true,
-        },
-      },
-      flow: [
-        {
-          label: translate('Security'),
-          flow: ['autoRotation', 'allowMultipleKeys', 'aggregationApiKeysSecurity'],
-          inline: true,
-        },
-        'subscriptionProcess',
-        'integrationProcess',
-      ],
     },
   ];
 
+  const billingSchema = {
+    paymentSettings: {
+      type: type.object,
+      format: format.form,
+      label: translate('payment settings'),
+      schema: {
+        thirdPartyPaymentSettingsId: {
+          type: type.string,
+          format: format.select,
+          label: translate('Type'),
+          help: 'If no type is selected, use daikokuy APIs to get billing informations',
+          options: queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : [],
+          transformer: (s: IThirdPartyPaymentSettings) => ({ label: s.name, value: s._id }),
+          props: { isClearable: true },
+          onChange: ({ rawValues, setValue, value }) => {
+            const settings = queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : []
+            setValue('paymentSettings.type', settings.find(s => value === s._id)?.type);
+          }
+        }
+      }
+    },
+    costPerMonth: {
+      type: type.number,
+      label: ({ rawValues }) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
+      placeholder: translate('Cost per billing period'),
+      constraints: [constraints.positive('constraints.positive')],
+    },
+    costPerAdditionalRequest: {
+      type: type.number,
+      label: translate('Cost per add. req.'),
+      placeholder: translate('Cost per additionnal request'),
+      constraints: [constraints.positive('constraints.positive')],
+    },
+    costPerRequest: {
+      type: type.number,
+      label: translate('Cost per req.'),
+      placeholder: translate('Cost per request'),
+      constraints: [constraints.positive('constraints.positive')],
+    },
+    currency: {
+      type: type.object,
+      format: format.form,
+      label: null,
+      schema: {
+        code: {
+          type: type.string,
+          format: format.select,
+          label: translate('Currency'),
+          defaultValue: 'EUR',
+          options: currencies.map((c) => ({
+            label: `${c.name} (${c.symbol})`,
+            value: c.code,
+          })),
+        },
+      },
+    },
+    billingDuration: {
+      type: type.object,
+      format: format.form,
+      label: translate('Billing every'),
+      schema: {
+        value: {
+          type: type.number,
+          label: translate('Billing period'),
+          placeholder: translate('The Billing period'),
+          props: {
+            step: 1,
+            min: 0,
+          },
+          constraints: [
+            constraints.positive('constraints.positive'),
+            constraints.integer('constraints.integer'),
+            constraints.required('constraints.required.billing.period'),
+          ],
+        },
+        unit: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: translate('Billing period unit'),
+          options: [
+            { label: translate('Hours'), value: 'Hour' },
+            { label: translate('Days'), value: 'Day' },
+            { label: translate('Months'), value: 'Month' },
+            { label: translate('Years'), value: 'Year' },
+          ],
+          constraints: [
+            constraints.required('constraints.required.billing.period'),
+            constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
+          ],
+        },
+      },
+    },
+    trialPeriod: {
+      type: type.object,
+      format: format.form,
+      label: translate('Trial'),
+      schema: {
+        value: {
+          type: type.number,
+          label: translate('Trial period'),
+          placeholder: translate('The trial period'),
+          defaultValue: 0,
+          props: {
+            step: 1,
+            min: 0,
+          },
+          constraints: [
+            constraints.integer(translate('constraints.integer')),
+            constraints.test('positive', translate('constraints.positive'), (v) => v >= 0),
+          ],
+        },
+        unit: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: translate('Trial period unit'),
+          defaultValue: 'Month',
+          options: [
+            { label: translate('Hours'), value: 'Hour' },
+            { label: translate('Days'), value: 'Day' },
+            { label: translate('Months'), value: 'Month' },
+            { label: translate('Years'), value: 'Year' },
+          ],
+          constraints: [
+            constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period')),
+            // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period'))]) //FIXME
+          ],
+        },
+      },
+    },
+  }
+
+  const securitySchema: Schema = {
+    otoroshiTarget: {
+      type: type.object,
+      visible: false,
+    },
+    autoRotation: {
+      type: type.bool,
+      format: format.buttonsSelect,
+      label: translate('Force apikey auto-rotation'),
+      props: {
+        trueLabel: translate('Enabled'),
+        falseLabel: translate('Disabled'),
+      }
+    },
+    aggregationApiKeysSecurity: {
+      type: type.bool,
+      format: format.buttonsSelect,
+      visible: !!props.tenant.aggregationApiKeysSecurity,
+      label: translate('aggregation api keys security'),
+      help: translate('aggregation_apikeys.security.help'),
+      onChange: ({ value, setValue }: any) => {
+        if (value)
+          confirm({ message: translate('aggregation.api_key.security.notification') })
+            .then((ok) => {
+              if (ok) {
+                setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
+                setValue('otoroshiTarget.apikeyCustomization.clientIdOnly', false);
+              }
+            });
+      },
+      props: {
+        trueLabel: translate('Enabled'),
+        falseLabel: translate('Disabled'),
+      }
+    },
+    allowMultipleKeys: {
+      type: type.bool,
+      format: format.buttonsSelect,
+      label: translate('Allow multiple apiKey demands'),
+      props: {
+        trueLabel: translate('Enabled'),
+        falseLabel: translate('Disabled'),
+      }
+    },
+    integrationProcess: {
+      type: type.string,
+      format: format.buttonsSelect,
+      label: () => translate('Integration'),
+      options: [
+        {
+          label: translate('Automatic'),
+          value: 'Automatic',
+        },
+        { label: translate('ApiKey'), value: 'ApiKey' },
+      ], //@ts-ignore //FIXME
+      expert: true,
+    },
+  }
+
   return (<div className="d-flex col flex-column pricing-content">
     <div className="album">
+      {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left fa-lg cursor-pointer" style={{ marginTop: 0 }} />}
       <div className="container">
         <div className="d-flex mb-3">
-          <button onClick={createNewPlan} type="button" className="btn btn-outline-success btn-sm me-1">
+          {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-success btn-sm me-1">
             {translate('add a new plan')}
-          </button>
-          {!!props.value.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
+          </button>}
+          {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
             {translate('import a plan')}
           </button>)}
-          {planForEdition && mode === possibleMode.creation && (<div className="flex-grow-1 d-flex justify-content-end">
-            <button onClick={cancelEdition} type="button" className="btn btn-outline-danger me-1" style={{ marginTop: 0 }}>
-              {translate('Cancel')}
-            </button>
-          </div>)}
         </div>
-        {planForEdition && mode === possibleMode.creation && (<div className="row">
-          <div className="col-md-4">
-            <Card
-              api={props.value}
-              plan={planForEdition}
-              isDefault={(planForEdition as any)._id === props.value.defaultUsagePlan}
-              creation={true} />
-          </div>
-          <div className="col-md-8 d-flex">
-            <MultiStepForm<IUsagePlan>
+        {planForEdition && mode !== possibleMode.list && (<div className="row">
+          <div className="col-md-12">
+            {selectedTab === 'settings' && <MultiStepForm<IUsagePlan>
               value={planForEdition}
               steps={steps}
               initial="info"
@@ -1144,17 +1234,34 @@ export const TeamApiPricings = (props: Props) => {
                 skip: translate('Skip'),
                 next: translate('Next'),
                 save: translate('Save'),
-              }} />
+              }} />}
+            {selectedTab === 'payment' && (
+              <Form
+                schema={billingSchema}
+                flow={getRightBillingFlow(planForEdition)}
+                onSubmit={plan => setupPayment(plan)}
+                value={planForEdition}
+              />
+            )}
+            {selectedTab === 'security' && (
+              <Form
+                schema={securitySchema}
+                onSubmit={savePlan}
+                value={planForEdition}
+              />
+            )}
+            {selectedTab === 'subscription-process' && (
+              <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
+            )}
           </div>
         </div>)}
         {mode === possibleMode.list && (<div className="row">
-          {props.value.possibleUsagePlans
+          {props.api.possibleUsagePlans
             .sort((a, b) => (a.customName || a.type).localeCompare(b.customName || b.type))
             .map((plan) => <div key={plan._id} className="col-md-4">
               <Card
-                api={props.value}
                 plan={plan}
-                isDefault={plan._id === props.value.defaultUsagePlan}
+                isDefault={plan._id === props.api.defaultUsagePlan}
                 makeItDefault={() => makePlanDefault(plan)}
                 toggleVisibility={() => toggleVisibility(plan)}
                 deletePlan={() => deletePlan(plan)}
@@ -1166,3 +1273,255 @@ export const TeamApiPricings = (props: Props) => {
     </div>
   </div>);
 };
+
+
+
+type SubProcessProps = {
+  savePlan: (plan: IUsagePlan) => Promise<void>,
+  value: IUsagePlan,
+  team: ITeamSimple,
+  tenant: ITenantFull
+}
+
+type EmailOption = { option: 'all' | 'oneOf' }
+
+const SubscriptionProcessEditor = (props: SubProcessProps) => {
+  const { translate } = useContext(I18nContext);
+  const { openFormModal, close } = useContext(ModalContext);
+
+  const addStepToRightPlace = (process: Array<IValidationStep>, step: IValidationStep, index: number): Array<IValidationStep> => {
+    if (step.type === 'teamAdmin') {
+      return insertArrayIndex(step, process, 0)
+    } else if (step.type === 'email') {
+      return insertArrayIndex(step, process, index)
+    } else {
+      return process
+    }
+  }
+
+
+  const editProcess = (name: string, index: number) => {
+    //todo: use the index !!
+    switch (name) {
+      case 'email':
+        return openFormModal({
+          title: translate('subscription.process.add.email.step.title'),
+          schema: {
+            title: {
+              type: type.string,
+              defaultValue: "Email",
+              constraints: [
+                constraints.required(translate('constraints.required.value'))
+              ]
+            },
+            emails: {
+              type: type.string,
+              format: format.email,
+              array: true,
+            },
+            message: {
+              type: type.string,
+              format: format.text
+            },
+            option: {
+              type: type.string,
+              format: format.buttonsSelect,
+              options: ["all", 'oneOf'],
+              defaultValue: 'oneOf'
+            }
+          },
+          onSubmit: (data: IValidationStepEmail & EmailOption) => {
+            if (data.option === 'oneOf') {
+              const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32), title: data.title }
+              props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }, index) })
+            } else {
+              const steps: Array<IValidationStepEmail> = data.emails.map(email => ({ type: 'email', emails: [email], message: data.message, id: nanoid(32), title: data.title }))
+              const subscriptionProcess = steps.reduce((process, step) => addStepToRightPlace(process, step, index), props.value.subscriptionProcess)
+              props.savePlan({ ...props.value, subscriptionProcess })
+
+            }
+          },
+          actionLabel: translate('Create')
+        })
+      case 'teamAdmin': {
+        const step: IValidationStepTeamAdmin = { type: 'teamAdmin', team: props.team._id, id: nanoid(32), title: 'Admin' }
+        return props.savePlan({ ...props.value, subscriptionProcess: [step, ...props.value.subscriptionProcess] })
+          .then(() => close())
+
+      }
+    }
+  }
+
+  const editMailStep = (value: IValidationStepEmail) => {
+    return openFormModal({
+      title: translate('subscription.process.update.email.step.title'),
+      schema: {
+        emails: {
+          type: type.string,
+          array: true,
+        },
+        message: {
+          type: type.string,
+          format: format.text
+        }
+      },
+      onSubmit: (data: IValidationStepEmail) => {
+        props.savePlan({
+          ...props.value,
+          subscriptionProcess: props.value.subscriptionProcess.map(p => {
+            if (p.id === data.id) {
+              return data
+            }
+            return p
+          })
+        })
+      },
+      actionLabel: translate('Update'),
+      value
+    })
+  }
+
+  //todo
+  const addProcess = (index: number) => {
+    const alreadyStepAdmin = props.value.subscriptionProcess.some(isValidationStepTeamAdmin)
+
+    const options = addArrayIf(!alreadyStepAdmin, [
+      { value: 'email', label: translate('subscription.process.email') }
+    ], { value: 'teamAdmin', label: translate('subscription.process.team.admin') })
+
+    openFormModal({
+      title: translate('subscription.process.creation.title'),
+      schema: {
+        type: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: translate('subscription.process.type.selection'),
+          options
+        }
+      },
+      onSubmit: (data: IValidationStep) => editProcess(data.type, index),
+      actionLabel: translate('Create'),
+      noClose: true
+    })
+  }
+
+  const deleteStep = (deletedStepId: UniqueIdentifier) => {
+    const subscriptionProcess = props.value.subscriptionProcess.filter(step => step.id !== deletedStepId)
+    props.savePlan({ ...props.value, subscriptionProcess })
+  }
+
+  if (!props.value.subscriptionProcess.length) {
+    return (
+      <div className='d-flex flex-column align-items-center'>
+        <div> {translate('api.pricings.no.step.explanation')}</div>
+        <button className='btn btn-outline-secondary my-2' onClick={() => addProcess(0)}>
+          {translate('api.pricings.add.first.step.btn.label')}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className='d-flex flex-row align-items-center'>
+      <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(0)}><Plus /></button>
+      <SortableList
+        items={props.value.subscriptionProcess}
+        onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
+        className="flex-grow-1"
+        renderItem={(item, idx) => {
+          if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
+            return (
+              <>
+                <FixedItem id={item.id}>
+                  <ValidationStep
+                    index={idx + 1}
+                    step={item}
+                    tenant={props.tenant} />
+                </FixedItem>
+                <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
+              </>
+            )
+          } else if (isValidationStepPayment(item)) {
+            return (
+              <FixedItem id={item.id}>
+                <ValidationStep
+                  index={idx + 1}
+                  step={item}
+                  tenant={props.tenant} />
+              </FixedItem>
+            )
+          } else {
+            return (
+              <>
+                <SortableItem
+                  className="validation-step-container"
+                  action={
+                    <div className={classNames('d-flex flex-row', {
+                      'justify-content-between': isValidationStepEmail(item),
+                      'justify-content-end': !isValidationStepEmail(item),
+                    })}>
+                      {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
+                      <button className='btn btn-sm btn-outline-danger' onClick={() => deleteStep(item.id)}><Trash size={15} /></button>
+                    </div>}
+                  id={item.id}>
+                  <ValidationStep
+                    index={idx + 1}
+                    step={item}
+                    tenant={props.tenant} />
+                </SortableItem>
+                <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
+              </>
+            )
+          }
+        }}
+      />
+    </div>
+  )
+}
+
+type ValidationStepProps = {
+  step: IValidationStep,
+  tenant: ITenantFull,
+  update?: () => void,
+  index: number
+}
+
+const ValidationStep = (props: ValidationStepProps) => {
+  const step = props.step
+  if (isValidationStepPayment(step)) {
+    const thirdPartyPaymentSettings = props.tenant.thirdPartyPaymentSettings.find(setting => setting._id == step.thirdPartyPaymentSettingsId)
+    return (
+      <div className='d-flex flex-column validation-step'>
+        <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
+        <span className='validation-step__name'>{step.title}</span>
+        <span className='validation-step__type'><CreditCard /></span>
+        <div className="d-flex flex-row validation-step__infos">
+          <span>{thirdPartyPaymentSettings?.name}</span>
+          <span>{thirdPartyPaymentSettings?.type}</span>
+        </div>
+      </div>
+    )
+  } else if (isValidationStepEmail(step)) {
+    return (
+      <div className='d-flex flex-column validation-step'>
+        <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
+        <span className='validation-step__name'>{step.title}</span>
+        <span className='validation-step__type'><AtSign /></span>
+        <div className="d-flex flex-row validation-step__infos">
+          <span>{step.emails[0]}</span>
+          {step.emails.length > 1 && <span>{` + ${step.emails.length - 1}`}</span>}
+        </div>
+      </div>
+    )
+  } else if (isValidationStepTeamAdmin(step)) {
+    return (
+      <div className='d-flex flex-column validation-step'>
+        <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
+        <span className='validation-step__name'>{step.title}</span>
+        <span className='validation-step__type'><User /></span>
+      </div>
+    )
+  } else {
+    return <></>
+  }
+}

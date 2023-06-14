@@ -341,7 +341,7 @@ export const ApiList = (props: TApiList) => {
                   row: view === GRID,
                 })}
               >
-                <FilterPreview count={dataRequest.data.result} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedCategory={selectedCategory} />
+                <FilterPreview count={dataRequest.data.total} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedCategory={selectedCategory} />
 
                 {apisWithAuth.map((apiWithAuth) => {
                   const sameApis = apisWithAuth.filter(((apiWithAuth2) => apiWithAuth2.api._humanReadableId === apiWithAuth.api._humanReadableId))
@@ -374,7 +374,7 @@ export const ApiList = (props: TApiList) => {
                   nextLabel={translate('Next')}
                   breakLabel="..."
                   breakClassName={'break'}
-                  pageCount={Math.ceil(dataRequest.data.result / pageNumber)}
+                  pageCount={Math.ceil(dataRequest.data.total / pageNumber)}
                   marginPagesDisplayed={1}
                   pageRangeDisplayed={5}
                   onPageChange={handlePageClick}

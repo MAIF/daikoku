@@ -39,7 +39,7 @@ export const impersonate = ({ impersonator }: any) => ({
   impersonator,
 });
 
-export const updateTeam = (team: ITeamSimple | ITeamVisibility) => ({
+export const updateTeam = (team: ITeamSimple) => ({
   type: UPDATE_TEAM,
   team,
 });

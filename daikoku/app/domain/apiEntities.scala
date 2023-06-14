@@ -2,17 +2,11 @@ package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  SeqIssueIdFormat,
-  SeqPostIdFormat,
-  SeqTeamIdFormat,
-  SetApiTagFormat,
-  UsagePlanFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TeamFormat, TeamIdFormat, UsagePlanFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.ReplaceAllWith
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, Days}
 import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -54,10 +48,10 @@ case class OtoroshiTarget(
       .mapValues(v => OtoroshiTarget.processValue(v, context))
       .toMap
   }
-  def processedTags(context: Map[String, String]): Seq[String] = {
+  def processedTags(context: Map[String, String]): Set[String] = {
     apikeyCustomization.tags
-      .asOpt[Seq[String]]
-      .getOrElse(Seq.empty[String])
+      .asOpt[Set[String]]
+      .getOrElse(Set.empty[String])
       .map(v => OtoroshiTarget.processValue(v, context))
   }
 }
@@ -105,6 +99,13 @@ object BillingTimeUnit {
 case class BillingDuration(value: Long, unit: BillingTimeUnit)
     extends CanJson[BillingDuration] {
   def asJson: JsValue = json.BillingDurationFormat.writes(this)
+  def toDays: Long = unit match {
+    case BillingTimeUnit.Day => value
+    case BillingTimeUnit.Hour => 1L
+    case BillingTimeUnit.Month => Days.daysBetween(DateTime.now(), DateTime.now().plusMonths(value.intValue)).getDays.longValue
+    case BillingTimeUnit.Year => 235L
+    case _ => 0L
+  }
 }
 
 sealed trait ApiVisibility {
@@ -156,25 +157,6 @@ object UsagePlanVisibility {
   }
 }
 
-sealed trait SubscriptionProcess {
-  def name: String
-}
-
-object SubscriptionProcess {
-  case object Automatic extends SubscriptionProcess {
-    def name: String = "Automatic"
-  }
-  case object Manual extends SubscriptionProcess {
-    def name: String = "Manual"
-  }
-  val values: Seq[SubscriptionProcess] = Seq(Automatic, Manual)
-  def apply(name: String): Option[SubscriptionProcess] = name match {
-    case "Automatic" => Automatic.some
-    case "Manual"    => Manual.some
-    case _           => None
-  }
-}
-
 sealed trait IntegrationProcess {
   def name: String
 }
@@ -196,6 +178,32 @@ object IntegrationProcess {
 
 case class Currency(code: String) extends CanJson[Currency] {
   def asJson: JsValue = json.CurrencyFormat.writes(this)
+}
+
+
+sealed trait PaymentSettings {
+  def thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId
+  def asJson: JsValue = json.PaymentSettingsFormat.writes(this)
+  def typeName: String
+}
+
+case class StripePriceIds(basePriceId: String, additionalPriceId: Option[String] = None) extends CanJson[StripePriceIds] {
+  override def asJson: JsValue = json.StripePriceIdsFormat.writes(this)
+}
+case object PaymentSettings {
+  case class Stripe(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
+                    productId: String,
+                    priceIds: StripePriceIds) extends PaymentSettings {
+    override def typeName: String = "Stripe"
+  }
+}
+
+case class BasePaymentInformation(
+                                   costPerMonth: BigDecimal,
+                                   billingDuration: BillingDuration,
+                                   currency: Currency,
+                                   trialPeriod: Option[BillingDuration]) extends CanJson[BasePaymentInformation] {
+  override def asJson: JsValue = json.BasePaymentInformationFormat.writes(this)
 }
 
 sealed trait UsagePlan {
@@ -221,9 +229,13 @@ sealed trait UsagePlan {
   def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan
   def removeAuthorizedTeam(teamId: TeamId): UsagePlan
   def removeAllAuthorizedTeams(): UsagePlan
-  def subscriptionProcess: SubscriptionProcess
   def integrationProcess: IntegrationProcess
   def aggregationApiKeysSecurity: Option[Boolean]
+  def paymentSettings: Option[PaymentSettings]
+  def mergeBase(a: BasePaymentInformation): UsagePlan
+  def subscriptionProcess: Seq[ValidationStep] = Seq.empty
+  def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan
+  def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
 }
 
 case object UsagePlan {
@@ -233,6 +245,7 @@ case object UsagePlan {
       customDescription: Option[String] = Some("access to admin api"),
       otoroshiTarget: Option[OtoroshiTarget],
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def costPerMonth: BigDecimal = BigDecimal(0)
@@ -256,10 +269,14 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
-    override def subscriptionProcess: SubscriptionProcess =
-      SubscriptionProcess.Automatic
+    override def subscriptionProcess: Seq[ValidationStep] = Seq.empty
     override def integrationProcess: IntegrationProcess =
       IntegrationProcess.ApiKey
+    override def mergeBase(a: BasePaymentInformation): Admin = this
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = this
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class FreeWithoutQuotas(
       id: UsagePlanId,
@@ -269,10 +286,11 @@ case object UsagePlan {
       customDescription: Option[String],
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
-      autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
+      autoRotation: Option[Boolean],
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -291,6 +309,24 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+
+    override def mergeBase(a: BasePaymentInformation): FreeWithoutQuotas = this.copy(
+      currency = a.currency,
+      billingDuration = a.billingDuration,
+    )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan =
+      this.copy(subscriptionProcess = this.subscriptionProcess.filter(predicate))
   }
   case class FreeWithQuotas(
       id: UsagePlanId,
@@ -304,9 +340,10 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -325,6 +362,23 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+
+    override def mergeBase(a: BasePaymentInformation): FreeWithQuotas = this.copy(
+      currency = a.currency,
+      billingDuration = a.billingDuration,
+    )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class QuotasWithLimits(
       id: UsagePlanId,
@@ -340,9 +394,10 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -359,6 +414,24 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+    override def mergeBase(a: BasePaymentInformation): QuotasWithLimits = this.copy(
+      costPerMonth = a.costPerMonth,
+      currency = a.currency,
+      trialPeriod = a.trialPeriod,
+      billingDuration = a.billingDuration,
+    )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class QuotasWithoutLimits(
       id: UsagePlanId,
@@ -375,9 +448,10 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -395,6 +469,24 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+    override def mergeBase(a: BasePaymentInformation): QuotasWithoutLimits = this.copy(
+      costPerMonth = a.costPerMonth,
+      currency = a.currency,
+      trialPeriod = a.trialPeriod,
+      billingDuration = a.billingDuration,
+    )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class PayPerUse(
       id: UsagePlanId,
@@ -408,9 +500,10 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
-      subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      paymentSettings: Option[PaymentSettings] = None,
+      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -428,6 +521,24 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
+    override def mergeBase(a: BasePaymentInformation): PayPerUse = this.copy(
+      costPerMonth = a.costPerMonth,
+      currency = a.currency,
+      trialPeriod = a.trialPeriod,
+      billingDuration = a.billingDuration,
+    )
+
+    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+      idx match {
+        case Some(value) =>
+          val (front, back) = this.subscriptionProcess.splitAt(value)
+          this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        case None =>
+          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+      }
+    }
+
+    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
   }
 }
 
@@ -604,6 +715,27 @@ case class Testing(
   override def asJson: JsValue = json.TestingFormat.writes(this)
 }
 
+sealed trait ApiState {
+  def name: String
+}
+
+object ApiState {
+  case object Created extends ApiState {
+    override def name: String = "created"
+  }
+  case object Published extends ApiState {
+    override def name: String = "published"
+  }
+  case object Blocked extends ApiState {
+    override def name: String = "blocked"
+  }
+  case object Deprecated extends ApiState {
+    override def name: String = "deprecated"
+  }
+
+  def publishedJsonFilter: JsObject = Json.obj("state" -> Json.obj("$in" -> Json.arr(Published.name, Deprecated.name)))
+}
+
 case class Api(
     id: ApiId,
     tenant: TenantId,
@@ -618,7 +750,6 @@ case class Api(
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
     isDefault: Boolean = true,
     lastUpdate: DateTime,
-    published: Boolean = false,
     testing: Testing = Testing(),
     documentation: ApiDocumentation,
     swagger: Option[SwaggerAccess] = Some(
@@ -634,7 +765,8 @@ case class Api(
     issuesTags: Set[ApiIssueTag] = Set.empty,
     stars: Int = 0,
     parent: Option[ApiId] = None,
-    apis: Option[Set[ApiId]] = None
+    apis: Option[Set[ApiId]] = None,
+    state: ApiState = ApiState.Created
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -659,7 +791,8 @@ case class Api(
     "issuesTags" -> SetApiTagFormat.writes(issuesTags),
     "stars" -> stars,
     "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
-    "isDefault" -> isDefault
+    "isDefault" -> isDefault,
+    "state" -> json.ApiStateFormat.writes(state)
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
@@ -686,13 +819,18 @@ case class Api(
     "description" -> description,
     "currentVersion" -> currentVersion.asJson,
     "isDefault" -> isDefault,
-    "published" -> published,
+    "state" -> json.ApiStateFormat.writes(state),
     "tags" -> JsArray(tags.map(JsString.apply).toSeq),
     "categories" -> JsArray(categories.map(JsString.apply).toSeq),
     "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
     "stars" -> stars,
     "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
   )
+  def isPublished: Boolean = state match {
+    case ApiState.Published => true
+    case ApiState.Deprecated => true
+    case _ => false
+  }
 }
 
 case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
@@ -711,9 +849,9 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
 case class ApiWithAuthorizations(api: Api,
                                  authorizations: Seq[AuthorizationApi] =
                                    Seq.empty)
-case class ApiWithCount(apis: Seq[ApiWithAuthorizations], result: Long)
-case class NotificationWithCount(notifications: Seq[Notification], result: Long)
-case class TeamWithCount(teams: Seq[Team], result: Long)
+case class ApiWithCount(apis: Seq[ApiWithAuthorizations], total: Long)
+case class NotificationWithCount(notifications: Seq[Notification], total: Long)
+case class TeamWithCount(teams: Seq[Team], total: Long)
 case class SubscriptionsWithPlan(planId: String,
                                  isPending: Boolean,
                                  subscriptionsCount: Int)
@@ -722,6 +860,26 @@ case class ApiWithSubscriptions(
     subscriptionsWithPlan: Seq[SubscriptionsWithPlan])
 
 case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],
-                                          nb: Long)
+                                          total: Long)
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
+
+sealed trait ValidationStep {
+  def id: String
+  def name: String
+  def title: String
+  def asJson: JsValue = json.ValidationStepFormat.writes(this)
+}
+
+object ValidationStep {
+  case class Email(id: String, emails: Seq[String], message: Option[String], title: String) extends ValidationStep {
+    def name: String = "email"
+  }
+
+  case class TeamAdmin(id: String, team: TeamId, title: String = "Administrator") extends ValidationStep {
+    def name: String = "teamAdmin"
+  }
+  case class Payment(id: String, thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId, title: String = "Payment") extends ValidationStep {
+    def name: String = "payment"
+  }
+}

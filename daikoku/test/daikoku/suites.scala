@@ -143,7 +143,8 @@ object utils {
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
         cmsPages: Seq[CmsPage] = Seq.empty,
-        operations: Seq[Operation] = Seq.empty
+        operations: Seq[Operation] = Seq.empty,
+        subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty
     ) = {
       Await.result(
         setupEnv(
@@ -162,7 +163,8 @@ object utils {
           issues,
           posts,
           cmsPages,
-          operations
+          operations,
+          subscriptionDemands
         ),
         1.second
       )
@@ -184,7 +186,8 @@ object utils {
         issues: Seq[ApiIssue] = Seq.empty,
         posts: Seq[ApiPost] = Seq.empty,
         cmsPages: Seq[CmsPage] = Seq.empty,
-        operations: Seq[Operation] = Seq.empty
+        operations: Seq[Operation] = Seq.empty,
+        subscriptionDemand: Seq[SubscriptionDemand] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -303,6 +306,14 @@ object utils {
           .mapAsync(1)(
             i =>
               daikokuComponents.env.dataStore.operationRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(subscriptionDemand.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.subscriptionDemandRepo
                 .forAllTenant()
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
@@ -729,7 +740,7 @@ object utils {
       smallDescription = "admin api",
       description = "admin api",
       currentVersion = Version("1.0.0"),
-      published = true,
+      state = ApiState.Published,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
@@ -759,7 +770,7 @@ object utils {
       smallDescription = "admin api II",
       description = "admin api II",
       currentVersion = Version("1.0.0"),
-      published = true,
+      state = ApiState.Published,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
@@ -890,7 +901,7 @@ object utils {
       """.stripMargin,
       currentVersion = Version("1.1.0"),
       supportedVersions = Set(Version("1.0.0")),
-      published = true,
+      state = ApiState.Published,
       visibility = ApiVisibility.Public,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
@@ -914,7 +925,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -934,7 +945,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -956,7 +967,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -979,7 +990,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(true),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -999,7 +1010,7 @@ object utils {
                                groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )

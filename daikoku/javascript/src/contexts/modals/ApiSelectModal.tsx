@@ -3,14 +3,19 @@ import Select from 'react-select';
 
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
-import { IUsagePlan } from '../../types';
+import { IApi, IUsagePlan } from '../../types';
 import { IBaseModalProps } from './types';
 
 
+export interface IModalProps {
+  title: string;
+  content: JSX.Element;
+}
+
 export interface IApiSelectModalProps {
-  teamId,
-  api,
-  onClose
+  teamId: string,
+  api: IApi,
+  onClose: (plan: IUsagePlan) => void
 }
 
 type plans = {

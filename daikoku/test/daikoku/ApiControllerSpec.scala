@@ -1,44 +1,25 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{
-  Container,
-  ForAllTestContainer,
-  GenericContainer,
-  MultipleContainers,
-  PostgreSQLContainer
-}
+import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
 import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{
-  SubscriptionAggregationDisabled,
-  SubscriptionParentExisted
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiFormat,
-  ApiSubscriptionFormat,
-  OtoroshiApiKeyFormat,
-  SeqApiSubscriptionFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, OtoroshiApiKeyFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
@@ -740,7 +721,8 @@ class ApiControllerSpec()
         ),
         billing = ApiKeyBilling(1000, BigDecimal(30)),
         from = DateTime.now().minusDays(1).withTimeAtStartOfDay(),
-        to = DateTime.now().withTimeAtStartOfDay()
+        to = DateTime.now().withTimeAtStartOfDay(),
+        state = ApiKeyConsumptionState.Completed
       )
 
       setupEnv(
@@ -890,7 +872,7 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi.copy(published = false))
+        apis = Seq(defaultApi.copy(state = ApiState.Created))
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -932,7 +914,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false),
                 visibility = UsagePlanVisibility.Private
@@ -1116,7 +1098,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1185,7 +1167,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1206,7 +1188,6 @@ class ApiControllerSpec()
         throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
         dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
         monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
-        tags = Seq(),
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None
@@ -1319,7 +1300,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1340,7 +1321,6 @@ class ApiControllerSpec()
         throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
         dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
         monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
-        tags = Seq(),
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None
@@ -1397,7 +1377,7 @@ class ApiControllerSpec()
         id = NotificationId("untreated-notification"),
         tenant = tenant.id,
         team = Some(teamOwnerId),
-        sender = user,
+        sender = NotificationSender(user.name, user.email, user.id.some),
         notificationType = AcceptOrReject,
         action = ApiAccess(defaultApi.id, teamConsumerId)
       )
@@ -1435,7 +1415,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Manual,
+                subscriptionProcess = Seq(ValidationStep.TeamAdmin(id = IdGenerator.token, team = defaultApi.team, title = "team.name")),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -1445,9 +1425,11 @@ class ApiControllerSpec()
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(
-              defaultApi.id,
-              UsagePlanId("3"),
-              teamConsumerId,
+              api = defaultApi.id,
+              plan = UsagePlanId("3"),
+              team = teamConsumerId,
+              demand = SubscriptionDemandId(IdGenerator.token),
+              step = SubscriptionDemandStepId(IdGenerator.token),
               motivation = Some("motivation")
             )
           )
@@ -1783,7 +1765,8 @@ class ApiControllerSpec()
         ),
         billing = ApiKeyBilling(1000, BigDecimal(30)),
         from = DateTime.now().minusDays(1).withTimeAtStartOfDay(),
-        to = DateTime.now().withTimeAtStartOfDay()
+        to = DateTime.now().withTimeAtStartOfDay(),
+        state = ApiKeyConsumptionState.Completed
       )
       setupEnv(
         tenants = Seq(tenant),
@@ -2315,13 +2298,15 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = user,
+            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
               teamConsumerId,
-              motivation = Some("motivation")
+              motivation = Some("motivation"),
+              demand = SubscriptionDemandId(IdGenerator.token),
+              step = SubscriptionDemandStepId(IdGenerator.token),
             )
           )
         )
@@ -2379,13 +2364,15 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = user,
+            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
               teamConsumerId,
-              motivation = Some("motivation")
+              motivation = Some("motivation"),
+                demand = SubscriptionDemandId(IdGenerator.token),
+              step = SubscriptionDemandStepId(IdGenerator.token),
             )
           )
         )
@@ -2425,13 +2412,15 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = user,
+            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
               teamConsumerId,
-              motivation = Some("motivation")
+              motivation = Some("motivation"),
+              demand = SubscriptionDemandId(IdGenerator.token),
+              step = SubscriptionDemandStepId(IdGenerator.token),
             )
           )
         )
@@ -2556,7 +2545,7 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = SubscriptionProcess.Manual,
+                subscriptionProcess =  Seq(ValidationStep.TeamAdmin(id = IdGenerator.token, team = defaultApi.team, title = "Admin")),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -2875,7 +2864,7 @@ class ApiControllerSpec()
             users = Set(UserWithPermission(user.id, Administrator))
           )
         ),
-        apis = Seq(defaultApi.copy(published = false))
+        apis = Seq(defaultApi.copy(state = ApiState.Created))
       )
 
       val session = loginWithBlocking(user, tenant)
@@ -2980,7 +2969,7 @@ class ApiControllerSpec()
                 allowMultipleKeys = Some(false),
                 visibility = Private,
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -3041,7 +3030,7 @@ class ApiControllerSpec()
                 allowMultipleKeys = Some(false),
                 visibility = Private,
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -3105,7 +3094,7 @@ class ApiControllerSpec()
             visibility = Public,
             authorizedTeams = Seq.empty,
             autoRotation = Some(false),
-            subscriptionProcess = SubscriptionProcess.Automatic,
+            subscriptionProcess = Seq.empty,
             integrationProcess = IntegrationProcess.ApiKey
           )
         )
@@ -3189,7 +3178,7 @@ class ApiControllerSpec()
                 visibility = Private,
                 authorizedTeams = Seq(teamConsumerId),
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -3278,7 +3267,7 @@ class ApiControllerSpec()
                 visibility = Private,
                 authorizedTeams = Seq(teamConsumerId),
                 autoRotation = Some(false),
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             )
@@ -3462,7 +3451,7 @@ class ApiControllerSpec()
         description = "new description",
         visibility = ApiVisibility.Public,
         currentVersion = Version("3.0.0"),
-        published = false,
+        state = ApiState.Created,
         possibleUsagePlans = Seq(
           adminApi.possibleUsagePlans.head
             .asInstanceOf[Admin]
@@ -3514,7 +3503,7 @@ class ApiControllerSpec()
       resultAdminApi.description mustBe "admin api"
       resultAdminApi.visibility mustBe ApiVisibility.AdminOnly
       resultAdminApi.currentVersion mustBe Version("1.0.0")
-      resultAdminApi.published mustBe true
+      resultAdminApi.state mustBe ApiState.Published
       resultAdminApi.possibleUsagePlans.length mustBe 1
 
       val adminPlan = resultAdminApi.possibleUsagePlans.head.asInstanceOf[Admin]

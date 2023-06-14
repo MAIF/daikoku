@@ -8,7 +8,7 @@ import { I18nContext } from '../../../core';
 import { useTeamBackOffice } from '../../../contexts';
 
 export const TeamConsumption = () => {
-    const { translate } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const { currentTeam } = useSelector((state) => (state as any).context);
   useTeamBackOffice(currentTeam);
@@ -49,10 +49,10 @@ export const TeamConsumption = () => {
   ];
 
   return (
-        <div className="row">
-            <div className="col">
-                <h1>Consumption</h1>
-                <OtoroshiStatsVizualization
+    <div className="row">
+      <div className="col">
+        <h1>Consumption</h1>
+        <OtoroshiStatsVizualization
           sync={() => Services.syncTeamBilling(currentTeam._id)}
           fetchData={(from: any, to: any) =>
             Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())

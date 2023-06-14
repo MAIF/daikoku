@@ -171,16 +171,7 @@ export const SideBar = () => {
             </div>
           )}
           <div className="nav_item mb-3">
-            <Link
-              className={classNames({
-                'notification-link': true,
-                'unread-notifications': !!unreadNotificationsCount,
-              })}
-              to="/notifications"
-              title={translate('Access to the notifications')}
-            >
-              <DarkModeActivator />
-            </Link>
+            <DarkModeActivator className="notification-link" />
           </div>
 
           <div className="nav_item mb-3" style={{ color: '#fff' }}>

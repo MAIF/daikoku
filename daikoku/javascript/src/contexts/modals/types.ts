@@ -12,7 +12,7 @@ import {
   ResponseError,
 } from '../../types';
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
-import { IApiSelectModalProps } from './ApiSelectModal';
+import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
 import {string} from "prop-types";
 
@@ -37,6 +37,8 @@ export type TModalContext = {
   openAssetSelectorModal: (p: IAssetSelectorModalProps) => void;
   openApiKeySelectModal: (p: IApiKeySelectModalProps) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
+  openCustomModal: (p: IModalProps) => void;
+  close: () => void;
 };
 export type ConfirmModalProps = {
   message: JSX.Element | string | ((ok: () => void, cancel: () => void) => JSX.Element | string);
@@ -82,6 +84,7 @@ export interface IFormModalProps<T> {
   onSubmit: (x: T) => void;
   options?: Option;
   actionLabel: string;
+  noClose?: boolean
 }
 
 export type TestingApiKeyModalProps = {

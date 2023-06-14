@@ -49,7 +49,7 @@ export const FastApiList = (props: FastApiListProps) => {
   const [researchTag, setResearchTag] = useState("");
   const [researchCat, setResearchCat] = useState("");
 
-  const dataRequest = useQuery<{ apis: Array<IFastApi>, nb: number }>({
+  const dataRequest = useQuery<{ apis: Array<IFastApi>, total: number }>({
 
     queryKey: ["data",
       props.team._id,
@@ -60,7 +60,7 @@ export const FastApiList = (props: FastApiListProps) => {
       nbOfApis,
       offset],
     queryFn: ({ queryKey }) => {
-      return client!.query<{ accessibleApis: { apis: Array<IFastApi>, nb: number } }>({
+      return client!.query<{ accessibleApis: { apis: Array<IFastApi>, total: number } }>({
         query: Services.graphql.getApisWithSubscription,
         fetchPolicy: "no-cache",
         variables: {
@@ -259,7 +259,7 @@ export const FastApiList = (props: FastApiListProps) => {
                 />
               </div>
             <div className="section pb-1">
-              <FilterPreview count={dataRequest.data.nb} clearFilter={clearFilter} searched={research} selectedTag={selectedTag} selectedCategory={selectedCategory} filterPlan={planResearch} seeOnlySubs={seeApiSubscribed}/>
+              <FilterPreview count={dataRequest.data.total} clearFilter={clearFilter} searched={research} selectedTag={selectedTag} selectedCategory={selectedCategory} filterPlan={planResearch} seeOnlySubs={seeApiSubscribed}/>
               <div className="apis" style={{ maxHeight: '600px', overflowY: 'scroll', overflowX: 'hidden' }}>
                 {dataRequest.data.apis.map(({ api }) => {
                   if (!api.parent) {
@@ -305,7 +305,7 @@ export const FastApiList = (props: FastApiListProps) => {
                     nextLabel={translate('Next')}
                     breakLabel="..."
                     breakClassName={'break'}
-                    pageCount={Math.ceil(dataRequest.data.nb / nbOfApis)}
+                    pageCount={Math.ceil(dataRequest.data.total / nbOfApis)}
                     marginPagesDisplayed={1}
                     pageRangeDisplayed={5}
                     onPageChange={handlePageClick}

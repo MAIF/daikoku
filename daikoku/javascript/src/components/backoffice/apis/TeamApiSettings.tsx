@@ -1,13 +1,15 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Form, constraints, type, format } from '@maif/react-forms';
 import { toastr } from 'react-redux-toastr';
+import sortBy from 'lodash/sortBy';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { ModalContext } from '../../../contexts';
-import {  IState, ITeamSimple } from '../../../types';
+import { isError, IState, ITeamSimple } from '../../../types';
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 export const TeamApiSettings = ({
   api,
@@ -35,6 +37,20 @@ export const TeamApiSettings = ({
     team: {
       type: type.string,
       label: translate('new.owner'),
+      format: format.select,
+      optionsFrom: Services.teams()
+        .then((teams) => {
+          if (!isError(teams)) {
+            return sortBy(teams.filter((team: any) => team._id !== api.team), 'name')
+          } else {
+            return []
+          }
+        }
+        ),
+      transformer: (team: any) => ({
+        label: team.name,
+        value: team._id
+      }),
       constraints: [constraints.required(translate('constraints.required.team'))],
     },
     comfirm: {
@@ -50,7 +66,7 @@ export const TeamApiSettings = ({
   };
 
   const deleteApi = () => {
-    confirm({ message: translate('delete.api.confirm') })
+    return confirm({ message: translate('delete.api.confirm') })
       .then((ok) => {
         if (ok) {
           Services.deleteTeamApi(currentTeam._id, api._id)
@@ -83,9 +99,12 @@ export const TeamApiSettings = ({
           <i>{translate('delete.api.description')}</i>
         </div>
         <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
-          <button onClick={deleteApi} className="btn btn-sm btn-outline-danger">
-            {translate('Delete this Api')}
-          </button>
+          <FeedbackButton
+            type="danger"
+            onPress={() => deleteApi()}
+            feedbackTimeout={1000}
+            disabled={false}
+          >{translate('Delete this Api')}</FeedbackButton>
         </div>
       </div>
     </div>

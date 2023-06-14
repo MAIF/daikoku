@@ -1,5 +1,7 @@
-import {IFastTeam, ITeamVisibility} from './team';
+import { IFastTeam, ITeamSimple, ITeamVisibility } from './team';
+import { ThirdPartyPaymentType } from './tenant';
 
+export type ApiState = "created" | "published" | "deprecated" | "blocked" | "deleted"
 interface IBaseApi {
   _id: string;
   _humanReadableId: string;
@@ -13,7 +15,6 @@ interface IBaseApi {
   description: string;
   currentVersion: string;
   supportedVersions: Array<string>;
-  published: boolean;
   testing: ITesting;
   documentation: IDocumentation;
   swagger?: ISwagger;
@@ -30,6 +31,7 @@ interface IBaseApi {
   parent?: string;
   isDefault: boolean;
   apis: Array<string>;
+  state: ApiState
 }
 
 export interface IIssuesTag {
@@ -39,7 +41,7 @@ export interface IIssuesTag {
 }
 
 export interface IApiWithSimpleTeam extends IBaseApi {
-  team: ITeamVisibility
+  team: ITeamSimple
 }
 
 export interface IApi extends IBaseApi {
@@ -65,7 +67,7 @@ export interface IApiWithAuthorization {
 
 export interface IApiAuthoWithCount {
   apis: Array<IApiWithAuthorization>;
-  result: number;
+  total: number;
 }
 
 export interface ITesting {
@@ -111,14 +113,58 @@ export interface ISwagger {
   headers: { [key: string]: string };
 }
 
+export interface IValidationStep {
+  id: string
+  type: 'teamAdmin' | 'email' | 'payment'
+}
+
+export interface IValidationStepEmail extends IValidationStep {
+  emails: Array<string>,
+  message: string
+  title: string
+}
+
+export function isValidationStepEmail(item: any): item is IValidationStepEmail {
+  return (<IValidationStepEmail>item).emails !== undefined;
+}
+
+export interface IValidationStepTeamAdmin extends IValidationStep {
+  team: string
+  title?: string
+}
+
+export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {
+  return (<IValidationStepTeamAdmin>item).team !== undefined;
+}
+
+export function isValidationStepPayment(item: any): item is IValidationStepPayment {
+  return (<IValidationStepPayment>item).thirdPartyPaymentSettingsId !== undefined;
+}
+
+export interface IValidationStepPayment extends IValidationStep {
+  thirdPartyPaymentSettingsId: string
+  title?: string
+}
 export interface IBaseUsagePlan {
   _id: string;
   type: string;
   customDescription?: string;
   customName?: string;
-  subscriptionProcess: 'Automatic' | 'manual';
+  subscriptionProcess: Array<IValidationStep>;
   currency: ICurrency;
   otoroshiTarget?: IOtoroshiTarget;
+}
+
+export type UsagePlanVisibility = 'Public' | 'Private'
+
+export interface IPaymentSettings {
+  thirdPartyPaymentSettingsId: string
+  type: ThirdPartyPaymentType
+}
+
+export interface IStripePaymentSettings extends IPaymentSettings {
+  productId: string
+  priceIds: Array<string>
 }
 
 export interface IUsagePlan extends IBaseUsagePlan {
@@ -129,14 +175,18 @@ export interface IUsagePlan extends IBaseUsagePlan {
   rotation: boolean;
   currency: ICurrency;
   billingDuration: IBillingDuration;
-  visibility: 'Public' | 'Private';
+  visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
   costPerMonth?: number;
+  maxPerMonth?: number
+  maxPerSecond?: number
+  maxPerDay?: number
+  paymentSettings?: IPaymentSettings
 }
 
-export interface IUsagePlanAdmin extends IUsagePlan {}
+export interface IUsagePlanAdmin extends IUsagePlan { }
 
-export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan {}
+export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan { }
 export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
   maxPerSecond: number;
   maxPerDay: number;
@@ -159,7 +209,6 @@ export interface IUsagePlanPayPerUse extends IUsagePlan {
   visibility: 'Public' | 'Private';
   authorizedTeams: Array<string>;
   autoRotation?: boolean;
-  subscriptionProcess: 'Automatic' | 'manual';
   integrationProcess: 'Automatic' | 'ApiKey';
   rotation: boolean;
 }
@@ -181,7 +230,7 @@ export interface ICurrency {
 
 interface IOtoroshiTarget {
   otoroshiSettings?: string;
-  authorizedEntities: IAuthorizedEntities;
+  authorizedEntities?: IAuthorizedEntities;
   apikeyCustomization: {
     clientIdOnly: boolean;
     constrainedServicesOnly: boolean;
@@ -312,15 +361,15 @@ export interface ISubscriptionWithApiInfo extends ISubscription {
 }
 
 export interface IQuotas {
+  authorizedCallsPerSec: number;
   currentCallsPerSec: number;
   remainingCallsPerSec: number;
-  currentCallsPerDay: number;
   authorizedCallsPerDay: number;
+  currentCallsPerDay: number;
+  remainingCallsPerDay: number;
+  authorizedCallsPerMonth: number;
   currentCallsPerMonth: number;
   remainingCallsPerMonth: number;
-  authorizedCallsPerSec: number;
-  authorizedCallsPerMonth: number;
-  remainingCallsPerDay: number;
 }
 
 export interface ISubscriptionInformation {
@@ -373,4 +422,60 @@ export interface IApiPost {
   title: string;
   lastModificationAt: string;
   content: string;
+}
+
+
+type ISubscriptionDemandState = 'accepted' | 'refused' | 'canceled' | 'inProgress' | 'waiting' | 'blocked'
+
+
+interface SubscriptionDemandStep {
+  id: string,
+  state: ISubscriptionDemandState,
+  step: IValidationStep,
+  metadata: object
+}
+
+export interface ISubscriptionDemand {
+  _id: string,
+  _tenant: string,
+  _deleted: boolean,
+  api: string,
+  plan: string,
+  steps: Array<SubscriptionDemandStep>,
+  state: ISubscriptionDemandState,
+  team: string,
+  from: string,
+  date: string,
+  motivation?: string,
+  parentSubscriptionId?: string,
+  customReadOnly?: boolean,
+  customMetadata?: object,
+  customMaxPerSecond?: number,
+  customMaxPerDay?: number,
+  customMaxPerMonth?: number
+}
+
+export interface IGlobalInformations {
+  avgDuration?: number,
+  avgOverhead?: number,
+  dataIn: number,
+  dataOut: number,
+  hits: number
+}
+
+export interface IConsumption {
+  _id: string
+  _deleted: boolean
+  _tenant: string
+  team: string
+  api: string
+  plan: string
+  clientId: string
+  hits: number
+  globalInformation: IGlobalInformations
+  quotas: IQuotas
+  billing: { hits: number, total: number }
+  from: number
+  to: number
+  state: 'inProgress' | 'completed'
 }

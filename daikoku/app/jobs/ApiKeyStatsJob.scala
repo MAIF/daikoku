@@ -1,19 +1,20 @@
 package jobs
 
 import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.Cancellable
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.BillingTimeUnit.{Day, Hour, Month, Year}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.DateTimeFormat
+import fr.maif.otoroshi.daikoku.domain.json.{ApiKeyQuotasFormat, DateTimeFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
+import org.joda.time.format.DateTimeFormatter
 import org.joda.time.{DateTime, Days}
 import play.api.Logger
 import play.api.libs.json._
@@ -90,7 +91,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       }
 
   def syncForSubscription(subscription: ApiSubscription,
-                          tenant: Tenant): Future[Seq[ApiKeyConsumption]] = {
+                          tenant: Tenant,
+                          completed: Boolean = false): Future[Seq[ApiKeyConsumption]] = {
     (for {
       lastConsumption <- env.dataStore.consumptionRepo
         .getLastConsumption(
@@ -103,9 +105,10 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       api match {
         case Some(api) =>
           syncConsumptionStatsForSubscription(subscription,
-                                              tenant,
-                                              Some(api),
-                                              lastConsumption)
+            tenant,
+            Some(api),
+            lastConsumption,
+            completed = completed)
         case None => FastFuture.successful(Seq.empty[ApiKeyConsumption])
       }
     }).flatten
@@ -158,8 +161,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       lastConsumptions <- env.dataStore.consumptionRepo
         .getLastConsumptionsforAllTenant(Json.obj())
     } yield {
-      val nbInterval = Math.ceil(
-        env.config.apikeysStatsSyncInterval / env.config.apikeysStatsCallInterval)
+      val nbInterval = Math.ceil(env.config.apikeysStatsSyncInterval / env.config.apikeysStatsCallInterval)
       val nbCall = Math
         .ceil(Math.max(subscriptions.length / nbInterval, maxCallPerJob))
         .toInt
@@ -207,12 +209,19 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     }).flatten
   }
 
-  private def syncConsumptionStatsForSubscription(
-      subscription: ApiSubscription,
-      tenant: Tenant,
-      maybeApi: Option[Api],
-      maybeLastConsumption: Option[ApiKeyConsumption]
-  ): Future[Seq[ApiKeyConsumption]] = {
+  /**
+   * with an optional given consumption, which is la last consumption found in database
+   * the consumption is calculated for every days between last consumption and now
+   * if the last consumption is not completed, the new consumption overwrite it
+   * An operation to sync consumption between daikoku and a possible third payment module is save if consumption is completed
+   *
+   */
+  private def syncConsumptionStatsForSubscription(subscription: ApiSubscription,
+                                                  tenant: Tenant,
+                                                  maybeApi: Option[Api],
+                                                  maybeLastConsumption: Option[ApiKeyConsumption],
+                                                  completed: Boolean = false
+                                                 ): Future[Seq[ApiKeyConsumption]] = {
     (for {
       api <- maybeApi
       plan <- api.possibleUsagePlans.find(_.id == subscription.plan)
@@ -222,92 +231,98 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     } yield {
       implicit val otoroshiSettings: OtoroshiSettings = otoSettings
 
-      val from = maybeLastConsumption
-        .map(c => c.to)
-        .getOrElse(subscription.createdAt)
+
+      val from = maybeLastConsumption.map(consumption => consumption.state match {
+        case ApiKeyConsumptionState.Completed => consumption.to
+        case ApiKeyConsumptionState.InProgress => consumption.from
+      }).getOrElse(subscription.createdAt.withTimeAtStartOfDay())
 
       Source(
         Days
-          .daysBetween(from, DateTime.now())
+          .daysBetween(from.withTimeAtStartOfDay(), DateTime.now())
           .getDays - 1 to -1 by -1
-      ).mapAsync(1) { nbDay =>
-          val from = DateTime.now().minusDays(nbDay + 1).withTimeAtStartOfDay()
-          val to =
-            if (nbDay == -1)
-              DateTime.now()
-            else
-              DateTime.now().minusDays(nbDay).withTimeAtStartOfDay()
+      ).map(nbDay => {
+        val from = DateTime.now().minusDays(nbDay + 1).withTimeAtStartOfDay()
+        val to =
+          if (nbDay == -1)
+            DateTime.now()
+          else
+            DateTime.now().minusDays(nbDay).withTimeAtStartOfDay()
 
-          for {
-            consumption <- otoroshiClient.getApiKeyConsumption(
-              subscription.apiKey.clientId,
-              from.getMillis.toString,
-              to.toDateTime.getMillis.toString)
-            quotas <- otoroshiClient.getApiKeyQuotas(
-              subscription.apiKey.clientId)
-            billing <- computeBilling(tenant.id,
-                                      subscription.apiKey.clientId,
-                                      plan,
-                                      (consumption \ "hits" \ "count").as[Long],
-                                      from,
-                                      to)
-            cons = ApiKeyConsumption(
-              id = DatastoreId(BSONObjectID.generate().stringify),
-              tenant = tenant.id,
-              team = subscription.team,
-              api = api.id,
-              plan = plan.id,
-              clientId = subscription.apiKey.clientId,
-              hits = (consumption \ "hits" \ "count").as[Long],
-              quotas = json.ApiKeyQuotasFormat.reads(quotas).get,
-              globalInformations = ApiKeyGlobalConsumptionInformations(
-                (consumption \ "hits" \ "count").asOpt[Long].getOrElse(0),
-                (consumption \ "dataIn" \ "data.dataIn")
-                  .asOpt[Long]
-                  .getOrElse(0),
-                (consumption \ "dataOut" \ "data.dataOut")
-                  .asOpt[Long]
-                  .getOrElse(0),
-                (consumption \ "avgDuration" \ "duration").asOpt[Double],
-                (consumption \ "avgOverhead" \ "overhead").asOpt[Double]
-              ),
-              billing = billing,
-              from = from,
-              to = to
-            )
-            _ <- maybeLastConsumption.fold(
-              env.dataStore.consumptionRepo
-                .forTenant(tenant.id)
-                .save(cons)
-            )(consumption => {
-              if (consumption.from == from) {
-                env.dataStore.consumptionRepo
-                  .forTenant(tenant.id)
-                  .findOne(Json.obj("clientId" -> subscription.apiKey.clientId,
-                                    "from" -> DateTimeFormat.writes(from)))
-                  .flatMap {
-                    case Some(con) =>
-                      env.dataStore.consumptionRepo
-                        .forTenant(tenant.id)
-                        .save(cons.copy(id = con.id))
-                    case None =>
-                      env.dataStore.consumptionRepo
-                        .forTenant(tenant.id)
-                        .save(cons)
-                  }
-              } else {
-                env.dataStore.consumptionRepo
-                  .forTenant(tenant.id)
-                  .save(cons)
-              }
-            })
-          } yield cons
+        (from, to)
+      }).mapAsync(1) { case (from, to) =>
+        val isCompleteConsumption = completed || Days.daysBetween(from.withTimeAtStartOfDay(), to).getDays == 1
+
+        val id = maybeLastConsumption
+          .map {
+            case c if !c.isComplete && c.from.withTimeAtStartOfDay() == from => c.id
+            case _ => DatastoreId(IdGenerator.token(24))
+          }.getOrElse(DatastoreId(IdGenerator.token(24)))
+
+        for {
+          consumption <- otoroshiClient.getApiKeyConsumption(
+            subscription.apiKey.clientId,
+            from.getMillis.toString,
+            to.toDateTime.getMillis.toString)
+          quotas <- otoroshiClient.getApiKeyQuotas(
+            subscription.apiKey.clientId)
+          billing <- computeBilling(tenant.id,
+            subscription.apiKey.clientId,
+            plan,
+            (consumption \ "hits" \ "count").as[Long],
+            from,
+            to)
+          apiKeyConsumption: ApiKeyConsumption = ApiKeyConsumption(
+            id = id,
+            tenant = tenant.id,
+            team = subscription.team,
+            api = api.id,
+            plan = plan.id,
+            clientId = subscription.apiKey.clientId,
+            hits = (consumption \ "hits" \ "count").as[Long],
+            quotas = json.ApiKeyQuotasFormat.reads(quotas).get,
+            globalInformations = ApiKeyGlobalConsumptionInformations(
+              (consumption \ "hits" \ "count").asOpt[Long].getOrElse(0),
+              (consumption \ "dataIn" \ "data.dataIn")
+                .asOpt[Long]
+                .getOrElse(0),
+              (consumption \ "dataOut" \ "data.dataOut")
+                .asOpt[Long]
+                .getOrElse(0),
+              (consumption \ "avgDuration" \ "duration").asOpt[Double],
+              (consumption \ "avgOverhead" \ "overhead").asOpt[Double]
+            ),
+            billing = billing,
+            from = if (from.isBefore(subscription.createdAt)) subscription.createdAt else from,
+            to = to,
+            state = if (isCompleteConsumption) ApiKeyConsumptionState.Completed else ApiKeyConsumptionState.InProgress
+          )
+          _ <- env.dataStore.consumptionRepo.forTenant(tenant).save(apiKeyConsumption)
+          _ <- apiKeyConsumption.state match {
+            case ApiKeyConsumptionState.Completed =>
+              env.dataStore.operationRepo.forTenant(tenant)
+                .save(Operation(
+                  DatastoreId(IdGenerator.token(24)),
+                  tenant = tenant.id,
+                  itemId = id.value,
+                  itemType = ItemType.ApiKeyConsumption,
+                  action = OperationAction.Sync,
+                  payload = Json.obj(
+                    "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
+                    "thirdPartySubscriptionInformations" -> subscription.thirdPartySubscriptionInformations.map(_.asJson).getOrElse(JsNull).as[JsValue]
+                  ).some
+                ))
+            case ApiKeyConsumptionState.InProgress => FastFuture.successful(())
+          }
+        } yield {
+          apiKeyConsumption
         }
+      }
         .runWith(Sink.seq)
         .recover {
           case e =>
             AppLogger.error("[apikey stats job] Error during sync consumption",
-                            e)
+              e)
             Seq.empty
         }
     }.recover {
@@ -325,10 +340,9 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                      periodEnd: DateTime): Future[ApiKeyBilling] = {
 
     def computeAdditionalHitsCost(
-        max: Long,
-        count: Long,
-        costPerAdditionalRequest: BigDecimal): BigDecimal = {
-//      Logger.debug(s"compute hits cost $max max hits, $count hits for a cost of $costPerAdditionalRequest")
+                                   max: Long,
+                                   count: Long,
+                                   costPerAdditionalRequest: BigDecimal): BigDecimal = {
       if (max - count > 0) {
         0
       } else {
@@ -350,7 +364,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       .find(
         Json.obj(
           "clientId" -> clientId,
-          "from" -> Json.obj("$gte" -> from.getMillis, "$lte" -> to.getMillis))
+          "from" -> Json.obj("$gte" -> from.getMillis, "$lte" -> to.getMillis),
+          "state" -> "completed")
       )
       .map(
         consumptions => {

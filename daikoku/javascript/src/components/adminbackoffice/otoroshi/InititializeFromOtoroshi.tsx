@@ -111,8 +111,10 @@ export const InitializeFromOtoroshi = () => {
         if (!isError(oldApi)) {
           return Services.saveTeamApi(api.team, { ...oldApi, ...api }, oldApi.currentVersion)
             .then((updatedApi) => {
-              const filteredApis = apis.filter((a) => (a as any)._id !== updatedApi._id);
-              setApis([...filteredApis, updatedApi]);
+              if (!isError(updatedApi)) {
+                const filteredApis = apis.filter((a) => (a as any)._id !== updatedApi._id);
+                setApis([...filteredApis, updatedApi]);
+              }
             })
         }
       });

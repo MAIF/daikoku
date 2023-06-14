@@ -6,6 +6,8 @@ import { constraints, format, type } from '@maif/react-forms';
 import { formatPlanType, Option } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext } from '../../../contexts';
+import * as Services from '../../../services';
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type LimitedTeam = {
   _id: string
@@ -45,6 +47,7 @@ type NotificationGQL = {
         clientSecret: string;
       }
     }
+    demand?: string
   }
   date: number
   notificationType: {
@@ -123,11 +126,11 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
         );
       case 'ApiSubscriptionAccept':
         return (
-            <i
-                className="fas fa-check"
-                style={{ marginRight: 5 }}
-                title={translate('Subscription to an API is accepted')}
-            />
+          <i
+            className="fas fa-check"
+            style={{ marginRight: 5 }}
+            title={translate('Subscription to an API is accepted')}
+          />
         );
       case 'OtoroshiSyncSubscriptionError':
         return (
@@ -209,6 +212,14 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             title={translate('New comment on issue')}
           />
         );
+      case 'CheckoutForSubscription':
+        return (
+          <i
+            className="fas fa-comment-credit-card"
+            style={{ marginRight: 5 }}
+            title={translate('Checkout subscription')}
+          />
+        )
     }
   };
 
@@ -312,12 +323,29 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       className="btn btn-outline-success btn-sm me-1"
                       // todo: @baudelotphilippe, don't sure it's the best solution
                       style={{ height: '30px' }}
-                      href="#"
                       title={translate('Accept')}
                       onClick={() => props.accept()}
                     >
                       <i className="fas fa-check" />
                     </a>
+                  </div>
+
+                </div>
+              )
+            case 'CheckoutForSubscription':
+              return (
+                <div className='d-flex flex-row flex-grow-1 justify-content-between'>
+                  <div>{props.notification.action.apiName}/{props.notification.action.planName}</div>
+                  <div className='d-flex flex-row flex-nowrap'>
+                    <FeedbackButton
+                      type="success"
+                      className="ms-1"
+                      onPress={() => Services.rerunProcess(props.notification.action.team?._id!, props.notification.action.demand!)
+                        .then(r => window.location.href = r.checkoutUrl)}
+                      onSuccess={() => console.debug("success")}
+                      feedbackTimeout={100}
+                      disabled={false}
+                    >{translate('Checkout')}</FeedbackButton>
                   </div>
 
                 </div>
@@ -389,7 +417,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
         return props.notification.action.team!.name;
       case 'ApiSubscriptionDemand':
         return `${sender.name}/${Option(props.notification.action.team!.name)
-          .getOrNull()}`;
+            .getOrNull()}`;
       case 'OtoroshiSyncSubscriptionError':
         return 'Otoroshi verifier job';
       case 'OtoroshiSyncApiError':
@@ -423,6 +451,11 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
         <div className="d-flex align-items-center">
           {typeFormatter(notification.action.__typename)}
           <h5 className="alert-heading mb-0">
+            {notification.action.__typename === 'CheckoutForSubscription' && (<div>
+              <Translation i18nkey="notif.CheckoutForSubscription">
+                You can checkout your subscription
+              </Translation>
+            </div>)}
             {notification.action.__typename === 'ApiAccess' && (<div>
               <Translation i18nkey="notif.api.access" replacements={[(infos as any).api.name]}>
                 Request access to {(infos as any).api.name}
@@ -446,7 +479,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
               </Translation>
             </div>)}
             {notification.action.__typename === 'ApiSubscriptionReject' && translate({
-              key: 'notif.api.demand.reject', 
+              key: 'notif.api.demand.reject',
               replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]})}
             {notification.action.__typename === 'ApiSubscriptionAccept' && translate({
               key: 'notif.api.demand.accept',

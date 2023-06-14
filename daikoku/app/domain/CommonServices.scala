@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object CommonServices {
 
   def getApisByIds(ids: Seq[String])
-                  (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[Seq[ApiWithAuthorizations], AppError]] = {
+                  (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, Seq[ApiWithAuthorizations]]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
 
       val tenant = ctx.tenant
@@ -45,7 +45,7 @@ object CommonServices {
         )
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] = (publicApis ++ almostPublicApis ++ privateApis)
-          .filter(api => api.published || myTeams.exists(api.team == _.id))
+          .filter(api => api.isPublished || myTeams.exists(api.team == _.id))
           .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
           .map(api => api
             .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))
@@ -55,7 +55,7 @@ object CommonServices {
               .foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
                 acc :+ AuthorizationApi(
                   team = team.id.value,
-                  authorized = (api.authorizedTeams.contains(team.id) || api.team == team.id),
+                  authorized = api.authorizedTeams.contains(team.id) || api.team == team.id,
                   pending = myCurrentRequests.exists(notif =>
                     notif.action.asInstanceOf[ApiAccess].team == team.id && notif.action.asInstanceOf[ApiAccess].api == api.id)
                 )
@@ -87,7 +87,8 @@ object CommonServices {
       }
     }
   }
-  def getApisWithSubscriptions(teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, apiSubOnly: Boolean)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AccessibleApisWithNumberOfApis, AppError]] = {
+  def getApisWithSubscriptions(teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, apiSubOnly: Boolean)
+                              (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, AccessibleApisWithNumberOfApis]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
       val tagFilter = selectedTag match {
         case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
@@ -105,13 +106,13 @@ object CommonServices {
           Json.obj("authorizedTeams" -> teamId),
           Json.obj("team" -> teamId),
         ),
-          "published" -> true,
+          "state" -> ApiState.publishedJsonFilter,
           "_deleted" -> false,
-          "parent" -> JsNull, //FIXME : could be a problem if parent is not published
+          "parent" -> JsNull, //FIXME : could be a problem if parent is not published [#517]
           "name" -> Json.obj("$regex" -> research))
-        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(apiFilter ++ subsOnlyFilter ++ tagFilter ++ catFilter, offset, limit, Some(Json.obj("name" -> 1)))
-
-        allApisFilter = Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))), "published" -> true) //++ tagFilter ++ catFilter
+        uniqueApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findWithPagination(apiFilter ++ subsOnlyFilter, offset, limit, Some(Json.obj("name" -> 1)))
+        allApisFilter = Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(uniqueApis._1.map(a => JsString(a.humanReadableId)))),
+          "state" -> ApiState.publishedJsonFilter)
         allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter ++ subsOnlyFilter, sort = Some(Json.obj("name" -> 1)))
         teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))))
         notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
@@ -142,7 +143,7 @@ object CommonServices {
   }
 
   def getVisibleApis[A](teamId: Option[String] = None, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, groupOpt: Option[String] = None)
-                       (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[ApiWithCount, AppError]] = {
+                       (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, ApiWithCount]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
       val userIsAdmin = ctx.user.isDaikokuAdmin || ctx.isTenantAdmin
 
@@ -197,7 +198,7 @@ object CommonServices {
               sort = Some(Json.obj("name" -> 1)))
           } yield {
             val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
-              .filter(api => api.published || myTeams.exists(api.team == _.id))
+              .filter(api => api.isPublished || myTeams.exists(api.team == _.id))
               .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
               .map(api => api
                 .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))

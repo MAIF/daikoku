@@ -5,11 +5,11 @@ import { constraints, format, type as formType } from "@maif/react-forms";
 import Select from "react-select";
 import { getApolloContext } from "@apollo/client";
 
-import { IApi, IFastApi, IFastPlan, IFastSubscription, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan } from "../../../types";
+import { IApi, IFastApi, IFastPlan, IFastSubscription, ISubscription, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan } from "../../../types";
 import { I18nContext } from "../../../contexts/i18n-context";
 import * as Services from "../../../services";
 import { ModalContext } from "../../../contexts";
-import { Option } from '../../utils';
+import { isSubscriptionProcessIsAutomatic, Option } from '../../utils';
 
 type FastApiCardProps = {
   team: ITeamSimple,
@@ -42,35 +42,11 @@ export const FastApiCard = (props: FastApiCardProps) => {
   }
 
   const subscribe = (input: string, apiId: string, team: ITeamSimple, plan: IFastPlan, apiKey?: ISubscription) => {
-    const teamsSubscriber = new Array(team._id)
-
     const apiKeyDemand = (motivation?: string) => apiKey
-      ? Services.extendApiKey(apiId, apiKey._id, teamsSubscriber, plan._id, motivation)
-      : Services.askForApiKey(apiId, teamsSubscriber, plan._id, motivation)
+      ? Services.extendApiKey(apiId, apiKey._id, team._id, plan._id, motivation)
+      : Services.askForApiKey(apiId, team._id, plan._id, motivation)
 
-    if (plan.subscriptionProcess === 'Automatic') {
-      apiKeyDemand()
-        .then((response) => {
-          if (response[0].error) {
-            toastr.error(
-              translate('Error'),
-              response[0].error
-            )
-          } else {
-            toastr.success(
-              translate('Done'),
-              translate(
-                {
-                  key: 'subscription.plan.accepted',
-                  replacements: [
-                    plan.customName!,
-                    team.name
-                  ]
-                }))
-            queryClient.invalidateQueries(['data'])
-          }
-        })
-    } else {
+    if (plan.subscriptionProcess.some(p => isValidationStepTeamAdmin(p))) {
       openFormModal<{ motivation: string }>({
         title: translate(input === '' ? 'motivations.modal.title' : 'fastMode.subscription.resume'),
         schema: {
@@ -112,7 +88,28 @@ export const FastApiCard = (props: FastApiCardProps) => {
         },
         actionLabel: translate('Send')
       })
-
+    } else {
+      apiKeyDemand()
+      .then((response) => {
+        if (response[0].error) {
+          toastr.error(
+            translate('Error'),
+            response[0].error
+          )
+        } else {
+          toastr.success(
+            translate('Done'),
+            translate(
+              {
+                key: 'subscription.plan.accepted',
+                replacements: [
+                  plan.customName!,
+                  team.name
+                ]
+              }))
+          queryClient.invalidateQueries(['data'])
+        }
+      })
     }
   }
 
@@ -184,7 +181,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
               return { plan, ...subPlan }
             })
             .sort((a, b) => (a.plan.customName || '').localeCompare(b.plan.customName || ''))
-            .filter(({ plan }) => plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities !== null
+            .filter(({ plan }) => plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities
               && (!!plan.otoroshiTarget.authorizedEntities.groups.length
                 || !!plan.otoroshiTarget.authorizedEntities.services.length
                 || !!plan.otoroshiTarget.authorizedEntities.routes.length))
@@ -221,7 +218,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
                           props.team,
                           plan
                         )}>
-                        {translate(plan.subscriptionProcess === 'Automatic' ? ('Get API key') : ('Request API key'))}
+                        {translate(isSubscriptionProcessIsAutomatic(plan) ? ('Get API key') : ('Request API key'))}
                       </button>}
                     {isPending &&
                       <button style={{ whiteSpace: "nowrap" }} disabled={true}

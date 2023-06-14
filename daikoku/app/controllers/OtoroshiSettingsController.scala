@@ -357,8 +357,6 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         val maxPerMonthOpt =
           (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
 
-        AppLogger.warn(
-          s"$otoroshiSettingsOpt - $authorizedEntitiesOpt - $clientNameOpt - $tagOpt - $apiOpt")
         (otoroshiSettingsOpt,
          authorizedEntitiesOpt,
          clientNameOpt,
@@ -396,7 +394,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                       dailyQuota = maxPerDayOpt.getOrElse(10000L),
                       monthlyQuota = maxPerMonthOpt.getOrElse(300000L),
                       constrainedServicesOnly = true,
-                      tags = Seq(tag),
+                      tags = Set(tag),
                       restrictions = ApiKeyRestrictions(),
                       metadata = Map(
                         "daikoku_created_by" -> user.email,

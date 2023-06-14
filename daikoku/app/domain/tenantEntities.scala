@@ -115,14 +115,26 @@ object ItemType {
   case object Subscription extends ItemType {
     def name: String = "Subscription"
   }
+  case object ApiKeyConsumption extends ItemType {
+    def name: String = "ApiKeyConsumption"
+  }
+  case object ThirdPartySubscription extends ItemType {
+    def name: String = "ThirdPartySubscription"
+  }
+  case object ThirdPartyProduct extends ItemType {
+    def name: String = "ThirdPartyProduct"
+  }
   val values: Seq[ItemType] =
     Seq(User, Team, Api, Subscription)
   def apply(name: String): Option[ItemType] = name match {
-    case "User"           => User.some
-    case "Team"           => Team.some
-    case "Api"            => Api.some
-    case "Subscription"   => Subscription.some
-    case _                => None
+    case "User"                   => User.some
+    case "Team"                   => Team.some
+    case "Api"                    => Api.some
+    case "Subscription"           => Subscription.some
+    case "ApiKeyConsumption"      => ApiKeyConsumption.some
+    case "ThirdPartySubscription" => ThirdPartySubscription.some
+    case "ThirdPartyProduct"      => ThirdPartyProduct.some
+    case _                        => None
   }
 }
 
@@ -135,10 +147,15 @@ object OperationAction {
     def name: String = "DELETE"
   }
 
-  val values: Seq[OperationAction] = Seq(Delete)
+  case object Sync extends OperationAction {
+    def name: String = "SYNC"
+  }
+
+  val values: Seq[OperationAction] = Seq(Delete, Sync)
 
   def apply(name: String): Option[OperationAction] = name match {
     case "DELETE" => Delete.some
+    case "SYNC" => Sync.some
     case _        => None
   }
 }
@@ -219,6 +236,26 @@ object TenantMode {
   }
 }
 
+sealed trait ThirdPartyPaymentSettings {
+  def id: ThirdPartyPaymentSettingsId
+
+  def typeName: String
+
+  def name: String
+
+  def asJson: JsValue = json.ThirdPartyPaymentSettingsFormat.writes(this)
+}
+
+case object ThirdPartyPaymentSettings {
+  case class StripeSettings(id: ThirdPartyPaymentSettingsId,
+                            name: String,
+                            publicKey: String,
+                            secretKey: String)
+    extends ThirdPartyPaymentSettings {
+    override def typeName: String = "Stripe"
+  }
+}
+
 case class Tenant(
     id: TenantId,
     enabled: Boolean = true,
@@ -243,7 +280,8 @@ case class Tenant(
     defaultMessage: Option[String] = None,
     tenantMode: Option[TenantMode] = None,
     aggregationApiKeysSecurity: Option[Boolean] = None,
-    robotTxt: Option[String] = None
+    robotTxt: Option[String] = None,
+    thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -534,7 +572,7 @@ case class CmsPage(
     handlebars.registerHelper(s"daikoku-${name}s", (_: CmsPage, options: Options) => {
       val visibility = options.hash.getOrDefault("visibility", "All").asInstanceOf[String]
       Await.result(CommonServices.getVisibleApis(research = "", limit = Int.MaxValue, offset = 0)(ctxUserContext, env, ec), 10.seconds) match {
-        case Left(ApiWithCount(apis, _)) =>
+        case Right(ApiWithCount(apis, _)) =>
           apis
             .filter(api => if(visibility == "All") true else api.api.visibility.name == visibility)
             .map(api => renderString(ctx,
@@ -544,7 +582,7 @@ case class CmsPage(
               jsonToCombine = jsonToCombine ++ Map("api" -> api.api.asJson)
             ))
             .mkString("\n")
-        case Right(error) => AppError.render(error)
+        case Left(error) => AppError.render(error)
       }
     })
     handlebars.registerHelper(s"daikoku-$name", (id: String, options: Options) => {
@@ -582,8 +620,8 @@ case class CmsPage(
     })
     handlebars.registerHelper(s"daikoku-json-${name}s", (_: CmsPage, _: Options) =>
       Await.result(CommonServices.getVisibleApis(research = "", limit = Int.MaxValue, offset = 0)(ctxUserContext, env, ec).map {
-        case Left(ApiWithCount(apis, _)) => JsArray(apis.map(_.api.asJson))
-        case Right(error) => toJson(error)
+        case Right(ApiWithCount(apis, _)) => JsArray(apis.map(_.api.asJson))
+        case Left(error) => toJson(error)
       }, 10.seconds)
     )
   }
@@ -614,8 +652,7 @@ case class CmsPage(
 
     handlebars.registerHelper(s"daikoku-owned-teams", (_: CmsPage, options: Options) => {
       Await.result(CommonServices.myTeams()(ctxUserContext, env, ec), 10.seconds) match {
-        case Left(teams) =>
-          teams
+        case Right(teams) => teams
             .map(team => renderString(ctx,
               parentId,
               options.fn.text(),
@@ -623,7 +660,7 @@ case class CmsPage(
               jsonToCombine = jsonToCombine ++ Map("team" -> team.asJson)
             )(env, ec, messagesApi))
             .mkString("\n")
-        case Right(error) => AppError.render(error)
+        case Left(error) => AppError.render(error)
       }
     })
     handlebars.registerHelper(s"daikoku-owned-team", (_: String, options: Options) => {
@@ -644,8 +681,8 @@ case class CmsPage(
             case _ => AppError.TeamUnauthorized
           }
       }, 10.seconds) match {
-        case Left(e) => e
-        case Right(error) => toJson(error)
+        case Right(e) => e
+        case Left(error) => toJson(error)
       }
     })
     handlebars.registerHelper(s"daikoku-json-owned-team", (id: String, options: Options) => {
@@ -664,8 +701,8 @@ case class CmsPage(
     })
     handlebars.registerHelper(s"daikoku-json-owned-teams", (_: CmsPage, _: Options) =>
       Await.result(CommonServices.myTeams()(ctxUserContext, env, ec).map {
-        case Left(teams) => JsArray(teams.map(_.asJson))
-        case Right(error) => toJson(error)
+        case Right(teams) => JsArray(teams.map(_.asJson))
+        case Left(error) => toJson(error)
       }, 10.seconds)
     )
   }

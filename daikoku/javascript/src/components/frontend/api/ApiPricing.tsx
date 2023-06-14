@@ -9,16 +9,18 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
+import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
 import { INotification } from '../../../types';
 import {
   access,
   api,
-  apikey, Can, manage,
+  apikey, Can, isPublish, isSubscriptionProcessIsAutomatic, manage,
   Option, renderPlanInfo, renderPricing
 } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
+import classNames from 'classnames';
+import { Link, useNavigate } from 'react-router-dom';
 
 
 export const currency = (plan?: IBaseUsagePlan) => {
@@ -32,21 +34,21 @@ export const currency = (plan?: IBaseUsagePlan) => {
 type ApiPricingCardProps = {
   plan: IUsagePlan,
   api: IApi,
-  askForApikeys: (x: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
+  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
   myTeams: Array<ITeamSimple>,
   ownerTeam: ITeamSimple,
   subscriptions: Array<ISubscription>,
-  pendingSubscriptions: Array<INotification>,
+  inProgressDemands: Array<ISubscriptionDemand>,
 }
 
 const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { Translation } = useContext(I18nContext);
-  const { openFormModal, openLoginOrRegisterModal, openApiKeySelectModal } = useContext(ModalContext);
+  const { openFormModal, openLoginOrRegisterModal, openApiKeySelectModal, openCustomModal, close } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
-  const showApiKeySelectModal = (teams: Array<string>) => {
+  const showApiKeySelectModal = (team: string) => {
     const { plan } = props;
 
     //FIXME: not bwaaagh !!
@@ -54,10 +56,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       return;
     }
 
-    const askForApikeys = (teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription) => {
-      if (plan.subscriptionProcess === "Automatic") {
-        props.askForApikeys({ teams, plan: plan, apiKey })
-      } else {
+    const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
+      if (plan.subscriptionProcess.some(isValidationStepTeamAdmin)) {
         openFormModal<{ motivation: string }>({
           title: translate('motivations.modal.title'),
           schema: {
@@ -70,13 +70,15 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               ]
             }
           },
-          onSubmit: ({ motivation }) => props.askForApikeys({ teams, plan, apiKey, motivation }),
+          onSubmit: ({ motivation }) => props.askForApikeys({ team, plan, apiKey, motivation }),
           actionLabel: translate('Send')
         })
+      } else {
+        props.askForApikeys({ team, plan: plan, apiKey })
       }
     }
 
-    Services.getAllTeamSubscriptions(teams[0])
+    Services.getAllTeamSubscriptions(team)
       .then((subscriptions) => client.query({
         query: Services.graphql.apisByIdsWithPlans,
         variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
@@ -99,13 +101,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           .map((infos) => infos.subscription);
 
         if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
-          askForApikeys(teams, plan);
+          askForApikeys(team, plan);
         } else {
           openApiKeySelectModal({
             plan,
             apiKeys: filteredApiKeys,
-            onSubscribe: () => askForApikeys(teams, plan),
-            extendApiKey: (apiKey: ISubscription) => askForApikeys(teams, plan, apiKey),
+            onSubscribe: () => askForApikeys(team, plan),
+            extendApiKey: (apiKey: ISubscription) => askForApikeys(team, plan, apiKey),
           });
         }
       });
@@ -113,6 +115,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const plan = props.plan;
   const customDescription = plan.customDescription;
+  const isAutomaticProcess = isSubscriptionProcessIsAutomatic(plan)
 
   const authorizedTeams = props.myTeams
     .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')
@@ -129,21 +132,36 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       .map((s) => s.team)
   );
 
-  const isPending = !difference(
-    allPossibleTeams,
-    props.pendingSubscriptions.map((s) => s.action.team)
-  ).length;
-
   const isAccepted = !allPossibleTeams.length;
 
   const { translate } = useContext(I18nContext);
 
   let pricing = renderPricing(plan, translate)
 
-  const otoroshiTargetIsDefined = !!plan.otoroshiTarget;
-  const otoroshiEntitiesIsDefined = otoroshiTargetIsDefined && (!!plan.otoroshiTarget?.authorizedEntities.groups.length ||
-    !!plan.otoroshiTarget?.authorizedEntities.routes.length ||
-    !!plan.otoroshiTarget?.authorizedEntities.services.length);
+  const otoroshiTargetIsDefined = !!plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities;
+  const otoroshiEntitiesIsDefined = otoroshiTargetIsDefined && (!!plan.otoroshiTarget?.authorizedEntities?.groups.length ||
+    !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
+    !!plan.otoroshiTarget?.authorizedEntities?.services.length);
+
+
+  const openTeamSelectorModal = () => {
+    openCustomModal({
+      title: 'select team',
+      content: <TeamSelector
+        teams={authorizedTeams
+          .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
+          .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+        pendingTeams={props.inProgressDemands.map((s) => s.team)}
+        acceptedTeams={props.subscriptions
+          .filter((f) => !f._deleted)
+          .map((subs) => subs.team)}
+        allowMultipleDemand={plan.allowMultipleKeys}
+        showApiKeySelectModal={showApiKeySelectModal}
+        plan={props.plan}
+      />
+    })
+  }
 
   return (
     <div className="col-md-4 card mb-4 shadow-sm usage-plan__card" data-usage-plan={plan.customName}>
@@ -177,12 +195,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             </Translation>
           </span>
         </div>
-        <div className="d-flex justify-content-between align-items-center flex-wrap">
-          {plan.otoroshiTarget && !isAccepted && isPending && (
-            <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
-              <Translation i18nkey="Request in progress">Request in progress</Translation>
-            </button>
-          )}
+        <div className="d-flex justify-content-between align-items-center">
           {!otoroshiTargetIsDefined && props.api.visibility !== 'AdminOnly' && (
             <span className="badge bg-danger m-1">{translate('otoroshi.missing.target')}</span>
           )}
@@ -191,7 +204,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           )}
           {(otoroshiTargetIsDefined && otoroshiEntitiesIsDefined || props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&
-            props.api.published && (
+            isPublish(props.api) && (
               <Can
                 I={access}
                 a={apikey}
@@ -200,36 +213,16 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                 )}
               >
                 {(props.api.visibility === 'AdminOnly' ||
-                  (plan.otoroshiTarget && !isAccepted && !isPending)) && (
-                    <ActionWithTeamSelector
-                      title={translate('team.selection.title')}
-                      description={translate(
-                        plan.subscriptionProcess === 'Automatic'
-                          ? 'team.selection.desc.get'
-                          : 'team.selection.desc.request')}
-                      teams={authorizedTeams
-                        .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-                        .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
-                        .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-                      pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
-                      acceptedTeams={props.subscriptions
-                        .filter((f) => !f._deleted)
-                        .map((subs) => subs.team)}
-                      allowMultipleDemand={plan.allowMultipleKeys}
-                      allTeamSelector={false}
-                      action={(teams) => showApiKeySelectModal(teams)}
-                      actionLabel={translate(plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key')}
-                    >
-                      <button type="button" className="btn btn-sm btn-access-negative col-12">
-                        <Translation
-                          i18nkey={
-                            plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
-                          }
-                        >
-                          {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
-                        </Translation>
-                      </button>
-                    </ActionWithTeamSelector>
+                  (plan.otoroshiTarget && !isAccepted)) && (
+                    <button type="button" className="btn btn-sm btn-access-negative col-12" onClick={openTeamSelectorModal}>
+                      <Translation
+                        i18nkey={
+                          isAutomaticProcess ? 'Get API key' : 'Request API key'
+                        }
+                      >
+                        {isAutomaticProcess ? 'Get API key' : 'Request API key'}
+                      </Translation>
+                    </button>
                   )}
               </Can>
             )}
@@ -237,9 +230,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             <button
               type="button"
               className="btn btn-sm btn-access-negative mx-auto mt-3"
-              onClick={() => openLoginOrRegisterModal({
-                tenant
-              })}
+              onClick={() => openLoginOrRegisterModal({ tenant})}
             >
               <Translation i18nkey="Get API key">Get API key</Translation>
             </button>
@@ -250,13 +241,77 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   );
 };
 
+type ITeamSelector = {
+  teams: Array<ITeamSimple>
+  pendingTeams: Array<string>
+  acceptedTeams: Array<string>
+  allowMultipleDemand?: boolean
+  showApiKeySelectModal: (teamId: string) => void,
+  plan: IUsagePlan
+}
+
+const TeamSelector = (props: ITeamSelector) => {
+  const { translate } = useContext(I18nContext);
+  const { close } = useContext(ModalContext);
+  const navigate = useNavigate();
+
+  const displayVerifiedBtn = props.plan.subscriptionProcess.some(p => p.type === 'payment')
+
+  return (
+    <div className="modal-body">
+      <div>
+        <div className='modal-description'>You are going to request an API key. For which team do you want it?</div>
+        <div className='team-selection__container'>
+          {
+            props.teams
+              .filter(t => !!props.allowMultipleDemand || !props.acceptedTeams.includes(t._id))
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(team => {
+                const allowed = props.allowMultipleDemand ||
+                  (!props.pendingTeams.includes(team._id) && !props.acceptedTeams.includes(team._id) && (!displayVerifiedBtn || team.verified))
+
+                return (
+                  <div
+                    key={team._id}
+                    className={classNames('team-selection team-selection__team', {
+                      selectable: allowed,
+                      'cursor-forbidden': !allowed,
+                    })}
+                    onClick={() => allowed ? props.showApiKeySelectModal(team._id) : () => { }}
+                  >
+                    {
+                      props.pendingTeams.includes(team._id) &&
+                      <button type="button" className="btn btn-sm btn-outline-secondary disabled">
+                        {translate("Request in progress")}
+                      </button>
+                    }
+                    {
+                      displayVerifiedBtn && !team.verified &&
+                      <button type="button" className="btn btn-sm btn-outline-warning" onClick={() => {
+                        close()
+                        navigate(`/${team._humanReadableId}/settings/edition`)
+                      }}>
+                        {translate("Email not verified")}
+                      </button>
+                    }
+                    <span className="ms-2">{team.name}</span>
+                  </div>
+                )
+              })
+          }
+        </div>
+      </div>
+    </div>
+  )
+}
+
 type ApiPricingProps = {
   api: IApi
   myTeams: Array<ITeamSimple>
   ownerTeam: ITeamSimple
   subscriptions: Array<ISubscription>,
-  pendingSubscriptions: Array<INotification>,
-  askForApikeys: (x: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
+  inProgressDemands: Array<ISubscriptionDemand>,
+  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
 }
 export function ApiPricing(props: ApiPricingProps) {
   if (!props.api) {
@@ -271,28 +326,24 @@ export function ApiPricing(props: ApiPricingProps) {
 
   return (
     <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
-      {/* <div className="album"> */}
-        {/* <div className="container">
-          <div className="row"> */}
-            {possibleUsagePlans.map((plan) => <React.Fragment key={plan._id}>
-              <ApiPricingCard
-                api={props.api}
-                key={plan._id}
-                plan={plan}
-                myTeams={props.myTeams}
-                ownerTeam={props.ownerTeam}
-                subscriptions={props.subscriptions.filter(
-                  (subs) => subs.api === props.api._id && subs.plan === plan._id
-                )}
-                pendingSubscriptions={props.pendingSubscriptions.filter(
-                  (subs) => subs.action.api === props.api._id && subs.action.plan === plan._id
-                )}
-                askForApikeys={props.askForApikeys}
-              />
-            </React.Fragment>)}
-          {/* </div>
-        </div> */}
-      {/* </div> */}
+      {possibleUsagePlans
+        .sort((a, b) => (a.customName || a.type).localeCompare(b.customDescription || b.type))
+        .map((plan) => <React.Fragment key={plan._id}>
+          <ApiPricingCard
+            api={props.api}
+            key={plan._id}
+            plan={plan}
+            myTeams={props.myTeams}
+            ownerTeam={props.ownerTeam}
+            subscriptions={props.subscriptions.filter(
+              (subs) => subs.api === props.api._id && subs.plan === plan._id
+            )}
+            inProgressDemands={props.inProgressDemands.filter(
+              (demand) => demand.api === props.api._id && demand.plan === plan._id
+            )}
+            askForApikeys={props.askForApikeys}
+          />
+        </React.Fragment>)}
     </div>
   );
 }

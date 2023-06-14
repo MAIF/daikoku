@@ -209,7 +209,7 @@ class TenantController(DaikokuAction: DaikokuAction,
             smallDescription = "admin api",
             description = "admin api",
             currentVersion = Version("1.0.0"),
-            published = true,
+            state = ApiState.Published,
             visibility = ApiVisibility.AdminOnly,
             documentation = ApiDocumentation(
               id = ApiDocumentationId(BSONObjectID.generate().stringify),
@@ -228,7 +228,7 @@ class TenantController(DaikokuAction: DaikokuAction,
                 otoroshiTarget = None,
                 allowMultipleKeys = Some(true),
                 autoRotation = None,
-                subscriptionProcess = SubscriptionProcess.Automatic,
+                subscriptionProcess = Seq.empty,
                 integrationProcess = IntegrationProcess.ApiKey
               )
             ),

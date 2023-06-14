@@ -16,10 +16,10 @@ import {
   TeamApiConsumption,
 } from '.';
 import { useDispatch } from 'react-redux';
-import { isError } from '../../../types';
+import { IApi, isError, IState, IStateContext, IUsagePlan } from '../../../types';
 
 type LocationState = {
-  newApiGroup?: any
+  newApiGroup?: IApi
 }
 
 export const TeamApiGroup = () => {
@@ -28,13 +28,13 @@ export const TeamApiGroup = () => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apigroups/:apiGroupId/stats/plan/:planId');
 
-  const [apiGroup, setApiGroup] = useState<any>();
+  const [apiGroup, setApiGroup] = useState<IApi>();
 
-  const { currentTeam, expertMode, tenant } = useSelector((s: any) => s.context);
+  const { currentTeam, expertMode, tenant } = useSelector<IState, IStateContext>(s => s.context);
   const dispatch = useDispatch();
 
   const state: LocationState = location.state as LocationState
-  const creation = state?.newApiGroup;
+  const creation = !!state?.newApiGroup;
 
   const methods = useApiGroupBackOffice(apiGroup, creation);
 
@@ -43,11 +43,16 @@ export const TeamApiGroup = () => {
       setApiGroup(state.newApiGroup);
     }
     else {
-      Services.teamApi(currentTeam._id, params.apiGroupId!, '1.0.0').then(setApiGroup);
+      Services.teamApi(currentTeam._id, params.apiGroupId!, '1.0.0')
+        .then((res) => {
+          if (!isError(res)) {
+            setApiGroup(res)
+          }
+        });
     }
   }, [params.apiGroupId, state?.newApiGroup]);
 
-  const save = (group: any) => {
+  const save = (group: IApi) => {
     if (creation) {
       return Services.createTeamApi(currentTeam._id, group).then((createdGroup) => {
         if (createdGroup.error) {
@@ -72,7 +77,7 @@ export const TeamApiGroup = () => {
         group.currentVersion,
         group._humanReadableId
       ).then((res) => {
-        if (res.error) {
+        if (isError(res)) {
           toastr.error(translate('error'), translate(res.error));
           return res;
         } else {
@@ -88,6 +93,24 @@ export const TeamApiGroup = () => {
       });
     }
   };
+
+  const setDefaultPlan = (plan: IUsagePlan) => {
+    if (apiGroup && apiGroup.defaultUsagePlan !== plan._id && plan.visibility !== 'Private') {
+      const updatedApi = { ...apiGroup, defaultUsagePlan: plan._id }
+      Services.saveTeamApiWithId(
+        currentTeam._id,
+        updatedApi,
+        apiGroup.currentVersion,
+        updatedApi._humanReadableId
+      ).then((response) => {
+        if (isError(response)) {
+          toastr.error(translate('Error'), translate(response.error));
+        } else {
+          setApiGroup(response);
+        }
+      })
+    }
+  }
 
   const { translate } = useContext(I18nContext);
   const { alert } = useContext(ModalContext);
@@ -238,10 +261,11 @@ export const TeamApiGroup = () => {
               </div>)}
               {params.tab === 'plans' && (<div>
                 <TeamApiPricings
-                  value={apiGroup}
+                  api={apiGroup}
+                  setApi={setApiGroup}
                   team={currentTeam}
                   tenant={tenant}
-                  save={save}
+                  setDefaultPlan={setDefaultPlan}
                   creation={creation}
                   expertMode={expertMode}
                   injectSubMenu={(component: any) => methods.addMenu({

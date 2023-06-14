@@ -182,7 +182,7 @@ class UsersController(DaikokuAction: DaikokuAction,
         "@{user.name} has deleted user profile of user.id : @{u.id}"))(ctx) {
       ctx.setCtxValue("u.id", id)
       deletionService
-        .deleteCompleteUserByQueue(id, ctx.tenant)
+        .deleteCompleteUserByQueue(id, ctx.tenant, ctx.user)
         .leftMap(_.render())
         .map(_ => Ok(Json.obj("done" -> true)))
         .merge
@@ -194,7 +194,7 @@ class UsersController(DaikokuAction: DaikokuAction,
     PublicUserAccess(
       AuditTrailEvent("@{user.name} has deleted his own profile)"))(ctx) {
       deletionService
-        .deleteUserByQueue(ctx.user.id.value, ctx.tenant)
+        .deleteUserByQueue(ctx.user.id.value, ctx.tenant, ctx.user)
         .leftMap(_.render())
         .map(_ => Ok(Json.obj("done" -> true)))
         .value

@@ -12,7 +12,7 @@ import { isError } from '../../../types';
 
 type NotificationsGQL = {
   notifications: Array<NotificationGQL>
-  result: number
+  total: number
 }
 type LimitedTeam = {
   _id: string
@@ -138,8 +138,8 @@ export const NotificationList = () => {
           untreatedNotifications: notifications.notifications.filter((n) => isUntreatedNotification(n)
           ),
           notifications: notifications.notifications,
-          count: notifications.result,
-          untreatedCount: notifications.result,
+          count: notifications.total,
+          untreatedCount: notifications.total,
           page: state.page + 1,
           loading: false
         });
@@ -179,12 +179,12 @@ export const NotificationList = () => {
       }).then(({data: {myNotifications}}) => {
         return myNotifications
       }))
-      .then(({ notifications, result}) =>
+      .then(({ notifications, total}) =>
         setState({
           ...state,
           notifications,
-          count: result,
-          untreatedCount: result,
+          count: total,
+          untreatedCount: total,
           untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
         })
       );
@@ -222,12 +222,12 @@ export const NotificationList = () => {
       }).then(({data: {myNotifications}}) => {
         return myNotifications
       }))
-      .then(({ notifications, result }) => {
+      .then(({ notifications, total }) => {
         setState({
           ...state,
           notifications,
-          count : result,
-          untreatedCount: result,
+          count : total,
+          untreatedCount: total,
           untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
         });
       });
@@ -250,11 +250,11 @@ export const NotificationList = () => {
         }).then(({data: {myNotifications}}) => {
           return myNotifications
         })
-          .then(({ notifications, result }) => setState({
+          .then(({ notifications, total }) => setState({
             ...state,
             notifications,
-            count: result,
-            untreatedCount: result,
+            count: total,
+            untreatedCount: total,
             loading: false,
           }));
       }
@@ -278,12 +278,12 @@ export const NotificationList = () => {
         }
       }).then(({data: {myNotifications}}) => {
         return myNotifications
-      }).then(({ notifications, result }) =>
+      }).then(({ notifications, total }) =>
         setState({
           ...state,
           notifications: [...state.notifications, ...notifications],
-          count: result,
-          untreatedCount: result,
+          count: total,
+          untreatedCount: total,
           page: state.page + 1,
           nextIsPending: false,
         })

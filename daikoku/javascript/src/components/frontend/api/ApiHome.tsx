@@ -16,7 +16,7 @@ import StarsButton from './StarsButton';
 
 import 'highlight.js/styles/monokai.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { IApi, INotification, isError, IState, IStateContext, ISubscription, ITeamSimple, IUsagePlan } from '../../../types';
+import { IApi, INotification, isError, IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan } from '../../../types';
 
 (window as any).hljs = hljs;
 
@@ -127,9 +127,9 @@ export const ApiHome = ({
 }: ApiHomeProps) => {
   const [api, setApi] = useState<IApi>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<INotification>>([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<ISubscriptionDemand>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
-  const [myTeams, setMyTeams] = useState<Array<any>>([]);
+  const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
 
@@ -255,36 +255,34 @@ export const ApiHome = ({
   };
 
 
-  const askForApikeys = ({ teams, plan, apiKey, motivation }: { teams: Array<string>, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => {
+  const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => {
     const planName = formatPlanType(plan, translate);
 
     if (api) {
       return (
         apiKey
-          ? Services.extendApiKey(api!._id, apiKey._id, teams, plan._id, motivation)
-          : Services.askForApiKey(api!._id, teams, plan._id, motivation)
-      ).then((results) => {
-        if (results.error) {
-          return toastr.error(translate('Error'), results.error);
-        }
-        return results.forEach((result: any) => {
-          if (result.error) {
-            return toastr.error(translate('Error'), result.error);
-          } else if (result.creation === 'done') {
-            const team: any = myTeams.find((t) => t._id === result.subscription.team);
+          ? Services.extendApiKey(api!._id, apiKey._id, team, plan._id, motivation)
+          : Services.askForApiKey(api!._id, team, plan._id, motivation)
+      ).then((result) => {
 
-            return toastr.success(
-              translate('Done'),
-              translate({ key: 'subscription.plan.accepted', replacements: [planName, team.name] })
-            );
-          } else if (result.creation === 'waiting') {
-            const team = myTeams.find((t) => (t as any)._id === result.subscription.team);
-            return toastr.info(
-              translate('Pending request'),
-              translate({ key: 'subscription.plan.waiting', replacements: [planName, team.name] })
-            );
-          }
-        });
+        if (isError(result)) {
+          return toastr.error(translate('Error'), result.error);
+        } else if (Services.isCheckoutUrl(result)) {
+          window.location.href = result.checkoutUrl
+        } else if (result.creation === 'done') {
+          const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
+          return toastr.success(
+            translate('Done'),
+            translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] })
+          );
+        } else if (result.creation === 'waiting') {
+          const teamName = myTeams.find((t) => t._id === team)!.name;
+          return toastr.info(
+            translate('Pending request'),
+            translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] })
+          );
+        }
+
       })
         .then(() => updateSubscriptions(api._id));
     } else {
@@ -374,7 +372,7 @@ export const ApiHome = ({
       <div className="container">
         <div className="row pt-3">
           {params.tab === 'description' && (<ApiDescription api={api} />)}
-          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} pendingSubscriptions={pendingSubscriptions} />)}
+          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
           {params.tab === 'documentation' && <ApiDocumentation api={api} />}
           {params.tab === 'testing' && (<ApiSwagger api={api} teamId={teamId} ownerTeam={ownerTeam} testing={(api as any).testing} tenant={tenant} connectedUser={connectedUser} />)}
           {params.tab === 'swagger' && (<ApiRedoc api={api} teamId={teamId} />)}

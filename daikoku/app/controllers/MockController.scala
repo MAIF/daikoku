@@ -177,7 +177,7 @@ class MockController(DaikokuAction: DaikokuAction,
         |Fusce ultricies at nisl sed faucibus. In sollicitudin libero eu augue lacinia aliquet. Nunc et eleifend augue. Donec eleifend nisi a iaculis tincidunt. Aenean a enim in nunc tincidunt euismod. Integer pellentesque tortor at ante tempus hendrerit. Fusce pretium, sapien ac sodales aliquam, diam quam placerat turpis, vitae tincidunt lacus massa finibus ante. Ut a ultrices odio. Sed pretium porttitor blandit. Sed ut ipsum a ligula pharetra lacinia. Donec laoreet purus mauris, rutrum hendrerit orci finibus at. Nullam aliquet augue ut tincidunt placerat. Proin tempor leo id orci tristique, at gravida metus pharetra.
       """.stripMargin,
     currentVersion = Version("1.0.0"),
-    published = true,
+    state = ApiState.Published,
     visibility = visibility,
     documentation = ApiDocumentation(
       id = ApiDocumentationId(BSONObjectID.generate().stringify),
@@ -196,7 +196,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       FreeWithQuotas(
@@ -211,7 +211,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithLimits(
@@ -228,7 +228,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithoutLimits(
@@ -246,7 +246,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       PayPerUse(
@@ -261,7 +261,7 @@ class MockController(DaikokuAction: DaikokuAction,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       )
     ),
@@ -313,7 +313,7 @@ class MockController(DaikokuAction: DaikokuAction,
       """.stripMargin,
     currentVersion = Version("1.1.0"),
     supportedVersions = Set(Version("1.1.0"), Version("1.0.0")),
-    published = true,
+    state = ApiState.Published,
     visibility = ApiVisibility.Public,
     documentation = ApiDocumentation(
       id = ApiDocumentationId(BSONObjectID.generate().stringify),
@@ -340,7 +340,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       FreeWithQuotas(
@@ -362,7 +362,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithLimits(
@@ -386,7 +386,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithoutLimits(
@@ -411,7 +411,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       ),
       PayPerUse(
@@ -433,7 +433,7 @@ class MockController(DaikokuAction: DaikokuAction,
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
         autoRotation = None,
-        subscriptionProcess = SubscriptionProcess.Automatic,
+        subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.Automatic
       )
     ),
@@ -535,7 +535,7 @@ class MockController(DaikokuAction: DaikokuAction,
         |Fusce ultricies at nisl sed faucibus. In sollicitudin libero eu augue lacinia aliquet. Nunc et eleifend augue. Donec eleifend nisi a iaculis tincidunt. Aenean a enim in nunc tincidunt euismod. Integer pellentesque tortor at ante tempus hendrerit. Fusce pretium, sapien ac sodales aliquam, diam quam placerat turpis, vitae tincidunt lacus massa finibus ante. Ut a ultrices odio. Sed pretium porttitor blandit. Sed ut ipsum a ligula pharetra lacinia. Donec laoreet purus mauris, rutrum hendrerit orci finibus at. Nullam aliquet augue ut tincidunt placerat. Proin tempor leo id orci tristique, at gravida metus pharetra.
       """.stripMargin,
       currentVersion = Version("1.0.0"),
-      published = true,
+      state = ApiState.Published,
       visibility = ApiVisibility.PublicWithAuthorizations,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
@@ -554,7 +554,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         ),
         FreeWithQuotas(
@@ -569,7 +569,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         ),
         QuotasWithLimits(
@@ -586,7 +586,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         ),
         QuotasWithoutLimits(
@@ -604,7 +604,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         ),
         PayPerUse(
@@ -619,7 +619,7 @@ class MockController(DaikokuAction: DaikokuAction,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
           autoRotation = None,
-          subscriptionProcess = SubscriptionProcess.Automatic,
+          subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.Automatic
         )
       ),
@@ -735,7 +735,7 @@ class MockController(DaikokuAction: DaikokuAction,
       smallDescription = "admin api",
       description = "admin api",
       currentVersion = Version("1.0.0"),
-      published = true,
+      state = ApiState.Published,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
@@ -1382,7 +1382,7 @@ class MockController(DaikokuAction: DaikokuAction,
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = Tenant.Default,
       team = Some(TeamId(teamId)),
-      sender = sender,
+      sender = sender.asNotificationSender,
       date = date,
       notificationType = NotificationType.AcceptOrReject,
       status = status,
@@ -1475,7 +1475,6 @@ class MockController(DaikokuAction: DaikokuAction,
               dailyQuota = 10000,
               monthlyQuota = 300000,
               constrainedServicesOnly = true,
-              tags = Seq(),
               restrictions = ApiKeyRestrictions(),
               metadata = Map(),
               rotation = None

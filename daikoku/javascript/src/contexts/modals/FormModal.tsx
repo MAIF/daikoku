@@ -12,7 +12,8 @@ export const FormModal = <T extends TBaseObject>({
   onSubmit,
   options,
   actionLabel,
-  close
+  close,
+  noClose
 }: IFormModalProps<T> & IBaseModalProps) => {
   const ref = useRef<FormRef>();
 
@@ -32,7 +33,9 @@ export const FormModal = <T extends TBaseObject>({
           value={value}
           onSubmit={(data) => {
             onSubmit(data)
-            close()
+            if (!noClose) {
+              close();
+            }
           }}
           options={{
             ...(options || {}),
