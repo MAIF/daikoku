@@ -352,7 +352,7 @@ object SchemaDefinition {
         Field("users", ListType(UserWithPermissionType), resolve = _.value.users.toSeq),
         Field("authorizedOtoroshiGroups", ListType(StringType), resolve = _.value.authorizedOtoroshiGroups.toSeq.map(_.value)),
         Field("apiKeyVisibility", OptionType(StringType), resolve = _.value.apiKeyVisibility.map(_.name)),
-        Field("metadata", MapType, resolve = _.value.metadata),
+        Field("metadata", JsonType, resolve = _.value.metadata.foldLeft(Json.obj())((obj, entry) => obj + (entry._1 -> JsString(entry._2)))),
         Field("_humanReadableId", StringType, resolve = _.value.humanReadableId),
         Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission),
         Field("verified", BooleanType, resolve = _.value.verified)
@@ -843,19 +843,19 @@ object SchemaDefinition {
     lazy val ApiWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithCount](
       ObjectTypeDescription("An object composed of an array of apis with autho and the total count of them"),
       ReplaceField("apis", Field("apis", ListType(ApiWithAuthorizationType), resolve = _.value.apis)),
-      ReplaceField("result", Field("result", LongType, resolve = _.value.result))
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
     lazy val NotificationWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationWithCount](
       ObjectTypeDescription("An object composed of an array of notification and a total count of them"),
       ReplaceField("notifications", Field("notifications", ListType(NotificationType), resolve = _.value.notifications)),
-      ReplaceField("result", Field("result", LongType, resolve = _.value.result))
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
     lazy val TeamWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]),TeamWithCount](
       ObjectTypeDescription("An object composed of an array of teams with the total count of them"),
       ReplaceField("teams", Field("teams", ListType(TeamObjectType), resolve = _.value.teams)),
-      ReplaceField("result", Field("result", LongType, resolve = _.value.result))
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
 
@@ -870,7 +870,7 @@ object SchemaDefinition {
     lazy val GraphQlAccessibleApisWithNumberOfApis = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AccessibleApisWithNumberOfApis](
       ObjectTypeDescription("A limited list of Daikoku apis with the count of all the apis for pagination"),
       ReplaceField("apis", Field("apis", ListType(GraphQLAccessibleApiType), resolve = _.value.apis)),
-      ReplaceField("nb", Field("nb", LongType, resolve = _.value.nb))
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
     lazy val  NotificationStatusType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus] = InterfaceType(
@@ -1427,11 +1427,11 @@ object SchemaDefinition {
     )
 
 
-    case class SubscriptionDemandWithCount(subscriptionDemands: Seq[SubscriptionDemand], count: Long)
+    case class SubscriptionDemandWithCount(subscriptionDemands: Seq[SubscriptionDemand], total: Long)
     lazy val graphQlSubscriptionDemandWithCount = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandWithCount](
       ObjectTypeDescription("A limited list of Daikoku apis with the count of all the apis for pagination"),
       ReplaceField("subscriptionDemands", Field("subscriptionDemands", ListType(SubscriptionDemandType), resolve = _.value.subscriptionDemands)),
-      ReplaceField("count", Field("count", LongType, resolve = _.value.count))
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
     val ID: Argument[String] = Argument("id", StringType, description = "The id of element")

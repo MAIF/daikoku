@@ -417,7 +417,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
         return props.notification.action.team!.name;
       case 'ApiSubscriptionDemand':
         return `${sender.name}/${Option(props.notification.action.team!.name)
-            .map((team: any) => team.name)
             .getOrNull()}`;
       case 'OtoroshiSyncSubscriptionError':
         return 'Otoroshi verifier job';

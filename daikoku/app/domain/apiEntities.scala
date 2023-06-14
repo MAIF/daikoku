@@ -849,9 +849,9 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
 case class ApiWithAuthorizations(api: Api,
                                  authorizations: Seq[AuthorizationApi] =
                                    Seq.empty)
-case class ApiWithCount(apis: Seq[ApiWithAuthorizations], result: Long)
-case class NotificationWithCount(notifications: Seq[Notification], result: Long)
-case class TeamWithCount(teams: Seq[Team], result: Long)
+case class ApiWithCount(apis: Seq[ApiWithAuthorizations], total: Long)
+case class NotificationWithCount(notifications: Seq[Notification], total: Long)
+case class TeamWithCount(teams: Seq[Team], total: Long)
 case class SubscriptionsWithPlan(planId: String,
                                  isPending: Boolean,
                                  subscriptionsCount: Int)
@@ -860,7 +860,7 @@ case class ApiWithSubscriptions(
     subscriptionsWithPlan: Seq[SubscriptionsWithPlan])
 
 case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],
-                                          nb: Long)
+                                          total: Long)
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
 

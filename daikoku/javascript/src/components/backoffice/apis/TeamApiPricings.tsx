@@ -702,7 +702,7 @@ export const TeamApiPricings = (props: Props) => {
 
   const setupPayment = (plan: IUsagePlan) => {
     //FIXME: beware of update --> display a message to explain what user is doing !!
-    console.debug({planForEdition})
+    console.debug({ planForEdition })
     return Services.setupPayment(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
         if (isError(response)) {
@@ -1431,12 +1431,15 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
         renderItem={(item, idx) => {
           if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
             return (
-              <FixedItem id={item.id}>
-                <ValidationStep
-                  index={idx + 1}
-                  step={item}
-                  tenant={props.tenant} />
-              </FixedItem>
+              <>
+                <FixedItem id={item.id}>
+                  <ValidationStep
+                    index={idx + 1}
+                    step={item}
+                    tenant={props.tenant} />
+                </FixedItem>
+                <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
+              </>
             )
           } else if (isValidationStepPayment(item)) {
             return (

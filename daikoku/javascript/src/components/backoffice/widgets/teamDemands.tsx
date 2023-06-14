@@ -20,7 +20,7 @@ export const LastDemands = (props: LastDemandsProps) => {
   const GET_TEAM_LAST_DEMANDS = gql`
     query GetTeamLastDemands($teamId: String!, $limit: Int, $offset: Int) {
       teamSubscriptionDemands(teamId: $teamId , limit: $limit, offset: $offset) {
-        count
+        total
         subscriptionDemands {
           id
           api {
@@ -78,9 +78,8 @@ export const LastDemands = (props: LastDemandsProps) => {
   return (
     <Widget isLoading={isLoading} isError={isError} size="small" title="My InProgress demands">
       <div className='d-flex flex-column gap-1'>
-        {data?.data && data.data.teamSubscriptionDemands.count === 0 && <span>no demands</span>}
-        {data?.data && data.data.teamSubscriptionDemands.count > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d: any) => {
-          console.debug({d})
+        {data?.data && data.data.teamSubscriptionDemands.total === 0 && <span>no demands</span>}
+        {data?.data && data.data.teamSubscriptionDemands.total > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d: any) => {
           const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress').step.name === 'payment'
 
           return (

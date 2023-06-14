@@ -1298,7 +1298,7 @@ export const graphql = {
             pending
           }
         }
-        result
+        total
       }
     }`),
   getAllTags: gql(`
@@ -1315,11 +1315,26 @@ export const graphql = {
       teams {
         _id
         _humanReadableId
+        tenant {
+          id
+        }
         name
         type
         avatar
+        description
+        contact
+        users {
+          user {
+            userId: id
+          }
+          teamPermission
+        }
+        apiKeyVisibility
+        apisCreationPermission
+        verified
+        metadata
       }
-      result
+      total
     }
   }`),
   getTeamIncome: gql(`
@@ -1576,7 +1591,7 @@ export const graphql = {
           }
           
         }
-        result
+        total
       }
     }
     `),
@@ -1653,7 +1668,7 @@ export const graphql = {
             subscriptionsCount
           }
         }
-        nb
+        total
       }
 
     }`),

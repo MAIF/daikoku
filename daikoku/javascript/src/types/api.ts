@@ -67,7 +67,7 @@ export interface IApiWithAuthorization {
 
 export interface IApiAuthoWithCount {
   apis: Array<IApiWithAuthorization>;
-  result: number;
+  total: number;
 }
 
 export interface ITesting {
