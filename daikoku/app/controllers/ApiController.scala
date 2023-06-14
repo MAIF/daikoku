@@ -2592,8 +2592,10 @@ class ApiController(
             .forTenant(ctx.tenant.id)
             .findNotDeleted(
               Json.obj("name" -> searchAsRegex) ++ teamUsersFilter,
-              5
+              5,
+              Json.obj("name" -> 1).some
             )
+          log = AppLogger.info(s"total teams ${teams.length}")
           apis <- env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .findNotDeleted(

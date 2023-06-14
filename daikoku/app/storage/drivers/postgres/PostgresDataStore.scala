@@ -1224,14 +1224,16 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
       maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
     logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
 
+    val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
+
     sort match {
       case None =>
         if (query.values.isEmpty)
-          reactivePg.querySeq(s"SELECT * FROM $tableName") {
+          reactivePg.querySeq(s"SELECT * FROM $tableName $limit") {
             rowToJson(_, format)
           } else {
           val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params) {
+          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql $limit", params) {
             rowToJson(_, format)
           }
         }
@@ -1245,12 +1247,12 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
           .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName ORDER BY ${sortedKeys.mkString(",")} ASC",
+            s"SELECT * FROM $tableName $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
             Seq.empty
           ) { rowToJson(_, format) } else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC",
+            s"SELECT * FROM $tableName WHERE $sql $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
             params
           ) { rowToJson(_, format) }
         }
@@ -1373,17 +1375,19 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     logger.debug(
       s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
 
+    val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
+
     sort match {
       case None =>
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}'") {
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' $limit") {
             rowToJson(_, format)
           } else {
           val (sql, params) = convertQuery(
             query ++ Json.obj("_tenant" -> tenant.value))
 
-          var out: String = s"SELECT * FROM $tableName WHERE $sql"
+          var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
           params.zipWithIndex.reverse.foreach {
             case (param, i) =>
               out = out.replace("$" + (i + 1), s"'$param'")
@@ -1402,14 +1406,14 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' ORDER BY ${sortedKeys
-              .mkString(",")} ASC",
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value} ORDER BY ${sortedKeys
+              .mkString(",")} ASC $limit",
             Seq.empty
           ) { rowToJson(_, format) } else {
           val (sql, params) = convertQuery(
             query ++ Json.obj("_tenant" -> tenant.value))
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC",
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC $limit",
             params
           ) { rowToJson(_, format) }
         }

@@ -324,14 +324,13 @@ export const ApiList = (props: TApiList) => {
         </div>
       </div>
       <div className="row">
-        {dataRequest.isLoading && <Spinner />}
-
         <div
           className={classNames('section d-flex flex-column', {
             'col-12 col-sm-9': !props.groupView,
             'col-12': props.groupView,
           })}
         >
+          {dataRequest.isLoading && <Spinner />}
           {apisWithAuth && dataRequest.data &&
             <>
               <div

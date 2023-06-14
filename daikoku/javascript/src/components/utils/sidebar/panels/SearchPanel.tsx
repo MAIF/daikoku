@@ -77,7 +77,7 @@ export const SearchPanel = () => {
               <div className="mb-1 block__category">{(r as any).label}</div>
               <div className="ms-2 block__entries block__border d-flex flex-column">
                 {(r as any).options.map((option: any) => {
-                  const team = teams.find((t: any) => t._id === option.team);
+                  const team = teams.find((t) => t._id === option.team);
                   switch (option.type) {
                     case 'link':
                       return (<Link to={option.url} className="block__entry__link" key={option.value}>
