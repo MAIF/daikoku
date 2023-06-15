@@ -33,13 +33,13 @@ export const TeamApiGroup = () => {
   const dispatch = useDispatch();
 
   const state: LocationState = location.state as LocationState
-  const creation = !!state?.newApiGroup;
+  const creation = state?.newApiGroup;
 
   const queryClient = useQueryClient();
   const apiGroupRequest = useQuery({
     queryKey: ['apiGroup', params.apiGroupId!],
     queryFn: () => Services.teamApi(currentTeam._id, params.apiGroupId!, '1.0.0'),
-    enabled: !!state?.newApiGroup
+    enabled: !creation
   })
 
   const methods = useApiGroupBackOffice(apiGroupRequest.data, creation);
@@ -240,10 +240,10 @@ export const TeamApiGroup = () => {
 
   const { tab } = params;
 
-  if (apiGroupRequest.isLoading) {
+  if (!creation && apiGroupRequest.isLoading) {
     return <Spinner />;
-  } else if (apiGroupRequest.data && !isError(apiGroupRequest.data)) {
-    const apiGroup = apiGroupRequest.data
+  } else if (creation || (apiGroupRequest.data && !isError(apiGroupRequest.data))) {
+    const apiGroup = creation || apiGroupRequest.data as IApi
     return (
       <Can I={manage} a={API} team={currentTeam} dispatchError>
           <div className="d-flex flex-row justify-content-between align-items-center">
@@ -272,7 +272,7 @@ export const TeamApiGroup = () => {
                     team={currentTeam}
                     tenant={tenant}
                     setDefaultPlan={plan => setDefaultPlan(apiGroup, plan)}
-                    creation={creation}
+                    creation={!!creation}
                     expertMode={expertMode}
                     injectSubMenu={(component) => methods.addMenu({
                       blocks: {
