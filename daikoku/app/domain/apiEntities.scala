@@ -733,7 +733,7 @@ object ApiState {
     override def name: String = "deprecated"
   }
 
-  def publishedJsonFilter: JsObject = Json.obj("state" -> Json.obj("$in" -> Json.arr(Published.name, Deprecated.name)))
+  def publishedJsonFilter: JsObject = Json.obj("$in" -> Json.arr(Published.name, Deprecated.name))
 }
 
 case class Api(

@@ -4002,7 +4002,7 @@ class ApiController(
               }
             }
             .map{case (oldPlan, plan) =>
-              if (oldPlan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty) && plan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.nonEmpty)) {
+              if (oldPlan.otoroshiTarget.forall(_.apikeyCustomization.customMetadata.isEmpty) && plan.otoroshiTarget.exists(_.apikeyCustomization.customMetadata.nonEmpty)) {
                 plan.addSubscriptionStep(ValidationStep.TeamAdmin(IdGenerator.token(32), api.team))
               } else {
                 plan
