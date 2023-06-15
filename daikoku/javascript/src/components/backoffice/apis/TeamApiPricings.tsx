@@ -332,7 +332,7 @@ type CardProps = {
   isDefault: boolean
   makeItDefault?: () => void
   toggleVisibility?: () => void
-  deletePlan?: () => void
+  deletePlan: () => void
   editPlan?: () => void
   duplicatePlan?: () => void
   creation?: boolean
@@ -356,7 +356,7 @@ const Card = ({
   const deleteWithConfirm = () => {
     confirm({ message: translate('delete.plan.confirm') })
       .then((ok) => {
-        if (ok && deletePlan) {
+        if (ok) {
           deletePlan()
         }
       });
@@ -481,7 +481,7 @@ type Props = {
   api: IApi
   team: ITeamSimple
   tenant: ITenant
-  setApi: (api: IApi) => void
+  reload: () => Promise<void>
   setDefaultPlan: (plan: IUsagePlan) => void
   creation: boolean
   expertMode: boolean
@@ -489,6 +489,7 @@ type Props = {
   openApiSelectModal?: () => void
 }
 type Tab = 'settings' | 'security' | 'payment' | 'subscription-process'
+
 export const TeamApiPricings = (props: Props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
   const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
@@ -655,6 +656,8 @@ export const TeamApiPricings = (props: Props) => {
 
   const deletePlan = (plan: IUsagePlan) => {
     Services.deletePlan(props.team._id, props.api._id, props.api.currentVersion, plan)
+      .then(() => props.reload())
+      .then(() => toastr.success(translate('Success'), translate('plan.deletion.successful')))
   };
 
   const createNewPlan = () => {
@@ -694,15 +697,14 @@ export const TeamApiPricings = (props: Props) => {
         } else {
           toastr.success(translate('Success'), creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
           setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
-          props.setApi(response)
           setCreation(false)
+          props.reload()
         }
       })
   };
 
   const setupPayment = (plan: IUsagePlan) => {
     //FIXME: beware of update --> display a message to explain what user is doing !!
-    console.debug({ planForEdition })
     return Services.setupPayment(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
         if (isError(response)) {
@@ -710,7 +712,7 @@ export const TeamApiPricings = (props: Props) => {
         } else {
           toastr.success(translate('Success'), translate('plan.payment.setup.successful'))
           setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
-          props.setApi(response)
+          props.reload()
         }
       })
   }

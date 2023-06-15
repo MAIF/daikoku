@@ -104,7 +104,6 @@ type TeamApiDocumentationProps = {
   api: IApi,
   versionId?: string,
   creationInProgress?: boolean,
-  onChange: (value: IApi) => void,
   reloadState: () => void,
   saveApi: (value: IApi) => Promise<any>
 }

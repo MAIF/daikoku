@@ -6,7 +6,7 @@ import Plus from 'react-feather/dist/icons/plus';
 import { useDispatch, useSelector } from 'react-redux';
 
 import * as Services from '../../../services';
-import { Can, manage, api as API, Spinner } from '../../utils';
+import { Can, manage, api as API, Spinner, api, queryClient } from '../../utils';
 import {
   TeamApiInfos,
   TeamApiPost,
@@ -24,9 +24,9 @@ import {
   I18nContext,
   toggleExpertMode,
 } from '../../../core';
-import { TOptions } from '../../../types/types';
 import { IApi, isError, IUsagePlan } from '../../../types/api';
 import { IState, IStateContext, ITeamSimple } from '../../../types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 type ButtonProps = {
@@ -98,83 +98,78 @@ export const TeamApi = (props: { creation: boolean }) => {
   const dispatch = useDispatch();
   const { currentTeam, tenant, expertMode } = useSelector<IState, IStateContext>((s) => s.context);
 
-  const [api, setApi] = useState<IApi>();
-  const [apiVersion, setApiVersion] = useState({
-    value: params.versionId,
-    label: params.versionId,
-  });
-  const [versions, setVersions] = useState<TOptions>([{ value: params.versionId as string, label: params.versionId as string }]);
-
-  const methods = useApiBackOffice(api, props.creation);
   const { translate } = useContext(I18nContext);
 
+  const isNewApi = location && location.state && location.state.newApi
+
+  const queryClient = useQueryClient();
+  const apiRequest = useQuery({
+    queryKey: ['api', params.apiId, params.versionId, location],
+    queryFn: () => Services.teamApi(currentTeam._id, params.apiId!, params.versionId!),
+    enabled: !isNewApi
+  })
+
+  const versionsRequest = useQuery({
+    queryKey: ['apiVersions', params.apiId, params.versionId, location],
+    queryFn: () => Services.getAllApiVersions(currentTeam._id, params.apiId!),
+    enabled: !isNewApi
+  })
+
+  const methods = useApiBackOffice(apiRequest.data, props.creation);
 
   useEffect(() => {
-    if (location && location.state && location.state.newApi) {
-      setApi(location.state.newApi);
-    } else {
-      reloadState();
-    }
-  }, [params.tab, params.versionId]);
+    if (apiRequest.isLoading && versionsRequest.isLoading) {
+      document.title = translate('???');
+    } else if (apiRequest.data && versionsRequest.data) {
 
-  useEffect(() => {
-    document.title = `${currentTeam.name} - ${api ? api.name : translate('API')}`;
-
-    if (!props.creation) {
-      methods.addMenu({
-        blocks: {
-          links: {
-            links: {
-              version: {
-                order: 1,
-                component: (
-                  <div className="d-flex flex-row mb-3">
-                    <Select
-                      name="versions-selector"
-                      value={{ value: params.versionId, label: params.versionId }}
-                      options={versions}
-                      onChange={(e) =>
-                        navigate(
-                          `/${currentTeam._humanReadableId}/settings/apis/${api?._humanReadableId}/${e?.value}/${tab}`
-                        )
-                      }
-                      classNamePrefix="reactSelect"
-                      className="flex-grow-1"
-                      menuPlacement="auto"
-                      menuPosition="fixed"
-                    />
-                    <CreateNewVersionButton apiId={params.apiId!} teamId={params.teamId!} versionId={params.versionId!} tab={params.tab!} currentTeam={currentTeam} />
-                  </div>
-                ),
-              },
-            },
-          },
-        },
-      });
-    }
-  }, [api, versions]);
-
-  const reloadState = () => {
-    Promise.all([
-      Services.teamApi(currentTeam._id, params.apiId!, params.versionId!),
-      Services.getAllApiVersions(currentTeam._id, params.apiId!),
-    ]).then(([api, v]) => {
-      if (!isError(api)) {
-        const versions = (v || []).map((v) => ({
+      if (!isError(apiRequest.data) && !isError(versionsRequest.data)) {
+        const api = apiRequest.data
+        const versions = versionsRequest.data.map((v) => ({
           label: v,
           value: v
         }));
-        setApiVersion({ value: params.versionId, label: params.versionId });
-        setApi(api);
-        setVersions(versions);
-      } else {
-        toastr.error(translate('Error'), api.error);
+
+        document.title = `${currentTeam.name} - ${api ? api.name : translate('API')}`;
+
+        methods.setApi(api)
+
+        if (!props.creation) {
+          methods.addMenu({
+            blocks: {
+              links: {
+                links: {
+                  version: {
+                    order: 1,
+                    component: (
+                      <div className="d-flex flex-row mb-3">
+                        <Select
+                          name="versions-selector"
+                          value={{ value: params.versionId, label: params.versionId }}
+                          options={versions}
+                          onChange={(e) =>
+                            navigate(
+                              `/${currentTeam._humanReadableId}/settings/apis/${api?._humanReadableId}/${e?.value}/${tab}`
+                            )
+                          }
+                          classNamePrefix="reactSelect"
+                          className="flex-grow-1"
+                          menuPlacement="auto"
+                          menuPosition="fixed"
+                        />
+                        <CreateNewVersionButton apiId={params.apiId!} teamId={params.teamId!} versionId={params.versionId!} tab={params.tab!} currentTeam={currentTeam} />
+                      </div>
+                    ),
+                  },
+                },
+              },
+            },
+          });
+        }
       }
-    });
-  };
+    }
+  }, [apiRequest.data, versionsRequest.data]);
 
   const save = (editedApi: IApi) => {
-    console.log(editedApi)
     if (props.creation) {
       return Services.createTeamApi(currentTeam._id, editedApi)
         .then((createdApi) => {
@@ -194,40 +189,36 @@ export const TeamApi = (props: { creation: boolean }) => {
       return Services.saveTeamApiWithId(
         currentTeam._id,
         editedApi,
-        apiVersion.value!,
+        editedApi.currentVersion,
         editedApi._humanReadableId
       ).then((res) => {
         if (isError(res)) {
           toastr.error(translate('Error'), translate(res.error));
         } else {
           toastr.success(translate('Success'), translate('Api saved'));
-          setApi(res);
-          methods.setApi(res)
           if (res._humanReadableId !== editedApi._humanReadableId) {
             navigate(`/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`);
           } else {
-            reloadState()
+            queryClient.invalidateQueries(['api'])
           }
         }
       });
     }
   };
 
-  const setDefaultPlan = (plan: IUsagePlan) => {
+  const setDefaultPlan = (api: IApi, plan: IUsagePlan) => {
     if (api && api.defaultUsagePlan !== plan._id && plan.visibility !== 'Private') {
       const updatedApi = { ...api, defaultUsagePlan: plan._id }
       Services.saveTeamApiWithId(
         currentTeam._id,
         updatedApi,
-        apiVersion.value!,
+        api.currentVersion,
         updatedApi._humanReadableId
       ).then((response) => {
         if (isError(response)) {
           toastr.error(translate('Error'), translate(response.error));
         } else {
-          setApi(response);
-          methods.setApi(response)
-          reloadState() //todo: use react query instead
+          queryClient.invalidateQueries(['api'])
         }
       })
     }
@@ -293,65 +284,73 @@ export const TeamApi = (props: { creation: boolean }) => {
     }
   }, [api]);
 
-  return (<Can I={manage} a={API} team={currentTeam} dispatchError>
-    {!api && <Spinner />}
-    {api && (<>
-      <div className="d-flex flex-row justify-content-between align-items-center">
-        {props.creation ? (<h2>{api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-          <h2 className="me-2">{api.name}</h2>
-        </div>)}
-        <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
-          {expertMode && translate('Standard mode')}
-          {!expertMode && translate('Expert mode')}
-        </button>
-      </div>
-      <div className="row">
-        <div className="section col container-api">
-          <div className="mt-2">
-            {tab === 'documentation' && (
-              <TeamApiDocumentation
-                creationInProgress={props.creation}
-                team={currentTeam}
-                api={api}
-                onChange={(api: IApi) => setApi(api)}
-                saveApi={save}
-                versionId={params.versionId}
-                reloadState={reloadState} />)}
-            {tab === 'plans' && (
-              <TeamApiPricings
-                api={api}
-                setApi={setApi}
-                setDefaultPlan={setDefaultPlan}
-                team={currentTeam}
-                tenant={tenant}
-                creation={!!props.creation}
-                expertMode={expertMode}
-                injectSubMenu={(component: any) => methods.addMenu({
-                  blocks: {
-                    links: { links: { plans: { childs: { menu: { component } } } } },
-                  },
-                })} />)}
-            {tab === 'infos' && (
-              <TeamApiInfos
-                value={api}
-                team={currentTeam}
-                tenant={tenant}
-                save={save}
-                creation={props.creation}
-                expertMode={expertMode}
-                injectSubMenu={(component: any) => methods.addMenu({
-                  blocks: {
-                    links: { links: { informations: { childs: { menu: { component } } } } },
-                  },
-                })} />)}
-            {tab === 'news' && (<TeamApiPost team={currentTeam} api={api} />)}
-            {tab === 'settings' && <TeamApiSettings api={api} />}
-            {tab === 'stats' && !match && <TeamApiConsumption api={api} />}
-            {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={api} />)}
-            {tab === 'subscriptions' && <TeamApiSubscriptions api={api} />}
+  if (apiRequest.isLoading) {
+    return <Spinner />
+  } else if (apiRequest.data && !isError(apiRequest.data)) {
+    const api = apiRequest.data;
+
+    return (
+      <Can I={manage} a={API} team={currentTeam} dispatchError>
+        <div className="d-flex flex-row justify-content-between align-items-center">
+          {props.creation ? (<h2>{api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+            <h2 className="me-2">{api.name}</h2>
+          </div>)}
+          <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+            {expertMode && translate('Standard mode')}
+            {!expertMode && translate('Expert mode')}
+          </button>
+        </div>
+        <div className="row">
+          <div className="section col container-api">
+            <div className="mt-2">
+              {tab === 'documentation' && (
+                <TeamApiDocumentation
+                  creationInProgress={props.creation}
+                  team={currentTeam}
+                  api={api}
+                  saveApi={save}
+                  versionId={params.versionId}
+                  reloadState={() => queryClient.invalidateQueries(['api'])} />)}
+              {tab === 'plans' && (
+                <TeamApiPricings
+                  api={api}
+                  reload={() => queryClient.invalidateQueries(['api'])}
+                  setDefaultPlan={plan => setDefaultPlan(api, plan)}
+                  team={currentTeam}
+                  tenant={tenant}
+                  creation={!!props.creation}
+                  expertMode={expertMode}
+                  injectSubMenu={(component) => methods.addMenu({
+                    blocks: {
+                      links: { links: { plans: { childs: { menu: { component } } } } },
+                    },
+                  })} />)}
+              {tab === 'infos' && (
+                <TeamApiInfos
+                  value={api}
+                  team={currentTeam}
+                  tenant={tenant}
+                  save={save}
+                  creation={props.creation}
+                  expertMode={expertMode}
+                  injectSubMenu={(component) => methods.addMenu({
+                    blocks: {
+                      links: { links: { informations: { childs: { menu: { component } } } } },
+                    },
+                  })} />)}
+              {tab === 'news' && (<TeamApiPost team={currentTeam} api={api} />)}
+              {tab === 'settings' && <TeamApiSettings api={api} />}
+              {tab === 'stats' && !match && <TeamApiConsumption api={api} />}
+              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={api} />)}
+              {tab === 'subscriptions' && <TeamApiSubscriptions api={api} />}
+            </div>
           </div>
         </div>
-      </div>
-    </>)}
-  </Can>);
+      </Can>
+    );
+  } else {
+    return <div>Error while fetching api details</div>
+  }
+
+
 };

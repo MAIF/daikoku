@@ -1,22 +1,23 @@
-import React, { useState, useRef, useContext, useEffect } from 'react';
-import { useParams, useLocation, useNavigate, useMatch } from 'react-router-dom';
-import { Form, constraints, type, format } from '@maif/react-forms';
+import { Form, constraints, format, type } from '@maif/react-forms';
+import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { Can, manage, api as API, Spinner } from '../../utils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
+import {
+  TeamApiConsumption,
+  TeamApiPricings,
+  TeamApiSettings,
+  TeamApiSubscriptions,
+  TeamPlanConsumption,
+} from '.';
 import { ModalContext, useApiGroupBackOffice } from '../../../contexts';
 import { I18nContext, toggleExpertMode } from '../../../core';
 import * as Services from '../../../services';
-import {
-  TeamApiPricings,
-  TeamApiSettings,
-  TeamPlanConsumption,
-  TeamApiSubscriptions,
-  TeamApiConsumption,
-} from '.';
-import { useDispatch } from 'react-redux';
-import { IApi, isError, IState, IStateContext, IUsagePlan } from '../../../types';
+import { IApi, IState, IStateContext, ITeamSimple, IUsagePlan, isError } from '../../../types';
+import { api as API, Can, Spinner, manage } from '../../utils';
 
 type LocationState = {
   newApiGroup?: IApi
@@ -28,29 +29,36 @@ export const TeamApiGroup = () => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apigroups/:apiGroupId/stats/plan/:planId');
 
-  const [apiGroup, setApiGroup] = useState<IApi>();
-
   const { currentTeam, expertMode, tenant } = useSelector<IState, IStateContext>(s => s.context);
   const dispatch = useDispatch();
 
   const state: LocationState = location.state as LocationState
   const creation = !!state?.newApiGroup;
 
-  const methods = useApiGroupBackOffice(apiGroup, creation);
+  const queryClient = useQueryClient();
+  const apiGroupRequest = useQuery({
+    queryKey: ['apiGroup', params.apiGroupId!],
+    queryFn: () => Services.teamApi(currentTeam._id, params.apiGroupId!, '1.0.0'),
+    enabled: !!state?.newApiGroup
+  })
+
+  const methods = useApiGroupBackOffice(apiGroupRequest.data, creation);
 
   useEffect(() => {
-    if (state?.newApiGroup) {
-      setApiGroup(state.newApiGroup);
+    if (apiGroupRequest.isLoading) {
+      document.title = translate('???');
+    } else if (apiGroupRequest.data) {
+      if (!isError(apiGroupRequest.data)) {
+        const apiGroup = apiGroupRequest.data
+
+        
+
+        document.title = `${currentTeam.name} - ${apiGroup ? apiGroup.name : translate('API group')}`;
+      }
     }
-    else {
-      Services.teamApi(currentTeam._id, params.apiGroupId!, '1.0.0')
-        .then((res) => {
-          if (!isError(res)) {
-            setApiGroup(res)
-          }
-        });
-    }
-  }, [params.apiGroupId, state?.newApiGroup]);
+  }, [apiGroupRequest.data]);
+
+
 
   const save = (group: IApi) => {
     if (creation) {
@@ -64,10 +72,7 @@ export const TeamApiGroup = () => {
             translate({ key: 'group.created.success', replacements: [createdGroup.name] })
           );
 
-          methods.setApiGroup(createdGroup);
-          navigate(
-            `/${currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`
-          );
+          navigate(`/${currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`);
         }
       });
     } else {
@@ -82,19 +87,17 @@ export const TeamApiGroup = () => {
           return res;
         } else {
           toastr.success(translate('Success'), translate('Group saved'));
-          setApiGroup(group);
+          queryClient.invalidateQueries(['apiGroup'])
 
           if (res._humanReadableId !== group._humanReadableId) {
-            navigate(
-              `/${currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`
-            );
+            navigate(`/${currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`);
           }
         }
       });
     }
   };
 
-  const setDefaultPlan = (plan: IUsagePlan) => {
+  const setDefaultPlan = (apiGroup: IApi, plan: IUsagePlan) => {
     if (apiGroup && apiGroup.defaultUsagePlan !== plan._id && plan.visibility !== 'Private') {
       const updatedApi = { ...apiGroup, defaultUsagePlan: plan._id }
       Services.saveTeamApiWithId(
@@ -106,7 +109,7 @@ export const TeamApiGroup = () => {
         if (isError(response)) {
           toastr.error(translate('Error'), translate(response.error));
         } else {
-          setApiGroup(response);
+          queryClient.invalidateQueries(['apiGroup'])
         }
       })
     }
@@ -115,7 +118,7 @@ export const TeamApiGroup = () => {
   const { translate } = useContext(I18nContext);
   const { alert } = useContext(ModalContext);
 
-  const schema: ({ [key: string]: any }) = {
+  const schema = (apiGroup: IApi): ({ [key: string]: any }) =>  ({
     name: {
       type: type.string,
       label: translate('Name'),
@@ -152,7 +155,7 @@ export const TeamApiGroup = () => {
       createOption: true,
       label: translate('Categories'),
       optionsFrom: '/api/categories',
-      transformer: (t: any) => ({
+      transformer: (t: string) => ({
         label: t,
         value: t
       }),
@@ -178,11 +181,11 @@ export const TeamApiGroup = () => {
       defaultValue: [],
       visible: {
         ref: 'visibility',
-        test: (v: any) => v !== 'Public',
+        test: (v: string) => v !== 'Public',
       },
       label: translate('Authorized teams'),
       optionsFrom: '/api/teams',
-      transformer: (t: any) => ({
+      transformer: (t: ITeamSimple) => ({
         label: t.name,
         value: t._id
       }),
@@ -203,7 +206,7 @@ export const TeamApiGroup = () => {
         value: api._id
       }),
     },
-  };
+  });
 
   const simpleOrExpertMode = (entry: string, expert: boolean) => {
     return !!expert || !schema[entry]?.expert;
@@ -236,53 +239,60 @@ export const TeamApiGroup = () => {
   ];
 
   const { tab } = params;
-  return (
-    <Can I={manage} a={API} team={currentTeam} dispatchError>
-      {!apiGroup && <Spinner />}
-      {apiGroup && (<>
-        <div className="d-flex flex-row justify-content-between align-items-center">
-          {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-            <h2 className="me-2">{apiGroup.name}</h2>
-          </div>)}
-          <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
-            {expertMode && translate('Standard mode')}
-            {!expertMode && translate('Expert mode')}
-          </button>
-        </div>
-        <div className="row">
-          <div className="section col container-api">
-            <div className="mt-2">
-              {params.tab === 'infos' && (<div>
-                <Form
-                  schema={schema}
-                  flow={flow}
-                  onSubmit={save}
-                  value={apiGroup} />
-              </div>)}
-              {params.tab === 'plans' && (<div>
-                <TeamApiPricings
-                  api={apiGroup}
-                  setApi={setApiGroup}
-                  team={currentTeam}
-                  tenant={tenant}
-                  setDefaultPlan={setDefaultPlan}
-                  creation={creation}
-                  expertMode={expertMode}
-                  injectSubMenu={(component: any) => methods.addMenu({
-                    blocks: {
-                      links: { links: { plans: { childs: { menu: { component } } } } },
-                    },
-                  })}
-                  openApiSelectModal={() => alert({ message: 'oops' })} />
-              </div>)}
-              {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
-              {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
-              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={apiGroup} apiGroup />)}
-              {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
+
+  if (apiGroupRequest.isLoading) {
+    return <Spinner />;
+  } else if (apiGroupRequest.data && !isError(apiGroupRequest.data)) {
+    const apiGroup = apiGroupRequest.data
+    return (
+      <Can I={manage} a={API} team={currentTeam} dispatchError>
+          <div className="d-flex flex-row justify-content-between align-items-center">
+            {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+              <h2 className="me-2">{apiGroup.name}</h2>
+            </div>)}
+            <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+              {expertMode && translate('Standard mode')}
+              {!expertMode && translate('Expert mode')}
+            </button>
+          </div>
+          <div className="row">
+            <div className="section col container-api">
+              <div className="mt-2">
+                {params.tab === 'infos' && (<div>
+                  <Form
+                    schema={schema(apiGroup)}
+                    flow={flow}
+                    onSubmit={save}
+                    value={apiGroup} />
+                </div>)}
+                {params.tab === 'plans' && (<div>
+                  <TeamApiPricings
+                    api={apiGroup}
+                    reload={() => queryClient.invalidateQueries(["apigroup"])}
+                    team={currentTeam}
+                    tenant={tenant}
+                    setDefaultPlan={plan => setDefaultPlan(apiGroup, plan)}
+                    creation={creation}
+                    expertMode={expertMode}
+                    injectSubMenu={(component) => methods.addMenu({
+                      blocks: {
+                        links: { links: { plans: { childs: { menu: { component } } } } },
+                      },
+                    })}
+                    openApiSelectModal={() => alert({ message: 'oops' })} />
+                </div>)}
+                {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
+                {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
+                {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={apiGroup} apiGroup />)}
+                {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
+              </div>
             </div>
           </div>
-        </div>
-      </>)}
-    </Can>
-  );
+      </Can>
+    );
+  } else {
+    return <div>Error while fetching api group details</div>
+  }
+
+  
 };

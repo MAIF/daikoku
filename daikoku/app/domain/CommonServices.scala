@@ -404,6 +404,7 @@ object CommonServices {
           .forTenantF(ctx.tenant.id)
         notifications <- notificationRepo.findWithPagination(
           Json.obj(
+            "_deleted" -> false,
             "$or" -> Json.arr(
               Json.obj(
                 "team" -> Json.obj("$in" -> JsArray(myTeams

@@ -1,33 +1,31 @@
+import { getApolloContext } from "@apollo/client";
+import { useQuery } from "@tanstack/react-query";
 import classNames from 'classnames';
-
+import debounce from "lodash/debounce";
 import sortBy from 'lodash/sortBy';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { Grid, List } from 'react-feather';
 import Pagination from 'react-paginate';
+import { useDispatch, useSelector } from 'react-redux';
+import { toastr } from "react-redux-toastr";
 import { useLocation, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
 
-import { useDispatch, useSelector } from 'react-redux';
 import { I18nContext, updateUser } from '../../../core';
 import {
-  IState,
   IApiAuthoWithCount,
   IApiWithAuthorization,
-  isError,
+  IState,
   ITeamSimple,
   IUserSimple,
   TOption,
-  TOptions
+  TOptions,
+  isError
 } from '../../../types';
 import { ApiCard } from '../api';
 
-import { getApolloContext } from "@apollo/client";
-import { useQuery } from "@tanstack/react-query";
 import * as Services from "../../../services";
-import { arrayStringToTOps, Spinner, FilterPreview } from "../../utils";
-
-import debounce from "lodash/debounce";
-import { toastr } from "react-redux-toastr";
+import { FilterPreview, Spinner, arrayStringToTOps } from "../../utils";
 import queryClient from "../../utils/queryClient";
 
 const GRID = 'GRID';
