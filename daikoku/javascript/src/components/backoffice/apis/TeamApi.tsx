@@ -100,19 +100,19 @@ export const TeamApi = (props: { creation: boolean }) => {
 
   const { translate } = useContext(I18nContext);
 
-  const isNewApi = location && location.state && location.state.newApi
+  const newApi = location && location.state && location.state.newApi
 
   const queryClient = useQueryClient();
   const apiRequest = useQuery({
     queryKey: ['api', params.apiId, params.versionId, location],
     queryFn: () => Services.teamApi(currentTeam._id, params.apiId!, params.versionId!),
-    enabled: !isNewApi
+    enabled: !newApi
   })
 
   const versionsRequest = useQuery({
     queryKey: ['apiVersions', params.apiId, params.versionId, location],
     queryFn: () => Services.getAllApiVersions(currentTeam._id, params.apiId!),
-    enabled: !isNewApi
+    enabled: !newApi
   })
 
   const methods = useApiBackOffice(apiRequest.data, props.creation);
@@ -284,10 +284,10 @@ export const TeamApi = (props: { creation: boolean }) => {
     }
   }, [api]);
 
-  if (apiRequest.isLoading) {
+  if (!newApi && apiRequest.isLoading) {
     return <Spinner />
-  } else if (apiRequest.data && !isError(apiRequest.data)) {
-    const api = apiRequest.data;
+  } else if (newApi || (apiRequest.data && !isError(apiRequest.data))) {
+    const api = newApi || apiRequest.data;
 
     return (
       <Can I={manage} a={API} team={currentTeam} dispatchError>

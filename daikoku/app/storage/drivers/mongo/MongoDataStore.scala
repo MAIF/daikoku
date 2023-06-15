@@ -520,6 +520,8 @@ class MongoDataStore(context: Context, env: Env)
       operationRepo.forAllTenant(),
       emailVerificationRepo.forAllTenant(),
       cmsRepo.forAllTenant(),
+      stepValidatorRepo.forAllTenant(),
+      subscriptionDemandRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -633,6 +635,14 @@ class MongoDataStore(context: Context, env: Env)
             messageRepo
               .forAllTenant()
               .save(MessageFormat.reads(payload).get)
+          case ("stepvalidators", payload) =>
+            stepValidatorRepo
+              .forAllTenant()
+              .save(json.StepValidatorFormat.reads(payload).get)
+          case ("subscriptiondemands", payload) =>
+            subscriptionDemandRepo
+              .forAllTenant()
+              .save(json.SubscriptionDemandFormat.reads(payload).get)
           case (typ, _) =>
             logger.info(s"Unknown type: $typ")
             FastFuture.successful(false)

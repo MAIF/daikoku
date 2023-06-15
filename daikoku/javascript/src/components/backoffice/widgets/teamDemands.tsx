@@ -72,7 +72,7 @@ export const LastDemands = (props: LastDemandsProps) => {
       title: translate('demand.delete.modal.title'),
       message: translate('demand.delete.modal.message')
     })
-    .then(() => Services.cancelProcess(props.team._id, demandId))
+      .then(() => Services.cancelProcess(props.team._id, demandId))
   }
 
   return (

@@ -1319,5 +1319,6 @@
   "api.documentation.clone.page.modal.title": "Clonage des pages de documentation",
   "api.documentation.clone.page.placeholder": "Sélectionnez toutes les page a cloner",
   "demand.delete.modal.message": "Voulez-vous vraiment supprimer cette demande de souscription ?",
-  "demand.delete.modal.title": "Suppression d'une demande de soucription"
+  "demand.delete.modal.title": "Suppression d'une demande de soucription",
+  "subscription.process.add.email.step.title": "Configuration de l'étape du processus par e-mail"
 }

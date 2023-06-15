@@ -695,6 +695,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       operationRepo.forAllTenant(),
       emailVerificationRepo.forAllTenant(),
       cmsRepo.forAllTenant(),
+      stepValidatorRepo.forAllTenant(),
+      subscriptionDemandRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -785,6 +787,14 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
                 .save(payload.as[JsObject])
             case ("usersessions", payload) =>
               userSessionRepo.save(UserSessionFormat.reads(payload).get)
+            case ("stepvalidators", payload) =>
+              stepValidatorRepo
+                .forAllTenant()
+                .save(json.StepValidatorFormat.reads(payload).get)
+            case ("subscriptiondemands", payload) =>
+              subscriptionDemandRepo
+                .forAllTenant()
+                .save(json.SubscriptionDemandFormat.reads(payload).get)
             case (typ, _) =>
               logger.error(s"Unknown type: $typ")
               FastFuture.successful(false)

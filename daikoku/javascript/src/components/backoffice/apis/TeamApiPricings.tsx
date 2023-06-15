@@ -1320,17 +1320,24 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
               type: type.string,
               format: format.email,
               array: true,
-            },
-            message: {
-              type: type.string,
-              format: format.text
+              constraints: [
+                constraints.required(translate('constraints.required.value')),
+                constraints.email(translate('constraints.matches.email'))
+              ]
             },
             option: {
               type: type.string,
               format: format.buttonsSelect,
               options: ["all", 'oneOf'],
-              defaultValue: 'oneOf'
-            }
+              defaultValue: 'oneOf',
+              visible: ({rawValues}) => {
+                return rawValues.emails && rawValues.emails.length > 1
+              }
+            },
+            message: {
+              type: type.string,
+              format: format.text
+            },
           },
           onSubmit: (data: IValidationStepEmail & EmailOption) => {
             if (data.option === 'oneOf') {
