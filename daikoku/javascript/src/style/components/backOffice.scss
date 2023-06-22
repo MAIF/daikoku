@@ -53,15 +53,35 @@
     border-bottom: 0.5rem solid $body-bg-color;
   }
 
-  .widget-list-default-item, .widget-list-item {
+  .widget-list-default-item,
+  .widget-list-item {
     background-color: $btn-border-color;
     margin: 10px;
-    border-left: 2px solid #FFF;
+    border-left: 2px solid #fff;
     min-height: 30px;
     padding: 0.5rem 1rem;
 
-    .item-title{
+    .item-title {
       font-size: 16px;
+    }
+  }
+
+  .revenus .percent span {
+    font-size: 32px;
+  }
+  .revenus .percent {
+    &.high {
+      color: green;
+      i{
+        rotate: 325deg;
+      }
+    }
+
+    &.low {
+      color: red;
+    }
+    i{
+      rotate: 45deg;
     }
   }
 }
