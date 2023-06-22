@@ -78,25 +78,25 @@ export const LastDemands = (props: LastDemandsProps) => {
   return (
     <Widget isLoading={isLoading} isError={isError} size="small" title="My InProgress demands">
       <div className='d-flex flex-column gap-1'>
-        {data?.data && data.data.teamSubscriptionDemands.total === 0 && <span>no demands</span>}
+        {data?.data && data.data.teamSubscriptionDemands.total === 0 && <span className='widget-list-default-item'>no demands</span>}
         {data?.data && data.data.teamSubscriptionDemands.total > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d: any) => {
           const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress').step.name === 'payment'
 
           return (
-            <div className='d-flex flex-row justify-content-between align-items-center widget-list-item'>
-              <div>{`${d.api.name} / ${d.plan.customName || formatPlanType(d.plan.type, translate)}`}</div>
-              <div>
+            <div className='d-flex flex-column justify-content-between align-items-center widget-list-item'>
+              <div className='item-title'>{`${d.api.name} / ${d.plan.customName || formatPlanType(d.plan.type, translate)}`}</div>
+              <div className='d-flex justify-content-between w-100 my-2'>
                 {checkout && <FeedbackButton
                   type="primary"
-                  className="ms-1"
+                  className="ms-1 btn-sm"
                   onPress={() => handleCheckout(d.id)}
                   onSuccess={() => console.debug("success")}
                   feedbackTimeout={100}
                   disabled={false}
                 >Checkout</FeedbackButton>
                 }
-                {!checkout && <span>{d.state}</span>}
-                {isAdmin && <button className='btn btn-outline-danger ms-1' onClick={() => cancelDemand(d.id)}>cancel</button>}
+                {!checkout && <span className='badge bg-secondary my-2'>State : {d.state}</span>}
+                {isAdmin && <button className='btn btn-sm btn-outline-danger ms-1' onClick={() => cancelDemand(d.id)}>cancel</button>}
               </div>
             </div>
           )

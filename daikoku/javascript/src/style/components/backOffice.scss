@@ -1,4 +1,4 @@
-@import '../variables';
+@import "../variables";
 
 .back-office-overlay {
   position: fixed;
@@ -13,11 +13,11 @@
   cursor: pointer;
 
   &.active {
-    display: block
+    display: block;
   }
 
   &:not(.active) {
-    display: none
+    display: none;
   }
 }
 
@@ -35,15 +35,13 @@
   gap: 20px;
   justify-content: start;
 
-
   .widget {
     width: calc(30% - 20px);
     height: 300px;
     overflow-y: scroll;
     border-radius: 4px;
-    // padding: 15px;
-    background-color: $menu-text-hover-bg-color;
-    color: $menu-text-hover-color;
+    background-color: $aside-bg-color;
+    color: $aside-text-color;
   }
 
   .widget-body {
@@ -55,8 +53,15 @@
     border-bottom: 0.5rem solid $body-bg-color;
   }
 
-  .widget-list-item {
+  .widget-list-default-item, .widget-list-item {
+    background-color: $btn-border-color;
+    margin: 10px;
+    border-left: 2px solid #FFF;
+    min-height: 30px;
     padding: 0.5rem 1rem;
-    border-bottom: 0.2rem solid $body-bg-color;
+
+    .item-title{
+      font-size: 16px;
+    }
   }
 }

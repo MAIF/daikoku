@@ -65,7 +65,7 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
   return (
     <Widget isLoading={isLoading} isError={isError} size="small" title="In Progress demands">
       <div className='d-flex flex-column'>
-        {data?.data && data.data.subscriptionDemandsForAdmin.total === 0 && <span>no demands</span>}
+        {data?.data && data.data.subscriptionDemandsForAdmin.total === 0 && <span className='widget-list-default-item'>no demands</span>}
         {data?.data && data.data.subscriptionDemandsForAdmin.total > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands
           .map((d: any) => {
             const actualStep = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress')
@@ -73,13 +73,13 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
 
             return (
               <div className='d-flex flex-row justify-content-between align-items-center widget-list-item'>
-                <div className='d-flex flex-column justify-content-between ms-2'>
-                  <div>{d.team.name}</div>
+                <div className='d-flex flex-column justify-content-between'>
+                  <div className='item-title'><i className="fas fa-users me-2"/>{d.team.name}</div>
                   <div className='ms-1'>{d.api.name} / {d.plan.customName || formatPlanType(d.plan.type, translate)}</div>
                 </div>
                 {reRunable && <FeedbackButton
                   type="primary"
-                  className="ms-1"
+                  className="ms-1 btn-sm"
                   onPress={() => runProcess(d.id)}
                   onSuccess={() => console.debug("success")}
                   feedbackTimeout={100}
