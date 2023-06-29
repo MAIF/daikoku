@@ -104,17 +104,6 @@ export const LastDemands = (props: LastDemandsProps) => {
         })}
       </div>
     </Widget>
-    <Widget isLoading={isLoading} isError={isError} size="small" title="My Revenus">
-      <div className='d-flex flex-column revenus'>
-            <div className='text-center mt-2'><h2>Mars 2023</h2></div>
-            <div className='text-center my-4'><h3>$4,390</h3></div>
-            <div className='percent d-flex align-items-center justify-content-center'><i className="fa-solid fa-arrow-right fa-3x"></i><span className='ms-3'>0%</span></div>
-            <div className='percent high d-flex align-items-center justify-content-center'><i className="fa-solid fa-arrow-right fa-3x"></i><span className='ms-3'>12%</span></div>
-            <div className='percent low d-flex align-items-center justify-content-center'><i className="fa-solid fa-arrow-right fa-3x"></i><span className='ms-3'>-12%</span></div>
-
-
-      </div>
-    </Widget>
     </>
   )
 }
