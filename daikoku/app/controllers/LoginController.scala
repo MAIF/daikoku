@@ -245,11 +245,9 @@ class LoginController(DaikokuAction: DaikokuAction,
                         )(ctx.request)
                     )
                   case AuthProvider.LDAP =>
-                    AuditTrailEvent(
-                      s"unauthenticated user with $username has tried to login [LDAP provider]")
+                    AuditTrailEvent(s"unauthenticated user with $username has tried to login [LDAP provider]")
                       .logUnauthenticatedUserEvent(ctx.tenant)
-                    val ldapConfig =
-                      LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
+                    val ldapConfig = LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
 
                     LdapSupport.bindUser(username,
                                          password,
