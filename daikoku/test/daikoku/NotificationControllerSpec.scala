@@ -483,8 +483,8 @@ class NotificationControllerSpec()
               UsagePlanId("3"),
               teamConsumerId,
               motivation = Some("motivation"),
-              demand = SubscriptionDemandId("1"),
-              step = SubscriptionDemandStepId(IdGenerator.token),
+              demand = demand.id,
+              step = demand.steps.head.id,
             ))
         )
       )
@@ -494,6 +494,7 @@ class NotificationControllerSpec()
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
+      logger.warn(Json.stringify(resp.json))
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
 
