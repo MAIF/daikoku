@@ -1209,6 +1209,28 @@ export const TeamApiPricings = (props: Props) => {
       ], //@ts-ignore //FIXME
       expert: true,
     },
+    visibility: {
+      type: type.string,
+      format: format.buttonsSelect,
+      label: () => translate('Visibility'),
+      options: [
+        { label: translate('Public'), value: 'Public', },
+        { label: translate('Private'), value: 'Private' },
+      ]
+    },
+    authorizedTeams: {
+      type: type.string,
+      format: format.select,
+      isMulti: true,
+      defaultValue: [],
+      visible: ({ rawValues }) => rawValues['visibility'] !== 'Public',
+      label: translate('Authorized teams'),
+      optionsFrom: '/api/me/teams',
+      transformer: (t: any) => ({
+        label: t.name,
+        value: t._id
+      }),
+    },
   }
 
   return (<div className="d-flex col flex-column pricing-content">

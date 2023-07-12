@@ -184,7 +184,7 @@ export const TeamApiGroup = () => {
         test: (v: string) => v !== 'Public',
       },
       label: translate('Authorized teams'),
-      optionsFrom: '/api/teams',
+      optionsFrom: '/api/me/teams',
       transformer: (t: ITeamSimple) => ({
         label: t.name,
         value: t._id

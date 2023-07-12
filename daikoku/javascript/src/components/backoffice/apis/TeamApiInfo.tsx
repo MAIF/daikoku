@@ -175,7 +175,7 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       defaultValue: [],
       visible: ({ rawValues }) => rawValues['visibility'] !== 'Public',
       label: translate('Authorized teams'),
-      optionsFrom: '/api/teams',
+      optionsFrom: '/api/me/teams',
       transformer: (t: any) => ({
         label: t.name,
         value: t._id
