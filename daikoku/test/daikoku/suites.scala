@@ -121,6 +121,8 @@ object utils {
         _ <- daikokuComponents.env.dataStore.messageRepo
           .forAllTenant()
           .deleteAll()
+        _ <- daikokuComponents.env.dataStore.stepValidatorRepo.forAllTenant().deleteAll()
+        _ <- daikokuComponents.env.dataStore.subscriptionDemandRepo.forAllTenant().deleteAll()
         _ <- daikokuComponents.env.dataStore.operationRepo
           .forAllTenant()
           .deleteAll()
@@ -756,9 +758,9 @@ object utils {
           otoroshiTarget = None
         )
       ),
+      defaultUsagePlan = UsagePlanId("admin"),
       tags = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
-      defaultUsagePlan = UsagePlanId("1"),
       authorizedTeams = Seq(defaultAdminTeam.id)
     )
     val adminApi2 = Api(

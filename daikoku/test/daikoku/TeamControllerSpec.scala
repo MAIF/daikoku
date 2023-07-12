@@ -1,21 +1,10 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiSubscriptionDemand,
-  TeamAccess,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionAccept, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
-  Administrator,
-  ApiEditor,
-  TeamUser
-}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -558,7 +547,7 @@ class TeamControllerSpec()
       notifications.get.length mustBe 1
       val notif = notifications.get.head
       notif.action mustBe TeamAccess(teamConsumerId)
-      notif.sender.id mustBe randomUser.id
+      notif.sender.id.get mustBe randomUser.id
       notif.team.get mustBe teamConsumerId
     }
 
@@ -743,12 +732,13 @@ class TeamControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = user,
+            sender = user.asNotificationSender,
             notificationType = AcceptOrReject,
-            action = ApiSubscriptionDemand(defaultApi.id,
-                                           UsagePlanId("2"),
-                                           teamConsumerId,
-                                           motivation = Some("motication"))
+            action = ApiSubscriptionAccept(
+              defaultApi.id,
+              subPlanId,
+              teamConsumerId
+            )
           ))
       )
       val session = loginWithBlocking(randomUser, tenant)
@@ -758,8 +748,7 @@ class TeamControllerSpec()
         )(tenant, session)
       resp.status mustBe 200
 
-      val team =
-        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(resp.json)
+      val team = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(resp.json)
       team.isSuccess mustBe true
       team.get.name mustBe teamOwner.name
 
