@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.1.2-rc.5
+16.1.2
 </div>
 </div>
 <div class="nav-toc">
@@ -125,7 +125,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.1.2-rc.5
+16.1.2
 </div>
 </div>
 <div class="nav-toc">
@@ -238,23 +238,45 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>You can define a plan as <strong>default plan</strong> as it&rsquo;s possible to <strong>make it private</strong> (only accessible by the producer team) It&rsquo;s possible to <strong>allow multiple API keys</strong> for a plan (by default a team can only have one API key). It&rsquo;s possible to <strong>allow API keys aggregation</strong></p>
 <p>It&rsquo;s important to choose a type of plan :</p>
 <ul>
-  <li>free without quotas: a plan with an unlimited number of calls per day and per month.</li>
-  <li>free with quotas: a plan with a limited number of calls per day and per month. Quotas will be set by default and can be overwritten.</li>
-  <li>quotas with limit: a priced plan with a limited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set.</li>
-  <li>quotas without limit: a priced plan with unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. The cost per additional requests can be set.</li>
-  <li>pay per use: a plan priced on usage. A fixed cost by month can be set. The cost per additional requests can be set.</li>
+  <li><strong>free without quotas</strong>: a plan with an unlimited number of calls per day and per month.</li>
+  <li><strong>free with quotas</strong>: a plan with a limited number of calls per day and per month. Quotas will be set by default and can be overwritten.</li>
+  <li><strong>quotas with limit</strong>: a priced plan with a limited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set.</li>
+  <li><strong>quotas without limit</strong>: a priced plan with unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. The cost per additional requests can be set.</li>
+  <li><strong>pay per use</strong>: a plan priced on usage. A fixed cost by month can be set. The cost per additional requests can be set.</li>
 </ul>
+<p>The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are three possible types of steps:</p>
+<ul>
+  <li>
+  <p><strong>Admin Validation</strong>: This step requires an administrator from the API&rsquo;s owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.</p></li>
+  <li>
+  <p><strong>Email Validation</strong>: This step involves a third-party person validating the subscription request by clicking on a validation link sent to the provided email address. Once the person clicks on the link, the request is validated, and the user is redirected to a public acknowledgment interface.</p></li>
+  <li>
+  <p><strong>Payment Validation</strong>: This step requires the requester to make a payment through a payment gateway. The user is redirected to a payment page provided by the payment gateway where they need to enter their payment information. Once the payment is validated, the subscription is approved, and the user is redirected to Daikoku&rsquo;s home page.</p></li>
+</ul>
+<blockquote>
+  <p>When a consumption plan for an API is priced, after its creation, one or more Stripe products are created based on the plan type:</p>
+  <p><strong>Quotas Only</strong>: A fixed-price subscription product is created.</p>
+  <p><strong>Quotas / Pay Per Use</strong>: Two products are created: a fixed-price subscription and a variable component linked to the user&rsquo;s consumption, which is synchronized with Stripe at the end of each day.</p>
+  <p><strong>Pay Per Use</strong>: Similarly, two products are created: a fixed-price subscription and a variable component linked to the user&rsquo;s consumption.</p>
+</blockquote><div class="callout warning "><div class="callout-title">Warning</div>
+<p>Please note that the email validation step can be used multiple times, while the other steps can only be completed once in the process. @@@warning</p>
+<p>The subscription process can be customized by adding new steps based on specific requirements. </p>
+<blockquote>
+  <p>Daikoku is an open-source project, and we encourage community initiatives to contribute new step types. We invite contributors to submit Pull Requests on the <a href="https://github.com/MAIF/daikoku">project&rsquo;s GitHub repository</a> to propose new features.</p>
+</blockquote>
+<p>To visualize and customize the subscription process, you can access the &ldquo;Process&rdquo; tab from the plan modification page. From this tab, you can view the entire process, add new steps, modify existing ones, or delete steps. </p>
+<p>@@@warning Please be aware that modifying or deleting a step immediately affects ongoing requests, either modifying them or validating them if necessary.</p></div>
+<p>When submitting a subscription request, the only required data is the team for which you want to subscribe. The subscription process may also prompt you to provide a motivation, particularly if the admin validation step is included. In such cases, a modal window appears to allow for detailed motivation for the request.</p>
+<p>Once the subscription request is validated or declined, notifications and emails are generated to inform the user of the request&rsquo;s status.</p>
+<p>If your subscription plan is associated with consumption-based pricing, you can also modify certain billing information, such as your name, address, and payment details. The link to the billing information modification page, stored by the payment gateway, can be found on Daikoku&rsquo;s billing page.</p>
 <h4><a href="#otoroshi-billing-and-security" name="otoroshi-billing-and-security" class="anchor"><span class="anchor-link"></span></a>Otoroshi, billing and security</h4>
 <p>Depending on chosen plan type, certain custom properties may be accessibles.</p>
 <ul>
   <li>Plan needs an Otoroshi instance to allow users to subscribe. After choosing an instance, a list of Otoroshi service groups and services is accessible to link daikoku api/plan with one or more Otoroshi service group or services.</li>
   <li>As it&rsquo;s Otoroshi which manages apis, apikey quotas can be define.</li>
-  <li>Daikoku provide, like <a href="https://maif.github.io/otoroshi/manual/entities/apikeys.html">Otorshi</a>, some apikey parameters.</li>
+  <li>Daikoku provide, like <a href="https://maif.github.io/otoroshi/manual/entities/apikeys.html">Otoroshi</a>, some apikey parameters.</li>
   <li>Daikoku side, billing informations can be filled (billing period, cost per month, currency &hellip;)</li>
   <li>For security, you can force apikey rotation. it&rsquo;s an Otoroshi feature that will reset clientSecret every month with a grace period of 1 week (during this week both secrets works)</li>
-  <li>Subscription can be:</li>
-  <li>Automatic: subscriptions will be granted automatically.</li>
-  <li>Manual: subscriptions will require an acceptance by a team admin.</li>
   <li>You can force the integration process :</li>
   <li>ApiKey: subscribers have access to an apikey to call api</li>
   <li>Automatic: Subscribers have just access to a token, which link to a real apikey, accessible by admin api. It&rsquo;s a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.</li>
@@ -386,7 +408,7 @@ components:
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.1.2-rc.5', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.1.2', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>
