@@ -93,4 +93,4 @@ Before using Stripe with Daikoku, you need to complete the following steps:
 
   * **Configure API Keys in Daikoku**: Access the Daikoku configuration settings (in the tenant configuration) and provide the Stripe API keys in the appropriate fields. This allows Daikoku to communicate with Stripe for payment handling.
 
-the next step is to configure your API to accept payment. see this [part](../producerusage/1-apis.md) of the doc to learn more
+the next step is to configure your API to accept payment. see this @ref:[part](../producerusage/1-apis.md) of the doc to learn more
