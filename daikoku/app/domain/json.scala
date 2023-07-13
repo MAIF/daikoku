@@ -3414,7 +3414,7 @@ object json {
     override def reads(json: JsValue): JsResult[ApiKeyConsumptionState] = json.as[String] match {
       case "completed" => JsSuccess(ApiKeyConsumptionState.Completed)
       case "inProgress" => JsSuccess(ApiKeyConsumptionState.InProgress)
-      case str => JsError(s"Bad TeamPermission value: $str")
+      case str => JsError(s"Bad ApiKeyConsumptionState value: $str")
     }
 
 
