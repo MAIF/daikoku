@@ -1,5 +1,5 @@
-import { IUser, TeamPermission, TeamUser } from "./team";
-import { ITenant } from "./tenant";
+import { IUser, TeamPermission, TeamUser } from './team';
+import { ITenant } from './tenant';
 
 export interface ITeamFullGql {
   _id: string;
@@ -11,9 +11,9 @@ export interface ITeamFullGql {
   description: string;
   avatar: string;
   contact: string;
-  users: Array<{ user: { userId: string }, teamPermission: TeamPermission }>;
+  users: Array<{ user: { userId: string }; teamPermission: TeamPermission }>;
   apiKeyVisibility: TeamPermission;
   apisCreationPermission?: boolean;
   verified: boolean;
-  metadata: object
+  metadata: object;
 }

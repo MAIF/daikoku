@@ -2,7 +2,15 @@ package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
-import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TeamFormat, TeamIdFormat, UsagePlanFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  SeqIssueIdFormat,
+  SeqPostIdFormat,
+  SeqTeamIdFormat,
+  SetApiTagFormat,
+  TeamFormat,
+  TeamIdFormat,
+  UsagePlanFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -100,11 +108,15 @@ case class BillingDuration(value: Long, unit: BillingTimeUnit)
     extends CanJson[BillingDuration] {
   def asJson: JsValue = json.BillingDurationFormat.writes(this)
   def toDays: Long = unit match {
-    case BillingTimeUnit.Day => value
+    case BillingTimeUnit.Day  => value
     case BillingTimeUnit.Hour => 1L
-    case BillingTimeUnit.Month => Days.daysBetween(DateTime.now(), DateTime.now().plusMonths(value.intValue)).getDays.longValue
+    case BillingTimeUnit.Month =>
+      Days
+        .daysBetween(DateTime.now(), DateTime.now().plusMonths(value.intValue))
+        .getDays
+        .longValue
     case BillingTimeUnit.Year => 235L
-    case _ => 0L
+    case _                    => 0L
   }
 }
 
@@ -180,29 +192,31 @@ case class Currency(code: String) extends CanJson[Currency] {
   def asJson: JsValue = json.CurrencyFormat.writes(this)
 }
 
-
 sealed trait PaymentSettings {
   def thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId
   def asJson: JsValue = json.PaymentSettingsFormat.writes(this)
   def typeName: String
 }
 
-case class StripePriceIds(basePriceId: String, additionalPriceId: Option[String] = None) extends CanJson[StripePriceIds] {
+case class StripePriceIds(basePriceId: String,
+                          additionalPriceId: Option[String] = None)
+    extends CanJson[StripePriceIds] {
   override def asJson: JsValue = json.StripePriceIdsFormat.writes(this)
 }
 case object PaymentSettings {
   case class Stripe(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
                     productId: String,
-                    priceIds: StripePriceIds) extends PaymentSettings {
+                    priceIds: StripePriceIds)
+      extends PaymentSettings {
     override def typeName: String = "Stripe"
   }
 }
 
-case class BasePaymentInformation(
-                                   costPerMonth: BigDecimal,
-                                   billingDuration: BillingDuration,
-                                   currency: Currency,
-                                   trialPeriod: Option[BillingDuration]) extends CanJson[BasePaymentInformation] {
+case class BasePaymentInformation(costPerMonth: BigDecimal,
+                                  billingDuration: BillingDuration,
+                                  currency: Currency,
+                                  trialPeriod: Option[BillingDuration])
+    extends CanJson[BasePaymentInformation] {
   override def asJson: JsValue = json.BasePaymentInformationFormat.writes(this)
 }
 
@@ -234,7 +248,8 @@ sealed trait UsagePlan {
   def paymentSettings: Option[PaymentSettings]
   def mergeBase(a: BasePaymentInformation): UsagePlan
   def subscriptionProcess: Seq[ValidationStep] = Seq.empty
-  def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan
+  def addSubscriptionStep(step: ValidationStep,
+                          idx: Option[Int] = None): UsagePlan
   def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
 }
 
@@ -274,9 +289,11 @@ case object UsagePlan {
       IntegrationProcess.ApiKey
     override def mergeBase(a: BasePaymentInformation): Admin = this
 
-    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = this
+    override def addSubscriptionStep(step: ValidationStep,
+                                     idx: Option[Int] = None): UsagePlan = this
 
-    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
+    override def removeSubscriptionStep(
+        predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class FreeWithoutQuotas(
       id: UsagePlanId,
@@ -310,12 +327,14 @@ case object UsagePlan {
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
 
-    override def mergeBase(a: BasePaymentInformation): FreeWithoutQuotas = this.copy(
-      currency = a.currency,
-      billingDuration = a.billingDuration,
-    )
+    override def mergeBase(a: BasePaymentInformation): FreeWithoutQuotas =
+      this.copy(
+        currency = a.currency,
+        billingDuration = a.billingDuration,
+      )
 
-    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(step: ValidationStep,
+                                     idx: Option[Int] = None): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -325,8 +344,10 @@ case object UsagePlan {
       }
     }
 
-    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan =
-      this.copy(subscriptionProcess = this.subscriptionProcess.filter(predicate))
+    override def removeSubscriptionStep(
+        predicate: ValidationStep => Boolean): UsagePlan =
+      this.copy(
+        subscriptionProcess = this.subscriptionProcess.filter(predicate))
   }
   case class FreeWithQuotas(
       id: UsagePlanId,
@@ -363,12 +384,14 @@ case object UsagePlan {
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
 
-    override def mergeBase(a: BasePaymentInformation): FreeWithQuotas = this.copy(
-      currency = a.currency,
-      billingDuration = a.billingDuration,
-    )
+    override def mergeBase(a: BasePaymentInformation): FreeWithQuotas =
+      this.copy(
+        currency = a.currency,
+        billingDuration = a.billingDuration,
+      )
 
-    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(step: ValidationStep,
+                                     idx: Option[Int] = None): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -378,7 +401,8 @@ case object UsagePlan {
       }
     }
 
-    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
+    override def removeSubscriptionStep(
+        predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class QuotasWithLimits(
       id: UsagePlanId,
@@ -414,14 +438,16 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
-    override def mergeBase(a: BasePaymentInformation): QuotasWithLimits = this.copy(
-      costPerMonth = a.costPerMonth,
-      currency = a.currency,
-      trialPeriod = a.trialPeriod,
-      billingDuration = a.billingDuration,
-    )
+    override def mergeBase(a: BasePaymentInformation): QuotasWithLimits =
+      this.copy(
+        costPerMonth = a.costPerMonth,
+        currency = a.currency,
+        trialPeriod = a.trialPeriod,
+        billingDuration = a.billingDuration,
+      )
 
-    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(step: ValidationStep,
+                                     idx: Option[Int] = None): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -431,7 +457,8 @@ case object UsagePlan {
       }
     }
 
-    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
+    override def removeSubscriptionStep(
+        predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class QuotasWithoutLimits(
       id: UsagePlanId,
@@ -469,14 +496,16 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
-    override def mergeBase(a: BasePaymentInformation): QuotasWithoutLimits = this.copy(
-      costPerMonth = a.costPerMonth,
-      currency = a.currency,
-      trialPeriod = a.trialPeriod,
-      billingDuration = a.billingDuration,
-    )
+    override def mergeBase(a: BasePaymentInformation): QuotasWithoutLimits =
+      this.copy(
+        costPerMonth = a.costPerMonth,
+        currency = a.currency,
+        trialPeriod = a.trialPeriod,
+        billingDuration = a.billingDuration,
+      )
 
-    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(step: ValidationStep,
+                                     idx: Option[Int] = None): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -486,7 +515,8 @@ case object UsagePlan {
       }
     }
 
-    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
+    override def removeSubscriptionStep(
+        predicate: ValidationStep => Boolean): UsagePlan = this
   }
   case class PayPerUse(
       id: UsagePlanId,
@@ -528,7 +558,8 @@ case object UsagePlan {
       billingDuration = a.billingDuration,
     )
 
-    override def addSubscriptionStep(step: ValidationStep, idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(step: ValidationStep,
+                                     idx: Option[Int] = None): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -538,7 +569,8 @@ case object UsagePlan {
       }
     }
 
-    override def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan = this
+    override def removeSubscriptionStep(
+        predicate: ValidationStep => Boolean): UsagePlan = this
   }
 }
 
@@ -733,7 +765,8 @@ object ApiState {
     override def name: String = "deprecated"
   }
 
-  def publishedJsonFilter: JsObject = Json.obj("$in" -> Json.arr(Published.name, Deprecated.name))
+  def publishedJsonFilter: JsObject =
+    Json.obj("$in" -> Json.arr(Published.name, Deprecated.name))
 }
 
 case class Api(
@@ -827,9 +860,9 @@ case class Api(
     "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
   )
   def isPublished: Boolean = state match {
-    case ApiState.Published => true
+    case ApiState.Published  => true
     case ApiState.Deprecated => true
-    case _ => false
+    case _                   => false
   }
 }
 
@@ -872,14 +905,24 @@ sealed trait ValidationStep {
 }
 
 object ValidationStep {
-  case class Email(id: String, emails: Seq[String], message: Option[String], title: String) extends ValidationStep {
+  case class Email(id: String,
+                   emails: Seq[String],
+                   message: Option[String],
+                   title: String)
+      extends ValidationStep {
     def name: String = "email"
   }
 
-  case class TeamAdmin(id: String, team: TeamId, title: String = "Administrator") extends ValidationStep {
+  case class TeamAdmin(id: String,
+                       team: TeamId,
+                       title: String = "Administrator")
+      extends ValidationStep {
     def name: String = "teamAdmin"
   }
-  case class Payment(id: String, thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId, title: String = "Payment") extends ValidationStep {
+  case class Payment(id: String,
+                     thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
+                     title: String = "Payment")
+      extends ValidationStep {
     def name: String = "payment"
   }
 }

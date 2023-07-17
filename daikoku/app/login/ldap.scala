@@ -391,12 +391,12 @@ object LdapSupport {
                         val userId = UserId(BSONObjectID.generate().stringify)
                         val team = getPersonalTeam(tenant.id, name, userId)
                         val user = getUser(userId,
-                          tenant.id,
-                          name,
-                          email,
-                          ldapConfig.pictureField,
-                          attrs,
-                          isDaikokuAdmin = false)
+                                           tenant.id,
+                                           name,
+                                           email,
+                                           ldapConfig.pictureField,
+                                           attrs,
+                                           isDaikokuAdmin = false)
                         for {
                           _ <- _env.dataStore.teamRepo
                             .forTenant(tenant.id)

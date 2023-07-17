@@ -322,7 +322,8 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 
 trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
 
-trait SubscriptionDemandRepo extends TenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
+trait SubscriptionDemandRepo
+    extends TenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
 
 trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId]
 

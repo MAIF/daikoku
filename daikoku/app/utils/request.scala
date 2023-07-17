@@ -13,9 +13,10 @@ object RequestImplicits {
   private val uriCache = new ConcurrentHashMap[String, String]()
 
   implicit class EnhancedRequestBody(val body: JsValue) extends AnyVal {
-    def getBodyField[T](fieldName: String)(implicit fjs: Reads[T]): Option[T] = body
-      .asOpt[JsObject]
-      .flatMap(o => (o \ fieldName).asOpt[T])
+    def getBodyField[T](fieldName: String)(implicit fjs: Reads[T]): Option[T] =
+      body
+        .asOpt[JsObject]
+        .flatMap(o => (o \ fieldName).asOpt[T])
   }
 
   implicit class EnhancedRequestHeader(val requestHeader: RequestHeader)
@@ -48,10 +49,10 @@ object RequestImplicits {
 
     def getLanguage(tenant: Tenant): String = {
       requestHeader.headers.toSimpleMap
-      .find (test => test._1 == "X-contact-language")
-      .map (h => h._2)
-      .orElse (tenant.defaultLanguage)
-      .getOrElse ("en")
+        .find(test => test._1 == "X-contact-language")
+        .map(h => h._2)
+        .orElse(tenant.defaultLanguage)
+        .getOrElse("en")
     }
 
   }

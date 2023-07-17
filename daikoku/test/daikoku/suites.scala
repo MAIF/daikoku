@@ -121,8 +121,12 @@ object utils {
         _ <- daikokuComponents.env.dataStore.messageRepo
           .forAllTenant()
           .deleteAll()
-        _ <- daikokuComponents.env.dataStore.stepValidatorRepo.forAllTenant().deleteAll()
-        _ <- daikokuComponents.env.dataStore.subscriptionDemandRepo.forAllTenant().deleteAll()
+        _ <- daikokuComponents.env.dataStore.stepValidatorRepo
+          .forAllTenant()
+          .deleteAll()
+        _ <- daikokuComponents.env.dataStore.subscriptionDemandRepo
+          .forAllTenant()
+          .deleteAll()
         _ <- daikokuComponents.env.dataStore.operationRepo
           .forAllTenant()
           .deleteAll()

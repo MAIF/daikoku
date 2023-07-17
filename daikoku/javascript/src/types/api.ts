@@ -1,7 +1,7 @@
 import { IFastTeam, ITeamSimple, ITeamVisibility } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 
-export type ApiState = "created" | "published" | "deprecated" | "blocked" | "deleted"
+export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 interface IBaseApi {
   _id: string;
   _humanReadableId: string;
@@ -31,7 +31,7 @@ interface IBaseApi {
   parent?: string;
   isDefault: boolean;
   apis: Array<string>;
-  state: ApiState
+  state: ApiState;
 }
 
 export interface IIssuesTag {
@@ -41,7 +41,7 @@ export interface IIssuesTag {
 }
 
 export interface IApiWithSimpleTeam extends IBaseApi {
-  team: ITeamSimple
+  team: ITeamSimple;
 }
 
 export interface IApi extends IBaseApi {
@@ -114,14 +114,14 @@ export interface ISwagger {
 }
 
 export interface IValidationStep {
-  id: string
-  type: 'teamAdmin' | 'email' | 'payment'
+  id: string;
+  type: 'teamAdmin' | 'email' | 'payment';
 }
 
 export interface IValidationStepEmail extends IValidationStep {
-  emails: Array<string>,
-  message: string
-  title: string
+  emails: Array<string>;
+  message: string;
+  title: string;
 }
 
 export function isValidationStepEmail(item: any): item is IValidationStepEmail {
@@ -129,8 +129,8 @@ export function isValidationStepEmail(item: any): item is IValidationStepEmail {
 }
 
 export interface IValidationStepTeamAdmin extends IValidationStep {
-  team: string
-  title?: string
+  team: string;
+  title?: string;
 }
 
 export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {
@@ -142,8 +142,8 @@ export function isValidationStepPayment(item: any): item is IValidationStepPayme
 }
 
 export interface IValidationStepPayment extends IValidationStep {
-  thirdPartyPaymentSettingsId: string
-  title?: string
+  thirdPartyPaymentSettingsId: string;
+  title?: string;
 }
 export interface IBaseUsagePlan {
   _id: string;
@@ -155,16 +155,16 @@ export interface IBaseUsagePlan {
   otoroshiTarget?: IOtoroshiTarget;
 }
 
-export type UsagePlanVisibility = 'Public' | 'Private'
+export type UsagePlanVisibility = 'Public' | 'Private';
 
 export interface IPaymentSettings {
-  thirdPartyPaymentSettingsId: string
-  type: ThirdPartyPaymentType
+  thirdPartyPaymentSettingsId: string;
+  type: ThirdPartyPaymentType;
 }
 
 export interface IStripePaymentSettings extends IPaymentSettings {
-  productId: string
-  priceIds: Array<string>
+  productId: string;
+  priceIds: Array<string>;
 }
 
 export interface IUsagePlan extends IBaseUsagePlan {
@@ -178,15 +178,15 @@ export interface IUsagePlan extends IBaseUsagePlan {
   visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
   costPerMonth?: number;
-  maxPerMonth?: number
-  maxPerSecond?: number
-  maxPerDay?: number
-  paymentSettings?: IPaymentSettings
+  maxPerMonth?: number;
+  maxPerSecond?: number;
+  maxPerDay?: number;
+  paymentSettings?: IPaymentSettings;
 }
 
-export interface IUsagePlanAdmin extends IUsagePlan { }
+export interface IUsagePlanAdmin extends IUsagePlan {}
 
-export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan { }
+export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan {}
 export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
   maxPerSecond: number;
   maxPerDay: number;
@@ -424,58 +424,62 @@ export interface IApiPost {
   content: string;
 }
 
-
-type ISubscriptionDemandState = 'accepted' | 'refused' | 'canceled' | 'inProgress' | 'waiting' | 'blocked'
-
+type ISubscriptionDemandState =
+  | 'accepted'
+  | 'refused'
+  | 'canceled'
+  | 'inProgress'
+  | 'waiting'
+  | 'blocked';
 
 interface SubscriptionDemandStep {
-  id: string,
-  state: ISubscriptionDemandState,
-  step: IValidationStep,
-  metadata: object
+  id: string;
+  state: ISubscriptionDemandState;
+  step: IValidationStep;
+  metadata: object;
 }
 
 export interface ISubscriptionDemand {
-  _id: string,
-  _tenant: string,
-  _deleted: boolean,
-  api: string,
-  plan: string,
-  steps: Array<SubscriptionDemandStep>,
-  state: ISubscriptionDemandState,
-  team: string,
-  from: string,
-  date: string,
-  motivation?: string,
-  parentSubscriptionId?: string,
-  customReadOnly?: boolean,
-  customMetadata?: object,
-  customMaxPerSecond?: number,
-  customMaxPerDay?: number,
-  customMaxPerMonth?: number
+  _id: string;
+  _tenant: string;
+  _deleted: boolean;
+  api: string;
+  plan: string;
+  steps: Array<SubscriptionDemandStep>;
+  state: ISubscriptionDemandState;
+  team: string;
+  from: string;
+  date: string;
+  motivation?: string;
+  parentSubscriptionId?: string;
+  customReadOnly?: boolean;
+  customMetadata?: object;
+  customMaxPerSecond?: number;
+  customMaxPerDay?: number;
+  customMaxPerMonth?: number;
 }
 
 export interface IGlobalInformations {
-  avgDuration?: number,
-  avgOverhead?: number,
-  dataIn: number,
-  dataOut: number,
-  hits: number
+  avgDuration?: number;
+  avgOverhead?: number;
+  dataIn: number;
+  dataOut: number;
+  hits: number;
 }
 
 export interface IConsumption {
-  _id: string
-  _deleted: boolean
-  _tenant: string
-  team: string
-  api: string
-  plan: string
-  clientId: string
-  hits: number
-  globalInformation: IGlobalInformations
-  quotas: IQuotas
-  billing: { hits: number, total: number }
-  from: number
-  to: number
-  state: 'inProgress' | 'completed'
+  _id: string;
+  _deleted: boolean;
+  _tenant: string;
+  team: string;
+  api: string;
+  plan: string;
+  clientId: string;
+  hits: number;
+  globalInformation: IGlobalInformations;
+  quotas: IQuotas;
+  billing: { hits: number; total: number };
+  from: number;
+  to: number;
+  state: 'inProgress' | 'completed';
 }
