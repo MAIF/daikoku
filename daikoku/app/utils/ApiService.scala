@@ -18,7 +18,7 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.{DatastoreId, _}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
+import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
@@ -892,6 +892,8 @@ class ApiService(env: Env,
 
           val value: EitherT[Future, AppError, Result] = for {
             title <- EitherT.liftF(translator.translate("mail.subscription.validation.title", tenant))
+            user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(demand.from), AppError.UserNotFound)
+            team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.TeamNotFound)
             _ <- EitherT.liftF(Future.sequence(emails.map(email => {
               val stepValidator = StepValidator(
                 id = DatastoreId(BSONObjectID.generate().stringify),
@@ -906,9 +908,14 @@ class ApiService(env: Env,
               val pathAccept = s"/api/subscription/_validate?token=$cipheredValidationToken"
               val pathDecline = s"/api/subscription/_decline?token=$cipheredValidationToken"
 
-              //FIXME: use template
               translator.translate("mail.subscription.validation.body", tenant,
-                Map("urlAccept" -> env.getDaikokuUrl(tenant, pathAccept), "urlDecline" -> env.getDaikokuUrl(tenant, pathDecline)))
+                Map(
+                  "urlAccept" -> env.getDaikokuUrl(tenant, pathAccept),
+                  "urlDecline" -> env.getDaikokuUrl(tenant, pathDecline),
+                  "user" -> user.name,
+                  "team" -> team.name,
+                  "body" -> template.getOrElse("")
+                ))
                 .flatMap(body => env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator).map(_ => body))
                 .flatMap(body => tenant.mailer.send(title, Seq(email), body, tenant))
             })))

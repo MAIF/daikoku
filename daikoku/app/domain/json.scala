@@ -2470,6 +2470,7 @@ object json {
       case "canceled" => JsSuccess(SubscriptionDemandState.Canceled)
       case "accepted" => JsSuccess(SubscriptionDemandState.Accepted)
       case "refused" => JsSuccess(SubscriptionDemandState.Refused)
+      case "blocked" => JsSuccess(SubscriptionDemandState.Blocked)
       case str => JsError(s"Bad SubscriptionDemandState value: $str")
     }
 
