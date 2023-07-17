@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.1.2
+16.2.0
 </div>
 </div>
 <div class="nav-toc">
@@ -125,7 +125,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.1.2
+16.2.0
 </div>
 </div>
 <div class="nav-toc">
@@ -252,6 +252,22 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>The unlogged home description is the first content shown to user for private tenant, before the login page. It can also be enabled for public tenant.</p>
 <h3><a href="#seo" name="seo" class="anchor"><span class="anchor-link"></span></a>SEO</h3>
 <p>A robot.txt file is serve on the path /robot.txt. by default, the file is empty but, you can fill it like you want.</p>
+<h3><a href="#payment" name="payment" class="anchor"><span class="anchor-link"></span></a>Payment</h3>
+<p>Daikoku offers full integration with online payment service, allowing users to easily manage their financial transactions as part of the subscription process. </p>
+<blockquote>
+  <p>Currently, only integration with <a href="https://stripe.com">Stripe</a> is implemented, but our project is open to integrating with other payment platforms. Daikoku&rsquo;s code is designed to be modular, making it easier to add support for additional payment platforms. We welcome contributions to enhance our product in this area.</p>
+</blockquote>
+<h4><a href="#configuring-stripe" name="configuring-stripe" class="anchor"><span class="anchor-link"></span></a>Configuring Stripe</h4>
+<p>Before using Stripe with Daikoku, you need to complete the following steps:</p>
+<ul>
+  <li>
+  <p><strong>Create a Stripe Account</strong>: Visit the Stripe website (stripe.com) to create an account. Follow Stripe&rsquo;s instructions to verify your identity and set up your payment account.</p></li>
+  <li>
+  <p><strong>Obtain Stripe API Keys</strong>: Once your Stripe account is set up, you need to obtain the necessary API keys to communicate with the Stripe API from Daikoku. These keys include the secret API key and the public API key.</p></li>
+  <li>
+  <p><strong>Configure API Keys in Daikoku</strong>: Access the Daikoku configuration settings (in the tenant configuration) and provide the Stripe API keys in the appropriate fields. This allows Daikoku to communicate with Stripe for payment handling.</p></li>
+</ul>
+<p>the next step is to configure your API to accept payment. see this <a href="../producerusage/1-apis.html">part</a> of the doc to learn more</p>
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../adminusage/2-users.html">Managing users</a></p>
 </div>
@@ -332,7 +348,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.1.2', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.2.0', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>
