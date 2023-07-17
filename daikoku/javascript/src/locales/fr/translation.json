@@ -1183,7 +1183,7 @@
   "Default mail template": "Modèle de courriel par défaut",
   "Translate": "Traduire",
   "Insert URL": "Insérer l'URL",
-  "custom.metadata.process.change.to.manual": "L'ajout de métadonnée personnalisée a forcé le process de souscription en manuel",
+  "custom.metadata.process.change.to.manual": "Des métadonnées personnalisées ont été configurées. Une étape de validation par administrateur a été créée pour garantir la vérification de ces informations. ",
   "subscription security": "Sécurité - souscription",
   "subscription.security.help": "Si activé, les équipes personnelles ne seront plus autorisées à souscrire à une API",
   "API reference visibility": "Sécurité - visibilité du swagger",
