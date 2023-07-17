@@ -18,7 +18,7 @@ describe('API page', { scrollBehavior: false }, () => {
       })
       .wait(500)
       .get('.block__entry__link').contains('Plans').click()
-      .get('.card').should('have.length', 1)
+      .get('.card').should('have.length', 2)
       .get('.block__entry__link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
   });

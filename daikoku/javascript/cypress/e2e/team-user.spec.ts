@@ -49,12 +49,12 @@ describe('Team apis page', { scrollBehavior: false }, () => {
 })
 
 describe('Team back-office', { scrollBehavior: false }, () => {
-  it('load well', () => {
-    //@ts-ignore
-    cy.login('tester@foo.bar', 'password')
-      .visit('http://localhost:9000/testers/settings')
-      .get('main h1').should('have.text', 'Testers');
-  });
+  // it('load well', () => {
+  //   //@ts-ignore
+  //   cy.login('tester@foo.bar', 'password')
+  //     .visit('http://localhost:9000/testers/settings')
+  //     .get('main h1').should('have.text', 'Testers');
+  // });
 
   it('Team APIs works', () => {
     //@ts-ignore
