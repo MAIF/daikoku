@@ -57,6 +57,8 @@ class TeamController(DaikokuAction: DaikokuAction,
           .findByIdOrHrIdNotDeleted(teamId)
           .map {
             case Some(team) =>
+              ctx.setCtxValue("team.name", team.name);
+              ctx.setCtxValue("team.id", team.id.value);
               Ok(team.asSimpleJson)
             case None => NotFound(Json.obj("error" -> "Team not found"))
           }
