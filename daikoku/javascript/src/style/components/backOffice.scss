@@ -36,7 +36,7 @@
   justify-content: start;
 
   .widget {
-    width: calc(30% - 20px);
+
     height: 300px;
     overflow-y: scroll;
     border-radius: 4px;
@@ -44,6 +44,15 @@
     color: $aside-text-color;
   }
 
+  .small{
+    width: calc(30% - 20px);
+  }
+  .medium {    width: calc(60% - 20px);
+
+  }
+  .large {    width: calc(90% - 20px);
+
+  }
   .widget-body {
     overflow-y: scroll;
   }
@@ -51,6 +60,9 @@
   .widget-title {
     padding: 0.5rem 1rem;
     border-bottom: 0.5rem solid $body-bg-color;
+    background-color: $btn-border-color;
+    color: $btn-text-color;
+
   }
 
   .widget-list-default-item,
