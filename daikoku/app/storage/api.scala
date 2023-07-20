@@ -52,11 +52,17 @@ trait Repo[Of, Id <: ValueType] {
   def streamAllRawFormatted(query: JsObject = Json.obj())(
       implicit ec: ExecutionContext): Source[Of, NotUsed]
 
+  def findRaw(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
+    implicit ec: ExecutionContext): Future[Seq[JsValue]]
+
   def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
       implicit ec: ExecutionContext): Future[Seq[Of]]
 
   def findWithProjection(query: JsObject, projection: JsObject)(
       implicit ec: ExecutionContext): Future[Seq[JsObject]]
+
+  def findOneRaw(query: JsObject)(
+      implicit ec: ExecutionContext): Future[Option[JsValue]]
 
   def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]]
@@ -135,6 +141,45 @@ trait Repo[Of, Id <: ValueType] {
                "$or" -> Json.arr(Json.obj("_id" -> idOrHrid),
                                  Json.obj("_humanReadableId" -> idOrHrid))))
 
+  def findByIdOrHrIdRaw(id: String, hrid: String)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    findOneNotDeletedRaw(
+      Json.obj("$or" -> Json.arr(Json.obj("_id" -> id),
+        Json.obj("_humanReadableId" -> hrid))))
+
+  def findByIdOrHrIdRaw(id: Id, hrid: String)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    findOneNotDeletedRaw(
+      Json.obj("$or" -> Json.arr(Json.obj("_id" -> id.value),
+        Json.obj("_humanReadableId" -> hrid))))
+
+  def findByIdOrHrIdRaw(idOrHrid: String)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    findOneNotDeletedRaw(
+      Json.obj("$or" -> Json.arr(Json.obj("_id" -> idOrHrid),
+        Json.obj("_humanReadableId" -> idOrHrid))))
+
+  def findByIdOrHrIdNotDeletedRaw(id: String, hrid: String)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    findOneNotDeletedRaw(
+      Json.obj("_deleted" -> false,
+        "$or" -> Json.arr(Json.obj("_id" -> id),
+          Json.obj("_humanReadableId" -> hrid))))
+
+  def findByIdOrHrIdNotDeletedRaw(id: Id, hrid: String)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    findOneNotDeletedRaw(
+      Json.obj("_deleted" -> false,
+        "$or" -> Json.arr(Json.obj("_id" -> id.value),
+          Json.obj("_humanReadableId" -> hrid))))
+
+  def findByIdOrHrIdNotDeletedRaw(idOrHrid: String)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    findOneNotDeletedRaw(
+      Json.obj("_deleted" -> false,
+        "$or" -> Json.arr(Json.obj("_id" -> idOrHrid),
+          Json.obj("_humanReadableId" -> idOrHrid))))
+
   def deleteByIdOrHrId(id: String, hrid: String)(
       implicit ec: ExecutionContext): Future[Boolean] =
     delete(
@@ -187,6 +232,10 @@ trait Repo[Of, Id <: ValueType] {
                      sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[Seq[Of]] =
     find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs, sort = sort)
+
+  def findOneNotDeletedRaw(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    findOneRaw(query ++ Json.obj("_deleted" -> false))
 
   def findOneNotDeleted(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] =
@@ -327,6 +376,12 @@ trait SubscriptionDemandRepo
 
 trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId]
 
+trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
+  def findByApi(tenant: TenantId, api: Api)(implicit env: Env, ec: ExecutionContext): Future[Seq[UsagePlan]] = {
+    env.dataStore.usagePlanRepo.forTenant(tenant).find(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.possibleUsagePlans.map(_.asJson)))))
+  }
+}
+
 trait EmailVerificationRepo
     extends TenantCapableRepo[EmailVerification, DatastoreId]
 
@@ -380,6 +435,8 @@ trait DataStore {
   def subscriptionDemandRepo: SubscriptionDemandRepo
 
   def stepValidatorRepo: StepValidatorRepo
+
+  def usagePlanRepo: UsagePlanRepo
 
   def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,

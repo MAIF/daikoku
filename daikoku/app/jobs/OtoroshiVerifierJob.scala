@@ -234,16 +234,14 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
     env.dataStore.apiRepo
       .forAllTenant()
       .streamAllRawFormatted(Json.obj("_deleted" -> false) ++ query)
-      .mapAsync(par)(api =>
-        env.dataStore.tenantRepo
-          .findByIdNotDeleted(api.tenant)
-          .map(tenant => (tenant, api)))
+      .mapAsync(par)(api =>env.dataStore.tenantRepo.findByIdNotDeleted(api.tenant).map(tenant => (tenant, api)))
+      .mapAsync(5){ case (tenant, api) => env.dataStore.usagePlanRepo.findByApi(api.tenant, api).map(plans => (tenant, api, plans))}
       .collect {
-        case (Some(tenant), api) => (tenant, api)
+        case (Some(tenant), api, plans ) => (tenant, api, plans)
       }
       .flatMapConcat {
-        case (tenant, api) =>
-          Source(api.possibleUsagePlans.map(plan => (tenant, api, plan)))
+        case (tenant, api, plans) =>
+          Source(plans.map(plan => (tenant, api, plan)))
       }
       .map {
         case (tenant, api, plan) =>
@@ -347,8 +345,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
               tenantAdminTeam.id,
               subscription.tenant)
           )
-          plan <- EitherT.fromOption[Future](
-            parentApi.possibleUsagePlans.find(_.id == subscription.plan),
+          plan <- EitherT.fromOptionF[Future, Unit, UsagePlan](
+            env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan),
             sendErrorNotification(
               NotificationAction.OtoroshiSyncSubscriptionError(
                 subscription,
@@ -414,8 +412,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                         tenantAdminTeam.id,
                         tenant.id)
                     )
-                    plan <- EitherT.fromOption[Future](
-                      api.possibleUsagePlans.find(_.id == sub.plan),
+                    plan <- EitherT.fromOptionF[Future, Unit, UsagePlan](
+                      env.dataStore.usagePlanRepo.forTenant(tenant).findById(sub.plan),
                       sendErrorNotification(
                         NotificationAction.OtoroshiSyncSubscriptionError(
                           sub,
@@ -697,8 +695,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
               tenantAdminTeam.id,
               subscription.tenant)
           )
-          plan <- EitherT.fromOption[Future](
-            api.possibleUsagePlans.find(_.id == subscription.plan),
+          plan <- EitherT.fromOptionF[Future, Unit, UsagePlan](
+            env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan),
             sendErrorNotification(
               NotificationAction.OtoroshiSyncSubscriptionError(
                 subscription,

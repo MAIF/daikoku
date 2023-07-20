@@ -8,6 +8,7 @@ import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, NotificationFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.env.evolution_1613_b.version
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
@@ -347,17 +348,18 @@ object evolution_157 extends EvolutionScript {
                 api <- OptionT(
                   dataStore.apiRepo
                     .forTenant(sub.tenant)
-                    .findOne(Json.obj("_id" -> sub.api.asJson))
+                    .findOneRaw(Json.obj("_id" -> sub.api.asJson))
                 )
                 otoSettingsId <- OptionT.fromOption[Future](
-                  api.possibleUsagePlans
-                    .find(pp => pp.id == sub.plan)
-                    .flatMap(pp => pp.otoroshiTarget)
+                  (api \ "possibleUsagePlans").as[JsArray]
+                    .value
+                    .find(pp => (pp \ "id").as[String] == sub.plan.value)
+                    .map(pp => (pp \ "otoroshiTarget").as(json.OtoroshiTargetFormat))
                     .map(_.otoroshiSettings)
                 )
                 tenant <- OptionT(
                   dataStore.tenantRepo
-                    .findOne(Json.obj("_id" -> api.tenant.asJson))
+                    .findOne(Json.obj("_id" -> (api \ "tenant").as[String]))
                 )
                 otoSettings <- OptionT.fromOption[Future](
                   tenant.otoroshiSettings.find(o => o.id == otoSettingsId)
@@ -383,7 +385,7 @@ object evolution_157 extends EvolutionScript {
                     .merge
 
                 _ = AppLogger.info(
-                  s"${sub.id} :: api ${api.id} with metadata ${Json.stringify(metadata)}"
+                  s"${sub.id} :: api ${(api \ "id").as[String]} with metadata ${Json.stringify(metadata)}"
                 )
                 _ <- OptionT.liftF(
                   dataStore.apiSubscriptionRepo
@@ -556,16 +558,17 @@ object evolution_1612_a extends EvolutionScript {
       implicit val execContext: ExecutionContext = ec
 
       val future: Future[Long] = for {
-        apiWithParents <- dataStore.apiRepo.forAllTenant().findNotDeleted(Json.obj(
+        apiWithParents <- dataStore.apiRepo.forAllTenant().findRaw(Json.obj(
+          "_deleted" -> false,
           "parent" -> Json.obj("$exists" -> true),
           "isDefault" -> true
         ))
-        parents = apiWithParents.map(_.parent.get).distinct
+        parents = apiWithParents.map(api => (api \ "parent").as[String]).distinct
         res <- dataStore.apiRepo
           .forAllTenant()
           .updateManyByQuery(Json.obj(
             "parent" -> JsNull,
-            "_id" -> Json.obj("$nin" -> JsArray(parents.map(_.asJson)))
+            "_id" -> Json.obj("$nin" -> JsArray(parents.map(JsString)))
           ),
             Json.obj(
               "$set" -> Json.obj(
@@ -695,6 +698,8 @@ object evolution_1613 extends EvolutionScript {
         s"Begin evolution $version - Update Apis to add property state & update all subscription process"
       )
 
+      implicit val executionContext: ExecutionContext = ec
+
       val source = dataStore.apiRepo
         .forAllTenant()
         .streamAllRaw()(ec)
@@ -730,17 +735,8 @@ object evolution_1613 extends EvolutionScript {
             "possibleUsagePlans" -> JsArray(updatedPlans)
           )
 
-          ApiFormat.reads(updatedApi) match {
-            case JsSuccess(v, _) =>
-              dataStore.apiRepo
-                .forAllTenant()
-                .save(v)(ec)
-            case JsError(errors) =>
-              AppLogger.error(s"Evolution $version errored : $errors")
-              FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
-              )
-          }
+          dataStore.apiRepo.forAllTenant().save(Json.obj(), updatedApi)
+          //FIXME can't get errors ?
         }
 
       source
@@ -785,18 +781,19 @@ object evolution_1613_b extends EvolutionScript {
           val motivation = (action \ "motivation").asOpt[String]
 
           (for {
-            api <- OptionT(dataStore.apiRepo.forAllTenant().findById(apiId))
-            plan <- OptionT.fromOption[Future](api.possibleUsagePlans.find(_.id == planId))
+            api <- OptionT(dataStore.apiRepo.forAllTenant().findOneRaw(Json.obj("_id" -> apiId.asJson)))
+            plan <- OptionT.fromOption[Future]((api \ "possibleUsagePlans").as[JsArray].value.find(plan => (plan \ "id").as[String] == planId.value))
             demand = SubscriptionDemand(
               id = SubscriptionDemandId(IdGenerator.token),
               tenant = tenant,
-              api = api.id,
-              plan = plan.id,
-              steps = plan.subscriptionProcess.map(step => SubscriptionDemandStep(
-                id = SubscriptionDemandStepId(IdGenerator.token),
-                state = SubscriptionDemandState.InProgress,
-                step = step,
-              )),
+              api = apiId,
+              plan = (plan \ "id").as(json.UsagePlanIdFormat),
+              steps = (plan \ "subscriptionProcess").as(json.SeqValidationStepFormat)
+                .map(step => SubscriptionDemandStep(
+                  id = SubscriptionDemandStepId(IdGenerator.token),
+                  state = SubscriptionDemandState.InProgress,
+                  step = step,
+                )),
               state = SubscriptionDemandState.InProgress,
               team = teamId,
               from = sender.id.get,
@@ -830,6 +827,46 @@ object evolution_1613_b extends EvolutionScript {
     }
 }
 
+object evolution_1630 extends EvolutionScript {
+  override def version: String = "16.3.0"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(s"Begin evolution $version - extract all usage plan to new table usage_plans")
+
+      implicit val executionContext: ExecutionContext = ec
+      implicit val materializer: Materializer = mat
+
+      dataStore.apiRepo.forAllTenant().streamAllRaw()
+        .map(api => {
+          val plans = json.SeqUsagePlanFormat.reads(Json.arr((api \ "possibleUsagePlans").as[JsArray]
+            .value
+            .map(plan => plan.as[JsObject] ++ Json.obj("tenant" -> (api \ "tenant").as[String]))))
+            .getOrElse(Seq.empty)
+
+          val updatedRawApi = api.as[JsObject] + ("possibleUsagePlans" -> json.SeqUsagePlanIdFormat.writes(plans.map(_.id)))
+          json.ApiFormat.reads(updatedRawApi) match {
+            case JsSuccess(updatedApi, _) =>
+              dataStore.usagePlanRepo.forTenant(updatedApi.tenant).insertMany(plans)
+                .flatMap(_ => dataStore.apiRepo.forTenant(updatedApi.tenant).save(updatedApi))
+            case JsError(errors) => AppLogger.error(s"error during evolution $version - wrong api format ${Json.stringify(updatedRawApi)} -- $errors")
+          }
+        })
+        .runWith(Sink.ignore)
+    }
+}
 
 object evolutions {
   val list: List[EvolutionScript] =
@@ -845,7 +882,8 @@ object evolutions {
       evolution_1612_b,
       evolution_1612_c,
       evolution_1613,
-      evolution_1613_b
+      evolution_1613_b,
+      evolution_1630
     )
   def run(
       dataStore: DataStore,

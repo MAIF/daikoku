@@ -226,14 +226,7 @@ class QueueJob(
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo.forTenant(o.tenant).findById(subscription.api),
         AppError.ApiNotFound)
-      plan <- EitherT.fromOption[Future](
-        api.possibleUsagePlans
-          .find(p => p.id == subscription.plan)
-          .orElse(o.payload.map(json.UsagePlanFormat.reads).collect {
-            case JsSuccess(value, _) => value
-          }),
-        AppError.PlanNotFound
-      )
+      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan), AppError.PlanNotFound)
       //todo: send notification & mail ?
       _ <- EitherT.liftF(
         apiService.archiveApiKey(tenant, subscription, plan, enabled = false))

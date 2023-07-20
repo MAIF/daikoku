@@ -884,6 +884,8 @@ object json {
         JsSuccess(
           Admin(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             otoroshiTarget =
               (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
             aggregationApiKeysSecurity =
@@ -899,6 +901,8 @@ object json {
 
     override def writes(o: Admin): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "customDescription" -> o.customDescription,
       "customName" -> o.customName,
       "allowMultipleKeys" -> o.allowMultipleKeys
@@ -921,6 +925,8 @@ object json {
         JsSuccess(
           FreeWithoutQuotas(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             currency = (json \ "currency").as(CurrencyFormat),
             customName = (json \ "customName").asOpt[String],
             customDescription = (json \ "customDescription").asOpt[String],
@@ -954,6 +960,8 @@ object json {
 
     override def writes(o: FreeWithoutQuotas): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "currency" -> o.currency.asJson,
       "billingDuration" -> o.billingDuration.asJson,
       "customName" -> o.customName
@@ -994,6 +1002,8 @@ object json {
         JsSuccess(
           FreeWithQuotas(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1030,6 +1040,8 @@ object json {
 
     override def writes(o: FreeWithQuotas): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "maxPerSecond" -> o.maxPerSecond,
       "maxPerDay" -> o.maxPerDay,
       "maxPerMonth" -> o.maxPerMonth,
@@ -1073,6 +1085,8 @@ object json {
         JsSuccess(
           QuotasWithLimits(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1113,6 +1127,8 @@ object json {
 
     override def writes(o: QuotasWithLimits): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "maxPerSecond" -> o.maxPerSecond,
       "maxPerDay" -> o.maxPerDay,
       "maxPerMonth" -> o.maxPerMonth,
@@ -1165,6 +1181,8 @@ object json {
         JsSuccess(
           QuotasWithoutLimits(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1207,6 +1225,8 @@ object json {
 
     override def writes(o: QuotasWithoutLimits): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "maxPerSecond" -> o.maxPerSecond,
       "maxPerDay" -> o.maxPerDay,
       "maxPerMonth" -> o.maxPerMonth,
@@ -1260,6 +1280,8 @@ object json {
         JsSuccess(
           PayPerUse(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             costPerMonth = (json \ "costPerMonth").as[BigDecimal],
             costPerRequest = (json \ "costPerRequest").as[BigDecimal],
             trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
@@ -1299,6 +1321,8 @@ object json {
 
     override def writes(o: PayPerUse): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "costPerMonth" -> o.costPerMonth,
       "costPerRequest" -> o.costPerRequest,
       "trialPeriod" -> o.trialPeriod
@@ -2247,7 +2271,7 @@ object json {
               .getOrElse(Set.empty),
             visibility = (json \ "visibility").as(ApiVisibilityFormat),
             possibleUsagePlans = (json \ "possibleUsagePlans")
-              .as(SeqUsagePlanFormat),
+              .as(SeqUsagePlanIdFormat),
             defaultUsagePlan = (json \ "defaultUsagePlan").as(UsagePlanIdFormat),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
@@ -2300,8 +2324,7 @@ object json {
       "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
       "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
       "visibility" -> ApiVisibilityFormat.writes(o.visibility),
-      "possibleUsagePlans" -> JsArray(
-        o.possibleUsagePlans.map(UsagePlanFormat.writes)),
+      "possibleUsagePlans" -> SeqUsagePlanIdFormat.writes(o.possibleUsagePlans),
       "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
       "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes)),
       "posts" -> SeqPostIdFormat.writes(o.posts),
@@ -3955,6 +3978,8 @@ object json {
            Writes.seq(ApiDocumentationPageFormat))
   val SeqUsagePlanFormat =
     Format(Reads.seq(UsagePlanFormat), Writes.seq(UsagePlanFormat))
+  val SeqUsagePlanIdFormat =
+    Format(Reads.seq(UsagePlanIdFormat), Writes.seq(UsagePlanIdFormat))
   val SeqTeamFormat =
     Format(Reads.seq(TeamFormat), Writes.seq(TeamFormat))
   val SeqApiFormat =

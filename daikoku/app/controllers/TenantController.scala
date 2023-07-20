@@ -200,6 +200,20 @@ class TenantController(DaikokuAction: DaikokuAction,
             authorizedOtoroshiGroups = Set.empty,
             contact = tenant.contact
           )
+          val adminApiPlan = FreeWithoutQuotas(
+            id = UsagePlanId(IdGenerator.token),
+            tenant = tenant.id,
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            currency = Currency("EUR"),
+            customName = Some("admin"),
+            customDescription = None,
+            otoroshiTarget = None,
+            allowMultipleKeys = Some(true),
+            autoRotation = None,
+            subscriptionProcess = Seq.empty,
+            integrationProcess = IntegrationProcess.ApiKey
+          )
+
           val adminApi = Api(
             id = ApiId(s"admin-api-tenant-${tenant.humanReadableId}"),
             tenant = tenant.id,
@@ -218,20 +232,7 @@ class TenantController(DaikokuAction: DaikokuAction,
               lastModificationAt = DateTime.now()
             ),
             swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
-            possibleUsagePlans = Seq(
-              FreeWithoutQuotas(
-                id = UsagePlanId("admin"),
-                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                currency = Currency("EUR"),
-                customName = Some("admin"),
-                customDescription = None,
-                otoroshiTarget = None,
-                allowMultipleKeys = Some(true),
-                autoRotation = None,
-                subscriptionProcess = Seq.empty,
-                integrationProcess = IntegrationProcess.ApiKey
-              )
-            ),
+            possibleUsagePlans = Seq(adminApiPlan.id),
             defaultUsagePlan = UsagePlanId("admin"),
             authorizedTeams = Seq.empty
           )

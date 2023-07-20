@@ -421,6 +421,8 @@ object SchemaDefinition {
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan visible only by admins"),
       ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id.value)),
+      ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant))),
+      ReplaceField("deleted", Field("deleted", BooleanType, resolve = _.value.deleted)),
       ReplaceField("paymentSettings", Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = ctx => ctx.value.otoroshiTarget)
@@ -439,6 +441,8 @@ object SchemaDefinition {
       ObjectTypeDescription("An Api plan which generate api key without quotas"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
+      ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant))),
+      ReplaceField("deleted", Field("deleted", BooleanType, resolve = _.value.deleted)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
         possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))),
@@ -463,6 +467,8 @@ object SchemaDefinition {
       ObjectTypeDescription("An Api plan which generate api key with quotas"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
+      ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant))),
+      ReplaceField("deleted", Field("deleted", BooleanType, resolve = _.value.deleted)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
         possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment))),
@@ -487,6 +493,8 @@ object SchemaDefinition {
       ObjectTypeDescription("An Api plan which generate api key with limited quotas"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
+      ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant))),
+      ReplaceField("deleted", Field("deleted", BooleanType, resolve = _.value.deleted)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
@@ -512,6 +520,8 @@ object SchemaDefinition {
       ObjectTypeDescription("An Api plan which generate api key with quotas but not limited"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
+      ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant))),
+      ReplaceField("deleted", Field("deleted", BooleanType, resolve = _.value.deleted)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
@@ -537,6 +547,8 @@ object SchemaDefinition {
       ObjectTypeDescription("An Api plan which generate api key where you need to pay per use"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
+      ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant))),
+      ReplaceField("deleted", Field("deleted", BooleanType, resolve = _.value.deleted)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
@@ -699,11 +711,7 @@ object SchemaDefinition {
         Field("deleted", BooleanType, resolve = _.value.deleted),
         Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
         Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
-          ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
-            .map {
-              case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
-              case None => None
-            },
+          ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.plan),
           possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
             PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
         Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
@@ -795,11 +803,14 @@ object SchemaDefinition {
         Field("swagger", OptionType(SwaggerAccessType), resolve = _.value.swagger),
         Field("visibility", StringType, resolve = _.value.visibility.name),
         Field("possibleUsagePlans", ListType(UsagePlanInterfaceType),
-            resolve = _.value.possibleUsagePlans,
+
+            resolve = ctx => ctx.ctx._1.usagePlanRepo.findByApi(ctx.value.tenant, ctx.value),
             possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
               PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
-        Field("defaultUsagePlan", OptionType(UsagePlanInterfaceType), resolve = ctx => ctx.value.possibleUsagePlans
-          .find(a => a.id == ctx.value.defaultUsagePlan)),
+        Field("defaultUsagePlan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
+          ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.defaultUsagePlan),
+          possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
+            PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
         Field("authorizedTeams", ListType(TeamObjectType), resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).find(Json.obj(
           "_id" -> Json.obj("$in" -> JsArray(ctx.value.authorizedTeams.map(_.asJson)))
         ))),
@@ -838,6 +849,7 @@ object SchemaDefinition {
     lazy val ApiWithAuthorizationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithAuthorizations](
       ObjectTypeDescription("A Daikoku api with the list of teams authorizations"),
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
+      ReplaceField("plans", Field("plans", ListType(UsagePlanInterfaceType), resolve = _.value.plans)),
       ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations)),
     )
     lazy val ApiWithCountType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithCount](
@@ -864,6 +876,7 @@ object SchemaDefinition {
     lazy val GraphQLAccessibleApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiWithSubscriptions](
       ObjectTypeDescription("A Daikoku api with the list of plans and his state of subscription"),
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
+      ReplaceField("plans", Field("plans", ListType(UsagePlanInterfaceType), resolve = _.value.plans)),
       ReplaceField("subscriptionsWithPlan", Field("subscriptionsWithPlan", ListType(subscriptionsWithPlanType), resolve = _.value.subscriptionsWithPlan))
     )
 
@@ -968,13 +981,8 @@ object SchemaDefinition {
           resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
         Field("team", OptionType(TeamObjectType),
           resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.team)),
-        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx => {
-          ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
-            .map {
-              case Some(api) =>api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
-              case None => None
-            }
-        },
+        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
+          ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.plan),
           possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
             PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
         Field("parentSubscriptionId", OptionType(ApiSubscriptionType), resolve = ctx => ctx.value.parentSubscriptionId match {
@@ -1018,11 +1026,7 @@ object SchemaDefinition {
         Field("api", OptionType(ApiType),
           resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
         Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
-          ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
-            .map {
-              case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
-              case None => None
-            },
+          ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.plan),
           possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
             PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType))
     )))
@@ -1036,11 +1040,7 @@ object SchemaDefinition {
         Field("api", OptionType(ApiType),
           resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
         Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
-          ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
-            .map {
-              case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
-              case None => None
-            },
+          ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.plan),
           possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
             PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType))
       )))
@@ -1228,12 +1228,7 @@ object SchemaDefinition {
         ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)
       )),
       ReplaceField("plan", Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx =>
-        ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant)
-          .findById(ctx.value.api.value)
-          .map {
-            case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
-            case None => None
-          },
+        ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.plan),
         possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
           PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType))),
       ReplaceField("globalInformations", Field("globalInformations", ApiKeyGlobalConsumptionInformationsType, resolve = _.value.globalInformations)),
@@ -1410,11 +1405,9 @@ object SchemaDefinition {
         Field("tenant", StringType, resolve = _.value.id.value),
         Field("deleted", BooleanType, resolve = _.value.deleted),
         Field("api", ApiType, resolve = ctx => apisFetcher.defer(ctx.value.api)),
-        Field("plan", OptionType(UsagePlanInterfaceType), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)
-          .map {
-            case Some(api) => api.possibleUsagePlans.find(p => p.id == ctx.value.plan)
-            case None => None
-          }, possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
+        Field("plan", OptionType(UsagePlanInterfaceType), resolve =
+          ctx => ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.plan),
+          possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
           PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
         Field("steps", ListType(SubscriptionDemandStepType), resolve = _.value.steps),
         Field("state", StringType, resolve = _.value.state.name),

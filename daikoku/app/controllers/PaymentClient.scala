@@ -159,6 +159,8 @@ class PaymentClient(
                                    .forTenant(tenant)
                                    .findByIdNotDeleted(subscriptionDemand.api),
                                  AppError.ApiNotFound)
+      plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(tenant).findByIdNotDeleted(subscriptionDemand.plan),
+        AppError.PlanNotFound)
       apiTeam <- EitherT.fromOptionF(
         env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team),
         AppError.TeamNotFound)
@@ -175,26 +177,25 @@ class PaymentClient(
       user <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(subscriptionDemand.from),
         AppError.UserNotFound)
-      plan <- EitherT.fromOption[Future](
-        api.possibleUsagePlans.find(_.id == subscriptionDemand.plan),
-        AppError.PlanNotFound)
       settings <- EitherT.fromOption[Future](
         plan.paymentSettings,
         AppError.ThirdPartyPaymentSettingsNotFound)
       checkoutUrl <- createSessionCheckout(tenant,
-                                           api,
-                                           team,
-                                           apiTeam,
-                                           subscriptionDemand,
-                                           settings,
-                                           user,
-                                           step,
-                                           from)
+        api,
+        plan,
+        team,
+        apiTeam,
+        subscriptionDemand,
+        settings,
+        user,
+        step,
+        from)
     } yield Ok(Json.obj("checkoutUrl" -> checkoutUrl))
   }
 
   def createSessionCheckout(tenant: Tenant,
                             api: Api,
+                            plan: UsagePlan,
                             team: Team,
                             apiTeam: Team,
                             demand: SubscriptionDemand,
@@ -212,6 +213,7 @@ class PaymentClient(
         createStripeCheckoutSession(
           tenant,
           api,
+          plan,
           team,
           apiTeam,
           demand,
@@ -365,6 +367,7 @@ class PaymentClient(
   def createStripeCheckoutSession(
       tenant: Tenant,
       api: Api,
+      plan: UsagePlan,
       team: Team,
       apiTeam: Team,
       subscriptionDemand: SubscriptionDemand,
@@ -424,20 +427,14 @@ class PaymentClient(
           .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
           .getOrElse(baseBody)
 
-        val trialPeriod: Long = api.possibleUsagePlans
-          .find(_.id == subscriptionDemand.plan)
-          .flatMap(_.trialPeriod.map(_.toDays))
+        val trialPeriod: Long = plan.trialPeriod.map(_.toDays)
           .getOrElse(0)
 
         val finalBody =
           if (trialPeriod > 0)
             body +
               ("subscription_data[trial_settings][end_behavior][missing_payment_method]" -> "cancel") +
-              ("subscription_data[trial_period_days]" -> api.possibleUsagePlans
-                .find(_.id == subscriptionDemand.plan)
-                .flatMap(_.trialPeriod.map(_.toDays))
-                .getOrElse(0)
-                .toString)
+              ("subscription_data[trial_period_days]" -> trialPeriod.toString)
           else body
 
         for {
@@ -623,15 +620,11 @@ class PaymentClient(
   def toggleStateThirdPartySubscription(
       apiSubscription: ApiSubscription): EitherT[Future, AppError, JsValue] = {
     for {
-      api <- EitherT.fromOptionF(env.dataStore.apiRepo
-                                   .forTenant(apiSubscription.tenant)
-                                   .findById(apiSubscription.api),
-                                 AppError.ApiNotFound)
-      plan <- EitherT.fromOption[Future](
-        api.possibleUsagePlans.find(_.id == apiSubscription.plan),
+      plan <- EitherT.fromOptionF(
+        env.dataStore.usagePlanRepo.forTenant(apiSubscription.tenant).findByIdNotDeleted(apiSubscription.plan),
         AppError.PlanNotFound)
       tenant <- EitherT.fromOptionF(
-        env.dataStore.tenantRepo.findByIdNotDeleted(api.tenant),
+        env.dataStore.tenantRepo.findByIdNotDeleted(apiSubscription.tenant),
         AppError.TenantNotFound)
       settings <- EitherT.fromOption[Future](
         plan.paymentSettings.flatMap(

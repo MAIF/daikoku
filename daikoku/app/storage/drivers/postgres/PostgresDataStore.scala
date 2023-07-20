@@ -249,6 +249,17 @@ case class PostgresTenantCapableStepValidatorRepo(
     _tenantRepo(tenant)
 }
 
+case class PostgresTenantCapableUsagePlanRepo(
+  _repo: () => PostgresRepo[UsagePlan, UsagePlanId],
+  _tenantRepo: TenantId => PostgresTenantAwareRepo[UsagePlan, UsagePlanId]
+) extends PostgresTenantCapableRepo[UsagePlan, UsagePlanId]
+  with UsagePlanRepo {
+  override def repo(): PostgresRepo[UsagePlan, UsagePlanId] = _repo()
+
+  override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[UsagePlan, UsagePlanId] =
+    _tenantRepo(tenant)
+}
+
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption,
@@ -545,6 +556,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       t => new PostgresTenantStepValidatorRepo(env, reactivePg, t)
     )
 
+  private val _usagePlanRepo: UsagePlanRepo =
+    PostgresTenantCapableUsagePlanRepo(
+      () => new PostgresUsagePlanRepo(env, reactivePg),
+      t => new PostgresTenantUsagePlanRepo(env, reactivePg, t)
+    )
+
   override def tenantRepo: TenantRepo = _tenantRepo
 
   override def userRepo: UserRepo = _userRepo
@@ -591,6 +608,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     _subscriptionDemandRepo
 
   override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
+
+  override def usagePlanRepo: UsagePlanRepo = _usagePlanRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -940,6 +959,19 @@ class PostgresTenantStepValidatorRepo(env: Env,
   override def extractId(value: StepValidator): String = value.id.value
 }
 
+class PostgresTenantUsagePlanRepo(env: Env,
+                                      reactivePg: ReactivePg,
+                                      tenant: TenantId)
+    extends PostgresTenantAwareRepo[UsagePlan, UsagePlanId](env,
+                                                                reactivePg,
+                                                                tenant) {
+  override def tableName: String = "usage_plans"
+
+  override def format: Format[UsagePlan] = json.UsagePlanFormat
+
+  override def extractId(value: UsagePlan): String = value.id.value
+}
+
 class PostgresTenantCmsPageRepo(env: Env,
                                 reactivePg: ReactivePg,
                                 tenant: TenantId)
@@ -1143,6 +1175,14 @@ class PostgresStepValidatorRepo(env: Env, reactivePg: ReactivePg)
 
   override def extractId(value: StepValidator): String = value.id.value
 }
+class PostgresUsagePlanRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[UsagePlan, UsagePlanId](env, reactivePg) {
+  override def tableName: String = "usage_plans"
+
+  override def format: Format[UsagePlan] = json.UsagePlanFormat
+
+  override def extractId(value: UsagePlan): String = value.id.value
+}
 
 class PostgresApiRepo(env: Env, reactivePg: ReactivePg)
     extends PostgresRepo[Api, ApiId](env, reactivePg) {
@@ -1243,6 +1283,47 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
     extends CommonRepo[Of, Id](env, reactivePg) {
 
   private implicit lazy val logger: Logger = Logger(s"PostgresRepo")
+
+  override def findRaw(query: JsObject,
+                       sort: Option[JsObject] = None,
+                       maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
+    logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
+
+    val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
+
+    sort match {
+      case None =>
+        if (query.values.isEmpty)
+          reactivePg.querySeq(s"SELECT * FROM $tableName $limit") {
+            _.optJsObject("content")
+          } else {
+          val (sql, params) = convertQuery(query)
+          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql $limit",
+            params) {
+            _.optJsObject("content")
+          }
+        }
+
+      case Some(_) =>
+        val sortedKeys = sort
+          .map(obj =>
+            obj.fields.sortWith((a, b) =>
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+          .map(r => r.map(x => s"content->>'${x._1}'"))
+          .getOrElse(Seq("_id"))
+        if (query.values.isEmpty)
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
+            Seq.empty
+          )(_.optJsObject("content")) else {
+          val (sql, params) = convertQuery(query)
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName WHERE $sql $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
+            params
+          )(_.optJsObject("content"))
+        }
+    }
+  }
 
   override def find(
       query: JsObject,
@@ -1393,6 +1474,67 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         Seq(tenant.value)
       )
       .map(_.size() > 0)
+  }
+
+  override def findRaw(
+                     query: JsObject,
+                     sort: Option[JsObject] = None,
+                     maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
+    logger.debug(
+      s"$tableName.findRaw(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
+
+    val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
+
+    sort match {
+      case None =>
+        if (query.values.isEmpty)
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' $limit") {
+            _.optJsObject("content")
+          } else {
+          val (sql, params) = convertQuery(
+            query ++ Json.obj("_tenant" -> tenant.value))
+
+          var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
+          params.zipWithIndex.reverse.foreach {
+            case (param, i) =>
+              out = out.replace("$" + (i + 1), s"'$param'")
+          }
+
+          reactivePg.querySeq(out) {
+            _.optJsObject("content")
+          }
+        }
+      case Some(s) =>
+        val sortedKeys = sort
+          .map(obj =>
+            obj.fields.sortWith((a, b) =>
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+          .map(r => r.map(x => s"content->>'${x._1}'"))
+          .getOrElse(Seq("_id"))
+        if (query.values.isEmpty)
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value} ORDER BY ${
+              sortedKeys
+                .mkString(",")
+            } ASC $limit",
+            Seq.empty
+          ) {
+            _.optJsObject("content")
+          } else {
+          val (sql, params) = convertQuery(
+            query ++ Json.obj("_tenant" -> tenant.value))
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${
+              sortedKeys
+                .mkString(",")
+            } ASC $limit",
+            params
+          ) {
+            _.optJsObject("content")
+          }
+        }
+    }
   }
 
   override def find(
@@ -1559,6 +1701,20 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .flatMapConcat(res =>
         Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
   }
+
+  override def findOneRaw(query: JsObject)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
+    val (sql, params) = convertQuery(query)
+    logger.debug(s"$tableName.findeOneRaw(${Json.prettyPrint(query)})")
+    logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
+    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
+
+    reactivePg
+      .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) {
+        row =>
+          row.optJsObject("content")
+      }
+  }
+
 
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = {

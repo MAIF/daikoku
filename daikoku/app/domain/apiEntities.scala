@@ -222,6 +222,8 @@ case class BasePaymentInformation(costPerMonth: BigDecimal,
 
 sealed trait UsagePlan {
   def id: UsagePlanId
+  def tenant: TenantId
+  def deleted: Boolean
   def costPerMonth: BigDecimal
   def maxRequestPerSecond: Option[Long]
   def maxRequestPerDay: Option[Long]
@@ -256,6 +258,8 @@ sealed trait UsagePlan {
 case object UsagePlan {
   case class Admin(
       id: UsagePlanId,
+      tenant: TenantId,
+      deleted: Boolean = false,
       customName: Option[String] = Some("Administration plan"),
       customDescription: Option[String] = Some("access to admin api"),
       otoroshiTarget: Option[OtoroshiTarget],
@@ -297,6 +301,8 @@ case object UsagePlan {
   }
   case class FreeWithoutQuotas(
       id: UsagePlanId,
+      tenant: TenantId,
+      deleted: Boolean = false,
       currency: Currency,
       billingDuration: BillingDuration,
       customName: Option[String],
@@ -351,6 +357,8 @@ case object UsagePlan {
   }
   case class FreeWithQuotas(
       id: UsagePlanId,
+      tenant: TenantId,
+      deleted: Boolean = false,
       maxPerSecond: Long,
       maxPerDay: Long,
       maxPerMonth: Long,
@@ -406,6 +414,8 @@ case object UsagePlan {
   }
   case class QuotasWithLimits(
       id: UsagePlanId,
+      tenant: TenantId,
+      deleted: Boolean = false,
       maxPerSecond: Long,
       maxPerDay: Long,
       maxPerMonth: Long,
@@ -462,6 +472,8 @@ case object UsagePlan {
   }
   case class QuotasWithoutLimits(
       id: UsagePlanId,
+      tenant: TenantId,
+      deleted: Boolean = false,
       maxPerSecond: Long,
       maxPerDay: Long,
       maxPerMonth: Long,
@@ -520,6 +532,8 @@ case object UsagePlan {
   }
   case class PayPerUse(
       id: UsagePlanId,
+      tenant: TenantId,
+      deleted: Boolean = false,
       costPerMonth: BigDecimal,
       costPerRequest: BigDecimal,
       trialPeriod: Option[BillingDuration],
@@ -790,7 +804,7 @@ case class Api(
     tags: Set[String] = Set.empty,
     categories: Set[String] = Set.empty,
     visibility: ApiVisibility,
-    possibleUsagePlans: Seq[UsagePlan],
+    possibleUsagePlans: Seq[UsagePlanId],
     defaultUsagePlan: UsagePlanId,
     authorizedTeams: Seq[TeamId] = Seq.empty,
     posts: Seq[ApiPostId] = Seq.empty,
@@ -880,8 +894,8 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
 }
 
 case class ApiWithAuthorizations(api: Api,
-                                 authorizations: Seq[AuthorizationApi] =
-                                   Seq.empty)
+                                 plans: Seq[UsagePlan],
+                                 authorizations: Seq[AuthorizationApi] = Seq.empty)
 case class ApiWithCount(apis: Seq[ApiWithAuthorizations], total: Long)
 case class NotificationWithCount(notifications: Seq[Notification], total: Long)
 case class TeamWithCount(teams: Seq[Team], total: Long)
@@ -890,6 +904,7 @@ case class SubscriptionsWithPlan(planId: String,
                                  subscriptionsCount: Int)
 case class ApiWithSubscriptions(
     api: Api,
+    plans: Seq[UsagePlan],
     subscriptionsWithPlan: Seq[SubscriptionsWithPlan])
 
 case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],

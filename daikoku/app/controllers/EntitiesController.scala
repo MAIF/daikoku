@@ -192,13 +192,15 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             Ok(
               UsagePlan
                 .Admin(id = UsagePlanId(BSONObjectID.generate().stringify),
-                       otoroshiTarget = None)
+                  tenant = ctx.tenant.id,
+                  otoroshiTarget = None)
                 .asJson)
           case "PayPerUse" =>
             Ok(
               UsagePlan
                 .PayPerUse(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   costPerRequest = BigDecimal(0),
                   costPerMonth = BigDecimal(0),
                   billingDuration = BillingDuration(1, BillingTimeUnit.Month),
@@ -219,6 +221,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .FreeWithQuotas(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,
                   maxPerMonth = 0,
@@ -238,6 +241,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .FreeWithoutQuotas(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   billingDuration = BillingDuration(1, BillingTimeUnit.Month),
                   currency = Currency("EUR"),
                   customName = None,
@@ -254,6 +258,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .QuotasWithLimits(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,
                   maxPerMonth = 0,
@@ -275,6 +280,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .QuotasWithoutLimits(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,
                   maxPerMonth = 0,
