@@ -8,9 +8,8 @@ import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, NotificationFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.env.evolution_1613_b.version
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
@@ -782,12 +781,12 @@ object evolution_1613_b extends EvolutionScript {
 
           (for {
             api <- OptionT(dataStore.apiRepo.forAllTenant().findOneRaw(Json.obj("_id" -> apiId.asJson)))
-            plan <- OptionT.fromOption[Future]((api \ "possibleUsagePlans").as[JsArray].value.find(plan => (plan \ "id").as[String] == planId.value))
+            plan <- OptionT.fromOption[Future]((api \ "possibleUsagePlans").as[JsArray].value.find(plan => (plan \ "_id").as[String] == planId.value))
             demand = SubscriptionDemand(
               id = SubscriptionDemandId(IdGenerator.token),
               tenant = tenant,
               api = apiId,
-              plan = (plan \ "id").as(json.UsagePlanIdFormat),
+              plan = (plan \ "_id").as(json.UsagePlanIdFormat),
               steps = (plan \ "subscriptionProcess").as(json.SeqValidationStepFormat)
                 .map(step => SubscriptionDemandStep(
                   id = SubscriptionDemandStepId(IdGenerator.token),
@@ -851,12 +850,17 @@ object evolution_1630 extends EvolutionScript {
 
       dataStore.apiRepo.forAllTenant().streamAllRaw()
         .map(api => {
-          val plans = json.SeqUsagePlanFormat.reads(Json.arr((api \ "possibleUsagePlans").as[JsArray]
+          val oldPlans = (api \ "possibleUsagePlans").as[JsArray]
             .value
-            .map(plan => plan.as[JsObject] ++ Json.obj("tenant" -> (api \ "tenant").as[String]))))
+
+          val updatedOldPlans = oldPlans
+            .map(plan => plan.as[JsObject] ++ Json.obj("_tenant" -> (api \ "_tenant").as[String]))
+
+          val plans = json.SeqUsagePlanFormat.reads(JsArray(updatedOldPlans))
             .getOrElse(Seq.empty)
 
           val updatedRawApi = api.as[JsObject] + ("possibleUsagePlans" -> json.SeqUsagePlanIdFormat.writes(plans.map(_.id)))
+
           json.ApiFormat.reads(updatedRawApi) match {
             case JsSuccess(updatedApi, _) =>
               dataStore.usagePlanRepo.forTenant(updatedApi.tenant).insertMany(plans)

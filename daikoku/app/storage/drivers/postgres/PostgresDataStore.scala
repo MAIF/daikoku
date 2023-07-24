@@ -374,8 +374,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "email_verifications" -> true,
     "operations" -> true,
     "subscription_demands" -> true,
-    "step_validators" -> true
-  )
+    "step_validators" -> true,
+    "usage_plans" -> true
+  )xw
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
     .setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
@@ -723,7 +724,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       emailVerificationRepo.forAllTenant(),
       cmsRepo.forAllTenant(),
       stepValidatorRepo.forAllTenant(),
-      subscriptionDemandRepo.forAllTenant()
+      subscriptionDemandRepo.forAllTenant(),
+      usagePlanRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -1676,10 +1678,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
     logger.debug(s"$tableName.streamAllRaw(${Json.prettyPrint(query)})")
 
+    val (sql, params) = convertQuery(query)
+    val selector = if (sql == "") "" else s"WHERE $sql "
+
     Source
       .future(
         reactivePg
-          .querySeq(s"SELECT * FROM $tableName") { row =>
+          .querySeq(s"SELECT * FROM $tableName $selector", params) { row =>
             row.optJsObject("content")
           }
       )
@@ -1691,10 +1696,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     logger.debug(
       s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
 
+    val (sql, params) = convertQuery(query)
+    val selector = if (sql == "") "" else s"WHERE $sql "
+
     Source
       .future(
         reactivePg
-          .querySeq(s"SELECT * FROM $tableName") { row =>
+          .querySeq(s"SELECT * FROM $tableName $selector", params) { row =>
             row.optJsObject("content")
           }
       )
@@ -1704,13 +1712,15 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
   override def findOneRaw(query: JsObject)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
     val (sql, params) = convertQuery(query)
-    logger.debug(s"$tableName.findeOneRaw(${Json.prettyPrint(query)})")
+    logger.debug(s"$tableName.findOneRaw(${Json.prettyPrint(query)})")
     logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
     logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
 
     reactivePg
       .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) {
         row =>
+          logger.debug(s"[ROW] :: ${row.deepToString()}")
+          logger.debug(s"[ROW] :: ${row.toJson}")
           row.optJsObject("content")
       }
   }
@@ -1726,6 +1736,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     reactivePg
       .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) {
         row =>
+          logger.debug(s"[ROW FINDONE] :: ${row.deepToString()}")
+          logger.debug(s"[ROW FINDONE] :: ${row.toJson}")
           row.optJsObject("content").map(format.reads).collect {
             case JsSuccess(s, _) => s
             case JsError(errors) => None.asInstanceOf[Of]

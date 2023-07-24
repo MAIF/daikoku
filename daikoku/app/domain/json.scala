@@ -3287,7 +3287,9 @@ object json {
           case "Pending"  => NotificationStatusPendingFormat.reads(json)
           case "Accepted" => NotificationStatusAcceptedFormat.reads(json)
           case "Rejected" => NotificationStatusRejectedFormat.reads(json)
-          case str        => JsError(s"Bad notification status value: $str")
+          case str        =>
+            AppLogger.error(s"Bad notification status value: $str")
+            JsError(s"Bad notification status value: $str")
         }
 
       override def writes(o: NotificationStatus): JsValue = o match {
