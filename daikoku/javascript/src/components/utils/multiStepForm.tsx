@@ -351,7 +351,7 @@ const Breadcrumb = <T,>({
         token: {
           colorPrimary: 'var(--success-color, red)',
           colorInfo: 'var(--success-color, red)',
-          colorTextBase: 'var(--success-color, red)',
+          colorTextBase: 'var(--success-color, red)'
         }
       }}
     >

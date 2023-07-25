@@ -10,7 +10,7 @@
     --navbar-brand-color: #fff;
 
     --sidebar-bg-color: #191c24;
-    --sidebar-text-color: #6c7293;
+    --sidebar-text-color: #bbc0df;
 
     --menu-text-color: #e2e2e2;
     --menu-text-hover-color: #fff;
@@ -34,7 +34,7 @@
     --form-select-focused-color: #fff;
     --form-select-focused-text-color : #ddd;
     --form-select-hover-color: #ccc;
-    --form-select-hover-text-color: #aaa;
+    --form-select-hover-text-color: #000;
 
 
     --badge-tags-bg-color: #9a81b8;
@@ -54,4 +54,9 @@
     --table-bg-color: #f8f9fa;
 
     --modal-selection-bg-color: rgba(27,31,35,.15);
+    --bs-backdrop-bg: #545454;
+
+    .modal-content .btn-close {
+        filter: invert(48%) saturate(2476%) brightness(118%) contrast(119%);
+      }
 }

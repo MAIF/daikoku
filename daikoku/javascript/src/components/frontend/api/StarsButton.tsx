@@ -1,41 +1,23 @@
-import React from 'react';
+import React from "react";
 
-const StarsButton = ({
-  stars,
-  toggleStar,
-  starred,
-  connectedUser
-}: any) => (
-    <div
-    className="d-flex flex-row"
-    style={{
-      borderRadius: '4px',
-      border: '1px solid',
-      overflow: 'hidden',
-      boxSizing: 'content-box',
-      borderColor: 'var(--btn-border-color, #97b0c7)',
-      backgroundColor: 'var(--btn-border-color, #fff)',
-      fontSize: '18px',
-    }}
-  >
+const StarsButton = ({ stars, toggleStar, starred, connectedUser }: any) => (
+  <div className="d-flex flex-row star-button">
     {connectedUser && !connectedUser.isGuest ? (
-            <>
-                <button
+      <>
+        <button
           className="btn flex-row align-items-center pe-2"
-          style={{ color: 'var(--btn-bg-color, "#000")', padding: '0' }}
+          style={{ color: 'var(--btn-bg-color, "#000")', padding: "0" }}
           onClick={toggleStar}
         >
-                    <i className={`${starred ? 'fas' : 'far'} fa-star ps-2`} />
+          <i className={`${starred ? "fas" : "far"} fa-star ps-2`} />
         </button>
-                <div className="px-2 d-flex align-items-center" style={{ backgroundColor: '#fff' }}>
-                    <span>{stars}</span>
-        </div>
+          <span className="btn btn-sm btn-access-negative">{stars}</span>
       </>
     ) : (
       stars > 0 && (
-                <div className="badge p-2" style={{ color: '#fff' }}>
+        <div className="badge p-2" style={{ color: "#fff" }}>
           {stars}
-                    <i className="fas fa-star ps-2" />
+          <i className="fas fa-star ps-2" />
         </div>
       )
     )}

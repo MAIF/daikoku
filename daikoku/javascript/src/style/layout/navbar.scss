@@ -101,8 +101,8 @@ a.navbar-brand, #teamSelector:hover {
   z-index: 1000;
   top: 0;
   left: 55px;
-  background-color: #fff;
-  color: #000;
+  background-color: $body-bg-color;
+  color: $body-text-color;
 
   transition: width .2s ease-in-out;
 
@@ -119,7 +119,8 @@ a.navbar-brand, #teamSelector:hover {
     width: 40px;
     &:hover {
       border-radius: 50%;
-      background-color: #EBECF0;
+      background-color: $section-bg-color;
+      color: $section-text-color;
     }
   }
 }
@@ -162,7 +163,7 @@ a.navbar-brand, #teamSelector:hover {
         .block__entry__link {
           cursor: pointer;
           font-size: 14px;
-          color: #000;
+          color: $aside-text-color;
           margin-bottom: 5px;
           line-height: 40px;
           border-radius: 4px;
