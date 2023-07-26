@@ -412,7 +412,7 @@ class ApiController(
   def getVisiblePlan(apiId: String, version: String, planId: String) =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
-        AuditTrailEvent("@{user.name} is accessing visible plan @{plan.name}")
+        AuditTrailEvent("@{user.name} is accessing visible plan @{plan.id} -- @{api.name}/@{plan.name}")
       )(ctx) {
 
         def control(api: Api, myTeams: Seq[Team], plan: UsagePlan): EitherT[Future, AppError, Unit] = {
@@ -437,7 +437,48 @@ class ApiController(
           plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId), AppError.PlanNotFound)
           myTeams <- EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
           _ <- control(api, myTeams, plan)
-        } yield Ok(plan.asJson))
+        } yield {
+          ctx.setCtxValue("plan.id", plan.id.value)
+          ctx.setCtxValue("aip.name", api.id.value)
+          ctx.setCtxValue("plan.name", plan.customName.getOrElse(plan.typeName))
+          Ok(plan.asJson)
+        })
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  def getVisiblePlans(apiId: String, version: String) =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      UberPublicUserAccess(
+        AuditTrailEvent("@{user.name} is accessing visible plans of @{api.name}")
+      )(ctx) {
+
+        def controlAndGet(api: Api, myTeams: Seq[Team], plans: Seq[UsagePlan]): EitherT[Future, AppError, Seq[UsagePlan]] = {
+          if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
+            .intersect(myTeams.map(_.id))
+            .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))) {
+
+
+
+            val filteredPlans = plans.filter(plan => plan.visibility == UsagePlanVisibility.Public || ctx.user.isDaikokuAdmin || (plan.authorizedTeams :+ api.team)
+              .intersect(myTeams.map(_.id))
+              .nonEmpty)
+            EitherT.pure[Future, AppError](filteredPlans)
+          } else {
+            EitherT.leftT[Future, Seq[UsagePlan]](AppError.ApiUnauthorized)
+          }
+        }
+
+        (for {
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
+          plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api))
+          myTeams <- EitherT.liftF[Future, AppError, Seq[Team]](env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
+          filteredPlans <- controlAndGet(api, myTeams, plans)
+        } yield {
+          ctx.setCtxValue("api.name", api.name)
+          Ok(json.SeqUsagePlanFormat.writes(filteredPlans))
+        })
           .leftMap(_.render())
           .merge
       }

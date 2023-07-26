@@ -849,7 +849,7 @@ object evolution_1630 extends EvolutionScript {
       implicit val materializer: Materializer = mat
 
       dataStore.apiRepo.forAllTenant().streamAllRaw()
-        .map(api => {
+        .mapAsync(5)(api => {
           val oldPlans = (api \ "possibleUsagePlans").as[JsArray]
             .value
 
@@ -865,7 +865,7 @@ object evolution_1630 extends EvolutionScript {
             case JsSuccess(updatedApi, _) =>
               dataStore.usagePlanRepo.forTenant(updatedApi.tenant).insertMany(plans)
                 .flatMap(_ => dataStore.apiRepo.forTenant(updatedApi.tenant).save(updatedApi))
-            case JsError(errors) => AppLogger.error(s"error during evolution $version - wrong api format ${Json.stringify(updatedRawApi)} -- $errors")
+            case JsError(errors) => FastFuture.successful(AppLogger.error(s"error during evolution $version - wrong api format ${Json.stringify(updatedRawApi)} -- $errors"))
           }
         })
         .runWith(Sink.ignore)

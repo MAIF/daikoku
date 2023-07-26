@@ -2,20 +2,20 @@ import { getApolloContext } from '@apollo/client';
 import { constraints, format, type as formType } from '@maif/react-forms';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
+import { IApi, IBaseUsagePlan, isError, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
 import { INotification } from '../../../types';
 import {
   access,
   api,
   apikey, Can, isPublish, isSubscriptionProcessIsAutomatic, manage,
-  Option, renderPlanInfo, renderPricing, Spinner
+  Option, queryClient, renderPlanInfo, renderPricing, Spinner
 } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
@@ -23,8 +23,6 @@ import classNames from 'classnames';
 import { Link, useNavigate } from 'react-router-dom';
 import { is } from 'cypress/types/bluebird';
 import { useQuery } from '@tanstack/react-query';
-import { isError } from 'lodash';
-
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -319,7 +317,12 @@ type ApiPricingProps = {
 }
 
 export const ApiPricing = (props: ApiPricingProps) => {
-  const usagePlansQuery = useQuery(['plan'], () => Services.getAllPlanOfApi(props.api.team, props.api._id, props.api.currentVersion))
+  const usagePlansQuery = useQuery(['plans'], () => Services.getVisiblePlans(props.api._id, props.api.currentVersion))
+
+  useEffect(() => {
+    queryClient.invalidateQueries(['plans'])
+  }, [props.api])
+  
 
   if (usagePlansQuery.isLoading) {
     return <Spinner />

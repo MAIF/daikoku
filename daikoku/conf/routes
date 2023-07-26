@@ -61,6 +61,7 @@ GET     /api/me/notifications/unread-count              fr.maif.otoroshi.daikoku
 
 GET     /api/me/visible-apis/:humanReadableId/:version          fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApi(humanReadableId, version)
 GET     /api/me/visible-apis/:apiId/:version/plan/:planId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisiblePlan(apiId, version, planId)
+GET     /api/me/visible-apis/:apiId/:version/plans              fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisiblePlans(apiId, version)
 GET     /api/me/visible-apis/:id                                fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApiWithId(id)
 GET     /api/me/teams/:teamId/visible-apis/:apiId/:version      fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId, version)
 GET     /api/apis/:apiId/_root                                  fr.maif.otoroshi.daikoku.ctrls.ApiController.getRootApi(apiId)

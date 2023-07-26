@@ -53,6 +53,7 @@ export const oneOfMyTeam = (id: any) => customFetch(`/api/me/teams/${id}`);
 export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> => customFetch(`/api/me/visible-apis/${id}`);
 export const getVisibleApi = (id: string, version: string): PromiseWithError<IApi> => customFetch(`/api/me/visible-apis/${id}/${version}`);
 export const getVisiblePlan = (apiId: string, version: string, planId: string): PromiseWithError<IUsagePlan> => customFetch(`/api/me/visible-apis/${apiId}/${version}/plans/${planId}`);
+export const getVisiblePlans = (apiId: string, version: string): PromiseWithError<Array<IUsagePlan>> => customFetch(`/api/me/visible-apis/${apiId}/${version}/plans`);
 export const getVisibleApiGroup = (id: any) => customFetch(`/api/me/visible-groups/${id}`);
 export const getTeamVisibleApi = (teamId: string, apiId: string, version: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
