@@ -1,5 +1,6 @@
 import { IFastTeam, ITeamSimple, ITeamVisibility } from './team';
 import { ThirdPartyPaymentType } from './tenant';
+import { INotification } from './types';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 interface IBaseApi {
@@ -21,7 +22,7 @@ interface IBaseApi {
   tags: Array<string>;
   categories: Array<string>;
   visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly';
-  possibleUsagePlans: Array<IUsagePlan>;
+  possibleUsagePlans: Array<string>;
   defaultUsagePlan: string;
   authorizedTeams: Array<string>;
   posts: Array<string>;
@@ -63,6 +64,13 @@ export interface IApiWithAuthorization {
     authorized: boolean;
     pending: boolean;
   }>;
+}
+
+export interface IApiExtended extends IApi {
+  pendingRequests: INotification
+  subscriptions: ISafeSubscription
+  myTeams: Array<ITeamSimple>
+  authorizations: Array<{team: string, authorized: boolean, pending: boolean}>
 }
 
 export interface IApiAuthoWithCount {
@@ -147,6 +155,8 @@ export interface IValidationStepPayment extends IValidationStep {
 }
 export interface IBaseUsagePlan {
   _id: string;
+  _tenant: string;
+  _deleted: boolean;
   type: string;
   customDescription?: string;
   customName?: string;
@@ -286,7 +296,7 @@ export interface IApiKey {
   clientSecret: string;
 }
 
-interface IRotation {
+export interface IRotation {
   enabled: boolean;
   rotationEvery: number;
   gracePeriod: number;
@@ -312,6 +322,7 @@ export interface IBaseSubscription {
   customMaxPerDay: number | null;
   customReadOnly: boolean | null;
   parent: string | null;
+  parentUp: boolean;
 }
 
 export const isPayPerUse = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanPayPerUse => {
@@ -351,8 +362,16 @@ export interface ISafeSubscription extends IBaseSubscription {
 }
 
 export interface ISubscription extends IBaseSubscription {
-  apiKey?: IApiKey;
+  apiKey: IApiKey;
   integrationToken: string;
+}
+
+export interface ISubscriptionExtended extends ISubscription {
+  parentUp: boolean
+  planType: string
+  planName: string
+  apiName: string
+  _humanReadableId: string
 }
 
 export interface ISubscriptionWithApiInfo extends ISubscription {

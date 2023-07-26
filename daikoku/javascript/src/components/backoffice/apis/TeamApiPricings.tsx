@@ -27,6 +27,7 @@ import {
   BeautifulTitle, formatPlanType, IMultistepsformStep,
   MultiStepForm, Option,
   renderPricing,
+  Spinner,
   team
 } from '../../utils';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
@@ -489,6 +490,7 @@ type Props = {
   openApiSelectModal?: () => void
 }
 type Tab = 'settings' | 'security' | 'payment' | 'subscription-process'
+type IUsagePlanId = string;
 
 export const TeamApiPricings = (props: Props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
@@ -501,6 +503,7 @@ export const TeamApiPricings = (props: Props) => {
   const { openApiSelectModal, confirm } = useContext(ModalContext);
 
   const queryFullTenant = useQuery(['full-tenant'], () => Services.oneTenant(props.tenant._id))
+  const queryPlans = useQuery(['plans'], () => Services.getAllPlanOfApi(props.api.team, props.api._id, props.api.currentVersion))
 
   useEffect(() => {
     return () => {
@@ -696,7 +699,7 @@ export const TeamApiPricings = (props: Props) => {
           toastr.error(translate('Error'), translate(response.error))
         } else {
           toastr.success(translate('Success'), creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
-          setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
+          setPlanForEdition(response)
           setCreation(false)
           props.reload()
         }
@@ -711,7 +714,7 @@ export const TeamApiPricings = (props: Props) => {
           toastr.error(translate('Error'), translate(response.error))
         } else {
           toastr.success(translate('Success'), translate('plan.payment.setup.successful'))
-          setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
+          setPlanForEdition(response)
           props.reload()
         }
       })
@@ -1279,20 +1282,28 @@ export const TeamApiPricings = (props: Props) => {
             )}
           </div>
         </div>)}
-        {mode === possibleMode.list && (<div className="row">
-          {props.api.possibleUsagePlans
-            .sort((a, b) => (a.customName || a.type).localeCompare(b.customName || b.type))
-            .map((plan) => <div key={plan._id} className="col-md-4">
-              <Card
-                plan={plan}
-                isDefault={plan._id === props.api.defaultUsagePlan}
-                makeItDefault={() => makePlanDefault(plan)}
-                toggleVisibility={() => toggleVisibility(plan)}
-                deletePlan={() => deletePlan(plan)}
-                editPlan={() => editPlan(plan)}
-                duplicatePlan={() => clonePlanAndEdit(plan)} />
-            </div>)}
-        </div>)}
+        {mode === possibleMode.list && (
+          <div className="row">
+            {queryPlans.isLoading && <Spinner />}
+            {queryPlans.data && !isError(queryPlans.data) && (
+              queryPlans.data
+                .sort((a, b) => (a.customName || a.type).localeCompare(b.customName || b.type))
+                .map((plan) => <div key={plan._id} className="col-md-4">
+                  <Card
+                    plan={plan}
+                    isDefault={plan._id === props.api.defaultUsagePlan}
+                    makeItDefault={() => makePlanDefault(plan)}
+                    toggleVisibility={() => toggleVisibility(plan)}
+                    deletePlan={() => deletePlan(plan)}
+                    editPlan={() => editPlan(plan)}
+                    duplicatePlan={() => clonePlanAndEdit(plan)} />
+                </div>)
+            )}
+            {queryPlans.isError && (
+              <div>Error while fetching usage plan</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   </div>);
@@ -1352,7 +1363,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
               format: format.buttonsSelect,
               options: ["all", 'oneOf'],
               defaultValue: 'oneOf',
-              visible: ({rawValues}) => {
+              visible: ({ rawValues }) => {
                 return rawValues.emails && rawValues.emails.length > 1
               }
             },

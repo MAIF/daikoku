@@ -60,6 +60,7 @@ GET     /api/me/notifications/all                       fr.maif.otoroshi.daikoku
 GET     /api/me/notifications/unread-count              fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUnreadNotificationsCount()
 
 GET     /api/me/visible-apis/:humanReadableId/:version          fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApi(humanReadableId, version)
+GET     /api/me/visible-apis/:apiId/:version/plan/:planId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisiblePlan(apiId, version, planId)
 GET     /api/me/visible-apis/:id                                fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApiWithId(id)
 GET     /api/me/teams/:teamId/visible-apis/:apiId/:version      fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId, version)
 GET     /api/apis/:apiId/_root                                  fr.maif.otoroshi.daikoku.ctrls.ApiController.getRootApi(apiId)
@@ -121,6 +122,7 @@ PUT     /api/teams/:teamId/apis/:apiId/issues/:issueId          fr.maif.otoroshi
 POST    /api/teams/:teamId/apis/:apiId/versions                 fr.maif.otoroshi.daikoku.ctrls.ApiController.createVersion(teamId, apiId)
 GET     /api/teams/:teamId/apis/:apiId/versions                 fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiVersions(teamId, apiId)
 GET     /api/teams/:teamId/apis/:apiId/:version/plans           fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllPlan(teamId, apiId, version)
+GET     /api/teams/:teamId/apis/:apiId/:version/plans/:planId   fr.maif.otoroshi.daikoku.ctrls.ApiController.getPlan(teamId, apiId, version, planId)
 POST    /api/teams/:teamId/apis/:apiId/plans                    fr.maif.otoroshi.daikoku.ctrls.ApiController.clonePlan(teamId, apiId)
 GET     /api/teams/:teamId/apis/:apiId/:version/access          fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsStatusAccess(teamId, apiId, version)
 GET     /api/teams/:teamId/subscribed-apis                      fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)

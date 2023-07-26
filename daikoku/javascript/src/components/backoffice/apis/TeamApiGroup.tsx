@@ -283,7 +283,7 @@ export const TeamApiGroup = () => {
                 </div>)}
                 {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
                 {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
-                {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={apiGroup} apiGroup />)}
+                {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption apiGroup />)}
                 {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
               </div>
             </div>

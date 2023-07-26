@@ -6,8 +6,9 @@ import { toastr } from 'react-redux-toastr';
 import { formatPlanType, Option, Spinner } from '../../components/utils';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
-import { IApi, IUsagePlan } from '../../types';
+import { IApi, isError, IUsagePlan } from '../../types';
 import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';
+import { useQuery } from '@tanstack/react-query';
 
 export type OverwriteSubscriptionData = {
   metadata: { [key: string]: string },
@@ -29,81 +30,20 @@ export type CustomSubscriptionData = {
 }
 
 export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps & IBaseModalProps) => {
-  const [loading, setLoading] = useState(true);
-  const [api, setApi] = useState<IApi>();
-  const [plan, setPlan] = useState<IUsagePlan>();
-  const [value, setValue] = useState<OverwriteSubscriptionData>();
 
   const { translate, Translation } = useContext(I18nContext);
 
   const formRef = useRef<FormRef>()
 
-  useEffect(() => {
-    if (api) {
-      setLoading(false);
-      setPlan(api.possibleUsagePlans.find((pp) => pp._id === props.plan));
-    }
-  }, [api]);
-
-  useEffect(() => {
-    if (plan || props.config) {
-      const maybeSubMetadata = Option(props.subscription)
-        .orElse(props.config)
-        .map((s: any) => s.customMetadata)
-        .map((v: any) => Object.entries(v))
-        .getOrElse([]);
-
-      const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
-        ([accMeta, accCustomMeta]: any, item: any) => {
-          if (plan && plan.otoroshiTarget?.apikeyCustomization.customMetadata.some((x: any) => x.key === item[0])) {
-            return [[...accMeta, item], accCustomMeta];
-          }
-          return [accMeta, [...accCustomMeta, item]];
-        },
-        [[], []]
-      );
-
-      setValue({
-        metadata: Object.fromEntries(maybeMetadata),
-        customMetadata: Object.fromEntries(maybeCustomMetadata),
-        customQuotas: {
-          customMaxPerSecond: Option(props.subscription)
-            .orElse(props.config)
-            .map((s: any) => s.customMaxPerSecond)
-            .getOrNull(),
-          customMaxPerDay: Option(props.subscription)
-            .orElse(props.config)
-            .map((s: any) => s.customMaxPerDay)
-            .getOrNull(),
-          customMaxPerMonth: Option(props.subscription)
-            .orElse(props.config)
-            .map((s: any) => s.customMaxPerMonth)
-            .getOrNull(),
-        },
-        customReadOnly: Option(props.subscription)
-          .orElse(props.config)
-          .map((s: any) => s.customReadOnly)
-          .getOrNull()
-      })
-    }
-  }, [plan, props.config]);
-
-  useEffect(() => {
-    if (!!props.api && typeof props.api === 'object') {
-      setApi(props.api);
-    } else {
-      Services.getVisibleApiWithId(props.api).then((api) => {
-        if (api.error) {
-          toastr.error(translate('Error'), api.error);
-          props.close();
-        }
-        else {
-          setApi(api);
-        }
-        setLoading(false);
-      });
-    }
-  }, []);
+  const apiQuery = useQuery(['api'], () => Services.getVisibleApiWithId(props.api))
+  const planQuery = useQuery({
+    queryKey: ['plan'],
+    queryFn: () => {
+      const api = apiQuery.data as IApi
+      return Services.getVisiblePlan(api._humanReadableId, api.currentVersion, props.plan!)
+    },
+    enabled: !!props.plan && apiQuery.data && !isError(apiQuery.data)
+  })
 
   const actionAndClose = (formData) => {
     const subProps: CustomSubscriptionData = {
@@ -120,12 +60,12 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
     const res = props.save(subProps)
     if (res instanceof Promise) {
       res.then(() => !props.noClose && props.close());
-    } else if(!props.noClose) {
+    } else if (!props.noClose) {
       props.close();
     }
   };
 
-  const schema = () => ({
+  const schema = (plan?: IUsagePlan) => ({
     metadata: {
       type: type.object,
       format: format.form,
@@ -188,23 +128,68 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
     }
   })
 
-  return (<div className="modal-content">
-    <div className="modal-header">
-      {!api && (<h5 className="modal-title">
-        <Translation i18nkey="Subscription metadata">Subscription metadata</Translation>
-      </h5>)}
-      {api && (<h5 className="modal-title">
-        <Translation i18nkey="Subscription metadata title" replacements={[api.name]}>
-          Subscription metadata - {api.name}
-        </Translation>
-      </h5>)}
-      <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
-    </div>
-    <div className="modal-body">
-      {loading && <Spinner />}
-      {!loading && plan && (
+  if (apiQuery.isLoading && (!!props.plan && planQuery.isLoading)) {
+    return <div className="modal-content"><Spinner /></div>
+  } else if (apiQuery.data && !isError(apiQuery.data) && (!!props.plan && planQuery.data && !isError(planQuery.data))) {
+    const api = apiQuery.data;
+    const plan = !!props.plan ? planQuery.data : undefined
+
+    const maybeSubMetadata = Option(props.subscription)
+      .orElse(props.config)
+      .map((s: any) => s.customMetadata)
+      .map((v: any) => Object.entries(v))
+      .getOrElse([]);
+
+    const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
+      ([accMeta, accCustomMeta]: any, item: any) => {
+        if (plan && plan.otoroshiTarget?.apikeyCustomization.customMetadata.some((x: any) => x.key === item[0])) {
+          return [[...accMeta, item], accCustomMeta];
+        }
+        return [accMeta, [...accCustomMeta, item]];
+      },
+      [[], []]
+    );
+
+    const value = {
+      metadata: Object.fromEntries(maybeMetadata),
+      customMetadata: Object.fromEntries(maybeCustomMetadata),
+      customQuotas: {
+        customMaxPerSecond: Option(props.subscription)
+          .orElse(props.config)
+          .map((s: any) => s.customMaxPerSecond)
+          .getOrNull(),
+        customMaxPerDay: Option(props.subscription)
+          .orElse(props.config)
+          .map((s: any) => s.customMaxPerDay)
+          .getOrNull(),
+        customMaxPerMonth: Option(props.subscription)
+          .orElse(props.config)
+          .map((s: any) => s.customMaxPerMonth)
+          .getOrNull(),
+      },
+      customReadOnly: Option(props.subscription)
+        .orElse(props.config)
+        .map((s: any) => s.customReadOnly)
+        .getOrNull()
+    }
+
+
+
+    return (<div className="modal-content">
+      <div className="modal-header">
+        {!api && (<h5 className="modal-title">
+          <Translation i18nkey="Subscription metadata">Subscription metadata</Translation>
+        </h5>)}
+        {api && (<h5 className="modal-title">
+          <Translation i18nkey="Subscription metadata title" replacements={[api.name]}>
+            Subscription metadata - {api.name}
+          </Translation>
+        </h5>)}
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
+      </div>
+      <div className="modal-body">
         <>
-          {!props.description && props.creationMode && (<div className="modal-description">
+          {!!plan && !props.description && props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[
 
               props.team?.name,
@@ -214,7 +199,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
               {plan.customName || formatPlanType(plan, translate)}
             </Translation>
           </div>)}
-          {!props.description && !props.creationMode && (<div className="modal-description">
+          {!!plan && !props.description && !props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.update.description" replacements={[
               props.team?.name,
               plan.customName || formatPlanType(plan, translate),
@@ -226,26 +211,29 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
           {props.description && <div className="modal-description">{props.description}</div>}
 
         </>
-      )}
-      {!loading && <Form
-            schema={schema()}
-            onSubmit={actionAndClose}
-            ref={formRef}
-            value={value}
-            footer={() => <></>}
-          />}
+        <Form
+          schema={schema(plan)}
+          onSubmit={actionAndClose}
+          ref={formRef}
+          value={value}
+          footer={() => <></>}
+        />
 
-      <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
-          <Translation i18nkey="Cancel">Cancel</Translation>
-        </button>
-        <button
-          type="button"
-          className="btn btn-outline-success"
-          onClick={() => formRef.current?.handleSubmit()}>
-          {props.creationMode ? translate('Accept') : translate('Update')}
-        </button>
+        <div className="modal-footer">
+          <button type="button" className="btn btn-outline-danger" onClick={props.close}>
+            <Translation i18nkey="Cancel">Cancel</Translation>
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-success"
+            onClick={() => formRef.current?.handleSubmit()}>
+            {props.creationMode ? translate('Accept') : translate('Update')}
+          </button>
+        </div>
       </div>
-    </div>
-  </div>);
+    </div>);
+  } else {
+    return <div>Error while fetching metadata</div>
+  }
+
 };

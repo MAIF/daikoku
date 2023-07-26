@@ -15,13 +15,15 @@ import {
   access,
   api,
   apikey, Can, isPublish, isSubscriptionProcessIsAutomatic, manage,
-  Option, renderPlanInfo, renderPricing
+  Option, renderPlanInfo, renderPricing, Spinner
 } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
 import classNames from 'classnames';
 import { Link, useNavigate } from 'react-router-dom';
 import { is } from 'cypress/types/bluebird';
+import { useQuery } from '@tanstack/react-query';
+import { isError } from 'lodash';
 
 
 export const currency = (plan?: IBaseUsagePlan) => {
@@ -315,37 +317,46 @@ type ApiPricingProps = {
   inProgressDemands: Array<ISubscriptionDemand>,
   askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
 }
-export function ApiPricing(props: ApiPricingProps) {
-  if (!props.api) {
-    return null;
+
+export const ApiPricing = (props: ApiPricingProps) => {
+  const usagePlansQuery = useQuery(['plan'], () => Services.getAllPlanOfApi(props.api.team, props.api._id, props.api.currentVersion))
+
+  if (usagePlansQuery.isLoading) {
+    return <Spinner />
+  } else if (usagePlansQuery.data && !isError(usagePlansQuery.data)) {
+    const possibleUsagePlans = (usagePlansQuery.data as Array<IUsagePlan>)
+      .filter((plan) => {
+        return plan.visibility === 'Public' ||
+          props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
+          props.myTeams.some((team) => plan.authorizedTeams.includes(team._id));
+      });
+
+    return (
+      <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
+        {possibleUsagePlans
+          .sort((a, b) => (a.customName || a.type).localeCompare(b.customDescription || b.type))
+          .map((plan) => <React.Fragment key={plan._id}>
+            <ApiPricingCard
+              api={props.api}
+              key={plan._id}
+              plan={plan}
+              myTeams={props.myTeams}
+              ownerTeam={props.ownerTeam}
+              subscriptions={props.subscriptions.filter(
+                (subs) => subs.api === props.api._id && subs.plan === plan._id
+              )}
+              inProgressDemands={props.inProgressDemands.filter(
+                (demand) => demand.api === props.api._id && demand.plan === plan._id
+              )}
+              askForApikeys={props.askForApikeys}
+            />
+          </React.Fragment>)}
+      </div>
+    );
+  } else {
+    return <div></div>
   }
 
-  const possibleUsagePlans = props.api.possibleUsagePlans.filter((plan) => {
-    return plan.visibility === 'Public' ||
-      props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
-      props.myTeams.some((team) => plan.authorizedTeams.includes(team._id));
-  });
 
-  return (
-    <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
-      {possibleUsagePlans
-        .sort((a, b) => (a.customName || a.type).localeCompare(b.customDescription || b.type))
-        .map((plan) => <React.Fragment key={plan._id}>
-          <ApiPricingCard
-            api={props.api}
-            key={plan._id}
-            plan={plan}
-            myTeams={props.myTeams}
-            ownerTeam={props.ownerTeam}
-            subscriptions={props.subscriptions.filter(
-              (subs) => subs.api === props.api._id && subs.plan === plan._id
-            )}
-            inProgressDemands={props.inProgressDemands.filter(
-              (demand) => demand.api === props.api._id && demand.plan === plan._id
-            )}
-            askForApikeys={props.askForApikeys}
-          />
-        </React.Fragment>)}
-    </div>
-  );
+
 }

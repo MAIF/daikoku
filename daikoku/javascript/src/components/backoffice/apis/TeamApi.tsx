@@ -341,7 +341,7 @@ export const TeamApi = (props: { creation: boolean }) => {
               {tab === 'news' && (<TeamApiPost team={currentTeam} api={api} />)}
               {tab === 'settings' && <TeamApiSettings api={api} />}
               {tab === 'stats' && !match && <TeamApiConsumption api={api} />}
-              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={api} />)}
+              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption />)}
               {tab === 'subscriptions' && <TeamApiSubscriptions api={api} />}
             </div>
           </div>

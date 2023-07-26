@@ -219,22 +219,8 @@ export const ApiHome = ({
           data: { myTeams },
         },
       ]) => {
-        if (api.error) {
-          if (api.visibility && api.visibility === 'PublicWithAuthorizations') {
-            Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId)
-              .then((res) => {
-                if (res.error) {
-                  setGuestModal(true);
-                } else {
-                  setAccessModalError({
-                    error: api.error,
-                    api: res,
-                  });
-                }
-              });
-          } else {
-            dispatch(setError({ error: { status: api.status || 404, message: api.error } }));
-          }
+        if (isError(api)) {
+            dispatch(setError({ error: { status: 404, message: api.error } }));
         } else {
           setApi(api);
           setSubscriptions(subscriptions);
@@ -364,7 +350,7 @@ export const ApiHome = ({
   }
   const teamId = params.teamId;
 
-  document.title = `${tenant.title} - ${api ? (api as any).name : 'API'}`;
+  document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
   return (<main role="main">
     <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />

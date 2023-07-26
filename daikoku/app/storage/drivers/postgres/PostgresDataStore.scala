@@ -376,7 +376,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "subscription_demands" -> true,
     "step_validators" -> true,
     "usage_plans" -> true
-  )xw
+  )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
     .setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))

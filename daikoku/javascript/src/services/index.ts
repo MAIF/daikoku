@@ -31,6 +31,8 @@ import {
   IUsagePlan,
   ISubscriptionDemand,
   IConsumption,
+  ISubscriptionExtended,
+  IApiExtended,
 } from '../types/api';
 
 const HEADERS = {
@@ -48,11 +50,11 @@ export const me = () => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id: any) => customFetch(`/api/me/teams/${id}`);
 
-export const getVisibleApiWithId = (id: any) => customFetch(`/api/me/visible-apis/${id}`);
-export const getVisibleApi = (id: any, version: any) =>
-  customFetch(`/api/me/visible-apis/${id}/${version}`);
+export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> => customFetch(`/api/me/visible-apis/${id}`);
+export const getVisibleApi = (id: string, version: string): PromiseWithError<IApi> => customFetch(`/api/me/visible-apis/${id}/${version}`);
+export const getVisiblePlan = (apiId: string, version: string, planId: string): PromiseWithError<IUsagePlan> => customFetch(`/api/me/visible-apis/${apiId}/${version}/plans/${planId}`);
 export const getVisibleApiGroup = (id: any) => customFetch(`/api/me/visible-groups/${id}`);
-export const getTeamVisibleApi = (teamId: any, apiId: any, version: any) =>
+export const getTeamVisibleApi = (teamId: string, apiId: string, version: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> =>
   customFetch('/api/me/teams');
@@ -104,7 +106,7 @@ export const getDocPage = (api: string, id: string): Promise<IDocPage | Response
 export const getDocDetails = (api: string, version: string): Promise<IDocDetail> =>
   customFetch(`/api/apis/${api}/${version}/doc`);
 
-export const getTeamSubscriptions = (api: any, team: any, version: any) =>
+export const getTeamSubscriptions = (api: string, team: string, version: string): PromiseWithError<Array<ISubscriptionExtended>> =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
 
 export const getTeamSubscriptionsWithPlan = (
@@ -179,12 +181,12 @@ export const subscriptionsInit = (subscriptions: any) =>
     body: JSON.stringify(subscriptions),
   });
 
-export const archiveApiKey = (teamId: string, subscriptionId: string, enable: boolean) =>
+export const archiveApiKey = (teamId: string, subscriptionId: string, enable: boolean): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_archive?enabled=${enable}`, {
     method: 'PUT',
   });
 
-export const makeUniqueApiKey = (teamId: string, subscriptionId: string) =>
+export const makeUniqueApiKey = (teamId: string, subscriptionId: string): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_makeUnique`, {
     method: 'POST',
   });
@@ -195,13 +197,13 @@ export const toggleApiKeyRotation = (
   enabled: boolean,
   rotationEvery: number,
   gracePeriod: number
-) =>
+): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
     method: 'POST',
     body: JSON.stringify({ enabled, rotationEvery, gracePeriod }),
   });
 
-export const regenerateApiKeySecret = (teamId: string, subscriptionId: string) =>
+export const regenerateApiKeySecret = (teamId: string, subscriptionId: string): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
     method: 'POST',
   });
@@ -223,6 +225,9 @@ export const teamApi = (
   apiId: string,
   version: string
 ): Promise<ResponseError | IApi> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
+
+export const planOfApi = (teamId: string, apiId: string, version: string, planId: string): Promise<ResponseError | IUsagePlan> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans/${planId}`)
 
 export const teamApiGroup = (teamId: string, apiGroupId: string) =>
   customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`);
@@ -733,13 +738,13 @@ export const uploadExportFile = (file: any) =>
     body: file,
   });
 
-export const updateSubscriptionCustomName = (team: any, subscription: any, customName: any) =>
+export const updateSubscriptionCustomName = (team: ITeamSimple, subscription: ISubscription, customName: string): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {
     method: 'POST',
     body: JSON.stringify({ customName }),
   });
 
-export const updateSubscription = (team: ITeamSimple, subscription: ISafeSubscription | any) =>
+export const updateSubscription = (team: ITeamSimple, subscription: ISafeSubscription | any): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
     method: 'PUT',
     body: JSON.stringify(subscription),
@@ -1075,7 +1080,7 @@ export const getAllPlanOfApi = (
   teamId: string,
   apiId: string,
   version: string
-): Promise<Array<IApi>> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
+): Promise<ResponseError | Array<IUsagePlan>> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
 
 export const getRootApi = (apiId: string): PromiseWithError<IApi> =>
   customFetch(`/api/apis/${apiId}/_root`);
@@ -1094,7 +1099,7 @@ export const getAllApiDocumentation = (
   version: string
 ): Promise<any> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`);
 
-export const getMyTeamsStatusAccess = (teamId: any, apiId: any, version: any) =>
+export const getMyTeamsStatusAccess = (teamId: string, apiId: string, version: string): PromiseWithError<IApiExtended> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
 export const createCmsPage = (id: any, cmsPage: any) =>
@@ -1752,7 +1757,7 @@ export const setupPayment = (
   apiId: string,
   version: string,
   plan: IUsagePlan
-): Promise<ResponseError | IApi> =>
+): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}/_payment`, {
     method: 'PUT',
     body: JSON.stringify(plan),
@@ -1763,7 +1768,7 @@ export const createPlan = (
   apiId: string,
   version: string,
   plan: IUsagePlan
-): PromiseWithError<IApi> =>
+): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan`, {
     method: 'POST',
     body: JSON.stringify(plan),
@@ -1774,7 +1779,7 @@ export const updatePlan = (
   apiId: string,
   version: string,
   plan: IUsagePlan
-): PromiseWithError<IApi> =>
+): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
     method: 'PUT',
     body: JSON.stringify(plan),

@@ -373,10 +373,7 @@ class ApiService(env: Env,
                   .forTenant(tenant.id)
                   .save(subscription)
               )
-            } yield {
-              Json.obj("done" -> true,
-                "subscription" -> subscription.asSafeJson)
-            }
+            } yield subscription.asSafeJson.as[JsObject]
 
             r.value
           }
@@ -465,10 +462,7 @@ class ApiService(env: Env,
               .forTenant(tenant.id)
               .save(updatedSubscription)
           )
-        } yield {
-          Json.obj("done" -> true,
-            "subscription" -> subscription.copy(enabled = enabled).asJson)
-        }
+        } yield updatedSubscription.asSafeJson.as[JsObject]
 
         r.value
     }
@@ -552,10 +546,7 @@ class ApiService(env: Env,
               tenant.mailer.send(title, Seq(admin.email), body, tenant)
             }).flatten
           })))
-        } yield {
-          Json.obj("done" -> true,
-            "subscription" -> updatedSubscription.asJson)
-        }
+        } yield updatedSubscription.asSafeJson.as[JsObject]
         r.value
       }
   }
@@ -602,10 +593,7 @@ class ApiService(env: Env,
                 .forTenant(tenant.id)
                 .findById(subscription.id)
             )
-          } yield {
-            Json.obj("done" -> true,
-              "subscription" -> updatedSubscription.get.asJson)
-          }
+          } yield Json.obj("subscription" -> updatedSubscription.get.asSafeJson)
           r.value
       }
     }

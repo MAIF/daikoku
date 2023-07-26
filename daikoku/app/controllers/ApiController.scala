@@ -1,21 +1,18 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import akka.NotUsed
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
 import akka.util.ByteString
-import akka.{Done, NotUsed}
-import cats.Id
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
-import com.auth0.jwt.JWT
 import controllers.AppError
 import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
-import fr.maif.otoroshi.daikoku.domain.SubscriptionDemandState.{InProgress, Waiting}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -24,8 +21,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
-import fr.maif.otoroshi.daikoku.utils.{ApiService, DeletionService, IdGenerator, OtoroshiClient, Translator}
+import fr.maif.otoroshi.daikoku.utils._
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -36,8 +32,6 @@ import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
@@ -340,12 +334,20 @@ class ApiController(
   def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]) = {
     import cats.implicits._
 
-    val r: EitherT[Future, Result, Result] = for {
-      myTeams <- EitherT.liftF(
-        env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
-      error: EitherT[Future, Result, Seq[Notification]] = EitherT
-        .leftT[Future, Seq[Notification]](AppError.render(ApiNotFound))
-      value: EitherT[Future, Nothing, Seq[Notification]] = EitherT.liftF(
+    def control(myTeams: Seq[Team]): EitherT[Future, AppError, Unit] = {
+      if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
+        .intersect(myTeams.map(_.id))
+        .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))) {
+        EitherT.pure[Future, AppError](())
+      } else {
+        EitherT.leftT[Future, Unit](AppError.ApiUnauthorized)
+      }
+    }
+
+    for {
+      myTeams <- EitherT.liftF[Future, AppError, Seq[Team]](env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
+      _ <- control(myTeams)
+      pendingRequests <- EitherT.liftF[Future, AppError, Seq[Notification]](
         env.dataStore.notificationRepo
           .forTenant(ctx.tenant.id)
           .findNotDeleted(
@@ -358,12 +360,7 @@ class ApiController(
             )
           )
       )
-      adminTeam <- EitherT.fromOptionF(
-        env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(api.team),
-        AppError.TeamNotFound.render()
-      )
-      pendingRequests <- value
-      subscriptions <- EitherT.liftF(
+      subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
           .findNotDeleted(
@@ -374,36 +371,22 @@ class ApiController(
           )
       )
     } yield {
-      if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
-            .intersect(myTeams.map(_.id))
-            .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))) {
-        val betterApi = api
-          .asJson
-          .as[JsObject] ++ Json.obj(
-          "pendingRequests" -> JsArray(
-            pendingRequests.map(_.asJson)
-          )
-        ) ++ Json.obj(
-          "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
+      val betterApi = api
+        .asJson
+        .as[JsObject] ++ Json.obj(
+        "pendingRequests" -> JsArray(
+          pendingRequests.map(_.asJson)
         )
-        ctx.setCtxValue("api.name", api.name)
-        Ok(
-          if (ctx.tenant.apiReferenceHideForGuest
-                .getOrElse(true) && ctx.user.isGuest) betterApi - "swagger"
-          else betterApi
-        )
-      } else {
-        Unauthorized(
-          Json.obj(
-            "error" -> "You're not authorized on this api",
-            "status" -> 401,
-            "visibility" -> api.visibility.name
-          )
-        )
-      }
-    }
+      ) ++ Json.obj(
+        "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
+      )
+      ctx.setCtxValue("api.name", api.name)
 
-    r.value.map(_.merge)
+      if (ctx.tenant.apiReferenceHideForGuest
+        .getOrElse(true) && ctx.user.isGuest) betterApi - "swagger"
+      else betterApi
+
+    }
   }
 
   def getVisibleApiWithId(apiId: String) =
@@ -411,13 +394,52 @@ class ApiController(
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible api @{api.name}")
       )(ctx) {
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant)
-          .findByIdOrHrId(apiId)
-          .flatMap {
-            case None      => ApiNotFound.renderF()
-            case Some(api) => getApi(api, ctx)
+
+        (for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo
+            .forTenant(ctx.tenant)
+            .findByIdOrHrId(apiId), AppError.ApiNotFound)
+          betterApi <- getApi(api, ctx)
+        } yield {
+          ctx.setCtxValue("api.name", api.name)
+          Ok(betterApi)
+        })
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  def getVisiblePlan(apiId: String, version: String, planId: String) =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      UberPublicUserAccess(
+        AuditTrailEvent("@{user.name} is accessing visible plan @{plan.name}")
+      )(ctx) {
+
+        def control(api: Api, myTeams: Seq[Team], plan: UsagePlan): EitherT[Future, AppError, Unit] = {
+          if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
+            .intersect(myTeams.map(_.id))
+            .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))) {
+
+            if (plan.visibility == UsagePlanVisibility.Public || ctx.user.isDaikokuAdmin || (plan.authorizedTeams :+ api.team)
+              .intersect(myTeams.map(_.id))
+              .nonEmpty) {
+              EitherT.pure[Future, AppError](())
+            } else {
+              EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
+            }
+          } else {
+            EitherT.leftT[Future, Unit](AppError.ApiUnauthorized)
           }
+        }
+
+        (for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
+          plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId), AppError.PlanNotFound)
+          myTeams <- EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
+          _ <- control(api, myTeams, plan)
+        } yield Ok(plan.asJson))
+          .leftMap(_.render())
+          .merge
       }
     }
 
@@ -426,12 +448,16 @@ class ApiController(
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible api @{api.name}")
       )(ctx) {
-        env.dataStore.apiRepo
-          .findByVersion(ctx.tenant, humanReadableId, version)
-          .flatMap {
-            case None      => FastFuture.successful(AppError.render(ApiNotFound))
-            case Some(api) => getApi(api, ctx)
-          }
+        (for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo
+            .findByVersion(ctx.tenant, humanReadableId, version), AppError.ApiNotFound)
+          betterApi <- getApi(api, ctx)
+        } yield {
+          ctx.setCtxValue("api.name", api.name)
+          Ok(betterApi)
+        })
+          .leftMap(_.render())
+          .merge
       }
     }
 
@@ -1140,10 +1166,11 @@ class ApiController(
                 NotFound(Json.obj("error" -> "apiSubscription not found"))
               )
             case Some(subscription) =>
+              val updatedSubscription = subscription.copy(customName = Some(customName))
               env.dataStore.apiSubscriptionRepo
                 .forTenant(ctx.tenant)
-                .save(subscription.copy(customName = Some(customName)))
-                .map(done => Ok(Json.obj("done" -> done)))
+                .save(updatedSubscription)
+                .map(_ => Ok(updatedSubscription.asSafeJson))
           }
       }
     }
@@ -1203,6 +1230,7 @@ class ApiController(
             sub: ApiSubscription,
             parentSub: Option[ApiSubscription]
         ): Future[JsValue] = {
+          val name: String = plan.customName.getOrElse(plan.typeName)
           val r = sub
             .asAuthorizedJson(
               teamPermission,
@@ -1211,6 +1239,7 @@ class ApiController(
             )
             .as[JsObject] ++
             Json.obj("planType" -> plan.typeName) ++
+            Json.obj("planName" -> name) ++
             Json.obj("apiName" -> api.name) ++
             Json.obj("_humanReadableId" -> api.humanReadableId) ++
             Json.obj("parentUp" -> false)
@@ -3620,18 +3649,42 @@ class ApiController(
         AuditTrailEvent(
           s"@{user.name} has requested all plan of api @{api.id} with @{team.name} - @{team.id}"
         )
-      )(teamId, ctx) { _ =>
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .find(
-            Json.obj(
-              "_humanReadableId" -> apiId,
-              "currentVersion" -> Json.obj("$ne" -> version)
-            )
-          )
-          .flatMap { apis =>
-            FastFuture.successful(Ok(SeqApiFormat.writes(apis)))
-          }
+      )(teamId, ctx) { team =>
+
+        (for {
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOne(Json.obj("_humanReadableId" -> apiId,
+              "currentVersion" -> Json.obj("$ne" -> version))), AppError.ApiNotFound)
+          _ <- if (api.team != team.id) EitherT.leftT[Future, Unit](AppError.ApiNotFound) else EitherT.pure[Future, AppError](())
+          plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api))
+        } yield Ok(json.SeqUsagePlanFormat.writes(plans)))
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  def getPlan(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(s"@{user.name} get plan of api @{api.id} with @{team.name} - @{team.id}")
+      )(teamId, ctx) { team =>
+
+        def controlApiAndPlan(api: Api): EitherT[Future, AppError, Unit] = {
+          if (api.team != team.id || api.possibleUsagePlans.forall(p => p.value != planId))
+            EitherT.leftT[Future, Unit](AppError.PlanNotFound)
+          else
+            EitherT.pure[Future, AppError](())
+        }
+
+        (for {
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOne(Json.obj("_humanReadableId" -> apiId,
+              "currentVersion" -> Json.obj("$ne" -> version))), AppError.ApiNotFound)
+          _ <- controlApiAndPlan(api)
+          plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId), AppError.PlanNotFound)
+        } yield Ok(plan.asJson))
+          .leftMap(_.render())
+          .merge
       }
     }
 

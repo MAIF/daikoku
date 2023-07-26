@@ -1,16 +1,10 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
+import cats.data.EitherT
 import cats.syntax.option._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  SeqIssueIdFormat,
-  SeqPostIdFormat,
-  SeqTeamIdFormat,
-  SetApiTagFormat,
-  TeamFormat,
-  TeamIdFormat,
-  UsagePlanFormat
-}
+import controllers.AppError
+import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TeamFormat, TeamIdFormat, UsagePlanFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString

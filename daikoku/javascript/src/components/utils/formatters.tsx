@@ -146,11 +146,21 @@ export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {
   }
 }
 
-export const formatPlanType = (
+export function formatPlanType(
   plan: IBaseUsagePlan,
   translate: (x: string | TranslateParams) => string
-) => {
-  switch (plan.type) {
+): string
+
+export function formatPlanType(
+  plan: string,
+  translate: (x: string | TranslateParams) => string
+): string
+
+export function formatPlanType(
+  plan: any,
+  translate: (x: string | TranslateParams) => string
+): string {
+  switch (plan?.type || plan) {
     case 'FreeWithoutQuotas':
       return translate('FreeWithoutQuotas');
     case 'FreeWithQuotas':
