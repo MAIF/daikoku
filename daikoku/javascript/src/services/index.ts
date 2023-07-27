@@ -1635,7 +1635,9 @@ export const graphql = {
                 code
               }
               type
-              subscriptionProcess
+              subscriptionProcess {
+                name
+              }
               allowMultipleKeys
               aggregationApiKeysSecurity
               ... on QuotasWithLimits {
