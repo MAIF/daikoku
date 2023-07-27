@@ -850,17 +850,20 @@ object evolution_1630 extends EvolutionScript {
 
       dataStore.apiRepo.forAllTenant().streamAllRaw()
         .mapAsync(5)(api => {
+          AppLogger.debug(s"### Begin evolution $version for ${(api \ "name").as[String]}")
           val oldPlans = (api \ "possibleUsagePlans").as[JsArray]
             .value
+          AppLogger.debug(s"$oldPlans")
 
           val updatedOldPlans = oldPlans
-            .map(plan => plan.as[JsObject] ++ Json.obj("_tenant" -> (api \ "_tenant").as[String]))
+            .map(plan => plan.as[JsObject] ++ Json.obj("_tenant" -> (api \ "_tenant").as[String], "_deleted" -> false))
 
           val plans = json.SeqUsagePlanFormat.reads(JsArray(updatedOldPlans))
             .getOrElse(Seq.empty)
 
           val updatedRawApi = api.as[JsObject] + ("possibleUsagePlans" -> json.SeqUsagePlanIdFormat.writes(plans.map(_.id)))
 
+          AppLogger.debug(Json.stringify(updatedRawApi))
           json.ApiFormat.reads(updatedRawApi) match {
             case JsSuccess(updatedApi, _) =>
               dataStore.usagePlanRepo.forTenant(updatedApi.tenant).insertMany(plans)
