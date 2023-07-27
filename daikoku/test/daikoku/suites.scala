@@ -40,6 +40,8 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
   override def toString: String = thisSuite.toString
 }
 
+case class ApiWithPlans(api: Api, plans: Seq[UsagePlan])
+
 object utils {
   trait OneServerPerSuiteWithMyComponents
       extends OneServerPerSuiteWithComponents
@@ -130,6 +132,9 @@ object utils {
         _ <- daikokuComponents.env.dataStore.operationRepo
           .forAllTenant()
           .deleteAll()
+        _ <- daikokuComponents.env.dataStore.usagePlanRepo
+          .forAllTenant()
+          .deleteAll()
       } yield ()
     }
 
@@ -150,7 +155,8 @@ object utils {
         posts: Seq[ApiPost] = Seq.empty,
         cmsPages: Seq[CmsPage] = Seq.empty,
         operations: Seq[Operation] = Seq.empty,
-        subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty
+        subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
+        usagePlans: Seq[UsagePlan] = Seq.empty
     ) = {
       Await.result(
         setupEnv(
@@ -170,30 +176,32 @@ object utils {
           posts,
           cmsPages,
           operations,
-          subscriptionDemands
+          subscriptionDemands,
+          usagePlans
         ),
         1.second
       )
     }
 
     def setupEnv(
-        tenants: Seq[Tenant] = Seq.empty,
-        users: Seq[User] = Seq.empty,
-        teams: Seq[Team] = Seq.empty,
-        apis: Seq[Api] = Seq.empty,
-        subscriptions: Seq[ApiSubscription] = Seq.empty,
-        pages: Seq[ApiDocumentationPage] = Seq.empty,
-        notifications: Seq[Notification] = Seq.empty,
-        consumptions: Seq[ApiKeyConsumption] = Seq.empty,
-        sessions: Seq[UserSession] = Seq.empty,
-        resets: Seq[PasswordReset] = Seq.empty,
-        creations: Seq[AccountCreation] = Seq.empty,
-        messages: Seq[Message] = Seq.empty,
-        issues: Seq[ApiIssue] = Seq.empty,
-        posts: Seq[ApiPost] = Seq.empty,
-        cmsPages: Seq[CmsPage] = Seq.empty,
-        operations: Seq[Operation] = Seq.empty,
-        subscriptionDemand: Seq[SubscriptionDemand] = Seq.empty
+      tenants: Seq[Tenant] = Seq.empty,
+      users: Seq[User] = Seq.empty,
+      teams: Seq[Team] = Seq.empty,
+      apis: Seq[Api] = Seq.empty,
+      subscriptions: Seq[ApiSubscription] = Seq.empty,
+      pages: Seq[ApiDocumentationPage] = Seq.empty,
+      notifications: Seq[Notification] = Seq.empty,
+      consumptions: Seq[ApiKeyConsumption] = Seq.empty,
+      sessions: Seq[UserSession] = Seq.empty,
+      resets: Seq[PasswordReset] = Seq.empty,
+      creations: Seq[AccountCreation] = Seq.empty,
+      messages: Seq[Message] = Seq.empty,
+      issues: Seq[ApiIssue] = Seq.empty,
+      posts: Seq[ApiPost] = Seq.empty,
+      cmsPages: Seq[CmsPage] = Seq.empty,
+      operations: Seq[Operation] = Seq.empty,
+      subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
+      usagePlans: Seq[UsagePlan] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -214,6 +222,14 @@ object utils {
           .mapAsync(1)(
             i =>
               daikokuComponents.env.dataStore.teamRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(usagePlans.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.usagePlanRepo
                 .forAllTenant()
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
@@ -316,7 +332,7 @@ object utils {
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
           .run()
-        _ <- Source(subscriptionDemand.toList)
+        _ <- Source(subscriptionDemands.toList)
           .mapAsync(1)(
             i =>
               daikokuComponents.env.dataStore.subscriptionDemandRepo
@@ -737,6 +753,13 @@ object utils {
       users = Set(UserWithPermission(user.id, Administrator)),
       authorizedOtoroshiGroups = Set.empty
     )
+    val adminApiPlan = Admin(
+      id = UsagePlanId("admin"),
+      tenant = Tenant.Default,
+      customName = Some("admin"),
+      customDescription = None,
+      otoroshiTarget = None
+    )
     val adminApi = Api(
       id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
       tenant = Tenant.Default,
@@ -754,18 +777,18 @@ object utils {
         lastModificationAt = DateTime.now()
       ),
       swagger = None,
-      possibleUsagePlans = Seq(
-        Admin(
-          id = UsagePlanId("admin"),
-          customName = Some("admin"),
-          customDescription = None,
-          otoroshiTarget = None
-        )
-      ),
+      possibleUsagePlans = Seq(adminApiPlan.id),
       defaultUsagePlan = UsagePlanId("admin"),
       tags = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
+    )
+    val adminApi2plan = Admin(
+      id = UsagePlanId("admin"),
+      tenant = TenantId("tenant2"),
+      customName = Some("admin"),
+      customDescription = None,
+      otoroshiTarget = None
     )
     val adminApi2 = Api(
       id = ApiId(s"admin-api-tenant-tenant-II"),
@@ -784,14 +807,7 @@ object utils {
         lastModificationAt = DateTime.now()
       ),
       swagger = None,
-      possibleUsagePlans = Seq(
-        Admin(
-          id = UsagePlanId("admin"),
-          customName = Some("admin"),
-          customDescription = None,
-          otoroshiTarget = None
-        )
-      ),
+      possibleUsagePlans = Seq(adminApi2plan.id),
       tags = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
       defaultUsagePlan = UsagePlanId("1"),
@@ -867,16 +883,127 @@ object utils {
     def generateApi(version: String = "0",
                     tenant: TenantId,
                     teamId: TeamId,
-                    docIds: Seq[ApiDocumentationDetailPage]) = Api(
-      id = ApiId(s"api-${tenant.value}-$version"),
-      tenant = tenant,
-      team = teamId,
-      lastUpdate = DateTime.now(),
-      name = s"Api - V$version",
-      smallDescription = "A small API to play with Daikoku exposition",
-      tags = Set("api", "rest", "scala", "play"),
-      description =
-        """# My Awesome API
+                    docIds: Seq[ApiDocumentationDetailPage]): ApiWithPlans = {
+      val plans = Seq(
+        FreeWithoutQuotas(
+          id = UsagePlanId("1"),
+          tenant = tenant,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        ),
+        FreeWithQuotas(
+          id = UsagePlanId("2"),
+          tenant = tenant,
+          maxPerSecond = 2000,
+          maxPerDay = 2000,
+          maxPerMonth = 2000,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        ),
+        QuotasWithLimits(
+          UsagePlanId("3"),
+          tenant = tenant,
+          maxPerSecond = 10000,
+          maxPerDay = 10000,
+          maxPerMonth = 10000,
+          costPerMonth = BigDecimal(10.0),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        ),
+        QuotasWithoutLimits(
+          UsagePlanId("4"),
+          tenant = tenant,
+          maxPerSecond = 10000,
+          maxPerDay = 10000,
+          maxPerMonth = 10000,
+          costPerAdditionalRequest = BigDecimal(0.015),
+          costPerMonth = BigDecimal(10.0),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(true),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        ),
+        PayPerUse(
+          id = UsagePlanId("5"),
+          tenant = tenant,
+          costPerRequest = BigDecimal(10.0),
+          costPerMonth = BigDecimal(0.02),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )
+      )
+
+      val api = Api(
+        id = ApiId(s"api-${tenant.value}-$version"),
+        tenant = tenant,
+        team = teamId,
+        lastUpdate = DateTime.now(),
+        name = s"Api - V$version",
+        smallDescription = "A small API to play with Daikoku exposition",
+        tags = Set("api", "rest", "scala", "play"),
+        description =
+          """# My Awesome API
             |
             |Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus.
             |
@@ -905,124 +1032,24 @@ object utils {
             |
             |Fusce ultricies at nisl sed faucibus. In sollicitudin libero eu augue lacinia aliquet. Nunc et eleifend augue. Donec eleifend nisi a iaculis tincidunt. Aenean a enim in nunc tincidunt euismod. Integer pellentesque tortor at ante tempus hendrerit. Fusce pretium, sapien ac sodales aliquam, diam quam placerat turpis, vitae tincidunt lacus massa finibus ante. Ut a ultrices odio. Sed pretium porttitor blandit. Sed ut ipsum a ligula pharetra lacinia. Donec laoreet purus mauris, rutrum hendrerit orci finibus at. Nullam aliquet augue ut tincidunt placerat. Proin tempor leo id orci tristique, at gravida metus pharetra.
       """.stripMargin,
-      currentVersion = Version("1.1.0"),
-      supportedVersions = Set(Version("1.0.0")),
-      state = ApiState.Published,
-      visibility = ApiVisibility.Public,
-      documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
-        tenant = tenant,
-        pages = docIds,
-        lastModificationAt = DateTime.now(),
-      ),
-      swagger = Some(
-        SwaggerAccess(url = "/assets/swaggers/petstore.json", content = None)),
-      possibleUsagePlans = Seq(
-        FreeWithoutQuotas(
-          id = UsagePlanId("1"),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
-          ),
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
+        currentVersion = Version("1.1.0"),
+        supportedVersions = Set(Version("1.0.0")),
+        state = ApiState.Published,
+        visibility = ApiVisibility.Public,
+        documentation = ApiDocumentation(
+          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+          tenant = tenant,
+          pages = docIds,
+          lastModificationAt = DateTime.now(),
         ),
-        FreeWithQuotas(
-          UsagePlanId("2"),
-          2000,
-          2000,
-          2000,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
-          ),
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
-        ),
-        QuotasWithLimits(
-          UsagePlanId("3"),
-          10000,
-          10000,
-          10000,
-          BigDecimal(10.0),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
-          ),
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
-        ),
-        QuotasWithoutLimits(
-          UsagePlanId("4"),
-          10000,
-          10000,
-          10000,
-          BigDecimal(0.015),
-          BigDecimal(10.0),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
-          ),
-          allowMultipleKeys = Some(true),
-          subscriptionProcess = Seq.empty,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
-        ),
-        PayPerUse(
-          UsagePlanId("5"),
-          BigDecimal(10.0),
-          BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
-          ),
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
-        )
-      ),
-      defaultUsagePlan = UsagePlanId("1")
-    )
+        swagger = Some(
+          SwaggerAccess(url = "/assets/swaggers/petstore.json", content = None)),
+        possibleUsagePlans = plans.map(_.id),
+        defaultUsagePlan = UsagePlanId("1")
+      )
+
+      ApiWithPlans(api, plans)
+    }
 
     val defaultCmsPage: CmsPage = CmsPage(
       id = CmsPageId(BSONObjectID.generate().stringify),
@@ -1039,7 +1066,6 @@ object utils {
       path = Some("/" + BSONObjectID.generate().stringify)
     )
 
-    val defaultApi: Api =
-      generateApi("default", tenant.id, teamOwnerId, Seq.empty)
+    val defaultApi: ApiWithPlans = generateApi("default", tenant.id, teamOwnerId, Seq.empty)
   }
 }

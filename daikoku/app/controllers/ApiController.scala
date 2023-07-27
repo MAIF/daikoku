@@ -1227,7 +1227,9 @@ class ApiController(
         (for {
           subscription <- EitherT.fromOptionF(env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("_id" -> subscriptionId, "team" -> team.id.asJson)), AppError.SubscriptionNotFound)
+            .findByIdNotDeleted(subscriptionId), AppError.SubscriptionNotFound)
+          _ <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOne(Json.obj("_id" -> subscription.api.asJson, "team" -> team.id.asJson)), AppError.ForbiddenAction)
           plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(subscription.plan), AppError.ApiNotFound)
           subToSave = subscription.copy(
             customMetadata = (body \ "customMetadata").asOpt[JsObject],
@@ -1721,7 +1723,7 @@ class ApiController(
         .findOneNotDeleted(Json.obj("_id" -> subscriptionId, "team" -> team.id.asJson)), AppError.SubscriptionNotFound)
       api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
         .forTenant(tenant)
-        .findOneNotDeleted(Json.obj("_id" -> subscription.api.asJson, "team" -> team.id.asJson)), AppError.ApiNotFound)
+        .findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo
         .forTenant(tenant)
         .findOneNotDeleted(Json.obj("_id" -> subscription.plan.asJson)), AppError.PlanNotFound)
@@ -2201,42 +2203,6 @@ class ApiController(
                     )
                   )
                 )
-                //FIXME: move to update plan ==> this api don not save plan anymore
-//              case JsSuccess(api, _)
-//                  if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&
-//                    api.possibleUsagePlans.exists(plan =>
-//                      plan.aggregationApiKeysSecurity.exists(identity)) =>
-//                FastFuture.successful(
-//                  AppError.render(SubscriptionAggregationDisabled)
-//                )
-//              case JsSuccess(api, _)
-//                  if oldApi.visibility == ApiVisibility.AdminOnly =>
-//                val oldAdminPlan = oldApi.possibleUsagePlans.head
-                //FIXME move to update plan ==> this api don not save plan anymore
-//                val planToSave =
-//                  api.possibleUsagePlans.find(_.id == oldAdminPlan.id)
-//                ctx.setCtxValue("api.name", api.name)
-//                ctx.setCtxValue("api.id", api.id)
-                //FIXME move to update plan ==> this api don not save plan anymore
-//                planToSave match {
-//                  case None =>
-//                    FastFuture.successful(
-//                      NotFound(Json.obj("error" -> "Api Plan not found"))
-//                    )
-//                  case Some(plan) =>
-//                    val apiToSave = oldApi.copy(
-//                      possibleUsagePlans = Seq(plan),
-//                      issuesTags = api.issuesTags
-//                    )
-//                    for {
-//                      _ <- env.dataStore.apiRepo
-//                        .forTenant(ctx.tenant.id)
-//                        .save(apiToSave)
-//                      _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
-//                    } yield {
-//                      Ok(apiToSave.asJson)
-//                    }
-//                }
               case JsSuccess(api, _) =>
                 checkApiNameUniqueness(
                   Some(api.id.value),
@@ -2251,28 +2217,7 @@ class ApiController(
                         )
                       )
                     )
-                    //FIXME move to update plan ==> this api don not save plan anymore
-                  //it's forbidden to update otoroshi target, must use migration API instead
-//                  case false
-//                      if api.possibleUsagePlans.exists(pp =>
-//                        oldApi.possibleUsagePlans.exists(oldPp =>
-//                          pp.id == oldPp.id && oldPp.otoroshiTarget.isDefined && oldPp.otoroshiTarget
-//                            .map(_.otoroshiSettings) != pp.otoroshiTarget
-//                            .map(_.otoroshiSettings))) =>
-//                    AppError.renderF(AppError.ForbiddenAction)
                   case false =>
-//                    val flippedPlans = api.possibleUsagePlans.filter(pp =>
-//                      oldApi.possibleUsagePlans.exists(oldPp =>
-//                        pp.id == oldPp.id && oldPp.visibility != pp.visibility))
-//                    val untouchedPlans =
-//                      api.possibleUsagePlans.diff(flippedPlans)
-
-//                    val newPlans = api.possibleUsagePlans.map(_.id)
-//                    val oldPlans = oldApi.possibleUsagePlans.map(_.id)
-//                    val deletedPlansId = oldPlans.diff(newPlans)
-//                    val deletedPlans = oldApi.possibleUsagePlans.filter(pp =>
-//                      deletedPlansId.contains(pp.id))
-
                     env.dataStore.apiRepo
                       .forTenant(ctx.tenant.id)
                       .exists(
@@ -2286,19 +2231,6 @@ class ApiController(
                         case true => AppError.renderF(ApiVersionConflict)
                         case false =>
                           for {
-//                            plans <- changePlansVisibility(
-//                              flippedPlans,
-//                              api,
-//                              ctx.tenant
-//                            )
-//                            _ <- deleteApiPlansSubscriptions(
-//                              deletedPlans,
-//                              oldApi,
-//                              ctx.tenant,
-//                              ctx.user
-//                            )
-//                            apiToSave = api.copy(possibleUsagePlans =
-//                              untouchedPlans ++ plans)
                             _ <- env.dataStore.apiRepo
                               .forTenant(ctx.tenant.id)
                               .save(api)
@@ -3918,9 +3850,9 @@ class ApiController(
         def getPlanAndCheckIt(oldPlan: UsagePlan, newPlan: UsagePlan): EitherT[Future, AppError, UsagePlan] = {
           oldPlan match {
             case _ if oldPlan.otoroshiTarget.map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(_.otoroshiSettings) => EitherT.leftT(AppError.ForbiddenAction)
-            //FIXME: Handle type changes
+            // Handle type changes
             case _ if oldPlan.typeName != newPlan.typeName => EitherT.leftT(AppError.ForbiddenAction)
-            //FIXME: Handle prices changes or payment settings deletion (addition is really forbidden)
+            //Handle prices changes or payment settings deletion (addition is really forbidden)
             case _ if oldPlan.paymentSettings != newPlan.paymentSettings => EitherT.leftT(AppError.ForbiddenAction)
             case p: UsagePlan.QuotasWithLimits if p.costPerMonth != newPlan.costPerMonth => EitherT.leftT(AppError.ForbiddenAction)
             case p: UsagePlan.QuotasWithoutLimits
@@ -3928,6 +3860,12 @@ class ApiController(
               EitherT.leftT(AppError.ForbiddenAction)
             case p: UsagePlan.PayPerUse
               if p.costPerMonth != newPlan.costPerMonth || p.costPerRequest != oldPlan.asInstanceOf[UsagePlan.PayPerUse].costPerRequest =>
+              EitherT.leftT(AppError.ForbiddenAction)
+            //handle otoroshi target update
+            case _ if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) && newPlan.aggregationApiKeysSecurity.exists(identity) =>
+              EitherT.leftT(AppError.SubscriptionAggregationDisabled)
+            //it's forbidden to update otoroshi target, must use migration API instead
+            case p if p.otoroshiTarget.map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(_.otoroshiSettings) =>
               EitherT.leftT(AppError.ForbiddenAction)
             case _ => EitherT.pure(newPlan)
           }

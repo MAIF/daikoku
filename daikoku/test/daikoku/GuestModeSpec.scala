@@ -106,8 +106,8 @@ class GuestModeSpec()
 
     "get visible apis" in {
       val publicTenant = tenant.copy(isPrivate = false)
-      val publicApi = defaultApi.copy(id = ApiId("public"))
-      val privateApi = defaultApi.copy(id = ApiId("private"),
+      val publicApi = defaultApi.api.copy(id = ApiId("public"))
+      val privateApi = defaultApi.api.copy(id = ApiId("private"),
                                        visibility = ApiVisibility.Private,
                                        name = "private api")
 
@@ -152,8 +152,8 @@ class GuestModeSpec()
     }
     "get visible apis of team" in {
       val publicTenant = tenant.copy(isPrivate = false)
-      val publicApi = defaultApi.copy(id = ApiId("public"))
-      val privateApi = defaultApi.copy(id = ApiId("private"),
+      val publicApi = defaultApi.api.copy(id = ApiId("public"))
+      val privateApi = defaultApi.api.copy(id = ApiId("private"),
                                        visibility = ApiVisibility.Private,
                                        name = "private api")
 
@@ -200,8 +200,8 @@ class GuestModeSpec()
     "get one visible api" in {
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi =
-        defaultApi.copy(id = ApiId("public"), visibility = ApiVisibility.Public)
-      val privateApi = defaultApi.copy(id = ApiId("private"),
+        defaultApi.api.copy(id = ApiId("public"), visibility = ApiVisibility.Public)
+      val privateApi = defaultApi.api.copy(id = ApiId("private"),
                                        visibility = ApiVisibility.Private)
 
       setupEnvBlocking(
@@ -333,25 +333,25 @@ class GuestModeSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner),
-        apis = Seq(defaultApi)
+        apis = Seq(defaultApi.api)
       )
 
       val respCreate = httpJsonCallWithoutSessionBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis",
         method = "POST",
-        body = Some(defaultApi.copy(name = "test").asJson)
+        body = Some(defaultApi.api.copy(name = "test").asJson)
       )(tenant)
       respCreate.status mustBe 303
 
       val respUpdate = httpJsonCallWithoutSessionBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}",
+        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
         method = "PUT",
-        body = Some(defaultApi.copy(name = "test").asJson)
+        body = Some(defaultApi.api.copy(name = "test").asJson)
       )(tenant)
       respUpdate.status mustBe 303
 
       val respDelete = httpJsonCallWithoutSessionBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}",
+        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
         method = "DELETE"
       )(tenant)
       respDelete.status mustBe 303
@@ -361,7 +361,7 @@ class GuestModeSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner),
-        apis = Seq(defaultApi),
+        apis = Seq(defaultApi.api),
       )
 
       val respGet = httpJsonCallWithoutSessionBlocking(
@@ -406,13 +406,13 @@ class GuestModeSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner),
-        apis = Seq(defaultApi)
+        apis = Seq(defaultApi.api)
       )
 
       val respImp = httpJsonCallWithoutSessionBlocking(
         path = s"/api/state/import",
         method = "POST",
-        body = Some(defaultApi.copy(name = "test").asJson)
+        body = Some(defaultApi.api.copy(name = "test").asJson)
       )(tenant)
       respImp.status mustBe 303
 

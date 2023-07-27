@@ -857,19 +857,20 @@ case class CmsPage(
                                             jsonToCombine: Map[String, JsValue])
                                            (implicit ec: ExecutionContext, messagesApi: MessagesApi, env: Env): Handlebars = {
     handlebars.registerHelper(s" ${name}s-json", (id: String, _: Options) => {
-      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine), 10.seconds)
-        .map(_.possibleUsagePlans).getOrElse(Seq())
+      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine).flatMap {
+        case Some(api) => env.dataStore.usagePlanRepo.findByApi(tenant, api)
+        case None => FastFuture.successful(Seq.empty)
+      }, 10.seconds)
         .map(_.asJson)
     })
 
     handlebars.registerHelper(s"daikoku-${name}s", (id: String, options: Options) => {
-      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)(env, ec, messagesApi), 10.seconds)
-        .map(api => {
-          api.possibleUsagePlans
-            .map(p => renderString(ctx, parentId, options.fn.text(), fields = fields, jsonToCombine = jsonToCombine ++ Map(name -> p.asJson)))
-            .mkString("\n")
-        })
-        .getOrElse("")
+      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine).flatMap {
+        case Some(api) => env.dataStore.usagePlanRepo.findByApi(tenant, api)
+        case None => FastFuture.successful(Seq.empty)
+      }, 10.seconds)
+        .map(p => renderString(ctx, parentId, options.fn.text(), fields = fields, jsonToCombine = jsonToCombine ++ Map(name -> p.asJson)))
+        .mkString("\n")
     })
   }
 

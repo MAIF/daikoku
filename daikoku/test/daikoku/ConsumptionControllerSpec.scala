@@ -44,7 +44,7 @@ class ConsumptionControllerSpec()
     plan = payPerUsePlanId,
     createdAt = DateTime.now(),
     team = teamConsumerId,
-    api = defaultApi.id,
+    api = defaultApi.api.id,
     by = userTeamAdminId,
     customName = None,
     rotation = None,
@@ -55,7 +55,7 @@ class ConsumptionControllerSpec()
     id = DatastoreId("test"),
     tenant = tenant.id,
     team = teamConsumerId,
-    api = defaultApi.id,
+    api = defaultApi.api.id,
     plan = payPerUsePlanId,
     clientId = payperUserSub.apiKey.clientId,
     hits = 1000L,
@@ -89,7 +89,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -100,7 +101,7 @@ class ConsumptionControllerSpec()
       val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/plan/${payPerUsePlanId.value}/consumption?from=$from&to=$to"
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/plan/${payPerUsePlanId.value}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
@@ -117,7 +118,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -128,7 +130,7 @@ class ConsumptionControllerSpec()
       val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption?from=$from&to=$to"
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
@@ -145,7 +147,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -173,7 +176,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -194,7 +198,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -217,15 +222,15 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
         )
       )
 
-      val plan =
-        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val plan = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
@@ -339,15 +344,15 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
         )
       )
 
-      val plan =
-        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val plan = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
@@ -404,7 +409,7 @@ class ConsumptionControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption/_sync",
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption/_sync",
         method = "POST"
       )(tenant, session)
 
@@ -429,15 +434,15 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
         )
       )
 
-      val plan =
-        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val plan = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
@@ -517,7 +522,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -525,7 +531,7 @@ class ConsumptionControllerSpec()
       )
 
       val plan =
-        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+        defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
@@ -610,7 +616,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -621,7 +628,7 @@ class ConsumptionControllerSpec()
       val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/plan/${payPerUsePlanId.value}/consumption?from=$from&to=$to"
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/plan/${payPerUsePlanId.value}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -631,7 +638,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -642,7 +650,7 @@ class ConsumptionControllerSpec()
       val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption?from=$from&to=$to"
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -652,7 +660,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -673,7 +682,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -693,7 +703,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -714,7 +725,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -722,7 +734,7 @@ class ConsumptionControllerSpec()
       )
 
       val plan =
-        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+        defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
@@ -788,7 +800,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -796,7 +809,7 @@ class ConsumptionControllerSpec()
       )
 
       val plan =
-        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+        defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
@@ -850,7 +863,7 @@ class ConsumptionControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption/_sync",
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption/_sync",
         method = "POST"
       )(tenant, session)
 
@@ -862,7 +875,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -870,7 +884,7 @@ class ConsumptionControllerSpec()
       )
 
       val plan =
-        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+        defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
@@ -935,7 +949,8 @@ class ConsumptionControllerSpec()
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, randomUser),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
         consumptions = Seq(
           yesterdayConsumption
@@ -943,7 +958,7 @@ class ConsumptionControllerSpec()
       )
 
       val plan =
-        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+        defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L

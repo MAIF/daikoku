@@ -1114,6 +1114,7 @@ class ApiService(env: Env,
                         .map(_.otoroshiSettings) != plan.otoroshiTarget
                         .map(_.otoroshiSettings) => Left(AppError.SubscriptionAggregationOtoroshiConflict)
                   case None => Left(AppError.ApiNotFound)
+                  case _ => Right(())
                 }
             }
         case None => FastFuture.successful(Right(()))
