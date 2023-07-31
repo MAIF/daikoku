@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiSubscriptionAccept,
   ApiSubscriptionDemand,
   TeamAccess,
   TeamInvitation
@@ -558,7 +559,7 @@ class TeamControllerSpec()
       notifications.get.length mustBe 1
       val notif = notifications.get.head
       notif.action mustBe TeamAccess(teamConsumerId)
-      notif.sender.id mustBe randomUser.id
+      notif.sender.id.get mustBe randomUser.id
       notif.team.get mustBe teamConsumerId
     }
 
@@ -743,12 +744,13 @@ class TeamControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = user,
+            sender = user.asNotificationSender,
             notificationType = AcceptOrReject,
-            action = ApiSubscriptionDemand(defaultApi.id,
-                                           UsagePlanId("2"),
-                                           teamConsumerId,
-                                           motivation = Some("motication"))
+            action = ApiSubscriptionAccept(
+              defaultApi.id,
+              subPlanId,
+              teamConsumerId
+            )
           ))
       )
       val session = loginWithBlocking(randomUser, tenant)

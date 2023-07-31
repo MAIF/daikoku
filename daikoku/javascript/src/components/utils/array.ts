@@ -21,10 +21,5 @@ function insertIf(condition: boolean, element: any): Array<any> {
   return condition ? [element] : [];
 }
 export const addArrayIf = (condition: boolean, array: Array<any>, element: any) => {
-  return [
-    ...insertIf(condition, element),
-    ...array,
-  ];
-  
-}
-
+  return [...insertIf(condition, element), ...array];
+};

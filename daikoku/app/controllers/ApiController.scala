@@ -458,7 +458,7 @@ class ApiController(
           .flatMap {
             case None => AppError.ApiNotFound.renderF()
             case Some(api) =>
-              ctx.setCtxValue("api.id", api.id)
+              ctx.setCtxValue("api.id", api.id.value)
               ctx.setCtxValue("api.name", api.name)
               env.dataStore.apiDocumentationPageRepo
                 .forTenant(ctx.tenant.id)
@@ -1113,6 +1113,8 @@ class ApiController(
                     if api.visibility == ApiVisibility.Public || api.authorizedTeams
                       .intersect(myTeams.map(_.id))
                       .nonEmpty || myTeams.exists(t => t.id == api.team) =>
+                  ctx.setCtxValue("api.name", api.name)
+                  ctx.setCtxValue("api.id", api.id.value)
                   findSubscriptions(api, myTeams)
                 case _ =>
                   FastFuture.successful(
@@ -1278,7 +1280,9 @@ class ApiController(
 
         def findSubscriptions(api: Api, team: Team, planId: Option[String]): Future[Result] = {
 
-          var jsonResearch = {planId match {
+          ctx.setCtxValue("api.name", api.name)
+          ctx.setCtxValue("api.id", api.id.value)
+          val jsonResearch = {planId match {
             case Some(_) =>
               Json.obj("api" -> api.id.value, "team" -> team.id.value,"plan" -> planId)
             case None =>
@@ -3663,15 +3667,14 @@ class ApiController(
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
-          s"@{user.name} has requested all versions of api @{api.id}"
+          s"@{user.name} has requested all versions of api @{api.name} - @{api.id}"
         )
       )(ctx) {
-        val repo = env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-
         env.dataStore.apiRepo
           .findAllVersions(tenant = ctx.tenant, id = apiId)
           .map { apis =>
+            ctx.setCtxValue("api.name", apis.head.name)
+            ctx.setCtxValue("api.id", apiId)
             Ok(
               SeqVersionFormat.writes(
                 apis
@@ -4107,8 +4110,8 @@ class ApiController(
               "$set" -> Json.obj("state" -> SubscriptionDemandState.Blocked.name)
             )))
           _ <- getPlanAndCheckIt(api, updatedPlan)
-          _ <- handleVisibilityToggling(api, updatedPlan)
-          updatedApi <- handleProcess(api, updatedPlan)
+          handledUpdatedPlan <- handleVisibilityToggling(api, updatedPlan)
+          updatedApi <- handleProcess(api, handledUpdatedPlan)
           _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
           _ <- EitherT.liftF(otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)))
           _ <- runDemandUpdate(api, updatedPlan)

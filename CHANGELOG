@@ -434,3 +434,32 @@ We'd like to thank all the contributors who worked on this release!
 - a new user have an empty page in home page [#525](https://github.com/MAIF/daikoku/issues/525)
 - aggregation key process is not accessible with fast mode [#506](https://github.com/MAIF/daikoku/issues/506)
 
+## [v16.2.0] - 2023-07-18
+
+## :star: New Features
+
+- action on usage plan deletion [#534](https://github.com/MAIF/daikoku/issues/534)
+- Support api lifecycle [#513](https://github.com/MAIF/daikoku/issues/513)
+- Support customizable subscription validation workflow [#512](https://github.com/MAIF/daikoku/issues/512)
+
+## :beetle: Bug Fixes
+
+- A new user logged in from an ldap has daikoku administrator privileges [#582](https://github.com/MAIF/daikoku/issues/582)
+- Select team when request an API key on an private plan [#580](https://github.com/MAIF/daikoku/issues/580)
+- limit the number of team return by search API [#577](https://github.com/MAIF/daikoku/issues/577)
+- the create account page has no form css  [#576](https://github.com/MAIF/daikoku/issues/576)
+- tenant admin can't update team metadata [#575](https://github.com/MAIF/daikoku/issues/575)
+- modal can't be closed by clicking in backgroud [#572](https://github.com/MAIF/daikoku/issues/572)
+- api creation permission is not accessible for tenant admin [#571](https://github.com/MAIF/daikoku/issues/571)
+- I can't delete user from my team [#570](https://github.com/MAIF/daikoku/issues/570)
+- Parameters / Email is not save [#566](https://github.com/MAIF/daikoku/issues/566)
+- make case insensitive the email of team invitation [#559](https://github.com/MAIF/daikoku/issues/559)
+- admin can't remove a team user [#558](https://github.com/MAIF/daikoku/issues/558)
+- I can't delete Tags from Issues [#552](https://github.com/MAIF/daikoku/issues/552)
+- Problem with Select team for Transfer ownership [#549](https://github.com/MAIF/daikoku/issues/549)
+- user guest can get all team list by api [#521](https://github.com/MAIF/daikoku/issues/521)
+
+## :notebook_with_decorative_cover: Documentation
+
+- Add some explanation for user rights in documentation [#567](https://github.com/MAIF/daikoku/issues/567)
+

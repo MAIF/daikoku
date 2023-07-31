@@ -76,3 +76,21 @@ It can also be enabled for public tenant.
 
 ### SEO
 A robot.txt file is serve on the path /robot.txt. by default, the file is empty but, you can fill it like you want.
+
+### Payment
+
+Daikoku offers full integration with online payment service, allowing users to easily manage their financial transactions as part of the subscription process. 
+
+> Currently, only integration with [Stripe](https://stripe.com) is implemented, but our project is open to integrating with other payment platforms. Daikoku's code is designed to be modular, making it easier to add support for additional payment platforms. We welcome contributions to enhance our product in this area.
+
+#### Configuring Stripe
+
+Before using Stripe with Daikoku, you need to complete the following steps:
+
+  * **Create a Stripe Account**: Visit the Stripe website (stripe.com) to create an account. Follow Stripe's instructions to verify your identity and set up your payment account.
+
+  * **Obtain Stripe API Keys**: Once your Stripe account is set up, you need to obtain the necessary API keys to communicate with the Stripe API from Daikoku. These keys include the secret API key and the public API key.
+
+  * **Configure API Keys in Daikoku**: Access the Daikoku configuration settings (in the tenant configuration) and provide the Stripe API keys in the appropriate fields. This allows Daikoku to communicate with Stripe for payment handling.
+
+the next step is to configure your API to accept payment. see this @ref:[part](../producerusage/1-apis.md) of the doc to learn more

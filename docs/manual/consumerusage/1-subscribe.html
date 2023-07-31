@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.1.2
+16.2.0
 </div>
 </div>
 <div class="nav-toc">
@@ -125,7 +125,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.1.2
+16.2.0
 </div>
 </div>
 <div class="nav-toc">
@@ -215,7 +215,21 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <h1><a href="#subscribe-to-an-api" name="subscribe-to-an-api" class="anchor"><span class="anchor-link"></span></a>Subscribe to an api</h1>
 <h2><a href="#choose-a-plan" name="choose-a-plan" class="anchor"><span class="anchor-link"></span></a>Choose a plan</h2>
 <p>First of all, you need to choose an API to subscribe. In the information page of the API, select the <code>Plans</code> tab. here are presented the differents pricing plans of the api (if team decides to present multiple plans). Just click the <code>subscribe</code> button. If you are member of several teams, please choose teams to make subscription and click the <code>subscribe</code> button.</p>
-<p>If the subscription is automatic, a green message appears to inform you that the subscription is successful. If the subscription is manual, the owner team has been notified of your request. please wait a moment.</p>
+<p>If the plan has no process of subscription, a green message appears to inform you that the subscription is successful. otherwise, the process is followed step by step until the subscription is generated (it could take a few moment).</p>
+<h3><a href="#payment-process" name="payment-process" class="anchor"><span class="anchor-link"></span></a>Payment Process</h3>
+<p>When a user reaches the payment step in the subscription process, Daikoku facilitates the transition to the payment gateway to collect payment information and process the transaction. Here&rsquo;s how it works:</p>
+<p>1.** Redirect to the checout page**: The user is automatically redirected to a secure payment page, where they can enter their payment information, such as credit card details.</p>
+<ol>
+  <li>
+  <p><strong>Payment Information Handling</strong>: Daikoku does not store user payment information. All payment details are collected directly by the payment gateway, ensuring the security of sensitive data.</p></li>
+  <li>
+  <p><strong>Transaction Processing</strong>: th epayment gateway processes the transaction using the payment information provided by the user. Once the transaction is successfully validated, Daikoku receives a payment confirmation notification.</p></li>
+  <li>
+  <p><strong>Subscription Validation</strong>: After payment validation, Daikoku marks the subscription as approved in the system. The user is then redirected to the Daikoku homepage, where they can start using the subscribed API features.</p></li>
+</ol>
+<blockquote>
+  <p>If a user has already subscribed via th epayment gateway, his team and information will be retrieved because they are associated with their Daikoku IDs.</p>
+</blockquote>
 <h2><a href="#fast-mode" name="fast-mode" class="anchor"><span class="anchor-link"></span></a>Fast mode</h2>
 <p>Daikoku offers a fast mode to display, for a selected team, only accessibles APIs (and subscriptions plans with their informations). In this UI, you can subscribe to all plan without switching pages and get subscription credentials.</p>
 <div class="nav-next">
@@ -299,7 +313,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.1.2', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.2.0', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>

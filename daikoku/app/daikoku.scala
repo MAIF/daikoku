@@ -27,12 +27,7 @@ import io.vertx.core.buffer.Buffer
 import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
 import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
 import io.vertx.sqlclient.PoolOptions
-import jobs.{
-  ApiKeyStatsJob,
-  AuditTrailPurgeJob,
-  QueueJob,
-  OtoroshiVerifierJob
-}
+import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, QueueJob, OtoroshiVerifierJob}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}

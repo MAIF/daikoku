@@ -1,4 +1,4 @@
-import {ITeamSimple, ITeamVisibility, ITenant, IUserSimple} from '../../types';
+import { ITeamSimple, ITeamVisibility, ITenant, IUserSimple } from '../../types';
 import {
   IMPERSONATE,
   LOGIN,

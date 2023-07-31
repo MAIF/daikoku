@@ -18,7 +18,7 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.{DatastoreId, _}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
+import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
@@ -892,6 +892,8 @@ class ApiService(env: Env,
 
           val value: EitherT[Future, AppError, Result] = for {
             title <- EitherT.liftF(translator.translate("mail.subscription.validation.title", tenant))
+            user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(demand.from), AppError.UserNotFound)
+            team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.TeamNotFound)
             _ <- EitherT.liftF(Future.sequence(emails.map(email => {
               val stepValidator = StepValidator(
                 id = DatastoreId(BSONObjectID.generate().stringify),
@@ -906,9 +908,14 @@ class ApiService(env: Env,
               val pathAccept = s"/api/subscription/_validate?token=$cipheredValidationToken"
               val pathDecline = s"/api/subscription/_decline?token=$cipheredValidationToken"
 
-              //FIXME: use template
               translator.translate("mail.subscription.validation.body", tenant,
-                Map("urlAccept" -> env.getDaikokuUrl(tenant, pathAccept), "urlDecline" -> env.getDaikokuUrl(tenant, pathDecline)))
+                Map(
+                  "urlAccept" -> env.getDaikokuUrl(tenant, pathAccept),
+                  "urlDecline" -> env.getDaikokuUrl(tenant, pathDecline),
+                  "user" -> user.name,
+                  "team" -> team.name,
+                  "body" -> template.getOrElse("")
+                ))
                 .flatMap(body => env.dataStore.stepValidatorRepo.forTenant(tenant).save(stepValidator).map(_ => body))
                 .flatMap(body => tenant.mailer.send(title, Seq(email), body, tenant))
             })))
@@ -1083,7 +1090,7 @@ class ApiService(env: Env,
       if (!api.isPublished) {
         EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
       } else if (api.visibility == ApiVisibility.AdminOnly && !currentUser.isDaikokuAdmin) {
-        EitherT.leftT[Future, Unit](AppError.ForbiddenAction)
+        EitherT.leftT[Future, Unit](AppError.ApiUnauthorized)
       } else {
         EitherT.pure(())
       }
@@ -1093,7 +1100,7 @@ class ApiService(env: Env,
       if (!currentUser.isDaikokuAdmin && !team.includeUser(currentUser.id)) {
         EitherT.leftT[Future, Unit](AppError.TeamUnauthorized)
       } else if (team.id != api.team && api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id)) {
-        EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
+        EitherT.leftT[Future, Unit](AppError.ApiUnauthorized)
       } else if (team.id != api.team && plan.visibility == UsagePlanVisibility.Private && !plan.authorizedTeams.contains(team.id)) {
         EitherT.leftT[Future, Unit](AppError.PlanUnauthorized)
       } else if (tenant.subscriptionSecurity.forall(t => t) && team.`type` == TeamType.Personal) {
@@ -1136,6 +1143,22 @@ class ApiService(env: Env,
       })
     }
 
+    def controlDemand(team: Team, api: Api, plan: UsagePlan): EitherT[Future, AppError,Unit] = {
+      plan.allowMultipleKeys match {
+        case Some(value) if value => EitherT.pure(())
+        case _ => EitherT(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findOneNotDeleted(
+          Json.obj(
+            "team" -> team.id.asJson,
+            "api" -> api.id.asJson,
+            "plan" -> plan.id.asJson
+          )
+        ).map {
+          case Some(_) => Left(AppError.SubscriptionConflict)
+          case None => Right(())
+        })
+      }
+    }
+
     val value: EitherT[Future, AppError, Result] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant.id).findByIdNotDeleted(apiId),
         AppError.ApiNotFound)
@@ -1145,16 +1168,7 @@ class ApiService(env: Env,
       team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
         AppError.TeamNotFound)
       _ <- controlTeam(team, api, plan)
-      _ <- EitherT(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findOneNotDeleted(
-        Json.obj(
-          "team" -> team.id.asJson,
-          "api" -> api.id.asJson,
-          "plan" -> plan.id.asJson
-        )
-      ).map {
-        case Some(_) => Left(AppError.SubscriptionConflict)
-        case None => Right(())
-      })
+      _ <- controlDemand(team, api, plan)
       _ <- controlSubscriptionExtension(plan, team)
       result <- applyProcessForApiSubscription(
         tenant,

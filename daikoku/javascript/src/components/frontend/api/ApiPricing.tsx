@@ -21,6 +21,7 @@ import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
 import classNames from 'classnames';
 import { Link, useNavigate } from 'react-router-dom';
+import { is } from 'cypress/types/bluebird';
 
 
 export const currency = (plan?: IBaseUsagePlan) => {
@@ -75,6 +76,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         })
       } else {
         props.askForApikeys({ team, plan: plan, apiKey })
+          .then(() => close())
       }
     }
 
@@ -230,7 +232,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             <button
               type="button"
               className="btn btn-sm btn-access-negative mx-auto mt-3"
-              onClick={() => openLoginOrRegisterModal({ tenant})}
+              onClick={() => openLoginOrRegisterModal({ tenant })}
             >
               <Translation i18nkey="Get API key">Get API key</Translation>
             </button>
@@ -260,7 +262,7 @@ const TeamSelector = (props: ITeamSelector) => {
   return (
     <div className="modal-body">
       <div>
-        <div className='modal-description'>You are going to request an API key. For which team do you want it?</div>
+        <div className='modal-description'>{translate('team.selection.desc.request')}</div>
         <div className='team-selection__container'>
           {
             props.teams

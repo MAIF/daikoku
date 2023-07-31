@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.1.2-rc.5
+16.1.2
 </div>
 </div>
 <div class="nav-toc">
@@ -125,7 +125,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.1.2-rc.5
+16.1.2
 </div>
 </div>
 <div class="nav-toc">
@@ -224,6 +224,65 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li>secured: The services exposed need authentication for both humans or machines</li>
   <li>event based: The services should expose a way to get notified of what happened inside.</li>
 </ul>
+<h2><a href="#rights-and-permissions-in-daikoku" name="rights-and-permissions-in-daikoku" class="anchor"><span class="anchor-link"></span></a>Rights and Permissions in Daikoku</h2>
+<p>In Daikoku, users&rsquo; rights and permissions are managed within a hierarchical structure that includes multiple nested entities, as illustrated in the following simplified diagram:</p>
+<p>Daikoku -&gt; Tenants -&gt; Teams -&gt; APIs</p>
+<blockquote>
+  <p>Users in Daikoku have a multi-tenant context, which allows them to access multiple tenants without the need for multiple accounts. </p>
+</blockquote>
+<p>The highest level of access is granted to the Super Admin, who has full control over the entire system. From there, rights and permissions are managed at the team level.</p>
+<p>Here are the different levels of permissions within a team:</p>
+<ul>
+  <li>
+  <p><strong>Super Admin</strong>: Users with this role have both Read (R) and Write (W) permissions, granting them complete control over all entities in the system, including tenants.</p></li>
+  <li>
+  <p><strong>Administrator</strong>: Administrators have Read (R) permissions across the entire team, allowing them to view all entities, but they can only Write (W) to specific elements within the team. They cannot modify tenant-related settings.</p></li>
+  <li>
+  <p><strong>API Editor</strong>: Users with this role have Read (R) permissions for all entities within the team, but they can only Write (W) to APIs. They cannot modify tenant settings or perform actions on subscriptions.</p></li>
+  <li>
+  <p><strong>User</strong>: Users with this role have Read (R) permissions, which enable them to access certain functionalities like requesting subscriptions, viewing APIs, and checking their subscription details. However, they do not have Write (W) permissions and are restricted from performing any modifications.</p></li>
+</ul>
+<p>Please note that the &ldquo;API keys visibility&rdquo; option of the team (by default set to &ldquo;User&rdquo;) restricts the visibility of API keys to specific levels of authorization within the team.</p>
+<blockquote>
+  <p>During the creation of a tenant, a special administrative team is automatically created, granting additional rights and permissions specific to managing the tenant itself, such as configuration, access to messaging, or management of CMS pages, for example.</p>
+</blockquote>
+<p>For a more visual representation, you can refer to the following matrix:</p>
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>Super Admin </th>
+      <th>Administrator </th>
+      <th>API Editor </th>
+      <th>User </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Tenant </td>
+      <td>RW </td>
+      <td>R </td>
+      <td>R </td>
+      <td>R </td>
+    </tr>
+    <tr>
+      <td>Team </td>
+      <td>RW </td>
+      <td>RW </td>
+      <td>R </td>
+      <td>R </td>
+    </tr>
+    <tr>
+      <td>API </td>
+      <td>RW </td>
+      <td>RW </td>
+      <td>RW </td>
+      <td>R </td>
+    </tr>
+  </tbody>
+</table>
+<p>| Subscription | RW | RW | - | R |</p>
+<hr/>
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="archi.html">Architecture</a></p>
 </div>
@@ -237,6 +296,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li><a href="about.html#about-daikoku" class="header">About Daikoku</a>
   <ul>
     <li><a href="about.html#philosophy" class="header">Philosophy</a></li>
+    <li><a href="about.html#rights-and-permissions-in-daikoku" class="header">Rights and Permissions in Daikoku</a></li>
   </ul></li>
 </ul>
 </div>
@@ -304,7 +364,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <script type="text/javascript" src="lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.1.2-rc.5', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.1.2', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>

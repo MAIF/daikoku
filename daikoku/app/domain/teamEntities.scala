@@ -160,7 +160,10 @@ case class EmailVerification(
   override def asJson: JsValue = json.EmailVerificationFormat.writes(this)
 }
 object NotificationStatus {
-  case class Pending() extends NotificationStatus with Product with Serializable {
+  case class Pending()
+      extends NotificationStatus
+      with Product
+      with Serializable {
     def status: String = "Pending"
   }
   case class Accepted(date: DateTime = DateTime.now())
@@ -253,8 +256,11 @@ object NotificationAction {
   case class TransferApiOwnership(team: TeamId, api: ApiId)
       extends NotificationAction
 
-  case class CheckoutForSubscription(demand: SubscriptionDemandId, api: ApiId, plan: UsagePlanId, step: SubscriptionDemandStepId)
-    extends NotificationAction
+  case class CheckoutForSubscription(demand: SubscriptionDemandId,
+                                     api: ApiId,
+                                     plan: UsagePlanId,
+                                     step: SubscriptionDemandStepId)
+      extends NotificationAction
 }
 
 sealed trait NotificationType {
@@ -270,7 +276,8 @@ object NotificationType {
   }
 }
 
-case class NotificationSender(name: String, email: String, id: Option[UserId]) extends CanJson[NotificationSender] {
+case class NotificationSender(name: String, email: String, id: Option[UserId])
+    extends CanJson[NotificationSender] {
   override def asJson: JsValue = json.NotificationSenderFormat.writes(this)
 }
 

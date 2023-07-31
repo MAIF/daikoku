@@ -395,7 +395,8 @@ object LdapSupport {
                                            name,
                                            email,
                                            ldapConfig.pictureField,
-                                           attrs)
+                                           attrs,
+                                           isDaikokuAdmin = false)
                         for {
                           _ <- _env.dataStore.teamRepo
                             .forTenant(tenant.id)

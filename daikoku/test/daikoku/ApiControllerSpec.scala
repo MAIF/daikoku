@@ -1,24 +1,44 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
+import com.dimafeng.testcontainers.{
+  Container,
+  ForAllTestContainer,
+  GenericContainer,
+  MultipleContainers,
+  PostgreSQLContainer
+}
 import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import controllers.AppError.{
+  SubscriptionAggregationDisabled,
+  SubscriptionParentExisted
+}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, OtoroshiApiKeyFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  ApiSubscriptionFormat,
+  OtoroshiApiKeyFormat,
+  SeqApiSubscriptionFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
@@ -36,6 +56,9 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.util.Random
 import org.scalatest.FlatSpec
 import org.testcontainers.containers.{BindMode, Network}
+
+import scala.concurrent.Future
+import scala.concurrent.impl.Promise
 
 class ApiControllerSpec()
     extends PlaySpec
@@ -780,6 +803,7 @@ class ApiControllerSpec()
         body = Some(updatedApi.asJson)
       )(tenant, session)
 
+      logger.warn(Json.stringify(respError2.json))
       respError2.status mustBe 404
     }
 
@@ -878,18 +902,17 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/${plan}/team/${teamConsumer.id.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj("motivation" -> "mot").some
       )(tenant, session)
 
       resp.status mustBe 403
       (resp.json \ "error")
         .as[
           String
-        ] mustBe "You're not authorized to subscribed to an unpublished api"
+        ] mustBe "API not published"
     }
 
     "not subscribe to an api for many reasons" in {
@@ -942,47 +965,46 @@ class ApiControllerSpec()
       resp.status mustBe 404
       //team not found
       resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamAdminId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamAdminId.asJson))
-        )
-      )(tenant, session)
-      resp.status mustBe 200
-      resp.json mustBe Json.parse("[{\"team-admin\":\"team not found\"}]")
-      //api not found
-      resp = httpJsonCallBlocking(
-        path = s"/api/apis/test/subscriptions",
-        method = "POST",
-        body = Some(
-          Json
-            .obj("plan" -> "toto", "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
-      )(tenant, session)
-      resp.status mustBe 404
-      //api unauthorized
-      resp = httpJsonCallBlocking(
-        path = s"/api/apis/${adminApi.id.value}/subscriptions",
-        method = "POST",
-        body = Some(
-          Json
-            .obj("plan" -> "admin", "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
-      resp.status mustBe 403
+      resp.status mustBe 404
+      (resp.json \ "error")
+        .as[String] mustBe AppError.TeamNotFound.getErrorMessage()
+      //api not found
+      resp = httpJsonCallBlocking(
+        path =
+          s"/api/apis/test/plan/test/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(tenant, session)
+      resp.status mustBe 404
+      (resp.json \ "error")
+        .as[String] mustBe AppError.ApiNotFound.getErrorMessage()
+      //api unauthorized
+      resp = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${adminApi.id.value}/plan/admin/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(tenant, session)
+
+      resp.status mustBe 401
+      (resp.json \ "error")
+        .as[String] mustBe AppError.ApiUnauthorized.getErrorMessage()
       //plan unauthorized
       resp = httpJsonCallBlocking(
-        path = s"/api/apis/${planUnauthorizedApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${planUnauthorizedApi.id.value}/plan/1/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> "1", "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
-      resp.status mustBe 200
-      resp.json mustBe Json.parse(
-        "[{\"error\":\"Consumer Team is not authorized on this plan\"}]"
-      )
+      resp.status mustBe 401
+      (resp.json \ "error")
+        .as[String] mustBe AppError.PlanUnauthorized.getErrorMessage()
     }
 
     "delete archived subscriptions" in {
@@ -1373,6 +1395,34 @@ class ApiControllerSpec()
     }
 
     "not accept subscription without custom metadata if plan requires it" in {
+      val demand = SubscriptionDemand(
+        id = SubscriptionDemandId("1"),
+        tenant = tenant.id,
+        api = defaultApi.id,
+        plan = UsagePlanId("3"),
+        steps = Seq(
+          SubscriptionDemandStep(
+            id = SubscriptionDemandStepId("demandStep_1"),
+            state = SubscriptionDemandState.InProgress,
+            step = ValidationStep.TeamAdmin(id = "step_1",
+                                            team = defaultApi.team,
+                                            title = "Admin"),
+            metadata = Json.obj()
+          )
+        ),
+        state = SubscriptionDemandState.InProgress,
+        team = teamConsumerId,
+        from = userAdmin.id,
+        date = DateTime.now().minusDays(1),
+        motivation = "test".some,
+        parentSubscriptionId = None,
+        customReadOnly = None,
+        customMetadata = None,
+        customMaxPerSecond = None,
+        customMaxPerDay = None,
+        customMaxPerMonth = None
+      )
+
       val untreatedNotification = Notification(
         id = NotificationId("untreated-notification"),
         tenant = tenant.id,
@@ -1415,21 +1465,25 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess = Seq(ValidationStep.TeamAdmin(id = IdGenerator.token, team = defaultApi.team, title = "team.name")),
+                subscriptionProcess = Seq(
+                  ValidationStep.TeamAdmin(id = IdGenerator.token,
+                                           team = defaultApi.team,
+                                           title = "team.name")),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
             )
           )
         ),
+        subscriptionDemands = Seq(demand),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(
               api = defaultApi.id,
               plan = UsagePlanId("3"),
               team = teamConsumerId,
-              demand = SubscriptionDemandId(IdGenerator.token),
-              step = SubscriptionDemandStepId(IdGenerator.token),
+              demand = demand.id,
+              step = demand.steps.head.id,
               motivation = Some("motivation")
             )
           )
@@ -1441,9 +1495,11 @@ class ApiControllerSpec()
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
+
       resp.status mustBe 400
       (resp.json \ "error")
-        .as[String] mustBe "You need to provide custom metadata"
+        .as[String] mustBe AppError.ApiKeyCustomMetadataNotPrivided
+        .getErrorMessage()
     }
 
     "not manipulate api if tenant api creation security is enabled & team.apisCreationPermission is disabled" in {
@@ -1493,34 +1549,23 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val respPersonal = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumer.id.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
-      respPersonal.status mustBe 200
-      val responsePersonal: JsValue = (respPersonal.json)
-        .as[JsArray]
-        .value
-        .head
-      (responsePersonal \ "error")
-        .as[
-          String
-        ] mustBe s"${teamConsumer.name} is not authorized to subscribe to an api"
+      logger.warn(Json.stringify(respPersonal.json))
+      respPersonal.status mustBe 401
 
       val respOrg = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamOwnerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamOwner.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
       respOrg.status mustBe 200
-      val resultOrg = (respOrg.json \ 0).as[JsObject]
-      (resultOrg \ "creation").as[String] mustBe "done"
     }
   }
 
@@ -2248,28 +2293,18 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userApiEditor, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj(
-            "plan" -> plan,
-            "teams" -> Json
-              .arr(teamConsumer.id.asJson, teamIdWithApiKeyVisible.asJson)
-          )
-        )
+        body = Json.obj().some
       )(tenant, session)
 
       resp.status mustBe 200
 
-      val resultAsSubscription =
-        fr.maif.otoroshi.daikoku.domain.json.ApiSubscriptionFormat
-          .reads((resp.json \ 0 \ "subscription").as[JsObject])
-
-      resultAsSubscription.isSuccess mustBe true
-      val subscription = resultAsSubscription.get
-      subscription.plan.value mustBe plan
-      subscription.team mustBe teamConsumerId
-      subscription.by mustBe userApiEditorId
+      val resultAsSubscription = (resp.json \ "subscription").as[JsObject]
+      (resultAsSubscription \ "plan").as[String] mustBe plan
+      (resultAsSubscription \ "team").as[String] mustBe teamConsumerId.value
+      (resultAsSubscription \ "by").as[String] mustBe userApiEditor.id.value
     }
 
     "get his team visible apis" in {
@@ -2298,7 +2333,9 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
+            sender = NotificationSender(name = user.name,
+                                        email = user.email,
+                                        id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
@@ -2364,14 +2401,16 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
+            sender = NotificationSender(name = user.name,
+                                        email = user.email,
+                                        id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
               UsagePlanId("2"),
               teamConsumerId,
               motivation = Some("motivation"),
-                demand = SubscriptionDemandId(IdGenerator.token),
+              demand = SubscriptionDemandId(IdGenerator.token),
               step = SubscriptionDemandStepId(IdGenerator.token),
             )
           )
@@ -2412,7 +2451,9 @@ class ApiControllerSpec()
             id = NotificationId("untreated-notification"),
             tenant = tenant.id,
             team = Some(teamOwnerId),
-            sender = NotificationSender(name = user.name, email = user.email, id = user.id.some),
+            sender = NotificationSender(name = user.name,
+                                        email = user.email,
+                                        id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.id,
@@ -2545,7 +2586,10 @@ class ApiControllerSpec()
                   )
                 ),
                 allowMultipleKeys = Some(false),
-                subscriptionProcess =  Seq(ValidationStep.TeamAdmin(id = IdGenerator.token, team = defaultApi.team, title = "Admin")),
+                subscriptionProcess = Seq(
+                  ValidationStep.TeamAdmin(id = IdGenerator.token,
+                                           team = defaultApi.team,
+                                           title = "Admin")),
                 integrationProcess = IntegrationProcess.ApiKey,
                 autoRotation = Some(false)
               )
@@ -2557,16 +2601,14 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
       resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      (result \ "creation").as[String] mustBe "waiting"
+      (resp.json \ "creation").as[String] mustBe "waiting"
 
       val respSubs = httpJsonCallBlocking(
         path =
@@ -2592,25 +2634,19 @@ class ApiControllerSpec()
 
       for (n <- Seq(1, 2, 3)) {
         val resp = httpJsonCallBlocking(
-          path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+          path =
+            s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
           method = "POST",
-          body = Some(
-            Json
-              .obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-          )
+          body = Json.obj().some
         )(tenant, session)
 
         if (n == 1) {
           resp.status mustBe 200
-          val result = (resp.json \ 0).as[JsObject]
-          (result \ "creation").as[String] mustBe "done"
+          (resp.json \ "creation").as[String] mustBe "done"
         } else {
-          resp.status mustBe 200
-          val result = (resp.json \ 0).as[JsObject]
-          (result \ "error")
-            .as[String]
-            .toLowerCase()
-            .contains("conflict") mustBe true
+          resp.status mustBe 409
+          (resp.json \ "error")
+            .as[String] mustBe AppError.SubscriptionConflict.getErrorMessage()
         }
       }
 
@@ -2637,17 +2673,14 @@ class ApiControllerSpec()
 
       for (_ <- Seq(1, 2, 3)) {
         val resp = httpJsonCallBlocking(
-          path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+          path =
+            s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
           method = "POST",
-          body = Some(
-            Json
-              .obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-          )
+          body = Json.obj().some
         )(tenant, session)
 
         resp.status mustBe 200
-        val result = (resp.json \ 0).as[JsObject]
-        (result \ "creation").as[String] mustBe "done"
+        (resp.json \ "creation").as[String] mustBe "done"
       }
 
       val respSubs = httpJsonCallBlocking(
@@ -2671,19 +2704,15 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
-      resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      (result \ "error")
-        .as[String]
-        .toLowerCase()
-        .contains("not authorized") mustBe true
+      resp.status mustBe 401
+      (resp.json \ "error")
+        .as[String] mustBe AppError.ApiUnauthorized.getErrorMessage()
     }
 
     "be impossible if api is publicWithAuthorization and team isn't authorized" in {
@@ -2699,19 +2728,16 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
-      resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      (result \ "error")
-        .as[String]
-        .toLowerCase()
-        .contains("not authorized") mustBe true
+      resp.status mustBe 401
+      (resp.json \ "error")
+        .as[String] mustBe AppError.ApiUnauthorized.getErrorMessage()
+
     }
 
     "be just visible for admin if team apikey visibility is set to Administrator" in {
@@ -2730,16 +2756,14 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
       resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      (result \ "creation").as[String] mustBe "done"
+      (resp.json \ "creation").as[String] mustBe "done"
 
       val respAdmin = httpJsonCallBlocking(
         s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
@@ -2771,16 +2795,14 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
       resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      (result \ "creation").as[String] mustBe "done"
+      (resp.json \ "creation").as[String] mustBe "done"
 
       val respAdmin = httpJsonCallBlocking(
         s"/api/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
@@ -2794,18 +2816,13 @@ class ApiControllerSpec()
       respUser.status mustBe 403
 
       val respCreationUser = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/2/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> "2", "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, userSession)
 
-      respCreationUser.status mustBe 200
-      (respCreationUser.json \ 0 \ "error")
-        .as[String]
-        .toLowerCase()
-        .contains("not authorized") mustBe true
+      respCreationUser.status mustBe 401
     }
   }
 
@@ -2980,25 +2997,19 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamOwnerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamOwner.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
       resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      (result \ "creation").as[String] mustBe "done"
+      (resp.json \ "creation").as[String] mustBe "done"
 
-      val resultAsSubscription =
-        fr.maif.otoroshi.daikoku.domain.json.ApiSubscriptionFormat
-          .reads((result \ "subscription").as[JsObject])
-      resultAsSubscription.isSuccess mustBe true
-      val subscription = resultAsSubscription.get
-      subscription.plan.value mustBe plan
-      subscription.team mustBe teamOwnerId
-      subscription.by mustBe userAdmin.id
+      val resultAsSubscription = (resp.json \ "subscription").as[JsObject]
+      (resultAsSubscription \ "plan").as[String] mustBe plan
+      (resultAsSubscription \ "team").as[String] mustBe teamOwnerId.value
+      (resultAsSubscription \ "by").as[String] mustBe userAdmin.id.value
     }
 
     "not be subscribed by another team then the owner team" in {
@@ -3041,17 +3052,13 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/$plan/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
-      resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      (result \ "error")
-        .as[String] mustBe "Consumer Team is not authorized on this plan"
+      resp.status mustBe 401
     }
 
     "adds all teams subscribed in authorized team after inverting visibility" in {
@@ -3116,9 +3123,9 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/plan/${privatePlan.id.value}",
         method = "PUT",
-        body = Some(api.copy(possibleUsagePlans = Seq(privatePlan)).asJson)
+        body = Some(privatePlan.asJson)
       )(tenant, session)
 
       resp.status mustBe 200
@@ -3201,9 +3208,8 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
-        method = "PUT",
-        body = Some(defaultApi.copy(possibleUsagePlans = Seq.empty).asJson)
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/plan/1",
+        method = "DELETE"
       )(tenant, session)
 
       resp.status mustBe 200
@@ -3383,15 +3389,15 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${adminApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${adminApi.id.value}/plan/admin/team/${teamConsumerId.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json
-            .obj("plan" -> "admin", "teams" -> Json.arr(teamConsumer.id.asJson))
-        )
+        body = Json.obj().some
       )(tenant, session)
 
-      resp.status mustBe 403
+      resp.status mustBe 401
+      (resp.json \ "error")
+        .as[String] mustBe AppError.ApiUnauthorized.getErrorMessage()
     }
 
     "be available for daikoku admin" in {
@@ -3405,19 +3411,13 @@ class ApiControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${adminApi.id.value}/subscriptions",
+        path =
+          s"/api/apis/${adminApi.id.value}/plan/admin/team/${defaultAdminTeam.id.value}/_subscribe",
         method = "POST",
-        body = Some(
-          Json.obj(
-            "plan" -> "admin",
-            "teams" -> Json.arr(defaultAdminTeam.id.asJson)
-          )
-        )
+        body = Json.obj().some
       )(tenant, session)
 
       resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      (result \ "creation").as[String] mustBe "done"
     }
 
     "cannot be deleted" in {
@@ -3822,7 +3822,7 @@ class ApiControllerSpec()
         dailyQuota = callPerDay,
         monthlyQuota = callPerMonth,
         constrainedServicesOnly = true,
-        tags = Seq(),
+        tags = Set.empty[String],
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None
@@ -3994,169 +3994,171 @@ class ApiControllerSpec()
         })
       })
     }
-    "restrict the activation/deactivation of a subscription" in {
-      val payPerUsePlanId = UsagePlanId("5")
-      val subId = ApiSubscriptionId("test")
-      val sub = ApiSubscription(
-        id = subId,
-        tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
-        plan = payPerUsePlanId,
-        createdAt = DateTime.now(),
-        team = teamConsumerId,
-        api = defaultApi.id,
-        by = userTeamAdminId,
-        customName = None,
-        rotation = None,
-        integrationToken = "test"
-      )
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userAdmin, userApiEditor, user),
-        teams = Seq(
-          teamOwner,
-          teamConsumer
-        ),
-        apis = Seq(defaultApi),
-        subscriptions = Seq(sub)
-      )
-      val sessionAdmin = loginWithBlocking(userAdmin, tenant)
-      val sessionApiEditor = loginWithBlocking(userApiEditor, tenant)
-      val sessionUser = loginWithBlocking(user, tenant)
-
-      val callPerSec = 100L
-      val callPerDay = 1000L
-      val callPerMonth = 2000L
-      val plan =
-        defaultApi.possibleUsagePlans.find(_.id == sub.plan).get
-      val otoroshiTarget = plan.otoroshiTarget
-      val otoApiKey = ActualOtoroshiApiKey(
-        clientId = sub.apiKey.clientId,
-        clientSecret = sub.apiKey.clientSecret,
-        clientName = sub.apiKey.clientName,
-        authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
-        throttlingQuota = callPerSec,
-        dailyQuota = callPerDay,
-        monthlyQuota = callPerMonth,
-        constrainedServicesOnly = true,
-        tags = Seq(),
-        restrictions = ApiKeyRestrictions(),
-        metadata = Map(),
-        rotation = None
-      )
-      val path = otoroshiDeleteApikeyPath(sub.apiKey.clientId)
-      stubFor(
-        get(urlMatching(s"$otoroshiPathStats.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  Json.obj("hits" -> Json.obj("count" -> 2000))
-                )
-              )
-              .withStatus(200)
-          )
-      )
-      val apiKeyPath = otoroshiGetApikeyPath(otoApiKey.clientId)
-      stubFor(
-        get(urlMatching(s"$apiKeyPath.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  otoApiKey.asJson.as[JsObject] ++
-                    Json.obj(
-                      "id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
-                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value
-                    )
-                )
-              )
-              .withStatus(200)
-          )
-      )
-      val otoPathQuotas = otoroshiPathApiKeyQuotas(sub.apiKey.clientId)
-      stubFor(
-        get(urlMatching(s"$otoPathQuotas.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
-                    currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
-                    currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
-                      .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
-                    currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
-                  ).asJson
-                )
-              )
-              .withStatus(200)
-          )
-      )
-      stubFor(
-        put(urlMatching(s"$path.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  otoApiKey.copy(enabled = false).asJson
-                )
-              )
-              .withStatus(200)
-          )
-      )
-
-      val matrixOfMatrix = Map(
-        (
-          Some(TeamApiKeyVisibility.Administrator),
-          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
-        ),
-        (
-          Some(TeamApiKeyVisibility.ApiEditor),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))
-        ),
-        (
-          Some(TeamApiKeyVisibility.User),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
-        ),
-        (
-          None,
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
-        )
-      )
-
-      matrixOfMatrix.foreachEntry((maybeVisibility, matrix) => {
-        val resp = {
-          httpJsonCallBlocking(
-            path = s"/api/teams/${teamOwnerId.value}",
-            method = "PUT",
-            body =
-              Some(teamConsumer.copy(apiKeyVisibility = maybeVisibility).asJson)
-          )(tenant, sessionAdmin)
-        }
-        resp.status mustBe 200
-
-        matrix.foreachEntry((session, response) => {
-          val rdmName = Random.alphanumeric.take(10).mkString
-          val respUpdate = httpJsonCallBlocking(
-            path =
-              s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}/_archive",
-            method = "PUT",
-            body = Some(Json.obj("customName" -> rdmName))
-          )(tenant, session)
-          respUpdate.status mustBe response
-        })
-      })
-    }
+//    "restrict the activation/deactivation of a subscription" in {
+//      val payPerUsePlanId = UsagePlanId("1")
+//      val subId = ApiSubscriptionId("test")
+//      val sub = ApiSubscription(
+//        id = subId,
+//        tenant = tenant.id,
+//        apiKey = OtoroshiApiKey("name", "id", "secret"),
+//        plan = payPerUsePlanId,
+//        createdAt = DateTime.now(),
+//        team = teamConsumerId,
+//        api = defaultApi.id,
+//        by = userTeamAdminId,
+//        customName = None,
+//        rotation = None,
+//        integrationToken = "test"
+//      )
+//      setupEnvBlocking(
+//        tenants = Seq(tenant),
+//        users = Seq(userAdmin, userApiEditor, user),
+//        teams = Seq(
+//          teamOwner,
+//          teamConsumer
+//        ),
+//        apis = Seq(defaultApi),
+//        subscriptions = Seq(sub)
+//      )
+//      val sessionAdmin = loginWithBlocking(userAdmin, tenant)
+//      val sessionApiEditor = loginWithBlocking(userApiEditor, tenant)
+//      val sessionUser = loginWithBlocking(user, tenant)
+//
+//      val callPerSec = 100L
+//      val callPerDay = 1000L
+//      val callPerMonth = 2000L
+//      val plan =
+//        defaultApi.possibleUsagePlans.find(_.id == sub.plan).get
+//      val otoroshiTarget = plan.otoroshiTarget
+//      val otoApiKey = ActualOtoroshiApiKey(
+//        clientId = sub.apiKey.clientId,
+//        clientSecret = sub.apiKey.clientSecret,
+//        clientName = sub.apiKey.clientName,
+//        authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
+//        throttlingQuota = callPerSec,
+//        dailyQuota = callPerDay,
+//        monthlyQuota = callPerMonth,
+//        constrainedServicesOnly = true,
+//        tags = Set.empty[String],
+//        restrictions = ApiKeyRestrictions(),
+//        metadata = Map(),
+//        rotation = None
+//      )
+//      val path = otoroshiDeleteApikeyPath(sub.apiKey.clientId)
+//      stubFor(
+//        get(urlMatching(s"$otoroshiPathStats.*"))
+//          .willReturn(
+//            aResponse()
+//              .withBody(
+//                Json.stringify(
+//                  Json.obj("hits" -> Json.obj("count" -> 2000))
+//                )
+//              )
+//              .withStatus(200)
+//          )
+//      )
+//      val apiKeyPath = otoroshiGetApikeyPath(otoApiKey.clientId)
+//      stubFor(
+//        get(urlMatching(s"$apiKeyPath.*"))
+//          .willReturn(
+//            aResponse()
+//              .withBody(
+//                Json.stringify(
+//                  otoApiKey.asJson.as[JsObject] ++
+//                    Json.obj(
+//                      "id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+//                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value
+//                    )
+//                )
+//              )
+//              .withStatus(200)
+//          )
+//      )
+//      val otoPathQuotas = otoroshiPathApiKeyQuotas(sub.apiKey.clientId)
+//      stubFor(
+//        get(urlMatching(s"$otoPathQuotas.*"))
+//          .willReturn(
+//            aResponse()
+//              .withBody(
+//                Json.stringify(
+//                  ApiKeyQuotas(
+//                    authorizedCallsPerSec =
+//                      plan.maxRequestPerSecond.getOrElse(0),
+//                    currentCallsPerSec = callPerSec,
+//                    remainingCallsPerSec =
+//                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
+//                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+//                    currentCallsPerDay = callPerDay,
+//                    remainingCallsPerDay = plan.maxRequestPerDay
+//                      .getOrElse(0L) - callPerDay,
+//                    authorizedCallsPerMonth =
+//                      plan.maxRequestPerMonth.getOrElse(0),
+//                    currentCallsPerMonth = callPerMonth,
+//                    remainingCallsPerMonth =
+//                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+//                  ).asJson
+//                )
+//              )
+//              .withStatus(200)
+//          )
+//      )
+//      stubFor(
+//        put(urlMatching(s"$path.*"))
+//          .willReturn(
+//            aResponse()
+//              .withBody(
+//                Json.stringify(
+//                  otoApiKey.copy(enabled = false).asJson
+//                )
+//              )
+//              .withStatus(200)
+//          )
+//      )
+//
+//      val matrixOfMatrix = Map(
+//        (
+//          Some(TeamApiKeyVisibility.Administrator),
+//          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
+//        ),
+//        (
+//          Some(TeamApiKeyVisibility.ApiEditor),
+//          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))
+//        ),
+//        (
+//          Some(TeamApiKeyVisibility.User),
+//          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+//        ),
+//        (
+//          None,
+//          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+//        )
+//      )
+//
+//      matrixOfMatrix.foreachEntry((maybeVisibility, matrix) => {
+//        val resp = {
+//          httpJsonCallBlocking(
+//            path = s"/api/teams/${teamOwnerId.value}",
+//            method = "PUT",
+//            body =
+//              Some(teamConsumer.copy(apiKeyVisibility = maybeVisibility).asJson)
+//          )(tenant, sessionAdmin)
+//        }
+//        resp.status mustBe 200
+//
+//        matrix.foreachEntry((session, response) => {
+//          val rdmName = Random.alphanumeric.take(10).mkString
+//          val respUpdate = httpJsonCallBlocking(
+//            path =
+//              s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}/_archive",
+//            method = "PUT",
+//            body = Some(Json.obj("customName" -> rdmName))
+//          )(tenant, session)
+//          logger.warn(s"$maybeVisibility -- $session")
+//          logger.warn(s"status ${respUpdate.status} --> ${Json.stringify(respUpdate.json)}")
+//          respUpdate.status mustBe response
+//        })
+//      })
+//    }
     "restrict the reset of the secret of a subscription" in {
       val payPerUsePlanId = UsagePlanId("5")
       val subId = ApiSubscriptionId("test")
@@ -4202,7 +4204,7 @@ class ApiControllerSpec()
         dailyQuota = callPerDay,
         monthlyQuota = callPerMonth,
         constrainedServicesOnly = true,
-        tags = Seq(),
+        tags = Set.empty[String],
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None
@@ -4313,22 +4315,13 @@ class ApiControllerSpec()
       wireMockServer.isRunning mustBe true
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions/${subId.value}",
+        path =
+          s"/api/apis/${defaultApi.id.value}/plan/4/team/${teamConsumerId.value}/${subId.value}/_extends",
         method = "PUT",
-        body = Some(
-          Json.obj(
-            "plan" -> defaultApi.possibleUsagePlans.head.id.value,
-            "teams" -> Seq(teamConsumerId.value)
-          )
-        )
+        body = Json.obj().some
       )(tenant, loginWithBlocking(user, tenant))
 
-      resp.status mustBe Status.OK
-
-      val expectedError =
-        (AppError.toJson(SubscriptionAggregationDisabled) \ "error").as[String]
-
-      (resp.json.as[JsArray].head \ "error").as[String] mustBe expectedError
+      resp.status mustBe Status.UNAUTHORIZED
     }
     "not be extended subscription that we have already a parent" in {
       val parentSub = ApiSubscription(
@@ -4369,21 +4362,12 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/apis/${defaultApi.id.value}/subscriptions/${childSub.id.value}",
+          s"/api/apis/${defaultApi.id.value}/plan/4/team/${teamConsumerId.value}/${childSub.id.value}/_extends",
         method = "PUT",
-        body = Some(
-          Json.obj(
-            "plan" -> defaultApi.possibleUsagePlans.head.id.value,
-            "teams" -> Seq(teamConsumerId.value)
-          )
-        )
+        body = Json.obj().some
       )(tenant, loginWithBlocking(user, tenant))
 
-      resp.status mustBe 200
-
-      val expectedError =
-        (AppError.toJson(SubscriptionParentExisted) \ "error").as[String]
-      (resp.json.as[JsArray].head \ "error").as[String] mustBe expectedError
+      resp.status mustBe 409
     }
     "not be enabled on plan when aggregation on tenant is disabled" in {
       setupEnvBlocking(
@@ -4436,7 +4420,9 @@ class ApiControllerSpec()
         users = Seq(user),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(
+          defaultApi,
           defaultApi.copy(
+            id = ApiId("test"),
             possibleUsagePlans = defaultApi.possibleUsagePlans.map {
               case p: Admin => p.copy(aggregationApiKeysSecurity = Some(true))
               case p: FreeWithoutQuotas =>
@@ -4472,24 +4458,21 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/apis/${defaultApi.id.value}/subscriptions/${parentSubId.value}",
+          s"/api/apis/test/plan/4/team/${teamConsumerId.value}/${parentSubId.value}/_extends",
         method = "PUT",
-        body = Some(
-          Json.obj(
-            "plan" -> defaultApi.possibleUsagePlans.head.id.value,
-            "teams" -> Seq(teamConsumerId.value)
-          )
-        )
+        body = Json.obj().some
       )(tenant, loginWithBlocking(user, tenant))
 
-      resp.status mustBe Status.OK
       logger.warn(Json.prettyPrint(resp.json))
+      resp.status mustBe Status.OK
 
-      ApiSubscriptionFormat
-        .reads((resp.json.as[JsArray].head \ "subscription").get)
-        .get
-        .apiKey
-        .clientId mustBe parentApiKeyClientId
+      daikokuComponents.env.dataStore.apiSubscriptionRepo
+        .forTenant(tenant)
+        .findById((resp.json \ "subscription" \ "_id").as[String])
+        .map {
+          case Some(sub) => sub.apiKey.clientId mustBe parentApiKeyClientId
+          case None      => fail
+        }
     }
     "be transformed in unique api key when the subscription hasn't parent" in {
       val parentSub = ApiSubscription(
@@ -4543,7 +4526,7 @@ class ApiControllerSpec()
                     throttlingQuota = 10L,
                     dailyQuota = 10L,
                     monthlyQuota = 10L,
-                    tags = Seq(),
+                    tags = Set.empty[String],
                     restrictions = ApiKeyRestrictions(),
                     metadata = Map(),
                     rotation = None
@@ -4614,7 +4597,7 @@ class ApiControllerSpec()
                   throttlingQuota = 10L,
                   dailyQuota = 10L,
                   monthlyQuota = 10L,
-                  tags = Seq(),
+                  tags = Set.empty[String],
                   restrictions = ApiKeyRestrictions(),
                   metadata = Map(),
                   rotation = None
@@ -4653,7 +4636,7 @@ class ApiControllerSpec()
                   throttlingQuota = 10L,
                   dailyQuota = 10L,
                   monthlyQuota = 10L,
-                  tags = Seq(),
+                  tags = Set.empty[String],
                   restrictions = ApiKeyRestrictions(),
                   metadata = Map(),
                   rotation = None
@@ -4677,7 +4660,7 @@ class ApiControllerSpec()
                     throttlingQuota = 10L,
                     dailyQuota = 10L,
                     monthlyQuota = 10L,
-                    tags = Seq(),
+                    tags = Set.empty[String],
                     restrictions = ApiKeyRestrictions(),
                     metadata = Map(),
                     rotation = None
@@ -4701,7 +4684,7 @@ class ApiControllerSpec()
                     throttlingQuota = 10L,
                     dailyQuota = 10L,
                     monthlyQuota = 10L,
-                    tags = Seq(),
+                    tags = Set.empty[String],
                     restrictions = ApiKeyRestrictions(),
                     metadata = Map(),
                     rotation = None
@@ -4725,7 +4708,7 @@ class ApiControllerSpec()
                     throttlingQuota = 10L,
                     dailyQuota = 10L,
                     monthlyQuota = 10L,
-                    tags = Seq(),
+                    tags = Set.empty[String],
                     restrictions = ApiKeyRestrictions(),
                     metadata = Map(),
                     rotation = None

@@ -22,9 +22,6 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
   /**
     * Delete logically a team
     * Add an operation in deletion queue to process complete deletion (delete user notifications & messages)
-    * @param user a User to delete
-    * @param tenant the tenant where delete the user
-    * @return an Either of Unit or AppError (actually Right[Unit])
     */
   private def deleteUser(user: User,
                          tenant: Tenant): EitherT[Future, AppError, Unit] = {
@@ -47,9 +44,6 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
   /**
     * Delete logically a team
     * Add an operation in deletion queue to process complete deletion (delete team notifications)
-    * @param team a Team do delete
-    * @param tenant the tenant where delete the team
-    * @return an Either of Unit or AppError (actually Right[Unit])
     */
   private def deleteTeam(team: Team,
                          tenant: Tenant): EitherT[Future, AppError, Unit] = {
@@ -122,11 +116,6 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
    * delete logically all subscriptions
    * add for each subscriptions an operation in queue to process a complete deletion of each Api
    * (disable apikey in otoroshi, compute consumptions, close third-party subscription, delete notifications)
-   *
-   * @param subscriptions Sequence of [[ApiSubscription]]
-   * @param tenant        the [[Tenant]] where delete those ApiSubscriptions
-   * @param user          the [[User]] who triggered the deletion
-   * @return EitherT of AppError or Unit (actually a RightT[Unit])
    */
   private def deleteSubscriptions(subscriptions: Seq[ApiSubscription],
                                   tenant: Tenant,
@@ -147,8 +136,8 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
     * add for each apis an operation in queue to process a complete deletion of each Api
     * (delete doc, issues, posts & notifications)
    *
-   * @param apis A sequence of Api to delete
-    * @param tenant the tenant where delete those apis
+   * @param A sequence of Api to delete
+    * @param the tenant where delete those apis
     * @return an EitherT of AppError or Unit (actually a RightT[Unit])
    */
   private def deleteApis(apis: Seq[Api],
@@ -206,11 +195,6 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
     * delete a personal user team in the provided tenant
     * Flag a user as deleted if there is no other account in another tenant
     * Add team (and him probably) to deletion queue to process complete deletion
-    *
-    * @param userId [[UserId]]
-    * @param tenant [[TenantId]]
-    * @param user [[User]]
-    * @return an EitherT of AppError or Unit
     */
   def deleteUserByQueue(userId: String,
                         tenant: Tenant,
@@ -245,11 +229,6 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
   /**
     * Flag a user as deleted and delete his all teams in all possible tenants
     * Add him and his personal teams to deletion queue to process complete deletion
-    *
-    * @param userId [[UserId]]
-    * @param tenant [[TenantId]]
-    * @param user [[User]]
-    * @return an EitherT of AppError or Unit
     */
   def deleteCompleteUserByQueue(
       userId: String,
@@ -278,9 +257,6 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
   /**
     * Flag a team as deleted and delete his subscriptions, apis and those apis subscriptions
     * add team, subs and apis to deletion queue to process complete deletion
-    * @param id [[TeamId]]
-    * @param tenant [[TenantId]]
-    * @return an EitherT of AppError or Unit
     */
   def deleteTeamByQueue(id: TeamId,
                         tenant: TenantId,
@@ -315,11 +291,6 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
   /**
    * Flag an api as deleted and delete his subscriptions
    * add api & subs to deletion queue to process complete deletion
-   *
-   * @param id     [[ApiId]]
-   * @param tenant [[TenantId]]
-   * @param user [[User]]
-   * @return an EitherT of AppError or Unit
    */
   def deleteApiByQueue(id: ApiId,
                        tenant: TenantId,

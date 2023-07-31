@@ -57,19 +57,19 @@ class TeamController(DaikokuAction: DaikokuAction,
           .findByIdOrHrIdNotDeleted(teamId)
           .map {
             case Some(team) =>
+              ctx.setCtxValue("team.name", team.name);
+              ctx.setCtxValue("team.id", team.id.value);
               Ok(team.asSimpleJson)
             case None => NotFound(Json.obj("error" -> "Team not found"))
           }
       }
     }
 
-  def teamFull(teamId: String) = DaikokuAction.async {
-    ctx =>
-      TeamAdminOrTenantAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { _ =>
+  def teamFull(teamId: String) = DaikokuAction.async { ctx =>
+    TeamAdminOrTenantAdminOnly(AuditTrailEvent(
+      s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(teamId,
+                                                                        ctx) {
+      _ =>
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
           .findByIdOrHrId(teamId)
@@ -99,7 +99,7 @@ class TeamController(DaikokuAction: DaikokuAction,
               FastFuture.successful(
                 NotFound(Json.obj("error" -> "Team not found")))
           }
-      }
+    }
   }
 
   def teams() = DaikokuActionMaybeWithGuest.async { ctx =>
@@ -161,8 +161,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                 .forTenant(ctx.tenant.id)
                 .save(emailVerif))
             cipheredValidationToken = encrypt(env.config.cypherSecret,
-              emailVerif.randomId,
-              ctx.tenant)
+                                              emailVerif.randomId,
+                                              ctx.tenant)
             title <- EitherT.liftF(
               translator.translate("mail.create.team.token.title", ctx.tenant))
             value <- EitherT.liftF(
@@ -210,7 +210,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                 .withHeaders(
                   "Location" -> s"/${team.humanReadableId}/settings/edition/?error=3")))
             case Some(encryptedString) =>
-              val token = decrypt(env.config.cypherSecret, encryptedString, ctx.tenant)
+              val token =
+                decrypt(env.config.cypherSecret, encryptedString, ctx.tenant)
               emailVerificationRepo
                 .findOneNotDeleted(Json.obj("randomId" -> token))
                 .flatMap {
@@ -268,7 +269,9 @@ class TeamController(DaikokuAction: DaikokuAction,
                 validUntil = DateTime.now().plusMinutes(15)
               )
               val cipheredValidationToken =
-                encrypt(env.config.cypherSecret, emailVerif.randomId, ctx.tenant)
+                encrypt(env.config.cypherSecret,
+                        emailVerif.randomId,
+                        ctx.tenant)
               implicit val language: String = ctx.user.defaultLanguage
                 .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
               for {
@@ -402,7 +405,8 @@ class TeamController(DaikokuAction: DaikokuAction,
 
         val value: EitherT[Future, AppError, Unit] = team.`type` match {
           case TeamType.Admin => EitherT.leftT(AppError.ForbiddenAction)
-          case _              => deletionService.deleteTeamByQueue(team.id, ctx.tenant.id, ctx.user)
+          case _ =>
+            deletionService.deleteTeamByQueue(team.id, ctx.tenant.id, ctx.user)
         }
 
         value
@@ -667,15 +671,14 @@ class TeamController(DaikokuAction: DaikokuAction,
 
                 env.dataStore.notificationRepo
                   .forTenant(ctx.tenant)
-                  .save(
-                    Notification(
-                      id = notificationId,
-                      tenant = ctx.tenant.id,
-                      team = None,
-                      sender = ctx.user.asNotificationSender,
-                      action = NotificationAction.TeamInvitation(team.id,
-                                                                 invitedUser.id)
-                    ))
+                  .save(Notification(
+                    id = notificationId,
+                    tenant = ctx.tenant.id,
+                    team = None,
+                    sender = ctx.user.asNotificationSender,
+                    action =
+                      NotificationAction.TeamInvitation(team.id, invitedUser.id)
+                  ))
                   .flatMap {
                     case true =>
                       implicit val language: String =

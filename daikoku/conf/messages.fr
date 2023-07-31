@@ -85,11 +85,9 @@ Vous devez vérifier votre mail pour l'équipe [team].\
 mail.subscription.validation.title = Validation de souscription
 mail.subscription.validation.body = Bonjour,\
     <br/>\
-    Quelqu'un voudrait souscrire a l'API [apiName],\
+    [user] pour l'équipe [team] voudrait souscrire a l'API [apiName],\
     <br>\
     <div>\
-    [user] :\
-    <br>\
     [body]\
     </div>\
 <a href="[urlAccept]">Accept</a> or <a href="[urlDecline]">Reject</a>

@@ -61,18 +61,18 @@ export interface IBucketSettings {
 }
 
 export enum ThirdPartyPaymentType {
-  stripe = 'Stripe'
+  stripe = 'Stripe',
 }
 
 export interface IThirdPartyPaymentSettings {
-  _id: string
-  name: string
-  type: ThirdPartyPaymentType
+  _id: string;
+  name: string;
+  type: ThirdPartyPaymentType;
 }
 
 interface IThirdPartyPaymentStripe extends IThirdPartyPaymentSettings {
-  publicKey: string
-  secretKey: string
+  publicKey: string;
+  secretKey: string;
 }
 
 enum MailerType {
@@ -187,7 +187,7 @@ export interface ITenantFull extends ITenant {
   otoroshiSettings: Array<IOtoroshiSettings>;
   style: ITenantStyle;
   translation: any;
-  thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>
+  thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
 }
 
 export type TranslationItem = string | { s: string; p: string };

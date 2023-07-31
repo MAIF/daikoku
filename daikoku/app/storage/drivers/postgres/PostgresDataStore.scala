@@ -225,22 +225,28 @@ case class PostgresTenantCapableEmailVerificationRepo(
 }
 case class PostgresTenantCapableSubscriptionDemandRepo(
     _repo: () => PostgresRepo[SubscriptionDemand, SubscriptionDemandId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[SubscriptionDemand,
+                                                     SubscriptionDemandId]
 ) extends PostgresTenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
-  with SubscriptionDemandRepo {
-  override def repo(): PostgresRepo[SubscriptionDemand, SubscriptionDemandId] = _repo()
+    with SubscriptionDemandRepo {
+  override def repo(): PostgresRepo[SubscriptionDemand, SubscriptionDemandId] =
+    _repo()
 
-  override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] = _tenantRepo(tenant)
+  override def tenantRepo(tenant: TenantId)
+    : PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] =
+    _tenantRepo(tenant)
 }
 
 case class PostgresTenantCapableStepValidatorRepo(
     _repo: () => PostgresRepo[StepValidator, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[StepValidator, DatastoreId]
 ) extends PostgresTenantCapableRepo[StepValidator, DatastoreId]
-  with StepValidatorRepo {
+    with StepValidatorRepo {
   override def repo(): PostgresRepo[StepValidator, DatastoreId] = _repo()
 
-  override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[StepValidator, DatastoreId] = _tenantRepo(tenant)
+  override def tenantRepo(
+      tenant: TenantId): PostgresTenantAwareRepo[StepValidator, DatastoreId] =
+    _tenantRepo(tenant)
 }
 
 case class PostgresTenantCapableConsumptionRepo(
@@ -287,9 +293,10 @@ case class PostgresTenantCapableConsumptionRepo(
     reactivePg
       .querySeq(
         s"SELECT content->>'clientId' as client_id, MAX(content->>'from') as max_from FROM ${rep.tableName} " +
-           selector +
+          selector +
           "GROUP BY content->>'clientId'",
-        params) { row => Json
+        params) { row =>
+        Json
           .obj(
             "clientId" -> row.getString("client_id"),
             "from" -> String.valueOf(row.getValue("max_from"))
@@ -580,7 +587,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def emailVerificationRepo: EmailVerificationRepo =
     _emailVerificationRepo
 
-  override def subscriptionDemandRepo: SubscriptionDemandRepo = _subscriptionDemandRepo
+  override def subscriptionDemandRepo: SubscriptionDemandRepo =
+    _subscriptionDemandRepo
 
   override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
 
@@ -907,18 +915,24 @@ class PostgresTenantEmailVerificationRepo(env: Env,
 class PostgresTenantSubscriptionDemandRepo(env: Env,
                                            reactivePg: ReactivePg,
                                            tenant: TenantId)
-extends PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](env, reactivePg, tenant) {
+    extends PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](
+      env,
+      reactivePg,
+      tenant) {
   override def tableName: String = "subscription_demands"
 
-  override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
+  override def format: Format[SubscriptionDemand] =
+    json.SubscriptionDemandFormat
 
   override def extractId(value: SubscriptionDemand): String = value.id.value
 }
 
 class PostgresTenantStepValidatorRepo(env: Env,
-                                           reactivePg: ReactivePg,
-                                           tenant: TenantId)
-extends PostgresTenantAwareRepo[StepValidator, DatastoreId](env, reactivePg, tenant) {
+                                      reactivePg: ReactivePg,
+                                      tenant: TenantId)
+    extends PostgresTenantAwareRepo[StepValidator, DatastoreId](env,
+                                                                reactivePg,
+                                                                tenant) {
   override def tableName: String = "step_validators"
 
   override def format: Format[StepValidator] = json.StepValidatorFormat
@@ -1111,16 +1125,18 @@ class PostgresEmailVerificationRepo(env: Env, reactivePg: ReactivePg)
 }
 
 class PostgresSubscriptionDemandRepo(env: Env, reactivePg: ReactivePg)
-  extends PostgresRepo[SubscriptionDemand, SubscriptionDemandId](env, reactivePg) {
+    extends PostgresRepo[SubscriptionDemand, SubscriptionDemandId](env,
+                                                                   reactivePg) {
   override def tableName: String = "subscription_demands"
 
-  override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
+  override def format: Format[SubscriptionDemand] =
+    json.SubscriptionDemandFormat
 
   override def extractId(value: SubscriptionDemand): String = value.id.value
 }
 
 class PostgresStepValidatorRepo(env: Env, reactivePg: ReactivePg)
-  extends PostgresRepo[StepValidator, DatastoreId](env, reactivePg) {
+    extends PostgresRepo[StepValidator, DatastoreId](env, reactivePg) {
   override def tableName: String = "step_validators"
 
   override def format: Format[StepValidator] = json.StepValidatorFormat
@@ -1243,7 +1259,8 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
             rowToJson(_, format)
           } else {
           val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql $limit", params) {
+          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql $limit",
+                              params) {
             rowToJson(_, format)
           }
         }
@@ -1423,7 +1440,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           val (sql, params) = convertQuery(
             query ++ Json.obj("_tenant" -> tenant.value))
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys.mkString(",")} ASC $limit",
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
+              .mkString(",")} ASC $limit",
             params
           ) { rowToJson(_, format) }
         }
@@ -1516,10 +1534,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
     logger.debug(s"$tableName.streamAllRaw(${Json.prettyPrint(query)})")
 
+    val (sql, params) = convertQuery(query)
+
+    val selector = if (sql == "") "" else s"WHERE $sql"
+
     Source
       .future(
         reactivePg
-          .querySeq(s"SELECT * FROM $tableName") { row =>
+          .querySeq(s"SELECT * FROM $tableName $selector") { row =>
             row.optJsObject("content")
           }
       )
@@ -1531,10 +1553,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     logger.debug(
       s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
 
+    val (sql, params) = convertQuery(query)
+    val selector = if (sql == "") "" else s"WHERE $sql"
+
     Source
       .future(
         reactivePg
-          .querySeq(s"SELECT * FROM $tableName") { row =>
+          .querySeq(s"SELECT * FROM $tableName $selector") { row =>
             row.optJsObject("content")
           }
       )

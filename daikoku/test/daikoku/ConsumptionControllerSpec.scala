@@ -79,7 +79,8 @@ class ConsumptionControllerSpec()
     ),
     billing = ApiKeyBilling(1000, BigDecimal(30)),
     from = DateTime.now().minusDays(1).withTimeAtStartOfDay(),
-    to = DateTime.now().withTimeAtStartOfDay()
+    to = DateTime.now().withTimeAtStartOfDay(),
+    state = ApiKeyConsumptionState.Completed
   )
 
   "a team admin" can {
@@ -240,7 +241,7 @@ class ConsumptionControllerSpec()
         dailyQuota = callPerDay,
         monthlyQuota = callPerMonth,
         constrainedServicesOnly = true,
-        tags = Seq(),
+        tags = Set.empty[String],
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None

@@ -20,7 +20,6 @@ lazy val root = (project in file("."))
     buildInfoPackage := "daikoku"
   )
 
-
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 
 assemblyMergeStrategy in assembly := {
@@ -77,7 +76,7 @@ libraryDependencies ++= Seq(
   "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
   "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.2",
-  "com.typesafe.akka"               %% "akka-http-xml"                  % "10.1.15",
+  "com.typesafe.akka" %% "akka-http-xml" % "10.1.15",
   "org.typelevel" %% "cats-core" % "2.1.1",
   "de.svenkubiak" % "jBCrypt" % "0.4.1",
   "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.0",

@@ -44,26 +44,59 @@ It's possible to **allow API keys aggregation**
 
 It's important to choose a type of plan :
 
-* free without quotas: a plan with an unlimited number of calls per day and per month.
-* free with quotas: a plan with a limited number of calls per day and per month. Quotas will be set by default and can be overwritten.
-* quotas with limit: a priced plan with a limited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. 
-* quotas without limit: a priced plan with unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. The cost per additional requests can be set.
-* pay per use: a plan priced on usage. A fixed cost by month can be set. The cost per additional requests can be set.
+* **free without quotas**: a plan with an unlimited number of calls per day and per month.
+* **free with quotas**: a plan with a limited number of calls per day and per month. Quotas will be set by default and can be overwritten.
+* **quotas with limit**: a priced plan with a limited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. 
+* **quotas without limit**: a priced plan with unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. The cost per additional requests can be set.
+* **pay per use**: a plan priced on usage. A fixed cost by month can be set. The cost per additional requests can be set.
+
+The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are three possible types of steps:
+
+  * **Admin Validation**: This step requires an administrator from the API's owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.
+
+  * **Email Validation**: This step involves a third-party person validating the subscription request by clicking on a validation link sent to the provided email address. Once the person clicks on the link, the request is validated, and the user is redirected to a public acknowledgment interface.
+
+  * **Payment Validation**: This step requires the requester to make a payment through a payment gateway. The user is redirected to a payment page provided by the payment gateway where they need to enter their payment information. Once the payment is validated, the subscription is approved, and the user is redirected to Daikoku's home page.
+
+> When a consumption plan for an API is priced, after its creation, one or more Stripe products are created based on the plan type:
+> 
+>  **Quotas Only**: A fixed-price subscription product is created.
+> 
+> **Quotas / Pay Per Use**: Two products are created: a fixed-price subscription and a variable component linked to the user's consumption, which is synchronized with Stripe at the end of each day.
+> 
+> **Pay Per Use**: Similarly, two products are created: a fixed-price subscription and a variable component linked to the user's consumption.
+
+
+@@@warning
+Please note that the email validation step can be used multiple times, while the other steps can only be completed once in the process.
+@@@warning
+
+The subscription process can be customized by adding new steps based on specific requirements. 
+>Daikoku is an open-source project, and we encourage community initiatives to contribute new step types. We invite contributors to submit Pull Requests on the [project's GitHub repository](https://github.com/MAIF/daikoku) to propose new features.
+
+To visualize and customize the subscription process, you can access the "Process" tab from the plan modification page. From this tab, you can view the entire process, add new steps, modify existing ones, or delete steps. 
+
+@@@warning
+Please be aware that modifying or deleting a step immediately affects ongoing requests, either modifying them or validating them if necessary.
+@@@
+
+When submitting a subscription request, the only required data is the team for which you want to subscribe. The subscription process may also prompt you to provide a motivation, particularly if the admin validation step is included. In such cases, a modal window appears to allow for detailed motivation for the request.
+
+Once the subscription request is validated or declined, notifications and emails are generated to inform the user of the request's status.
+
+If your subscription plan is associated with consumption-based pricing, you can also modify certain billing information, such as your name, address, and payment details. The link to the billing information modification page, stored by the payment gateway, can be found on Daikoku's billing page.
 
 #### Otoroshi, billing and security
 Depending on chosen plan type, certain custom properties may be accessibles.
 
 - Plan needs an Otoroshi instance to allow users to subscribe. After choosing an instance, a list of Otoroshi service groups and services is accessible to link daikoku api/plan with one or more Otoroshi service group or services.
 - As it's Otoroshi which manages apis, apikey quotas can be define.
-- Daikoku provide, like [Otorshi](https://maif.github.io/otoroshi/manual/entities/apikeys.html), some apikey parameters.
+- Daikoku provide, like [Otoroshi](https://maif.github.io/otoroshi/manual/entities/apikeys.html), some apikey parameters.
 - Daikoku side, billing informations can be filled (billing period, cost per month, currency ...)
 - For security, you can force apikey rotation. it's an Otoroshi feature that will reset clientSecret every month with a grace period of 1 week (during this week both secrets works)
-- Subscription can be: 
-  * Automatic: subscriptions will be granted automatically.
-  * Manual: subscriptions will require an acceptance by a team admin.
 - You can force the integration process :
   * ApiKey: subscribers have access to an apikey to call api
-  * Automatic: Subscribers have just access to a token, which link to a real apikey,  accessible by admin api. It's a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.
+  * Automatic: Subscribers have just access to a token, which link to a real apikey, accessible by admin api. It's a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.
 
 @@@ note { title='API key Metadata' }
 As Otoroshi does, it's possible to add metadata on API keys. __Automatic metadata__ will be calculated and added after subscription validation. __Asked metadata__ will switch the plan subscription mode to manual then, on susbcription acceptation, a team admin will have to add the metadata manually. 

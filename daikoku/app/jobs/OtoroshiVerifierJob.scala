@@ -285,7 +285,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
 
     def getListFromMeta(key: String,
                         metadata: Map[String, String]): Set[String] = {
-      metadata.get(key)
+      metadata
+        .get(key)
         .map(_.split('|').toSeq.map(_.trim).toSet)
         .getOrElse(Set.empty)
     }
@@ -337,7 +338,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
             env.dataStore.apiRepo
               .forAllTenant()
               .findOneNotDeleted(
-                Json.obj("_id" -> subscription.api.value, "state" -> ApiState.publishedJsonFilter)),
+                Json.obj("_id" -> subscription.api.value,
+                         "state" -> ApiState.publishedJsonFilter)),
             sendErrorNotification(
               NotificationAction.OtoroshiSyncSubscriptionError(
                 subscription,
@@ -395,14 +397,16 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                                         .findById(subscription.team),
                                       ())
           newApk <- EitherT(
-            Future.sequence((aggregatedSubscriptions :+ subscription)
+            Future
+              .sequence((aggregatedSubscriptions :+ subscription)
                 .map(sub => {
                   for {
                     api <- EitherT.fromOptionF(
                       env.dataStore.apiRepo
                         .forAllTenant()
-                        .findOneNotDeleted(Json.obj("_id" -> sub.api.value,
-                          "state" -> ApiState.publishedJsonFilter)),
+                        .findOneNotDeleted(
+                          Json.obj("_id" -> sub.api.value,
+                                   "state" -> ApiState.publishedJsonFilter)),
                       sendErrorNotification(
                         NotificationAction.OtoroshiSyncSubscriptionError(
                           sub,
@@ -419,7 +423,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                         api.team,
                         tenant.id)
                     )
-                    user <- EitherT.fromOptionF(env.dataStore.userRepo.findById(sub.by), ())
+                    user <- EitherT
+                      .fromOptionF(env.dataStore.userRepo.findById(sub.by), ())
                   } yield {
                     val ctx: Map[String, String] = Map(
                       "user.id" -> user.id.value,
@@ -444,8 +449,10 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                       .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
                       .getOrElse(Set.empty[String])
 
-                    val tagsFromDk = getListFromMeta("daikoku__tags", apk.metadata)
-                    val newTagsFromDk = planTags.map(OtoroshiTarget.processValue(_, ctx))
+                    val tagsFromDk =
+                      getListFromMeta("daikoku__tags", apk.metadata)
+                    val newTagsFromDk =
+                      planTags.map(OtoroshiTarget.processValue(_, ctx))
 
                     //todo: unnecessary ??
                     //val newTags: Set[String] = apk.tags.diff(tagsFromDk) ++ newTagsFromDk
@@ -682,7 +689,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
               .forAllTenant()
               .findOneNotDeleted(
                 Json.obj("_id" -> subscription.api.value,
-                  "state" -> ApiState.publishedJsonFilter)),
+                         "state" -> ApiState.publishedJsonFilter)),
             sendErrorNotification(
               NotificationAction.OtoroshiSyncSubscriptionError(
                 subscription,

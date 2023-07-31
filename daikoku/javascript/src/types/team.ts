@@ -25,7 +25,6 @@ export interface ITeamVisibility {
   type: 'Personal' | 'Organization' | 'Admin';
   name: string;
   avatar: string;
-
 }
 
 export interface ITeamFull extends ITeamSimple {

@@ -9,7 +9,11 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
+  Accepted,
+  Pending,
+  Rejected
+}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
@@ -472,16 +476,18 @@ object json {
 
     override def writes(o: OtoroshiSettingsId): JsValue = JsString(o.value)
   }
-  val ThirdPartyPaymentSettingsIdFormat = new Format[ThirdPartyPaymentSettingsId] {
-    override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettingsId] =
-      Try {
-        JsSuccess(ThirdPartyPaymentSettingsId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
+  val ThirdPartyPaymentSettingsIdFormat =
+    new Format[ThirdPartyPaymentSettingsId] {
+      override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettingsId] =
+        Try {
+          JsSuccess(ThirdPartyPaymentSettingsId(json.as[String]))
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
 
-    override def writes(o: ThirdPartyPaymentSettingsId): JsValue = JsString(o.value)
-  }
+      override def writes(o: ThirdPartyPaymentSettingsId): JsValue =
+        JsString(o.value)
+    }
   val SubscriptionDemandIdFormat = new Format[SubscriptionDemandId] {
     override def reads(json: JsValue): JsResult[SubscriptionDemandId] =
       Try {
@@ -500,7 +506,8 @@ object json {
         case e => JsError(e.getMessage)
       } get
 
-    override def writes(o: SubscriptionDemandStepId): JsValue = JsString(o.value)
+    override def writes(o: SubscriptionDemandStepId): JsValue =
+      JsString(o.value)
   }
   val TeamTypeFormat = new Format[TeamType] {
     override def reads(json: JsValue) = json.as[String] match {
@@ -546,46 +553,58 @@ object json {
 
   val ValidationStepFormat = new Format[ValidationStep] {
     override def writes(o: ValidationStep): JsValue = o match {
-      case ValidationStep.Email(id, emails, message, title) => Json.obj(
-        "type" -> "email",
-        "id" -> id,
-        "emails" -> emails,
-        "title" -> title,
-        "message" -> message.map(JsString).getOrElse(JsNull).as[JsValue]
-      )
-      case ValidationStep.TeamAdmin(id, team, title) => Json.obj(
-        "type" -> "teamAdmin",
-        "id" -> id,
-        "team" -> team.asJson,
-        "title" -> title
-      )
-      case ValidationStep.Payment(id, thirdPartyPaymentSettingsId, title) => Json.obj(
-        "type" -> "payment",
-        "id" -> id,
-        "thirdPartyPaymentSettingsId" -> thirdPartyPaymentSettingsId.asJson,
-        "title" -> title
-      )
+      case ValidationStep.Email(id, emails, message, title) =>
+        Json.obj(
+          "type" -> "email",
+          "id" -> id,
+          "emails" -> emails,
+          "title" -> title,
+          "message" -> message.map(JsString).getOrElse(JsNull).as[JsValue]
+        )
+      case ValidationStep.TeamAdmin(id, team, title) =>
+        Json.obj(
+          "type" -> "teamAdmin",
+          "id" -> id,
+          "team" -> team.asJson,
+          "title" -> title
+        )
+      case ValidationStep.Payment(id, thirdPartyPaymentSettingsId, title) =>
+        Json.obj(
+          "type" -> "payment",
+          "id" -> id,
+          "thirdPartyPaymentSettingsId" -> thirdPartyPaymentSettingsId.asJson,
+          "title" -> title
+        )
     }
 
-
-    override def reads(json: JsValue): JsResult[ValidationStep] = (json \ "type").as[String] match {
-      case "email" => JsSuccess(ValidationStep.Email(
-        id = (json \ "id").as[String],
-        emails = (json \ "emails").as[Seq[String]],
-        message = (json \ "message").asOpt[String],
-        title = (json \ "title").as[String],
-      ))
-      case "teamAdmin" => JsSuccess(ValidationStep.TeamAdmin(
-        id = (json \ "id").as[String],
-        team = (json \ "team").as(TeamIdFormat),
-        title = (json \ "title").as[String],
-      ))
-      case "payment" => JsSuccess(ValidationStep.Payment(
-        id = (json \ "id").as[String],
-        thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat),
-        title = (json \ "title").as[String]))
-      case str => JsError(s"Bad UsagePlanVisibility value: $str")
-    }
+    override def reads(json: JsValue): JsResult[ValidationStep] =
+      (json \ "type").as[String] match {
+        case "email" =>
+          JsSuccess(
+            ValidationStep.Email(
+              id = (json \ "id").as[String],
+              emails = (json \ "emails").as[Seq[String]],
+              message = (json \ "message").asOpt[String],
+              title = (json \ "title").as[String],
+            ))
+        case "teamAdmin" =>
+          JsSuccess(
+            ValidationStep.TeamAdmin(
+              id = (json \ "id").as[String],
+              team = (json \ "team").as(TeamIdFormat),
+              title = (json \ "title").as[String],
+            ))
+        case "payment" =>
+          JsSuccess(
+            ValidationStep.Payment(
+              id = (json \ "id").as[String],
+              thirdPartyPaymentSettingsId =
+                (json \ "thirdPartyPaymentSettingsId").as(
+                  ThirdPartyPaymentSettingsIdFormat),
+              title = (json \ "title").as[String]
+            ))
+        case str => JsError(s"Bad UsagePlanVisibility value: $str")
+      }
   }
 
   val IntegrationProcessFormat = new Format[IntegrationProcess] {
@@ -599,19 +618,21 @@ object json {
   }
 
   val BasePaymentInformationFormat = new Format[BasePaymentInformation] {
-    override def reads(json: JsValue): JsResult[BasePaymentInformation] = Try {
-      JsSuccess(BasePaymentInformation(
-        costPerMonth = (json \ "costPerMonth").as[BigDecimal],
-        trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
-        billingDuration =
-          (json \ "billingDuration").as(BillingDurationFormat),
-        currency = (json \ "currency").as(CurrencyFormat),
-      ))
-    } recover {
-      case e =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-    } get
+    override def reads(json: JsValue): JsResult[BasePaymentInformation] =
+      Try {
+        JsSuccess(
+          BasePaymentInformation(
+            costPerMonth = (json \ "costPerMonth").as[BigDecimal],
+            trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
+            billingDuration =
+              (json \ "billingDuration").as(BillingDurationFormat),
+            currency = (json \ "currency").as(CurrencyFormat),
+          ))
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
 
     override def writes(o: BasePaymentInformation): JsValue = Json.obj(
       "costPerMonth" -> o.costPerMonth,
@@ -795,51 +816,60 @@ object json {
   }
 
   val StripePriceIdsFormat = new Format[StripePriceIds] {
-    override def reads(json: JsValue): JsResult[StripePriceIds] = Try {
-      JsSuccess(
-        StripePriceIds(
-          basePriceId = (json \ "basePriceId").as[String],
-          additionalPriceId = (json \ "additionalPriceId").asOpt[String]
-        ))
-    } recover {
-      case e =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-    } get
+    override def reads(json: JsValue): JsResult[StripePriceIds] =
+      Try {
+        JsSuccess(
+          StripePriceIds(
+            basePriceId = (json \ "basePriceId").as[String],
+            additionalPriceId = (json \ "additionalPriceId").asOpt[String]
+          ))
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
 
     override def writes(o: StripePriceIds): JsValue = Json.obj(
       "basePriceId" -> o.basePriceId,
-      "additionalPriceId" -> o.additionalPriceId.map(JsString).getOrElse(JsNull).as[JsValue]
+      "additionalPriceId" -> o.additionalPriceId
+        .map(JsString)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 
   val PaymentSettingsFormat = new Format[PaymentSettings] {
-    override def reads(json: JsValue): JsResult[PaymentSettings] = (json \ "type").asOpt[String] match {
-      case Some("Stripe") => StripePaymentSettingsFormat.reads(json)
-      case Some(str) => JsError(s"Bad notification payment settings value: $str")
-      case None => JsError(s"No notification payment settings value")
-    }
+    override def reads(json: JsValue): JsResult[PaymentSettings] =
+      (json \ "type").asOpt[String] match {
+        case Some("Stripe") => StripePaymentSettingsFormat.reads(json)
+        case Some(str) =>
+          JsError(s"Bad notification payment settings value: $str")
+        case None => JsError(s"No notification payment settings value")
+      }
 
     override def writes(o: PaymentSettings): JsValue = o match {
       case s: PaymentSettings.Stripe =>
-        StripePaymentSettingsFormat.writes(s).as[JsObject] ++ Json.obj("type" -> "Stripe")
+        StripePaymentSettingsFormat.writes(s).as[JsObject] ++ Json.obj(
+          "type" -> "Stripe")
     }
   }
 
   val StripePaymentSettingsFormat = new Format[PaymentSettings.Stripe] {
-    override def reads(json: JsValue): JsResult[PaymentSettings.Stripe] = Try {
-      JsSuccess(
-        PaymentSettings.Stripe(
-          thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId").as(ThirdPartyPaymentSettingsIdFormat),
-          productId = (json \ "productId").as[String],
-          priceIds = (json \ "priceIds").as(StripePriceIdsFormat)
-        ))
-    } recover {
-      case e =>
-        AppLogger.warn("Stripe Settings")
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-    } get
+    override def reads(json: JsValue): JsResult[PaymentSettings.Stripe] =
+      Try {
+        JsSuccess(
+          PaymentSettings.Stripe(
+            thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId")
+              .as(ThirdPartyPaymentSettingsIdFormat),
+            productId = (json \ "productId").as[String],
+            priceIds = (json \ "priceIds").as(StripePriceIdsFormat)
+          ))
+      } recover {
+        case e =>
+          AppLogger.warn("Stripe Settings")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
 
     override def writes(o: PaymentSettings.Stripe): JsValue = Json.obj(
       "thirdPartyPaymentSettingsId" -> o.thirdPartyPaymentSettingsId.asJson,
@@ -1961,7 +1991,8 @@ object json {
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
-      "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat.writes(o.thirdPartyPaymentSettings)
+      "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat.writes(
+        o.thirdPartyPaymentSettings)
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -2363,13 +2394,19 @@ object json {
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
             parent = (json \ "parent").asOpt(ApiSubscriptionIdFormat),
-            thirdPartySubscriptionInformations = (json \ "thirdPartySubscriptionInformations") match {
-              case JsDefined(value) => value match {
-                case JsNull => None
-                case _ => ThirdPartySubscriptionInformationsFormat.reads(value).get.some
+            thirdPartySubscriptionInformations =
+              (json \ "thirdPartySubscriptionInformations") match {
+                case JsDefined(value) =>
+                  value match {
+                    case JsNull => None
+                    case _ =>
+                      ThirdPartySubscriptionInformationsFormat
+                        .reads(value)
+                        .get
+                        .some
+                  }
+                case _: JsUndefined => None
               }
-              case _: JsUndefined => None
-            }
           )
         )
       } recover {
@@ -2429,116 +2466,134 @@ object json {
     )
   }
 
-  val ThirdPartySubscriptionInformationsFormat =  new Format[ThirdPartySubscriptionInformations] {
-    override def reads(json: JsValue): JsResult[ThirdPartySubscriptionInformations] = {
-      (json \ "type").as[String] match {
-        case "stripe" => StripeSubscriptionInformationsFormat.reads(json)
+  val ThirdPartySubscriptionInformationsFormat =
+    new Format[ThirdPartySubscriptionInformations] {
+      override def reads(
+          json: JsValue): JsResult[ThirdPartySubscriptionInformations] = {
+        (json \ "type").as[String] match {
+          case "stripe" => StripeSubscriptionInformationsFormat.reads(json)
+        }
       }
-    }
 
-    override def writes(o: ThirdPartySubscriptionInformations): JsValue = o match {
-      case i: StripeSubscriptionInformations => StripeSubscriptionInformationsFormat.writes(i).as[JsObject] + ("type" -> JsString("stripe"))
+      override def writes(o: ThirdPartySubscriptionInformations): JsValue =
+        o match {
+          case i: StripeSubscriptionInformations =>
+            StripeSubscriptionInformationsFormat
+              .writes(i)
+              .as[JsObject] + ("type" -> JsString("stripe"))
+        }
     }
-  }
-  val StripeSubscriptionInformationsFormat = new Format[StripeSubscriptionInformations] {
-    override def reads(json: JsValue): JsResult[StripeSubscriptionInformations] = Try {
-      JsSuccess(
-        StripeSubscriptionInformations(
-          subscriptionId = (json \ "subscriptionId").as[String],
-          primaryElementId =  (json \ "primaryElementId").asOpt[String],
-          meteredElementId =  (json \ "meteredElementId").asOpt[String]
+  val StripeSubscriptionInformationsFormat =
+    new Format[StripeSubscriptionInformations] {
+      override def reads(
+          json: JsValue): JsResult[StripeSubscriptionInformations] =
+        Try {
+          JsSuccess(
+            StripeSubscriptionInformations(
+              subscriptionId = (json \ "subscriptionId").as[String],
+              primaryElementId = (json \ "primaryElementId").asOpt[String],
+              meteredElementId = (json \ "meteredElementId").asOpt[String]
+            )
+          )
+        } recover {
+          case e =>
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
+        } get
+
+      override def writes(o: StripeSubscriptionInformations): JsValue =
+        Json.obj(
+          "subscriptionId" -> o.subscriptionId,
+          "primaryElementId" -> o.primaryElementId,
+          "meteredElementId" -> o.meteredElementId
         )
-      )
-    } recover {
-    case e =>
-      AppLogger.error(e.getMessage, e)
-      JsError(e.getMessage)
-  } get
-
-    override def writes(o: StripeSubscriptionInformations): JsValue = Json.obj(
-      "subscriptionId" -> o.subscriptionId,
-      "primaryElementId" -> o.primaryElementId,
-      "meteredElementId" -> o.meteredElementId
-    )
-  }
-
+    }
 
   val SubscriptionDemandStateFormat = new Format[SubscriptionDemandState] {
     override def reads(json: JsValue) = json.as[String] match {
-      case "waiting" => JsSuccess(SubscriptionDemandState.Waiting)
+      case "waiting"    => JsSuccess(SubscriptionDemandState.Waiting)
       case "inProgress" => JsSuccess(SubscriptionDemandState.InProgress)
-      case "canceled" => JsSuccess(SubscriptionDemandState.Canceled)
-      case "accepted" => JsSuccess(SubscriptionDemandState.Accepted)
-      case "refused" => JsSuccess(SubscriptionDemandState.Refused)
-      case str => JsError(s"Bad SubscriptionDemandState value: $str")
+      case "canceled"   => JsSuccess(SubscriptionDemandState.Canceled)
+      case "accepted"   => JsSuccess(SubscriptionDemandState.Accepted)
+      case "refused"    => JsSuccess(SubscriptionDemandState.Refused)
+      case "blocked"    => JsSuccess(SubscriptionDemandState.Blocked)
+      case str          => JsError(s"Bad SubscriptionDemandState value: $str")
     }
 
     override def writes(o: SubscriptionDemandState) = JsString(o.name)
   }
 
-
   val SubscriptionDemandFormat = new Format[SubscriptionDemand] {
-    override def writes(o: SubscriptionDemand): JsValue = Json.obj(
-      "_id" -> o.id.asJson,
-      "_tenant" -> o.tenant.asJson,
-      "_deleted" -> o.deleted,
-      "api" -> o.api.asJson,
-      "plan" -> o.plan.asJson,
-      "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
-      "state" -> o.state.name,
-      "team" -> o.team.asJson,
-      "from" -> o.from.asJson,
-      "date" -> DateTimeFormat.writes(o.date),
-      "motivation" -> o.motivation.map(JsString).getOrElse(JsNull).as[JsValue],
-      "parentSubscription" -> o.parentSubscriptionId.map(_.asJson).getOrElse(JsNull).as[JsValue],
-      "customMetadata" -> o.customMetadata
-        .getOrElse(JsNull)
-        .as[JsValue],
-      "customMaxPerSecond" -> o.customMaxPerSecond
-        .map(JsNumber(_))
-        .getOrElse(JsNull)
-        .as[JsValue],
-      "customMaxPerDay" -> o.customMaxPerDay
-        .map(JsNumber(_))
-        .getOrElse(JsNull)
-        .as[JsValue],
-      "customMaxPerMonth" -> o.customMaxPerMonth
-        .map(JsNumber(_))
-        .getOrElse(JsNull)
-        .as[JsValue],
-      "customReadOnly" -> o.customReadOnly
-        .map(JsBoolean.apply)
-        .getOrElse(JsNull)
-        .as[JsValue])
-
-
-    override def reads(json: JsValue): JsResult[SubscriptionDemand] = Try {
-      JsSuccess(
-        SubscriptionDemand(
-          id = (json \ "_id").as(SubscriptionDemandIdFormat),
-          tenant = (json \ "_tenant").as(TenantIdFormat),
-          deleted = (json \ "_deleted").as[Boolean],
-          api = (json \ "api").as(ApiIdFormat),
-          plan = (json \ "plan").as(UsagePlanIdFormat),
-          steps = (json \ "steps").as(SeqSubscriptionDemanStepFormat),
-          state = (json \ "state").as(SubscriptionDemandStateFormat),
-          team = (json \ "team").as(TeamIdFormat),
-          from = (json \ "from").as(UserIdFormat),
-          date = (json \ "date").as(DateTimeFormat),
-          motivation = (json \ "motivation").asOpt[String],
-          parentSubscriptionId = (json \ "parentSubscription").asOpt(ApiSubscriptionIdFormat),
-          customMetadata = (json \ "customMetadata").asOpt[JsObject],
-          customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
-          customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
-          customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
-          customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
-        )
+    override def writes(o: SubscriptionDemand): JsValue =
+      Json.obj(
+        "_id" -> o.id.asJson,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "api" -> o.api.asJson,
+        "plan" -> o.plan.asJson,
+        "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
+        "state" -> o.state.name,
+        "team" -> o.team.asJson,
+        "from" -> o.from.asJson,
+        "date" -> DateTimeFormat.writes(o.date),
+        "motivation" -> o.motivation
+          .map(JsString)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "parentSubscription" -> o.parentSubscriptionId
+          .map(_.asJson)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "customMetadata" -> o.customMetadata
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "customMaxPerSecond" -> o.customMaxPerSecond
+          .map(JsNumber(_))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "customMaxPerDay" -> o.customMaxPerDay
+          .map(JsNumber(_))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "customMaxPerMonth" -> o.customMaxPerMonth
+          .map(JsNumber(_))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "customReadOnly" -> o.customReadOnly
+          .map(JsBoolean.apply)
+          .getOrElse(JsNull)
+          .as[JsValue]
       )
-    } recover {
-      case e =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-    } get
+
+    override def reads(json: JsValue): JsResult[SubscriptionDemand] =
+      Try {
+        JsSuccess(
+          SubscriptionDemand(
+            id = (json \ "_id").as(SubscriptionDemandIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
+            api = (json \ "api").as(ApiIdFormat),
+            plan = (json \ "plan").as(UsagePlanIdFormat),
+            steps = (json \ "steps").as(SeqSubscriptionDemanStepFormat),
+            state = (json \ "state").as(SubscriptionDemandStateFormat),
+            team = (json \ "team").as(TeamIdFormat),
+            from = (json \ "from").as(UserIdFormat),
+            date = (json \ "date").as(DateTimeFormat),
+            motivation = (json \ "motivation").asOpt[String],
+            parentSubscriptionId =
+              (json \ "parentSubscription").asOpt(ApiSubscriptionIdFormat),
+            customMetadata = (json \ "customMetadata").asOpt[JsObject],
+            customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
+            customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
+            customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
+            customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
   }
 
   val SubscriptionDemandStepFormat = new Format[SubscriptionDemandStep] {
@@ -2549,20 +2604,21 @@ object json {
       "metadata" -> o.metadata
     )
 
-    override def reads(json: JsValue): JsResult[SubscriptionDemandStep] = Try {
-      JsSuccess(
-        SubscriptionDemandStep(
-          id = (json \ "_id").as(SubscriptionDemandStepIdFormat),
-          state = (json \ "state").as(SubscriptionDemandStateFormat),
-          step = (json \ "step").as(ValidationStepFormat),
-          metadata = (json \ "metadata").as[JsObject]
+    override def reads(json: JsValue): JsResult[SubscriptionDemandStep] =
+      Try {
+        JsSuccess(
+          SubscriptionDemandStep(
+            id = (json \ "_id").as(SubscriptionDemandStepIdFormat),
+            state = (json \ "state").as(SubscriptionDemandStateFormat),
+            step = (json \ "step").as(ValidationStepFormat),
+            metadata = (json \ "metadata").as[JsObject]
+          )
         )
-      )
-    } recover {
-      case e =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-    } get
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
   }
 
   val StepValidatorFormat = new Format[StepValidator] {
@@ -2576,23 +2632,25 @@ object json {
       "metadata" -> o.metadata
     )
 
-    override def reads(json: JsValue): JsResult[StepValidator] = Try {
-      JsSuccess(
-        StepValidator(
-          id = (json \ "_id").as(DatastoreIdFormat),
-          tenant = (json \ "_tenant").as(TenantIdFormat),
-          deleted = (json \ "_deleted").as[Boolean],
-          token = (json \ "token").as[String],
-          step = (json \ "step").as(SubscriptionDemandStepIdFormat),
-          subscriptionDemand = (json \ "subscriptionDemand").as(SubscriptionDemandIdFormat),
-          metadata = (json \ "metadata").as[JsObject]
+    override def reads(json: JsValue): JsResult[StepValidator] =
+      Try {
+        JsSuccess(
+          StepValidator(
+            id = (json \ "_id").as(DatastoreIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
+            token = (json \ "token").as[String],
+            step = (json \ "step").as(SubscriptionDemandStepIdFormat),
+            subscriptionDemand =
+              (json \ "subscriptionDemand").as(SubscriptionDemandIdFormat),
+            metadata = (json \ "metadata").as[JsObject]
+          )
         )
-      )
-    } recover {
-      case e =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-    } get
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
   }
 
   //just because otoroshi do not use the actual entities format ;)
@@ -2772,8 +2830,9 @@ object json {
         case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
         case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
         case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
-        case "CheckoutForSubscription" => CheckoutForSubscriptionFormat.reads(json)
-        case str                    => JsError(s"Bad notification value: $str")
+        case "CheckoutForSubscription" =>
+          CheckoutForSubscriptionFormat.reads(json)
+        case str => JsError(s"Bad notification value: $str")
       }
 
       override def writes(o: NotificationAction) = o match {
@@ -3287,27 +3346,29 @@ object json {
       )
     }
 
-  val NotificationSenderFormat: Format[NotificationSender] = new Format[NotificationSender] {
-    override def reads(json: JsValue): JsResult[NotificationSender] = Try {
-      JsSuccess(
-        NotificationSender(
-          name = (json \ "name").as[String],
-          email = (json \ "email").as[String],
-          id = (json \ "id").asOpt(UserIdFormat)
-        )
-      )
-    } recover {
-      case e =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-    } get
+  val NotificationSenderFormat: Format[NotificationSender] =
+    new Format[NotificationSender] {
+      override def reads(json: JsValue): JsResult[NotificationSender] =
+        Try {
+          JsSuccess(
+            NotificationSender(
+              name = (json \ "name").as[String],
+              email = (json \ "email").as[String],
+              id = (json \ "id").asOpt(UserIdFormat)
+            )
+          )
+        } recover {
+          case e =>
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
+        } get
 
-    override def writes(o: NotificationSender): JsValue = Json.obj(
-      "name" -> o.name,
-      "email" -> o.email,
-      "id" -> o.id.map(_.asJson).getOrElse(JsNull).as[JsValue]
-    )
-  }
+      override def writes(o: NotificationSender): JsValue = Json.obj(
+        "name" -> o.name,
+        "email" -> o.email,
+        "id" -> o.id.map(_.asJson).getOrElse(JsNull).as[JsValue]
+      )
+    }
   val NotificationFormat: Format[Notification] = new Format[Notification] {
     override def reads(json: JsValue): JsResult[Notification] =
       Try {
@@ -3318,7 +3379,8 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             team = (json \ "team").asOpt(TeamIdFormat),
             sender = (json \ "sender").as(NotificationSenderFormat),
-            date = (json \ "date").asOpt(DateTimeFormat).getOrElse(DateTime.now()),
+            date =
+              (json \ "date").asOpt(DateTimeFormat).getOrElse(DateTime.now()),
             status = (json \ "status").as(NotificationStatusFormat),
             action = (json \ "action").as(NotificationActionFormat),
             notificationType = (json \ "notificationType")
@@ -3410,16 +3472,17 @@ object json {
     )
   }
 
-  val ApiKeyConsumptionStateFormat: Format[ApiKeyConsumptionState] = new Format[ApiKeyConsumptionState] {
-    override def reads(json: JsValue): JsResult[ApiKeyConsumptionState] = json.as[String] match {
-      case "completed" => JsSuccess(ApiKeyConsumptionState.Completed)
-      case "inProgress" => JsSuccess(ApiKeyConsumptionState.InProgress)
-      case str => JsError(s"Bad TeamPermission value: $str")
+  val ApiKeyConsumptionStateFormat: Format[ApiKeyConsumptionState] =
+    new Format[ApiKeyConsumptionState] {
+      override def reads(json: JsValue): JsResult[ApiKeyConsumptionState] =
+        json.as[String] match {
+          case "completed"  => JsSuccess(ApiKeyConsumptionState.Completed)
+          case "inProgress" => JsSuccess(ApiKeyConsumptionState.InProgress)
+          case str          => JsError(s"Bad ApiKeyConsumptionState value: $str")
+        }
+
+      override def writes(o: ApiKeyConsumptionState): JsValue = JsString(o.name)
     }
-
-
-    override def writes(o: ApiKeyConsumptionState): JsValue = JsString(o.name)
-  }
 
   val ConsumptionFormat: Format[ApiKeyConsumption] =
     new Format[ApiKeyConsumption] {
@@ -4075,31 +4138,35 @@ object json {
   }
 
   val ThirdPartyPaymentSettingsFormat = new Format[ThirdPartyPaymentSettings] {
-    override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettings] = (json \ "type").as[String] match {
-      case "Stripe" => StripeSettingsFormat.reads(json)
-      case str => JsError(s"Bad ThirdPartyPaymentSettings value: $str")
-    }
+    override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettings] =
+      (json \ "type").as[String] match {
+        case "Stripe" => StripeSettingsFormat.reads(json)
+        case str      => JsError(s"Bad ThirdPartyPaymentSettings value: $str")
+      }
 
     override def writes(o: ThirdPartyPaymentSettings): JsValue = o match {
-      case s: StripeSettings =>  StripeSettingsFormat.writes(s).as[JsObject] ++ Json.obj("type" -> "Stripe")
+      case s: StripeSettings =>
+        StripeSettingsFormat.writes(s).as[JsObject] ++ Json.obj(
+          "type" -> "Stripe")
     }
   }
 
   val StripeSettingsFormat = new Format[StripeSettings] {
-    override def reads(json: JsValue): JsResult[StripeSettings] = Try {
-      StripeSettings(
-        id  = (json \ "_id").as(ThirdPartyPaymentSettingsIdFormat),
-        name = (json \ "name").as[String],
-        publicKey = (json \ "publicKey").as[String],
-        secretKey = (json \ "secretKey").as[String],
-      )
-    } match {
-      case Failure(e) =>
-        AppLogger.warn("Stripe Settings")
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-      case Success(value) => JsSuccess(value)
-    }
+    override def reads(json: JsValue): JsResult[StripeSettings] =
+      Try {
+        StripeSettings(
+          id = (json \ "_id").as(ThirdPartyPaymentSettingsIdFormat),
+          name = (json \ "name").as[String],
+          publicKey = (json \ "publicKey").as[String],
+          secretKey = (json \ "secretKey").as[String],
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.warn("Stripe Settings")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
 
     override def writes(o: StripeSettings): JsValue = Json.obj(
       "_id" -> ThirdPartyPaymentSettingsIdFormat.writes(o.id),
@@ -4111,23 +4178,26 @@ object json {
 
   val SetOtoroshiServicesIdFormat =
     Format(Reads.set(OtoroshiServiceIdFormat),
-      Writes.set(OtoroshiServiceIdFormat))
+           Writes.set(OtoroshiServiceIdFormat))
   val SetOtoroshiRoutesIdFormat =
     Format(Reads.set(OtoroshiRouteIdFormat), Writes.set(OtoroshiRouteIdFormat))
   val SetOtoroshiServiceGroupsIdFormat =
     Format(Reads.set(OtoroshiServiceGroupIdFormat),
-      Writes.set(OtoroshiServiceGroupIdFormat))
+           Writes.set(OtoroshiServiceGroupIdFormat))
   val SeqCmsHistoryFormat =
     Format(Reads.seq(CmsHistoryFormat), Writes.seq(CmsHistoryFormat))
   val SeqApiDocumentationDetailPageFormat
-  : Format[Seq[ApiDocumentationDetailPage]] =
+    : Format[Seq[ApiDocumentationDetailPage]] =
     Format(Reads.seq(ApiDocumentationDetailPageFormat),
-      Writes.seq(ApiDocumentationDetailPageFormat))
-  val SeqThirdPartyPaymentSettingsFormat: Format[Seq[ThirdPartyPaymentSettings]] =
-    Format(Reads.seq(ThirdPartyPaymentSettingsFormat), Writes.seq(ThirdPartyPaymentSettingsFormat))
+           Writes.seq(ApiDocumentationDetailPageFormat))
+  val SeqThirdPartyPaymentSettingsFormat
+    : Format[Seq[ThirdPartyPaymentSettings]] =
+    Format(Reads.seq(ThirdPartyPaymentSettingsFormat),
+           Writes.seq(ThirdPartyPaymentSettingsFormat))
   val SeqValidationStepFormat: Format[Seq[ValidationStep]] =
     Format(Reads.seq(ValidationStepFormat), Writes.seq(ValidationStepFormat))
   val SeqSubscriptionDemanStepFormat =
-    Format(Reads.seq(SubscriptionDemandStepFormat), Writes.seq(SubscriptionDemandStepFormat))
+    Format(Reads.seq(SubscriptionDemandStepFormat),
+           Writes.seq(SubscriptionDemandStepFormat))
 
 }

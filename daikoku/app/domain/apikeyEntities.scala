@@ -74,7 +74,8 @@ case class ApiSubscription(
     customMaxPerMonth: Option[Long] = None,
     customReadOnly: Option[Boolean] = None,
     parent: Option[ApiSubscriptionId] = None,
-    thirdPartySubscriptionInformations: Option[ThirdPartySubscriptionInformations] = None
+    thirdPartySubscriptionInformations: Option[
+      ThirdPartySubscriptionInformations] = None
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(permission: TeamPermission,
@@ -199,15 +200,15 @@ case class ApiKeyBilling(hits: Long, total: BigDecimal)
 }
 
 sealed trait ThirdPartySubscriptionInformations {
-  def asJson: JsValue = json.ThirdPartySubscriptionInformationsFormat.writes(this)
+  def asJson: JsValue =
+    json.ThirdPartySubscriptionInformationsFormat.writes(this)
 }
 
 object ThirdPartySubscriptionInformations {
-  case class StripeSubscriptionInformations(
-      subscriptionId: String,
-      primaryElementId: Option[String],
-      meteredElementId: Option[String]) extends ThirdPartySubscriptionInformations {
-  }
+  case class StripeSubscriptionInformations(subscriptionId: String,
+                                            primaryElementId: Option[String],
+                                            meteredElementId: Option[String])
+      extends ThirdPartySubscriptionInformations {}
 }
 
 sealed trait SubscriptionDemandState {
@@ -263,31 +264,32 @@ object SubscriptionDemandState {
   def apply(name: String): Option[SubscriptionDemandState] = name match {
     case "accepted"   => Accepted.some
     case "refused"    => Refused.some
-    case "canceled"  => Canceled.some
+    case "canceled"   => Canceled.some
     case "inProgress" => InProgress.some
     case "waiting"    => Waiting.some
     case _            => None
   }
 }
 
-case class SubscriptionDemand(id: SubscriptionDemandId,
-                              tenant: TenantId,
-                              deleted: Boolean = false,
-                              api: ApiId,
-                              plan: UsagePlanId,
-                              steps: Seq[SubscriptionDemandStep],
-                              state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
-                              team: TeamId,
-                              from: UserId,
-                              date: DateTime = DateTime.now,
-                              motivation: Option[String],
-                              parentSubscriptionId: Option[ApiSubscriptionId],
-                              customReadOnly: Option[Boolean] = None,
-                              customMetadata: Option[JsObject] = None,
-                              customMaxPerSecond: Option[Long] = None,
-                              customMaxPerDay: Option[Long] = None,
-                              customMaxPerMonth: Option[Long] = None)
-  extends CanJson[SubscriptionDemand] {
+case class SubscriptionDemand(
+    id: SubscriptionDemandId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    api: ApiId,
+    plan: UsagePlanId,
+    steps: Seq[SubscriptionDemandStep],
+    state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
+    team: TeamId,
+    from: UserId,
+    date: DateTime = DateTime.now,
+    motivation: Option[String] = None,
+    parentSubscriptionId: Option[ApiSubscriptionId] = None,
+    customReadOnly: Option[Boolean] = None,
+    customMetadata: Option[JsObject] = None,
+    customMaxPerSecond: Option[Long] = None,
+    customMaxPerDay: Option[Long] = None,
+    customMaxPerMonth: Option[Long] = None)
+    extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }
 
@@ -295,12 +297,16 @@ case class SubscriptionDemandStep(id: SubscriptionDemandStepId,
                                   state: SubscriptionDemandState,
                                   step: ValidationStep,
                                   metadata: JsObject = Json.obj())
-  extends CanJson[SubscriptionDemandStep] {
+    extends CanJson[SubscriptionDemandStep] {
   override def asJson: JsValue = json.SubscriptionDemandStepFormat.writes(this)
   def check(): EitherT[Future, AppError, Unit] = {
     state match {
-      case SubscriptionDemandState.InProgress | SubscriptionDemandState.Waiting => EitherT.pure[Future, AppError](())
-      case _ => EitherT.leftT[Future, Unit](AppError.EntityConflict("Subscription demand state"))
+      case SubscriptionDemandState.InProgress |
+          SubscriptionDemandState.Waiting =>
+        EitherT.pure[Future, AppError](())
+      case _ =>
+        EitherT.leftT[Future, Unit](
+          AppError.EntityConflict("Subscription demand state"))
     }
   }
 }
@@ -312,7 +318,6 @@ case class StepValidator(id: DatastoreId,
                          step: SubscriptionDemandStepId,
                          subscriptionDemand: SubscriptionDemandId,
                          metadata: JsObject = Json.obj())
-  extends CanJson[StepValidator] {
+    extends CanJson[StepValidator] {
   override def asJson: JsValue = json.StepValidatorFormat.writes(this)
 }
-

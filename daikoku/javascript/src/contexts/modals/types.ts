@@ -14,7 +14,7 @@ import {
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
-import {string} from "prop-types";
+import { string } from 'prop-types';
 
 export interface IBaseModalProps {
   close: () => void;
@@ -84,7 +84,7 @@ export interface IFormModalProps<T> {
   onSubmit: (x: T) => void;
   options?: Option;
   actionLabel: string;
-  noClose?: boolean
+  noClose?: boolean;
 }
 
 export type TestingApiKeyModalProps = {
@@ -96,58 +96,58 @@ export type TestingApiKeyModalProps = {
   metadata: any;
 };
 type LimitedTeam = {
-  _id: string
-  name?: string
-}
+  _id: string;
+  name?: string;
+};
 type ApiSubscriptionGql = {
-  _id: String
+  _id: String;
   apiKey: {
-    clientName: string
-    clientId: string
-    clientSecret: string
-  }
-  plan: LimitedTeam
+    clientName: string;
+    clientId: string;
+    clientSecret: string;
+  };
+  plan: LimitedTeam;
   team: {
-    _id: string
-    name: string
-    type: string
-  }
-  createdAt: string
+    _id: string;
+    name: string;
+    type: string;
+  };
+  createdAt: string;
   api: {
-    _id: string
-  }
-  customName: string
-  enabled: boolean
-}
+    _id: string;
+  };
+  customName: string;
+  enabled: boolean;
+};
 type NotificationGQL = {
-  _id: string
+  _id: string;
   action: {
-    message?: string
-    motivation?: string
+    message?: string;
+    motivation?: string;
     api?: {
-      _id: string
-      name: string
-    }
-    team?: LimitedTeam
+      _id: string;
+      name: string;
+    };
+    team?: LimitedTeam;
     plan?: {
-      _id: string
-      customName?: string
-      typeName: string
-    }
+      _id: string;
+      customName?: string;
+      typeName: string;
+    };
     user?: {
-      id: string
-      name: string
-    }
+      id: string;
+      name: string;
+    };
     parentSubscriptionId?: {
-      _id: string
+      _id: string;
       apiKey: {
         clientName: string;
         clientId: string;
         clientSecret: string;
-      }
-    }
-  }
-}
+      };
+    };
+  };
+};
 export type SubscriptionMetadataModalProps = {
   api: string;
   creationMode?: boolean;

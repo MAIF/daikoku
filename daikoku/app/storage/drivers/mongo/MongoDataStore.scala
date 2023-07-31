@@ -299,13 +299,15 @@ case class MongoTenantCapableEmailVerificationRepo(
 
 case class MongoTenantCapableSubscriptionDemandRepo(
     _repo: () => MongoRepo[SubscriptionDemand, SubscriptionDemandId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId]
+    _tenantRepo: TenantId => MongoTenantAwareRepo[SubscriptionDemand,
+                                                  SubscriptionDemandId]
 ) extends MongoTenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
     with SubscriptionDemandRepo {
-  override def repo(): MongoRepo[SubscriptionDemand, SubscriptionDemandId] = _repo()
+  override def repo(): MongoRepo[SubscriptionDemand, SubscriptionDemandId] =
+    _repo()
 
-  override def tenantRepo(
-      tenant: TenantId): MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] =
+  override def tenantRepo(tenant: TenantId)
+    : MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] =
     _tenantRepo(tenant)
 }
 
@@ -473,7 +475,8 @@ class MongoDataStore(context: Context, env: Env)
   override def emailVerificationRepo: EmailVerificationRepo =
     _emailVerificationRepo
 
-  override def subscriptionDemandRepo: SubscriptionDemandRepo = _subscriptionDemandRepo
+  override def subscriptionDemandRepo: SubscriptionDemandRepo =
+    _subscriptionDemandRepo
 
   override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
 
@@ -756,20 +759,26 @@ class MongoTenantOperationRepo(env: Env,
 
   override def extractId(value: Operation): String = value.id.value
 }
-class MongoTenantSubscriptionDemandRepo(env: Env, reactiveMongoApi: ReactiveMongoApi, tenant: TenantId)
-    extends MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](env,
-                                                         reactiveMongoApi,
-                                                         tenant) {
+class MongoTenantSubscriptionDemandRepo(env: Env,
+                                        reactiveMongoApi: ReactiveMongoApi,
+                                        tenant: TenantId)
+    extends MongoTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](
+      env,
+      reactiveMongoApi,
+      tenant) {
   override def collectionName: String = "SubscriptionDemands"
 
-  override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
+  override def format: Format[SubscriptionDemand] =
+    json.SubscriptionDemandFormat
 
   override def extractId(value: SubscriptionDemand): String = value.id.value
 }
-class MongoTenantStepValidatorRepo(env: Env, reactiveMongoApi: ReactiveMongoApi, tenant: TenantId)
+class MongoTenantStepValidatorRepo(env: Env,
+                                   reactiveMongoApi: ReactiveMongoApi,
+                                   tenant: TenantId)
     extends MongoTenantAwareRepo[StepValidator, DatastoreId](env,
-                                                         reactiveMongoApi,
-                                                         tenant) {
+                                                             reactiveMongoApi,
+                                                             tenant) {
   override def collectionName: String = "StepValidators"
 
   override def format: Format[StepValidator] = json.StepValidatorFormat
@@ -964,10 +973,13 @@ class MongoEmailVerificationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoSubscriptionDemandRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[SubscriptionDemand, SubscriptionDemandId](env, reactiveMongoApi) {
+    extends MongoRepo[SubscriptionDemand, SubscriptionDemandId](
+      env,
+      reactiveMongoApi) {
   override def collectionName: String = "SubscriptionDemands"
 
-  override def format: Format[SubscriptionDemand] = json.SubscriptionDemandFormat
+  override def format: Format[SubscriptionDemand] =
+    json.SubscriptionDemandFormat
 
   override def extractId(value: SubscriptionDemand): String = value.id.value
 }
