@@ -63,7 +63,7 @@ export const AuditTrailList = () => {
             className="btn btn-sm btn-outline-primary"
             onClick={() => alert({
               title: translate('Event.details.modal.title'),
-              message: <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
+              message: <pre style={{ backgroundColor: '#{"var(--section-bg-color, #f8f9fa)"}', color:'#{"var(--section-text-color, #6c757d)"}', padding: 10 }}>
                 {JSON.stringify(value, null, 2)}
               </pre>
             })}

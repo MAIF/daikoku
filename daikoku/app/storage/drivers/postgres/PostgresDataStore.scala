@@ -1541,7 +1541,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     Source
       .future(
         reactivePg
-          .querySeq(s"SELECT * FROM $tableName $selector") { row =>
+          .querySeq(s"SELECT * FROM $tableName $selector", params) { row =>
             row.optJsObject("content")
           }
       )
@@ -1559,12 +1559,27 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     Source
       .future(
         reactivePg
-          .querySeq(s"SELECT * FROM $tableName $selector") { row =>
+          .querySeq(s"SELECT * FROM $tableName $selector", params) { row =>
             row.optJsObject("content")
           }
       )
       .flatMapConcat(res =>
         Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
+  }
+
+  override def findOneRaw(query: JsObject)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
+    val (sql, params) = convertQuery(query)
+    logger.debug(s"$tableName.findOneRaw(${Json.prettyPrint(query)})")
+    logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
+    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
+
+    reactivePg
+      .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) {
+        row =>
+          logger.debug(s"[ROW] :: ${row.deepToString()}")
+          logger.debug(s"[ROW] :: ${row.toJson}")
+          row.optJsObject("content")
+      }
   }
 
   override def findOne(query: JsObject)(

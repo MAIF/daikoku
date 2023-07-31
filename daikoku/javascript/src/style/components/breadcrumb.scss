@@ -62,8 +62,14 @@
 
 .ant-steps {
   .ant-steps-item {
+    .ant-steps-item-title{
+      color: $aside-text-color !important;
 
-    
+    }
+    .ant-steps-item-tail::after{
+      background-color: $aside-text-color !important;
+
+    }
 
     .ant-steps-item-container {
       color: $aside-text-color;

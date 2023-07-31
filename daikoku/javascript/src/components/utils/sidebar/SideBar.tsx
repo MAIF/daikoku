@@ -77,13 +77,10 @@ export const SideBar = () => {
             title="Daikoku home"
             className="mb-3"
             style={{
-              width: '40px',
+              width: '39px',
             }}
           >
             <img
-              style={{
-                width: '40px',
-              }}
               src={tenant.logo}
             />
           </Link>

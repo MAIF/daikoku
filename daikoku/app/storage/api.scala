@@ -58,6 +58,9 @@ trait Repo[Of, Id <: ValueType] {
   def findWithProjection(query: JsObject, projection: JsObject)(
       implicit ec: ExecutionContext): Future[Seq[JsObject]]
 
+  def findOneRaw(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]]
+
   def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]]
 
@@ -187,6 +190,10 @@ trait Repo[Of, Id <: ValueType] {
                      sort: Option[JsObject] = None)(
       implicit ec: ExecutionContext): Future[Seq[Of]] =
     find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs, sort = sort)
+
+  def findOneNotDeletedRaw(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    findOneRaw(query ++ Json.obj("_deleted" -> false))
 
   def findOneNotDeleted(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] =
