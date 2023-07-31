@@ -1330,6 +1330,15 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
       .flatMapConcat(res =>
         Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
 
+  override def findOneRaw(query: JsObject)(implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    collection.flatMap {
+      col =>
+        logger.debug(s"$collectionName.findOne(${Json.prettyPrint(query)})")
+        col
+          .find(query, None)
+          .one[JsObject](ReadPreference.primaryPreferred)
+    }
+
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = collection.flatMap {
     col =>

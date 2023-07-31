@@ -785,14 +785,15 @@ object evolution_1613_b extends EvolutionScript {
           val motivation = (action \ "motivation").asOpt[String]
 
           (for {
-            api <- OptionT(dataStore.apiRepo.forAllTenant().findById(apiId))
-            plan <- OptionT.fromOption[Future](api.possibleUsagePlans.find(_.id == planId))
+            api <- OptionT(dataStore.apiRepo.forAllTenant().findOneRaw(Json.obj("_id" -> apiId.asJson)))
+            plan <- OptionT.fromOption[Future]((api \ "possibleUsagePlans").as[JsArray].value.find(plan => (plan \ "_id").as[String] == planId.value))
             demand = SubscriptionDemand(
               id = SubscriptionDemandId(IdGenerator.token),
               tenant = tenant,
-              api = api.id,
-              plan = plan.id,
-              steps = plan.subscriptionProcess.map(step => SubscriptionDemandStep(
+              api = apiId,
+              plan = (plan \ "_id").as(json.UsagePlanIdFormat),
+              steps = (plan \ "subscriptionProcess").as(json.SeqValidationStepFormat)
+                .map(step => SubscriptionDemandStep(
                 id = SubscriptionDemandStepId(IdGenerator.token),
                 state = SubscriptionDemandState.InProgress,
                 step = step,
@@ -823,7 +824,7 @@ object evolution_1613_b extends EvolutionScript {
                 motivation = motivation
               )
             )
-            _ <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(notif))
+            result <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(notif))
           } yield ()).value
         }
         .runWith(Sink.ignore)(mat)
