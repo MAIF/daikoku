@@ -1534,10 +1534,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
     logger.debug(s"$tableName.streamAllRaw(${Json.prettyPrint(query)})")
 
+    val (sql, params) = convertQuery(query)
+
+    val selector = if (sql == "") "" else s"WHERE $sql"
+
     Source
       .future(
         reactivePg
-          .querySeq(s"SELECT * FROM $tableName") { row =>
+          .querySeq(s"SELECT * FROM $tableName $selector") { row =>
             row.optJsObject("content")
           }
       )
@@ -1549,10 +1553,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     logger.debug(
       s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
 
+    val (sql, params) = convertQuery(query)
+    val selector = if (sql == "") "" else s"WHERE $sql"
+
     Source
       .future(
         reactivePg
-          .querySeq(s"SELECT * FROM $tableName") { row =>
+          .querySeq(s"SELECT * FROM $tableName $selector") { row =>
             row.optJsObject("content")
           }
       )

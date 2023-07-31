@@ -1317,5 +1317,17 @@
     "api.documentation.clone.page.placeholder": "Select all pages to clone",
     "demand.delete.modal.message": "Are you sure you want to delete this subscription demand?",
     "demand.delete.modal.title": "Deleting a subscription request",
-    "subscription.process.add.email.step.title": "Email process step setup"
+    "subscription.process.add.email.step.title": "Email process step setup",
+    "widget.demands.ext.title": "My in progress demands",
+    "widget.demands.title": " In progress demands",
+    "widget.demands.state": "State: %s",
+    "accepted": "Accepted",
+    "refused": "Refused",
+    "canceled": "Canceled",
+    "inProgress": "In progress",
+    "waiting": "Waiting",
+    "blocked": "Blocked",
+    "widget.demands.no.demands": "no demands",
+    "team.dashboard.label.producer": "Producer",
+    "team.dashboard.label.consumer": "Consumer"
 }
