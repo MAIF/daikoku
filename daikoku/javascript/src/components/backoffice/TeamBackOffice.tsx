@@ -42,7 +42,7 @@ const TeamBackOfficeHome = () => {
   );
   useTeamBackOffice(currentTeam);
 
-  const { Translation } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const [team, setTeam] = useState<TeamHome>();
   const [mode, setMode] = useState<"producer" | "consumer">("consumer");
 
@@ -66,7 +66,7 @@ const TeamBackOfficeHome = () => {
             })}
             onClick={() => setMode("producer")}
           >
-            Producer
+            {translate('team.dashboard.label.producer')}
           </button>
           <button
             className={classNames("btn btn-outline-primary", {
@@ -74,7 +74,7 @@ const TeamBackOfficeHome = () => {
             })}
             onClick={() => setMode("consumer")}
           >
-            Consumer
+            {translate('team.dashboard.label.consumer')}
           </button>
         </div>
         <div>
@@ -159,11 +159,11 @@ const ProducerDashboard = (props: ProducerDashboardType) => {
     <>
       <div className="col-12 mt-5 tbo__dasboard">
         <LastDemandsExt team={currentTeam} />
-        <Revenus size="small" title="My Revenus small" />
+        {/* <Revenus size="small" title="My Revenus small" /> */}
       </div>
-      <div className="col-12 mt-5 tbo__dasboard">
+      {/* <div className="col-12 mt-5 tbo__dasboard">
         <Revenus size="large" title="My Revenus large" />
-      </div>
+      </div> */}
     </>
   );
 };
