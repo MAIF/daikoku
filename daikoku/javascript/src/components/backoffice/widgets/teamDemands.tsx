@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { IState, ITeamSimple, IUserSimple } from '../../../types';
+import { IState, ISubscriptionDemand, ITeamSimple, IUserSimple } from '../../../types';
 import { formatPlanType } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Widget } from './widget';
@@ -58,6 +58,7 @@ export const LastDemands = (props: LastDemandsProps) => {
     variables: { teamId: props.team._id, offset: 0, limit: 5 }
   }))
 
+  debugger;
   const isAdmin = !!props.team.users.find(u => u.userId === connectedUser._id && u.teamPermission === 'Administrator')
 
   const handleCheckout = (demandId: string) => {
@@ -76,10 +77,11 @@ export const LastDemands = (props: LastDemandsProps) => {
   }
 
   return (
-    <Widget isLoading={isLoading} isError={isError} size="small" title="My InProgress demands">
+    <>
+    <Widget isLoading={isLoading} isError={isError} size="small" title={translate("widget.demands.title")}>
       <div className='d-flex flex-column gap-1'>
-        {data?.data && data.data.teamSubscriptionDemands.total === 0 && <span className='widget-list-default-item'>no demands</span>}
-        {data?.data && data.data.teamSubscriptionDemands.total > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d: any) => {
+        {data?.data && data.data.teamSubscriptionDemands.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
+        {data?.data && data.data.teamSubscriptionDemands.total > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d) => {
           const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress').step.name === 'payment'
 
           return (
@@ -95,13 +97,14 @@ export const LastDemands = (props: LastDemandsProps) => {
                   disabled={false}
                 >Checkout</FeedbackButton>
                 }
-                {!checkout && <span className='badge bg-secondary my-2'>State : {d.state}</span>}
-                {isAdmin && <button className='btn btn-sm btn-outline-danger ms-1' onClick={() => cancelDemand(d.id)}>cancel</button>}
+                {!checkout && <span className='badge bg-secondary my-2'>{translate({key: 'widget.demands.state', replacements: [translate(d.state)]})}</span>}
+                {isAdmin && <button className='btn btn-sm btn-outline-danger ms-1' onClick={() => cancelDemand(d.id)}>{translate('Cancel')}</button>}
               </div>
             </div>
           )
         })}
       </div>
     </Widget>
+    </>
   )
 }

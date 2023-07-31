@@ -1320,5 +1320,17 @@
   "api.documentation.clone.page.placeholder": "Sélectionnez toutes les pages à cloner",
   "demand.delete.modal.message": "Voulez-vous vraiment supprimer cette demande de souscription ?",
   "demand.delete.modal.title": "Suppression d'une demande de soucription",
-  "subscription.process.add.email.step.title": "Configuration de l'étape du processus par e-mail"
+  "subscription.process.add.email.step.title": "Configuration de l'étape du processus par e-mail",
+  "widget.demands.title": "Mes demandes en cours",
+  "widget.demands.ext.title": "Demandes en cours",
+  "widget.demands.state": "%s",
+  "accepted": "Acceptée",
+  "refused": "Refusée",
+  "canceled": "Annulée",
+  "inProgress": "En cours",
+  "waiting": "En attente",
+  "blocked": "Bloquée",
+  "widget.demands.no.demands": "aucune demande en cours",
+  "team.dashboard.label.producer": "Producteur",
+  "team.dashboard.label.consumer": "Consommateur"
 }
