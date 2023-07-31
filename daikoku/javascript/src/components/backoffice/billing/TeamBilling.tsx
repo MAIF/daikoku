@@ -209,8 +209,8 @@ export const TeamBilling = () => {
               <div className="row month__and__total">
                 <div className="col-12 month__selector d-flex align-items-center">
                   <MonthPicker updateDate={setDate} value={date} />
-                  <button className="btn btn-sm btn-access-negative" onClick={sync}>
-                    <i className="fas fa-sync-alt ms-1" />
+                  <button className="btn btn-sm btn-access-negative ms-1" onClick={sync}>
+                    <i className="fas fa-sync-alt" />
                   </button>
                   {getLastDate()}
                 </div>

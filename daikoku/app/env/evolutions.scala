@@ -819,7 +819,7 @@ object evolution_1613_b extends EvolutionScript {
                 motivation = motivation
               )
             )
-            _ <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(notif))
+            result <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(notif))
           } yield ()).value
         }
         .runWith(Sink.ignore)(mat)

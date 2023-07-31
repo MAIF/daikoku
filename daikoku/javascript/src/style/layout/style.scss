@@ -72,7 +72,7 @@ main {
   white-space: pre-wrap;
 }
 
-.api-description>p {
+.api-description > p {
   text-align: justify;
   white-space: pre-wrap;
 }
@@ -92,7 +92,6 @@ a.nav-link.active {
     padding-top: 60px;
   }
 }
-
 
 .section,
 .album {
@@ -122,11 +121,11 @@ a.nav-link.active {
     .api-doc-cartridge-link a {
       line-height: 2rem;
       border-radius: 4px;
-      padding: 0 .5rem;
+      padding: 0 0.5rem;
       display: block;
       width: 100%;
       color: $menu-text-color;
-      margin-bottom: .3rem;
+      margin-bottom: 0.3rem;
 
       &:hover {
         background-color: $menu-text-hover-bg-color;
@@ -147,7 +146,7 @@ a.nav-link.active {
 
 .hr-apidescription {
   width: 100%;
-  border-bottom: 1px solid #BBBBBB;
+  border-bottom: 1px solid #bbbbbb;
   border-top: 0;
   margin-top: 5px;
   margin-bottom: 5px;
@@ -182,14 +181,29 @@ a.nav-link.active {
   top: 0;
 }
 
-img:hover+.changePicture,
+img:hover + .changePicture,
 .changePicture:hover {
   display: block;
-  opacity: .5;
+  opacity: 0.5;
 }
 
 .swagger-ui .info hgroup.main a {
   word-break: break-all;
+}
+
+.swagger-ui {
+  color: $aside-text-color;
+  .btn {
+    color: $aside-text-color;
+  }
+}
+
+.swagger-ui .errors-wrapper {
+  hgroup h4,
+  .errors h4,
+  .errors small {
+    color: $aside-text-color;
+  }
 }
 
 .language-selector {
@@ -231,14 +245,11 @@ img:hover+.changePicture,
   border-radius: 4px;
   justify-content: center;
   align-items: center;
-
 }
 
 .Popover-tipShape {
-  fill: hsl(0, 0%, 27%)
+  fill: hsl(0, 0%, 27%);
 }
-
-
 
 /* rwd */
 @media screen and (min-width: 576px) {
@@ -263,7 +274,6 @@ img:hover+.changePicture,
 
 @media screen and (max-width: 540px) {
   .nav-tabs {
-
     .nav-tabs .nav-item:first-child {
       border-top-left-radius: 5px;
       border-top-right-radius: 5px;

@@ -5,7 +5,7 @@ import { Spinner } from "../../utils"
 type WidgetProps = {
   isLoading: boolean
   isError: boolean
-  size: "small" | "large"
+  size: "small" | "medium" | "large"
   title: string
 }
 export const Widget = (props: PropsWithChildren<WidgetProps>) => {

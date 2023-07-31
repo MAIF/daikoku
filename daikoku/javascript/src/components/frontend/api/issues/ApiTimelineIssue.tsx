@@ -19,7 +19,7 @@ import { ModalContext } from '../../../../contexts';
 
 const styles = {
   commentHeader: {
-    backgroundColor: '#eee',
+    backgroundColor: 'var(--body-bg-color, #fff)',
     borderTopLeftRadius: '8px',
     borderTopRightRadius: '8px',
   },
@@ -35,10 +35,10 @@ const styles = {
     color: '#fff'
   }),
   commentBody: {
-    border: '1px solid #eee',
+    border: '1px solid var(--body-bg-color, #f8f9fa)',
     borderBottomLeftRadius: '8px',
     borderBottomRightRadius: '8px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--section-bg-color, #f8f9fa)',
   },
 };
 

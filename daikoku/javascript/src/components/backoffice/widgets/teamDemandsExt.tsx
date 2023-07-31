@@ -63,9 +63,9 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
 
 
   return (
-    <Widget isLoading={isLoading} isError={isError} size="small" title="In Progress demands">
+    <Widget isLoading={isLoading} isError={isError} size="small" title={translate("widget.demands.ext.title")}>
       <div className='d-flex flex-column'>
-        {data?.data && data.data.subscriptionDemandsForAdmin.total === 0 && <span className='widget-list-default-item'>no demands</span>}
+        {data?.data && data.data.subscriptionDemandsForAdmin.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
         {data?.data && data.data.subscriptionDemandsForAdmin.total > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands
           .map((d: any) => {
             const actualStep = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress')

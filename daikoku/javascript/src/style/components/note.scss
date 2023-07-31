@@ -2,12 +2,14 @@
 .note {
   border: none;
   border-left: 10px solid #4078c0;
-  background-color: rgba(64, 120, 192, 0.1);
   margin: 0 0 1rem;
   padding: 1rem;
   border-radius: 0;
   position: relative;
-  color: #0a0a0a;
+  // background-color: rgba(64, 120, 192, 0.1);
+  // color: #0a0a0a;
+  background-color: $body-bg-color;
+  color: $body-text-color;
 }
 
 .note-warning {
