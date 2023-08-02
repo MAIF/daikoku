@@ -241,7 +241,7 @@ export const ApiHome = ({
   };
 
 
-  const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => {
+  const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
     const planName = formatPlanType(plan, translate);
 
     if (api) {

@@ -306,6 +306,8 @@ object SchemaDefinition {
       ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id)),
       ReplaceField("title", Field("title", StringType, resolve = ctx => ctx.value.title)),
       ReplaceField("team", Field("team", StringType, resolve = ctx => ctx.value.team.value)),
+      ReplaceField("schema", Field("schema", OptionType(JsonType), resolve = ctx => ctx.value.schema)),
+      ReplaceField("formatter", Field("formatter", OptionType(StringType), resolve = ctx => ctx.value.formatter)),
     ))
     lazy val ValidationStepPayment = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.Payment](
       Interfaces(ValidationStepInterfaceType),
@@ -1414,7 +1416,7 @@ object SchemaDefinition {
         Field("team", TeamObjectType, resolve = ctx => teamsFetcher.defer(ctx.value.team)),
         Field("from", UserType, resolve = ctx => usersFetcher.defer(ctx.value.from)),
         Field("date", DateTimeUnitype, resolve = _.value.date),
-        Field("motivation", OptionType(StringType), resolve = _.value.motivation),
+        Field("motivation", OptionType(JsonType), resolve = _.value.motivation),
         Field("parentSubscriptionId", OptionType(StringType), resolve = _.value.parentSubscriptionId.map(_.value)),
       )
     )

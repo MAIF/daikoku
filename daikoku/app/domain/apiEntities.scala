@@ -924,10 +924,17 @@ object ValidationStep {
 
   case class TeamAdmin(id: String,
                        team: TeamId,
-                       title: String = "Administrator")
-      extends ValidationStep {
+                       title: String = "Administrator",
+                       schema: Option[JsObject] = Json.obj(
+                         "motivation" -> Json.obj(
+                           "type" -> "string",
+                           "format" -> "textarea",
+                           "constraints" -> Json.arr(Json.obj("type" -> "required")))).some,
+                       formatter: Option[String] = "[[motivation]]".some)
+    extends ValidationStep {
     def name: String = "teamAdmin"
   }
+
   case class Payment(id: String,
                      thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
                      title: String = "Payment")

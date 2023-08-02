@@ -1,3 +1,4 @@
+import { Schema } from '@maif/react-forms';
 import { IFastTeam, ITeamSimple, ITeamVisibility } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
@@ -139,6 +140,8 @@ export function isValidationStepEmail(item: any): item is IValidationStepEmail {
 export interface IValidationStepTeamAdmin extends IValidationStep {
   team: string;
   title?: string;
+  schema: Schema;
+  formatter: string;
 }
 
 export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {

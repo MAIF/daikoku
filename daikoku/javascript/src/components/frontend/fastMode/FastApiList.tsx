@@ -41,7 +41,7 @@ export const FastApiList = (props: FastApiListProps) => {
   const [research, setResearch] = useState<string>("");
   const [seeApiSubscribed, setSeeApiSubscribed] = useState<boolean>(false)
 
-  const [reasonSub, setReasonSub] = useState<string>("");
+  const [reasonSub, setReasonSub] = useState<object>({});
 
   const [selectedTag, setSelectedTag] = useState<TOption | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(undefined);
@@ -271,11 +271,9 @@ export const FastApiList = (props: FastApiListProps) => {
                             apisWithAuthorization={allFastApiVersions}
                             team={props.team}
                             subscriptions={allFastApiVersions.map((fastApi) => fastApi.subscriptionsWithPlan)}
-                            input={reasonSub}
                             showPlan={togglePlan}
                             showApiKey={toggleApiKey}
                             planResearch={planResearch}
-                            setReasonSub={setReasonSub}
                           />
                         }
                       </div>

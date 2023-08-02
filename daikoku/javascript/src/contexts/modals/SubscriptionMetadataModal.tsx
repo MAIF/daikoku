@@ -42,7 +42,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
       const api = apiQuery.data as IApi
       return Services.getVisiblePlan(api._humanReadableId, api.currentVersion, props.plan!)
     },
-    enabled: !!props.plan && apiQuery.data && !isError(apiQuery.data)
+    enabled: !!props.plan && !!apiQuery.data && !isError(apiQuery.data)
   })
 
   const actionAndClose = (formData) => {

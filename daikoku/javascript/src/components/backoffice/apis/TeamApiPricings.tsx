@@ -1,21 +1,22 @@
 import { UniqueIdentifier } from '@dnd-kit/core';
-import { constraints, Form, format, Schema, type } from '@maif/react-forms';
+import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import AtSign from 'react-feather/dist/icons/at-sign';
+import CreditCard from 'react-feather/dist/icons/credit-card';
+import Plus from 'react-feather/dist/icons/plus';
+import Settings from 'react-feather/dist/icons/settings';
+import Trash from 'react-feather/dist/icons/trash';
+import User from 'react-feather/dist/icons/user';
 import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import Settings from 'react-feather/dist/icons/settings'
-import Trash from 'react-feather/dist/icons/trash'
-import Plus from 'react-feather/dist/icons/plus'
-import AtSign from 'react-feather/dist/icons/at-sign'
-import CreditCard from 'react-feather/dist/icons/credit-card'
-import User from 'react-feather/dist/icons/user'
 
+import React from 'react';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
@@ -27,11 +28,11 @@ import {
   BeautifulTitle, formatPlanType, IMultistepsformStep,
   MultiStepForm, Option,
   renderPricing,
-  Spinner,
-  team
+  Spinner
 } from '../../utils';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
+import { Help } from '../apikeys';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -1322,7 +1323,7 @@ type EmailOption = { option: 'all' | 'oneOf' }
 
 const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
-  const { openFormModal, close } = useContext(ModalContext);
+  const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
   const addStepToRightPlace = (process: Array<IValidationStep>, step: IValidationStep, index: number): Array<IValidationStep> => {
     if (step.type === 'teamAdmin') {
@@ -1386,7 +1387,14 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           actionLabel: translate('Create')
         })
       case 'teamAdmin': {
-        const step: IValidationStepTeamAdmin = { type: 'teamAdmin', team: props.team._id, id: nanoid(32), title: 'Admin' }
+        const step: IValidationStepTeamAdmin = {
+          type: 'teamAdmin',
+          team: props.team._id,
+          id: nanoid(32),
+          title: 'Admin',
+          schema: { motivation: { type: type.string, format: format.text, constraints: [{type: 'required'}] } },
+          formatter: '[[motivation]]'
+        }
         return props.savePlan({ ...props.value, subscriptionProcess: [step, ...props.value.subscriptionProcess] })
           .then(() => close())
 
@@ -1499,10 +1507,23 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
                   className="validation-step-container"
                   action={
                     <div className={classNames('d-flex flex-row', {
-                      'justify-content-between': isValidationStepEmail(item),
-                      'justify-content-end': !isValidationStepEmail(item),
+                      'justify-content-between': isValidationStepEmail(item) || isValidationStepTeamAdmin(item),
+                      'justify-content-end': isValidationStepPayment(item),
                     })}>
                       {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
+                      {isValidationStepTeamAdmin(item) ?
+                        <button
+                          className='btn btn-sm btn-outline-primary'
+                          onClick={() => openCustomModal({
+                            title: translate('motivation.form.modal.title'),
+                            content: <MotivationForm value={item} saveMotivation={({ schema, formatter }) => {
+                              const step = { ...item, schema, formatter }
+                              const updatedPlan = { ...props.value, subscriptionProcess: props.value.subscriptionProcess.map(s => s.id === step.id ? step : s) }
+                              props.savePlan(updatedPlan)
+                            }} />
+                          })}>
+                          <Settings size={15} />
+                        </button> : <></>}
                       <button className='btn btn-sm btn-outline-danger' onClick={() => deleteStep(item.id)}><Trash size={15} /></button>
                     </div>}
                   id={item.id}>
@@ -1521,6 +1542,151 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
   )
 }
 
+type MotivationFormProps = {
+  saveMotivation: (m: { schema: object, formatter: string }) => void
+  value: IValidationStepTeamAdmin
+}
+
+const MotivationForm = (props: MotivationFormProps) => {
+  const [schema, setSchema] = useState<string | object>(props.value.schema || '{}')
+  const [realSchema, setRealSchema] = useState<any>(props.value.schema || {})
+  const [formatter, setFormatter] = useState(props.value.formatter || '')
+  const [value, setValue] = useState<any>({})
+  const [example, setExample] = useState('')
+
+  const { translate } = useContext(I18nContext);
+  const { close } = useContext(ModalContext);
+
+  const childRef = useRef();
+  const codeInputRef = useRef();
+
+  useEffect(() => { //@ts-ignore
+    if (codeInputRef.current.hasFocus) {
+      let maybeFormattedSchema = schema;
+      try {
+        maybeFormattedSchema = typeof schema === 'object' ? schema : JSON.parse(schema);
+      } catch (_) { }
+
+      setRealSchema(maybeFormattedSchema || {})
+    }
+  }, [schema]);
+
+  useEffect(() => {
+    const regexp = /\[\[(.+?)\]\]/g
+    const matches = formatter.match(regexp)
+
+    const result = matches?.reduce((acc, match) => {
+      const key = match.replace('[[', '').replace(']]', '')
+      return acc.replace(match, value[key] || match)
+    }, formatter)
+
+
+    setExample(result || formatter)
+  }, [value, formatter])
+
+
+  return (
+    <>
+      <div className="container">
+        <div className='row'>
+          <div className="col-6">
+            <h6>{translate('motivation.form.setting.title')}</h6>
+            <div className='motivation-form__editor mb-1'>
+              <label>{translate('motivation.form.schema.label')}</label>
+              <Help message={translate('motivation.form.schema.help')} />
+              <CodeInput
+                mode="javascript"
+                onChange={(e) => {
+                  setSchema(e);
+                }}
+                value={
+                  typeof schema === "object"
+                    ? JSON.stringify(schema, null, 2)
+                    : schema
+                }
+                setRef={(ref) => (codeInputRef.current = ref)}
+              />
+            </div>
+            <div className='motivation-form__editor mb-1'>
+              <label>{translate('motivation.form.formatter.label')}</label>
+              <Help message={translate('motivation.form.formatter.help')} />
+              <CodeInput
+                mode="markdown"
+                onChange={(e) => {
+                  setFormatter(e);
+                }}
+                value={formatter}
+              />
+            </div>
+            {/* <Form
+              schema={{
+                schema: {
+                  type: type.string,
+                  format: format.code,
+                  label: translate('motivation.form.schema.label'),
+                  help: translate('motivation.form.schema.help'),
+                  defaultValue: '{}',
+                  className: 'motivation-form__editor'
+                },
+                formatter: {
+                  type: type.string,
+                  format: format.markdown,
+                  label: translate('motivation.form.formatter.label'),
+                  help: translate('motivation.form.formatter.help'),
+                  defaultValue: '',
+                  className: 'motivation-form__editor'
+                }
+              }}
+              onSubmit={data => {
+                setFormatter(data.formatter ?? '')
+                setSchema(data.schema ?? '{}')
+              }}
+              value={{schema: realSchema, formatter}}
+              options={{
+                autosubmit: true,
+                actions: {
+                  submit: {
+                    display: false
+                  }
+                }
+              }}
+            /> */}
+          </div>
+          <div className="col-6 d-flex flex-column">
+            <div className='flex-1'>{/* @ts-ignore */}
+              <WrapperError ref={childRef}>
+                <h6>{translate('motivation.form.preview.title')}</h6>
+                <i>{translate('motivation.form.sample.help')}</i>
+                <Form
+                  schema={realSchema}
+                  onSubmit={setValue}
+                  options={{
+                    actions: {
+                      submit: {
+                        label: translate("motivation.form.sample.button.label")
+                      }
+                    }
+                  }}
+                />
+              </WrapperError>
+            </div>
+            <div className="flex-1">
+              <div>{translate('motivation.form.sample.title')}</div>
+              <div>{example}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-outline-success" onClick={() => {
+          props.saveMotivation({ schema: realSchema, formatter })
+          close()
+        }}>{translate('Save')}</button>
+      </div>
+    </>
+  )
+}
+
 type ValidationStepProps = {
   step: IValidationStep,
   tenant: ITenantFull,
@@ -1529,6 +1695,7 @@ type ValidationStepProps = {
 }
 
 const ValidationStep = (props: ValidationStepProps) => {
+  const { openCustomModal } = useContext(ModalContext)
   const step = props.step
   if (isValidationStepPayment(step)) {
     const thirdPartyPaymentSettings = props.tenant.thirdPartyPaymentSettings.find(setting => setting._id == step.thirdPartyPaymentSettingsId)
@@ -1565,5 +1732,25 @@ const ValidationStep = (props: ValidationStepProps) => {
     )
   } else {
     return <></>
+  }
+}
+
+export default class WrapperError extends React.Component {
+  state = {
+    error: undefined
+  }
+
+  componentDidCatch(error) {
+    this.setState({ error })
+  }
+
+  reset() {
+    this.setState({ error: undefined })
+  }
+
+  render() {
+    if (this.state.error)
+      return <div>Something wrong happened</div> //@ts-ignore
+    return this.props.children
   }
 }

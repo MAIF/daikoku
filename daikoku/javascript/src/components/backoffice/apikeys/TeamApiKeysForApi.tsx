@@ -46,7 +46,7 @@ export const TeamApiKeysForApi = () => {
   const teamQuery = useQuery({
     queryKey: ['data', 'team'],
     queryFn: () => Services.team((apiQuery.data as IApi).team),
-    enabled: apiQuery.data && !isError(apiQuery.data)
+    enabled: !!apiQuery.data && !isError(apiQuery.data)
   })
 
   const subApisQuery = useQuery({
@@ -55,29 +55,8 @@ export const TeamApiKeysForApi = () => {
       query: Services.graphql.apisByIds,
       variables: { ids: [...new Set((subsQuery.data as Array<ISubscription>).map((s) => s.api))] },
     }),
-    enabled: subsQuery.data && !isError(subsQuery.data)
+    enabled: !!subsQuery.data && !isError(subsQuery.data)
   })
-
-  // const data = useQueries({
-  //   queries: [
-  //     {queryKey: ['data', 'visibleApi'], queryFn: () => Services.getTeamVisibleApi(currentTeam._id, params.apiId!, params.versionId!)},
-  //     {queryKey: ['data', 'subscriptions'], queryFn: () => Services.getTeamSubscriptions(params.apiId!, currentTeam._id, params.versionId!)},
-  //     {
-  //       queryKey: ['data', 'team'],
-  //       queryFn: () => Services.team((apiQuery.data as IApi).team),
-  //       enabled: apiQuery.data && !isError(apiQuery.data)
-  //     },
-  //     {
-  //       queryKey: ['data', 'subApis'],
-  //       queryFn: () => client?.query({
-  //         query: Services.graphql.apisByIds,
-  //         variables: { ids: [...new Set((subsQuery.data as Array<ISubscription>).map((s) => s.api))] },
-  //       }),
-  //       enabled: subsQuery.data && !isError(subsQuery.data)
-  //     }
-  //   ]
-  // })
-
 
   useEffect(() => {
     queryClient.invalidateQueries(['data'])
@@ -261,7 +240,7 @@ const ApiKeyCard = ({
 
   const { translate, Translation } = useContext(I18nContext);
 
-  const planQuery = useQuery(['plan'], () => Services.planOfApi(api.team, api._id, api.currentVersion, subscription.plan))
+  const planQuery = useQuery(['plan'], () => Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan))
 
   useEffect(() => {
     if (planQuery.data && !isError(planQuery.data)) {
@@ -670,10 +649,12 @@ const ApiKeyCard = ({
 
 
 };
-
-const Help = ({
+type HelpProps = {
+  message: string
+}
+export const Help = ({
   message
-}: any) => {
+}: HelpProps) => {
   return (
     <BeautifulTitle placement="bottom" title={message}>
       <i className="ms-4 far fa-question-circle" />

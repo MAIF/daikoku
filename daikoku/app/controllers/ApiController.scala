@@ -453,14 +453,10 @@ class ApiController(
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible plans of @{api.name}")
       )(ctx) {
-
         def controlAndGet(api: Api, myTeams: Seq[Team], plans: Seq[UsagePlan]): EitherT[Future, AppError, Seq[UsagePlan]] = {
           if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
             .intersect(myTeams.map(_.id))
             .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))) {
-
-
-
             val filteredPlans = plans.filter(plan => plan.visibility == UsagePlanVisibility.Public || ctx.user.isDaikokuAdmin || (plan.authorizedTeams :+ api.team)
               .intersect(myTeams.map(_.id))
               .nonEmpty)
@@ -913,7 +909,7 @@ class ApiController(
         implicit val language: String = ctx.request.getLanguage(ctx.tenant)
         implicit val currentUser: User = ctx.user
 
-        val motivation = ctx.request.body.getBodyField[String]("motivation")
+        val motivation = ctx.request.body.getBodyField[JsObject]("motivation")
         val customMaxPerSecond = ctx.request.body.getBodyField[Long]("customMaxPerSecond")
         val customMaxPerDay = ctx.request.body.getBodyField[Long]("customMaxPerDay")
         val customMaxPerMonth = ctx.request.body.getBodyField[Long]("customMaxPerMonth")
@@ -948,7 +944,7 @@ class ApiController(
         implicit val language: String = ctx.request.getLanguage(ctx.tenant)
         implicit val currentUser: User = ctx.user
 
-        val motivation = ctx.request.body.getBodyField[String]("motivation")
+        val motivation = ctx.request.body.getBodyField[JsObject]("motivation")
         val customMaxPerSecond = ctx.request.body.getBodyField[Long]("customMaxPerSecond")
         val customMaxPerDay = ctx.request.body.getBodyField[Long]("customMaxPerDay")
         val customMaxPerMonth = ctx.request.body.getBodyField[Long]("customMaxPerMonth")
@@ -3626,8 +3622,7 @@ class ApiController(
 
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant)
-            .findOne(Json.obj("_humanReadableId" -> apiId,
-              "currentVersion" -> Json.obj("$ne" -> version))), AppError.ApiNotFound)
+            .findOne(Json.obj("_id" -> apiId, "currentVersion" -> version)), AppError.ApiNotFound)
           _ <- if (api.team != team.id) EitherT.leftT[Future, Unit](AppError.ApiNotFound) else EitherT.pure[Future, AppError](())
           plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api))
         } yield Ok(json.SeqUsagePlanFormat.writes(plans)))

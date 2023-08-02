@@ -810,29 +810,30 @@ class ApiService(env: Env,
       }
   }
 
-  def notifyApiSubscription(demandId: SubscriptionDemandId,
-                            stepId: SubscriptionDemandStepId,
-                             tenantId: TenantId,
-                             userId: UserId,
-                             apiId: ApiId,
-                             planId: UsagePlanId,
-                             teamId: TeamId,
-                             apiKeyId: Option[ApiSubscriptionId],
-                             motivation: Option[String]
-                           ): EitherT[Future, AppError, Result] = {
+  def notifyApiSubscription(demand: SubscriptionDemand,
+                            tenant: Tenant,
+                            step: SubscriptionDemandStep,
+                            actualStep: ValidationStep.TeamAdmin): EitherT[Future, AppError, Result] = {
     import cats.implicits._
 
+    val motivationPattern = "\\[\\[(.+?)\\]\\]".r
+
     for {
-      tenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(tenantId), AppError.TenantNotFound)
-      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(apiId), AppError.ApiNotFound)
-      user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(userId), AppError.UserNotFound)
+      api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
+      user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(demand.from), AppError.UserNotFound)
+      motivationAsString = motivationPattern.findAllMatchIn(actualStep.formatter.getOrElse("[[motivation]]"))
+        .foldLeft(actualStep.formatter.getOrElse("[[motivation]]"))((motivation, rgxMatch) => {
+          val key = rgxMatch.group(1)
+          val replacement = (demand.motivation.getOrElse(Json.obj()) \ key).asOpt[String].getOrElse(s"-- $key --")
+          motivation.replace(s"[[$key]]", replacement)
+        })
       notification = Notification(
         id = NotificationId(BSONObjectID.generate().stringify),
         tenant = tenant.id,
         team = Some(api.team),
         sender = user.asNotificationSender,
         action = NotificationAction
-          .ApiSubscriptionDemand(api.id, planId, teamId, demandId, stepId, apiKeyId, motivation)
+          .ApiSubscriptionDemand(api.id, demand.plan, demand.team, demand.id, step.id, None, motivationAsString.some)
       )
 
       tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
@@ -909,16 +910,11 @@ class ApiService(env: Env,
             Ok(Json.obj("creation" -> "waiting"))
           }
           value
-        case ValidationStep.TeamAdmin(_, _, _) => notifyApiSubscription(
-          demandId = demand.id,
-          stepId = step.id,
-          tenantId = tenant.id,
-          userId = demand.from,
-          apiId = demand.api,
-          planId = demand.plan,
-          teamId = demand.team,
-          apiKeyId = None,
-          motivation = demand.motivation
+        case s: ValidationStep.TeamAdmin => notifyApiSubscription(
+          demand = demand,
+          step = step,
+          tenant = tenant,
+          actualStep = s
         )
         case ValidationStep.Payment(_, _, _) => paymentClient.checkoutSubscription(
           tenant = tenant,
@@ -1063,7 +1059,7 @@ class ApiService(env: Env,
                             planId: String,
                             teamId: String,
                             parentSubscriptionId: Option[ApiSubscriptionId] = None,
-                            motivation: Option[String] = None,
+                            motivation: Option[JsObject] = None,
                             customMetadata: Option[JsObject],
                             customMaxPerSecond: Option[Long],
                             customMaxPerDay: Option[Long],
@@ -1174,7 +1170,7 @@ class ApiService(env: Env,
                                       plan: UsagePlan,
                                       team: Team,
                                       apiKeyId: Option[ApiSubscriptionId],
-                                      motivation: Option[String],
+                                      motivation: Option[JsObject],
                                       customMetadata: Option[JsObject],
                                       customMaxPerSecond: Option[Long],
                                       customMaxPerDay: Option[Long],

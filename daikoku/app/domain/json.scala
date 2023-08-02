@@ -561,12 +561,14 @@ object json {
           "title" -> title,
           "message" -> message.map(JsString).getOrElse(JsNull).as[JsValue]
         )
-      case ValidationStep.TeamAdmin(id, team, title) =>
+      case ValidationStep.TeamAdmin(id, team, title, schema, formatter) =>
         Json.obj(
           "type" -> "teamAdmin",
           "id" -> id,
           "team" -> team.asJson,
-          "title" -> title
+          "title" -> title,
+          "schema" -> schema.getOrElse(JsNull).as[JsValue],
+          "formatter" -> formatter.map(JsString).getOrElse(JsNull).as[JsValue]
         )
       case ValidationStep.Payment(id, thirdPartyPaymentSettingsId, title) =>
         Json.obj(
@@ -593,6 +595,14 @@ object json {
               id = (json \ "id").as[String],
               team = (json \ "team").as(TeamIdFormat),
               title = (json \ "title").as[String],
+              schema = (json \ "schema").asOpt[JsObject]
+                .orElse(Json.obj(
+                  "motivation" -> Json.obj(
+                    "type" -> "string",
+                    "format" -> "textarea",
+                    "constraints" -> Json.arr(Json.obj("type" -> "required")))).some),
+              formatter = (json \ "formatter").asOpt[String]
+                .orElse("[[motivation]]".some)
             ))
         case "payment" =>
           JsSuccess(
@@ -2560,7 +2570,6 @@ object json {
         "from" -> o.from.asJson,
         "date" -> DateTimeFormat.writes(o.date),
         "motivation" -> o.motivation
-          .map(JsString)
           .getOrElse(JsNull)
           .as[JsValue],
         "parentSubscription" -> o.parentSubscriptionId
@@ -2602,7 +2611,9 @@ object json {
             team = (json \ "team").as(TeamIdFormat),
             from = (json \ "from").as(UserIdFormat),
             date = (json \ "date").as(DateTimeFormat),
-            motivation = (json \ "motivation").asOpt[String],
+            motivation = (json \ "motivation").asOpt[String]
+              .map(m => Json.obj("motivation" -> m))
+              .orElse((json \ "motivation").asOpt[JsObject]),
             parentSubscriptionId =
               (json \ "parentSubscription").asOpt(ApiSubscriptionIdFormat),
             customMetadata = (json \ "customMetadata").asOpt[JsObject],

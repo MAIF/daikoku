@@ -9,7 +9,7 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, IBaseUsagePlan, isError, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
+import { IApi, IBaseUsagePlan, isError, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit, IValidationStepTeamAdmin } from '../../../types';
 import { INotification } from '../../../types';
 import {
   access,
@@ -35,7 +35,7 @@ export const currency = (plan?: IBaseUsagePlan) => {
 type ApiPricingCardProps = {
   plan: IUsagePlan,
   api: IApi,
-  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
+  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => Promise<void>,
   myTeams: Array<ITeamSimple>,
   ownerTeam: ITeamSimple,
   subscriptions: Array<ISubscription>,
@@ -58,20 +58,12 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     }
 
     const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
-      if (plan.subscriptionProcess.some(isValidationStepTeamAdmin)) {
-        openFormModal<{ motivation: string }>({
+      const adminStep = plan.subscriptionProcess.find(s => isValidationStepTeamAdmin(s))
+      if (adminStep && isValidationStepTeamAdmin(adminStep)) {
+        openFormModal<any>({
           title: translate('motivations.modal.title'),
-          schema: {
-            motivation: {
-              type: formType.string,
-              format: format.text,
-              label: null,
-              constraints: [
-                constraints.required()
-              ]
-            }
-          },
-          onSubmit: ({ motivation }) => props.askForApikeys({ team, plan, apiKey, motivation }),
+          schema: adminStep.schema,
+          onSubmit: (motivation: object) => props.askForApikeys({ team, plan, apiKey, motivation }),
           actionLabel: translate('Send')
         })
       } else {
@@ -313,7 +305,7 @@ type ApiPricingProps = {
   ownerTeam: ITeamSimple
   subscriptions: Array<ISubscription>,
   inProgressDemands: Array<ISubscriptionDemand>,
-  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
+  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => Promise<void>,
 }
 
 export const ApiPricing = (props: ApiPricingProps) => {
@@ -322,7 +314,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   useEffect(() => {
     queryClient.invalidateQueries(['plans'])
   }, [props.api])
-  
+
 
   if (usagePlansQuery.isLoading) {
     return <Spinner />

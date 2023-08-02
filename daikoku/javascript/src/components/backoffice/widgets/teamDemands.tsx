@@ -58,7 +58,6 @@ export const LastDemands = (props: LastDemandsProps) => {
     variables: { teamId: props.team._id, offset: 0, limit: 5 }
   }))
 
-  debugger;
   const isAdmin = !!props.team.users.find(u => u.userId === connectedUser._id && u.teamPermission === 'Administrator')
 
   const handleCheckout = (demandId: string) => {

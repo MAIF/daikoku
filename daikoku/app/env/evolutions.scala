@@ -778,6 +778,7 @@ object evolution_1613_b extends EvolutionScript {
           val teamId = (action \ "team").as(json.TeamIdFormat)
           val parentSubscriptionId = (action \ "parentSubscriptionId").asOpt(json.ApiSubscriptionIdFormat)
           val motivation = (action \ "motivation").asOpt[String]
+            .map(m => Json.obj("motivation" -> m))
 
           (for {
             api <- OptionT(dataStore.apiRepo.forAllTenant().findOneRaw(Json.obj("_id" -> apiId.asJson)))
@@ -816,7 +817,7 @@ object evolution_1613_b extends EvolutionScript {
                 demand = demand.id,
                 step = demand.steps.head.id,
                 parentSubscriptionId = parentSubscriptionId,
-                motivation = motivation
+                motivation = (action \ "motivation").asOpt[String]
               )
             )
             result <- OptionT.liftF(dataStore.notificationRepo.forTenant(demand.tenant).save(notif))

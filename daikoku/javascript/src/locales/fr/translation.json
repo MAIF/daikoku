@@ -1208,7 +1208,7 @@
   "otoroshi.list.add.label": "Ajouter une instance Otoroshi",
   "Global stats": "Statistiques",
   "apikeys visibility": "Visibilité des clés d'API",
-  "motivations.modal.title": "Dites-nous pourquoi vous voulez une clé d'API",
+  "motivations.modal.title": "Informations complémentaires concernant la demande",
   "Daily quotas consumed": "Quotas journaliers consommés",
   "Monthly quotas consumed": "Quotas mensuels consommés",
   "daily.quotas.consumed.title": "%s appels quotidien consommés sur %s",
@@ -1332,5 +1332,15 @@
   "blocked": "Bloquée",
   "widget.demands.no.demands": "aucune demande en cours",
   "team.dashboard.label.producer": "Producteur",
-  "team.dashboard.label.consumer": "Consommateur"
+  "team.dashboard.label.consumer": "Consommateur",
+  "motivation.form.modal.title": "Parametrage du formulaire de motivation",
+  "motivation.form.sample.title": "Exemple",
+  "motivation.form.setting.title": "Paramètres",
+  "motivation.form.preview.title": "Prévisualisation",
+  "motivation.form.schema.label": "Schema",
+  "motivation.form.schema.help": "Un schema JSON compatible @maif/react-forms afin de spécifier les différents champs du formalaire de motivation",
+  "motivation.form.formatter.label": "Formatteur",
+  "motivation.form.formatter.help": "une chaîne de caractères dans laquelle des mots entre « [[ ]] » seront remplacés par les valeurs correspondantes récupérées à partir des réponses fournies par l'utilisateur dans le formulaire et envoyé à l'administarteur pour validation.",
+  "motivation.form.sample.help": "Utilisez le formulaire de test ci-dessous pour prévisualiser et valider vos paramètres de formatage (formatter).",
+  "motivation.form.sample.button.label": "Tester"
 }

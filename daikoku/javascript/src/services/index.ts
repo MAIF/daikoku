@@ -146,7 +146,7 @@ export const askForApiKey = (
   apiId: string,
   teamId: string,
   planId: string,
-  motivation?: string
+  motivation?: object
 ): Promise<SubscriptionReturn> => {
   return customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/_subscribe`, {
     method: 'POST',
@@ -1057,7 +1057,7 @@ export const extendApiKey = (
   apiKeyId: string,
   teamId: string,
   planId: string,
-  motivation?: string
+  motivation?: object
 ): Promise<SubscriptionReturn> =>
   customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
     method: 'PUT',

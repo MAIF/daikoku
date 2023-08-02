@@ -15,11 +15,9 @@ type FastApiCardProps = {
   team: ITeamSimple,
   apisWithAuthorization: Array<IFastApi>,
   subscriptions: Array<Array<IFastSubscription>>,
-  input: string
   showPlan: (plan: IFastPlan) => void
   showApiKey: (apiId: string, teamId: string, version: string, plan: IFastPlan) => void
   planResearch: string
-  setReasonSub: (reason: string) => void
 }
 export const FastApiCard = (props: FastApiCardProps) => {
   const { openFormModal, openApiKeySelectModal } = useContext(ModalContext);
@@ -41,29 +39,19 @@ export const FastApiCard = (props: FastApiCardProps) => {
     setSelectedApi(props.apisWithAuthorization.find((api) => api.api.currentVersion === version)!)
   }
 
-  const subscribe = (input: string, apiId: string, team: ITeamSimple, plan: IFastPlan, apiKey?: ISubscription) => {
-    const apiKeyDemand = (motivation?: string) => apiKey
+  const subscribe = (apiId: string, team: ITeamSimple, plan: IFastPlan, apiKey?: ISubscription) => {
+    const apiKeyDemand = (motivation?: object) => apiKey
       ? Services.extendApiKey(apiId, apiKey._id, team._id, plan._id, motivation)
       : Services.askForApiKey(apiId, team._id, plan._id, motivation)
 
-    if (plan.subscriptionProcess.some(p => isValidationStepTeamAdmin(p))) {
+    const adminStep = plan.subscriptionProcess.find(s => isValidationStepTeamAdmin(s))
+    if (adminStep && isValidationStepTeamAdmin(adminStep)) {
       openFormModal<{ motivation: string }>({
-        title: translate(input === '' ? 'motivations.modal.title' : 'fastMode.subscription.resume'),
-        schema: {
-          motivation: {
-            defaultValue: input,
-            type: formType.string,
-            format: format.text,
-            label: null,
-            constraints: [
-              constraints.required()
-            ]
-          }
-        },
-        onSubmit: ({ motivation }) => {
+        title: translate('motivations.modal.title'),
+        schema: adminStep.schema,
+        onSubmit: (motivation) => {
           apiKeyDemand(motivation)
             .then((response) => {
-              props.setReasonSub(motivation)
               if (response[0].error) {
                 toastr.error(
                   translate('Error'),
@@ -114,7 +102,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
   }
 
 
-  const subscribeOrExtends = (input: string, apiId: string, team: ITeamSimple, plan: IFastPlan) => {
+  const subscribeOrExtends = (apiId: string, team: ITeamSimple, plan: IFastPlan) => {
     if (client) {
       Services.getAllTeamSubscriptions(props.team._id)
         .then((subscriptions) => client.query({
@@ -139,13 +127,13 @@ export const FastApiCard = (props: FastApiCardProps) => {
             .map((infos) => infos.subscription);
 
           if (!plan.aggregationApiKeysSecurity || subscriptions.length <= 0) {
-            subscribe(input, apiId, team, plan);
+            subscribe(apiId, team, plan);
           } else {
             openApiKeySelectModal({
               plan,
               apiKeys: filteredApiKeys,
-              onSubscribe: () => subscribe(input, apiId, team, plan),
-              extendApiKey: (apiKey: ISubscription) => subscribe(input, apiId, team, plan, apiKey),
+              onSubscribe: () => subscribe(apiId, team, plan),
+              extendApiKey: (apiKey: ISubscription) => subscribe(apiId, team, plan, apiKey),
             });
           }
         });
@@ -213,7 +201,6 @@ export const FastApiCard = (props: FastApiCardProps) => {
                         style={{ whiteSpace: "nowrap" }}
                         className={"btn btn-sm btn-outline-primary"}
                         onClick={() => subscribeOrExtends(
-                          props.input,
                           selectedApi.api._id,
                           props.team,
                           plan

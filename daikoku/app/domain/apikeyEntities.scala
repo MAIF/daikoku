@@ -282,7 +282,7 @@ case class SubscriptionDemand(
     team: TeamId,
     from: UserId,
     date: DateTime = DateTime.now,
-    motivation: Option[String] = None,
+    motivation: Option[JsObject] = None,
     parentSubscriptionId: Option[ApiSubscriptionId] = None,
     customReadOnly: Option[Boolean] = None,
     customMetadata: Option[JsObject] = None,
