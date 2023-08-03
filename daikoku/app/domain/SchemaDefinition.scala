@@ -1559,16 +1559,16 @@ object SchemaDefinition {
     )
 
 
-    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, apiSubOnly: Boolean, limit: Int, offset: Int) = {
-      CommonServices.getApisWithSubscriptions(teamId, research, selectedTag, selectedCat, limit, offset, apiSubOnly)(ctx.ctx._2, env, e).map {
+    def getApisWithSubscriptions(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit], teamId: String, research: String, apiSubOnly: Boolean, limit: Int, offset: Int) = {
+      CommonServices.getApisWithSubscriptions(teamId, research, limit, offset, apiSubOnly)(ctx.ctx._2, env, e).map {
         case Right(value) => value
         case Left(r) => throw NotAuthorizedError(r.toString)
       }
     }
 
     def apiWithSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("accessibleApis", GraphQlAccessibleApisWithNumberOfApis, arguments = TEAM_ID_NOT_OPT :: RESEARCH :: SELECTED_TAG :: SELECTED_CAT :: API_SUB_ONLY :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
-        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT),ctx.arg(RESEARCH), ctx.arg(SELECTED_TAG), ctx.arg(SELECTED_CAT),ctx.arg(API_SUB_ONLY),ctx.arg(LIMIT), ctx.arg(OFFSET))
+      Field("accessibleApis", GraphQlAccessibleApisWithNumberOfApis, arguments = TEAM_ID_NOT_OPT :: RESEARCH :: API_SUB_ONLY :: LIMIT :: OFFSET :: Nil, resolve = ctx => {
+        getApisWithSubscriptions(ctx, ctx.arg(TEAM_ID_NOT_OPT),ctx.arg(RESEARCH),ctx.arg(API_SUB_ONLY),ctx.arg(LIMIT), ctx.arg(OFFSET))
       })
     )
 

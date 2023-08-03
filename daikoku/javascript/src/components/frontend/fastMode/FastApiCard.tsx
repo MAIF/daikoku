@@ -5,7 +5,7 @@ import { constraints, format, type as formType } from "@maif/react-forms";
 import Select from "react-select";
 import { getApolloContext } from "@apollo/client";
 
-import { IApi, IFastApi, IFastPlan, IFastSubscription, ISubscription, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan } from "../../../types";
+import { IApi, IFastApi, IFastPlan, IFastSubscription, isError, ISubscription, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan } from "../../../types";
 import { I18nContext } from "../../../contexts/i18n-context";
 import * as Services from "../../../services";
 import { ModalContext } from "../../../contexts";
@@ -45,6 +45,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
       : Services.askForApiKey(apiId, team._id, plan._id, motivation)
 
     const adminStep = plan.subscriptionProcess.find(s => isValidationStepTeamAdmin(s))
+    console.debug({adminStep, plan})
     if (adminStep && isValidationStepTeamAdmin(adminStep)) {
       openFormModal<{ motivation: string }>({
         title: translate('motivations.modal.title'),
@@ -52,13 +53,14 @@ export const FastApiCard = (props: FastApiCardProps) => {
         onSubmit: (motivation) => {
           apiKeyDemand(motivation)
             .then((response) => {
-              if (response[0].error) {
+              console.debug({response})
+              if (isError(response)) {
                 toastr.error(
                   translate('Error'),
-                  response[0].error
+                  response.error
                 )
               } else {
-                toastr.success(
+                toastr.info(
                   translate('Done'),
                   translate(
                     {
@@ -79,10 +81,10 @@ export const FastApiCard = (props: FastApiCardProps) => {
     } else {
       apiKeyDemand()
       .then((response) => {
-        if (response[0].error) {
+        if (isError(response)) {
           toastr.error(
             translate('Error'),
-            response[0].error
+            response.error
           )
         } else {
           toastr.success(

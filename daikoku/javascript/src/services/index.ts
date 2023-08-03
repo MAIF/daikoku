@@ -1616,8 +1616,8 @@ export const graphql = {
     }
     `),
   getApisWithSubscription: gql(`
-    query AccessibleApis ($teamId: String!, $research: String, $selectedTag: String, $selectedCategory: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
-      accessibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
+    query AccessibleApis ($teamId: String!, $research: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
+      accessibleApis (teamId: $teamId, research: $research, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
         apis {
           api {
             name
@@ -1647,6 +1647,10 @@ export const graphql = {
               type
               subscriptionProcess {
                 name
+                ... on TeamAdmin {
+                  team
+                  schema
+                }
               }
               allowMultipleKeys
               aggregationApiKeysSecurity

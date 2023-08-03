@@ -8,6 +8,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
 import play.api.libs.json._
 
@@ -90,17 +91,9 @@ object CommonServices {
       }
     }
   }
-  def getApisWithSubscriptions(teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, apiSubOnly: Boolean)
+  def getApisWithSubscriptions(teamId: String, research: String, limit: Int, offset: Int, apiSubOnly: Boolean)
                               (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, AccessibleApisWithNumberOfApis]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
-      val tagFilter = selectedTag match {
-        case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
-        case None => Json.obj()
-      }
-      val catFilter = selectedCat match {
-        case Some(_) => Json.obj("categories" -> selectedCat.map(JsString))
-        case None => Json.obj()
-      }
       for {
         subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
         subsOnlyFilter = if (apiSubOnly) Json.obj("_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))) else Json.obj()
@@ -118,9 +111,9 @@ object CommonServices {
           "state" -> ApiState.publishedJsonFilter)
         allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter ++ subsOnlyFilter, sort = Some(Json.obj("name" -> 1)))
         teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))))
-        notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
-          "action.type" -> "ApiSubscription",
-          "status.status" -> "Pending"
+        demands <- env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId,
+          "api" -> Json.obj("$in" -> Json.arr(allApis.map(_.id.asJson))),
+          "state" -> Json.obj("$in" -> Json.arr("waiting", "inProgress"))
         ))
         plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
           .findNotDeleted(Json.obj("_id" -> Json.obj("$in"-> JsArray(allApis.flatMap(_.possibleUsagePlans).map(_.asJson)))))
@@ -141,7 +134,7 @@ object CommonServices {
                   .filter(p => filterPrivatePlan(p, api, teamId))
                   .map(plan => {
                     SubscriptionsWithPlan(plan.id.value,
-                      isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
+                      isPending = demands.exists(demand => demand.team.value == teamId && demand.plan.value == plan.id.value && demand.api.value == api.id.value),
                       subscriptionsCount = subs.count(sub => sub.plan.value == plan.id.value && sub.api == api.id))
                   }))
             }), uniqueApis._2)
