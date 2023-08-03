@@ -26,7 +26,8 @@ export type CustomSubscriptionData = {
   customMaxPerSecond: number,
   customMaxPerDay: number,
   customMaxPerMonth: number,
-  customReadOnly: boolean
+  customReadOnly: boolean,
+  adminCustomName: string
 }
 
 export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps & IBaseModalProps) => {
@@ -55,6 +56,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
       customMaxPerDay: formData.customQuotas.customMaxPerDay,
       customMaxPerMonth: formData.customQuotas.customMaxPerMonth,
       customReadOnly: formData.customReadOnly,
+      adminCustomName: formData.adminCustomName
     };
 
     const res = props.save(subProps)
@@ -125,6 +127,11 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
     customReadOnly: {
       type: type.bool,
       label: translate('Read only apikey')
+    },
+    adminCustomName: {
+      type: type.string,
+      label: translate('sub.meta.modal.admin.custom.name.label'),
+      help: translate('sub.meta.modal.admin.custom.name.help'),
     }
   })
 
@@ -170,8 +177,14 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
       customReadOnly: Option(props.subscription)
         .orElse(props.config)
         .map((s: any) => s.customReadOnly)
+        .getOrNull(),
+      adminCustomName: Option(props.subscription)
+        .orElse(props.config)
+        .map((s: any) => s.adminCustomName)
         .getOrNull()
     }
+
+    console.debug({ value })
 
 
 
@@ -217,6 +230,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
           ref={formRef}
           value={value}
           footer={() => <></>}
+          className='mb-1'
         />
 
         <div className="modal-footer">

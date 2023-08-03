@@ -1438,6 +1438,10 @@ export const graphql = {
         tags
         metadata
         customMetadata
+        customMaxPerSecond
+        customMaxPerDay
+        customMaxPerMonth
+        adminCustomName
       }
     }
     `),

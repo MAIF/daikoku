@@ -2416,6 +2416,7 @@ object json {
             createdAt = (json \ "createdAt").as(DateTimeFormat),
             by = (json \ "by").as(UserIdFormat),
             customName = (json \ "customName").asOpt[String],
+            adminCustomName = (json \ "adminCustomName").asOpt[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
             integrationToken = (json \ "integrationToken").as[String],
@@ -2460,6 +2461,10 @@ object json {
       "createdAt" -> DateTimeFormat.writes(o.createdAt),
       "by" -> UserIdFormat.writes(o.by),
       "customName" -> o.customName
+        .map(id => JsString(id))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "adminCustomName" -> o.adminCustomName
         .map(id => JsString(id))
         .getOrElse(JsNull)
         .as[JsValue],
@@ -2594,6 +2599,10 @@ object json {
         "customReadOnly" -> o.customReadOnly
           .map(JsBoolean.apply)
           .getOrElse(JsNull)
+          .as[JsValue],
+        "adminCustomName" -> o.adminCustomName
+          .map(JsString.apply)
+          .getOrElse(JsNull)
           .as[JsValue]
       )
 
@@ -2620,7 +2629,8 @@ object json {
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
             customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
-            customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
+            customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
+            adminCustomName = (json \ "adminCustomName").asOpt[String]
           )
         )
       } recover {

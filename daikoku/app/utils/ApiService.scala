@@ -168,6 +168,7 @@ class ApiService(env: Env,
                      customMaxPerDay: Option[Long] = None,
                      customMaxPerMonth: Option[Long] = None,
                      customReadOnly: Option[Boolean] = None,
+                     adminCustomName: Option[String] = None,
                      thirdPartySubscriptionInformations: Option[ThirdPartySubscriptionInformations]): Future[Either[AppError, ApiSubscription]] = {
     def createKey(api: Api, plan: UsagePlan, team: Team, authorizedEntities: AuthorizedEntities, parentSubscriptionId: Option[ApiSubscriptionId])(
       implicit otoroshiSettings: OtoroshiSettings
@@ -228,6 +229,7 @@ class ApiService(env: Env,
               customMaxPerDay = customMaxPerDay,
               customMaxPerMonth = customMaxPerMonth,
               customReadOnly = customReadOnly,
+              adminCustomName = adminCustomName,
               parent = parentSubscriptionId,
               thirdPartySubscriptionInformations = thirdPartySubscriptionInformations
             )
@@ -1010,6 +1012,7 @@ class ApiService(env: Env,
             customMaxPerDay = demand.customMaxPerDay,
             customMaxPerMonth = demand.customMaxPerMonth,
             customReadOnly = demand.customReadOnly,
+            adminCustomName = demand.adminCustomName,
             thirdPartySubscriptionInformations = maybeSubscriptionInformations
           ))
           administrators <- EitherT.liftF(
@@ -1064,7 +1067,8 @@ class ApiService(env: Env,
                             customMaxPerSecond: Option[Long],
                             customMaxPerDay: Option[Long],
                             customMaxPerMonth: Option[Long],
-                            customReadOnly: Option[Boolean]
+                            customReadOnly: Option[Boolean],
+                            adminCustomName: Option[String],
                            )(implicit language: String, currentUser: User) = {
     import cats.implicits._
 
@@ -1156,7 +1160,8 @@ class ApiService(env: Env,
         customMaxPerSecond,
         customMaxPerDay,
         customMaxPerMonth,
-        customReadOnly
+        customReadOnly,
+        adminCustomName
       )
     } yield result
 
@@ -1175,7 +1180,8 @@ class ApiService(env: Env,
                                       customMaxPerSecond: Option[Long],
                                       customMaxPerDay: Option[Long],
                                       customMaxPerMonth: Option[Long],
-                                      customReadOnly: Option[Boolean])(implicit language: String): EitherT[Future, AppError, Result] = {
+                                      customReadOnly: Option[Boolean],
+                                      adminCustomName: Option[String])(implicit language: String): EitherT[Future, AppError, Result] = {
     import cats.implicits._
 
     plan match {
@@ -1216,7 +1222,8 @@ class ApiService(env: Env,
                   customMaxPerSecond = customMaxPerSecond,
                   customMaxPerDay = customMaxPerDay,
                   customMaxPerMonth = customMaxPerMonth,
-                  customReadOnly = customReadOnly
+                  customReadOnly = customReadOnly,
+                  adminCustomName = adminCustomName
                 )))
               result <- runSubscriptionProcess(demanId, tenant)(language, user)
             } yield result

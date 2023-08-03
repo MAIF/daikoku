@@ -723,6 +723,7 @@ object SchemaDefinition {
           ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api)),
         Field("by", OptionType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.by)),
         Field("customName", OptionType(StringType), resolve = _.value.customName),
+        Field("adminCustomName", OptionType(StringType), resolve = _.value.adminCustomName),
         Field("enabled", BooleanType, resolve = _.value.enabled),
         Field("rotation", OptionType(ApiSubscriptionRotationType), resolve = _.value.rotation),
         Field("integrationToken", StringType, resolve = _.value.integrationToken),

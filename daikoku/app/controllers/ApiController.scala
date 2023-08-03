@@ -767,7 +767,6 @@ class ApiController(
           s"@{user.name} has init an apikey for @{api.name} - @{api.id}"
         )
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        val parallelism = 10;
         val subSource = ctx.request.body
           .map(
             data =>
@@ -915,6 +914,7 @@ class ApiController(
         val customMaxPerMonth = ctx.request.body.getBodyField[Long]("customMaxPerMonth")
         val customReadOnly = ctx.request.body.getBodyField[Boolean]("customReadOnly")
         val customMetadata = ctx.request.body.getBodyField[JsObject]("customMetadata")
+        val adminCustomName = ctx.request.body.getBodyField[String]("adminCustomName")
 
         apiService._createOrExtendApiKey(
           tenant = ctx.tenant,
@@ -926,6 +926,7 @@ class ApiController(
           customMaxPerDay = customMaxPerDay,
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
+          adminCustomName = adminCustomName,
           motivation = motivation,
           parentSubscriptionId = Some(ApiSubscriptionId(apiKeyId))
         )
@@ -950,6 +951,7 @@ class ApiController(
         val customMaxPerMonth = ctx.request.body.getBodyField[Long]("customMaxPerMonth")
         val customReadOnly = ctx.request.body.getBodyField[Boolean]("customReadOnly")
         val customMetadata = ctx.request.body.getBodyField[JsObject]("customMetadata")
+        val adminCustomName = ctx.request.body.getBodyField[String]("adminCustomName")
 
         apiService._createOrExtendApiKey(
           tenant = ctx.tenant,
@@ -961,6 +963,7 @@ class ApiController(
           customMaxPerDay = customMaxPerDay,
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
+          adminCustomName = adminCustomName,
           motivation = motivation)
       }
     }
@@ -1234,7 +1237,8 @@ class ApiController(
             customMaxPerDay = (body \ "customMaxPerDay").asOpt[Long],
             customMaxPerMonth =
               (body \ "customMaxPerMonth").asOpt[Long],
-            customReadOnly = (body \ "customReadOnly").asOpt[Boolean]
+            customReadOnly = (body \ "customReadOnly").asOpt[Boolean],
+            adminCustomName = (body \ "adminCustomName").asOpt[String]
           )
           result <- EitherT(apiService.updateSubscription(ctx.tenant, subToSave, plan))
         } yield Ok(result))

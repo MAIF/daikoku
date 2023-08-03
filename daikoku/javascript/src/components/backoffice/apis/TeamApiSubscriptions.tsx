@@ -56,6 +56,10 @@ type ApiSubscriptionGql = {
   customName: string
   enabled: boolean
   customMetadata?: JSON
+  adminCustomName?: string
+  customMaxPerSecond?: number
+  customMaxPerDay?: number
+  customMaxPerMonth?: number
   tags: Array<string>
   metadata?: JSON
 }
@@ -88,14 +92,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
 
   const columnHelper = createColumnHelper<ApiSubscriptionGql>()
   const columns = (usagePlans) => [
-    columnHelper.accessor(row => row.team._id === currentTeam._id ? row.customName || row.apiKey.clientName : row.apiKey.clientName, {
-      id: 'name',
+    columnHelper.accessor(row => row.adminCustomName || row.apiKey.clientName, {
+      id: 'adminCustomName',
       header: translate('Name'),
       meta: { style: { textAlign: 'left' } },
-      cell: (info) => {
-        const sub = info.row.original
-        return sub.team._id === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
-      },
       filterFn: (row, _, value) => {
         const sub = row.original
         const displayed: string = sub.team._id === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
@@ -260,8 +260,6 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                   schema: {
                     key: {
                       type: type.string,
-                      format: format.select,
-                      options: Array.from(new Set(options)),
                       createOption: true
                     },
                     value: {
@@ -271,11 +269,8 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                 },
                 tags: {
                   type: type.string,
-                  format: format.select,
                   label: translate('Filter tags'),
-                  isMulti: true,
-                  createOption: true,
-                  options: usagePlans.flatMap(pp => pp.otoroshiTarget?.apikeyCustomization.tags || []).filter(t => !t.startsWith('$'))
+                  array: true,
                 }
               },
               title: translate("Filter data"),
@@ -307,17 +302,17 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                   } else {
                     const filterByMetadata = (subscription: ApiSubscriptionGql) => {
                       const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) };
-  
+
                       return !Object.keys(meta) || (!filters.metadata.length || filters.metadata.every(item => {
                         const value = meta[item.key]
                         return value && value.includes(item.value)
                       }))
                     }
-  
+
                     const filterByTags = (subscription: ApiSubscriptionGql) => {
                       return filters.tags.every(tag => subscription.tags.includes(tag))
                     }
-  
+
                     return apiApiSubscriptions
                       .filter(filterByMetadata)
                       .filter(filterByTags)

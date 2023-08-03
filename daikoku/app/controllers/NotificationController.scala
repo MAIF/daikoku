@@ -739,6 +739,8 @@ class NotificationController(
           ctx.request.body.getBodyField[Long]("customMaxPerMonth"),
         customMetadata =
           ctx.request.body.getBodyField[JsObject]("customMetadata"),
+        adminCustomName =
+          ctx.request.body.getBodyField[String]("adminCustomName"),
         steps = demand.steps.map(
           s =>
             if (s.id == subscriptionDemandStepId)

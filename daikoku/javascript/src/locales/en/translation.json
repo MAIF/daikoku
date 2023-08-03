@@ -1339,5 +1339,7 @@
     "motivation.form.formatter.label": "Formatter",
     "motivation.form.formatter.help": "a character string in which words between “[[ ]]” will be replaced by the corresponding values retrieved from the answers provided by the user in the form and sent to the administrator for validation.",
     "motivation.form.sample.help": "Use the test form below to preview and validate your formatting settings (formatter).",
-    "motivation.form.sample.button.label": "Test"
+    "motivation.form.sample.button.label": "Test",
+    "sub.meta.modal.admin.custom.name.label": "Custom key name",
+    "sub.meta.modal.admin.custom.name.help": "this custom name will only be visible to the admin team"
 }
