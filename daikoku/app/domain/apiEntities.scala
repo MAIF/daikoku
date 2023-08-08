@@ -247,6 +247,17 @@ sealed trait UsagePlan {
   def addSubscriptionStep(step: ValidationStep,
                           idx: Option[Int] = None): UsagePlan
   def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
+  def checkCustomName(tenant: Tenant, plans: Seq[UsagePlan])(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+    val existingNames = plans.collect(_.customName)
+      .collect { case Some(name) => name }
+    tenant.display match {
+      case TenantDisplay.Environment => customName match {
+        case Some(customName) if tenant.environments.contains(customName) && !existingNames.contains(customName) => EitherT.pure[Future, AppError](())
+        case _ => EitherT.leftT[Future, Unit](AppError.EntityConflict("Plan custom name"))
+      }
+      case TenantDisplay.Default => EitherT.pure[Future, AppError](())
+    }
+  }
 }
 
 case object UsagePlan {

@@ -12,6 +12,7 @@ import { AuditForm, AuthenticationForm, BucketForm, CustomizationForm, GeneralFo
 import { SecurityForm } from './forms/SecurityForm';
 import { ThirdPartyPaymentForm } from './forms/ThirdPartyPaymentForm';
 import { isError } from '../../../types';
+import { DisplayForm } from './forms/DisplayForm';
 
 export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: string, fromDaikokuAdmin?: boolean }) => {
   const { translate } = useContext(I18nContext)
@@ -112,6 +113,15 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
             <>
               {fromDaikokuAdmin && <h1>{data?.name} - {translate('Third-Party payment')}</h1>}
               <SecurityForm tenant={data} updateTenant={updateTenant} />
+            </>
+          }
+        />
+        <Route
+          path="/display-mode"
+          element={
+            <>
+              {fromDaikokuAdmin && <h1>{data?.name} - {translate('DisplayMode')}</h1>}
+              <DisplayForm tenant={data} updateTenant={updateTenant} />
             </>
           }
         />

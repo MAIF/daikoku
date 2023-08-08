@@ -139,7 +139,8 @@ object SchemaDefinition {
         Field("apiReferenceHideForGuest", OptionType(BooleanType), resolve = _.value.apiReferenceHideForGuest),
         Field("defaultMessage", OptionType(StringType), resolve = _.value.defaultMessage),
         Field("tenantMode", OptionType(StringType), resolve = _.value.tenantMode.map(_.name)),
-        Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity)
+        Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity),
+        Field("display", OptionType(StringType), resolve = _.value.display.name)
       )
     )
 

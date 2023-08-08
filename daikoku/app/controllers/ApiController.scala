@@ -3806,7 +3806,7 @@ class ApiController(
       }
     }
 
-  def createNewPlan(teamId: String, apiId: String, version: String) =
+  def createPlan(teamId: String, apiId: String, version: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}")
@@ -3829,6 +3829,8 @@ class ApiController(
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
           updatedPlan <- addProcess(api, newPlan)
+          plans <- EitherT.liftF(env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api))
+          _ <- updatedPlan.checkCustomName(ctx.tenant, plans)
           updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans :+ updatedPlan.id)
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan))
@@ -4001,6 +4003,8 @@ class ApiController(
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
+          plans <- EitherT.liftF(env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api))
+          _ <- updatedPlan.checkCustomName(ctx.tenant, plans)
           oldPlan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId), AppError.PlanNotFound)
           _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
             .updateManyByQuery(

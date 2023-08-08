@@ -735,6 +735,11 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
                 action: () => navigateTo('settings/security'),
                 className: { active: subTab === 'security' },
               },
+              display: {
+                label: translate('DisplayMode'),
+                action: () => navigateTo('settings/display-mode'),
+                className: { active: subTab === 'display-mode' },
+              },
             },
           },
           message: {

@@ -235,6 +235,22 @@ object TenantMode {
     case _              => Some(Default)
   }
 }
+sealed trait TenantDisplay {
+  def name: String
+}
+
+object TenantDisplay {
+  case object Environment extends TenantDisplay {
+    def name: String = "environment"
+  }
+  case object Default extends TenantDisplay {
+    def name: String = "default"
+  }
+  def apply(name: String): TenantDisplay = name.toLowerCase() match {
+    case "environment"  => Environment
+    case _              => Default
+  }
+}
 
 sealed trait ThirdPartyPaymentSettings {
   def id: ThirdPartyPaymentSettingsId
@@ -281,7 +297,10 @@ case class Tenant(
     tenantMode: Option[TenantMode] = None,
     aggregationApiKeysSecurity: Option[Boolean] = None,
     robotTxt: Option[String] = None,
-    thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty
+    thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
+    display: TenantDisplay = TenantDisplay.Default,
+    environments: Set[String] = Set.empty,
+    defaultEnvironment: Option[String] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -343,7 +362,9 @@ case class Tenant(
       "aggregationApiKeysSecurity" -> aggregationApiKeysSecurity
         .map(JsBoolean)
         .getOrElse(JsBoolean(false))
-        .as[JsValue]
+        .as[JsValue],
+      "display" -> display.name,
+      "environments" -> JsArray(environments.map(JsString.apply).toSeq)
     )
   }
   def colorTheme(): Html = {

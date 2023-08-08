@@ -290,6 +290,17 @@ object json {
 
     override def writes(o: TenantMode): JsValue = JsString(o.name)
   }
+  val TenantDisplayFormat = new Format[TenantDisplay] {
+    override def reads(json: JsValue): JsResult[TenantDisplay] =
+      json.asOpt[String].map(_.toLowerCase) match {
+        case Some("environment")  => JsSuccess(TenantDisplay.Environment)
+        case Some("default")      => JsSuccess(TenantDisplay.Default)
+        case None                 => JsSuccess(TenantDisplay.Default)
+        case Some(str)            => JsError(s"Bad value for tenant display : $str")
+      }
+
+    override def writes(o: TenantDisplay): JsValue = JsString(o.name)
+  }
   val ApiSubscriptionIdFormat = new Format[ApiSubscriptionId] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionId] =
       Try {
@@ -1958,7 +1969,13 @@ object json {
             robotTxt = (json \ "robotTxt").asOpt[String],
             thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings")
               .asOpt(SeqThirdPartyPaymentSettingsFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            display = (json \ "display").asOpt(TenantDisplayFormat)
+              .getOrElse(TenantDisplay.Default),
+            environments = (json \ "environments")
+              .asOpt[Set[String]]
+              .getOrElse(Set.empty),
+            defaultEnvironment = (json \ "defaultEnvironment").asOpt[String]
           )
         )
       } recover {
@@ -2026,7 +2043,13 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat.writes(
-        o.thirdPartyPaymentSettings)
+        o.thirdPartyPaymentSettings),
+      "display" -> TenantDisplayFormat.writes(o.display),
+      "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
+      "defaultEnvironment" -> o.defaultEnvironment
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {

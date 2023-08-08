@@ -1,6 +1,6 @@
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-forms';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
@@ -21,7 +21,7 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { ITeamSimple } from '../../../types';
+import { IState, ITeamSimple } from '../../../types';
 import { IApi, isError, isValidationStepEmail, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepTeamAdmin, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
@@ -33,6 +33,7 @@ import {
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys';
+import { useSelector } from 'react-redux';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -491,7 +492,6 @@ type Props = {
   openApiSelectModal?: () => void
 }
 type Tab = 'settings' | 'security' | 'payment' | 'subscription-process'
-type IUsagePlanId = string;
 
 export const TeamApiPricings = (props: Props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
@@ -502,7 +502,9 @@ export const TeamApiPricings = (props: Props) => {
 
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
 
+  const queryClient = useQueryClient()
   const queryFullTenant = useQuery(['full-tenant'], () => Services.oneTenant(props.tenant._id))
   const queryPlans = useQuery(['plans'], () => Services.getAllPlanOfApi(props.api.team, props.api._id, props.api.currentVersion))
 
@@ -661,7 +663,10 @@ export const TeamApiPricings = (props: Props) => {
   const deletePlan = (plan: IUsagePlan) => {
     Services.deletePlan(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(() => props.reload())
-      .then(() => toastr.success(translate('Success'), translate('plan.deletion.successful')))
+      .then(() => {
+        queryClient.invalidateQueries(['plans'])
+        toastr.success(translate('Success'), translate('plan.deletion.successful'))
+      })
   };
 
   const createNewPlan = () => {
@@ -703,6 +708,7 @@ export const TeamApiPricings = (props: Props) => {
           setPlanForEdition(response)
           setCreation(false)
           props.reload()
+          queryClient.invalidateQueries(['plans'])
         }
       })
   };
@@ -771,7 +777,35 @@ export const TeamApiPricings = (props: Props) => {
     'PayPerUse',
   ];
 
-  const steps: Array<IMultistepsformStep<IUsagePlan>> = [
+  const customNameSchemaPart = (plans: Array<IUsagePlan>) => {
+    if (tenant.display === 'environment') {
+      const availablePlans = tenant.environments.filter(e => plans.every(p => p.customName !== e))
+
+      return {
+        customName: {
+          type: type.string,
+          format: format.select,
+          label: translate('Name'),
+          placeholder: translate('Plan name'),
+          options: availablePlans,
+          constraints: [
+            constraints.oneOf(tenant.environments, translate('constraints.plan.custom-name.one-of.environment')),
+            constraints.required('constraints.required.value')
+          ]
+        }
+      }
+    } else {
+      return {
+        customName: {
+          type: type.string,
+          label: translate('Name'),
+          placeholder: translate('Plan name'),
+        }
+      }
+    }
+  }
+
+  const steps = (plans): Array<IMultistepsformStep<IUsagePlan>> => ([
     {
       id: 'info',
       label: 'Informations',
@@ -807,11 +841,7 @@ export const TeamApiPricings = (props: Props) => {
             constraints.oneOf(planTypes, translate('constraints.oneof.plan.type')),
           ],
         },
-        customName: {
-          type: type.string,
-          label: translate('Name'),
-          placeholder: translate('Plan name'),
-        },
+        ...customNameSchemaPart(plans),
         customDescription: {
           type: type.string,
           format: format.text,
@@ -1023,7 +1053,7 @@ export const TeamApiPricings = (props: Props) => {
         },
       },
     },
-  ];
+  ]);
 
   const billingSchema = {
     paymentSettings: {
@@ -1237,12 +1267,17 @@ export const TeamApiPricings = (props: Props) => {
     },
   }
 
+  const availablePlans = queryPlans.data && !isError(queryPlans.data) && tenant.environments.filter(e => (queryPlans.data as Array<IUsagePlan>).every(p => p.customName !== e))
   return (<div className="d-flex col flex-column pricing-content">
     <div className="album">
       {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left fa-lg cursor-pointer" style={{ marginTop: 0 }} />}
       <div className="container">
         <div className="d-flex mb-3">
-          {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-success btn-sm me-1">
+          {!planForEdition && <button
+            onClick={createNewPlan}
+            type="button"
+            disabled={tenant.display === 'environment' && (!availablePlans || !availablePlans.length)}
+            className="btn btn-outline-success btn-sm me-1">
             {translate('add a new plan')}
           </button>}
           {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
@@ -1251,9 +1286,9 @@ export const TeamApiPricings = (props: Props) => {
         </div>
         {planForEdition && mode !== possibleMode.list && (<div className="row">
           <div className="col-md-12">
-            {selectedTab === 'settings' && <MultiStepForm<IUsagePlan>
+            {queryPlans.data && selectedTab === 'settings' && <MultiStepForm<IUsagePlan>
               value={planForEdition}
-              steps={steps}
+              steps={steps(queryPlans.data as Array<IUsagePlan>)}
               initial="info"
               creation={creation}
               save={savePlan}
@@ -1263,7 +1298,7 @@ export const TeamApiPricings = (props: Props) => {
                 next: translate('Next'),
                 save: translate('Save'),
               }} />}
-            {selectedTab === 'payment' && (
+            {queryPlans.data && selectedTab === 'payment' && (
               <Form
                 schema={billingSchema}
                 flow={getRightBillingFlow(planForEdition)}
@@ -1271,14 +1306,14 @@ export const TeamApiPricings = (props: Props) => {
                 value={planForEdition}
               />
             )}
-            {selectedTab === 'security' && (
+            {queryPlans.data && selectedTab === 'security' && (
               <Form
                 schema={securitySchema}
                 onSubmit={savePlan}
                 value={planForEdition}
               />
             )}
-            {selectedTab === 'subscription-process' && (
+            {queryPlans.data && selectedTab === 'subscription-process' && (
               <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
             )}
           </div>
@@ -1392,7 +1427,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           team: props.team._id,
           id: nanoid(32),
           title: 'Admin',
-          schema: { motivation: { type: type.string, format: format.text, constraints: [{type: 'required'}] } },
+          schema: { motivation: { type: type.string, format: format.text, constraints: [{ type: 'required' }] } },
           formatter: '[[motivation]]'
         }
         return props.savePlan({ ...props.value, subscriptionProcess: [step, ...props.value.subscriptionProcess] })
