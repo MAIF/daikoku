@@ -20,15 +20,14 @@ export const DisplayForm = (props: UpdateFormProps) => {
         {value: 'environment', label: translate('display.environment.label')},
         {value: 'default', label: translate('display.default.label')},
       ],
-      label: translate('environment-mode.is-private.label'),
-      help: translate('environment-mode.is-private.help')
+      label: translate('display-mode.label'),
+      help: translate('display-mode.help')
     },
     //TODO: draw a custom component with is default flag
     environments: {
       type: type.string,
       array: true,
-      label: translate('environment-mode.environments.label'),
-      help: translate('environment-mode.environments.help'),
+      label: translate('display-mode.environments.label'),
       visible: ({ rawValues }) => rawValues.isPrivate,
       constraints: [
         constraints.required('constraints.required.value')

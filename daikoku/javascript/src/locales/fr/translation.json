@@ -1345,5 +1345,11 @@
   "motivation.form.sample.button.label": "Tester",
   "sub.meta.modal.admin.custom.name.label": "Nom personnalisé de la clé",
   "sub.meta.modal.admin.custom.name.help": "ce nom personnalisé ne sera visible que de l'équipe d'administration",
-  "documentation.add.page.btn.label": "Ajouter une page"
+  "documentation.add.page.btn.label": "Ajouter une page",
+  "DisplayMode": "Affichage",
+  "display.environment.label": "Environnement",
+  "display.default.label": "Défaut",
+  "display-mode.label": "Mode d'affichage",
+  "display-mode.help": "Le mode environnement vous obligera à créer des environnements disponibles. Les plans d'utilisation de l'API doivent correspondre à l'un des environnements disponibles.",
+  "display-mode.environments.label": "Environnements disponibles"
 }

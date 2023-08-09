@@ -1342,6 +1342,12 @@
     "motivation.form.sample.button.label": "Test",
     "sub.meta.modal.admin.custom.name.label": "Custom key name",
     "sub.meta.modal.admin.custom.name.help": "this custom name will only be visible to the admin team",
-    "documentation.add.page.btn.label": "Add page"
+    "documentation.add.page.btn.label": "Add page",
+    "DisplayMode": "Display mode",
+    "display.environment.label": "Environment",
+    "display.default.label": "Default",
+    "display-mode.label": "Display mode",
+    "display-mode.help": "The environment mode will force you to create avalible environments. The api usage plans needs to match one of the avalible environments.",
+    "display-mode.environments.label": "Available environments"
 
 }
