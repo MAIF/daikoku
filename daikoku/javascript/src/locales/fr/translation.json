@@ -1344,5 +1344,6 @@
   "motivation.form.sample.help": "Utilisez le formulaire de test ci-dessous pour prévisualiser et valider vos paramètres de formatage (formatter).",
   "motivation.form.sample.button.label": "Tester",
   "sub.meta.modal.admin.custom.name.label": "Nom personnalisé de la clé",
-  "sub.meta.modal.admin.custom.name.help": "ce nom personnalisé ne sera visible que de l'équipe d'administration"
+  "sub.meta.modal.admin.custom.name.help": "ce nom personnalisé ne sera visible que de l'équipe d'administration",
+  "documentation.add.page.btn.label": "Ajouter une page"
 }

@@ -71,7 +71,7 @@ export interface IApiExtended extends IApi {
   pendingRequests: INotification
   subscriptions: ISafeSubscription
   myTeams: Array<ITeamSimple>
-  authorizations: Array<{team: string, authorized: boolean, pending: boolean}>
+  authorizations: Array<{ team: string, authorized: boolean, pending: boolean }>
 }
 
 export interface IApiAuthoWithCount {
@@ -114,6 +114,15 @@ export interface IDocumentation {
   _tenant: string;
   pages: IDocumentationPages;
   lastModificationAt: string;
+}
+
+export interface IImportingDocumentation {
+  from: string
+  _id: string
+  pages: Array<{ 
+    _id: string, 
+    title: string 
+  }>
 }
 
 export interface ISwagger {
@@ -195,11 +204,12 @@ export interface IUsagePlan extends IBaseUsagePlan {
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
+  documentation?: IDocumentation
 }
 
-export interface IUsagePlanAdmin extends IUsagePlan {}
+export interface IUsagePlanAdmin extends IUsagePlan { }
 
-export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan {}
+export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan { }
 export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
   maxPerSecond: number;
   maxPerDay: number;

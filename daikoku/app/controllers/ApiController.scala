@@ -1869,44 +1869,76 @@ class ApiController(
         AuditTrailEvent(
           s"@{user.name} has requested all pages of @{api.name} - @{team.id}"
         )
-      )(teamId, ctx) { team =>
-        {
-          env.dataStore.apiRepo
+      )(teamId, ctx) { _ => {
+        (for {
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
+          apis <- EitherT.liftF[Future, AppError, Seq[Api]](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .find(
               Json.obj(
-                "_humanReadableId" -> apiId,
+                "_humanReadableId" -> api.humanReadableId,
                 "currentVersion" -> Json.obj("$ne" -> version)
               )
-            )
-            .flatMap(apis =>
-              Future.sequence(apis.map { api =>
-                env.dataStore.apiDocumentationPageRepo
-                  .forTenant(ctx.tenant.id)
-                  .find(
+            ))
+          docs <- EitherT.liftF[Future, AppError, Seq[JsObject]](Future.sequence(apis.map(a => env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant)
+            .findNotDeleted(Json.obj(
+              "_id" -> Json.obj(
+                "$in" -> JsArray(a.documentation.docIds().map(JsString.apply))
+              )
+            ))
+            .map { pages =>
+              Json.obj(
+                "from" -> a.currentVersion.value,
+                "_id" -> a.id.asJson,
+                "pages" -> pages.map(
+                  page =>
                     Json.obj(
-                      "_id" -> Json.obj(
-                        "$in" -> JsArray(
-                          api.documentation.docIds().map(JsString.apply)
-                        )
-                      )
-                    )
-                  )
-                  .map { pages =>
-                    Json.obj(
-                      "currentVersion" -> api.currentVersion.value,
-                      "apiId" -> api.id.asJson,
-                      "pages" -> pages.map(
-                        page =>
-                          Json.obj(
-                            "_id" -> page.id.asJson,
-                            "title" -> JsString(page.title)
-                        ))
-                    )
-                  }
-              }))
-            .map(v => Ok(JsArray(v)))
-        }
+                      "_id" -> page.id.asJson,
+                      "title" -> JsString(page.title)
+                    ))
+              )
+            })))
+        } yield Ok(JsArray(docs)))
+          .leftMap(_.render())
+          .merge
+      }
+      }
+    }
+
+  def getAllPlansDocumentation(teamId: String, apiId: String, version: String) =
+    DaikokuAction.async { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} has requested all pages of @{api.name} - @{team.id}"
+        )
+      )(teamId, ctx) { _ =>
+        ({
+          for {
+            api <- EitherT.fromOptionF(env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
+            plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api))
+            docs <- EitherT.liftF[Future, AppError, Seq[JsObject]](Future.sequence(plans.map(p => env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant)
+              .findNotDeleted(Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> JsArray(p.documentation.map(_.docIds().map(JsString.apply)).getOrElse(Seq.empty))
+                )
+              ))
+              .map { pages =>
+                val str: String = p.customName.getOrElse(p.typeName)
+                Json.obj(
+                  "from" -> str,
+                  "_id" -> p.id.asJson,
+                  "pages" -> pages.map(
+                    page =>
+                      Json.obj(
+                        "_id" -> page.id.asJson,
+                        "title" -> JsString(page.title)
+                      ))
+                )
+              })))
+          } yield Ok(JsArray(docs))
+        })
+          .leftMap(_.render())
+          .merge
       }
     }
 
@@ -1918,7 +1950,7 @@ class ApiController(
         )
       )(teamId, ctx) { _ =>
         {
-          val pages = (ctx.request.body \ "pages").as[Seq[JsObject]]
+          val pages = (ctx.request.body \ "pages").as[Seq[String]]
 
           (for {
             fromPages <- env.dataStore.apiDocumentationPageRepo
@@ -1926,9 +1958,7 @@ class ApiController(
               .find(
                 Json.obj(
                   "_id" -> Json.obj(
-                    "$in" -> JsArray(
-                      pages.map(page => (page \ "pageId").as[JsString])
-                    )
+                    "$in" -> pages
                   )
                 )
               )
@@ -1955,9 +1985,49 @@ class ApiController(
                     api.copy(documentation = api.documentation
                       .copy(pages = api.documentation.pages ++ createdPages))
                   )
-                  .map(_ => Ok(Json.obj("cloned" -> true)))
+                  .map(_ => Ok(Json.obj("done" -> true)))
             }
           }).flatten
+        }
+      }
+    }
+  def clonePlanDocumentation(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} has imported pages from $version in @{api.name} @{team.id}"
+        )
+      )(teamId, ctx) { _ =>
+        {
+          val pages = (ctx.request.body \ "pages").as[Seq[String]]
+
+          (for {
+            fromPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationPage]](env.dataStore.apiDocumentationPageRepo
+              .forTenant(ctx.tenant.id)
+              .find(
+                Json.obj(
+                  "_id" -> Json.obj(
+                    "$in" -> pages
+                  )
+                )
+              ))
+            createdPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationDetailPage]](Future.sequence(fromPages.map(page => {
+              val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+              env.dataStore.apiDocumentationPageRepo
+                .forTenant(ctx.tenant.id)
+                .save(page.copy(id = generatedId))
+                .flatMap(_ =>
+                  FastFuture.successful(
+                    ApiDocumentationDetailPage(generatedId, page.title, Seq.empty)
+                ))
+            })))
+            plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(planId), AppError.PlanNotFound)
+            _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.usagePlanRepo
+              .forTenant(ctx.tenant.id)
+              .save(plan.addDocumentationPages(createdPages)))
+          } yield Ok(Json.obj("done" -> true)))
+            .leftMap(_.render())
+            .merge
         }
       }
     }

@@ -22,7 +22,7 @@ import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import { IState, ITeamSimple } from '../../../types';
-import { IApi, isError, isValidationStepEmail, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepTeamAdmin, UsagePlanVisibility } from '../../../types/api';
+import { IApi, IDocumentation, isError, isValidationStepEmail, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepTeamAdmin, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
   BeautifulTitle, formatPlanType, IMultistepsformStep,
@@ -34,6 +34,7 @@ import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys';
 import { useSelector } from 'react-redux';
+import { TeamApiDocumentation } from './TeamApiDocumentation';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -491,7 +492,7 @@ type Props = {
   injectSubMenu: (x: JSX.Element | null) => void
   openApiSelectModal?: () => void
 }
-type Tab = 'settings' | 'security' | 'payment' | 'subscription-process'
+type Tab = 'settings' | 'security' | 'payment' | 'subscription-process' | 'swagger' | 'documentation' | 'testing'
 
 export const TeamApiPricings = (props: Props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
@@ -532,6 +533,18 @@ export const TeamApiPricings = (props: Props) => {
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'security' })}
             onClick={() => setSelectedTab('security')}>{translate('Security')}</span>
         )}
+        {mode === possibleMode.edition && tenant.display === 'environment' && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'swagger' })}
+            onClick={() => setSelectedTab('swagger')}>{translate('Swagger')}</span>
+        )}
+        {mode === possibleMode.edition && tenant.display === 'environment' && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'testing' })}
+            onClick={() => setSelectedTab('testing')}>{translate('Testing')}</span>
+        )}
+        {mode === possibleMode.edition && tenant.display === 'environment' && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'documentation' })}
+            onClick={() => setSelectedTab('documentation')}>{translate('Documentation')}</span>
+        )}
       </div>)
     } else {
       props.injectSubMenu(null)
@@ -545,6 +558,14 @@ export const TeamApiPricings = (props: Props) => {
       setMode(possibleMode.edition);
     }
   }, [props.api]);
+
+  useEffect(() => {
+    if (queryPlans.data && !isError(queryPlans.data) && mode === possibleMode.edition) {
+      const plan = queryPlans.data.find(p => p._id === planForEdition?._id)
+      setPlanForEdition(plan)
+    }
+
+  }, [queryPlans.data])
 
 
   const pathes = {
@@ -1316,6 +1337,22 @@ export const TeamApiPricings = (props: Props) => {
             {queryPlans.data && selectedTab === 'subscription-process' && (
               <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
             )}
+            {queryPlans.data && selectedTab === 'swagger' && (
+              <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
+            )}
+            {queryPlans.data && selectedTab === 'testing' && (
+              <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
+            )}
+            {queryPlans.data && selectedTab === 'documentation' && (
+              <TeamApiPricingDocumentation
+                api={props.api}
+                team={props.team}
+                planForEdition={planForEdition}
+                onSave={documentation => savePlan({ ...planForEdition, documentation })}
+                reloadState={() => queryClient.invalidateQueries(['plans'])}
+                plans={queryPlans.data as Array<IUsagePlan>}
+              />
+            )}
           </div>
         </div>)}
         {mode === possibleMode.list && (
@@ -1767,6 +1804,56 @@ const ValidationStep = (props: ValidationStepProps) => {
     )
   } else {
     return <></>
+  }
+}
+
+type TeamApiPricingDocumentationProps = {
+  planForEdition: IUsagePlan
+  team: ITeamSimple
+  api: IApi
+  reloadState: () => Promise<void>
+  onSave: (d: IDocumentation) => Promise<void>
+  plans: Array<IUsagePlan>
+}
+const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) => {
+  const { openApiDocumentationSelectModal } = useContext(ModalContext);
+  const { translate } = useContext(I18nContext);
+
+
+  const createPlanDoc = () => {
+    Services.fetchNewApiDoc()
+      .then(props.onSave)
+  }
+
+
+  if (!props.planForEdition.documentation) {
+    return (
+      <div>
+        <div>it's seems that this plan has no documentation setted</div>
+        <button type='button' onClick={createPlanDoc}>add doc</button>
+      </div>
+    )
+  } else {
+    return (
+      <TeamApiDocumentation
+        documentation={props.planForEdition.documentation}
+        team={props.team}
+        api={props.api}
+        creationInProgress={true}
+        reloadState={props.reloadState}
+        onSave={props.onSave}
+        importAuthorized={props.plans.filter(p => p._id !== props.planForEdition._id).some(p => p.documentation?.pages.length)}
+        importPage={() => openApiDocumentationSelectModal({
+          api: props.api,
+          teamId: props.team._id,
+          onClose: () => {
+            toastr.success(translate('Success'), translate('doc.page.import.successfull'));
+            props.reloadState()
+          },
+          getDocumentationPages: () => Services.getAllPlansDocumentation(props.team._id, props.api._humanReadableId, props.api.currentVersion),
+          importPages: (pages) => Services.importPlanPages(props.team._id, props.api._id, pages, props.api.currentVersion, props.planForEdition._id) 
+        })} />
+    )
   }
 }
 

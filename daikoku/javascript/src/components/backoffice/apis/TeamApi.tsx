@@ -24,7 +24,7 @@ import {
   I18nContext,
   toggleExpertMode,
 } from '../../../core';
-import { IApi, isError, IUsagePlan } from '../../../types/api';
+import { IApi, IImportingDocumentation, isError, IUsagePlan, ResponseError } from '../../../types/api';
 import { IState, IStateContext, ITeamSimple } from '../../../types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -99,6 +99,7 @@ export const TeamApi = (props: { creation: boolean }) => {
   const { currentTeam, tenant, expertMode } = useSelector<IState, IStateContext>((s) => s.context);
 
   const { translate } = useContext(I18nContext);
+  const { openApiDocumentationSelectModal } = useContext(ModalContext);
 
   const newApi = location && location.state && location.state.newApi
 
@@ -308,9 +309,21 @@ export const TeamApi = (props: { creation: boolean }) => {
                   creationInProgress={props.creation}
                   team={currentTeam}
                   api={api}
-                  saveApi={save}
-                  versionId={params.versionId}
-                  reloadState={() => queryClient.invalidateQueries(['api'])} />)}
+                  onSave={documentation => save({ ...api, documentation })}
+                  reloadState={() => queryClient.invalidateQueries(['api'])}
+                  documentation={api.documentation} 
+                  importPage={() => openApiDocumentationSelectModal({
+                    api: api,
+                    teamId: currentTeam._id,
+                    onClose: () => {
+                      toastr.success(translate('Success'), translate('doc.page.import.successfull'));
+                      queryClient.invalidateQueries(['details']);
+                      queryClient.invalidateQueries(['api']);
+                    },
+                    getDocumentationPages: () => Services.getAllApiDocumentation(currentTeam._id, api._id, api.currentVersion),
+                    importPages: (pages: Array<string>) => Services.importApiPages(currentTeam._id, api._id, pages, api.currentVersion)
+                  })} 
+                  importAuthorized={!!versionsRequest.data && !!versionsRequest.data.length} />)}
               {tab === 'plans' && (
                 <TeamApiPricings
                   api={api}

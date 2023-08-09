@@ -234,7 +234,6 @@ sealed trait UsagePlan {
   def typeName: String
   def visibility: UsagePlanVisibility
   def authorizedTeams: Seq[TeamId]
-  def asJson: JsValue = UsagePlanFormat.writes(this)
   def addAutorizedTeam(teamId: TeamId): UsagePlan
   def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan
   def removeAuthorizedTeam(teamId: TeamId): UsagePlan
@@ -242,17 +241,24 @@ sealed trait UsagePlan {
   def integrationProcess: IntegrationProcess
   def aggregationApiKeysSecurity: Option[Boolean]
   def paymentSettings: Option[PaymentSettings]
-  def mergeBase(a: BasePaymentInformation): UsagePlan
   def subscriptionProcess: Seq[ValidationStep] = Seq.empty
+  def swagger: Option[SwaggerAccess]
+  def testing: Option[Testing]
+  def documentation: Option[ApiDocumentation]
+
+  def asJson: JsValue = UsagePlanFormat.writes(this)
+  def mergeBase(a: BasePaymentInformation): UsagePlan
   def addSubscriptionStep(step: ValidationStep,
                           idx: Option[Int] = None): UsagePlan
+  def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan
   def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
   def checkCustomName(tenant: Tenant, plans: Seq[UsagePlan])(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     val existingNames = plans.collect(_.customName)
       .collect { case Some(name) => name }
+    //TODO: check conflict with extisting name in case of creation
     tenant.display match {
       case TenantDisplay.Environment => customName match {
-        case Some(customName) if tenant.environments.contains(customName) && !existingNames.contains(customName) => EitherT.pure[Future, AppError](())
+        case Some(customName) if tenant.environments.contains(customName) => EitherT.pure[Future, AppError](())
         case _ => EitherT.leftT[Future, Unit](AppError.EntityConflict("Plan custom name"))
       }
       case TenantDisplay.Default => EitherT.pure[Future, AppError](())
@@ -270,6 +276,9 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      swagger: Option[SwaggerAccess] = None,
+      testing: Option[Testing] = None,
+      documentation: Option[ApiDocumentation] = None,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def costPerMonth: BigDecimal = BigDecimal(0)
@@ -303,6 +312,9 @@ case object UsagePlan {
 
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
+
+    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this
   }
   case class FreeWithoutQuotas(
       id: UsagePlanId,
@@ -318,6 +330,9 @@ case object UsagePlan {
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
       autoRotation: Option[Boolean],
+      swagger: Option[SwaggerAccess] = None,
+      testing: Option[Testing] = None,
+      documentation: Option[ApiDocumentation] = None,
       override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
@@ -359,6 +374,9 @@ case object UsagePlan {
         predicate: ValidationStep => Boolean): UsagePlan =
       this.copy(
         subscriptionProcess = this.subscriptionProcess.filter(predicate))
+
+    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
   }
   case class FreeWithQuotas(
       id: UsagePlanId,
@@ -377,6 +395,9 @@ case object UsagePlan {
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      swagger: Option[SwaggerAccess] = None,
+      testing: Option[Testing] = None,
+      documentation: Option[ApiDocumentation] = None,
       override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
@@ -416,6 +437,9 @@ case object UsagePlan {
 
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
+
+    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
   }
   case class QuotasWithLimits(
       id: UsagePlanId,
@@ -436,6 +460,9 @@ case object UsagePlan {
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      swagger: Option[SwaggerAccess] = None,
+      testing: Option[Testing] = None,
+      documentation: Option[ApiDocumentation] = None,
       override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
@@ -474,6 +501,9 @@ case object UsagePlan {
 
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
+
+    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
   }
   case class QuotasWithoutLimits(
       id: UsagePlanId,
@@ -495,6 +525,9 @@ case object UsagePlan {
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      swagger: Option[SwaggerAccess] = None,
+      testing: Option[Testing] = None,
+      documentation: Option[ApiDocumentation] = None,
       override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
@@ -534,6 +567,9 @@ case object UsagePlan {
 
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
+
+    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
   }
   case class PayPerUse(
       id: UsagePlanId,
@@ -552,6 +588,9 @@ case object UsagePlan {
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
+      swagger: Option[SwaggerAccess] = None,
+      testing: Option[Testing] = None,
+      documentation: Option[ApiDocumentation] = None,
       override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
@@ -590,6 +629,9 @@ case object UsagePlan {
 
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
+
+    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
   }
 }
 

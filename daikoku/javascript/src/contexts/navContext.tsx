@@ -5,7 +5,7 @@ import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { api as API, Can, manage } from '../components/utils';
 import { I18nContext } from '../core';
-import { IState, IStoreState, ITeamSimple, ITenant, IUserSimple } from '../types';
+import { IState, IStateContext, IStoreState, ITeamSimple, ITenant, IUserSimple } from '../types';
 import { ModalContext } from './modalContext';
 
 
@@ -365,7 +365,7 @@ export const useApiBackOffice = (api: any, creation: any) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
 
   const navigate = useNavigate();
   const params = useParams();

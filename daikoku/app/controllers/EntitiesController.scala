@@ -106,6 +106,20 @@ class EntitiesController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def newApiDocumentation() = DaikokuAction.async { ctx =>
+    PublicUserAccess(
+      AuditTrailEvent(
+        s"@{user.name} has asked for a template entity of type ApiDocumentationr"))(ctx) {
+      Ok(
+        ApiDocumentation(
+            id = ApiDocumentationId(BSONObjectID.generate().stringify),
+            tenant = ctx.tenant.id,
+            lastModificationAt = DateTime.now(),
+            pages = Seq.empty
+          ).asJson)
+    }
+  }
+
   def newApiGroup() = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has asked for a template entity of type ApiGroup"))(ctx) {

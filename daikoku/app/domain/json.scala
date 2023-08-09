@@ -969,7 +969,10 @@ object json {
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "tesing").asOpt(TestingFormat),
+            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1014,6 +1017,18 @@ object json {
       "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
         .map(JsBoolean.apply)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1049,7 +1064,10 @@ object json {
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "tesing").asOpt(TestingFormat),
+            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1097,6 +1115,18 @@ object json {
       "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
         .map(JsBoolean.apply)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1136,7 +1166,10 @@ object json {
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "tesing").asOpt(TestingFormat),
+            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1193,6 +1226,18 @@ object json {
       "paymentSettings" -> o.paymentSettings
         .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1234,7 +1279,10 @@ object json {
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "tesing").asOpt(TestingFormat),
+            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1292,6 +1340,18 @@ object json {
       "paymentSettings" -> o.paymentSettings
         .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1329,7 +1389,10 @@ object json {
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "tesing").asOpt(TestingFormat),
+            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1384,6 +1447,18 @@ object json {
         .as[JsValue],
       "paymentSettings" -> o.paymentSettings
         .map(PaymentSettingsFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )

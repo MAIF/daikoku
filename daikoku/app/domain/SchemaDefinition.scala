@@ -434,9 +434,10 @@ object SchemaDefinition {
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         )),
-      AddFields(
-        Field("type", StringType, resolve = _.value.typeName)
-      )
+      ReplaceField("swagger",Field("swagger", OptionType(SwaggerAccessType), resolve = ctx => ctx.value.swagger)),
+      ReplaceField("testing",Field("testing", OptionType(TestingType), resolve = ctx => ctx.value.testing)),
+      ReplaceField("documentation",Field("documentation", OptionType(ApiDocumentationType), resolve = ctx => ctx.value.documentation)),
+      AddFields(Field("type", StringType, resolve = _.value.typeName))
     ))
 
     lazy val  FreeWithoutQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithoutQuotas](
@@ -460,6 +461,9 @@ object SchemaDefinition {
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         )),
+      ReplaceField("swagger", Field("swagger", OptionType(SwaggerAccessType), resolve = ctx => ctx.value.swagger)),
+      ReplaceField("testing", Field("testing", OptionType(TestingType), resolve = ctx => ctx.value.testing)),
+      ReplaceField("documentation", Field("documentation", OptionType(ApiDocumentationType), resolve = ctx => ctx.value.documentation)),
       AddFields(
         Field("type", StringType, resolve = _.value.typeName)
       )
@@ -486,6 +490,9 @@ object SchemaDefinition {
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         )),
+      ReplaceField("swagger", Field("swagger", OptionType(SwaggerAccessType), resolve = ctx => ctx.value.swagger)),
+      ReplaceField("testing", Field("testing", OptionType(TestingType), resolve = ctx => ctx.value.testing)),
+      ReplaceField("documentation", Field("documentation", OptionType(ApiDocumentationType), resolve = ctx => ctx.value.documentation)),
       AddFields(
         Field("type", StringType, resolve = _.value.typeName)
       )
@@ -513,6 +520,9 @@ object SchemaDefinition {
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         )),
+      ReplaceField("swagger", Field("swagger", OptionType(SwaggerAccessType), resolve = ctx => ctx.value.swagger)),
+      ReplaceField("testing", Field("testing", OptionType(TestingType), resolve = ctx => ctx.value.testing)),
+      ReplaceField("documentation", Field("documentation", OptionType(ApiDocumentationType), resolve = ctx => ctx.value.documentation)),
       AddFields(
         Field("type", StringType, resolve = _.value.typeName)
       )
@@ -540,6 +550,9 @@ object SchemaDefinition {
           Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
             Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
           )),
+      ReplaceField("swagger", Field("swagger", OptionType(SwaggerAccessType), resolve = ctx => ctx.value.swagger)),
+      ReplaceField("testing", Field("testing", OptionType(TestingType), resolve = ctx => ctx.value.testing)),
+      ReplaceField("documentation", Field("documentation", OptionType(ApiDocumentationType), resolve = ctx => ctx.value.documentation)),
       AddFields(
         Field("type", StringType, resolve = _.value.typeName)
       )
@@ -567,6 +580,9 @@ object SchemaDefinition {
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         )),
+      ReplaceField("swagger", Field("swagger", OptionType(SwaggerAccessType), resolve = ctx => ctx.value.swagger)),
+      ReplaceField("testing", Field("testing", OptionType(TestingType), resolve = ctx => ctx.value.testing)),
+      ReplaceField("documentation", Field("documentation", OptionType(ApiDocumentationType), resolve = ctx => ctx.value.documentation)),
       AddFields(
         Field("type", StringType, resolve = _.value.typeName)
       )

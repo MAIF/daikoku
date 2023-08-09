@@ -3,12 +3,14 @@ import {
   IApi,
   IApiKey,
   IAsset,
+  IImportingDocumentation,
   INotification,
   ISafeSubscription,
   ISubscription,
   ITeamSimple,
   ITenant,
   IUserSimple,
+  ResponseDone,
   ResponseError,
 } from '../../types';
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
@@ -164,7 +166,9 @@ export type SubscriptionMetadataModalProps = {
 export interface IApiDocumentationSelectModalProps {
   teamId: string;
   api: IApi;
+  getDocumentationPages: () => Promise<ResponseError | Array<IImportingDocumentation>>;
   onClose: () => void;
+  importPages: (pages: Array<string>) => Promise<ResponseError | ResponseDone>
 }
 
 export type TeamSelectorModalProps = {

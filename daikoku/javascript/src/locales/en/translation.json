@@ -1341,5 +1341,7 @@
     "motivation.form.sample.help": "Use the test form below to preview and validate your formatting settings (formatter).",
     "motivation.form.sample.button.label": "Test",
     "sub.meta.modal.admin.custom.name.label": "Custom key name",
-    "sub.meta.modal.admin.custom.name.help": "this custom name will only be visible to the admin team"
+    "sub.meta.modal.admin.custom.name.help": "this custom name will only be visible to the admin team",
+    "documentation.add.page.btn.label": "Add page"
+
 }

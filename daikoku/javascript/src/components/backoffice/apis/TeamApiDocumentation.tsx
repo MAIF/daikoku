@@ -1,7 +1,7 @@
 import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import {useContext, useEffect, useState} from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { IFormModalProps, ModalContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { IApi, IAsset, IDocPage, IDocumentationPage, IDocumentationPages, isError, IState, IStateContext, ITeamSimple } from '../../../types';
+import { IApi, IAsset, IDocPage, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, IStateContext, ITeamSimple, ITenant } from '../../../types';
 import { BeautifulTitle, Spinner } from '../../utils';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
@@ -80,7 +80,6 @@ const AssetButton = (props: AssetButtonProps) => {
       >
         <AssetChooserByModal
           team={props.team}
-          teamId={props.team._id}
           label={translate('Set from asset')}
           onSelect={(asset: IAsset) => {
             openFormModal({
@@ -100,25 +99,24 @@ const AssetButton = (props: AssetButtonProps) => {
 }
 
 type TeamApiDocumentationProps = {
-  team: ITeamSimple,
-  api: IApi,
-  versionId?: string,
+  documentation: IDocumentation
+  team: ITeamSimple
+  api: IApi
   creationInProgress?: boolean,
-  reloadState: () => void,
-  saveApi: (value: IApi) => Promise<any>
+  reloadState: () => Promise<void>,
+  onSave: (value: IDocumentation) => Promise<any>
+  importPage: () => void,
+  importAuthorized: boolean
 }
 
 export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
-  const { team, versionId } = props;
 
-  const params = useParams();
   const { translate } = useContext(I18nContext);
-  const { confirm, openFormModal, openApiDocumentationSelectModal } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
 
-  const { currentTeam, tenant } = useSelector<IState, IStateContext>(s => s.context)
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
 
   const queryClient = useQueryClient();
-  const apiQuery = useQuery(['api'], () => Services.teamApi(currentTeam._id, params.apiId!, versionId!));
 
   const flow: Flow = [
     'title',
@@ -128,15 +126,14 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     'remoteContentHeaders',
     'content',
   ];
-  const [versions, setApiVersions] = useState<Array<string>>([]);
 
-  useEffect(() => {
+  /*useEffect(() => {
     Services.getAllApiVersions(props.team._id, params.apiId!)
       .then((versions) =>
         setApiVersions(versions
         )
       );
-  }, []);
+  }, []); */
 
   const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
     return {
@@ -156,7 +153,6 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         label: translate('Page content'),
         props: {
           height: '800px',
-          team: team,
           actions: (insert) => {
             return <>
               <button
@@ -185,8 +181,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                   typeFilter={MimeTypeFilter.image}
                   onlyPreview
                   tenantMode={false}
-                  team={team}
-                  teamId={team._id}
+                  team={props.team}
                   icon="fas fa-file-image"
                   classNames="btn-for-descriptionToolbar"
                   onSelect={(asset) => insert(asset.link)}
@@ -223,7 +218,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
             <div className='flex-grow-1 ms-3'>
               <input className='mrf-input mb-3' value={value} onChange={onChange} />
               <div className="col-12 d-flex justify-content-end">
-                <AssetButton onChange={onChange} team={team} setValue={setValue} rawValues={rawValues} formModalProps={{
+                <AssetButton onChange={onChange} team={props.team} setValue={setValue} rawValues={rawValues} formModalProps={{
                   title: translate('doc.page.update.modal.title'),
                   flow: flow,
                   schema: schema(onSubmitAsset),
@@ -247,8 +242,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   };
 
   const updatePage = (selectedPage: string) => {
-    const api = apiQuery.data as IApi
-    Services.getDocPage(api._id, selectedPage)
+    Services.getDocPage(props.api._id, selectedPage)
       .then((page) => {
         if (isError(page)) {
           toastr.error(translate('Error'), page.error);
@@ -277,33 +271,25 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   const savePage = (page: IDocPage, original: IDocPage) => {
     if (page) {
-      return Services.saveDocPage(team._id, page)
+      return Services.saveDocPage(props.team._id, page)
         .then((resp) => {
           if (isError(resp)) {
             toastr.error(translate('Error'), resp.error);
           } else if (resp.title === original.title) {
-            queryClient.invalidateQueries(['api'])
+            props.reloadState()
             toastr.success(translate('Success'), translate("doc.page.save.successfull"))
           } else {
-            const api = apiQuery.data as IApi;
-            updatePages(updateTitle(api.documentation.pages, page.title, page._id))
+            updatePages(updateTitle(props.documentation.pages, page.title, page._id))
           }
         })
     }
   }
 
   const updatePages = (pages: IDocumentationPages) => {
-    const api = apiQuery.data as IApi;
-    const updatedApi = { ...api, documentation: { ...api.documentation, pages } }
-
-    return Services.saveTeamApi(
-      currentTeam._id,
-      updatedApi,
-      updatedApi.currentVersion
-    )
+    return props.onSave({ ...props.documentation, pages })
       .then(() => {
         toastr.success(translate('Success'), translate('doc.page.update.successfull'))
-        queryClient.invalidateQueries(['api'])
+        props.reloadState()
       })
   }
 
@@ -333,98 +319,71 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 
   const saveNewPage = (page: IDocPage) => {
-    Services.createDocPage(team._id, page)
-      .then(page => {
-        const api = apiQuery.data as IApi
-        const newPage: IDocumentationPage = {
-          id: page._id,
-          title: page.title,
-          children: []
-        }
-        const updatedApi = {
-          ...api,
-          documentation: { ...api.documentation, pages: [...api.documentation.pages, newPage] }
-        }
-
-        return Services.saveTeamApi(
-          currentTeam._id,
-          updatedApi,
-          updatedApi.currentVersion
-        )
+    Services.createDocPage(props.team._id, page)
+      .then(page => props.onSave({
+        ...props.documentation,
+        pages: [
+          ...props.documentation.pages,
+          {
+            id: page._id,
+            title: page.title,
+            children: []
+          }
+        ]
       })
-      .then(() => queryClient.invalidateQueries(['api']))
+      )
+      .then(() => props.reloadState())
   }
 
   const deletePage = (page: IDocumentationPage) => {
     const apiDocPageToList = (page: IDocumentationPage, list: Array<string>) => {
       if (page.children.length) {
-        return [page, ...page.children.flatMap(child => apiDocPageToList(child, list) )]
+        return [page, ...page.children.flatMap(child => apiDocPageToList(child, list))]
       } else {
         return [page, ...list]
       }
     }
-    if (apiQuery.data) {
-      Promise.all([
-        apiDocPageToList(page, []).map((apiDoc => Services.deleteDocPage(team._id, apiDoc.id)))
-      ]).then(() => {
-          toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
-          queryClient.invalidateQueries(['details'])
-        })
-    }
+    Promise.all([
+      apiDocPageToList(page, []).map((apiDoc => Services.deleteDocPage(props.team._id, apiDoc.id)))
+    ]).then(() => {
+      toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
+      queryClient.invalidateQueries(['details'])
+    })
   }
 
-  const importPage = () => {
-    const api = apiQuery.data as IApi
-    openApiDocumentationSelectModal({
-      api,
-      teamId: team._id,
-      onClose: () => {
-        toastr.success(translate('Success'), translate('doc.page.import.successfull'))
-        queryClient.invalidateQueries(['details'])
-        queryClient.invalidateQueries(['api'])
-      },
-    });
-  }
-
-  if (apiQuery.isLoading) {
-    return <Spinner />
-  } else if (apiQuery.data && !isError(apiQuery.data)) {
-    return (
-      <div className="row">
-        <div className="col-12 col-sm-6 col-lg-6">
-          <div className="d-flex flex-column">
-            <div className="">
-              <div className="d-flex justify-content-between align-items-center">
-                <div className="btn-group ms-2">
-                  <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-success">
-                    Add page
-                  </button>
-                  {versions.length > 1 &&
+  return (
+    <div className="row">
+      <div className="col-12 col-sm-6 col-lg-6">
+        <div className="d-flex flex-column">
+          <div className="">
+            <div className="d-flex justify-content-between align-items-center">
+              <div className="btn-group ms-2">
+                <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-success">
+                  {translate('documentation.add.page.btn.label')}
+                </button>
+                {props.importAuthorized &&
                     <button
-                      onClick={importPage}
+                      onClick={props.importPage}
                       type="button"
                       className="btn btn-sm btn-outline-primary">
                       <i className="fas fa-download" />
                     </button>
                   }
-                </div>
               </div>
             </div>
-            <div className='d-flex flex-column'>
-              <DnDoc
-                items={apiQuery.data.documentation.pages}
-                deletePage={deletePage}
-                updatePages={updatePages}
-                confirmRemoveItem={() => (confirm({ message: translate('delete.documentation.page.confirm') }))}
-                updateItem={updatePage} />
-            </div>
+          </div>
+          <div className='d-flex flex-column'>
+            <DnDoc
+              items={props.documentation?.pages || []}
+              deletePage={deletePage}
+              updatePages={updatePages}
+              confirmRemoveItem={() => (confirm({ message: translate('delete.documentation.page.confirm') }))}
+              updateItem={updatePage} />
           </div>
         </div>
       </div>
-    );
-  } else {
-    return <div>Error while fetching doc details</div>
-  }
+    </div>
+  );
 };
 
 type DndProps = {

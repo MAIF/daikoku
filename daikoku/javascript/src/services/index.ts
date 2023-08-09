@@ -33,6 +33,8 @@ import {
   IConsumption,
   ISubscriptionExtended,
   IApiExtended,
+  IDocumentation,
+  IImportingDocumentation,
 } from '../types/api';
 
 const HEADERS = {
@@ -485,6 +487,7 @@ export const getTenantNames = (ids: any) =>
 export const fetchNewTenant = () => customFetch('/api/entities/tenant');
 export const fetchNewTeam = (): Promise<ITeamSimple> => customFetch('/api/entities/team');
 export const fetchNewApi = () => customFetch('/api/entities/api');
+export const fetchNewApiDoc = (): Promise<IDocumentation> => customFetch('/api/entities/api-documentation');
 export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
@@ -1086,8 +1089,16 @@ export const getAllPlanOfApi = (
 export const getRootApi = (apiId: string): PromiseWithError<IApi> =>
   customFetch(`/api/apis/${apiId}/_root`);
 
-export const importApiPages = (teamId: any, apiId: any, pages: any, version: any) =>
+export const importApiPages = (teamId: string, apiId: string, pages: Array<string>, version: string): PromiseWithError<ResponseDone> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      pages,
+    }),
+  });
+
+export const importPlanPages = (teamId: string, apiId: string, pages: Array<string>, version: string, planId: string): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${planId}/pages`, {
     method: 'PUT',
     body: JSON.stringify({
       pages,
@@ -1098,7 +1109,13 @@ export const getAllApiDocumentation = (
   teamId: string,
   apiId: string,
   version: string
-): Promise<any> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`);
+): PromiseWithError<Array<IImportingDocumentation>> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages/_versions`);
+
+export const getAllPlansDocumentation = (
+  teamId: string,
+  apiId: string,
+  version: string
+): PromiseWithError<Array<IImportingDocumentation>> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages/_plans`);
 
 export const getMyTeamsStatusAccess = (teamId: string, apiId: string, version: string): PromiseWithError<IApiExtended> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
