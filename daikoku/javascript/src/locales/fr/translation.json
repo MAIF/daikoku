@@ -1351,5 +1351,6 @@
   "display.default.label": "Défaut",
   "display-mode.label": "Mode d'affichage",
   "display-mode.help": "Le mode environnement vous obligera à créer des environnements disponibles. Les plans d'utilisation de l'API doivent correspondre à l'un des environnements disponibles.",
-  "display-mode.environments.label": "Environnements disponibles"
+  "display-mode.environments.label": "Environnements disponibles",
+  "navbar.environments.label": "environnements"
 }

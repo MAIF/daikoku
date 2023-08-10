@@ -8,6 +8,7 @@ import { I18nContext } from '../../../core';
 import { ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { FeedbackButton } from '../../utils/FeedbackButton';
+import { ITesting } from '../../../types';
 
 type LimitedTeam = {
   _id: string
@@ -22,6 +23,7 @@ type NotificationGQL = {
     api?: {
       _id: string
       name: string
+      testing: ITesting
     }
     apiName?: string
     subscriptionName?: string
@@ -225,7 +227,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
 
   const actionFormatter = (notification: NotificationGQL) => {
     const { status, date } = notification.status;
-    const { notificationType } = notification
     if (
       status === 'Pending' &&
       (notification.action.__typename === 'NewIssueOpen' ||
@@ -273,7 +274,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       onClick={() =>
                         openSubMetadataModal({
                           save: props.accept,
-                          api: props.notification.action.api!._id,
+                          value: props.notification.action.api!,
                           plan: props.notification.action.plan!._id,
                           team: props.notification.action.team,
                           notification: props.notification,

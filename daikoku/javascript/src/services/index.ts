@@ -35,6 +35,9 @@ import {
   IApiExtended,
   IDocumentation,
   IImportingDocumentation,
+  ITestingConfig,
+  IApiKey,
+  IOtoroshiApiKey,
 } from '../types/api';
 
 const HEADERS = {
@@ -765,19 +768,19 @@ export const storeThumbnail = (id: any, formData: any) =>
     body: formData,
   });
 
-export const createTestingApiKey = (teamId: any, body: any) =>
+export const createTestingApiKey = (teamId: string, body: ITestingConfig): PromiseWithError<IOtoroshiApiKey> =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'POST',
     body: JSON.stringify(body),
   });
 
-export const updateTestingApiKey = (teamId: any, body: any) =>
+export const updateTestingApiKey = (teamId: string, body: ITestingConfig): PromiseWithError<IOtoroshiApiKey> =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'PUT',
     body: JSON.stringify(body),
   });
 
-export const deleteTestingApiKey = (teamId: any, body: any) =>
+export const deleteTestingApiKey = (teamId: string, body: any): PromiseWithError<ResponseDone> =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'DELETE',
     body: JSON.stringify(body),
@@ -1509,6 +1512,7 @@ export const graphql = {
               api {
                 _id
                 name
+                testing
               }
               team {
                 _id

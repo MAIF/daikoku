@@ -1,14 +1,13 @@
 import { constraints, Form, format, FormRef, type } from '@maif/react-forms';
 import sortBy from 'lodash/sortBy';
-import { useContext, useEffect, useRef, useState } from 'react';
-import { toastr } from 'react-redux-toastr';
+import { useContext, useRef } from 'react';
 
+import { useQuery } from '@tanstack/react-query';
 import { formatPlanType, Option, Spinner } from '../../components/utils';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
-import { IApi, isError, IUsagePlan } from '../../types';
+import { IApi, isError, ITesting, ITestingConfig, IUsagePlan, IWithTesting } from '../../types';
 import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';
-import { useQuery } from '@tanstack/react-query';
 
 export type OverwriteSubscriptionData = {
   metadata: { [key: string]: string },
@@ -30,13 +29,18 @@ export type CustomSubscriptionData = {
   adminCustomName: string
 }
 
-export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps & IBaseModalProps) => {
+export const SubscriptionMetadataModal = <T extends IWithTesting>(props: SubscriptionMetadataModalProps<T> & IBaseModalProps) => {
 
   const { translate, Translation } = useContext(I18nContext);
 
   const formRef = useRef<FormRef>()
 
-  const apiQuery = useQuery(['api'], () => Services.getVisibleApiWithId(props.api))
+
+  const apiQuery = useQuery({
+    queryKey: ['api'],
+    queryFn: () => Services.getVisibleApiWithId(props.api!),
+    enabled: !!props.api
+  })
   const planQuery = useQuery({
     queryKey: ['plan'],
     queryFn: () => {
@@ -67,31 +71,7 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
     }
   };
 
-  const schema = (plan?: IUsagePlan) => ({
-    metadata: {
-      type: type.object,
-      format: format.form,
-      visible: !!plan,
-      label: translate({ key: 'mandatory.metadata.label', replacements: [plan?.otoroshiTarget?.apikeyCustomization.customMetadata.length.toString() || ''] }),
-      schema: sortBy(plan?.otoroshiTarget?.apikeyCustomization.customMetadata, ['key'])
-        .map((meta: { key: string, possibleValues: Array<string> }) => {
-          return {
-            key: meta.key,
-            schemaEntry: {
-              type: type.string,
-              format: format.select,
-              createOption: true,
-              options: meta.possibleValues,
-              constraints: [
-                constraints.required(translate('constraints.required.value'))
-              ]
-            }
-          }
-        })
-        .reduce((acc, curr) => {
-          return { ...acc, [curr.key]: curr.schemaEntry }
-        }, {}),
-    },
+  const schema = {
     customMetadata: {
       type: type.object,
       label: translate('Additional metadata'),
@@ -133,19 +113,47 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
       label: translate('sub.meta.modal.admin.custom.name.label'),
       help: translate('sub.meta.modal.admin.custom.name.help'),
     }
+  }
+
+  const mandatoryMetdataSchema = (plan: IUsagePlan) => ({
+    metadata: {
+      type: type.object,
+      format: format.form,
+      visible: !!plan,
+      label: translate({ key: 'mandatory.metadata.label', replacements: [plan?.otoroshiTarget?.apikeyCustomization.customMetadata.length.toString() || ''] }),
+      schema: sortBy(plan?.otoroshiTarget?.apikeyCustomization.customMetadata, ['key'])
+        .map((meta: { key: string, possibleValues: Array<string> }) => {
+          return {
+            key: meta.key,
+            schemaEntry: {
+              type: type.string,
+              format: format.select,
+              createOption: true,
+              options: meta.possibleValues,
+              constraints: [
+                constraints.required(translate('constraints.required.value'))
+              ]
+            }
+          }
+        })
+        .reduce((acc, curr) => {
+          return { ...acc, [curr.key]: curr.schemaEntry }
+        }, {}),
+    },
   })
 
-  if (apiQuery.isLoading && (!!props.plan && planQuery.isLoading)) {
+
+  if (!!props.api && apiQuery.isLoading) {
     return <div className="modal-content"><Spinner /></div>
-  } else if (apiQuery.data && !isError(apiQuery.data) && (!!props.plan && planQuery.data && !isError(planQuery.data))) {
-    const api = apiQuery.data;
-    const plan = !!props.plan ? planQuery.data : undefined
+  } else if (!props.api || (apiQuery.data && !isError(apiQuery.data))) {
+    const plan = !!props.plan ? !isError(planQuery.data) ? planQuery.data : undefined : undefined
 
     const maybeSubMetadata = Option(props.subscription)
       .orElse(props.config)
-      .map((s: any) => s.customMetadata)
-      .map((v: any) => Object.entries(v))
+      .map((s: ITestingConfig) => s.customMetadata)
+      .map((v: object) => Object.entries(v))
       .getOrElse([]);
+
 
     const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
       ([accMeta, accCustomMeta]: any, item: any) => {
@@ -184,25 +192,19 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
         .getOrNull()
     }
 
-    console.debug({ value })
 
 
 
     return (<div className="modal-content">
       <div className="modal-header">
-        {!api && (<h5 className="modal-title">
+        <h5 className="modal-title">
           <Translation i18nkey="Subscription metadata">Subscription metadata</Translation>
-        </h5>)}
-        {api && (<h5 className="modal-title">
-          <Translation i18nkey="Subscription metadata title" replacements={[api.name]}>
-            Subscription metadata - {api.name}
-          </Translation>
-        </h5>)}
+        </h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
       </div>
       <div className="modal-body">
         <>
-          {!!plan && !props.description && props.creationMode && (<div className="modal-description">
+          {/* {!!plan && !props.description && props.creationMode && (<div className="modal-description">
             <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[
 
               props.team?.name,
@@ -220,12 +222,12 @@ export const SubscriptionMetadataModal = (props: SubscriptionMetadataModalProps 
               Team: {props.team?.name} - Plan:{' '}
               {plan.customName || formatPlanType(plan, translate)}
             </Translation>
-          </div>)}
+          </div>)} */}
           {props.description && <div className="modal-description">{props.description}</div>}
 
         </>
         <Form
-          schema={schema(plan)}
+          schema={{...schema, ...(props.api ? mandatoryMetdataSchema : {})}}
           onSubmit={actionAndClose}
           ref={formRef}
           value={value}

@@ -971,7 +971,7 @@ object json {
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "tesing").asOpt(TestingFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
@@ -1066,7 +1066,7 @@ object json {
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "tesing").asOpt(TestingFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
@@ -1168,7 +1168,7 @@ object json {
             paymentSettings =
               (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "tesing").asOpt(TestingFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
@@ -1281,7 +1281,7 @@ object json {
             paymentSettings =
               (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "tesing").asOpt(TestingFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
@@ -1391,7 +1391,7 @@ object json {
             paymentSettings =
               (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "tesing").asOpt(TestingFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )

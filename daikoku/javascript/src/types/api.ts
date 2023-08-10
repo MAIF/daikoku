@@ -4,7 +4,21 @@ import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
-interface IBaseApi {
+
+export interface IWithSwagger {
+  swagger?: ISwagger;
+}
+
+export interface IWithTesting {
+  testing?: ITesting;
+  _id: string
+  name?: string
+  customName?: string
+}
+
+
+
+interface IBaseApi extends IWithSwagger, IWithTesting {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
@@ -17,9 +31,7 @@ interface IBaseApi {
   description: string;
   currentVersion: string;
   supportedVersions: Array<string>;
-  testing: ITesting;
   documentation: IDocumentation;
-  swagger?: ISwagger;
   tags: Array<string>;
   categories: Array<string>;
   visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly';
@@ -46,7 +58,7 @@ export interface IApiWithSimpleTeam extends IBaseApi {
   team: ITeamSimple;
 }
 
-export interface IApi extends IBaseApi {
+export interface IApi extends IBaseApi, IWithSwagger {
   team: string;
 }
 
@@ -90,9 +102,17 @@ export interface ITesting {
   config?: ITestingConfig;
 }
 
+export function isApi(obj: any): obj is IApi {
+  return (<IApi>obj).possibleUsagePlans !== undefined;
+}
+
+export function isUsagePlan(obj: any): obj is IUsagePlan {
+  return (<IUsagePlan>obj).subscriptionProcess !== undefined;
+}
+
 export interface ITestingConfig {
-  otoroshiSettings: string;
-  authorizedEntities: IAuthorizedEntities;
+  otoroshiSettings?: string;
+  authorizedEntities?: IAuthorizedEntities;
   clientName: string;
   api: string;
   tag: string;
@@ -189,7 +209,7 @@ export interface IStripePaymentSettings extends IPaymentSettings {
   priceIds: Array<string>;
 }
 
-export interface IUsagePlan extends IBaseUsagePlan {
+export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting {
   allowMultipleKeys?: boolean;
   aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
@@ -301,6 +321,22 @@ export interface IDocPage {
   remoteContentEnabled: boolean;
   remoteContentUrl: string | null;
   remoteContentHeaders: object;
+}
+
+export interface IOtoroshiApiKey {
+    clientId: string,
+    clientSecret: string,
+    clientName: String,
+    authorizedEntities: IAuthorizedEntities,
+    enabled: boolean,
+    allowClientIdOnly: boolean,
+    readOnly: boolean,
+    constrainedServicesOnly: boolean,
+    throttlingQuota: number,
+    dailyQuota: number,
+    monthlyQuota: number,
+    tags: Array<string>,
+    metadata: {[x: string]: string}
 }
 
 export interface IApiKey {

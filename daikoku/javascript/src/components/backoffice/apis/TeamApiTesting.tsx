@@ -1,18 +1,24 @@
-import React, { useContext } from 'react';
-import { Form, type, format, FormRef } from '@maif/react-forms';
+import { Form, FormRef, format, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
+import { MutableRefObject, useContext } from 'react';
 import { useSelector } from 'react-redux';
 
-import { Option } from '../../utils';
-import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
 import { useDispatch } from 'react-redux';
-import { IState, ITeamSimple } from '../../../types';
 import { ModalContext } from '../../../contexts';
+import { I18nContext } from '../../../core';
+import * as Services from '../../../services';
+import { IApi, IState, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting } from '../../../types';
+import { Option } from '../../utils';
 
-export const TeamApiTesting = (props) => {
-  const dispatch = useDispatch();
+interface TeamApiTestingProps<T extends IWithTesting> {
+  value: T
+  onChange: (s: T) => void
+  reference?: MutableRefObject<FormRef | undefined>
+  metadata: object,
+  plan?: IUsagePlan
+}
 
+export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProps<T>) => {
   const testing = props.value.testing;
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const { translate, Translation } = useContext(I18nContext);
@@ -21,12 +27,10 @@ export const TeamApiTesting = (props) => {
   const handleOtoroshiUsage = () => {
     const random = nanoid(16);
     const newConfig =
-      testing.config && testing.config.otoroshiSettings
+      testing?.config && testing.config.otoroshiSettings
         ? testing.config
         : {
-          otoroshiSettings: null,
-          authorizedEntities: null,
-          clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
+          clientName: `testing-purpose-only-apikey-for-${props.value.name || props.value.customName || props.value._id}`,
           api: props.value._id,
           tag: `daikoku_testing_${random}`,
           metadata: props.metadata,
@@ -38,9 +42,10 @@ export const TeamApiTesting = (props) => {
           metadata,
           teamId: currentTeam._id,
           config: newConfig,
-          update: testing.config && testing.config.otoroshiSettings,
+          update: !!testing?.config && !!testing.config.otoroshiSettings,
           title: translate('Otoroshi settings'),
-          onChange: (apiKey: any, config: any) => {
+          value: props.value,
+          onChange: (apiKey, config) => {
             props.onChange({
               ...props.value,
               testing: {
@@ -55,8 +60,8 @@ export const TeamApiTesting = (props) => {
           },
         })
       },
-      config: testing.config,
-      api: props.value,
+      config: testing?.config,
+      value: props.value,
       description: <div>Description</div>,
       noClose: true
     });
@@ -67,26 +72,27 @@ export const TeamApiTesting = (props) => {
       .then((ok) => {
         if (ok)
           Services.deleteTestingApiKey(currentTeam._id, {
-            otoroshiSettings: testing.config.otoroshiSettings,
-            authorizedEntities: testing.config.authorizedEntities,
-            clientId: testing.username,
-          }).then(() => props.onChange({
-            ...props.value,
-            testing: {
-              config: {},
-              enabled: false,
-              name: undefined,
-              auth: 'Basic',
-              username: undefined,
-              password: undefined,
-            },
-          }));
+            otoroshiSettings: testing!.config!.otoroshiSettings,
+            authorizedEntities: testing!.config!.authorizedEntities,
+            clientId: testing!.username,
+          })
+            .then(() => props.onChange({
+              ...props.value,
+              testing: {
+                config: {},
+                enabled: false,
+                name: undefined,
+                auth: 'Basic',
+                username: undefined,
+                password: undefined,
+              },
+            }));
       });
   };
 
-  const otoKeyExists = Option(props.value.testing)
-    .map((t: any) => t.config)
-    .exists((c: any) => c.otoroshiSettings);
+  const otoKeyExists: Boolean = Option(props.value.testing)
+    .map((t: ITesting) => t.config)
+    .exists((c: ITestingConfig) => c.otoroshiSettings);
 
   const schema = {
     enabled: {
@@ -128,7 +134,14 @@ export const TeamApiTesting = (props) => {
         schema={schema}
         onSubmit={(testing) => props.onChange({ ...props.value, testing })}
         value={props.value.testing}
-        footer={() => <></>}
+        options={{
+          actions: {
+            submit: {
+              display: !props.reference,
+              label: translate('Save')
+            }
+          }
+        }}
       />
       {!otoKeyExists && (
         <div className="col-6 d-flex justify-content-center align-items-center">
@@ -174,7 +187,7 @@ export const TeamApiTesting = (props) => {
                 justifyContent: 'center',
               }}
             >
-              {testing.config.tag}
+              {testing?.config?.tag || 'no tag :('}
             </div>
           </div>
           <div className="d-flex justify-content-center align-items-center flex-grow-1">

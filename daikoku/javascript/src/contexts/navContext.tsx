@@ -107,7 +107,7 @@ export const useApiFrontOffice = (api: any, team: any) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>((state) => state.context);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -124,7 +124,7 @@ export const useApiFrontOffice = (api: any, team: any) => {
             className: { active: currentTab === 'description' },
           },
           pricings: {
-            label: translate({ key: 'Plan', plural: true }),
+            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
@@ -386,7 +386,7 @@ export const useApiBackOffice = (api: any, creation: any) => {
           plans: {
             order: 3,
             visible: !creation,
-            label: translate('Plans'),
+            label:  tenant.display === 'environment' ? translate("navbar.environments.label") : translate('Plans'),
             action: () => navigateTo('plans'),
             className: { active: currentTab === 'plans' },
           },

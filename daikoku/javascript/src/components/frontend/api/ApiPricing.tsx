@@ -157,16 +157,34 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     })
   }
 
+  const openMockModal = (title: string) => {
+    openCustomModal({
+      title,
+      content: <div>
+        work in progress ;)
+      </div>
+    })
+  }
+
   return (
     <div className="col-md-4 card mb-4 shadow-sm usage-plan__card" data-usage-plan={plan.customName}>
       <div className="card-img-top card-link card-skin" data-holder-rendered="true">
         <span>{plan.customName || formatPlanType(plan, translate)}</span>
       </div>
       <div className="card-body plan-body d-flex flex-column">
-        <p className="card-text text-justify">
-          {customDescription && <span>{customDescription}</span>}
-          {!customDescription && renderPlanInfo(plan)}
-        </p>
+        <div className="d-flex flex-row">
+          <p className="card-text text-justify flex-grow-1">
+            {customDescription && <span>{customDescription}</span>}
+            {!customDescription && renderPlanInfo(plan)}
+          </p>
+          {tenant.display === 'environment' && (
+            <div className='flex-shrink-1 d-flex flex-column'>
+              <button type="button" disabled={!plan.swagger} onClick={() => openMockModal("plan - swagger")} className="btn btn-sm btn-outline-primary mb-1">swagger</button>
+              <button type="button" disabled={!plan.testing} onClick={() => openMockModal('plan - testing')} className="btn btn-sm btn-outline-primary mb-1">test</button>
+              <button type="button" disabled={!plan.documentation} onClick={() => openMockModal('plan - documentation')} className="btn btn-sm btn-outline-primary">Documentation</button>
+            </div>
+          )}
+        </div>
         <div className="d-flex flex-column mb-2">
           <span className="plan-quotas">
             {!isMiniFreeWithQuotas(plan) && translate('plan.limits.unlimited')}

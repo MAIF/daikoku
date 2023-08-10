@@ -35,6 +35,8 @@ import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableL
 import { Help } from '../apikeys';
 import { useSelector } from 'react-redux';
 import { TeamApiDocumentation } from './TeamApiDocumentation';
+import { TeamApiSwagger } from './TeamApiSwagger';
+import { TeamApiTesting } from './TeamApiTesting';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -1338,10 +1340,17 @@ export const TeamApiPricings = (props: Props) => {
               <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
             )}
             {queryPlans.data && selectedTab === 'swagger' && (
-              <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
+              <TeamApiSwagger
+                value={planForEdition}
+                onChange={savePlan}
+              />
             )}
             {queryPlans.data && selectedTab === 'testing' && (
-              <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
+              //FIXME: inaccessible si pas de swagger
+              <TeamApiTesting
+                value={planForEdition}
+                onChange={savePlan}
+                metadata={planForEdition.otoroshiTarget?.apikeyCustomization.metadata || {}} />
             )}
             {queryPlans.data && selectedTab === 'documentation' && (
               <TeamApiPricingDocumentation
@@ -1690,39 +1699,6 @@ const MotivationForm = (props: MotivationFormProps) => {
                 value={formatter}
               />
             </div>
-            {/* <Form
-              schema={{
-                schema: {
-                  type: type.string,
-                  format: format.code,
-                  label: translate('motivation.form.schema.label'),
-                  help: translate('motivation.form.schema.help'),
-                  defaultValue: '{}',
-                  className: 'motivation-form__editor'
-                },
-                formatter: {
-                  type: type.string,
-                  format: format.markdown,
-                  label: translate('motivation.form.formatter.label'),
-                  help: translate('motivation.form.formatter.help'),
-                  defaultValue: '',
-                  className: 'motivation-form__editor'
-                }
-              }}
-              onSubmit={data => {
-                setFormatter(data.formatter ?? '')
-                setSchema(data.schema ?? '{}')
-              }}
-              value={{schema: realSchema, formatter}}
-              options={{
-                autosubmit: true,
-                actions: {
-                  submit: {
-                    display: false
-                  }
-                }
-              }}
-            /> */}
           </div>
           <div className="col-6 d-flex flex-column">
             <div className='flex-1'>{/* @ts-ignore */}
@@ -1851,7 +1827,7 @@ const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) =>
             props.reloadState()
           },
           getDocumentationPages: () => Services.getAllPlansDocumentation(props.team._id, props.api._humanReadableId, props.api.currentVersion),
-          importPages: (pages) => Services.importPlanPages(props.team._id, props.api._id, pages, props.api.currentVersion, props.planForEdition._id) 
+          importPages: (pages) => Services.importPlanPages(props.team._id, props.api._id, pages, props.api.currentVersion, props.planForEdition._id)
         })} />
     )
   }

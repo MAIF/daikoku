@@ -1,11 +1,12 @@
-import React, { useEffect, useContext } from 'react';
+import React, { useEffect, useContext, MutableRefObject } from 'react';
 //@ts-ignore
 import SwaggerEditor, { plugins } from 'swagger-editor';
-import { Form, type, format, constraints } from '@maif/react-forms';
+import { Form, type, format, constraints, FormRef } from '@maif/react-forms';
 
 import { I18nContext } from '../../../core';
 
 import 'swagger-editor/dist/swagger-editor.css';
+import { IApi, ISwagger, IWithSwagger } from '../../../types';
 
 const defaultSwaggerContent = {
   swagger: '2.0',
@@ -88,11 +89,17 @@ const SwaggerEditorInput = ({
   return <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }} />;
 };
 
-export const TeamApiSwagger = ({
+interface TeamApiSwaggerProps<T extends IWithSwagger> {
+  value: T
+  onChange: (s: T) => void
+  reference?: MutableRefObject<FormRef | undefined>
+}
+
+export const TeamApiSwagger = <T extends IWithSwagger>({
   value,
   onChange,
   reference
-}: any) => {
+}: TeamApiSwaggerProps<T>) => {
   const { translate } = useContext(I18nContext);
   const swagger = value.swagger;
 
@@ -118,7 +125,7 @@ export const TeamApiSwagger = ({
     useContent: {
       type: type.bool,
       label: translate('Use swagger content'),
-      defaultValue: !!swagger.content,
+      defaultValue: !!swagger?.content,
     },
     content: {
       type: type.string,
@@ -138,7 +145,14 @@ export const TeamApiSwagger = ({
         onChange({ ...value, swagger });
       }}
       value={value.swagger}
-      footer={() => <></>}
+      options={{
+        actions: {
+          submit: {
+            display: !reference,
+            label: translate('Save')
+          }
+        }
+      }}
     />
   );
 };

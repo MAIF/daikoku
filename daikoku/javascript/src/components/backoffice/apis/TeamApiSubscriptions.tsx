@@ -30,7 +30,7 @@ type SubscriptionsFilter = {
   metadata: Array<{ key: string, value: string }>,
   tags: Array<string>
 }
-type LimitedTeam = {
+type LimitedPlan = {
   _id: string
   customName?: string
   type: string
@@ -43,7 +43,7 @@ type ApiSubscriptionGql = {
     clientId: string
     clientSecret: string
   }
-  plan: LimitedTeam
+  plan: LimitedPlan
   team: {
     _id: string
     name: string
@@ -183,7 +183,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     plan: sub.plan._id,
     team: sub.team,
     subscription: sub,
-    creationMode: false
+    creationMode: false,
+    value: (plansQuery.data as Array<IUsagePlan>)
+      .find(p => sub.plan._id === p._id)!
   });
 
   const regenerateSecret = (sub: ApiSubscriptionGql) => {
