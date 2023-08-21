@@ -5,13 +5,14 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import com.google.common.base.Charsets
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat, TestingConfigFormat}
-import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, TestingAuth}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, Testing, TestingAuth}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
@@ -397,31 +398,17 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
   }
 
-  private val sourceBodyParser = BodyParser("FakeApiCall BodyParser") { _ =>
-    Accumulator.source[ByteString].map(Right.apply)
-  }
-
-  //TODO: like function above, use entity instead of api
-  //TODO: just need TestingConfig
   def updateTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {
     ctx =>
       TeamApiEditorOnly(AuditTrailEvent(
         s"@{user.name} update testing @{apikey.id} apikey for team @{team.name} - @{team.id}"))(
         teamId,
         ctx) { _ =>
-        val apiOpt = (ctx.request.body \ "api").asOpt[String]
+        val entityType = (ctx.request.body \ "entity" \ "type").as[String]
+        val entityId = (ctx.request.body \ "entity" \ "_id").as[String]
+
+
         val testingConfig = ctx.request.body.as(TestingConfigFormat)
-        val otoroshiSettingsOpt = (ctx.request.body \ "otoroshiSettings")
-          .asOpt(OtoroshiSettingsIdFormat)
-        val authorizedEntitiesOpt = (ctx.request.body \ "authorizedEntities")
-          .asOpt(AuthorizedEntitiesFormat)
-        val metadataOpt = (ctx.request.body \ "customMetadata").asOpt[JsObject]
-        val readOnlyOpt = (ctx.request.body \ "customReadOnly").asOpt[Boolean]
-        val maxPerSecondOpt =
-          (ctx.request.body \ "customMaxPerSecond").asOpt[Long]
-        val maxPerDayOpt = (ctx.request.body \ "customMaxPerDay").asOpt[Long]
-        val maxPerMonthOpt =
-          (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
 
         def handleKeyJob(previousSettings: OtoroshiSettings, actualSettings: OtoroshiSettings, key: ActualOtoroshiApiKey): EitherT[Future, AppError, ActualOtoroshiApiKey] = {
           if (previousSettings != actualSettings) {
@@ -436,33 +423,41 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         }
 
         (for {
-          //todo: get the value to get the previous config
-//          apiId <- EitherT.fromOption[Future](apiOpt, AppError.EntityNotFound("Api id"))
-//          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(apiId), AppError.ApiNotFound)
-          otoroshiSettingsId <- EitherT.fromOption[Future](otoroshiSettingsOpt, AppError.EntityNotFound("Otoroshi settings"))
-          otoroshiSettings <- EitherT.fromOption[Future](ctx.tenant.otoroshiSettings.find(_.id == otoroshiSettingsId), AppError.EntityNotFound("Otoroshi settings"))
-          authorizedEntities <- EitherT.fromOption[Future](authorizedEntitiesOpt, AppError.EntityNotFound("authorized entities"))
-          previousSettings <- EitherT.fromOption[Future](ctx.tenant.otoroshiSettings.find(s => api.testing.config.map(_.otoroshiSettings).contains(s.id)), AppError.EntityNotFound("Otoroshi Settings"))
-          apiKey <- EitherT(otoroshiClient.getApikey(testingConfig.clientName)(previousSettings)) //todo: replace api.testing.username by this, it seems ok but test it !!
+          testing <- EitherT.fromOptionF[Future, AppError, Testing](entityType match {
+            case "api" => env.dataStore.apiRepo.forTenant(ctx.tenant)
+              .findByIdNotDeleted(entityId)
+              .map(api => api.map(_.testing))
+            case "plan" => env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
+              .findByIdNotDeleted(entityId)
+              .map(plan => plan.flatMap(_.testing))
+            case _ => FastFuture.successful(None)
+          }, AppError.EntityNotFound("Otoroshi settings"))
+
+
+          otoroshiSettings <- EitherT.fromOption[Future](ctx.tenant.otoroshiSettings.find(_.id == testingConfig.otoroshiSettings), AppError.EntityNotFound("Otoroshi settings"))
+          previousSettings <- EitherT.fromOption[Future](
+            ctx.tenant.otoroshiSettings.find(s => testing.config.map(_.otoroshiSettings).contains(s.id)),
+            AppError.EntityNotFound("Otoroshi settings"))
+          apiKey <- EitherT(otoroshiClient.getApikey(testingConfig.clientName)(previousSettings))
           lastMetadata: Map[String, String] =
-            api.testing.config
+            testing.config
               .flatMap(_.customMetadata)
               .flatMap(_.asOpt[Map[String, String]])
               .getOrElse(Map.empty[String, String])
 
           updatedKey = apiKey.copy(
-            authorizedEntities = authorizedEntities,
-            metadata = (apiKey.metadata -- lastMetadata.keySet) ++ metadataOpt
+            authorizedEntities = testingConfig.authorizedEntities,
+            metadata = (apiKey.metadata -- lastMetadata.keySet) ++ testingConfig.customMetadata
               .flatMap(_.asOpt[Map[String, String]])
               .getOrElse(Map.empty[String, String]),
-            throttlingQuota = maxPerSecondOpt
+            throttlingQuota = testingConfig.customMaxPerSecond
               .getOrElse(apiKey.throttlingQuota),
             dailyQuota =
-              maxPerDayOpt.getOrElse(apiKey.dailyQuota),
-            monthlyQuota = maxPerMonthOpt.getOrElse(
+              testingConfig.customMaxPerDay.getOrElse(apiKey.dailyQuota),
+            monthlyQuota = testingConfig.customMaxPerMonth.getOrElse(
               apiKey.monthlyQuota),
             readOnly =
-              readOnlyOpt.getOrElse(apiKey.readOnly)
+              testingConfig.customReadOnly.getOrElse(apiKey.readOnly)
           )
           key <- handleKeyJob(previousSettings, otoroshiSettings, updatedKey)
         } yield Ok(key.asJson))

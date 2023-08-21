@@ -134,7 +134,6 @@ object json {
             authorizedEntities =
               (json \ "authorizedEntities").as(AuthorizedEntitiesFormat),
             clientName = (json \ "clientName").as[String],
-            api = (json \ "api").as(ApiIdFormat),
             tag = (json \ "tag").as[String],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
@@ -152,7 +151,6 @@ object json {
       "authorizedEntities" -> AuthorizedEntitiesFormat.writes(
         o.authorizedEntities),
       "clientName" -> o.clientName,
-      "api" -> ApiIdFormat.writes(o.api),
       "tag" -> o.tag,
       "customMetadata" -> o.customMetadata
         .getOrElse(JsNull)

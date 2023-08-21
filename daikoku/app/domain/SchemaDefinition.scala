@@ -773,9 +773,13 @@ object SchemaDefinition {
       () => fields[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
         Field("otoroshiSettings", StringType, resolve = _.value.otoroshiSettings.value),
         Field("authorizedEntities", OptionType(AuthorizedEntitiesType), resolve = _.value.authorizedEntities),
-        Field("api", OptionType(ApiType),
-          resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)),
-        Field("customMetadata", OptionType(JsonType), resolve = _.value.customMetadata)
+        Field("customMetadata", OptionType(JsonType), resolve = _.value.customMetadata),
+        Field("customMaxPerSecond", OptionType(LongType), resolve = _.value.customMaxPerSecond),
+        Field("customMaxPerDay", OptionType(LongType), resolve = _.value.customMaxPerDay),
+        Field("customMaxPerMonth", OptionType(LongType), resolve = _.value.customMaxPerMonth),
+        Field("customReadOnly", OptionType(BooleanType), resolve = _.value.customReadOnly),
+        Field("tag", StringType, resolve = _.value.tag),
+        Field("clientName", StringType, resolve = _.value.clientName),
       )
     )
 

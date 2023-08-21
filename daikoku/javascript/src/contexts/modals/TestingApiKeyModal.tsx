@@ -7,7 +7,7 @@ import { Spinner } from '../../components/utils';
 import * as Services from '../../services';
 import { I18nContext } from '../../core';
 import { IBaseModalProps, TestingApiKeyModalProps } from './types';
-import { IState, ITenant, ITestingConfig, IWithTesting, isError } from '../../types';
+import { IState, ITenant, ITestingConfig, IWithTesting, isApi, isError } from '../../types';
 
 
 export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyModalProps<T> & IBaseModalProps) => {
@@ -121,8 +121,16 @@ export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyM
   };
 
   const generateApiKey = (updatedConfig: ITestingConfig) => {
-    console.debug({props})
-    return Services.createTestingApiKey(props.teamId, { ...updatedConfig, ...props.metadata })
+    console.debug({ props })
+    return Services.createTestingApiKey(props.teamId, {
+      ...updatedConfig,
+      ...props.metadata,
+      entity: {
+        type: isApi(props.value) ? 'api' : 'plan',
+        _id: props.value._id,
+        name: props.value.customName || props.value.name
+      }
+    })
       .then((apikey) => {
         if (!isError(apikey)) {
           props.close();
@@ -135,7 +143,16 @@ export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyM
   };
 
   const updateApiKey = (updatedConfig: ITestingConfig) => {
-    Services.updateTestingApiKey(props.teamId, { ...updatedConfig, ...props.metadata })
+    Services.updateTestingApiKey(props.teamId,
+      {
+        ...updatedConfig,
+        ...props.metadata,
+        entity: {
+          type: isApi(props.value) ? 'api' : 'plan',
+          _id: props.value._id,
+          name: props.value.customName || props.value.name
+        }
+      })
       .then((apikey) => {
         if (!isError(apikey)) {
           props.close();

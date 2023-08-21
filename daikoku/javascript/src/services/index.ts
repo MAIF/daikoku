@@ -768,12 +768,14 @@ export const storeThumbnail = (id: any, formData: any) =>
     body: formData,
   });
 
+  //todo: add api or plan in body
 export const createTestingApiKey = (teamId: string, body: ITestingConfig): PromiseWithError<IOtoroshiApiKey> =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'POST',
     body: JSON.stringify(body),
   });
 
+  //todo: add api or plan in body
 export const updateTestingApiKey = (teamId: string, body: ITestingConfig): PromiseWithError<IOtoroshiApiKey> =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'PUT',

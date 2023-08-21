@@ -786,7 +786,6 @@ case class TestingConfig(
     otoroshiSettings: OtoroshiSettingsId,
     authorizedEntities: AuthorizedEntities,
     clientName: String,
-    api: ApiId,
     tag: String,
     customMetadata: Option[JsObject],
     customMaxPerSecond: Option[Long],
