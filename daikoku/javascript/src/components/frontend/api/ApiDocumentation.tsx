@@ -60,8 +60,7 @@ type ApiDocPageProps = {
 const ApiDocPage = (props: ApiDocPageProps) => {
   const queryClient = useQueryClient();
   const pageRequest = useQuery(['page', { pageId: props.pageId }], ({ queryKey }) => {
-    const [_key, keys] = queryKey 
-    console.debug({keys, _key})//@ts-ignore
+    const [_key, keys] = queryKey //@ts-ignore
     return props.getDocPage(keys.pageId)
   });
 

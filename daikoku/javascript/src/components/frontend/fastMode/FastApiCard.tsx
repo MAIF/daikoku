@@ -53,7 +53,6 @@ export const FastApiCard = (props: FastApiCardProps) => {
         onSubmit: (motivation) => {
           apiKeyDemand(motivation)
             .then((response) => {
-              console.debug({response})
               if (isError(response)) {
                 toastr.error(
                   translate('Error'),

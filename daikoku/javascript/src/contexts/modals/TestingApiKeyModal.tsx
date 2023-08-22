@@ -121,7 +121,6 @@ export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyM
   };
 
   const generateApiKey = (updatedConfig: ITestingConfig) => {
-    console.debug({ props })
     return Services.createTestingApiKey(props.teamId, {
       ...updatedConfig,
       ...props.metadata,

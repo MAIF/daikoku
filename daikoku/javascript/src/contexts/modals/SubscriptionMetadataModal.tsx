@@ -143,8 +143,6 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
   })
 
 
-  console.debug(props.plan, planQuery.data, apiQuery.data)
-
   if (!!props.api && apiQuery.isLoading || props.plan && planQuery.isLoading) {
     return <div className="modal-content"><Spinner /></div>
   } else if (!props.api && planQuery.data || (apiQuery.data && !isError(apiQuery.data))) {
