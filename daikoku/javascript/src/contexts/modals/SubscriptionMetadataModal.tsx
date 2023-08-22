@@ -143,9 +143,11 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
   })
 
 
-  if (!!props.api && apiQuery.isLoading) {
+  console.debug(props.plan, planQuery.data, apiQuery.data)
+
+  if (!!props.api && apiQuery.isLoading || props.plan && planQuery.isLoading) {
     return <div className="modal-content"><Spinner /></div>
-  } else if (!props.api || (apiQuery.data && !isError(apiQuery.data))) {
+  } else if (!props.api && planQuery.data || (apiQuery.data && !isError(apiQuery.data))) {
     const plan = !!props.plan ? !isError(planQuery.data) ? planQuery.data : undefined : undefined
 
     const maybeSubMetadata = Option(props.subscription)

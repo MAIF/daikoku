@@ -1516,7 +1516,6 @@ export const graphql = {
               api {
                 _id
                 name
-                testing
               }
               team {
                 _id
