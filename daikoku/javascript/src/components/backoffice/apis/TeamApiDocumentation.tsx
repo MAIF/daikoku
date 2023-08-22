@@ -242,7 +242,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   };
 
   const updatePage = (selectedPage: string) => {
-    Services.getDocPage(props.api._id, selectedPage)
+    Services.getApiDocPage(props.api._id, selectedPage)
       .then((page) => {
         if (isError(page)) {
           toastr.error(translate('Error'), page.error);

@@ -505,38 +505,72 @@ class ApiController(
           s"@{user.name} has accessed documentation page for @{api.name} - @{api.id} - $pageId"
         )
       )(ctx) {
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(apiId)
-          .flatMap {
-            case None => AppError.ApiNotFound.renderF()
-            case Some(api) =>
-              ctx.setCtxValue("api.id", api.id.value)
-              ctx.setCtxValue("api.name", api.name)
-              env.dataStore.apiDocumentationPageRepo
-                .forTenant(ctx.tenant.id)
-                .findByIdOrHrId(pageId)
-                .map {
-                  case None => AppError.PageNotFound.render()
-                  case Some(page) =>
-                    api.documentation match {
-                      case doc if !doc.docIds().contains(page.id.value) =>
-                        AppError.PageNotFound.render()
-                      case doc if page.remoteContentEnabled =>
-                        //Ok(page.asWebUiJson.as[JsObject] ++ Json.obj("contentUrl" -> s"/api/apis/$apiId/pages/$pageId/content"))
-                        val url: String = page.remoteContentUrl.getOrElse(
-                          s"/api/apis/$apiId/pages/$pageId/content"
-                        )
-                        Ok(
-                          page.asWebUiJson
-                            .as[JsObject] ++ Json.obj("contentUrl" -> url)
-                        )
-                      case doc => Ok(page.asWebUiJson)
-                    }
-                }
+        (for {
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId), AppError.ApiNotFound)
+          page <- EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(pageId), AppError.PageNotFound)
+//          _ <- EitherT.fromOption[Future](api.documentation.docIds().find(s => s == page.id.value), AppError.PageNotFound)
+        } yield {
+          ctx.setCtxValue("api.id", api.id.value)
+          ctx.setCtxValue("api.name", api.name)
+
+          if (page.remoteContentEnabled) {
+            val url: String = page.remoteContentUrl.getOrElse(
+              s"/api/apis/$apiId/pages/$pageId/content"
+            )
+            Ok(
+              page.asWebUiJson.as[JsObject] ++ Json.obj("contentUrl" -> url)
+            )
+          } else {
+            Ok(page.asWebUiJson)
           }
+        })
+          .leftMap(_.render())
+          .merge
       }
     }
+
+  def getPlanDocumentationPage(apiId: String, planId: String, pageId: String) =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      UberPublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has accessed documentation page for plan @{plan.name} - @{plan.id} - $pageId"
+        )
+      )(ctx) {
+        def check(api: Api, plan: UsagePlan, page: ApiDocumentationPage): EitherT[Future, AppError, Unit] = {
+          if (api.possibleUsagePlans.forall(_.value != planId)) {
+            EitherT.leftT[Future, Unit](AppError.PlanNotFound)
+          } else if (plan.documentation.map(_.docIds()).forall(_.forall(_ != page.id.value))) {
+            EitherT.leftT[Future, Unit](AppError.PlanNotFound)
+          } else {
+            EitherT.pure[Future, AppError](())
+          }
+        }
+
+        (for {
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(apiId), AppError.ApiNotFound)
+          plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(planId), AppError.PlanNotFound)
+          page <- EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant).findByIdNotDeleted(pageId), AppError.PageNotFound)
+          _ <- check(api, plan, page)
+        } yield {
+          ctx.setCtxValue("plan.id", plan.id.value)
+          ctx.setCtxValue("plan.name", plan.customName.getOrElse(plan.typeName))
+
+          if (page.remoteContentEnabled) {
+            val url: String = page.remoteContentUrl.getOrElse(
+              s"/api/apis/$apiId/pages/$pageId/content"
+            )
+            Ok(
+              page.asWebUiJson.as[JsObject] ++ Json.obj("contentUrl" -> url)
+            )
+          } else {
+            Ok(page.asWebUiJson)
+          }
+        })
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
 
   private val extensions: Map[String, String] = Map(
     ".adoc" -> "text/asciidoc",

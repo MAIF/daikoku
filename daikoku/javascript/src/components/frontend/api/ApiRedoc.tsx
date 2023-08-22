@@ -5,11 +5,10 @@ import { SwaggerUIBundle } from 'swagger-ui-dist';
 import { ModalContext } from '../../../contexts';
 
 import { I18nContext } from '../../../core';
-import { IApi, IState, IStateContext } from '../../../types';
+import { IApi, IState, IStateContext, ISwagger } from '../../../types';
 
 type ApiRedocProps = {
-  teamId: string
-  api: IApi
+  swaggerUrl: string
 }
 export function ApiRedoc(props: ApiRedocProps) {
   const [error, setError] = useState<string>();
@@ -37,9 +36,9 @@ export function ApiRedoc(props: ApiRedocProps) {
   }, []);
 
   const drawSwaggerUi = () => {
-    if (props.api.swagger) {
+    if (props.swaggerUrl) {
       (window as any).ui = SwaggerUIBundle({
-        url: `/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`,
+        url: props.swaggerUrl,
         dom_id: '#swagger-ui',
         deepLinking: true,
         docExpansion: 'list',
@@ -63,10 +62,6 @@ export function ApiRedoc(props: ApiRedocProps) {
         <span className="alert alert-danger text-center">{error}</span>
       </div>
     );
-
-  const api = props.api;
-  if (!api || !api.swagger)
-    return <div>{translate({ key: 'api_data.missing', replacements: ['Api reference'] })}</div>;
 
   return <div id="swagger-ui" />
 }

@@ -228,7 +228,7 @@ export const ApiGroupHome = ({ }) => {
             />
           )}
           {params.tab === 'documentation' && (
-            <ApiDocumentation api={apiGroup} />
+            <ApiDocumentation documentation={apiGroup.documentation} getDocPage={(pageId) => Services.getApiDocPage(apiGroup._id, pageId)}/>
           )}
           {params.tab === 'issues' && (
             <ApiIssue

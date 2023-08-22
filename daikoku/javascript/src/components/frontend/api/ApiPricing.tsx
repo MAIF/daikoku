@@ -23,6 +23,9 @@ import classNames from 'classnames';
 import { Link, useNavigate } from 'react-router-dom';
 import { is } from 'cypress/types/bluebird';
 import { useQuery } from '@tanstack/react-query';
+import { ApiRedoc } from './ApiRedoc';
+import { ApiSwagger } from './ApiSwagger';
+import { ApiDocumentation } from './ApiDocumentation';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -157,12 +160,29 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     })
   }
 
-  const openMockModal = (title: string) => {
+  const openDocumentationModal = (title: string) => {
     openCustomModal({
       title,
-      content: <div>
-        work in progress ;)
-      </div>
+      content: <ApiDocumentation documentation={plan.documentation} getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, props.plan._id, pageId)}/>
+    })
+  }
+
+  const openSwaggerModal = (title: string) => {
+    openCustomModal({
+      title,
+      content: <ApiRedoc swaggerUrl={`/changeit`} />
+    })
+  }
+
+  const openTestModal = (title: string) => {
+    openCustomModal({
+      title,
+      content: <ApiSwagger _id={plan._id}
+      testing={plan.testing}
+      swagger={plan.swagger}
+      swaggerUrl={`changeit`}
+      callUrl={`changeit`}
+       />
     })
   }
 
@@ -179,9 +199,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           </p>
           {tenant.display === 'environment' && (
             <div className='flex-shrink-1 d-flex flex-column'>
-              <button type="button" disabled={!plan.swagger} onClick={() => openMockModal("plan - swagger")} className="btn btn-sm btn-outline-primary mb-1">swagger</button>
-              <button type="button" disabled={!plan.testing} onClick={() => openMockModal('plan - testing')} className="btn btn-sm btn-outline-primary mb-1">test</button>
-              <button type="button" disabled={!plan.documentation} onClick={() => openMockModal('plan - documentation')} className="btn btn-sm btn-outline-primary">Documentation</button>
+              <button type="button" disabled={!plan.swagger} onClick={() => openSwaggerModal("plan - swagger")} className="btn btn-sm btn-outline-primary mb-1">swagger</button>
+              <button type="button" disabled={!plan.testing} onClick={() => openTestModal('plan - testing')} className="btn btn-sm btn-outline-primary mb-1">test</button>
+              <button type="button" disabled={!plan.documentation} onClick={() => openDocumentationModal('plan - documentation')} className="btn btn-sm btn-outline-primary">Documentation</button>
             </div>
           )}
         </div>

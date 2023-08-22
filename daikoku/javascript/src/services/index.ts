@@ -107,8 +107,10 @@ export const rejectNotificationOfTeam = (
 
 export const subscribedApis = (teamId: string): Promise<ResponseError | Array<IApi>> =>
   customFetch(`/api/teams/${teamId}/subscribed-apis`);
-export const getDocPage = (api: string, id: string): Promise<IDocPage | ResponseError> =>
+export const getApiDocPage = (api: string, id: string): PromiseWithError<IDocPage> =>
   customFetch(`/api/apis/${api}/pages/${id}`);
+export const getUsagePlanDocPage = (apiId: string, planId: string, pageId: string): PromiseWithError<IDocPage> =>
+  customFetch(`/api/apis/${apiId}/plan/${planId}/pages/${pageId}`);
 export const getDocDetails = (api: string, version: string): Promise<IDocDetail> =>
   customFetch(`/api/apis/${api}/${version}/doc`);
 
