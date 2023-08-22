@@ -42,7 +42,7 @@ export const TeamApiGroup = () => {
     enabled: !creation
   })
 
-  const methods = useApiGroupBackOffice(apiGroupRequest.data, creation);
+  const methods = useApiGroupBackOffice(apiGroupRequest.data, !!creation);
 
   useEffect(() => {
     if (apiGroupRequest.isLoading) {

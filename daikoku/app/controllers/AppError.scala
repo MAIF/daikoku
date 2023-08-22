@@ -61,6 +61,7 @@ object AppError {
   case object ThirdPartyPaymentSettingsNotFound extends AppError
   case class SecurityError(security: String) extends AppError
   case object UnexpectedError extends AppError
+  case class InternalServerError(message: String) extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
@@ -114,6 +115,7 @@ object AppError {
       play.api.mvc.Results.Unauthorized(toJson(error))
     case TeamAlreadyVerified => Conflict(toJson(error))
     case UnexpectedError     => BadRequest(toJson(error))
+    case InternalServerError(message) => play.api.mvc.Results.InternalServerError(toJson(error))
   }
 
   def getErrorMessage(error: AppError) =
@@ -172,6 +174,7 @@ object AppError {
       case SecurityError(s)    => s"Forbidden action due to security : $s"
       case TeamAlreadyVerified => "This team is already verified"
       case UnexpectedError     => "Oops, an unexpected error occured ¯\\_(ツ)_/¯"
+      case InternalServerError(msg) => msg
       case _                   => ""
     }
 
@@ -182,6 +185,7 @@ object AppError {
       case ApiKeyRotationError(e) => e
       case ParsingPayloadError(msg) =>
         Json.obj("error" -> "Error while parsing payload", "msg" -> msg)
+      case InternalServerError(msg) => Json.obj("error" -> msg)
       case _ => Json.obj("error" -> error.getErrorMessage())
     }
   }

@@ -163,14 +163,14 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   const openDocumentationModal = (title: string) => {
     openCustomModal({
       title,
-      content: <ApiDocumentation documentation={plan.documentation} getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, props.plan._id, pageId)}/>
+      content: <ApiDocumentation documentation={plan.documentation} getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, props.plan._id, pageId)} />
     })
   }
 
   const openSwaggerModal = (title: string) => {
     openCustomModal({
       title,
-      content: <ApiRedoc swaggerUrl={`/changeit`} />
+      content: <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${props.plan._id}/swagger`} />
     })
   }
 
@@ -178,11 +178,11 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     openCustomModal({
       title,
       content: <ApiSwagger _id={plan._id}
-      testing={plan.testing}
-      swagger={plan.swagger}
-      swaggerUrl={`changeit`}
-      callUrl={`changeit`}
-       />
+        testing={plan.testing}
+        swagger={plan.swagger}
+        swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${props.plan._id}/swagger`}
+        callUrl={`/api/teams/${props.api.team}/testing/${props.api._id}/plans/${props.plan._id}/call`}
+      />
     })
   }
 
@@ -200,7 +200,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {tenant.display === 'environment' && (
             <div className='flex-shrink-1 d-flex flex-column'>
               <button type="button" disabled={!plan.swagger} onClick={() => openSwaggerModal("plan - swagger")} className="btn btn-sm btn-outline-primary mb-1">swagger</button>
-              <button type="button" disabled={!plan.testing} onClick={() => openTestModal('plan - testing')} className="btn btn-sm btn-outline-primary mb-1">test</button>
+              <button type="button" disabled={!plan.testing?.enabled} onClick={() => openTestModal('plan - testing')} className="btn btn-sm btn-outline-primary mb-1">test</button>
               <button type="button" disabled={!plan.documentation} onClick={() => openDocumentationModal('plan - documentation')} className="btn btn-sm btn-outline-primary">Documentation</button>
             </div>
           )}

@@ -79,97 +79,102 @@ class ApiController(
         )
       )(ctx) {
 
-        def fetchSwagger(api: Api): Future[Result] = {
+        def fetchSwagger(api: Api): EitherT[Future, AppError, Result] = {
           api.swagger match {
             case Some(SwaggerAccess(_, Some(content), _)) =>
-              FastFuture.successful(Ok(content).as("application/json"))
-            case Some(SwaggerAccess(url, None, headers)) => {
+              EitherT.pure[Future, AppError](Ok(content).as("application/json"))
+            case Some(SwaggerAccess(url, None, headers)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
                 else url
-              Try {
+              EitherT(Try {
                 env.wsClient
                   .url(finalUrl)
                   .withHttpHeaders(headers.toSeq: _*)
                   .get()
                   .map { resp =>
-                    Ok(resp.body).as(
+                    Right(Ok(resp.body).as(
                       resp.header("Content-Type").getOrElse("application/json")
-                    )
+                    ))
+                  }
+              }.recover {
+                case _: Exception =>
+                  FastFuture.successful(Left(AppError.EntityNotFound("Swagger"))
+                  )
+              }.get)
+            case None => EitherT.leftT[Future, Result](AppError.EntityNotFound("Swagger access"))
+          }
+        }
+
+        (for {
+          _ <- EitherT.cond[Future][AppError, Unit](ctx.tenant.apiReferenceHideForGuest.getOrElse(true) && ctx.user.isGuest, (), AppError.ForbiddenAction)
+          team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(teamId), AppError.TeamNotFound)
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "currentVersion" -> version, "team" -> team.id.asJson)), AppError.ApiNotFound)
+          myTeams <- EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
+          test = api.visibility == ApiVisibility.Public || myTeams.exists(_.id == api.team) || api.visibility != ApiVisibility.Public && api.authorizedTeams
+            .intersect(myTeams.map(_.id)).nonEmpty
+          _ <- EitherT.cond[Future][AppError, Unit](test, (), AppError.ApiUnauthorized)
+          result <- fetchSwagger(api)
+        } yield {
+          result
+        })
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  def planSwagger(teamId: String, apiId: String, version: String, planId: String) =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed swagger of api @{api.name} on team @{team.name}"))(ctx) {
+
+        def fetchSwagger(plan: UsagePlan): EitherT[Future, AppError, Result] = {
+          plan.swagger match {
+            case Some(SwaggerAccess(_, Some(content), _)) =>
+              EitherT.pure[Future, AppError](Ok(content).as("application/json"))
+            case Some(SwaggerAccess(url, None, headers)) =>
+              val finalUrl =
+                if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
+                else url
+              val triedEventualErrorOrResult: Try[Future[Either[AppError, Result]]] = Try {
+                env.wsClient
+                  .url(finalUrl)
+                  .withHttpHeaders(headers.toSeq: _*)
+                  .get()
+                  .map { resp =>
+                    Right[AppError, Result](Ok(resp.body).as(
+                      resp.header("Content-Type").getOrElse("application/json")
+                    ))
                   }
               }.recover {
                 case _: Exception =>
                   FastFuture.successful(
-                    BadRequest(Json.obj("error" -> "Can't retrieve swagger"))
+                    Left[AppError, Result](AppError.UnexpectedError)
                   )
-              }.get
-            }
-            case None =>
-              FastFuture.successful(
-                NotFound(Json.obj("error" -> "swagger access not found"))
-              )
+              }
+              EitherT(triedEventualErrorOrResult.get)
+            case None => EitherT.leftT[Future, Result](AppError.EntityNotFound("Swagger access"))
           }
         }
 
-        (ctx.tenant.apiReferenceHideForGuest, ctx.user.isGuest) match {
-          case (None, true) =>
-            FastFuture.successful(
-              Forbidden(
-                Json.obj(
-                  "error" -> "Tenant is set up for hide api reference for Guest user"
-                )
-              )
-            )
-          case (Some(true), true) =>
-            FastFuture.successful(
-              Forbidden(
-                Json.obj(
-                  "error" -> "Tenant is set up for hide api reference for Guest user"
-                )
-              )
-            )
-          case (_, _) =>
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdOrHrIdNotDeleted(teamId)
-              .flatMap {
-                case Some(team) =>
-                  ctx.setCtxValue("team.name", team.name)
-                  env.dataStore.apiRepo
-                    .findByVersion(ctx.tenant, apiId, version)
-                    .flatMap {
-                      case None =>
-                        FastFuture.successful(
-                          NotFound(Json.obj("error" -> "Api not found"))
-                        )
-                      case Some(api)
-                          if api.visibility == ApiVisibility.Public =>
-                        ctx.setCtxValue("api.name", api.name)
-                        fetchSwagger(api)
-                      case Some(api) if api.team == team.id =>
-                        ctx.setCtxValue("api.name", api.name)
-                        fetchSwagger(api)
-                      case Some(api)
-                          if api.visibility != ApiVisibility.Public && api.authorizedTeams
-                            .contains(team.id) =>
-                        ctx.setCtxValue("api.name", api.name)
-                        fetchSwagger(api)
-                      case _ =>
-                        FastFuture.successful(
-                          Unauthorized(
-                            Json.obj(
-                              "error" -> "You're not authorized on this api",
-                              "status" -> 403
-                            )
-                          )
-                        )
-                    }
-                case None =>
-                  FastFuture.successful(
-                    NotFound(Json.obj("error" -> "Team not found"))
-                  )
-              }
-        }
+        (for {
+          _ <- EitherT.cond[Future][AppError, Unit](!(ctx.tenant.apiReferenceHideForGuest.getOrElse(true) && ctx.user.isGuest), (), AppError.ForbiddenAction)
+          team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(teamId), AppError.TeamNotFound)
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("_id" -> apiId, "currentVersion" -> version, "team" -> team.id.asJson)), AppError.ApiNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](api.team == team.id, (), AppError.ApiNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](api.possibleUsagePlans.exists(_.value == planId), (), AppError.PlanNotFound)
+          plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(planId), AppError.PlanNotFound)
+          myTeams <- EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
+          test = api.visibility == ApiVisibility.Public || myTeams.exists(_.id == api.team) || api.visibility != ApiVisibility.Public && api.authorizedTeams
+            .intersect(myTeams.map(_.id)).nonEmpty
+          _ <- EitherT.cond[Future][AppError, Unit](test, (), AppError.ApiUnauthorized)
+          result <- fetchSwagger(plan)
+        } yield {
+          result
+        })
+          .leftMap(_.render())
+          .merge
       }
     }
 

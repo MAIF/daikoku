@@ -4,11 +4,13 @@ import { IFastApiParent } from './api';
 export type TeamPermission = 'Administrator' | 'ApiEditor' | 'User';
 
 export type TeamUser = { userId: string; teamPermission: TeamPermission };
+
+export type TeamType = 'Personal' | 'Organization' | 'Admin';
 export interface ITeamSimple {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
-  type: 'Personal' | 'Organization' | 'Admin';
+  type: TeamType;
   name: string;
   description: string;
   avatar: string;

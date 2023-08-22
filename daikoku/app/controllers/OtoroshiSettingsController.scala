@@ -12,7 +12,7 @@ import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat, TestingConfigFormat}
-import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, Testing, TestingAuth}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, Testing, TestingAuth, UsagePlan}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request}
+import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request, Result}
 
 import scala.concurrent.Future
 
@@ -511,7 +511,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       case _                   => true
     }
 
-  def fakeApiCall(teamId: String, apiId: String) =
+  def __fakeApiCall(teamId: String, apiId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       import scala.concurrent.duration._
 
@@ -618,5 +618,215 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
               }
           }
         }
+    }
+
+  def fakeApiCall(teamId: String, apiId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      import scala.concurrent.duration._
+
+      def makeCall(api: Api): Future[Either[AppError, Result]] = {
+        val url = (ctx.request.body \ "url").as[String]
+        val headers = (ctx.request.body \ "headers")
+          .asOpt[Map[String, String]]
+          .getOrElse(Map.empty[String, String])
+        val method =
+          (ctx.request.body \ "method").asOpt[String].getOrElse("GET")
+        val body = (ctx.request.body \ "body").asOpt[String]
+        val credentials = (ctx.request.body \ "credentials")
+          .asOpt[String]
+          .getOrElse("same-origin")
+        val uri = Uri(url)
+        val queryOpt = uri
+          .query()
+          .toIndexedSeq
+          .find(_._2 == s"fake-${api.id.value}")
+        val headerOpt = headers.find(_._2 == s"fake-${api.id.value}")
+        val username = api.testing.username.get
+        val password = api.testing.password.get
+        val finalUrl = api.testing.auth match {
+          case TestingAuth.ApiKey if queryOpt.isDefined =>
+            url
+              .replace(s"&${queryOpt.get._1}=fake-${api.id.value}",
+                s"&${queryOpt.get._1}=${username}")
+              .replace(s"?${queryOpt.get._1}=fake-${api.id.value}",
+                s"?${queryOpt.get._1}=${username}")
+          // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
+          // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
+          case _ => url
+        }
+        val finalHeaders: Map[String, String] =
+          api.testing.auth match {
+            case TestingAuth.ApiKey if headerOpt.isDefined =>
+              headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
+            case TestingAuth.Basic =>
+              headers - "Authorization" + ("Authorization" -> s"Basic ${
+                Base64.encodeBase64String(
+                  s"${username}:${password}".getBytes(Charsets.UTF_8))
+              }")
+            case _ => headers
+          }
+        val builder = env.wsClient
+          .url(finalUrl)
+          .withHttpHeaders(finalHeaders.toSeq: _*)
+          .withFollowRedirects(false)
+          .withMethod(method)
+          .withRequestTimeout(30.seconds)
+        body
+          .map(b =>
+            builder.withBody(
+              play.api.libs.ws.InMemoryBody(ByteString(b))))
+          .getOrElse(builder)
+          .stream()
+          .map { res =>
+            val ctype = res.headers
+              .get("Content-Type")
+              .flatMap(_.headOption)
+              .getOrElse("application/json")
+            Status(res.status)
+              .sendEntity(
+                HttpEntity.Streamed(
+                  Source.lazySource(() => res.bodyAsSource),
+                  res.headers
+                    .get("Content-Length")
+                    .flatMap(_.lastOption)
+                    .map(_.toInt),
+                  res.headers
+                    .get("Content-Type")
+                    .flatMap(_.headOption)
+                )
+              )
+              .withHeaders(
+                res.headers.view
+                  .mapValues(_.head)
+                  .toSeq
+                  .filter(_._1 != "Content-Type")
+                  .filter(_._1 != "Content-Length")
+                  .filter(_._1 != "Transfer-Encoding"): _*
+              )
+              .as(ctype)
+          }
+          .map(Right(_))
+          .recover {
+            case e => Left(AppError.InternalServerError(e.getMessage))
+          }
+      }
+
+      (for {
+        team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(teamId), AppError.TeamNotFound)
+        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+          .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)), AppError.ApiNotFound)
+        _ <- EitherT.cond[Future][AppError, Unit](api.testing.enabled, (), AppError.ForbiddenAction)
+        result <- EitherT(makeCall(api))
+      } yield result)
+        .leftMap(_.render())
+        .merge
+    }
+
+
+  def fakePlanCall(teamId: String, apiId: String, planId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      import scala.concurrent.duration._
+
+      def makeCall(plan: UsagePlan): Future[Either[AppError, Result]] = {
+        //todo: pattern matching on plan.testing
+
+
+        val url = (ctx.request.body \ "url").as[String]
+        val headers = (ctx.request.body \ "headers")
+          .asOpt[Map[String, String]]
+          .getOrElse(Map.empty[String, String])
+        val method =
+          (ctx.request.body \ "method").asOpt[String].getOrElse("GET")
+        val body = (ctx.request.body \ "body").asOpt[String]
+        val credentials = (ctx.request.body \ "credentials")
+          .asOpt[String]
+          .getOrElse("same-origin")
+        val uri = Uri(url)
+        val queryOpt = uri
+          .query()
+          .toIndexedSeq
+          .find(_._2 == s"fake-${plan.id.value}")
+        val headerOpt = headers.find(_._2 == s"fake-${plan.id.value}")
+        val username = plan.testing.flatMap(_.username).get
+        val password = plan.testing.flatMap(_.password).get
+        val finalUrl = plan.testing.map(_.auth).get match {
+          case TestingAuth.ApiKey if queryOpt.isDefined =>
+            url
+              .replace(s"&${queryOpt.get._1}=fake-${plan.id.value}",
+                s"&${queryOpt.get._1}=$username")
+              .replace(s"?${queryOpt.get._1}=fake-${plan.id.value}",
+                s"?${queryOpt.get._1}=$username")
+          // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
+          // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
+          case _ => url
+        }
+        val finalHeaders: Map[String, String] =
+          plan.testing.map(_.auth).get match {
+            case TestingAuth.ApiKey if headerOpt.isDefined =>
+              headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
+            case TestingAuth.Basic =>
+              headers - "Authorization" + ("Authorization" -> s"Basic ${
+                Base64.encodeBase64String(
+                  s"${username}:${password}".getBytes(Charsets.UTF_8))
+              }")
+            case _ => headers
+          }
+        val builder = env.wsClient
+          .url(finalUrl)
+          .withHttpHeaders(finalHeaders.toSeq: _*)
+          .withFollowRedirects(false)
+          .withMethod(method)
+          .withRequestTimeout(30.seconds)
+        body
+          .map(b =>
+            builder.withBody(
+              play.api.libs.ws.InMemoryBody(ByteString(b))))
+          .getOrElse(builder)
+          .stream()
+          .map { res =>
+            val ctype = res.headers
+              .get("Content-Type")
+              .flatMap(_.headOption)
+              .getOrElse("application/json")
+            Status(res.status)
+              .sendEntity(
+                HttpEntity.Streamed(
+                  Source.lazySource(() => res.bodyAsSource),
+                  res.headers
+                    .get("Content-Length")
+                    .flatMap(_.lastOption)
+                    .map(_.toInt),
+                  res.headers
+                    .get("Content-Type")
+                    .flatMap(_.headOption)
+                )
+              )
+              .withHeaders(
+                res.headers.view
+                  .mapValues(_.head)
+                  .toSeq
+                  .filter(_._1 != "Content-Type")
+                  .filter(_._1 != "Content-Length")
+                  .filter(_._1 != "Transfer-Encoding"): _*
+              )
+              .as(ctype)
+          }
+          .map(Right(_))
+          .recover {
+            case e => Left(AppError.InternalServerError(e.getMessage))
+          }
+      }
+
+      (for {
+        team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(teamId), AppError.TeamNotFound)
+        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+          .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)), AppError.ApiNotFound)
+        _ <- EitherT.cond[Future][AppError, Unit](api.possibleUsagePlans.exists(_.value == planId), (), AppError.PlanNotFound)
+        plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(planId), AppError.PlanNotFound)
+        _ <- EitherT.cond[Future][AppError, Unit](plan.testing.exists(_.enabled), (), AppError.ForbiddenAction)
+        result <- EitherT(makeCall(plan))
+      } yield result)
+        .leftMap(_.render())
+        .merge
     }
 }
