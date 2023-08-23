@@ -138,7 +138,7 @@ export const ApiHome = ({
 
   const navigate = useNavigate();
   const defaultParams = useParams();
-  const apiGroupMatch = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab');
+  const apiGroupMatch = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab*');
   const params = Option(apiGroupMatch)
     .map((match: any) => match.params)
     .getOrElse(defaultParams);

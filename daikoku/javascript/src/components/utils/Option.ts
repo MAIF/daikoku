@@ -1,18 +1,22 @@
-// export interface TOption<A> {
-//   map<B>(f: (a: A) => B): TOption<B>;
-//   flatMap<B>(f: (a: A) => TOption<B>): TOption<B>;
-//   fold<B>(ifEmpty: B, f: (a: A) => B): B;
-//   orElse<B extends A>(ob: TOption<B>): TOption<A>;
-//   getOrElse<B extends A>(a: B): A;
-//   getOrNull(): A | undefined
-//   isDefined: boolean;
-//   exists(f: (a: A) => boolean): boolean;
-//   filter(f: (a: A) => boolean): TOption<A>;
-// }
+interface ISome<A> extends IOption<A> {}
+interface INone extends IOption<undefined> {}
 
-export const Option = (x) => (x === undefined || x === null ? None : Some(x));
+export interface IOption<A> {
+  map<B>(f: (a: A) => B): ISome<B> | INone;
+  flatMap<B>(f: (a: A) => IOption<B>): IOption<B> | INone;
+  fold<B>(ifEmpty: B, f: (a: A) => B): B;
+  orElse<B>(ob: IOption<B>): IOption<A> | IOption<B> | INone;
+  getOrElse<B>(b: B): A | B;
+  getOrNull(): A | undefined
+  isDefined: boolean;
+  exists(f: (a: A) => boolean): boolean;
+  filter(f: (a: A) => boolean): IOption<A> | INone;
+}
 
-export const Some = (x) => ({
+
+export const Option = <T>(x: T) => (x === undefined || x === null ? None : Some(x));
+
+export const Some = <T>(x: T) => ({
   map: (f) => Option(f(x)),
   flatMap: (f) => f(x),
   fold: (_ifEmpty, f) => f(x),

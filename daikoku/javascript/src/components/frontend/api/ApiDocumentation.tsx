@@ -1,20 +1,17 @@
 /* eslint-disable react/display-name */
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import asciidoctor from 'asciidoctor';
+import classNames from 'classnames';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
-import { Link, useMatch, useMatches, useParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import classNames from 'classnames';
-import {Option} from '../../utils';
 
 import { I18nContext } from '../../../core';
-import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-
-import { IApi, IDocPage, IDocumentation, IDocumentationPages, ResponseError, isError } from '../../../types';
+import { IDocPage, IDocumentation, IDocumentationPages, ResponseError, isError } from '../../../types';
 import { Spinner } from '../../utils';
 
 import 'highlight.js/styles/monokai.css';
+import { ParamKeyValuePair, useSearchParams } from 'react-router-dom';
 
 const asciidoctorConverter = asciidoctor();
 
@@ -33,7 +30,7 @@ export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) =
           {pages.map((page) => {
             return (
               <li className="api-doc-cartridge-link cursor-pointer" key={page.id} style={{ marginLeft: level * 10 }}>
-                <a className={classNames({active: page.id === props.currentPageId})} onClick={() => props.goTo(page.id)}>
+                <a className={classNames({ active: page.id === props.currentPageId })} onClick={() => props.goTo(page.id)}>
                   {page.title}
                 </a>
                 {renderLinks(page.children, level + 1)}
@@ -107,7 +104,10 @@ type ApiDocumentationProps = {
 export const ApiDocumentation = (props: ApiDocumentationProps) => {
   const { Translation } = useContext(I18nContext);
 
-  const [pageId, setPageId] = useState(props.documentation?.pages[0].id)
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = searchParams.get('page');
+  const [pageId, setPageId] = useState(page || props.documentation?.pages[0].id);
 
   const flattenDoc = (pages?: IDocumentationPages): Array<string> => {
     if (!pages) {
@@ -117,14 +117,21 @@ export const ApiDocumentation = (props: ApiDocumentationProps) => {
     }
   }
 
+  useEffect(() => {
+    if (pageId) {
+      setSearchParams({page: pageId})
+    }
+  }, [pageId])
+
+
   const orderedPages = flattenDoc(props.documentation?.pages)
 
   const idx = orderedPages.findIndex(p => p === pageId)
   const next = orderedPages[idx + (pageId ? 1 : 2)];
   const prev = orderedPages[idx - 1];
 
-  return (<>
-    <ApiDocumentationCartidge documentation={props.documentation} currentPageId={pageId} goTo={setPageId}/>
+  return (<div className='d-flex flex-row'>
+    <ApiDocumentationCartidge documentation={props.documentation} currentPageId={pageId} goTo={setPageId} />
     <div className="col p-3 d-flex flex-column">
       <div className={classNames("d-flex", {
         'justify-content-between': !!prev,
@@ -139,9 +146,9 @@ export const ApiDocumentation = (props: ApiDocumentationProps) => {
           <i className="fas fa-chevron-right ms-1" />
         </button>)}
       </div>
-      <ApiDocPage pageId={pageId} getDocPage={props.getDocPage}/>
+      <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} />
     </div >
-  </>);
+  </div>);
 }
 
 const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;

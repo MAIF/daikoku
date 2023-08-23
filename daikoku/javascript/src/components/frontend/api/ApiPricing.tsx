@@ -1,31 +1,31 @@
 import { getApolloContext } from '@apollo/client';
-import { constraints, format, type as formType } from '@maif/react-forms';
+import { useQuery } from '@tanstack/react-query';
+import classNames from 'classnames';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { Link, useMatch, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, IBaseUsagePlan, isError, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit, IValidationStepTeamAdmin } from '../../../types';
-import { INotification } from '../../../types';
+import {
+  IApi, IBaseUsagePlan, isError,
+  isMiniFreeWithQuotas, IState, IStateContext, ISubscription,
+  ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin,
+  ITeamSimple, IUsagePlan
+} from '../../../types';
 import {
   access,
-  api,
-  apikey, Can, isPublish, isSubscriptionProcessIsAutomatic, manage,
+  apikey, Can, isPublish, isSubscriptionProcessIsAutomatic,
   Option, queryClient, renderPlanInfo, renderPricing, Spinner
 } from '../../utils';
-import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
-import classNames from 'classnames';
-import { Link, useNavigate } from 'react-router-dom';
-import { is } from 'cypress/types/bluebird';
-import { useQuery } from '@tanstack/react-query';
+import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
-import { ApiDocumentation } from './ApiDocumentation';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -160,32 +160,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     })
   }
 
-  const openDocumentationModal = (title: string) => {
-    openCustomModal({
-      title,
-      content: <ApiDocumentation documentation={plan.documentation} getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, props.plan._id, pageId)} />
-    })
-  }
-
-  const openSwaggerModal = (title: string) => {
-    openCustomModal({
-      title,
-      content: <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${props.plan._id}/swagger`} />
-    })
-  }
-
-  const openTestModal = (title: string) => {
-    openCustomModal({
-      title,
-      content: <ApiSwagger _id={plan._id}
-        testing={plan.testing}
-        swagger={plan.swagger}
-        swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${props.plan._id}/swagger`}
-        callUrl={`/api/teams/${props.api.team}/testing/${props.api._id}/plans/${props.plan._id}/call`}
-      />
-    })
-  }
-
   return (
     <div className="col-md-4 card mb-4 shadow-sm usage-plan__card" data-usage-plan={plan.customName}>
       <div className="card-img-top card-link card-skin" data-holder-rendered="true">
@@ -199,9 +173,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           </p>
           {tenant.display === 'environment' && (
             <div className='flex-shrink-1 d-flex flex-column'>
-              <button type="button" disabled={!plan.swagger} onClick={() => openSwaggerModal("plan - swagger")} className="btn btn-sm btn-outline-primary mb-1">swagger</button>
-              <button type="button" disabled={!plan.testing?.enabled} onClick={() => openTestModal('plan - testing')} className="btn btn-sm btn-outline-primary mb-1">test</button>
-              <button type="button" disabled={!plan.documentation} onClick={() => openDocumentationModal('plan - documentation')} className="btn btn-sm btn-outline-primary">Documentation</button>
+              <Link to={`./${props.plan.customName}/swagger`} relative='path' className="btn btn-sm btn-outline-primary mb-1">swagger</Link>
+              <Link to={`./${props.plan.customName}/testing`} relative='path' className="btn btn-sm btn-outline-primary mb-1">test</Link>
+              <Link to={`./${props.plan.customName}/documentation`} relative='path' className="btn btn-sm btn-outline-primary">Documentation</Link>
             </div>
           )}
         </div>
@@ -349,6 +323,11 @@ type ApiPricingProps = {
 export const ApiPricing = (props: ApiPricingProps) => {
   const usagePlansQuery = useQuery(['plans'], () => Services.getVisiblePlans(props.api._id, props.api.currentVersion))
 
+  const match = useMatch('/:team/:api/:version/pricing/:env/:tab')
+
+  const maybeTab = match?.params.tab
+  const maybeEnv = match?.params.env
+
   useEffect(() => {
     queryClient.invalidateQueries(['plans'])
   }, [props.api])
@@ -364,28 +343,58 @@ export const ApiPricing = (props: ApiPricingProps) => {
           props.myTeams.some((team) => plan.authorizedTeams.includes(team._id));
       });
 
-    return (
-      <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
-        {possibleUsagePlans
-          .sort((a, b) => (a.customName || a.type).localeCompare(b.customDescription || b.type))
-          .map((plan) => <React.Fragment key={plan._id}>
-            <ApiPricingCard
-              api={props.api}
-              key={plan._id}
-              plan={plan}
-              myTeams={props.myTeams}
-              ownerTeam={props.ownerTeam}
-              subscriptions={props.subscriptions.filter(
-                (subs) => subs.api === props.api._id && subs.plan === plan._id
-              )}
-              inProgressDemands={props.inProgressDemands.filter(
-                (demand) => demand.api === props.api._id && demand.plan === plan._id
-              )}
-              askForApikeys={props.askForApikeys}
-            />
-          </React.Fragment>)}
-      </div>
-    );
+    if (maybeEnv && maybeTab) {
+      const plan = usagePlansQuery.data.find(p => p.customName === maybeEnv)!
+      return (
+        <div>
+          <div className="d-flex flex-row">
+            <Link to="../.." relative='path'>
+              <i className="fa-regular fa-circle-left fa-lg cursor-pointer" />
+            </Link>
+            <h5 className='ms-3'>{plan.customName}</h5>
+          </div>
+          <div className='d-flex flex-row justify-content-around mb-2'>
+            <Link to={`../../${plan.customName}/swagger`} relative='path' className="btn btn-sm btn-outline-secondary mb-1">swagger</Link>
+            <Link to={`../../${plan.customName}/testing`} relative='path' className="btn btn-sm btn-outline-secondary mb-1">test</Link>
+            <Link to={`../../${plan.customName}/documentation`} relative='path' className="btn btn-sm btn-outline-secondary">Documentation</Link>
+          </div>
+          <div>
+            {maybeTab === 'swagger' && <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`} />}
+            {maybeTab === 'documentation' && <ApiDocumentation documentation={plan.documentation} getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)} />}
+            {maybeTab === 'testing' && <ApiSwagger _id={plan._id}
+              testing={plan.testing}
+              swagger={plan.swagger}
+              swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`}
+              callUrl={`/api/teams/${props.api.team}/testing/${props.api._id}/plans/${plan._id}/call`}
+            />}
+          </div>
+        </div>
+      )
+    } else {
+      return (
+        <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
+          {possibleUsagePlans
+            .sort((a, b) => (a.customName || a.type).localeCompare(b.customDescription || b.type))
+            .map((plan) => <React.Fragment key={plan._id}>
+              <ApiPricingCard
+                api={props.api}
+                key={plan._id}
+                plan={plan}
+                myTeams={props.myTeams}
+                ownerTeam={props.ownerTeam}
+                subscriptions={props.subscriptions.filter(
+                  (subs) => subs.api === props.api._id && subs.plan === plan._id
+                )}
+                inProgressDemands={props.inProgressDemands.filter(
+                  (demand) => demand.api === props.api._id && demand.plan === plan._id
+                )}
+                askForApikeys={props.askForApikeys}
+              />
+            </React.Fragment>)}
+        </div>
+      );
+    }
+
   } else {
     return <div></div>
   }

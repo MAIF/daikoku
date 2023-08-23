@@ -45,7 +45,6 @@ export const FastApiCard = (props: FastApiCardProps) => {
       : Services.askForApiKey(apiId, team._id, plan._id, motivation)
 
     const adminStep = plan.subscriptionProcess.find(s => isValidationStepTeamAdmin(s))
-    console.debug({adminStep, plan})
     if (adminStep && isValidationStepTeamAdmin(adminStep)) {
       openFormModal<{ motivation: string }>({
         title: translate('motivations.modal.title'),
