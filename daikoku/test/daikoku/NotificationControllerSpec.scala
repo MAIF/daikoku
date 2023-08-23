@@ -498,7 +498,7 @@ class NotificationControllerSpec()
         team = teamConsumerId,
         from = userAdmin.id,
         date = DateTime.now().minusDays(1),
-        motivation = "test".some,
+        motivation = Json.obj("motivation" -> "test").some,
         parentSubscriptionId = None,
         customReadOnly = None,
         customMetadata = None,
