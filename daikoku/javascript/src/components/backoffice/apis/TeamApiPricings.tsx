@@ -356,6 +356,7 @@ const Card = ({
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant);
 
   const pricing = renderPricing(plan, translate)
 
@@ -416,7 +417,7 @@ const Card = ({
           <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
             {!isDefault && plan.visibility !== PRIVATE && (
               <span className="dropdown-item cursor-pointer" onClick={makeItDefault}>
-                <Translation i18nkey="Make default plan">Make default plan</Translation>
+                {tenant.display === 'environment' ? translate('pricing.default.env.btn.label') : translate('Make default plan')}
               </span>
             )}
             {!isDefault && (
@@ -431,17 +432,17 @@ const Card = ({
             )}
             <div className="dropdown-divider" />
             <span className="dropdown-item cursor-pointer" onClick={duplicatePlan}>
-              <Translation i18nkey="Duplicate plan">duplicate</Translation>
+              {tenant.display === 'environment' ? translate('pricing.clone.env.btn.label') : translate('Duplicate plan')}
             </span>
             <span className="dropdown-item cursor-pointer" onClick={editPlan}>
-              <Translation i18nkey="Edit plan">Edit</Translation>
+              {tenant.display === 'environment' ? translate('pricing.edit.env.btn.label') : translate('Edit plan')}
             </span>
             <div className="dropdown-divider" />
             <span
               className="dropdown-item cursor-pointer btn-danger-negative"
               onClick={deleteWithConfirm}
             >
-              <Translation i18nkey="Delete plan">delete</Translation>
+              {tenant.display === 'environment' ? translate('pricing.delete.env.btn.label') : translate('Delete plan')}
             </span>
           </div>
         </div>
@@ -1301,10 +1302,10 @@ export const TeamApiPricings = (props: Props) => {
             type="button"
             disabled={tenant.display === 'environment' && (!availablePlans || !availablePlans.length)}
             className="btn btn-outline-success btn-sm me-1">
-            {translate('add a new plan')}
+            {tenant.display === 'environment' ? translate('pricing.add.new.env.btn.label') : translate('add a new plan')}
           </button>}
           {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
-            {translate('import a plan')}
+            {tenant.display === 'environment' ? translate('pricing.import.env.btn.label') : translate('import a plan')}
           </button>)}
         </div>
         {planForEdition && mode !== possibleMode.list && (<div className="row">
