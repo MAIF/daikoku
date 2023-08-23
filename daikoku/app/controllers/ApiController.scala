@@ -3959,24 +3959,32 @@ class ApiController(
 
         def getPlanAndCheckIt(oldPlan: UsagePlan, newPlan: UsagePlan): EitherT[Future, AppError, UsagePlan] = {
           oldPlan match {
-            case _ if oldPlan.otoroshiTarget.map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(_.otoroshiSettings) => EitherT.leftT(AppError.ForbiddenAction)
+            //it's forbidden to update otoroshi target, must use migration API instead
+            case _ if oldPlan.otoroshiTarget.isDefined && oldPlan.otoroshiTarget.map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(_.otoroshiSettings) =>
+              AppLogger.error("1")
+              EitherT.leftT(AppError.ForbiddenAction)
             // Handle type changes
-            case _ if oldPlan.typeName != newPlan.typeName => EitherT.leftT(AppError.ForbiddenAction)
+            case _ if oldPlan.typeName != newPlan.typeName =>
+              AppLogger.error("2")
+              EitherT.leftT(AppError.ForbiddenAction)
             //Handle prices changes or payment settings deletion (addition is really forbidden)
-            case _ if oldPlan.paymentSettings != newPlan.paymentSettings => EitherT.leftT(AppError.ForbiddenAction)
-            case p: UsagePlan.QuotasWithLimits if p.costPerMonth != newPlan.costPerMonth => EitherT.leftT(AppError.ForbiddenAction)
+            case _ if oldPlan.paymentSettings != newPlan.paymentSettings =>
+              AppLogger.error("3")
+              EitherT.leftT(AppError.ForbiddenAction)
+            case p: UsagePlan.QuotasWithLimits if p.costPerMonth != newPlan.costPerMonth =>
+              AppLogger.error("4")
+              EitherT.leftT(AppError.ForbiddenAction)
             case p: UsagePlan.QuotasWithoutLimits
               if p.costPerMonth != newPlan.costPerMonth || p.costPerAdditionalRequest != oldPlan.asInstanceOf[UsagePlan.QuotasWithoutLimits].costPerAdditionalRequest =>
+              AppLogger.error("5")
               EitherT.leftT(AppError.ForbiddenAction)
             case p: UsagePlan.PayPerUse
               if p.costPerMonth != newPlan.costPerMonth || p.costPerRequest != oldPlan.asInstanceOf[UsagePlan.PayPerUse].costPerRequest =>
+              AppLogger.error("6")
               EitherT.leftT(AppError.ForbiddenAction)
             //handle otoroshi target update
             case _ if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) && newPlan.aggregationApiKeysSecurity.exists(identity) =>
               EitherT.leftT(AppError.SubscriptionAggregationDisabled)
-            //it's forbidden to update otoroshi target, must use migration API instead
-            case p if p.otoroshiTarget.map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(_.otoroshiSettings) =>
-              EitherT.leftT(AppError.ForbiddenAction)
             case _ => EitherT.pure(newPlan)
           }
         }

@@ -996,6 +996,40 @@ object SchemaDefinition {
           resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.user))
       )
     ))
+
+    lazy val SubscriptionDemandStepType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep](
+      "SubscriptionDemandStep",
+      "A subscription demand step",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep](
+        Field("id", StringType, resolve = _.value.id.value),
+        Field("step", ValidationStepInterfaceType, resolve = _.value.step),
+        Field("state", StringType, resolve = _.value.state.name),
+        Field("medatada", JsonType, resolve = _.value.metadata),
+      )
+    )
+
+    lazy val SubscriptionDemandType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
+      "SubscriptionDemand",
+      "A subscription demand",
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
+        Field("id", StringType, resolve = _.value.id.value),
+        Field("tenant", StringType, resolve = _.value.id.value),
+        Field("deleted", BooleanType, resolve = _.value.deleted),
+        Field("api", ApiType, resolve = ctx => apisFetcher.defer(ctx.value.api)),
+        Field("plan", OptionType(UsagePlanInterfaceType), resolve =
+          ctx => ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.plan),
+          possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
+            PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
+        Field("steps", ListType(SubscriptionDemandStepType), resolve = _.value.steps),
+        Field("state", StringType, resolve = _.value.state.name),
+        Field("team", TeamObjectType, resolve = ctx => teamsFetcher.defer(ctx.value.team)),
+        Field("from", UserType, resolve = ctx => usersFetcher.defer(ctx.value.from)),
+        Field("date", DateTimeUnitype, resolve = _.value.date),
+        Field("motivation", OptionType(JsonType), resolve = _.value.motivation),
+        Field("parentSubscriptionId", OptionType(StringType), resolve = _.value.parentSubscriptionId.map(_.value)),
+      )
+    )
+
     lazy val  ApiSubscriptionDemandType = new PossibleObject(ObjectType(
       "ApiSubscriptionDemand",
       "A api subscription notification action",
@@ -1013,7 +1047,9 @@ object SchemaDefinition {
           case Some(parent) => ctx.ctx._1.apiSubscriptionRepo.forTenant(ctx.ctx._2.tenant).findById(parent)
           case None => None
         }),
-        Field("motivation", OptionType(StringType), resolve = ctx => ctx.value.motivation)
+        Field("motivation", OptionType(StringType), resolve = ctx => ctx.value.motivation),
+        Field("demand", OptionType(SubscriptionDemandType),
+          resolve = ctx => ctx.ctx._1.subscriptionDemandRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.demand))
 
       )
     ))
@@ -1407,39 +1443,6 @@ object SchemaDefinition {
         Field("exact", BooleanType, resolve = _.value.exact),
         Field("lastPublishedDate", OptionType(LongType), resolve = _.value.lastPublishedDate.map(p => p.getMillis)),
         Field("history", ListType(CmsHistoryType), resolve = _.value.history.sortBy(_.date.toInstant.getMillis)(Ordering[Long].reverse))
-      )
-    )
-
-    lazy val SubscriptionDemandStepType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep](
-      "SubscriptionDemandStep",
-      "A subscription demand step",
-      () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemandStep](
-        Field("id", StringType, resolve = _.value.id.value),
-        Field("step", ValidationStepInterfaceType, resolve = _.value.step),
-        Field("state", StringType, resolve = _.value.state.name),
-        Field("medatada", JsonType, resolve = _.value.metadata),
-      )
-    )
-
-    lazy val SubscriptionDemandType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
-      "SubscriptionDemand",
-      "A subscription demand",
-      () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
-        Field("id", StringType, resolve = _.value.id.value),
-        Field("tenant", StringType, resolve = _.value.id.value),
-        Field("deleted", BooleanType, resolve = _.value.deleted),
-        Field("api", ApiType, resolve = ctx => apisFetcher.defer(ctx.value.api)),
-        Field("plan", OptionType(UsagePlanInterfaceType), resolve =
-          ctx => ctx.ctx._1.usagePlanRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.plan),
-          possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
-          PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType)),
-        Field("steps", ListType(SubscriptionDemandStepType), resolve = _.value.steps),
-        Field("state", StringType, resolve = _.value.state.name),
-        Field("team", TeamObjectType, resolve = ctx => teamsFetcher.defer(ctx.value.team)),
-        Field("from", UserType, resolve = ctx => usersFetcher.defer(ctx.value.from)),
-        Field("date", DateTimeUnitype, resolve = _.value.date),
-        Field("motivation", OptionType(JsonType), resolve = _.value.motivation),
-        Field("parentSubscriptionId", OptionType(StringType), resolve = _.value.parentSubscriptionId.map(_.value)),
       )
     )
 

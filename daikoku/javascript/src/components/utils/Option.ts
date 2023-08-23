@@ -5,7 +5,7 @@ export interface IOption<A> {
   map<B>(f: (a: A) => B): ISome<B> | INone;
   flatMap<B>(f: (a: A) => IOption<B>): IOption<B> | INone;
   fold<B>(ifEmpty: B, f: (a: A) => B): B;
-  orElse<B>(ob: IOption<B>): IOption<A> | IOption<B> | INone;
+  orElse<B>(ob: B): IOption<A> | IOption<B> | INone;
   getOrElse<B>(b: B): A | B;
   getOrNull(): A | undefined
   isDefined: boolean;

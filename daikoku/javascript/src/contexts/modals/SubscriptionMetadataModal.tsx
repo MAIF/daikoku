@@ -3,10 +3,10 @@ import sortBy from 'lodash/sortBy';
 import { useContext, useRef } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { formatPlanType, Option, Spinner } from '../../components/utils';
+import { Option, Spinner } from '../../components/utils';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
-import { IApi, isError, ITesting, ITestingConfig, IUsagePlan, IWithTesting } from '../../types';
+import { IApi, isError, ITestingConfig, IUsagePlan, IWithTesting } from '../../types';
 import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';
 
 export type OverwriteSubscriptionData = {
@@ -115,7 +115,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
     }
   }
 
-  const mandatoryMetdataSchema = (plan: IUsagePlan) => ({
+  const mandatoryMetadataSchema = (plan?: IUsagePlan) => ({
     metadata: {
       type: type.object,
       format: format.form,
@@ -142,6 +142,14 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
     },
   })
 
+  if (!!props.api && apiQuery.isLoading) { 
+    return (<div className="modal-content"><Spinner /></div>) 
+  } else if (props.plan && planQuery.isLoading) {
+    return (<div className="modal-content"><Spinner /></div>) 
+  } else if (apiQuery.error || planQuery.error) {
+
+  }
+
 
   if (!!props.api && apiQuery.isLoading || props.plan && planQuery.isLoading) {
     return <div className="modal-content"><Spinner /></div>
@@ -150,10 +158,12 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
 
     const maybeSubMetadata = Option(props.subscription)
       .orElse(props.config)
+      .orElse({customMetadata: props.notification?.action?.demand?.motivation})
       .map((s: ITestingConfig) => s.customMetadata)
       .map((v: object) => Object.entries(v))
       .getOrElse([]);
 
+      console.debug({maybeSubMetadata, mot: props.notification?.action?.demand?.motivation})
 
     const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
       ([accMeta, accCustomMeta]: any, item: any) => {
@@ -194,7 +204,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
 
 
 
-
+    const _schema = { ...mandatoryMetadataSchema(plan), ...schema }
     return (<div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">
@@ -203,31 +213,9 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
         <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
       </div>
       <div className="modal-body">
-        <>
-          {/* {!!plan && !props.description && props.creationMode && (<div className="modal-description">
-            <Translation i18nkey="subscription.metadata.modal.creation.description" replacements={[
-
-              props.team?.name,
-              plan.customName || formatPlanType(plan, translate),
-            ]}>
-              {props.team?.name} ask you an apikey for plan{' '}
-              {plan.customName || formatPlanType(plan, translate)}
-            </Translation>
-          </div>)}
-          {!!plan && !props.description && !props.creationMode && (<div className="modal-description">
-            <Translation i18nkey="subscription.metadata.modal.update.description" replacements={[
-              props.team?.name,
-              plan.customName || formatPlanType(plan, translate),
-            ]}>
-              Team: {props.team?.name} - Plan:{' '}
-              {plan.customName || formatPlanType(plan, translate)}
-            </Translation>
-          </div>)} */}
-          {props.description && <div className="modal-description">{props.description}</div>}
-
-        </>
+        {props.description && <div className="modal-description">{props.description}</div>}
         <Form
-          schema={{...schema, ...(props.api ? mandatoryMetdataSchema : {})}}
+          schema={_schema}
           onSubmit={actionAndClose}
           ref={formRef}
           value={value}

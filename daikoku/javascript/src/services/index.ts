@@ -1536,6 +1536,9 @@ export const graphql = {
                 }
               }
               motivation
+              demand {
+                motivation
+              }
             }
             ... on NewCommentOnIssue {
               linkTo
