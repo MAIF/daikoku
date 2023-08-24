@@ -254,7 +254,6 @@ const CustomMetadataInput = (props: {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
       props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
-      //FIXME: add better info to user for the new subscription process
       alert({ message: props.translate('custom.metadata.process.change.to.manual'), title: props.translate('Information') })
     }
   };
@@ -803,7 +802,7 @@ export const TeamApiPricings = (props: Props) => {
 
   const customNameSchemaPart = (plans: Array<IUsagePlan>) => {
     if (tenant.display === 'environment') {
-      const availablePlans = tenant.environments.filter(e => plans.every(p => p.customName !== e))
+      const availablePlans = tenant.environments.filter(e => plans.filter(p => p._id !== planForEdition?._id).every(p => p.customName !== e))
 
       return {
         customName: {
