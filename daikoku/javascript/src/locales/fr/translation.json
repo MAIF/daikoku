@@ -1353,11 +1353,13 @@
   "display-mode.label": "Mode d'affichage",
   "display-mode.help": "Le mode environnement vous obligera à créer des environnements disponibles. Les plans d'utilisation de l'API doivent correspondre à l'un des environnements disponibles.",
   "display-mode.environments.label": "Environnements disponibles",
+  "display-mode.environments.deletion.alert": "Veuillez noter que la suppression d'un environnement entraînera la suppression de son implémentation pour toutes les API.",
   "navbar.environments.label": "environnements",
   "pricing.add.new.env.btn.label": "Ajouter un environnement",
   "pricing.import.env.btn.label": "Importer un environnement",
   "pricing.default.env.btn.label": "Environment par default",
   "pricing.clone.env.btn.label": "Dupliquer l'environnement",
   "pricing.edit.env.btn.label": "Modifier l'environnement",
-  "pricing.delete.env.btn.label": "Supprimer l'environnement"
+  "pricing.delete.env.btn.label": "Supprimer l'environnement",
+  "Alert": "Alerte"
 }

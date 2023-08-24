@@ -1350,6 +1350,7 @@
     "display-mode.label": "Display mode",
     "display-mode.help": "The environment mode will force you to create avalible environments. The api usage plans needs to match one of the avalible environments.",
     "display-mode.environments.label": "Available environments",
+    "display-mode.environments.deletion.alert": "Please note that deleting an environment will result in the deletion of its implementation for all APIs",
     "navbar.environments.label": "environments",
     "pricing.add.new.env.btn.label": "Add environment",
     "pricing.import.env.btn.label": "Import environment",

@@ -304,6 +304,14 @@ class TenantController(DaikokuAction: DaikokuAction,
           ctx.setCtxValue("tenant.name", tenant.name)
           ctx.setCtxValue("tenant.id", tenant.id)
 
+//          def checkEnvironments(): Future[Unit] = {
+//            tenant.display match {
+//              case TenantDisplay.Environment => {
+//              }
+//              case TenantDisplay.Default => FastFuture.successful(())
+//            }
+//          }
+
           tenant.tenantMode match {
             case Some(value) =>
               value match {
@@ -315,8 +323,10 @@ class TenantController(DaikokuAction: DaikokuAction,
             case _ =>
           }
 
+          //TODO: in case of display-mode environment, check if some env are deleted and deleted all associated env/plan
           for {
             _ <- env.dataStore.tenantRepo.save(tenant)
+//            _ <- checkEnvironments()
             _ <- env.dataStore.teamRepo
               .forTenant(tenant)
               .save(
