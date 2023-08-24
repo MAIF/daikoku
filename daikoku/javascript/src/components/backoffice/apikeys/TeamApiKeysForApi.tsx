@@ -25,8 +25,9 @@ import { I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import { IApi, IRotation, ISafeSubscription, isError, IState, IStateContext, ISubscription, ISubscriptionExtended, ITeamSimple, IUsagePlan, ResponseError } from '../../../types';
 import { useQuery } from '@tanstack/react-query';
+import { result } from 'lodash';
 
-type ISubscriptionWithChildren = ISubscriptionExtended & { children: Array<ISubscription>}
+type ISubscriptionWithChildren = ISubscriptionExtended & { children: Array<ISubscription> }
 
 export const TeamApiKeysForApi = () => {
   const { currentTeam, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
@@ -179,7 +180,6 @@ export const TeamApiKeysForApi = () => {
                 <ApiKeyCard
                   api={api}
                   currentTeam={currentTeam}
-                  openInfoNotif={(message) => toastr.info(translate('Info'), message)}
                   statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
                   key={subscription._id}
                   subscription={subscription}
@@ -202,9 +202,8 @@ export const TeamApiKeysForApi = () => {
 type ApiKeyCardProps = {
   api: IApi
   subscription: ISubscriptionWithChildren
-  updateCustomName: (string) => Promise<ResponseError | ISafeSubscription>
+  updateCustomName: (name: string) => Promise<ResponseError | ISafeSubscription>
   statsLink: string
-  openInfoNotif: (message: string) => void
   archiveApiKey: () => void
   makeUniqueApiKey: () => void
   toggleRotation: (plan: IUsagePlan, enabled: boolean, rotationEvery: number, graceperiod: number) => Promise<void>
@@ -217,7 +216,6 @@ const ApiKeyCard = ({
   api,
   subscription,
   updateCustomName,
-  openInfoNotif,
   statsLink,
   archiveApiKey,
   makeUniqueApiKey,
@@ -242,20 +240,23 @@ const ApiKeyCard = ({
 
   const planQuery = useQuery(['plan'], () => Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan))
 
+
   useEffect(() => {
     if (planQuery.data && !isError(planQuery.data)) {
       setActiveTab(planQuery.data.integrationProcess === 'Automatic' ? 'token' : 'apikey')
-      setCustomName(subscription.customName || planQuery.data.customName || planQuery.data.type)
+
+      if (!customName) {
+        setCustomName(subscription.customName || planQuery.data.customName || planQuery.data.type)
+      }
     }
   }, [planQuery])
 
 
   let inputRef = React.createRef<HTMLInputElement>();
-  let clipboard = React.createRef<HTMLInputElement>();
 
   useEffect(() => {
     if (editMode) {
-      (inputRef as any).current.focus();
+      inputRef.current?.focus();
     }
   }, [editMode]);
 
@@ -301,8 +302,14 @@ const ApiKeyCard = ({
     };
 
     const handleCustomNameChange = () => {
-      updateCustomName(customName!.trim())
-        .then(() => setEditMode(false));
+      const _customName = inputRef.current?.value.trim();
+      if (_customName) {
+        updateCustomName(_customName)
+          .then(() => {
+            setCustomName(_customName)
+            setEditMode(false)
+          });
+      }
     };
 
     const abort = () => {
@@ -310,7 +317,6 @@ const ApiKeyCard = ({
     };
 
     const abortCustomNameEdit = () => {
-      setCustomName(subscription.customName || plan.type);
       setEditMode(false);
     };
 
@@ -323,6 +329,7 @@ const ApiKeyCard = ({
 
     const disableRotation = api.visibility === 'AdminOnly' || !!plan.autoRotation;
 
+    console.debug({ customName })
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
@@ -359,9 +366,8 @@ const ApiKeyCard = ({
                     <input
                       type="text"
                       className="form-control"
-                      value={customName}
+                      defaultValue={customName}
                       ref={inputRef}
-                      onChange={(e) => setCustomName(e.target.value)}
                     />
                     <div className="input-group-append">
                       <span
@@ -420,9 +426,13 @@ const ApiKeyCard = ({
                         disabled={!subscription.enabled}
                         className="btn btn-sm btn-access-negative ms-1"
                         onClick={() => {
-                          (clipboard as any).current.select();
-                          document.execCommand('Copy');
-                          openInfoNotif(translate('Credientials copied'));
+                          const credentials = activeTab === 'apikey'
+                            ? subscription.apiKey.clientId + ':' + subscription.apiKey.clientSecret
+                            : integrationToken
+
+                          navigator.clipboard.writeText(credentials)
+                            .then(() => toastr.info(translate('Info'), translate('credential.copy.success')))
+                            .catch(() => toastr.warning(translate('Warning'), translate('credential.copy.error')))
                         }}
                       >
                         <i className="fas fa-copy" />
@@ -600,17 +610,6 @@ const ApiKeyCard = ({
               </div>
             )}
 
-            <input
-              ref={clipboard}
-              style={{ position: 'fixed', left: 0, top: -250 }}
-              type="text"
-              readOnly
-              value={
-                activeTab === 'apikey'
-                  ? subscription.apiKey.clientId + ':' + subscription.apiKey.clientSecret
-                  : integrationToken
-              }
-            />
             {settingMode && (
               <div className="d-flex flex-column flex-grow-0">
                 {!plan.autoRotation && (
