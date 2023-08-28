@@ -27,14 +27,13 @@ export const DisplayForm = (props: UpdateFormProps) => {
       label: translate('display-mode.label'),
       help: translate('display-mode.help')
     },
-    //TODO: draw a custom component with is default flag
     environments: {
       type: type.string,
       array: true,
       label: translate('display-mode.environments.label'),
       visible: ({ rawValues }) => rawValues.isPrivate,
       constraints: [
-        constraints.required('constraints.required.value')
+        constraints.required(translate('constraints.required.value'))
       ],
       onChange: ({ value }) => {
         const diff = props.tenant.environments.filter(x => !value.map(t => t.value).includes(x));

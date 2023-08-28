@@ -1,7 +1,9 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import cats.data.EitherT
 import com.nimbusds.jose.jwk.KeyType
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
@@ -26,6 +28,7 @@ import scala.util.Try
 
 class TenantController(DaikokuAction: DaikokuAction,
                        DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+                       apiService: ApiService,
                        env: Env,
                        cc: ControllerComponents,
                        translator: Translator)
@@ -300,19 +303,44 @@ class TenantController(DaikokuAction: DaikokuAction,
           FastFuture.successful(
             BadRequest(Json.obj("error" -> "Error while parsing payload",
                                 "msg" -> e.toString)))
-        case JsSuccess(tenant, _) =>
-          ctx.setCtxValue("tenant.name", tenant.name)
-          ctx.setCtxValue("tenant.id", tenant.id)
+        case JsSuccess(updatedTenant, _) =>
+          ctx.setCtxValue("tenant.name", updatedTenant.name)
+          ctx.setCtxValue("tenant.id", updatedTenant.id)
 
-//          def checkEnvironments(): Future[Unit] = {
-//            tenant.display match {
-//              case TenantDisplay.Environment => {
-//              }
-//              case TenantDisplay.Default => FastFuture.successful(())
+          //FIXME: if env is deleted =>  delete all associated env/plan
+          def checkEnvironments(oldTenant: Tenant): EitherT[Future, AppError, Unit] = {
+            updatedTenant.display match {
+              case TenantDisplay.Environment =>
+                val deletedEnvs = oldTenant.environments.diff(updatedTenant.environments)
+                EitherT.cond(deletedEnvs.nonEmpty, (), AppError.EntityConflict("tenant's environment couldn't deleted"))
+              case TenantDisplay.Default =>
+                EitherT.pure[Future, AppError](())
+            }
+          }
+
+//          def checkEnvironments(oldTenant: Tenant): EitherT[Future, AppError, Unit] = {
+//            updatedTenant.display match {
+//              case TenantDisplay.Environment =>
+//                val deletedEnvs = oldTenant.environments.diff(updatedTenant.environments)
+//                EitherT.liftF(Future.sequence(deletedEnvs.map(name => {
+//                  for {
+//                    plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant).find(Json.obj(
+//                      "customName" -> name
+//                    ))
+//                    _ <- Future.sequence(plans.map(plan => {
+//                      for {
+//                        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+//                          .findOne(Json.obj("possibleUsagePlans" -> plan.id.asJson)), AppError.ApiNotFound)
+//                        _ <- apiService.deleteUsagePlan(plan, api, ctx.tenant, ctx.user)
+//                      } yield api
+//                    }).map(_.value))
+//                  } yield ()
+//                })).map(_ -> ()))
+//              case TenantDisplay.Default => EitherT.pure[Future, AppError](())
 //            }
 //          }
 
-          tenant.tenantMode match {
+          updatedTenant.tenantMode match {
             case Some(value) =>
               value match {
                 case TenantMode.Maintenance | TenantMode.Construction =>
@@ -323,23 +351,25 @@ class TenantController(DaikokuAction: DaikokuAction,
             case _ =>
           }
 
-          //TODO: in case of display-mode environment, check if some env are deleted and deleted all associated env/plan
-          for {
-            _ <- env.dataStore.tenantRepo.save(tenant)
-//            _ <- checkEnvironments()
-            _ <- env.dataStore.teamRepo
-              .forTenant(tenant)
+          (for {
+            oldTenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(updatedTenant.id), AppError.TenantNotFound)
+            _ <- checkEnvironments(oldTenant)
+            _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.tenantRepo.save(updatedTenant))
+            _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.teamRepo
+              .forTenant(updatedTenant)
               .save(
                 adminTeam.copy(
-                  name = s"${tenant.humanReadableId}-admin-team",
-                  contact = tenant.contact,
-                  avatar = tenant.style.map(_.logo)
-                ))
+                  name = s"${updatedTenant.humanReadableId}-admin-team",
+                  contact = updatedTenant.contact,
+                  avatar = updatedTenant.style.map(_.logo)
+                )))
           } yield {
             Ok(
-              Json.obj("tenant" -> tenant.asJsonWithJwt,
-                       "uiPayload" -> tenant.toUiPayload(env)))
-          }
+              Json.obj("tenant" -> updatedTenant.asJsonWithJwt,
+                "uiPayload" -> updatedTenant.toUiPayload(env)))
+          })
+            .leftMap(_.render())
+            .merge
       }
     }
   }

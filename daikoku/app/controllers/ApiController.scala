@@ -4153,22 +4153,7 @@ class ApiController(
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId), AppError.PlanNotFound)
-          updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(pp => pp.value != planId))
-          _ <- EitherT.liftF(apiService.deleteApiPlansSubscriptions(Seq(plan), api, ctx.tenant, ctx.user))
-          _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
-          _ <- EitherT.liftF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).deleteByIdLogically(planId))
-          _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(ctx.tenant).save(
-            Operation(
-              DatastoreId(IdGenerator.token(24)),
-              tenant = ctx.tenant.id,
-              itemId = plan.id.value,
-              itemType = ItemType.ThirdPartyProduct,
-              action = OperationAction.Delete,
-              payload = Json.obj(
-                "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
-              ).some
-            )
-          ))
+          updatedApi <- apiService.deleteUsagePlan(plan, api, ctx.tenant, ctx.user)
         } yield Ok(updatedApi.asJson)
 
         value.leftMap(_.render()).merge

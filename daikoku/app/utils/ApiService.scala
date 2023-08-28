@@ -25,7 +25,7 @@ import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.i18n.{Lang, MessagesApi}
 import play.api.libs.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Json}
-import play.api.mvc.Result
+import play.api.mvc.{AnyContent, Result}
 import play.api.mvc.Results.Ok
 import reactivemongo.bson.BSONObjectID
 
@@ -782,6 +782,28 @@ class ApiService(env: Env,
       } yield ()).value
         .map(_ => plan)
     }
+
+  def deleteUsagePlan(plan: UsagePlan, api: Api, tenant: Tenant, user: User): EitherT[Future, AppError, Api] = {
+    val updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(pp => pp != plan.id))
+    for {
+      _ <- EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, tenant, user))
+      _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(tenant).save(updatedApi))
+      _ <- EitherT.liftF(env.dataStore.usagePlanRepo.forTenant(tenant).deleteByIdLogically(plan.id))
+      //FIXME: save operation just if needed
+      _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).save(
+        Operation(
+          DatastoreId(IdGenerator.token(24)),
+          tenant = tenant.id,
+          itemId = plan.id.value,
+          itemType = ItemType.ThirdPartyProduct,
+          action = OperationAction.Delete,
+          payload = Json.obj(
+            "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
+          ).some
+        )
+      ))
+    } yield updatedApi
+  }
 
   def deleteApiPlansSubscriptions(
                                    plans: Seq[UsagePlan],
