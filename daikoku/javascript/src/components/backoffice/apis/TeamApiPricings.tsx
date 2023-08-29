@@ -169,6 +169,19 @@ const OtoroshiEntitiesSelector = ({
       onChange(value);
     }
   };
+  
+  const groupedOptions = [
+    { label: 'Service groups', options: groups },
+    { label: 'Services', options: services },
+    { label: 'Routes', options: routes }
+  ];
+
+  const formatGroupLabel = (data) => (
+    <div className="groupStyles">
+      <span>{data.label}</span>
+      <span className="groupBadgeStyles">{data.options.length}</span>
+    </div>
+  )
 
   return (<div>
     <Select
@@ -179,39 +192,40 @@ const OtoroshiEntitiesSelector = ({
       isDisabled={disabled && !loading}
       placeholder={translate('Authorized.entities.placeholder')} //@ts-ignore //FIXME
       components={(props: any) => <components.Group {...props} />}
-      options={[
-        { label: 'Service groups', options: groups },
-        { label: 'Services', options: services },
-        { label: 'Routes', options: routes },
-      ]} value={value} onChange={onValueChange} classNamePrefix="reactSelect" className="reactSelect" />
-    <div className="col-12 d-flex flex-row mt-1">
+      formatGroupLabel={formatGroupLabel}
+      options={groupedOptions} 
+      value={value} 
+      onChange={onValueChange} 
+      classNamePrefix="reactSelect" 
+      className="reactSelect" />
+    <div className="col-12 d-flex flex-row mt-3">
       <div className="d-flex flex-column flex-grow-1">
-        <strong className="font-italic">
+        <strong className="reactSelect__group-heading">
           <Translation i18nkey="authorized.groups">Services Groups</Translation>
         </strong>
         {!!value &&
           value.filter((x: any) => x.type === 'group')
-            .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
+            .map((g: any, idx: any) => (<span key={idx}>
               {g.label}
             </span>))}
       </div>
       <div className="d-flex flex-column flex-grow-1">
-        <strong className="font-italic">
+        <strong className="reactSelect__group-heading">
           <Translation i18nkey="authorized.services">Services</Translation>
         </strong>
         {!!value &&
           value.filter((x: any) => x.type === 'service')
-            .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
+            .map((g: any, idx: any) => (<span key={idx}>
               {g.label}
             </span>))}
       </div>
       <div className="d-flex flex-column flex-grow-1">
-        <strong className="font-italic">
+        <strong className="reactSelect__group-heading">
           <Translation i18nkey="authorized.routes">Routes</Translation>
         </strong>
         {!!value &&
           value.filter((x: any) => x.type === 'route')
-            .map((g: any, idx: any) => (<span className="font-italic" key={idx}>
+            .map((g: any, idx: any) => (<span key={idx}>
               {g.label}
             </span>))}
       </div>
