@@ -249,7 +249,7 @@ a.navbar-brand, #teamSelector:hover {
               cursor: default;
             }
 
-            &:hover {
+            &:not(.disabled):hover {
               background-color: $menu-text-hover-bg-color;
               color: var(--menu-text-hover-color, #fff);
             }
