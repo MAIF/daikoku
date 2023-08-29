@@ -176,6 +176,7 @@ export const AdminMessages = () => {
           .some((v) => v.includes(search))} classNamePrefix="reactSelect" />
       {orderBy(orderedMessages.map(({ chat, user, messages }) => {
         const maxMessage = maxBy(messages, 'date');
+        moment.locale(language);
         const maxDate = Option(maxMessage)
           .map((m: any) => moment(m.date))
           .getOrElse(moment());
@@ -230,7 +231,7 @@ export const AdminMessages = () => {
                 <span className="sender">{sender}</span>
                 <span className="message">{m.message}</span>
                 <span className="info">
-                  <span className="date">{formatMessageDate(m.date)}</span>
+                  <span className="date">{formatMessageDate(m.date, language)}</span>
                 </span>
               </div>);
             })}

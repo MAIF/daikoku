@@ -177,7 +177,8 @@ export const formatDate = (date: any, language: any, format = 'l LT') => {
   return moment(date).format(format);
 };
 
-export const formatMessageDate = (date: any) => {
+export const formatMessageDate = (date: any, language:any) => {
+  moment.locale(language);
   const messageDate = moment.isMoment(date) ? date : moment(date);
   const now = moment();
   const diffToNow = now.diff(messageDate, 'day');
