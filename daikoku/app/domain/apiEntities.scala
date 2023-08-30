@@ -963,6 +963,7 @@ sealed trait ValidationStep {
   def name: String
   def title: String
   def asJson: JsValue = json.ValidationStepFormat.writes(this)
+  def isAutomatic: Boolean
 }
 
 object ValidationStep {
@@ -972,6 +973,8 @@ object ValidationStep {
                    title: String)
       extends ValidationStep {
     def name: String = "email"
+
+    override def isAutomatic: Boolean = false
   }
 
   case class TeamAdmin(id: String,
@@ -985,6 +988,7 @@ object ValidationStep {
                        formatter: Option[String] = "[[motivation]]".some)
     extends ValidationStep {
     def name: String = "teamAdmin"
+    override def isAutomatic: Boolean = false
   }
 
   case class Payment(id: String,
@@ -992,5 +996,14 @@ object ValidationStep {
                      title: String = "Payment")
       extends ValidationStep {
     def name: String = "payment"
+    override def isAutomatic: Boolean = false
+  }
+
+  case class HttpRequest(id: String,
+                         title: String,
+                         url: String,
+                         headers: Map[String, String] = Map.empty[String, String]) extends ValidationStep {
+    def name: String = "httpRequest"
+    override def isAutomatic: Boolean = true
   }
 }

@@ -1080,6 +1080,17 @@ class ApiController(
     }
   }
 
+  def getSubscriptionDemand(teamId: String, demandId: String) = DaikokuAction.async { ctx =>
+    TeamMemberOnly(AuditTrailEvent(s"@{user.name} get subscription subcriptiondeman -- @{demand.id}"))(teamId, ctx) { team =>
+      ctx.setCtxValue("demand.id", demandId)
+      (for {
+        demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findByIdNotDeleted(demandId), AppError.EntityNotFound("Subscription demand"))
+        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant).findById(demand.api), AppError.ApiNotFound)
+        _ <- EitherT.cond[Future][AppError, Unit](api.team == team.id, (), AppError.EntityNotFound("Subscription demand"))
+      } yield Ok(demand.asJson)).value
+    }
+  }
+
   def runProcess(teamId: String, demandId: String) = DaikokuAction.async { ctx =>
     TeamMemberOnly( AuditTrailEvent(s"Subscription process for demand @{demand.id} has been re-run by @{user.name}"))(teamId, ctx) { team =>
       ctx.setCtxValue("demand.id", demandId)
@@ -2596,7 +2607,6 @@ class ApiController(
               5,
               Json.obj("name" -> 1).some
             )
-          log = AppLogger.info(s"total teams ${teams.length}")
           apis <- env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .findNotDeleted(

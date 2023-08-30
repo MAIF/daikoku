@@ -11,6 +11,7 @@ import Plus from 'react-feather/dist/icons/plus';
 import Settings from 'react-feather/dist/icons/settings';
 import Trash from 'react-feather/dist/icons/trash';
 import User from 'react-feather/dist/icons/user';
+import Globe from 'react-feather/dist/icons/globe';
 import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
@@ -22,7 +23,7 @@ import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import { IState, ITeamSimple } from '../../../types';
-import { IApi, IDocumentation, isError, isValidationStepEmail, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepTeamAdmin, UsagePlanVisibility } from '../../../types/api';
+import { IApi, IDocumentation, isError, isValidationStepEmail, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
   BeautifulTitle, formatPlanType, IMultistepsformStep,
@@ -1406,18 +1407,8 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
   const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
-  const addStepToRightPlace = (process: Array<IValidationStep>, step: IValidationStep, index: number): Array<IValidationStep> => {
-    if (step.type === 'teamAdmin') {
-      return insertArrayIndex(step, process, 0)
-    } else if (step.type === 'email') {
-      return insertArrayIndex(step, process, index)
-    } else {
-      return process
-    }
-  }
 
-
-  const editProcess = (name: string, index: number) => {
+  const editProcess = (name: IValidationStepType, index: number) => {
     //todo: use the index !!
     switch (name) {
       case 'email':
@@ -1457,10 +1448,10 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           onSubmit: (data: IValidationStepEmail & EmailOption) => {
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32), title: data.title }
-              props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }, index) })
+              props.savePlan({ ...props.value, subscriptionProcess: insertArrayIndex({ ...step, id: nanoid(32) }, props.value.subscriptionProcess, index) })
             } else {
               const steps: Array<IValidationStepEmail> = data.emails.map(email => ({ type: 'email', emails: [email], message: data.message, id: nanoid(32), title: data.title }))
-              const subscriptionProcess = steps.reduce((process, step) => addStepToRightPlace(process, step, index), props.value.subscriptionProcess)
+              const subscriptionProcess = steps.reduce((process, step) => insertArrayIndex(step, process, index), props.value.subscriptionProcess)
               props.savePlan({ ...props.value, subscriptionProcess })
 
             }
@@ -1479,6 +1470,46 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
         return props.savePlan({ ...props.value, subscriptionProcess: [step, ...props.value.subscriptionProcess] })
           .then(() => close())
 
+      }
+      case 'httpRequest': {
+        const step: IValidationStepHttpRequest = {
+          type: 'httpRequest',
+          id: nanoid(32),
+          title: 'Admin',
+          url: 'https://changeit.io',
+          headers: {}
+        }
+
+        return openFormModal({
+          title: translate('subscription.process.add.httpRequest.step.title'),
+          schema: {
+            title: {
+              type: type.string,
+              defaultValue: "HttpRequest",
+              constraints: [
+                constraints.required(translate('constraints.required.value'))
+              ]
+            },
+            url: {
+              type: type.string,
+              constraints: [
+                constraints.required(translate('constraints.required.value')),
+                constraints.url(translate('constraints.matches.url'))
+              ]
+            },
+            Headers: {
+              type: type.object,
+              defaultValue: {}
+            },
+          },
+          value: step,
+          onSubmit: (data: IValidationStepHttpRequest) => {
+            const subscriptionProcess = insertArrayIndex(data, props.value.subscriptionProcess, index)
+            props.savePlan({ ...props.value, subscriptionProcess })
+
+          },
+          actionLabel: translate('Create')
+        })
       }
     }
   }
@@ -1512,12 +1543,50 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
     })
   }
 
+  const editHttpRequestStep = (value: IValidationStepHttpRequest) => {
+    return openFormModal({
+      title: translate('subscription.process.update.email.step.title'),
+      schema: {
+        title: {
+          type: type.string,
+          constraints: [
+            constraints.required(translate('constraints.required.value'))
+          ]
+        },
+        url: {
+          type: type.string,
+          constraints: [
+            constraints.required(translate('constraints.required.value')),
+            constraints.url(translate('constraints.matches.url'))
+          ]
+        },
+        Headers: {
+          type: type.object,
+        },
+      },
+      onSubmit: (data: IValidationStepHttpRequest) => {
+        props.savePlan({
+          ...props.value,
+          subscriptionProcess: props.value.subscriptionProcess.map(p => {
+            if (p.id === data.id) {
+              return data
+            }
+            return p
+          })
+        })
+      },
+      actionLabel: translate('Update'),
+      value
+    })
+  }
+
   //todo
   const addProcess = (index: number) => {
     const alreadyStepAdmin = props.value.subscriptionProcess.some(isValidationStepTeamAdmin)
 
     const options = addArrayIf(!alreadyStepAdmin, [
-      { value: 'email', label: translate('subscription.process.email') }
+      { value: 'email', label: translate('subscription.process.email') },
+      { value: 'httpRequest', label: translate('subscription.process.httpRequest') }
     ], { value: 'teamAdmin', label: translate('subscription.process.team.admin') })
 
     openFormModal({
@@ -1560,19 +1629,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
         onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
         className="flex-grow-1"
         renderItem={(item, idx) => {
-          if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
-            return (
-              <>
-                <FixedItem id={item.id}>
-                  <ValidationStep
-                    index={idx + 1}
-                    step={item}
-                    tenant={props.tenant} />
-                </FixedItem>
-                <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
-              </>
-            )
-          } else if (isValidationStepPayment(item)) {
+          if (isValidationStepPayment(item)) {
             return (
               <FixedItem id={item.id}>
                 <ValidationStep
@@ -1588,10 +1645,11 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
                   className="validation-step-container"
                   action={
                     <div className={classNames('d-flex flex-row', {
-                      'justify-content-between': isValidationStepEmail(item) || isValidationStepTeamAdmin(item),
+                      'justify-content-between': !isValidationStepPayment(item),
                       'justify-content-end': isValidationStepPayment(item),
                     })}>
                       {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
+                      {isValidationStepHttpRequest(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editHttpRequestStep(item)}><Settings size={15} /></button> : <></>}
                       {isValidationStepTeamAdmin(item) ?
                         <button
                           className='btn btn-sm btn-outline-primary'
@@ -1743,7 +1801,6 @@ type ValidationStepProps = {
 }
 
 const ValidationStep = (props: ValidationStepProps) => {
-  const { openCustomModal } = useContext(ModalContext)
   const step = props.step
   if (isValidationStepPayment(step)) {
     const thirdPartyPaymentSettings = props.tenant.thirdPartyPaymentSettings.find(setting => setting._id == step.thirdPartyPaymentSettingsId)
@@ -1776,6 +1833,14 @@ const ValidationStep = (props: ValidationStepProps) => {
         <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
         <span className='validation-step__name'>{step.title}</span>
         <span className='validation-step__type'><User /></span>
+      </div>
+    )
+  }  else if (isValidationStepHttpRequest(step)) {
+    return (
+      <div className='d-flex flex-column validation-step'>
+        <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
+        <span className='validation-step__name'>{step.title}</span>
+        <span className='validation-step__type'><Globe /></span>
       </div>
     )
   } else {

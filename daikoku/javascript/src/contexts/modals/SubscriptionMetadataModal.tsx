@@ -158,12 +158,12 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
 
     const maybeSubMetadata = Option(props.subscription)
       .orElse(props.config)
-      .orElse({customMetadata: props.notification?.action?.demand?.motivation})
-      .map((s: ITestingConfig) => s.customMetadata)
+      .orElse(props.subscriptionDemand)
+      .map((s) => s.customMetadata)
       .map((v: object) => Object.entries(v))
       .getOrElse([]);
 
-      console.debug({maybeSubMetadata, mot: props.notification?.action?.demand?.motivation})
+      console.debug({maybeSubMetadata})
 
     const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
       ([accMeta, accCustomMeta]: any, item: any) => {
@@ -175,29 +175,36 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
       [[], []]
     );
 
+    console.debug({maybeMetadata, maybeCustomMetadata})
+
     const value = {
       metadata: Object.fromEntries(maybeMetadata),
       customMetadata: Object.fromEntries(maybeCustomMetadata),
       customQuotas: {
         customMaxPerSecond: Option(props.subscription)
           .orElse(props.config)
+          .orElse(props.subscriptionDemand)
           .map((s: any) => s.customMaxPerSecond)
           .getOrNull(),
         customMaxPerDay: Option(props.subscription)
           .orElse(props.config)
+          .orElse(props.subscriptionDemand)
           .map((s: any) => s.customMaxPerDay)
           .getOrNull(),
         customMaxPerMonth: Option(props.subscription)
           .orElse(props.config)
+          .orElse(props.subscriptionDemand)
           .map((s: any) => s.customMaxPerMonth)
           .getOrNull(),
       },
       customReadOnly: Option(props.subscription)
         .orElse(props.config)
+        .orElse(props.subscriptionDemand)
         .map((s: any) => s.customReadOnly)
         .getOrNull(),
       adminCustomName: Option(props.subscription)
         .orElse(props.config)
+        .orElse(props.subscriptionDemand)
         .map((s: any) => s.adminCustomName)
         .getOrNull()
     }

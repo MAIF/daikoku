@@ -310,6 +310,14 @@ object SchemaDefinition {
       ReplaceField("schema", Field("schema", OptionType(JsonType), resolve = ctx => ctx.value.schema)),
       ReplaceField("formatter", Field("formatter", OptionType(StringType), resolve = ctx => ctx.value.formatter)),
     ))
+    lazy val ValidationStepHttRequest = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.HttpRequest](
+      Interfaces(ValidationStepInterfaceType),
+      ObjectTypeDescription("A validation Step by team admins"),
+      ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id)),
+      ReplaceField("title", Field("title", StringType, resolve = ctx => ctx.value.title)),
+      ReplaceField("url", Field("url", StringType, resolve = ctx => ctx.value.url)),
+      ReplaceField("headers", Field("headers", MapType, resolve = _.value.headers))
+    ))
     lazy val ValidationStepPayment = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ValidationStep.Payment](
       Interfaces(ValidationStepInterfaceType),
       ObjectTypeDescription("A validation Step by payment"),
@@ -411,7 +419,7 @@ object SchemaDefinition {
             Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
         ),
         Field("subscriptionProcess", ListType(ValidationStepInterfaceType), resolve = _.value.subscriptionProcess,
-          possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment)),
+          possibleTypes = List(ValidationStepEmail, ValidationStepAdmin, ValidationStepPayment, ValidationStepHttRequest)),
         Field("integrationProcess", StringType, resolve = _.value.integrationProcess.name),
         Field("paymentSettings", OptionType(PaymentSettingsInterfaceType), resolve = _.value.paymentSettings,
           possibleTypes = List(StripePaymentSettingsType)),

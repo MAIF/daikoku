@@ -586,6 +586,14 @@ object json {
           "thirdPartyPaymentSettingsId" -> thirdPartyPaymentSettingsId.asJson,
           "title" -> title
         )
+      case ValidationStep.HttpRequest(id, title, url, headers) =>
+        Json.obj(
+          "type" -> "httpRequest",
+          "id" -> id,
+          "title" -> title,
+          "url" -> url,
+          "headers" -> headers
+        )
     }
 
     override def reads(json: JsValue): JsResult[ValidationStep] =
@@ -622,6 +630,17 @@ object json {
                   ThirdPartyPaymentSettingsIdFormat),
               title = (json \ "title").as[String]
             ))
+        case "httpRequest" =>
+          JsSuccess(
+            ValidationStep.HttpRequest(
+              id = (json \ "id").as[String],
+              title = (json \ "title").as[String],
+              url = (json \ "url").as[String],
+              headers = (json \ "headers")
+                .asOpt[Map[String, String]]
+                .getOrElse(Map.empty[String, String])
+            )
+          )
         case str => JsError(s"Bad UsagePlanVisibility value: $str")
       }
   }

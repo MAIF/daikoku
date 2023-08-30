@@ -1006,12 +1006,12 @@ class MockController(DaikokuAction: DaikokuAction,
   )
   val routes: Seq[JsObject] = Seq(
     Json.obj(
-      "id" -> "s_123456",
+      "id" -> "r_12345",
       "name" -> "nice-route",
       "description" -> "A nice route"
     ),
     Json.obj(
-      "id" -> "s_12346",
+      "id" -> "r_12346",
       "name" -> "daikoku_nice-route",
       "description" -> "A nice route (with prefix)"
     )

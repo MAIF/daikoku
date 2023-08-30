@@ -11,7 +11,7 @@ import { Spinner } from '../../utils/Spinner';
 import { AuditForm, AuthenticationForm, BucketForm, CustomizationForm, GeneralForm, MailForm } from './forms';
 import { SecurityForm } from './forms/SecurityForm';
 import { ThirdPartyPaymentForm } from './forms/ThirdPartyPaymentForm';
-import { isError } from '../../../types';
+import { ResponseError, isError } from '../../../types';
 import { DisplayForm } from './forms/DisplayForm';
 
 export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: string, fromDaikokuAdmin?: boolean }) => {
@@ -22,11 +22,14 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
 
   const queryClient = useQueryClient()
   const { isLoading, data } = useQuery(['full-tenant'], () => Services.oneTenant(tenantId))
-  const updateTenant = useMutation((tenant: ITenantFull) => Services.saveTenant(tenant), {
+  const updateTenant = useMutation((tenant: ITenantFull) => Services.saveTenant(tenant).then(r => isError(r) ? Promise.reject(r) : r), {
     onSuccess: () => {
       toastr.success(translate('Success'), translate('Tenant updated successfully'))
     },
-    onError: () => { toastr.error(translate('Error'), translate('Error')) }
+    onError: (e: ResponseError) => { 
+      toastr.error(translate('Error'), translate(e.error))
+      //todo: reset forms
+    }
   });
   const createTenant = useMutation((tenant: ITenantFull) => Services.createTenant(tenant), {
     onSuccess: (createdTenant) => {

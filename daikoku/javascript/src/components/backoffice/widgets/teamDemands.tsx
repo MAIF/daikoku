@@ -57,7 +57,6 @@ export const LastDemands = (props: LastDemandsProps) => {
     query: GET_TEAM_LAST_DEMANDS,
     variables: { teamId: props.team._id, offset: 0, limit: 5 }
   }))
-
   const isAdmin = !!props.team.users.find(u => u.userId === connectedUser._id && u.teamPermission === 'Administrator')
 
   const handleCheckout = (demandId: string) => {

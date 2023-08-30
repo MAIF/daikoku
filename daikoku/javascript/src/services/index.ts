@@ -599,6 +599,9 @@ export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, en
     }
   );
 
+export const getSubscriptionDemand = (teamId: String, demandId: string): PromiseWithError<ISubscriptionDemand> => 
+    customFetch(`/api/subscritpion/team/${teamId}/demands/${demandId}`)
+
 export const getSubscriptionInformations = (
   subscription: string,
   teamId: string
@@ -1537,6 +1540,7 @@ export const graphql = {
               }
               motivation
               demand {
+                id
                 motivation
               }
             }

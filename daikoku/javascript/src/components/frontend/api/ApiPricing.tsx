@@ -71,7 +71,10 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         })
       } else {
         props.askForApikeys({ team, plan: plan, apiKey })
-          .then(() => close())
+          .then(r => {
+            console.debug({r})
+            close()
+          })
       }
     }
 

@@ -21,17 +21,21 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.i18n.{Lang, MessagesApi}
 import play.api.libs.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Json}
+import play.api.libs.ws.ahc.AhcWSResponse
 import play.api.mvc.{AnyContent, Result}
-import play.api.mvc.Results.Ok
+import play.api.mvc.Results.{Created, Ok}
 import reactivemongo.bson.BSONObjectID
 
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.Future
+import scala.concurrent.impl.Promise
+import scala.util.Try
 
 class ApiService(env: Env,
                  otoroshiClient: OtoroshiClient,
@@ -896,11 +900,90 @@ class ApiService(env: Env,
     ))
   }
 
+  def callHttpRequestStep(step: ValidationStep.HttpRequest, _step: SubscriptionDemandStep, demand: SubscriptionDemand, tenant: Tenant, maybeSessionId: Option[String] = None)
+                         (implicit language: String, currentUser: User): EitherT[Future, AppError, Result] = {
+
+    def validStep(response: JsValue): EitherT[Future, AppError, Result] = {
+      val customMedata = (response \ "customMetadata").asOpt[JsObject]
+      val customMaxPerSecond = (response \ "customMaxPerSecond").asOpt[Long]
+      val customMaxPerDay = (response \ "customMaxPerDay").asOpt[Long]
+      val customMaxPerMonth = (response \ "customMaxPerMonth").asOpt[Long]
+      val customReadOnly = (response \ "customReadOnly").asOpt[Boolean]
+      val adminCustomName = (response \ "adminCustomName").asOpt[String]
+
+      for {
+        _ <- _step.check()
+        updatedDemand = demand.copy(
+          steps = demand.steps.map(s => if (s.id == _step.id) s.copy(state = SubscriptionDemandState.Accepted) else s),
+          adminCustomName = adminCustomName,
+          customMetadata = demand.customMetadata.fold(customMedata)(m =>  (m ++ customMedata.getOrElse(Json.obj())).some),
+          customMaxPerSecond = customMaxPerSecond,
+          customMaxPerDay = customMaxPerDay,
+          customMaxPerMonth = customMaxPerMonth,
+          customReadOnly = customReadOnly
+        )
+        _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(updatedDemand))
+        result <- runSubscriptionProcess(demand.id, tenant, maybeSessionId = maybeSessionId)
+      } yield result
+    }
+
+    for {
+      api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(tenant).findById(demand.api), AppError.ApiNotFound)
+      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(demand.plan), AppError.PlanNotFound)
+      user <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(demand.from), AppError.UserNotFound)
+      parentSubscription <- EitherT.liftF[Future, AppError, Option[ApiSubscription]](demand.parentSubscriptionId.fold(Option.empty[ApiSubscription].future)(s => env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(s)))
+      parentApi <- EitherT.liftF[Future, AppError, Option[Api]](parentSubscription.fold[Future[Option[Api]]](FastFuture.successful(None))(s => env.dataStore.apiRepo.forTenant(tenant).findById(s.api)))
+      parentPlan <- EitherT.liftF[Future, AppError, Option[UsagePlan]](parentSubscription.fold[Future[Option[UsagePlan]]](FastFuture.successful(None))(s => env.dataStore.usagePlanRepo.forTenant(tenant).findById(s.plan)))
+      aggregatedSubs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](parentSubscription.fold(FastFuture.successful(Seq.empty[ApiSubscription]))(s => env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+        .findNotDeleted(Json.obj("parent" -> s.api.value))))
+      aggregatedApis <- EitherT.liftF[Future, AppError, Seq[Api]](env.dataStore.apiRepo.forTenant(tenant)
+        .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(aggregatedSubs.map(_.api.asJson))))))
+      aggregatedPlan <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.forTenant(tenant)
+        .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(aggregatedSubs.map(_.plan.asJson))))))
+
+       response <- EitherT(env.wsClient.url(step.url)
+        .withHttpHeaders(step.headers.toSeq: _*)
+        .post(Json.obj(
+          "demand" -> demand.asJson,
+          "api" -> api.asJson,
+          "plan" -> plan.asJson,
+          "user" -> user.asJson,
+          "aggregate" -> parentSubscription.fold[JsValue](JsNull)(sub => Json.obj(
+            "parent" -> Json.obj(
+              "api" -> parentApi.get.asJson,
+              "plan" -> parentPlan.get.asJson,
+              "subscription" -> sub.asJson
+            ),
+            "subscriptions" -> aggregatedSubs.map(sub => {
+              Json.obj(
+                "subscription" -> sub.asJson,
+                "api" -> aggregatedApis.find(_.id == sub.api).map(_.asJson).getOrElse(JsNull).as[JsValue],
+                "plan" -> aggregatedPlan.find(_.id == sub.plan).map(_.asJson).getOrElse(JsNull).as[JsValue],
+              )
+            })
+          )))).map(resp => {
+        val value: Either[AppError, (Boolean, JsValue)] = Try {
+          Right(((resp.json \ "accept").as[Boolean], resp.json))
+        }.recover(e => {
+          AppLogger.error(e.getMessage, e)
+          AppLogger.error(s"body ==> ${Json.stringify(resp.json)}")
+          Left(AppError.OtoroshiError(Json.obj("error" -> e.getMessage)))
+        }).get
+        value
+      }))
+
+      r <- if (response._1)
+        validStep(response._2)
+      else
+        declineSubscriptionDemand(tenant, demand.id, _step.id, NotificationSender("automatic process", "no-reply@daikoku.io", None), (response._2 \ "message").asOpt[String])
+    } yield r
+  }
+
   def runSubscriptionProcess(demandId: SubscriptionDemandId, tenant: Tenant, from: Option[String] = None, maybeSessionId: Option[String] = None)(implicit language: String, currentUser: User): EitherT[Future, AppError, Result] = {
     def runRightProcess(step: SubscriptionDemandStep, demand: SubscriptionDemand, tenant: Tenant): EitherT[Future, AppError, Result] = {
+
       val run = step.step match {
         case ValidationStep.Email(_, emails, template, _) =>
-
           val value: EitherT[Future, AppError, Result] = for {
             title <- EitherT.liftF(translator.translate("mail.subscription.validation.title", tenant))
             user <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(demand.from), AppError.UserNotFound)
@@ -946,6 +1029,7 @@ class ApiService(env: Env,
           step = step,
           from = from
         )
+        case s: ValidationStep.HttpRequest => callHttpRequestStep(s, step, demand, tenant)
       }
 
       val steps = demand.steps.map(s => if (s.id != step.id) s else s.copy(state = SubscriptionDemandState.InProgress))
@@ -953,27 +1037,23 @@ class ApiService(env: Env,
 
       for {
         result <- run
-        _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
-          .save(demand.copy(steps = steps, state = demandState)))
+        _ <- if (!step.step.isAutomatic) EitherT.liftF[Future, AppError, Boolean](env.dataStore.subscriptionDemandRepo.forTenant(tenant)
+          .save(demand.copy(steps = steps, state = demandState))) else EitherT.pure[Future, AppError](true)
       } yield result
     }
 
-    val value: EitherT[Future, AppError, SubscriptionDemand] = for {
+    val value: EitherT[Future, AppError, (Option[SubscriptionDemandStep], SubscriptionDemand)] = for {
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).findByIdNotDeleted(demandId), AppError.SubscriptionDemandNotFound)
-      a: EitherT[Future, AppError, Unit] = if (demand.state.isClosed) EitherT.leftT[Future, Unit](AppError.SubscriptionDemandClosed) else EitherT.pure[Future, AppError](())
-      _ <- a
-    } yield demand
+      _ <- EitherT.cond[Future][AppError, Unit](!demand.state.isClosed, (), AppError.SubscriptionDemandClosed)
+      maybeStep <- EitherT.pure[Future, AppError](demand.steps.find(!_.state.isClosed))
+    } yield (maybeStep, demand)
 
     value
-      .map(demand => {
-        val maybeStep: Option[SubscriptionDemandStep] = demand.steps.find(!_.state.isClosed)
-        (maybeStep, demand)
-      })
       .flatMap {
+        //generate notification to checkout
         case (Some(step), demand) if step.step.name == "payment" && demand.steps.size > 1 && step.state.name == "waiting" =>
-          val value1: EitherT[Future, AppError, (Option[SubscriptionDemandStep], SubscriptionDemand)] =
               for {
-                _ <- EitherT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(
+                _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(tenant).save(
                   Notification(
                     id = NotificationId(BSONObjectID.generate().stringify),
                     tenant = tenant.id,
@@ -983,16 +1063,16 @@ class ApiService(env: Env,
                     notificationType = NotificationType.AcceptOnly,
                     action = NotificationAction.CheckoutForSubscription(demandId, demand.api, demand.plan, step.id))
                 ))
-                team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.TeamNotFound)
-                api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
+                team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.TeamNotFound)
+                api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api), AppError.ApiNotFound)
                 plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(demand.plan), AppError.PlanNotFound)
                 maybeAdmins = team.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId)
-                recipent <- EitherT.liftF(env.dataStore.userRepo.find(Json.obj("_id" -> Json.obj("$in" -> maybeAdmins.map(_.asJson)))))
-                title <- EitherT.liftF(translator.translate(
+                recipent <- EitherT.liftF[Future, AppError, Seq[User]](env.dataStore.userRepo.find(Json.obj("_id" -> Json.obj("$in" -> maybeAdmins.map(_.asJson)))))
+                title <- EitherT.liftF[Future, AppError, String](translator.translate(
                   "mail.checkout.title",
                   tenant,
                   Map.empty))
-                body <- EitherT.liftF(translator.translate(
+                body <- EitherT.liftF[Future, AppError, String](translator.translate(
                   "mail.checkout.body",
                   tenant,
                   Map(
@@ -1000,16 +1080,14 @@ class ApiService(env: Env,
                     "api.plan" -> plan.customName.getOrElse(plan.typeName),
                     "link" -> env.getDaikokuUrl(tenant, s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run")
                   )))
-                _ <- EitherT.liftF(tenant.mailer.send(
+                _ <- EitherT.liftF[Future, AppError, Unit](tenant.mailer.send(
                   title = title,
                   to = recipent.map(_.email),
                   body = body,
                   tenant = tenant))
               } yield (step.some, demand)
-          value1
         case tuple =>
-          val value1: EitherT[Future, AppError, (Option[SubscriptionDemandStep], SubscriptionDemand)] = EitherT.pure(tuple)
-          value1
+          EitherT.pure[Future, AppError](tuple)
       }
       .flatMap {
         case (Some(step), demand) => runRightProcess(step, demand, tenant)
@@ -1074,7 +1152,7 @@ class ApiService(env: Env,
                 tenant.mailer.send(title, Seq(admin.email), body, tenant)
               }).flatten
             })))
-        } yield Ok(subscription.asSafeJson)
+        } yield Ok(Json.obj("creation" -> "done", "subscription" -> subscription.asSafeJson))
     }
   }
 
@@ -1094,7 +1172,7 @@ class ApiService(env: Env,
                            )(implicit language: String, currentUser: User) = {
     import cats.implicits._
 
-    def controlApiAndPlan(api: Api, plan: UsagePlan): EitherT[Future, AppError, Unit] = {
+    def controlApiAndPlan(api: Api): EitherT[Future, AppError, Unit] = {
       if (!api.isPublished) {
         EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
       } else if (api.visibility == ApiVisibility.AdminOnly && !currentUser.isDaikokuAdmin) {
@@ -1164,7 +1242,7 @@ class ApiService(env: Env,
         AppError.ApiNotFound)
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(planId),
         AppError.PlanNotFound)
-      _ <- controlApiAndPlan(api, plan)
+      _ <- controlApiAndPlan(api)
       team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
         AppError.TeamNotFound)
       _ <- controlTeam(team, api, plan)
@@ -1253,7 +1331,7 @@ class ApiService(env: Env,
     }
   }
 
-  def declineSubscriptionDemand(tenant: Tenant, demandId: SubscriptionDemandId, stepId: SubscriptionDemandStepId, sender: NotificationSender, maybeMessage: Option[String] = None): EitherT[Future, AppError, Unit] = {
+  def declineSubscriptionDemand(tenant: Tenant, demandId: SubscriptionDemandId, stepId: SubscriptionDemandStepId, sender: NotificationSender, maybeMessage: Option[String] = None): EitherT[Future, AppError, Result] = {
 
     for {
       demand <- EitherT.fromOptionF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
@@ -1275,7 +1353,7 @@ class ApiService(env: Env,
           demand.team)
       )
       _ <- EitherT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(newNotification))
-    } yield ()
+    } yield Ok(Json.obj("creation" -> "refused"))
   }
 
 }

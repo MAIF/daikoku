@@ -312,7 +312,7 @@ class TenantController(DaikokuAction: DaikokuAction,
             updatedTenant.display match {
               case TenantDisplay.Environment =>
                 val deletedEnvs = oldTenant.environments.diff(updatedTenant.environments)
-                EitherT.cond(deletedEnvs.nonEmpty, (), AppError.EntityConflict("tenant's environment couldn't deleted"))
+                EitherT.cond(deletedEnvs.isEmpty, (), AppError.EntityConflict("tenant's environment couldn't deleted"))
               case TenantDisplay.Default =>
                 EitherT.pure[Future, AppError](())
             }

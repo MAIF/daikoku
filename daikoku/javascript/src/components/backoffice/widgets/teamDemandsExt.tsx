@@ -68,6 +68,7 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
         {data?.data && data.data.subscriptionDemandsForAdmin.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
         {data?.data && data.data.subscriptionDemandsForAdmin.total > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands
           .map((d: any) => {
+            
             const actualStep = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress')
             const reRunable = actualStep.step.name !== 'payment'
 

@@ -8,6 +8,7 @@ import {
   IOtoroshiApiKey,
   ISafeSubscription,
   ISubscription,
+  ISubscriptionDemand,
   ITeamSimple,
   ITenant,
   ITesting,
@@ -165,6 +166,7 @@ export type SubscriptionMetadataModalProps<T extends IWithTesting> = {
   notification?: INotification | NotificationGQL;
   config?: ITestingConfig;
   subscription?: ISafeSubscription | ApiSubscriptionGql;
+  subscriptionDemand?: ISubscriptionDemand
   description?: any;
   noClose?: boolean;
   value: T

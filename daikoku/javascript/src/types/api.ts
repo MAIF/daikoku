@@ -151,15 +151,23 @@ export interface ISwagger {
   headers: { [key: string]: string };
 }
 
+export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest'
+
 export interface IValidationStep {
   id: string;
-  type: 'teamAdmin' | 'email' | 'payment';
+  type: IValidationStepType;
 }
 
 export interface IValidationStepEmail extends IValidationStep {
   emails: Array<string>;
   message: string;
   title: string;
+}
+
+export interface IValidationStepHttpRequest extends IValidationStep {
+  title: string;
+  url: string;
+  headers: object;
 }
 
 export function isValidationStepEmail(item: any): item is IValidationStepEmail {
@@ -179,6 +187,10 @@ export function isValidationStepTeamAdmin(item: any): item is IValidationStepTea
 
 export function isValidationStepPayment(item: any): item is IValidationStepPayment {
   return (<IValidationStepPayment>item).thirdPartyPaymentSettingsId !== undefined;
+}
+
+export function isValidationStepHttpRequest(item: any): item is IValidationStepHttpRequest {
+  return (<IValidationStepHttpRequest>item).url !== undefined;
 }
 
 export interface IValidationStepPayment extends IValidationStep {
