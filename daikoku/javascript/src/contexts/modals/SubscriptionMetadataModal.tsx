@@ -163,8 +163,6 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
       .map((v: object) => Object.entries(v))
       .getOrElse([]);
 
-      console.debug({maybeSubMetadata})
-
     const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
       ([accMeta, accCustomMeta]: any, item: any) => {
         if (plan && plan.otoroshiTarget?.apikeyCustomization.customMetadata.some((x: any) => x.key === item[0])) {
@@ -174,8 +172,6 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
       },
       [[], []]
     );
-
-    console.debug({maybeMetadata, maybeCustomMetadata})
 
     const value = {
       metadata: Object.fromEntries(maybeMetadata),
