@@ -62,12 +62,12 @@
     border-bottom: 0.5rem solid $body-bg-color;
     background-color: $btn-border-color;
     color: $btn-text-color;
-
   }
 
   .widget-list-default-item,
   .widget-list-item {
     background-color: $btn-border-color;
+    color: $btn-text-color;
     margin: 10px;
     border-left: 2px solid #fff;
     min-height: 30px;
