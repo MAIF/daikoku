@@ -205,7 +205,7 @@ const OtoroshiEntitiesSelector = ({
         </strong>
         {!!value &&
           value.filter((x: any) => x.type === 'group')
-            .map((g: any, idx: any) => (<span key={idx}>
+            .map((g: any, idx: any) => (<span className="p-2" key={idx}>
               {g.label}
             </span>))}
       </div>
@@ -215,7 +215,7 @@ const OtoroshiEntitiesSelector = ({
         </strong>
         {!!value &&
           value.filter((x: any) => x.type === 'service')
-            .map((g: any, idx: any) => (<span key={idx}>
+            .map((g: any, idx: any) => (<span className="p-2" key={idx}>
               {g.label}
             </span>))}
       </div>
@@ -225,7 +225,7 @@ const OtoroshiEntitiesSelector = ({
         </strong>
         {!!value &&
           value.filter((x: any) => x.type === 'route')
-            .map((g: any, idx: any) => (<span key={idx}>
+            .map((g: any, idx: any) => (<span className="p-2" key={idx}>
               {g.label}
             </span>))}
       </div>
