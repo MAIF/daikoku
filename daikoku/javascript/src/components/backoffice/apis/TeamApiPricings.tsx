@@ -949,6 +949,7 @@ export const TeamApiPricings = (props: Props) => {
                 restrictions: {
                   type: type.object,
                   format: format.form,
+                  label: "Restrictions",
                   schema: {
                     enabled: {
                       type: type.bool,
