@@ -155,8 +155,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             action: () => {
               if (api?.testing?.enabled) navigateTo('testing');
             },
-            className: { 
-              active: currentTab === 'testing', 
+            className: {
+              active: currentTab === 'testing',
               disabled: tenant.display === 'environment' && !api?.testing?.enabled,
               'd-none': tenant.display === 'environment'
             },
@@ -247,7 +247,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>((state) => state.context);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -269,7 +269,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
             className: { active: currentTab === 'description' },
           },
           pricings: {
-            label: translate({ key: 'Plan', plural: true }),
+            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
@@ -392,7 +392,7 @@ export const useApiBackOffice = (api: any, creation: any) => {
           plans: {
             order: 3,
             visible: !creation,
-            label:  tenant.display === 'environment' ? translate("navbar.environments.label") : translate('Plans'),
+            label: tenant.display === 'environment' ? translate("navbar.environments.label") : translate('Plans'),
             action: () => navigateTo('plans'),
             className: { active: currentTab === 'plans' },
           },
@@ -467,7 +467,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -488,7 +488,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
           plans: {
             order: 3,
             visible: !creation,
-            label: translate('Plans'),
+            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('plans'),
             className: { active: currentTab === 'plans' },
           },

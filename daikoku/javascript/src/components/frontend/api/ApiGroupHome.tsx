@@ -1,24 +1,24 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useMatch, useNavigate } from 'react-router-dom';
 import { getApolloContext } from '@apollo/client';
+import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
+import { useApiGroupFrontOffice } from '../../../contexts';
+import { I18nContext } from '../../../core';
+import * as Services from '../../../services';
+import { IState, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, IUserSimple, isError } from '../../../types';
+import { formatPlanType } from '../../utils/formatters';
 import {
-  ApiHeader,
-  ApiPricing,
   ApiDescription,
-  ApiHome,
-  ApiGroupApis,
   ApiDocumentation,
+  ApiGroupApis,
+  ApiHeader,
+  ApiHome,
   ApiIssue,
   ApiPost,
+  ApiPricing,
 } from './';
-import { useApiGroupFrontOffice } from '../../../contexts';
-import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
-import { formatPlanType } from '../../utils/formatters';
-import { INotification, isError, IState, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, IUserSimple } from '../../../types';
 
 export const ApiGroupHome = ({ }) => {
   const [apiGroup, setApiGroup] = useState<any>();
@@ -41,7 +41,7 @@ export const ApiGroupHome = ({ }) => {
   useEffect(() => {
     if (!!apiGroup && !!match) {
       const api = apiGroup.apis.find((a: any) => a._humanReadableId === match.params.apiId);
-      const navigateTo = (navTab: any) => navigate(
+      const navigateTo = (navTab: string) => navigate(
         `/${match.params.teamId}/apigroups/${match.params.apiGroupId}/apis/${match.params.apiId}/${match.params.versionId}/${navTab}`
       );
       addMenu({

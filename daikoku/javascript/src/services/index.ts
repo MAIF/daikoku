@@ -1207,7 +1207,7 @@ export const graphql = {
         api (id: $id) {
           _id
           _humanReadableId
-          published
+          state
           currentVersion
           name
           smallDescription
@@ -1239,7 +1239,13 @@ export const graphql = {
               maxPerDay
               maxPerMonth
             }
-            subscriptionProcess
+            subscriptionProcess {
+              name
+                ... on TeamAdmin {
+                  team
+                  schema
+                }
+            }
             allowMultipleKeys
             otoroshiTarget {
               otoroshiSettings
