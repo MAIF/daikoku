@@ -72,7 +72,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       } else {
         props.askForApikeys({ team, plan: plan, apiKey })
           .then(r => {
-            console.debug({r})
+            console.debug({ r })
             close()
           })
       }
@@ -176,9 +176,15 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           </p>
           {tenant.display === 'environment' && (
             <div className='flex-shrink-1 d-flex flex-column'>
-              <Link to={`./${props.plan.customName}/swagger`} relative='path' className="btn btn-sm btn-outline-primary mb-1">swagger</Link>
-              <Link to={`./${props.plan.customName}/testing`} relative='path' className="btn btn-sm btn-outline-primary mb-1">test</Link>
-              <Link to={`./${props.plan.customName}/documentation`} relative='path' className="btn btn-sm btn-outline-primary">Documentation</Link>
+              <Link
+                to={`./${props.plan.customName}/swagger`} relative='path'
+                className={classNames("btn btn-sm btn-outline-primary mb-1", {'link__disabled': !props.plan.swagger})}>swagger</Link>
+              <Link
+                to={`./${props.plan.customName}/testing`} relative='path'
+                className={classNames("btn btn-sm btn-outline-primary mb-1", {'link__disabled': !props.plan.testing?.enabled})}>test</Link>
+              <Link
+                to={`./${props.plan.customName}/documentation`} relative='path'
+                className={classNames("btn btn-sm btn-outline-primary", {'link__disabled': !props.plan.documentation})}>Documentation</Link>
             </div>
           )}
         </div>
