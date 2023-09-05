@@ -761,6 +761,8 @@ class ApiService(env: Env,
         }
       }
 
+      AppLogger.info(s"[DELETE_SUBS] :: plan => ${plan.customName} :: subscription => ${subscription.id}")
+
       (for {
         otoroshiSettings <- OptionT.fromOption[Future](plan.otoroshiTarget.map(_.otoroshiSettings).flatMap(id => tenant.otoroshiSettings.find(_.id == id)))
         subscriberTeam <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(subscription.team))
@@ -793,8 +795,7 @@ class ApiService(env: Env,
       _ <- EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, tenant, user))
       _ <- EitherT.liftF(env.dataStore.apiRepo.forTenant(tenant).save(updatedApi))
       _ <- EitherT.liftF(env.dataStore.usagePlanRepo.forTenant(tenant).deleteByIdLogically(plan.id))
-      //FIXME: save operation just if needed
-      _ <- EitherT.liftF(env.dataStore.operationRepo.forTenant(tenant).save(
+      _ <- if(plan.paymentSettings.isDefined) EitherT.liftF[Future, AppError, Boolean](env.dataStore.operationRepo.forTenant(tenant).save(
         Operation(
           DatastoreId(IdGenerator.token(24)),
           tenant = tenant.id,
@@ -805,7 +806,7 @@ class ApiService(env: Env,
             "paymentSettings" -> plan.paymentSettings.map(_.asJson).getOrElse(JsNull).as[JsValue],
           ).some
         )
-      ))
+      )) else EitherT.pure[Future, AppError](true)
     } yield updatedApi
   }
 

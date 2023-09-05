@@ -302,43 +302,32 @@ class TenantController(DaikokuAction: DaikokuAction,
         case JsError(e) =>
           FastFuture.successful(
             BadRequest(Json.obj("error" -> "Error while parsing payload",
-                                "msg" -> e.toString)))
+              "msg" -> e.toString)))
         case JsSuccess(updatedTenant, _) =>
           ctx.setCtxValue("tenant.name", updatedTenant.name)
           ctx.setCtxValue("tenant.id", updatedTenant.id)
 
-          //FIXME: if env is deleted =>  delete all associated env/plan
-          def checkEnvironments(oldTenant: Tenant): EitherT[Future, AppError, Unit] = {
+          def deleteUnusedEnvironments(oldTenant: Tenant): EitherT[Future, AppError, Unit] = {
             updatedTenant.display match {
               case TenantDisplay.Environment =>
                 val deletedEnvs = oldTenant.environments.diff(updatedTenant.environments)
-                EitherT.cond(deletedEnvs.isEmpty, (), AppError.EntityConflict("tenant's environment couldn't deleted"))
-              case TenantDisplay.Default =>
-                EitherT.pure[Future, AppError](())
+                EitherT.liftF(Future.sequence(deletedEnvs.map(name => {
+                  for {
+                    plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant).find(Json.obj(
+                      "customName" -> name
+                    ))
+                    _ <- Future.sequence(plans.map(plan => {
+                      for {
+                        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+                          .findOne(Json.obj("possibleUsagePlans" -> plan.id.value)), AppError.ApiNotFound)
+                        _ <- apiService.deleteUsagePlan(plan, api, ctx.tenant, ctx.user)
+                      } yield api
+                    }).map(_.value))
+                  } yield ()
+                })).map(_ -> ()))
+              case TenantDisplay.Default => EitherT.pure[Future, AppError](())
             }
           }
-
-//          def checkEnvironments(oldTenant: Tenant): EitherT[Future, AppError, Unit] = {
-//            updatedTenant.display match {
-//              case TenantDisplay.Environment =>
-//                val deletedEnvs = oldTenant.environments.diff(updatedTenant.environments)
-//                EitherT.liftF(Future.sequence(deletedEnvs.map(name => {
-//                  for {
-//                    plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant).find(Json.obj(
-//                      "customName" -> name
-//                    ))
-//                    _ <- Future.sequence(plans.map(plan => {
-//                      for {
-//                        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
-//                          .findOne(Json.obj("possibleUsagePlans" -> plan.id.asJson)), AppError.ApiNotFound)
-//                        _ <- apiService.deleteUsagePlan(plan, api, ctx.tenant, ctx.user)
-//                      } yield api
-//                    }).map(_.value))
-//                  } yield ()
-//                })).map(_ -> ()))
-//              case TenantDisplay.Default => EitherT.pure[Future, AppError](())
-//            }
-//          }
 
           updatedTenant.tenantMode match {
             case Some(value) =>
@@ -353,7 +342,7 @@ class TenantController(DaikokuAction: DaikokuAction,
 
           (for {
             oldTenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(updatedTenant.id), AppError.TenantNotFound)
-            _ <- checkEnvironments(oldTenant)
+            _ <- deleteUnusedEnvironments(oldTenant)
             _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.tenantRepo.save(updatedTenant))
             _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.teamRepo
               .forTenant(updatedTenant)
@@ -368,7 +357,10 @@ class TenantController(DaikokuAction: DaikokuAction,
               Json.obj("tenant" -> updatedTenant.asJsonWithJwt,
                 "uiPayload" -> updatedTenant.toUiPayload(env)))
           })
-            .leftMap(_.render())
+            .leftMap(e => {
+              AppLogger.error(s"[SAVE_TENANT] :: ${e.getErrorMessage()}")
+              e.render()
+            })
             .merge
       }
     }
