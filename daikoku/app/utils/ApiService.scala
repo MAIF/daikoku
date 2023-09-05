@@ -1198,28 +1198,23 @@ class ApiService(env: Env,
     }
 
     def controlSubscriptionExtension(plan: UsagePlan, team: Team): EitherT[Future, AppError, Unit] = {
-      EitherT(parentSubscriptionId match {
-        case Some(apiKey) =>
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findByIdNotDeleted(apiKey.value)
-            .flatMap {
-              case Some(sub) if sub.parent.isDefined => FastFuture.successful(Left(AppError.SubscriptionParentExisted))
-              case Some(_) if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity
-                .exists(a => !a) => FastFuture.successful(Left(AppError.SecurityError("Subscription Aggregation")))
-              case Some(sub) if sub.team != team.id => FastFuture.successful(Left(SubscriptionAggregationTeamConflict))
-              case Some(sub) => env.dataStore.usagePlanRepo.forTenant(tenant).findById(sub.plan)
-                .map {
-                  case Some(parentPlan)
-                      if parentPlan.otoroshiTarget
-                        .map(_.otoroshiSettings) != plan.otoroshiTarget
-                        .map(_.otoroshiSettings) => Left(AppError.SubscriptionAggregationOtoroshiConflict)
-                  case None => Left(AppError.ApiNotFound)
-                  case _ => Right(())
-                }
-            }
-        case None => FastFuture.successful(Right(()))
-      })
+      parentSubscriptionId match {
+        case Some(subId) =>
+          for {
+            subscription <- EitherT.fromOptionF(env.dataStore.apiSubscriptionRepo
+              .forTenant(tenant)
+              .findByIdNotDeleted(subId.value), AppError.SubscriptionNotFound)
+            _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.SubscriptionParentExisted)
+            _ <- EitherT.cond[Future][AppError, Unit](plan.aggregationApiKeysSecurity.isDefined &&
+              plan.aggregationApiKeysSecurity.exists(identity), (), AppError.SecurityError("Subscription Aggregation"))
+            _<- EitherT.cond[Future][AppError, Unit](subscription.team == team.id, (), AppError.SubscriptionAggregationTeamConflict)
+            parentPlan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan), AppError.PlanNotFound)
+            _ <- EitherT.cond[Future][AppError, Unit](parentPlan.otoroshiTarget
+              .map(_.otoroshiSettings) == plan.otoroshiTarget
+              .map(_.otoroshiSettings), (), AppError.SubscriptionAggregationOtoroshiConflict)
+          } yield ()
+        case None => EitherT.pure[Future, AppError](())
+      }
     }
 
     def controlDemand(team: Team, api: Api, plan: UsagePlan): EitherT[Future, AppError,Unit] = {
