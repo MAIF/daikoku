@@ -814,7 +814,7 @@ export const TeamApiPricings = (props: Props) => {
           options: availablePlans,
           constraints: [
             constraints.oneOf(tenant.environments, translate('constraints.plan.custom-name.one-of.environment')),
-            constraints.required('constraints.required.value')
+            constraints.required(translate('constraints.required.value'))
           ]
         }
       }
