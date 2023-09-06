@@ -257,10 +257,8 @@ sealed trait UsagePlan {
       .collect { case Some(name) => name }
     //TODO: check conflict with extisting name in case of creation
     tenant.display match {
-      case TenantDisplay.Environment => customName match {
-        case Some(customName) if tenant.environments.contains(customName) => EitherT.pure[Future, AppError](())
-        case _ => EitherT.leftT[Future, Unit](AppError.EntityConflict("Plan custom name"))
-      }
+      case TenantDisplay.Environment =>
+        EitherT.cond[Future](customName.exists(name => tenant.environments.contains(name) && !existingNames.contains(name)), (), AppError.EntityConflict("Plan custom name"))
       case TenantDisplay.Default => EitherT.pure[Future, AppError](())
     }
   }

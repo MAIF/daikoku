@@ -3954,7 +3954,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan))
 
-        } yield Ok(updatedApi.asJson))
+        } yield Created(updatedApi.asJson))
           .leftMap(_.render())
           .merge
       }
