@@ -20,22 +20,21 @@ class UserControllerSpec()
 
   "a daikoku admin" can {
     "list all tenant user" in {
-      setupEnv(
+      setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, user, userAdmin),
         teams = Seq(defaultAdminTeam)
-      ).map(_ => {
+      )
         val session = loginWithBlocking(daikokuAdmin, tenant)
 
         val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
         resp.status mustBe 200
-        val users = resp.json.as[JsArray]
-        users.value.length mustBe 3
-        users.value.diff(
+        val users = resp.json.as[JsArray].value.filter(u => (u \ "email").as[String] != "admin@daikoku.io")
+        users.length mustBe 3
+        users.diff(
           Seq(daikokuAdmin.asSimpleJson,
               user.asSimpleJson,
               userAdmin.asSimpleJson)) mustBe Seq.empty
-      })
     }
 
     "find user by id" in {
@@ -339,7 +338,7 @@ class UserControllerSpec()
 
   "a teamAdmin" can {
     "create LDAP user" in {
-      setupEnv(
+      setupEnvBlocking(
         tenants = Seq(
           tenant.copy(
             authProvider = AuthProvider.LDAP,
@@ -358,7 +357,7 @@ class UserControllerSpec()
           )),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam)
-      ).map(_ => {
+      )
         val session = loginWithBlocking(tenantAdmin, tenant)
 
         val resp = httpJsonCallBlocking(
@@ -370,7 +369,6 @@ class UserControllerSpec()
         )(tenant, session)
 
         resp.status mustBe 201
-      })
     }
   }
 }

@@ -44,31 +44,29 @@ class MessagesControllerSpec()
 
   "a tenant admin" can {
     "close a chat" in {
-      setupEnv(
+      setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         teams = Seq(defaultAdminTeam),
         messages = Seq(adminMessage(user, user, "not closed", None))
-      ).map(_ => {
-        val session = loginWithBlocking(tenantAdmin, tenant)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
 
-        val resp =
-          httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
-                               method = "DELETE")(tenant, session)
+      val resp =
+        httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
+          method = "DELETE")(tenant, session)
 
-        resp.status mustBe 200
-      })
-
+      resp.status mustBe 200
     }
   }
 
   "a user" can {
     "get his message to admin team" in {
-      setupEnv(
+      setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         messages = Seq(adminMessage(user, user, "1", None))
-      ).map(_ => {
+      )
         val session = loginWithBlocking(user, tenant)
 
         val respGet =
@@ -80,17 +78,15 @@ class MessagesControllerSpec()
         messages.isSuccess mustBe true
         messages.get.length mustBe 1
         messages.get.head.message mustBe "1"
-      })
-
     }
 
     "get his previous messages" in {
       val closedDate = DateTime.now().minusHours(1)
-      setupEnv(
+      setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         messages = Seq(adminMessage(user, user, "1", Some(closedDate)))
-      ).map(_ => {
+      )
         val session = loginWithBlocking(user, tenant)
 
         val respGetClosedDate = httpJsonCallBlocking(
@@ -110,18 +106,16 @@ class MessagesControllerSpec()
 
         messages.get.length mustBe 1
         messages.get.head.message mustBe "1"
-      })
-
     }
 
     "read his messages" in {
-      setupEnv(
+      setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         messages = Seq(
           adminMessage(user, user, "1", None).copy(
             date = DateTime.now().minusHours(1)))
-      ).map(_ => {
+      )
         val session = loginWithBlocking(tenantAdmin, tenant)
 
         val respGet = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
@@ -143,15 +137,13 @@ class MessagesControllerSpec()
 
         messagesVerif.length mustBe 1
         messagesVerif.count(_.readBy.contains(tenantAdminId)) mustBe 1
-      })
-
     }
 
     "send a message to admin team" in {
-      setupEnv(
+      setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user)
-      ).map(_ => {
+      )
         val session = loginWithBlocking(user, tenant)
 
         val respSend = httpJsonCallBlocking(
@@ -176,8 +168,6 @@ class MessagesControllerSpec()
         messages.isSuccess mustBe true
         messages.get.length mustBe 1
         messages.get.head.message mustBe "1"
-      })
-
     }
 
     "not close a chat" in {

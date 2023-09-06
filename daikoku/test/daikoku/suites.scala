@@ -179,7 +179,7 @@ object utils {
           subscriptionDemands,
           usagePlans
         ),
-        1.second
+        5.second
       )
     }
 
@@ -633,7 +633,7 @@ object utils {
     def otoroshiPathApiKeyQuotas(clientId: String) =
       s"/api/apikeys/$clientId/quotas"
     val otoroshiPathStats = s"/api/stats"
-    def otoroshiPathGroup(groupId: String) = s"/api/groups/[\\w-]*"
+    val otoroshiPathGroup = s"/api/groups/[\\w-]*"
     def otoroshiDeleteApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
     def otoroshiUpdateApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
     def otoroshiGetApikeyPath(clientId: String) = s"/api/apikeys/$clientId"

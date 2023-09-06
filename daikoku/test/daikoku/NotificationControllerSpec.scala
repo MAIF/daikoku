@@ -136,13 +136,13 @@ class NotificationControllerSpec()
 
   "a team admin" can {
     "read the count of untreated notifications of his team" in {
-      setupEnv(
+      setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(defaultApi.api),
         notifications = Seq(treatedNotification, untreatedNotification)
-      ).map(_ => {
+      )
         val session = loginWithBlocking(userAdmin, tenant)
         val resp = httpJsonCallBlocking(
           s"/api/teams/${teamOwnerId.value}/notifications/unread-count")(
@@ -150,8 +150,6 @@ class NotificationControllerSpec()
           session)
         resp.status mustBe 200
         (resp.json \ "count").as[Long] mustBe 1
-      })
-
     }
     "read notifications of his team" in {
       setupEnvBlocking(
@@ -532,7 +530,6 @@ class NotificationControllerSpec()
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
-      logger.warn(Json.stringify(resp.json))
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
 
