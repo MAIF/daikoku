@@ -824,6 +824,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
               subscriptionDemandRepo
                 .forAllTenant()
                 .save(json.SubscriptionDemandFormat.reads(payload).get)
+            case ("usageplans", payload) =>
+              usagePlanRepo
+                .forAllTenant()
+                .save(json.UsagePlanFormat.reads(payload).get)
             case (typ, _) =>
               logger.error(s"Unknown type: $typ")
               FastFuture.successful(false)

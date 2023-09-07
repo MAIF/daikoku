@@ -954,7 +954,9 @@ object json {
       "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
-        .as[JsValue]
+        .as[JsValue],
+      "subscriptionProcess" -> SeqValidationStepFormat.writes(
+        o.subscriptionProcess)
     )
   }
   val FreeWithoutQuotasFormat = new Format[FreeWithoutQuotas] {
