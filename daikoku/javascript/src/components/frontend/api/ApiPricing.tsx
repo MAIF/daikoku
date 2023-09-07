@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Link, useMatch, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useMatch, useNavigate } from 'react-router-dom';
 
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
