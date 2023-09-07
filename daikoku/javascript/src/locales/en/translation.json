@@ -1357,5 +1357,6 @@
     "pricing.default.env.btn.label": "Default environment",
     "pricing.clone.env.btn.label": "Duplicate environment",
     "pricing.edit.env.btn.label": "Edit environment",
-    "pricing.delete.env.btn.label": "Delete environment"
+    "pricing.delete.env.btn.label": "Delete environment",
+    "documentation.add.button.label": "Create documentation"
 }

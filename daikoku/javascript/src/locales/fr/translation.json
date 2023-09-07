@@ -1361,5 +1361,6 @@
   "pricing.clone.env.btn.label": "Dupliquer l'environnement",
   "pricing.edit.env.btn.label": "Modifier l'environnement",
   "pricing.delete.env.btn.label": "Supprimer l'environnement",
-  "Alert": "Alerte"
+  "Alert": "Alerte",
+  "documentation.add.button.label": "Initialiser la documentation"
 }

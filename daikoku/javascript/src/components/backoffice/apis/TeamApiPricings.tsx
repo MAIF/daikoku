@@ -1871,7 +1871,7 @@ const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) =>
     return (
       <div>
         <div>it's seems that this plan has no documentation setted</div>
-        <button type='button' onClick={createPlanDoc}>add doc</button>
+        <button type='button' className='btn btn-outline-primary' onClick={createPlanDoc}>{translate('documentation.add.button.label')}</button>
       </div>
     )
   } else {

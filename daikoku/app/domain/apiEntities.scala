@@ -253,9 +253,11 @@ sealed trait UsagePlan {
   def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan
   def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
   def checkCustomName(tenant: Tenant, plans: Seq[UsagePlan])(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
-    val existingNames = plans.collect(_.customName)
+    val existingNames = plans
+      .filter(_.id != id)
+      .collect(_.customName)
       .collect { case Some(name) => name }
-    //TODO: check conflict with extisting name in case of creation
+    //FIXME: check conflict with extisting name in case of creation but
     tenant.display match {
       case TenantDisplay.Environment =>
         EitherT.cond[Future](customName.exists(name => tenant.environments.contains(name) && !existingNames.contains(name)), (), AppError.EntityConflict("Plan custom name"))

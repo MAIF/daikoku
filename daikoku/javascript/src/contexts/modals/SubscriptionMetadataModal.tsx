@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Option, Spinner } from '../../components/utils';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
-import { IApi, isError, ITestingConfig, IUsagePlan, IWithTesting } from '../../types';
+import { IApi, isApi, isError, ITestingConfig, IUsagePlan, IWithTesting } from '../../types';
 import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';
 
 export type OverwriteSubscriptionData = {
@@ -151,6 +151,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
   }
 
 
+  console.debug({props, apiQuery, planQuery})
   if (!!props.api && apiQuery.isLoading || props.plan && planQuery.isLoading) {
     return <div className="modal-content"><Spinner /></div>
   } else if (!props.api && planQuery.data || (apiQuery.data && !isError(apiQuery.data))) {

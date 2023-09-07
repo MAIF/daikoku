@@ -31,7 +31,7 @@ export const DisplayForm = (props: UpdateFormProps) => {
       type: type.string,
       array: true,
       label: translate('display-mode.environments.label'),
-      visible: ({ rawValues }) => rawValues.isPrivate,
+      visible: ({ rawValues }) => rawValues.display === 'environment',
       constraints: [
         constraints.required(translate('constraints.required.value'))
       ],
