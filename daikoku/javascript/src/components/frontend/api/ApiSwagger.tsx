@@ -97,12 +97,12 @@ export function ApiSwagger(props: ApiSwaggerProps) {
       // window.ui.preauthorizeApiKey('api_key', 'hello');
       // console.log('ApiKey', props.testing.name, props.testing.username)
       // window.ui.preauthorizeApiKey(props.testing.name, props.testing.username);
-      (window as any).ui.preauthorizeApiKey(props.testing.name, 'fake-' + props._id);
+      window.ui.preauthorizeApiKey(props.testing.name, 'fake-' + props._id);
     } else if (props.testing?.auth.name === 'Basic') {
       // window.ui.preauthorizeBasic('api_key', 'user', 'pass');
       // console.log('Baisc', props.testing.name, props.testing.username, props.testing.password)
       // window.ui.preauthorizeBasic(props.testing.name, props.testing.username, props.testing.password);
-      (window as any).ui.preauthorizeBasic(props.testing.name, 'fake-' + props._id, 'fake-' + props._id);
+      window.ui.preauthorizeBasic(props.testing.name, 'fake-' + props._id, 'fake-' + props._id);
     } else {
       if (canCreate) {
         alert({ message: 'Unknown authentication type' });

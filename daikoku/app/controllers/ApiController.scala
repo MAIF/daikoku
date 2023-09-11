@@ -110,7 +110,9 @@ class ApiController(
           _ <- EitherT.cond[Future][AppError, Unit](!(ctx.tenant.apiReferenceHideForGuest.getOrElse(true) && ctx.user.isGuest), (), AppError.ForbiddenAction)
           team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(teamId), AppError.TeamNotFound)
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("_id" -> apiId, "currentVersion" -> version, "team" -> team.id.asJson)), AppError.ApiNotFound)
+            .findOneNotDeleted(Json.obj(
+              "$or" -> Json.arr(Json.obj("_id" -> apiId), Json.obj("_humanReadableId" -> apiId)),
+              "currentVersion" -> version, "team" -> team.id.asJson)), AppError.ApiNotFound)
           myTeams <- EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
           test = api.visibility == ApiVisibility.Public || myTeams.exists(_.id == api.team) || api.visibility != ApiVisibility.Public && api.authorizedTeams
             .intersect(myTeams.map(_.id)).nonEmpty
