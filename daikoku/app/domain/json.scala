@@ -291,10 +291,10 @@ object json {
   val TenantDisplayFormat = new Format[TenantDisplay] {
     override def reads(json: JsValue): JsResult[TenantDisplay] =
       json.asOpt[String].map(_.toLowerCase) match {
-        case Some("environment")  => JsSuccess(TenantDisplay.Environment)
-        case Some("default")      => JsSuccess(TenantDisplay.Default)
-        case None                 => JsSuccess(TenantDisplay.Default)
-        case Some(str)            => JsError(s"Bad value for tenant display : $str")
+        case Some("environment") => JsSuccess(TenantDisplay.Environment)
+        case Some("default")     => JsSuccess(TenantDisplay.Default)
+        case None                => JsSuccess(TenantDisplay.Default)
+        case Some(str)           => JsError(s"Bad value for tenant display : $str")
       }
 
     override def writes(o: TenantDisplay): JsValue = JsString(o.name)
@@ -612,13 +612,18 @@ object json {
               id = (json \ "id").as[String],
               team = (json \ "team").as(TeamIdFormat),
               title = (json \ "title").as[String],
-              schema = (json \ "schema").asOpt[JsObject]
-                .orElse(Json.obj(
-                  "motivation" -> Json.obj(
-                    "type" -> "string",
-                    "format" -> "textarea",
-                    "constraints" -> Json.arr(Json.obj("type" -> "required")))).some),
-              formatter = (json \ "formatter").asOpt[String]
+              schema = (json \ "schema")
+                .asOpt[JsObject]
+                .orElse(
+                  Json
+                    .obj(
+                      "motivation" -> Json.obj("type" -> "string",
+                                               "format" -> "textarea",
+                                               "constraints" -> Json.arr(Json
+                                                 .obj("type" -> "required"))))
+                    .some),
+              formatter = (json \ "formatter")
+                .asOpt[String]
                 .orElse("[[motivation]]".some)
             ))
         case "payment" =>
@@ -991,7 +996,8 @@ object json {
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
             testing = (json \ "testing").asOpt(TestingFormat),
-            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1086,7 +1092,8 @@ object json {
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
             testing = (json \ "testing").asOpt(TestingFormat),
-            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1188,7 +1195,8 @@ object json {
               (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
             testing = (json \ "testing").asOpt(TestingFormat),
-            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1301,7 +1309,8 @@ object json {
               (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
             testing = (json \ "testing").asOpt(TestingFormat),
-            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1411,7 +1420,8 @@ object json {
               (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
             testing = (json \ "testing").asOpt(TestingFormat),
-            documentation = (json \ "documentation").asOpt(ApiDocumentationFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -2066,7 +2076,8 @@ object json {
             thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings")
               .asOpt(SeqThirdPartyPaymentSettingsFormat)
               .getOrElse(Seq.empty),
-            display = (json \ "display").asOpt(TenantDisplayFormat)
+            display = (json \ "display")
+              .asOpt(TenantDisplayFormat)
               .getOrElse(TenantDisplay.Default),
             environments = (json \ "environments")
               .asOpt[Set[String]]
@@ -2739,7 +2750,8 @@ object json {
             team = (json \ "team").as(TeamIdFormat),
             from = (json \ "from").as(UserIdFormat),
             date = (json \ "date").as(DateTimeFormat),
-            motivation = (json \ "motivation").asOpt[String]
+            motivation = (json \ "motivation")
+              .asOpt[String]
               .map(m => Json.obj("motivation" -> m))
               .orElse((json \ "motivation").asOpt[JsObject]),
             parentSubscriptionId =
@@ -3427,7 +3439,7 @@ object json {
           case "Pending"  => NotificationStatusPendingFormat.reads(json)
           case "Accepted" => NotificationStatusAcceptedFormat.reads(json)
           case "Rejected" => NotificationStatusRejectedFormat.reads(json)
-          case str        =>
+          case str =>
             AppLogger.error(s"Bad notification status value: $str")
             JsError(s"Bad notification status value: $str")
         }

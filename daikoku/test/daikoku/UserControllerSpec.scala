@@ -25,16 +25,19 @@ class UserControllerSpec()
         users = Seq(daikokuAdmin, user, userAdmin),
         teams = Seq(defaultAdminTeam)
       )
-        val session = loginWithBlocking(daikokuAdmin, tenant)
+      val session = loginWithBlocking(daikokuAdmin, tenant)
 
-        val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
-        resp.status mustBe 200
-        val users = resp.json.as[JsArray].value.filter(u => (u \ "email").as[String] != "admin@daikoku.io")
-        users.length mustBe 3
-        users.diff(
-          Seq(daikokuAdmin.asSimpleJson,
-              user.asSimpleJson,
-              userAdmin.asSimpleJson)) mustBe Seq.empty
+      val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
+      resp.status mustBe 200
+      val users = resp.json
+        .as[JsArray]
+        .value
+        .filter(u => (u \ "email").as[String] != "admin@daikoku.io")
+      users.length mustBe 3
+      users.diff(
+        Seq(daikokuAdmin.asSimpleJson,
+            user.asSimpleJson,
+            userAdmin.asSimpleJson)) mustBe Seq.empty
     }
 
     "find user by id" in {
@@ -358,17 +361,17 @@ class UserControllerSpec()
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam)
       )
-        val session = loginWithBlocking(tenantAdmin, tenant)
+      val session = loginWithBlocking(tenantAdmin, tenant)
 
-        val resp = httpJsonCallBlocking(
-          path = s"/api/teams/${defaultAdminTeam.id.value}/ldap/users",
-          method = "POST",
-          body = Some(
-            Json.obj("email" -> "gauss@ldap.forumsys.com",
-                     "teamId" -> defaultAdminTeam.id.value))
-        )(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}/ldap/users",
+        method = "POST",
+        body = Some(
+          Json.obj("email" -> "gauss@ldap.forumsys.com",
+                   "teamId" -> defaultAdminTeam.id.value))
+      )(tenant, session)
 
-        resp.status mustBe 201
+      resp.status mustBe 201
     }
   }
 }

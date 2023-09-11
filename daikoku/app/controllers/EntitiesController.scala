@@ -107,16 +107,16 @@ class EntitiesController(DaikokuAction: DaikokuAction,
   }
 
   def newApiDocumentation() = DaikokuAction.async { ctx =>
-    PublicUserAccess(
-      AuditTrailEvent(
-        s"@{user.name} has asked for a template entity of type ApiDocumentationr"))(ctx) {
+    PublicUserAccess(AuditTrailEvent(
+      s"@{user.name} has asked for a template entity of type ApiDocumentationr"))(
+      ctx) {
       Ok(
         ApiDocumentation(
-            id = ApiDocumentationId(BSONObjectID.generate().stringify),
-            tenant = ctx.tenant.id,
-            lastModificationAt = DateTime.now(),
-            pages = Seq.empty
-          ).asJson)
+          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+          tenant = ctx.tenant.id,
+          lastModificationAt = DateTime.now(),
+          pages = Seq.empty
+        ).asJson)
     }
   }
 
@@ -206,8 +206,8 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             Ok(
               UsagePlan
                 .Admin(id = UsagePlanId(BSONObjectID.generate().stringify),
-                  tenant = ctx.tenant.id,
-                  otoroshiTarget = None)
+                       tenant = ctx.tenant.id,
+                       otoroshiTarget = None)
                 .asJson)
           case "PayPerUse" =>
             Ok(

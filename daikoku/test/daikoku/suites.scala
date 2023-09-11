@@ -185,24 +185,24 @@ object utils {
     }
 
     def setupEnv(
-      tenants: Seq[Tenant] = Seq.empty,
-      users: Seq[User] = Seq.empty,
-      teams: Seq[Team] = Seq.empty,
-      apis: Seq[Api] = Seq.empty,
-      subscriptions: Seq[ApiSubscription] = Seq.empty,
-      pages: Seq[ApiDocumentationPage] = Seq.empty,
-      notifications: Seq[Notification] = Seq.empty,
-      consumptions: Seq[ApiKeyConsumption] = Seq.empty,
-      sessions: Seq[UserSession] = Seq.empty,
-      resets: Seq[PasswordReset] = Seq.empty,
-      creations: Seq[AccountCreation] = Seq.empty,
-      messages: Seq[Message] = Seq.empty,
-      issues: Seq[ApiIssue] = Seq.empty,
-      posts: Seq[ApiPost] = Seq.empty,
-      cmsPages: Seq[CmsPage] = Seq.empty,
-      operations: Seq[Operation] = Seq.empty,
-      subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
-      usagePlans: Seq[UsagePlan] = Seq.empty
+        tenants: Seq[Tenant] = Seq.empty,
+        users: Seq[User] = Seq.empty,
+        teams: Seq[Team] = Seq.empty,
+        apis: Seq[Api] = Seq.empty,
+        subscriptions: Seq[ApiSubscription] = Seq.empty,
+        pages: Seq[ApiDocumentationPage] = Seq.empty,
+        notifications: Seq[Notification] = Seq.empty,
+        consumptions: Seq[ApiKeyConsumption] = Seq.empty,
+        sessions: Seq[UserSession] = Seq.empty,
+        resets: Seq[PasswordReset] = Seq.empty,
+        creations: Seq[AccountCreation] = Seq.empty,
+        messages: Seq[Message] = Seq.empty,
+        issues: Seq[ApiIssue] = Seq.empty,
+        posts: Seq[ApiPost] = Seq.empty,
+        cmsPages: Seq[CmsPage] = Seq.empty,
+        operations: Seq[Operation] = Seq.empty,
+        subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
+        usagePlans: Seq[UsagePlan] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -895,9 +895,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-              Some(
-                AuthorizedEntities(
-                  groups = Set(OtoroshiServiceGroupId("12345")))))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
@@ -916,9 +916,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-              Some(
-                AuthorizedEntities(
-                  groups = Set(OtoroshiServiceGroupId("12345")))))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
@@ -939,9 +939,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-              Some(
-                AuthorizedEntities(
-                  groups = Set(OtoroshiServiceGroupId("12345")))))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
@@ -963,9 +963,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-              Some(
-                AuthorizedEntities(
-                  groups = Set(OtoroshiServiceGroupId("12345")))))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(true),
           subscriptionProcess = Seq.empty,
@@ -984,9 +984,9 @@ object utils {
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-              Some(
-                AuthorizedEntities(
-                  groups = Set(OtoroshiServiceGroupId("12345")))))
+                           Some(
+                             AuthorizedEntities(
+                               groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
@@ -1044,7 +1044,8 @@ object utils {
           lastModificationAt = DateTime.now(),
         ),
         swagger = Some(
-          SwaggerAccess(url = "/assets/swaggers/petstore.json".some, content = None)),
+          SwaggerAccess(url = "/assets/swaggers/petstore.json".some,
+                        content = None)),
         possibleUsagePlans = plans.map(_.id),
         defaultUsagePlan = UsagePlanId("1")
       )
@@ -1067,6 +1068,7 @@ object utils {
       path = Some("/" + BSONObjectID.generate().stringify)
     )
 
-    val defaultApi: ApiWithPlans = generateApi("default", tenant.id, teamOwnerId, Seq.empty)
+    val defaultApi: ApiWithPlans =
+      generateApi("default", tenant.id, teamOwnerId, Seq.empty)
   }
 }

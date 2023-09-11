@@ -1,24 +1,48 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer, MultipleContainers, PostgreSQLContainer}
+import com.dimafeng.testcontainers.{
+  Container,
+  ForAllTestContainer,
+  GenericContainer,
+  MultipleContainers,
+  PostgreSQLContainer
+}
 import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import controllers.AppError.{
+  SubscriptionAggregationDisabled,
+  SubscriptionParentExisted
+}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, IssueIdFormat, OtoroshiApiKeyFormat, SeqApiSubscriptionFormat, TeamIdFormat, UsagePlanIdFormat, UserIdFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  ApiSubscriptionFormat,
+  IssueIdFormat,
+  OtoroshiApiKeyFormat,
+  SeqApiSubscriptionFormat,
+  TeamIdFormat,
+  UsagePlanIdFormat,
+  UserIdFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
@@ -221,8 +245,11 @@ class ApiControllerSpec()
         .map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
 
       //no api created ==> resp = []
-      result.forall(tuple =>
-        !apis.map(_.api).exists(api => api.name == tuple._1 && tuple._2)) mustBe true
+      result.forall(
+        tuple =>
+          !apis
+            .map(_.api)
+            .exists(api => api.name == tuple._1 && tuple._2)) mustBe true
     }
 
     "initialize tenant apis" in {
@@ -312,11 +339,26 @@ class ApiControllerSpec()
           UsagePlanId("5"),
           teamConsumerId
         ),
-        generateInitSubJson("1", defaultApi.api.id, UsagePlanId("1"), teamOwnerId),
-        generateInitSubJson("2", defaultApi.api.id, UsagePlanId("2"), teamOwnerId),
-        generateInitSubJson("3", defaultApi.api.id, UsagePlanId("3"), teamOwnerId),
-        generateInitSubJson("4", defaultApi.api.id, UsagePlanId("4"), teamOwnerId),
-        generateInitSubJson("5", defaultApi.api.id, UsagePlanId("5"), teamOwnerId)
+        generateInitSubJson("1",
+                            defaultApi.api.id,
+                            UsagePlanId("1"),
+                            teamOwnerId),
+        generateInitSubJson("2",
+                            defaultApi.api.id,
+                            UsagePlanId("2"),
+                            teamOwnerId),
+        generateInitSubJson("3",
+                            defaultApi.api.id,
+                            UsagePlanId("3"),
+                            teamOwnerId),
+        generateInitSubJson("4",
+                            defaultApi.api.id,
+                            UsagePlanId("4"),
+                            teamOwnerId),
+        generateInitSubJson("5",
+                            defaultApi.api.id,
+                            UsagePlanId("5"),
+                            teamOwnerId)
       )
 
       val session = loginWithBlocking(tenantAdmin, tenant2)
@@ -386,11 +428,26 @@ class ApiControllerSpec()
           UsagePlanId("5"),
           teamConsumerId
         ),
-        generateInitSubJson("1", defaultApi.api.id, UsagePlanId("1"), teamOwnerId),
-        generateInitSubJson("2", defaultApi.api.id, UsagePlanId("2"), teamOwnerId),
-        generateInitSubJson("3", defaultApi.api.id, UsagePlanId("3"), teamOwnerId),
-        generateInitSubJson("4", defaultApi.api.id, UsagePlanId("4"), teamOwnerId),
-        generateInitSubJson("5", defaultApi.api.id, UsagePlanId("5"), teamOwnerId)
+        generateInitSubJson("1",
+                            defaultApi.api.id,
+                            UsagePlanId("1"),
+                            teamOwnerId),
+        generateInitSubJson("2",
+                            defaultApi.api.id,
+                            UsagePlanId("2"),
+                            teamOwnerId),
+        generateInitSubJson("3",
+                            defaultApi.api.id,
+                            UsagePlanId("3"),
+                            teamOwnerId),
+        generateInitSubJson("4",
+                            defaultApi.api.id,
+                            UsagePlanId("4"),
+                            teamOwnerId),
+        generateInitSubJson("5",
+                            defaultApi.api.id,
+                            UsagePlanId("5"),
+                            teamOwnerId)
       )
 
       val session = loginWithBlocking(tenantAdmin, tenant)
@@ -545,11 +602,26 @@ class ApiControllerSpec()
           UsagePlanId("5"),
           teamConsumerId
         ),
-        generateInitSubJson("1", defaultApi.api.id, UsagePlanId("1"), teamOwnerId),
-        generateInitSubJson("2", defaultApi.api.id, UsagePlanId("2"), teamOwnerId),
-        generateInitSubJson("3", defaultApi.api.id, UsagePlanId("3"), teamOwnerId),
-        generateInitSubJson("4", defaultApi.api.id, UsagePlanId("4"), teamOwnerId),
-        generateInitSubJson("5", defaultApi.api.id, UsagePlanId("5"), teamOwnerId)
+        generateInitSubJson("1",
+                            defaultApi.api.id,
+                            UsagePlanId("1"),
+                            teamOwnerId),
+        generateInitSubJson("2",
+                            defaultApi.api.id,
+                            UsagePlanId("2"),
+                            teamOwnerId),
+        generateInitSubJson("3",
+                            defaultApi.api.id,
+                            UsagePlanId("3"),
+                            teamOwnerId),
+        generateInitSubJson("4",
+                            defaultApi.api.id,
+                            UsagePlanId("4"),
+                            teamOwnerId),
+        generateInitSubJson("5",
+                            defaultApi.api.id,
+                            UsagePlanId("5"),
+                            teamOwnerId)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -647,8 +719,7 @@ class ApiControllerSpec()
         apis = Seq(api)
       )
 
-      val doubleApi = generateApi("1", tenant.id, teamOwnerId, Seq.empty)
-        .api
+      val doubleApi = generateApi("1", tenant.id, teamOwnerId, Seq.empty).api
         .copy(name = api.name)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp =
@@ -775,7 +846,8 @@ class ApiControllerSpec()
 
       respError.status mustBe 404
 
-      (respError.json \ "error").as[String] mustBe AppError.ApiNotFound.getErrorMessage()
+      (respError.json \ "error")
+        .as[String] mustBe AppError.ApiNotFound.getErrorMessage()
 
       val respError2 = httpJsonCallBlocking(
         path =
@@ -842,7 +914,8 @@ class ApiControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
         method = "DELETE"
       )(tenant, session)
       resp.status mustBe 200
@@ -891,37 +964,38 @@ class ApiControllerSpec()
       resp.status mustBe 403
       (resp.json \ "error")
         .as[
-        String
-      ] mustBe AppError.ApiNotPublished.getErrorMessage()
+          String
+        ] mustBe AppError.ApiNotPublished.getErrorMessage()
     }
 
     "not subscribe to an api for many reasons" in {
 
       val planUnauthorizedApi = FreeWithoutQuotas(
-                id = UsagePlanId(IdGenerator.token),
-                tenant = tenant.id,
-                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                currency = Currency("EUR"),
-                customName = None,
-                customDescription = None,
-                otoroshiTarget = Some(
-                  OtoroshiTarget(
-                    OtoroshiSettingsId("default"),
-                    Some(
-                      AuthorizedEntities(
-                        groups = Set(OtoroshiServiceGroupId("12345"))
-                      )
-                    )
-                  )
-                ),
-                allowMultipleKeys = Some(false),
-                subscriptionProcess = Seq.empty,
-                integrationProcess = IntegrationProcess.ApiKey,
-                autoRotation = Some(false),
-                visibility = UsagePlanVisibility.Private
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            OtoroshiSettingsId("default"),
+            Some(
+              AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))
               )
-      val unauthorizedApi = generateApi("unauthorized-plan", tenant.id, teamOwnerId, Seq.empty).api
-        .copy(possibleUsagePlans = Seq(planUnauthorizedApi.id))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        visibility = UsagePlanVisibility.Private
+      )
+      val unauthorizedApi =
+        generateApi("unauthorized-plan", tenant.id, teamOwnerId, Seq.empty).api
+          .copy(possibleUsagePlans = Seq(planUnauthorizedApi.id))
 
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1075,8 +1149,7 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             )
           )
         ),
@@ -1098,7 +1171,6 @@ class ApiControllerSpec()
         rotation = None,
         integrationToken = "test"
       )
-
 
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1141,8 +1213,7 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             )
           )
         ),
@@ -1272,8 +1343,7 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             )
           )
         ),
@@ -1324,7 +1394,6 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       wireMockServer.isRunning mustBe true
       val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
-
 
       stubFor(
         get(urlMatching(s"$otoroshiPathGroup.*"))
@@ -1382,8 +1451,7 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             ),
             ApikeyCustomization(
               customMetadata = Seq(
@@ -1395,8 +1463,8 @@ class ApiControllerSpec()
         allowMultipleKeys = Some(false),
         subscriptionProcess = Seq(
           ValidationStep.TeamAdmin(id = IdGenerator.token,
-            team = defaultApi.api.team,
-            title = "team.name")),
+                                   team = defaultApi.api.team,
+                                   title = "team.name")),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1733,7 +1801,8 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userApiEditor, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
         method = "DELETE"
       )(tenant, session)
       resp.status mustBe 200
@@ -2307,8 +2376,8 @@ class ApiControllerSpec()
             tenant = tenant.id,
             team = Some(teamOwnerId),
             sender = NotificationSender(name = user.name,
-              email = user.email,
-              id = user.id.some),
+                                        email = user.email,
+                                        id = user.id.some),
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.api.id,
@@ -2550,16 +2619,15 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             )
           )
         ),
         allowMultipleKeys = Some(false),
         subscriptionProcess = Seq(
           ValidationStep.TeamAdmin(id = IdGenerator.token,
-            team = defaultApi.api.team,
-            title = "Admin")),
+                                   team = defaultApi.api.team,
+                                   title = "Admin")),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -2701,7 +2769,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans,
         apis = Seq(
-          defaultApi.api.copy(visibility = ApiVisibility.PublicWithAuthorizations)
+          defaultApi.api.copy(
+            visibility = ApiVisibility.PublicWithAuthorizations)
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2894,7 +2963,8 @@ class ApiControllerSpec()
         integrationToken = "test"
       )
 
-      val secondApi = generateApi("second", tenant.id, teamConsumerId, Seq.empty)
+      val secondApi =
+        generateApi("second", tenant.id, teamConsumerId, Seq.empty)
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("test2"),
         tenant = tenant.id,
@@ -2949,8 +3019,7 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             )
           )
         ),
@@ -3004,8 +3073,7 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             )
           )
         ),
@@ -3106,7 +3174,8 @@ class ApiControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      val result = fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat.reads(resp.json)
+      val result =
+        fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat.reads(resp.json)
       result.isSuccess mustBe true
 
       result.get.authorizedTeams.length mustBe 1
@@ -3129,8 +3198,7 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             )
           )
         ),
@@ -3177,7 +3245,8 @@ class ApiControllerSpec()
         tenant,
         session)
       respGetSubsStart.status mustBe 200
-      val resultStart = fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
+      val resultStart =
+        fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
           .reads(respGetSubsStart.json)
       resultStart.isSuccess mustBe true
       resultStart.get.length mustBe 1
@@ -3217,8 +3286,7 @@ class ApiControllerSpec()
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
             Some(
-              AuthorizedEntities(groups =
-                Set(OtoroshiServiceGroupId("12345")))
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
             )
           )
         ),
@@ -3265,13 +3333,15 @@ class ApiControllerSpec()
         tenant,
         session)
       respGetSubsStart.status mustBe 200
-      val resultStart = fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
+      val resultStart =
+        fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
           .reads(respGetSubsStart.json)
       resultStart.isSuccess mustBe true
       resultStart.get.length mustBe 1
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
         method = "DELETE"
       )(tenant, session)
       resp.status mustBe 200
@@ -3297,20 +3367,20 @@ class ApiControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(
           defaultApi.api.copy(id = ApiId("123"),
-                          supportedVersions = Set(Version("1.0.0")),
-                          currentVersion = Version("1.0.0"),
-                          isDefault = false,
-                          parent = None),
+                              supportedVersions = Set(Version("1.0.0")),
+                              currentVersion = Version("1.0.0"),
+                              isDefault = false,
+                              parent = None),
           defaultApi.api.copy(id = ApiId("345"),
-                          supportedVersions = Set(Version("2.0.0")),
-                          currentVersion = Version("2.0.0"),
-                          isDefault = false,
-                          parent = Some(ApiId("123"))),
+                              supportedVersions = Set(Version("2.0.0")),
+                              currentVersion = Version("2.0.0"),
+                              isDefault = false,
+                              parent = Some(ApiId("123"))),
           defaultApi.api.copy(id = ApiId("678"),
-                          supportedVersions = Set(Version("3.0.0")),
-                          currentVersion = Version("3.0.0"),
-                          isDefault = true,
-                          parent = Some(ApiId("123"))),
+                              supportedVersions = Set(Version("3.0.0")),
+                              currentVersion = Version("3.0.0"),
+                              isDefault = true,
+                              parent = Some(ApiId("123"))),
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3424,7 +3494,8 @@ class ApiControllerSpec()
               otoroshiSettings = OtoroshiSettingsId("wiremock"),
               authorizedEntities = Some(
                 AuthorizedEntities(
-                  groups = Set(OtoroshiServiceGroupId("daikoku-admin-api-group-id"))
+                  groups =
+                    Set(OtoroshiServiceGroupId("daikoku-admin-api-group-id"))
                 )
               )
             )
@@ -3438,10 +3509,10 @@ class ApiControllerSpec()
             aResponse()
               .withBody(
                 Json.stringify(
-                    Json.obj(
-                      "id" -> "daikoku-admin-api-group-id",
-                      "name" -> "daikoku-admin-api-group"
-                    )
+                  Json.obj(
+                    "id" -> "daikoku-admin-api-group-id",
+                    "name" -> "daikoku-admin-api-group"
+                  )
                 )
               )
               .withStatus(200)
@@ -3458,7 +3529,8 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${defaultAdminTeam.id.value}/apis/${adminApi.id.value}/${adminApi.currentVersion.value}/plan/${adminApiPlan.id.value}",
+        path =
+          s"/api/teams/${defaultAdminTeam.id.value}/apis/${adminApi.id.value}/${adminApi.currentVersion.value}/plan/${adminApiPlan.id.value}",
         method = "PUT",
         body = Some(updatedAdminPlan.asJson)
       )(tenant, session)
@@ -3468,7 +3540,7 @@ class ApiControllerSpec()
         fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat.reads(resp.json)
       result.isSuccess mustBe true
 
-     val adminPlan = result.get
+      val adminPlan = result.get
 
       adminPlan.customName.get mustBe "Administration plan"
       adminPlan.customDescription.get mustBe "access to admin api"
@@ -4363,21 +4435,20 @@ class ApiControllerSpec()
 
       updatedPlans.foreach(plan => {
         val resp = httpJsonCallBlocking(
-          path = s"/api/teams/${teamOwner.id.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${plan.id.value}",
+          path =
+            s"/api/teams/${teamOwner.id.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${plan.id.value}",
           method = "PUT",
           body = Some(plan.asJson)
         )(tenant, loginWithBlocking(userApiEditor, tenant))
 
-
         resp.status mustBe Status.BAD_REQUEST
 
         val expectedError =
-          (AppError.toJson(SubscriptionAggregationDisabled) \ "error").as[String]
+          (AppError.toJson(SubscriptionAggregationDisabled) \ "error")
+            .as[String]
 
         (resp.json \ "error").as[String] mustBe expectedError
       })
-
-
 
     }
     "match client id of this parent" in {
@@ -4399,9 +4470,9 @@ class ApiControllerSpec()
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(OtoroshiSettingsId("default"),
-            Some(
-              AuthorizedEntities(
-                groups = Set(OtoroshiServiceGroupId("12345")))))
+                         Some(
+                           AuthorizedEntities(
+                             groups = Set(OtoroshiServiceGroupId("12345")))))
         ),
         allowMultipleKeys = Some(true),
         subscriptionProcess = Seq.empty,
@@ -4770,12 +4841,14 @@ class ApiControllerSpec()
         usagePlans = defaultApi.plans.map {
           case p: Admin => p.copy(aggregationApiKeysSecurity = Some(true))
           case p: FreeWithoutQuotas =>
-            p.copy(aggregationApiKeysSecurity = Some(true), otoroshiTarget = Some(
-              OtoroshiTarget(OtoroshiSettingsId("default2"),
-                Some(
-                  AuthorizedEntities(
-                    groups = Set(OtoroshiServiceGroupId("12345")))))
-            ))
+            p.copy(
+              aggregationApiKeysSecurity = Some(true),
+              otoroshiTarget = Some(
+                OtoroshiTarget(OtoroshiSettingsId("default2"),
+                               Some(AuthorizedEntities(groups =
+                                 Set(OtoroshiServiceGroupId("12345")))))
+              )
+            )
           case p: FreeWithQuotas =>
             p.copy(aggregationApiKeysSecurity = Some(true))
           case p: QuotasWithLimits =>
@@ -4814,7 +4887,8 @@ class ApiControllerSpec()
       )(tenant, loginWithBlocking(user, tenant))
 
       resp.status mustBe Status.CONFLICT
-      (resp.json \ "error").as[String] mustBe "The subscribed plan has another otoroshi of the parent plan"
+      (resp.json \ "error")
+        .as[String] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
   }
 }

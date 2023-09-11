@@ -115,7 +115,8 @@ object AppError {
       play.api.mvc.Results.Unauthorized(toJson(error))
     case TeamAlreadyVerified => Conflict(toJson(error))
     case UnexpectedError     => BadRequest(toJson(error))
-    case InternalServerError(message) => play.api.mvc.Results.InternalServerError(toJson(error))
+    case InternalServerError(message) =>
+      play.api.mvc.Results.InternalServerError(toJson(error))
   }
 
   def getErrorMessage(error: AppError) =
@@ -171,11 +172,11 @@ object AppError {
       case NameAlreadyExists   => "Resource with same name already exists"
       case ThirdPartyPaymentSettingsNotFound =>
         "Third-party payment settings not found"
-      case SecurityError(s)    => s"Forbidden action due to security : $s"
-      case TeamAlreadyVerified => "This team is already verified"
-      case UnexpectedError     => "Oops, an unexpected error occured ¯\\_(ツ)_/¯"
+      case SecurityError(s)         => s"Forbidden action due to security : $s"
+      case TeamAlreadyVerified      => "This team is already verified"
+      case UnexpectedError          => "Oops, an unexpected error occured ¯\\_(ツ)_/¯"
       case InternalServerError(msg) => msg
-      case _                   => ""
+      case _                        => ""
     }
 
   def toJson(error: AppError) = {
@@ -186,7 +187,7 @@ object AppError {
       case ParsingPayloadError(msg) =>
         Json.obj("error" -> "Error while parsing payload", "msg" -> msg)
       case InternalServerError(msg) => Json.obj("error" -> msg)
-      case _ => Json.obj("error" -> error.getErrorMessage())
+      case _                        => Json.obj("error" -> error.getErrorMessage())
     }
   }
 }

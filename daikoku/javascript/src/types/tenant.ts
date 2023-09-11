@@ -11,7 +11,7 @@ enum TenanMode {
 
 enum Display {
   default = 'default',
-  environment = 'environment'
+  environment = 'environment',
 }
 
 enum AuthProvider {
@@ -175,8 +175,8 @@ export interface ITenant {
   homePageVisible: boolean;
   mode: DaikokuMode;
   tenantMode: TenanMode;
-  display: Display,
-  environments: Array<string>
+  display: Display;
+  environments: Array<string>;
 }
 
 export interface ITenantFull extends ITenant {

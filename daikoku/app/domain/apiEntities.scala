@@ -4,7 +4,15 @@ import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TeamFormat, TeamIdFormat, UsagePlanFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  SeqIssueIdFormat,
+  SeqPostIdFormat,
+  SeqTeamIdFormat,
+  SetApiTagFormat,
+  TeamFormat,
+  TeamIdFormat,
+  UsagePlanFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
@@ -253,7 +261,8 @@ sealed trait UsagePlan {
                           idx: Option[Int] = None): UsagePlan
   def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan
   def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
-  def checkCustomName(tenant: Tenant, plans: Seq[UsagePlan])(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+  def checkCustomName(tenant: Tenant, plans: Seq[UsagePlan])(
+      implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     val existingNames = plans
       .filter(_.id != id)
       .collect(_.customName)
@@ -261,7 +270,13 @@ sealed trait UsagePlan {
     //FIXME: check conflict with extisting name in case of creation but
     tenant.display match {
       case TenantDisplay.Environment =>
-        EitherT.cond[Future](customName.exists(name => tenant.environments.contains(name) && !existingNames.contains(name)), (), AppError.EntityConflict("Plan custom name"))
+        EitherT.cond[Future](
+          customName.exists(
+            name =>
+              tenant.environments.contains(name) && !existingNames.contains(
+                name)),
+          (),
+          AppError.EntityConflict("Plan custom name"))
       case TenantDisplay.Default => EitherT.pure[Future, AppError](())
     }
   }
@@ -314,7 +329,8 @@ case object UsagePlan {
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
 
-    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+    override def addDocumentationPages(
+        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
       this
   }
   case class FreeWithoutQuotas(
@@ -376,8 +392,10 @@ case object UsagePlan {
       this.copy(
         subscriptionProcess = this.subscriptionProcess.filter(predicate))
 
-    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
+    override def addDocumentationPages(
+        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d =>
+        d.copy(pages = d.pages ++ pages)))
   }
   case class FreeWithQuotas(
       id: UsagePlanId,
@@ -439,8 +457,10 @@ case object UsagePlan {
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
 
-    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
+    override def addDocumentationPages(
+        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d =>
+        d.copy(pages = d.pages ++ pages)))
   }
   case class QuotasWithLimits(
       id: UsagePlanId,
@@ -503,8 +523,10 @@ case object UsagePlan {
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
 
-    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
+    override def addDocumentationPages(
+        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d =>
+        d.copy(pages = d.pages ++ pages)))
   }
   case class QuotasWithoutLimits(
       id: UsagePlanId,
@@ -569,8 +591,10 @@ case object UsagePlan {
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
 
-    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
+    override def addDocumentationPages(
+        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d =>
+        d.copy(pages = d.pages ++ pages)))
   }
   case class PayPerUse(
       id: UsagePlanId,
@@ -631,8 +655,10 @@ case object UsagePlan {
     override def removeSubscriptionStep(
         predicate: ValidationStep => Boolean): UsagePlan = this
 
-    override def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
+    override def addDocumentationPages(
+        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+      this.copy(documentation = documentation.map(d =>
+        d.copy(pages = d.pages ++ pages)))
   }
 }
 
@@ -942,7 +968,8 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
 
 case class ApiWithAuthorizations(api: Api,
                                  plans: Seq[UsagePlan],
-                                 authorizations: Seq[AuthorizationApi] = Seq.empty)
+                                 authorizations: Seq[AuthorizationApi] =
+                                   Seq.empty)
 case class ApiWithCount(apis: Seq[ApiWithAuthorizations], total: Long)
 case class NotificationWithCount(notifications: Seq[Notification], total: Long)
 case class TeamWithCount(teams: Seq[Team], total: Long)
@@ -978,16 +1005,19 @@ object ValidationStep {
     override def isAutomatic: Boolean = false
   }
 
-  case class TeamAdmin(id: String,
-                       team: TeamId,
-                       title: String = "Administrator",
-                       schema: Option[JsObject] = Json.obj(
-                         "motivation" -> Json.obj(
-                           "type" -> "string",
-                           "format" -> "textarea",
-                           "constraints" -> Json.arr(Json.obj("type" -> "required")))).some,
-                       formatter: Option[String] = "[[motivation]]".some)
-    extends ValidationStep {
+  case class TeamAdmin(
+      id: String,
+      team: TeamId,
+      title: String = "Administrator",
+      schema: Option[JsObject] = Json
+        .obj(
+          "motivation" -> Json.obj(
+            "type" -> "string",
+            "format" -> "textarea",
+            "constraints" -> Json.arr(Json.obj("type" -> "required"))))
+        .some,
+      formatter: Option[String] = "[[motivation]]".some)
+      extends ValidationStep {
     def name: String = "teamAdmin"
     override def isAutomatic: Boolean = false
   }
@@ -1003,7 +1033,9 @@ object ValidationStep {
   case class HttpRequest(id: String,
                          title: String,
                          url: String,
-                         headers: Map[String, String] = Map.empty[String, String]) extends ValidationStep {
+                         headers: Map[String, String] =
+                           Map.empty[String, String])
+      extends ValidationStep {
     def name: String = "httpRequest"
     override def isAutomatic: Boolean = true
   }

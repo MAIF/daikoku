@@ -145,13 +145,15 @@ class MockController(DaikokuAction: DaikokuAction,
       autoRotation = None,
       subscriptionProcess = Seq.empty,
       integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget = if(linkToOtoroshi) Some(
-        OtoroshiTarget(
-          otoroshiSettings = OtoroshiSettingsId("default"),
-          authorizedEntities = Some(
-            AuthorizedEntities(
-              groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-      ) else None,
+      otoroshiTarget =
+        if (linkToOtoroshi)
+          Some(
+            OtoroshiTarget(
+              otoroshiSettings = OtoroshiSettingsId("default"),
+              authorizedEntities = Some(AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
+          )
+        else None,
     ),
     FreeWithQuotas(
       id = UsagePlanId(IdGenerator.token),
@@ -167,13 +169,15 @@ class MockController(DaikokuAction: DaikokuAction,
       autoRotation = None,
       subscriptionProcess = Seq.empty,
       integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget = if (linkToOtoroshi) Some(
-        OtoroshiTarget(
-          otoroshiSettings = OtoroshiSettingsId("default"),
-          authorizedEntities = Some(
-            AuthorizedEntities(
-              groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-      ) else None
+      otoroshiTarget =
+        if (linkToOtoroshi)
+          Some(
+            OtoroshiTarget(
+              otoroshiSettings = OtoroshiSettingsId("default"),
+              authorizedEntities = Some(AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
+          )
+        else None
     ),
     QuotasWithLimits(
       id = UsagePlanId(IdGenerator.token),
@@ -191,13 +195,15 @@ class MockController(DaikokuAction: DaikokuAction,
       autoRotation = None,
       subscriptionProcess = Seq.empty,
       integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget = if (linkToOtoroshi) Some(
-        OtoroshiTarget(
-          otoroshiSettings = OtoroshiSettingsId("default"),
-          authorizedEntities = Some(
-            AuthorizedEntities(
-              groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-      ) else None
+      otoroshiTarget =
+        if (linkToOtoroshi)
+          Some(
+            OtoroshiTarget(
+              otoroshiSettings = OtoroshiSettingsId("default"),
+              authorizedEntities = Some(AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
+          )
+        else None
     ),
     QuotasWithoutLimits(
       id = UsagePlanId(IdGenerator.token),
@@ -216,13 +222,15 @@ class MockController(DaikokuAction: DaikokuAction,
       autoRotation = None,
       subscriptionProcess = Seq.empty,
       integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget = if (linkToOtoroshi) Some(
-        OtoroshiTarget(
-          otoroshiSettings = OtoroshiSettingsId("default"),
-          authorizedEntities = Some(
-            AuthorizedEntities(
-              groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-      ) else None
+      otoroshiTarget =
+        if (linkToOtoroshi)
+          Some(
+            OtoroshiTarget(
+              otoroshiSettings = OtoroshiSettingsId("default"),
+              authorizedEntities = Some(AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
+          )
+        else None
     ),
     PayPerUse(
       id = UsagePlanId(IdGenerator.token),
@@ -238,13 +246,15 @@ class MockController(DaikokuAction: DaikokuAction,
       autoRotation = None,
       subscriptionProcess = Seq.empty,
       integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget = if (linkToOtoroshi) Some(
-        OtoroshiTarget(
-          otoroshiSettings = OtoroshiSettingsId("default"),
-          authorizedEntities = Some(
-            AuthorizedEntities(
-              groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-      ) else None
+      otoroshiTarget =
+        if (linkToOtoroshi)
+          Some(
+            OtoroshiTarget(
+              otoroshiSettings = OtoroshiSettingsId("default"),
+              authorizedEntities = Some(AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
+          )
+        else None
     )
   )
 
@@ -265,8 +275,7 @@ class MockController(DaikokuAction: DaikokuAction,
       smallDescription =
         s"$name to Lorem ipsum dolor sit amet, consectetur adipiscing elit",
       tags = Set("api", "rest", "java", "fun"),
-      description =
-        s"""# $name - $id
+      description = s"""# $name - $id
            |
            |Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus.
            |
@@ -367,7 +376,8 @@ class MockController(DaikokuAction: DaikokuAction,
         lastModificationAt = DateTime.now(),
       ),
       swagger = Some(
-        SwaggerAccess(url = "/assets/swaggers/petstore.json".some, content = None)),
+        SwaggerAccess(url = "/assets/swaggers/petstore.json".some,
+                      content = None)),
       possibleUsagePlans = plans.map(_.id),
       defaultUsagePlan = plans.head.id
     )
@@ -874,7 +884,9 @@ class MockController(DaikokuAction: DaikokuAction,
         .save(adminApiDefaultTenant)
       _ <- env.dataStore.usagePlanRepo.forTenant(Tenant.Default).save(adminPlan)
       _ <- env.dataStore.apiRepo.forTenant(tenant2Id).save(adminApiTenant2)
-      _ <- env.dataStore.usagePlanRepo.forTenant(tenant2Id).save(adminPlanTenant2)
+      _ <- env.dataStore.usagePlanRepo
+        .forTenant(tenant2Id)
+        .save(adminPlanTenant2)
       _ <- teamRepo1.save(
         Team(
           id = TeamId(team3Id),
@@ -952,9 +964,18 @@ class MockController(DaikokuAction: DaikokuAction,
       ids <- saveApiDocPages(tenantId)
       ids2 <- saveApiDocPages(tenant2Id)
 
-      toyApiDefault = ToyApi("0", tenantId, TeamId(team1Id), ids, Seq(TeamId(team3Id)))
+      toyApiDefault = ToyApi("0",
+                             tenantId,
+                             TeamId(team1Id),
+                             ids,
+                             Seq(TeamId(team3Id)))
       toyApiJohnny = ToyApi("0", tenant2Id, TeamId(teamJohnnyId), ids2)
-      sampleApi = SampleApi("1", tenantId, "Sample Api", TeamId(team2Id), ids, ApiVisibility.PublicWithAuthorizations)
+      sampleApi = SampleApi("1",
+                            tenantId,
+                            "Sample Api",
+                            TeamId(team2Id),
+                            ids,
+                            ApiVisibility.PublicWithAuthorizations)
 
       _ <- Future.sequence(
         Seq(
@@ -963,8 +984,12 @@ class MockController(DaikokuAction: DaikokuAction,
           apiRepo.save(sampleApi._1),
         )
       )
-      _ <- env.dataStore.usagePlanRepo.forTenant(Tenant.Default).insertMany(toyApiDefault._2 ++ sampleApi._2)
-      _ <- env.dataStore.usagePlanRepo.forTenant(tenant2Id).insertMany(toyApiJohnny._2)
+      _ <- env.dataStore.usagePlanRepo
+        .forTenant(Tenant.Default)
+        .insertMany(toyApiDefault._2 ++ sampleApi._2)
+      _ <- env.dataStore.usagePlanRepo
+        .forTenant(tenant2Id)
+        .insertMany(toyApiJohnny._2)
 
       _ <- Future.sequence(issues.map(issue =>
         env.dataStore.apiIssueRepo.forTenant(tenantId).save(issue)))
@@ -1119,33 +1144,34 @@ class MockController(DaikokuAction: DaikokuAction,
           FastFuture.successful(
             NotFound(Json.obj("error" -> "subscription not found")))
         case Some(sub) =>
-          env.dataStore.usagePlanRepo.forAllTenant().findOneNotDeleted(Json.obj("_id" -> sub.plan.asJson)).map {
-            case None => NotFound(Json.obj("error" -> "plan not found"))
-            case Some(pp) =>
-              val callPerSec =
-                      r.nextInt(pp.maxRequestPerSecond.getOrElse(10L).toInt)
-              val callPerDay =
-                      r.nextInt(pp.maxRequestPerDay.getOrElse(100L).toInt)
-              val callPerMonth =
-                      r.nextInt(pp.maxRequestPerMonth.getOrElse(1000L).toInt)
+          env.dataStore.usagePlanRepo
+            .forAllTenant()
+            .findOneNotDeleted(Json.obj("_id" -> sub.plan.asJson))
+            .map {
+              case None => NotFound(Json.obj("error" -> "plan not found"))
+              case Some(pp) =>
+                val callPerSec =
+                  r.nextInt(pp.maxRequestPerSecond.getOrElse(10L).toInt)
+                val callPerDay =
+                  r.nextInt(pp.maxRequestPerDay.getOrElse(100L).toInt)
+                val callPerMonth =
+                  r.nextInt(pp.maxRequestPerMonth.getOrElse(1000L).toInt)
 
-              Ok(ApiKeyQuotas(
-                      authorizedCallsPerSec =
-                        pp.maxRequestPerSecond.getOrElse(0),
-                      currentCallsPerSec = callPerSec,
-                      remainingCallsPerSec = pp.maxRequestPerSecond.getOrElse(
-                        0L) - callPerSec,
-                      authorizedCallsPerDay = pp.maxRequestPerDay.getOrElse(0),
-                      currentCallsPerDay = callPerDay,
-                      remainingCallsPerDay = pp.maxRequestPerDay
-                        .getOrElse(0L) - callPerDay,
-                      authorizedCallsPerMonth =
-                        pp.maxRequestPerMonth.getOrElse(0),
-                      currentCallsPerMonth = callPerMonth,
-                      remainingCallsPerMonth = pp.maxRequestPerMonth.getOrElse(
-                        0L) - callPerMonth,
-                    ).asJson)
-          }
+                Ok(ApiKeyQuotas(
+                  authorizedCallsPerSec = pp.maxRequestPerSecond.getOrElse(0),
+                  currentCallsPerSec = callPerSec,
+                  remainingCallsPerSec = pp.maxRequestPerSecond
+                    .getOrElse(0L) - callPerSec,
+                  authorizedCallsPerDay = pp.maxRequestPerDay.getOrElse(0),
+                  currentCallsPerDay = callPerDay,
+                  remainingCallsPerDay = pp.maxRequestPerDay
+                    .getOrElse(0L) - callPerDay,
+                  authorizedCallsPerMonth = pp.maxRequestPerMonth.getOrElse(0),
+                  currentCallsPerMonth = callPerMonth,
+                  remainingCallsPerMonth = pp.maxRequestPerMonth
+                    .getOrElse(0L) - callPerMonth,
+                ).asJson)
+            }
       }
   }
 }

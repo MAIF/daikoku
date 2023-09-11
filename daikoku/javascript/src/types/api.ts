@@ -11,12 +11,10 @@ export interface IWithSwagger {
 
 export interface IWithTesting {
   testing?: ITesting;
-  _id: string
-  name?: string
-  customName?: string
+  _id: string;
+  name?: string;
+  customName?: string;
 }
-
-
 
 interface IBaseApi extends IWithSwagger, IWithTesting {
   _id: string;
@@ -80,10 +78,10 @@ export interface IApiWithAuthorization {
 }
 
 export interface IApiExtended extends IApi {
-  pendingRequests: INotification
-  subscriptions: ISafeSubscription
-  myTeams: Array<ITeamSimple>
-  authorizations: Array<{ team: string, authorized: boolean, pending: boolean }>
+  pendingRequests: INotification;
+  subscriptions: ISafeSubscription;
+  myTeams: Array<ITeamSimple>;
+  authorizations: Array<{ team: string; authorized: boolean; pending: boolean }>;
 }
 
 export interface IApiAuthoWithCount {
@@ -137,12 +135,12 @@ export interface IDocumentation {
 }
 
 export interface IImportingDocumentation {
-  from: string
-  _id: string
-  pages: Array<{ 
-    _id: string, 
-    title: string 
-  }>
+  from: string;
+  _id: string;
+  pages: Array<{
+    _id: string;
+    title: string;
+  }>;
 }
 
 export interface ISwagger {
@@ -151,7 +149,7 @@ export interface ISwagger {
   headers: { [key: string]: string };
 }
 
-export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest'
+export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest';
 
 export interface IValidationStep {
   id: string;
@@ -236,12 +234,12 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting {
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
-  documentation?: IDocumentation
+  documentation?: IDocumentation;
 }
 
-export interface IUsagePlanAdmin extends IUsagePlan { }
+export interface IUsagePlanAdmin extends IUsagePlan {}
 
-export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan { }
+export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan {}
 export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
   maxPerSecond: number;
   maxPerDay: number;
@@ -336,19 +334,19 @@ export interface IDocPage {
 }
 
 export interface IOtoroshiApiKey {
-    clientId: string,
-    clientSecret: string,
-    clientName: String,
-    authorizedEntities: IAuthorizedEntities,
-    enabled: boolean,
-    allowClientIdOnly: boolean,
-    readOnly: boolean,
-    constrainedServicesOnly: boolean,
-    throttlingQuota: number,
-    dailyQuota: number,
-    monthlyQuota: number,
-    tags: Array<string>,
-    metadata: {[x: string]: string}
+  clientId: string;
+  clientSecret: string;
+  clientName: String;
+  authorizedEntities: IAuthorizedEntities;
+  enabled: boolean;
+  allowClientIdOnly: boolean;
+  readOnly: boolean;
+  constrainedServicesOnly: boolean;
+  throttlingQuota: number;
+  dailyQuota: number;
+  monthlyQuota: number;
+  tags: Array<string>;
+  metadata: { [x: string]: string };
 }
 
 export interface IApiKey {
@@ -428,11 +426,11 @@ export interface ISubscription extends IBaseSubscription {
 }
 
 export interface ISubscriptionExtended extends ISubscription {
-  parentUp: boolean
-  planType: string
-  planName: string
-  apiName: string
-  _humanReadableId: string
+  parentUp: boolean;
+  planType: string;
+  planName: string;
+  apiName: string;
+  _humanReadableId: string;
 }
 
 export interface ISubscriptionWithApiInfo extends ISubscription {

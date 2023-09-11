@@ -227,10 +227,13 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       completed: Boolean = false): Future[Seq[ApiKeyConsumption]] = {
     (for {
       api <- OptionT.fromOption[Future](maybeApi)
-      plan <- OptionT(env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan))
+      plan <- OptionT(
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findById(subscription.plan))
       otoroshiTarget <- OptionT.fromOption[Future](plan.otoroshiTarget)
-      otoSettings <- OptionT.fromOption[Future](tenant.otoroshiSettings.find(
-        _.id == otoroshiTarget.otoroshiSettings))
+      otoSettings <- OptionT.fromOption[Future](
+        tenant.otoroshiSettings.find(_.id == otoroshiTarget.otoroshiSettings))
     } yield {
       implicit val otoroshiSettings: OtoroshiSettings = otoSettings
 

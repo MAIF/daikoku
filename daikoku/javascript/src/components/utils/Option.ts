@@ -7,12 +7,11 @@ export interface IOption<A> {
   fold<B>(ifEmpty: B, f: (a: A) => B): B;
   orElse<B>(ob: B): IOption<A> | IOption<B> | INone;
   getOrElse<B>(b: B): A | B;
-  getOrNull(): A | undefined
+  getOrNull(): A | undefined;
   isDefined: boolean;
   exists(f: (a: A) => boolean): boolean;
   filter(f: (a: A) => boolean): IOption<A> | INone;
 }
-
 
 export const Option = <T>(x: T) => (x === undefined || x === null ? None : Some(x));
 
@@ -51,7 +50,6 @@ export const None = {
 //   exists(f: (a: A) => boolean): boolean;
 //   filter(f: (a: A) => boolean): IOption<A>;
 // }
-
 
 // export const Option = <T>(x: T): IOption<T> => (x === undefined || x === null ? None() : Some(x));
 

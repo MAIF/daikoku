@@ -4,14 +4,22 @@ import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, TeamApiKeyAction}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  TeamAdminOnly,
+  TeamApiKeyAction
+}
 import fr.maif.otoroshi.daikoku.domain.OtoroshiSettings
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import jobs.ApiKeyStatsJob
 import org.joda.time.DateTime
 import play.api.libs.json._
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -188,20 +196,19 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                   case Some(plan) =>
                     plan.otoroshiTarget match {
                       case None =>
-                        FastFuture.successful(NotFound(Json.obj(
-                          "error" -> "Otoroshi target not found")))
+                        FastFuture.successful(NotFound(
+                          Json.obj("error" -> "Otoroshi target not found")))
                       case Some(target) =>
-                        ctx.tenant.otoroshiSettings.find(
-                          _.id == target.otoroshiSettings) match {
+                        ctx.tenant.otoroshiSettings
+                          .find(_.id == target.otoroshiSettings) match {
                           case None =>
                             Future.successful(NotFound(Json.obj(
                               "error" -> "Otoroshi settings not found")))
                           case Some(otoSettings) =>
-                            implicit val otoroshiSettings
-                            : OtoroshiSettings = otoSettings
+                            implicit val otoroshiSettings: OtoroshiSettings =
+                              otoSettings
                             otoroshiClient
-                              .getApiKeyQuotas(
-                                subscription.apiKey.clientId)
+                              .getApiKeyQuotas(subscription.apiKey.clientId)
                               .map(result => Ok(result))
 
                         }
@@ -234,20 +241,19 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
           .flatMap {
             case None => AppError.ApiNotFound.renderF()
             case Some(plan) =>
-                  env.dataStore.consumptionRepo
-                    .forTenant(ctx.tenant.id)
-                    .find(
-                      Json.obj("api" -> apiId, //FIXME: get api from plan
-                               "plan" -> planId,
-                               "from" -> Json.obj("$gte" -> fromTimestamp),
-                               "to" -> Json.obj("$lte" -> toTimestamp)),
-                      Some(Json.obj("from" -> 1))
-                    )
-                    .map(consumptions =>
-                      Ok(JsArray(consumptions.map(_.asJson))))
-              }
+              env.dataStore.consumptionRepo
+                .forTenant(ctx.tenant.id)
+                .find(
+                  Json.obj("api" -> apiId, //FIXME: get api from plan
+                           "plan" -> planId,
+                           "from" -> Json.obj("$gte" -> fromTimestamp),
+                           "to" -> Json.obj("$lte" -> toTimestamp)),
+                  Some(Json.obj("from" -> 1))
+                )
+                .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
           }
       }
+    }
 
   def getApiConsumption(teamId: String,
                         apiId: String,
@@ -314,8 +320,10 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
               Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptions.map(s =>
                 s.api.asJson))))
             )
-          plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptions.map(_.plan.asJson)))))
+          plans <- env.dataStore.usagePlanRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(Json.obj("_id" -> Json.obj(
+              "$in" -> JsArray(subscriptions.map(_.plan.asJson)))))
           consumptions <- env.dataStore.consumptionRepo
             .forTenant(ctx.tenant.id)
             .find(Json.obj("team" -> team.id.value,

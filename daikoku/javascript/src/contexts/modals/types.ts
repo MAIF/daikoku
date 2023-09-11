@@ -102,7 +102,7 @@ export type TestingApiKeyModalProps<T extends IWithTesting> = {
   onChange: (apiKey: IOtoroshiApiKey, config: ITestingConfig) => void;
   config: ITestingConfig;
   metadata: any;
-  value: T
+  value: T;
 };
 type LimitedTeam = {
   _id: string;
@@ -159,17 +159,17 @@ type NotificationGQL = {
 };
 export type SubscriptionMetadataModalProps<T extends IWithTesting> = {
   creationMode?: boolean;
-  api?: string
+  api?: string;
   plan?: string;
   save: ((sub: CustomSubscriptionData) => Promise<void>) | ((sub: CustomSubscriptionData) => void);
   team?: ITeamSimple | LimitedTeam;
   notification?: INotification | NotificationGQL;
   config?: ITestingConfig;
   subscription?: ISafeSubscription | ApiSubscriptionGql;
-  subscriptionDemand?: ISubscriptionDemand
+  subscriptionDemand?: ISubscriptionDemand;
   description?: any;
   noClose?: boolean;
-  value: T
+  value: T;
 };
 
 export interface IApiDocumentationSelectModalProps {
@@ -177,7 +177,7 @@ export interface IApiDocumentationSelectModalProps {
   api: IApi;
   getDocumentationPages: () => Promise<ResponseError | Array<IImportingDocumentation>>;
   onClose: () => void;
-  importPages: (pages: Array<string>) => Promise<ResponseError | ResponseDone>
+  importPages: (pages: Array<string>) => Promise<ResponseError | ResponseDone>;
 }
 
 export type TeamSelectorModalProps = {

@@ -5,7 +5,14 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions._
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminAccessTenant
-import fr.maif.otoroshi.daikoku.domain.{Api, ApiState, ApiVisibility, Team, UsagePlan, json}
+import fr.maif.otoroshi.daikoku.domain.{
+  Api,
+  ApiState,
+  ApiVisibility,
+  Team,
+  UsagePlan,
+  json
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.future._
@@ -129,11 +136,15 @@ class IntegrationApiController(DaikokuAction: DaikokuAction,
 
   def apiComplete(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
     TenantAdminAccessTenant(AuditTrailEvent(
-      "@{user.name} is accessing team @{team.name} visible api @{api.name} complete through integration api"))(ctx) {
+      "@{user.name} is accessing team @{team.name} visible api @{api.name} complete through integration api"))(
+      ctx) {
       (for {
         api <- EitherT(findById(ctx, teamId, apiId))
-        plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
-          .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(api._2.possibleUsagePlans.map(_.asJson))))))
+        plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
+          env.dataStore.usagePlanRepo
+            .forTenant(ctx.tenant)
+            .find(Json.obj("_id" -> Json.obj(
+              "$in" -> JsArray(api._2.possibleUsagePlans.map(_.asJson))))))
       } yield {
         api._2.documentation.fetchPages(ctx.tenant).map { pages =>
           val cleanPages = pages.map(p =>
@@ -150,12 +161,10 @@ class IntegrationApiController(DaikokuAction: DaikokuAction,
               "api" -> api._2.name.urlPathSegmentSanitized,
               "team" -> api._1.name.urlPathSegmentSanitized,
               "possibleUsagePlans" -> JsArray(plans.map(v =>
-                v.asJson.as[JsObject] - "_id" ++ Json.obj(
-                  "id" -> v.id.value)))
+                v.asJson.as[JsObject] - "_id" ++ Json.obj("id" -> v.id.value)))
             ))
         }
-      })
-        .leftMap(_.renderF())
+      }).leftMap(_.renderF())
         .merge
         .flatten
 
@@ -189,17 +198,21 @@ class IntegrationApiController(DaikokuAction: DaikokuAction,
 
       (for {
         result <- EitherT(findById(ctx, teamId, apiId))
-        plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
-          .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(result._2.possibleUsagePlans.map(_.asJson))))))
-      } yield Ok(
-        Json.obj(
-          "id" -> s"$teamId/$apiId/plans",
-          "api" -> result._2.name.urlPathSegmentSanitized,
-          "team" -> result._1.name.urlPathSegmentSanitized,
-          "name" -> result._2.name,
-          "plans" -> JsArray(plans.map(v =>
-            v.asJson.as[JsObject] - "_id" ++ Json.obj("id" -> v.id.value)))
-        )))
+        plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
+          env.dataStore.usagePlanRepo
+            .forTenant(ctx.tenant)
+            .find(Json.obj("_id" -> Json.obj(
+              "$in" -> JsArray(result._2.possibleUsagePlans.map(_.asJson))))))
+      } yield
+        Ok(
+          Json.obj(
+            "id" -> s"$teamId/$apiId/plans",
+            "api" -> result._2.name.urlPathSegmentSanitized,
+            "team" -> result._1.name.urlPathSegmentSanitized,
+            "name" -> result._2.name,
+            "plans" -> JsArray(plans.map(v =>
+              v.asJson.as[JsObject] - "_id" ++ Json.obj("id" -> v.id.value)))
+          )))
         .leftMap(_.render())
         .merge
 

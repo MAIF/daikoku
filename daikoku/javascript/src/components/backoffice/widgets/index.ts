@@ -1,3 +1,3 @@
 export * from './teamDemands';
 export * from './teamDemandsExt';
-export * from './revenus'
+export * from './revenus';
