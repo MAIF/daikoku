@@ -1698,7 +1698,7 @@ object json {
       Try {
         JsSuccess(
           SwaggerAccess(
-            url = (json \ "url").as[String],
+            url = (json \ "url").asOpt[String],
             content = (json \ "content").asOpt[String],
             headers = (json \ "headers")
               .asOpt[Map[String, String]]
@@ -1706,7 +1706,9 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: SwaggerAccess): JsValue = Json.obj(

@@ -83,7 +83,7 @@ class ApiController(
           api.swagger match {
             case Some(SwaggerAccess(_, Some(content), _)) =>
               EitherT.pure[Future, AppError](Ok(content).as("application/json"))
-            case Some(SwaggerAccess(url, None, headers)) =>
+            case Some(SwaggerAccess(Some(url), None, headers)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
                 else url
@@ -102,7 +102,7 @@ class ApiController(
                   FastFuture.successful(Left(AppError.EntityNotFound("Swagger"))
                   )
               }.get)
-            case None => EitherT.leftT[Future, Result](AppError.EntityNotFound("Swagger access"))
+            case _ => EitherT.leftT[Future, Result](AppError.EntityNotFound("Swagger access"))
           }
         }
 
@@ -132,7 +132,7 @@ class ApiController(
           plan.swagger match {
             case Some(SwaggerAccess(_, Some(content), _)) =>
               EitherT.pure[Future, AppError](Ok(content).as("application/json"))
-            case Some(SwaggerAccess(url, None, headers)) =>
+            case Some(SwaggerAccess(Some(url), None, headers)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
                 else url
@@ -153,7 +153,7 @@ class ApiController(
                   )
               }
               EitherT(triedEventualErrorOrResult.get)
-            case None => EitherT.leftT[Future, Result](AppError.EntityNotFound("Swagger access"))
+            case _ => EitherT.leftT[Future, Result](AppError.EntityNotFound("Swagger access"))
           }
         }
 
@@ -3632,7 +3632,7 @@ class ApiController(
                               ),
                               swagger = Some(
                                 SwaggerAccess(
-                                  url = "/assets/swaggers/petstore.json")
+                                  url = "/assets/swaggers/petstore.json".some)
                               ),
                               possibleUsagePlans = Seq.empty,
                               defaultUsagePlan = UsagePlanId(""),

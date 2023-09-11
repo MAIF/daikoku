@@ -541,8 +541,19 @@ export const TeamApiPricings = (props: Props) => {
             onClick={() => setSelectedTab('swagger')}>{translate('Swagger')}</span>
         )}
         {mode === possibleMode.edition && tenant.display === 'environment' && (
-          <span className={classNames('submenu__entry__link', { active: selectedTab === 'testing' })}
-            onClick={() => setSelectedTab('testing')}>{translate('Testing')}</span>
+          <span className={classNames('submenu__entry__link',
+            {
+              active: selectedTab === 'testing',
+              disabled: !planForEdition?.swagger?.content && !planForEdition?.swagger?.url
+            })}
+            onClick={() => {
+              const swaggerExist = !!planForEdition?.swagger?.content || !!planForEdition?.swagger?.url
+              if (swaggerExist) {
+                setSelectedTab('testing')
+              }
+            }}>
+            {translate('Testing')}
+          </span>
         )}
         {mode === possibleMode.edition && tenant.display === 'environment' && (
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'documentation' })}
@@ -553,7 +564,7 @@ export const TeamApiPricings = (props: Props) => {
       props.injectSubMenu(null)
     }
 
-  }, [mode, selectedTab])
+  }, [mode, selectedTab, planForEdition])
 
   useEffect(() => {
     if (mode === possibleMode.creation) {
@@ -1350,6 +1361,7 @@ export const TeamApiPricings = (props: Props) => {
               //FIXME: inaccessible si pas de swagger
               <TeamApiTesting
                 value={planForEdition}
+                api={props.api}
                 onChange={savePlan}
                 metadata={planForEdition.otoroshiTarget?.apikeyCustomization.metadata || {}} />
             )}
@@ -1835,7 +1847,7 @@ const ValidationStep = (props: ValidationStepProps) => {
         <span className='validation-step__type'><User /></span>
       </div>
     )
-  }  else if (isValidationStepHttpRequest(step)) {
+  } else if (isValidationStepHttpRequest(step)) {
     return (
       <div className='d-flex flex-column validation-step'>
         <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>

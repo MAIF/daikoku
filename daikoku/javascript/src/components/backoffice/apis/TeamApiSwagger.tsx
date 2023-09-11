@@ -142,6 +142,7 @@ export const TeamApiSwagger = <T extends IWithSwagger>({
       ref={reference}
       schema={schema}
       onSubmit={(swagger) => {
+        console.debug({value, swagger})
         onChange({ ...value, swagger });
       }}
       value={value.swagger}

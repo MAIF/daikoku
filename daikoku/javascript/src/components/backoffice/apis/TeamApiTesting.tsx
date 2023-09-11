@@ -7,7 +7,7 @@ import { useDispatch } from 'react-redux';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { IApi, IState, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting } from '../../../types';
+import { IApi, IState, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting, isApi, isUsagePlan } from '../../../types';
 import { Option } from '../../utils';
 
 interface TeamApiTestingProps<T extends IWithTesting> {
@@ -15,7 +15,8 @@ interface TeamApiTestingProps<T extends IWithTesting> {
   onChange: (s: T) => void
   reference?: MutableRefObject<FormRef | undefined>
   metadata: object,
-  plan?: IUsagePlan
+  plan?: IUsagePlan,
+  api?: IApi
 }
 
 export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProps<T>) => {
@@ -62,6 +63,8 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       },
       config: testing?.config,
       value: props.value,
+      api: props.api ? props.api._id : props.value._id,
+      plan: isUsagePlan(props.value) ? props.value._id : undefined,
       description: <div>Description</div>,
       noClose: true
     });

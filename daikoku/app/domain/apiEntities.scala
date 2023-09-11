@@ -6,6 +6,7 @@ import cats.syntax.option._
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TeamFormat, TeamIdFormat, UsagePlanFormat}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import org.joda.time.{DateTime, Days}
@@ -643,18 +644,18 @@ case class OtoroshiApiKey(
   override def asJson: JsValue = json.OtoroshiApiKeyFormat.writes(this)
 }
 
-case class SwaggerAccess(url: String,
+case class SwaggerAccess(url: Option[String],
                          content: Option[String] = None,
                          headers: Map[String, String] =
                            Map.empty[String, String]) {
   def swaggerContent()(implicit ec: ExecutionContext,
                        env: Env): Future[JsValue] = {
-    content match {
-      case Some(c) => FastFuture.successful(Json.parse(c))
-      case None => {
+    (content, url) match {
+      case (Some(c), _) => FastFuture.successful(Json.parse(c))
+      case (None, Some(_url)) =>
         val finalUrl =
-          if (url.startsWith("/")) s"http://127.0.0.1:${env.config.port}${url}"
-          else url
+          if (_url.startsWith("/")) s"http://127.0.0.1:${env.config.port}$url"
+          else _url
         env.wsClient
           .url(finalUrl)
           .withHttpHeaders(headers.toSeq: _*)
@@ -662,7 +663,7 @@ case class SwaggerAccess(url: String,
           .map { resp =>
             Json.parse(resp.body)
           }
-      }
+      case (_, _) => FastFuture.successful(Json.obj())
     }
   }
 }
@@ -846,7 +847,7 @@ case class Api(
     testing: Testing = Testing(),
     documentation: ApiDocumentation,
     swagger: Option[SwaggerAccess] = Some(
-      SwaggerAccess(url = "/assets/swaggers/petstore.json")),
+      SwaggerAccess(url = "/assets/swaggers/petstore.json".some)),
     tags: Set[String] = Set.empty,
     categories: Set[String] = Set.empty,
     visibility: ApiVisibility,

@@ -52,12 +52,6 @@ export const TeamApiInfos = ({
       component: TeamApiSwagger,
       skipTo: 'save',
     },
-    {
-      id: 'testing',
-      label: translate('Testing'),//@ts-ignore
-      component: TeamApiTesting,
-      skipTo: 'save',
-    },
   ];
 
   if (value.visibility === 'AdminOnly') {

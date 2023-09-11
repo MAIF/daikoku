@@ -5,15 +5,11 @@ import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
+import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
-import fr.maif.otoroshi.daikoku.domain.{
-  DatastoreId,
-  Evolution,
-  TeamApiKeyVisibility,
-  Tenant
-}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Evolution, TeamApiKeyVisibility, Tenant}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.logger.AppLogger
@@ -443,7 +439,7 @@ class DaikokuEnv(ws: WSClient,
                     pages = Seq.empty[ApiDocumentationDetailPage],
                     lastModificationAt = DateTime.now()
                   ),
-                  swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
+                  swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
                   possibleUsagePlans = Seq(adminApiDefaultPlan.id),
                   visibility = ApiVisibility.AdminOnly,
                   defaultUsagePlan = adminApiDefaultPlan.id,

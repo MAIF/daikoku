@@ -146,7 +146,7 @@ export interface IImportingDocumentation {
 }
 
 export interface ISwagger {
-  url: string;
+  url?: string;
   content?: string;
   headers: { [key: string]: string };
 }

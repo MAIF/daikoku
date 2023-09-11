@@ -6,6 +6,7 @@ import java.nio.file.{Files, StandardCopyOption}
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{Keep, Sink, Source}
+import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.themillhousegroup.scoup.Scoup
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
@@ -1043,7 +1044,7 @@ object utils {
           lastModificationAt = DateTime.now(),
         ),
         swagger = Some(
-          SwaggerAccess(url = "/assets/swaggers/petstore.json", content = None)),
+          SwaggerAccess(url = "/assets/swaggers/petstore.json".some, content = None)),
         possibleUsagePlans = plans.map(_.id),
         defaultUsagePlan = UsagePlanId("1")
       )

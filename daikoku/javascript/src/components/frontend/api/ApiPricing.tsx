@@ -71,10 +71,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         })
       } else {
         props.askForApikeys({ team, plan: plan, apiKey })
-          .then(r => {
-            console.debug({ r })
-            close()
-          })
+          .then(() => close())
       }
     }
 
@@ -178,13 +175,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             <div className='flex-shrink-1 d-flex flex-column'>
               <Link
                 to={`./${props.plan.customName}/swagger`} relative='path'
-                className={classNames("btn btn-sm btn-outline-primary mb-1", {'link__disabled': !props.plan.swagger})}>swagger</Link>
+                className={classNames("btn btn-sm btn-outline-primary mb-1", { 'link__disabled': !props.plan.swagger?.url && !props.plan.swagger?.content })}>swagger</Link>
               <Link
                 to={`./${props.plan.customName}/testing`} relative='path'
-                className={classNames("btn btn-sm btn-outline-primary mb-1", {'link__disabled': !props.plan.testing?.enabled})}>test</Link>
+                className={classNames("btn btn-sm btn-outline-primary mb-1", { 'link__disabled': !props.plan.testing?.enabled })}>test</Link>
               <Link
                 to={`./${props.plan.customName}/documentation`} relative='path'
-                className={classNames("btn btn-sm btn-outline-primary", {'link__disabled': !props.plan.documentation})}>Documentation</Link>
+                className={classNames("btn btn-sm btn-outline-primary", { 'link__disabled': !props.plan.documentation?.pages.length })}>Documentation</Link>
             </div>
           )}
         </div>
@@ -363,9 +360,27 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <h5 className='ms-3'>{plan.customName}</h5>
           </div>
           <div className='d-flex flex-row justify-content-around mb-2'>
-            <Link to={`../../${plan.customName}/swagger`} relative='path' className="btn btn-sm btn-outline-secondary mb-1">swagger</Link>
-            <Link to={`../../${plan.customName}/testing`} relative='path' className="btn btn-sm btn-outline-secondary mb-1">test</Link>
-            <Link to={`../../${plan.customName}/documentation`} relative='path' className="btn btn-sm btn-outline-secondary">Documentation</Link>
+            <Link
+              to={`../../${plan.customName}/swagger`} relative='path'
+              className={classNames("btn btn-sm btn-outline-secondary mb-1",
+                {
+                  link__disabled: !plan.swagger?.content && !plan.swagger?.url,
+                  disabled: !plan.swagger?.content && !plan.swagger?.url
+                })}>swagger</Link>
+            <Link
+              to={`../../${plan.customName}/testing`} relative='path'
+              className={classNames("btn btn-sm btn-outline-secondary mb-1",
+                {
+                  link__disabled: !plan.testing || !plan.testing.enabled,
+                  disabled: !plan.testing || !plan.testing.enabled,
+                })}>test</Link>
+            <Link
+              to={`../../${plan.customName}/documentation`} relative='path'
+              className={classNames("btn btn-sm btn-outline-secondary",
+                {
+                  link__disabled: !plan.documentation || !plan.documentation?.pages.length,
+                  disabled: !plan.documentation || !plan.documentation?.pages.length,
+                })}>Documentation</Link>
           </div>
           <div>
             {maybeTab === 'swagger' && <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`} />}

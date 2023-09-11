@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
@@ -303,7 +304,7 @@ class MockController(DaikokuAction: DaikokuAction,
         pages = docPages,
         lastModificationAt = DateTime.now()
       ),
-      swagger = Some(SwaggerAccess("/assets/swaggers/petstore.json", None)),
+      swagger = Some(SwaggerAccess("/assets/swaggers/petstore.json".some, None)),
       possibleUsagePlans = plans.map(_.id),
       defaultUsagePlan = plans.head.id
     )
@@ -366,7 +367,7 @@ class MockController(DaikokuAction: DaikokuAction,
         lastModificationAt = DateTime.now(),
       ),
       swagger = Some(
-        SwaggerAccess(url = "/assets/swaggers/petstore.json", content = None)),
+        SwaggerAccess(url = "/assets/swaggers/petstore.json".some, content = None)),
       possibleUsagePlans = plans.map(_.id),
       defaultUsagePlan = plans.head.id
     )
@@ -551,7 +552,7 @@ class MockController(DaikokuAction: DaikokuAction,
         pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
       ),
-      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
       possibleUsagePlans = Seq(adminPlan.id),
       tags = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
@@ -567,7 +568,7 @@ class MockController(DaikokuAction: DaikokuAction,
       name = s"admin-api-tenant-${tenant2Id.value}",
       team = tenant2adminTeam.id,
       tags = Set("Administration"),
-      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = tenant2Id,

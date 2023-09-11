@@ -2,6 +2,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
@@ -234,7 +235,7 @@ class TenantController(DaikokuAction: DaikokuAction,
               pages = Seq.empty[ApiDocumentationDetailPage],
               lastModificationAt = DateTime.now()
             ),
-            swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
+            swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
             possibleUsagePlans = Seq(adminApiPlan.id),
             defaultUsagePlan = UsagePlanId("admin"),
             authorizedTeams = Seq.empty
