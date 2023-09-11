@@ -107,7 +107,7 @@ class ApiController(
         }
 
         (for {
-          _ <- EitherT.cond[Future][AppError, Unit](ctx.tenant.apiReferenceHideForGuest.getOrElse(true) && ctx.user.isGuest, (), AppError.ForbiddenAction)
+          _ <- EitherT.cond[Future][AppError, Unit](!(ctx.tenant.apiReferenceHideForGuest.getOrElse(true) && ctx.user.isGuest), (), AppError.ForbiddenAction)
           team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(teamId), AppError.TeamNotFound)
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "currentVersion" -> version, "team" -> team.id.asJson)), AppError.ApiNotFound)
