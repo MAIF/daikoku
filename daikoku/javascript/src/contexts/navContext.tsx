@@ -401,7 +401,7 @@ export const useApiBackOffice = (api: any, creation: any) => {
             visible: !creation,
             label: translate('Documentation'),
             action: () => navigateTo('documentation'),
-            className: { active: currentTab === 'documentation' },
+            className: { active: currentTab === 'documentation', 'd-none': tenant.display === 'environment' },
           },
           news: {
             order: 5,

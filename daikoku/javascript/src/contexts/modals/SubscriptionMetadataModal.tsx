@@ -151,7 +151,6 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
   }
 
 
-  console.debug({props, apiQuery, planQuery})
   if (!!props.api && apiQuery.isLoading || props.plan && planQuery.isLoading) {
     return <div className="modal-content"><Spinner /></div>
   } else if (!props.api && planQuery.data || (apiQuery.data && !isError(apiQuery.data))) {
@@ -160,7 +159,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
     const maybeSubMetadata = Option(props.subscription)
       .orElse(props.config)
       .orElse(props.subscriptionDemand)
-      .map((s) => s.customMetadata)
+      .map((s) => ({...s.customMetadata, ...s.motivation}))
       .map((v: object) => Object.entries(v))
       .getOrElse([]);
 
@@ -174,6 +173,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
       [[], []]
     );
 
+    console.debug({props})
     const value = {
       metadata: Object.fromEntries(maybeMetadata),
       customMetadata: Object.fromEntries(maybeCustomMetadata),

@@ -51,6 +51,7 @@ export const TeamApiInfos = ({
       label: translate('Swagger'),//@ts-ignore
       component: TeamApiSwagger,
       skipTo: 'save',
+      disabled: tenant.display === 'environment'
     },
   ];
 

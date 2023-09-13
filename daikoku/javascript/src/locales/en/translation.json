@@ -1311,6 +1311,8 @@
     "subscription.process.team.admin": "Team admin",
     "subscription.process.email": "Email",
     "subscription.process.add.label": "Add a new step",
+    "subscription.process.httpRequest": "HTTP Request",
+    "subscription.process.add.httpRequest.step.title": "HTTP Request step creation",
     "Process": "Process",
     "api.pricings.no.step.explanation": "It's seems that there is no process subscription request validation process",
     "api.pricings.add.first.step.btn.label": "Add a first validation step",

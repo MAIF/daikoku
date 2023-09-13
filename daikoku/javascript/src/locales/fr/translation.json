@@ -1314,6 +1314,8 @@
   "subscription.process.team.admin": "Admin. équipe",
   "subscription.process.email": "Courriel",
   "subscription.process.add.label": "Ajouter une nouvelle étape",
+  "subscription.process.httpRequest": "Requete HTTP",
+  "subscription.process.add.httpRequest.step.title": "Création de l'etape par requete HTTP",
   "Process": "Process",
   "api.pricings.no.step.explanation": "Il semble qu'il n'y ait pas de processus de validation de la demande d'abonnement au processus",
   "api.pricings.add.first.step.btn.label": "Ajouter une premiere étape de validation",

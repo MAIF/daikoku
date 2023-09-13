@@ -930,6 +930,7 @@ class ApiService(env: Env,
 
     for {
       api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(tenant).findById(demand.api), AppError.ApiNotFound)
+      team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(tenant).findById(demand.team), AppError.TeamNotFound)
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(demand.plan), AppError.PlanNotFound)
       user <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(demand.from), AppError.UserNotFound)
       parentSubscription <- EitherT.liftF[Future, AppError, Option[ApiSubscription]](demand.parentSubscriptionId.fold(Option.empty[ApiSubscription].future)(s => env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(s)))
@@ -949,6 +950,7 @@ class ApiService(env: Env,
           "api" -> api.asJson,
           "plan" -> plan.asJson,
           "user" -> user.asJson,
+          "team" -> team.asJson,
           "aggregate" -> parentSubscription.fold[JsValue](JsNull)(sub => Json.obj(
             "parent" -> Json.obj(
               "api" -> parentApi.get.asJson,
