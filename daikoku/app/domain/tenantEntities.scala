@@ -412,7 +412,7 @@ case class Tenant(
     } getOrElse Html("")
   }
   def favicon(): String = {
-    style.flatMap(_.faviconUrl).getOrElse("/assets/images/favicon.png")
+    style.flatMap(_.faviconUrl).getOrElse("/assets/images/daikoku.svg")
   }
 }
 
