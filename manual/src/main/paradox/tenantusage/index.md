@@ -10,6 +10,7 @@ Now we will see how to use Daikoku as tenant admin.
 * [Managing assets](./3-assets.md)
 * [User messages](./4-messages.md)
 * [Translations](./5-translations.md)
+* [Display mode](./5.5-display.md)
 * [Using Content Management System](./6-cms.md)
 
 @@@

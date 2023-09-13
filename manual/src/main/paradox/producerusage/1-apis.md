@@ -52,7 +52,54 @@ It's important to choose a type of plan :
 
 The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are three possible types of steps:
 
-  * **Admin Validation**: This step requires an administrator from the API's owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.
+  * **Admin Validation**: This step requires an administrator from the AP I's owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.
+> it's possible to configure this step to display a specific form when user ask subscription.
+> to parameter the form, we use the json language use by [@maif/react-forms](https://github.com/MAIF/react-forms#maifreact-forms).
+> You can write a formatter to format the form response as a notification sended to admins. it's just a string with a replacement pattern like this `[[label]]`
+> the result of the form is used to automatically generate metadata which will be deleteable or modifiable before validation by the admin
+
+  * **HTTP Request**: This step is a semi-automatic step. A http POST is sended to an API with the whole context of the subscription demand
+A json response is awaited with a precise format.
+> a property `accept` as boolean to accept or reject the subscription demand
+> it totally possible to calculate and give some metadata or custom property for the subscription to created
+> ```json
+> {
+>   "accept": true,
+>   "customMaxPerDay": 42,
+>   "customMaxPerSecond": 42,
+>   "customMaxPerMonth": 42,
+>   "customMetadata": {
+>     "value1": 2,
+>     "value2": true,
+>     "value3": "foo"
+>   },
+>   "adminCustomName": "foo-bar-apikey",
+>   "customReadOnly": true
+> }
+> ```
+> the body of the call contains lot of data as the context:  the subscription demand with the other step information, the api, the usage plan, the team and the aggragation in case of an aggergated apikey
+> ```json
+> {
+>   "demand": {},
+>   "api": {},
+>   "plan": {},
+>   "team": {},
+>   "aggregate": {
+>     "parent": {
+>       "api": {},
+>       "plan": {},
+>       "subscription": {} 
+>     },
+>     "subscriptions": [
+>       {
+>         "api": {},
+>         "plan": {},
+>         "subscription": {} 
+>       }
+>     ]
+>   } 
+> }
+> ```
 
   * **Email Validation**: This step involves a third-party person validating the subscription request by clicking on a validation link sent to the provided email address. Once the person clicks on the link, the request is validated, and the user is redirected to a public acknowledgment interface.
 

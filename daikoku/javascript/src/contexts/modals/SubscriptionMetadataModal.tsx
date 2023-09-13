@@ -159,7 +159,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
     const maybeSubMetadata = Option(props.subscription)
       .orElse(props.config)
       .orElse(props.subscriptionDemand)
-      .map((s) => ({...s.customMetadata, ...s.motivation}))
+      .map((s) => ({...s.motivation, ...s.customMetadata}))
       .map((v: object) => Object.entries(v))
       .getOrElse([]);
 
