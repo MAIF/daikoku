@@ -21,7 +21,11 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
   const { state } = useLocation();
 
   const queryClient = useQueryClient()
-  const { isLoading, data } = useQuery(['full-tenant'], () => Services.oneTenant(tenantId))
+  const { isLoading, data } = useQuery({
+    queryKey: ['full-tenant'], 
+    queryFn: () => Services.oneTenant(tenantId),
+    enabled: !state
+  })
   const updateTenant = useMutation((tenant: ITenantFull) => Services.saveTenant(tenant).then(r => isError(r) ? Promise.reject(r) : r), {
     onSuccess: () => {
       toastr.success(translate('Success'), translate('Tenant updated successfully'))
@@ -40,19 +44,20 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
     onError: () => { toastr.error(translate('Error'), translate('Error')) }
   });
 
-  if (isLoading) {
+  if (isLoading && !state) {
     return (
       <Spinner />
     )
-  } else if (data && !isError(data)) {
+  } else if ((!!state && state.newTenant) || (data && !isError(data))) {
+    const tenant: ITenantFull = state?.newTenant || data
     return (
       <Routes>
         <Route
           path="/general"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('General')}</h1>}
-              <GeneralForm tenant={state?.newTenant || data} creation={!!state?.newTenant} updateTenant={updateTenant} createTenant={createTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('General')}</h1>}
+              <GeneralForm tenant={tenant} creation={!!state && state.newTenant} updateTenant={updateTenant} createTenant={createTenant} />
             </>
           }
         />
@@ -60,8 +65,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
           path="/customization"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('Customization')}</h1>}
-              <CustomizationForm tenant={data} updateTenant={updateTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('Customization')}</h1>}
+              <CustomizationForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />
@@ -69,8 +74,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
           path="/audit"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('Audit')}</h1>}
-              <AuditForm tenant={data} updateTenant={updateTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('Audit')}</h1>}
+              <AuditForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />
@@ -78,8 +83,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
           path="/mail"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('Mail')}</h1>}
-              <MailForm tenant={data} updateTenant={updateTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('Mail')}</h1>}
+              <MailForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />
@@ -87,8 +92,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
           path="/authentication"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('Authentication')}</h1>}
-              <AuthenticationForm tenant={data} updateTenant={updateTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('Authentication')}</h1>}
+              <AuthenticationForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />
@@ -96,8 +101,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
           path="/bucket"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('Bucket')}</h1>}
-              <BucketForm tenant={data} updateTenant={updateTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('Bucket')}</h1>}
+              <BucketForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />
@@ -105,8 +110,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
           path="/payment"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('Security')}</h1>}
-              <ThirdPartyPaymentForm tenant={data} updateTenant={updateTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('Security')}</h1>}
+              <ThirdPartyPaymentForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />
@@ -114,8 +119,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
           path="/security"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('Third-Party payment')}</h1>}
-              <SecurityForm tenant={data} updateTenant={updateTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('Third-Party payment')}</h1>}
+              <SecurityForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />
@@ -123,8 +128,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
           path="/display-mode"
           element={
             <>
-              {fromDaikokuAdmin && <h1>{data?.name} - {translate('DisplayMode')}</h1>}
-              <DisplayForm tenant={data} updateTenant={updateTenant} />
+              {fromDaikokuAdmin && <h1>{tenant.name} - {translate('DisplayMode')}</h1>}
+              <DisplayForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />
