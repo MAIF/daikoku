@@ -164,9 +164,7 @@ class IntegrationApiController(DaikokuAction: DaikokuAction,
                 v.asJson.as[JsObject] - "_id" ++ Json.obj("id" -> v.id.value)))
             ))
         }
-      }).leftMap(_.renderF())
-        .merge
-        .flatten
+      }).leftMap(_.renderF()).merge.flatten
 
     }
   }
