@@ -37,6 +37,7 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
             state
             step {
               name
+              title
             }
           }
           state
@@ -69,14 +70,15 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
         {data?.data && data.data.subscriptionDemandsForAdmin.total > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands
           .map((d: any) => {
             
-            const actualStep = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress')
-            const reRunable = actualStep.step.name !== 'payment'
+            const actualStep = d.steps.find(s => ['inProgress', 'waiting'].includes(s.state))
+            const reRunable = actualStep && actualStep.step.name !== 'payment'
 
             return (
               <div className='d-flex flex-row justify-content-between align-items-center widget-list-item'>
                 <div className='d-flex flex-column justify-content-between'>
                   <div className='item-title'><i className="fas fa-users me-2"/>{d.team.name}</div>
                   <div className='ms-1'>{d.api.name} / {d.plan.customName || formatPlanType(d.plan.type, translate)}</div>
+                  {actualStep && <i>{actualStep.step.name} - {actualStep.step.title}</i>}
                 </div>
                 {reRunable && <FeedbackButton
                   type="primary"

@@ -290,7 +290,9 @@ object SchemaDefinition {
       "ValidationStep",
       "Interface of a validation step: email, admin or payment",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), ValidationStep](
-        Field("name", StringType, resolve = _.value.name)
+        Field("name", StringType, resolve = _.value.name),
+        Field("title", StringType, resolve = _.value.title),
+        Field("id", StringType, resolve = _.value.id),
       )
     )
 

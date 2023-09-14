@@ -829,6 +829,14 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
               usagePlanRepo
                 .forAllTenant()
                 .save(json.UsagePlanFormat.reads(payload).get)
+            case ("cmspages", payload) =>
+              cmsRepo
+                .forAllTenant()
+                .save(json.CmsPageFormat.reads(payload).get)
+            case ("emailverifications", payload) =>
+              emailVerificationRepo
+                .forAllTenant()
+                .save(json.EmailVerificationFormat.reads(payload).get)
             case (typ, _) =>
               logger.error(s"Unknown type: $typ")
               FastFuture.successful(false)

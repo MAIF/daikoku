@@ -543,7 +543,8 @@ class MongoDataStore(context: Context, env: Env)
       emailVerificationRepo.forAllTenant(),
       cmsRepo.forAllTenant(),
       stepValidatorRepo.forAllTenant(),
-      subscriptionDemandRepo.forAllTenant()
+      subscriptionDemandRepo.forAllTenant(),
+      usagePlanRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -586,6 +587,8 @@ class MongoDataStore(context: Context, env: Env)
       - <- messageRepo.forAllTenant().deleteAll()
       _ <- operationRepo.forAllTenant().deleteAll()
       _ <- emailVerificationRepo.forAllTenant().deleteAll()
+      _ <- cmsRepo.forAllTenant().deleteAll()
+      _ <- usagePlanRepo.forAllTenant().deleteAll()
       _ <- source
         .via(Framing.delimiter(ByteString("\n"), 1000000000, true))
         .map(_.utf8String)
@@ -665,6 +668,18 @@ class MongoDataStore(context: Context, env: Env)
             subscriptionDemandRepo
               .forAllTenant()
               .save(json.SubscriptionDemandFormat.reads(payload).get)
+          case ("usageplans", payload) =>
+            usagePlanRepo
+              .forAllTenant()
+              .save(json.UsagePlanFormat.reads(payload).get)
+          case ("cmspages", payload) =>
+            cmsRepo
+              .forAllTenant()
+              .save(json.CmsPageFormat.reads(payload).get)
+          case ("emailverifications", payload) =>
+            emailVerificationRepo
+              .forAllTenant()
+              .save(json.EmailVerificationFormat.reads(payload).get)
           case (typ, _) =>
             logger.info(s"Unknown type: $typ")
             FastFuture.successful(false)
