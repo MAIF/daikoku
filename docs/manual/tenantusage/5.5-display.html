@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Subscribe to an api · Daikoku</title>
+<title>Display modes · Daikoku</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='daikoku-manual'/>
@@ -71,7 +71,7 @@
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
     <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
-    <li><a href="../tenantusage/5.5-display.html" class="page">Display modes</a></li>
+    <li><a href="../tenantusage/5.5-display.html" class="active page">Display modes</a></li>
     <li><a href="../tenantusage/6-cms.html" class="page">Using Content Management System</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
@@ -84,7 +84,7 @@
   </ul></li>
   <li><a href="../consumerusage/index.html" class="page">Using Daikoku as api consumer</a>
   <ul>
-    <li><a href="../consumerusage/1-subscribe.html" class="active page">Subscribe to an api</a></li>
+    <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
     <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
     <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
@@ -167,7 +167,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
     <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
-    <li><a href="../tenantusage/5.5-display.html" class="page">Display modes</a></li>
+    <li><a href="../tenantusage/5.5-display.html" class="active page">Display modes</a></li>
     <li><a href="../tenantusage/6-cms.html" class="page">Using Content Management System</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
@@ -180,7 +180,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   </ul></li>
   <li><a href="../consumerusage/index.html" class="page">Using Daikoku as api consumer</a>
   <ul>
-    <li><a href="../consumerusage/1-subscribe.html" class="active page">Subscribe to an api</a></li>
+    <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
     <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
     <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
@@ -205,8 +205,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-breadcrumbs">
 <ul>
   <li><a href="../index.html">Daikoku</a></li>
-  <li><a href="../consumerusage/index.html">Using Daikoku as api consumer</a></li>
-  <li>Subscribe to an api</li>
+  <li><a href="../tenantusage/index.html">Using Daikoku as Tenant admin</a></li>
+  <li>Display modes</li>
 </ul>
 </div>
 </div>
@@ -214,28 +214,21 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#subscribe-to-an-api" name="subscribe-to-an-api" class="anchor"><span class="anchor-link"></span></a>Subscribe to an api</h1>
-<h2><a href="#choose-a-plan" name="choose-a-plan" class="anchor"><span class="anchor-link"></span></a>Choose a plan</h2>
-<p>First of all, you need to choose an API to subscribe. In the information page of the API, select the <code>Plans</code> tab. here are presented the differents pricing plans of the api (if team decides to present multiple plans). Just click the <code>subscribe</code> button. If you are member of several teams, please choose teams to make subscription and click the <code>subscribe</code> button.</p>
-<p>If the plan has no process of subscription, a green message appears to inform you that the subscription is successful. otherwise, the process is followed step by step until the subscription is generated (it could take a few moment).</p>
-<h3><a href="#payment-process" name="payment-process" class="anchor"><span class="anchor-link"></span></a>Payment Process</h3>
-<p>When a user reaches the payment step in the subscription process, Daikoku facilitates the transition to the payment gateway to collect payment information and process the transaction. Here&rsquo;s how it works:</p>
-<p>1.** Redirect to the checout page**: The user is automatically redirected to a secure payment page, where they can enter their payment information, such as credit card details.</p>
-<ol>
-  <li>
-  <p><strong>Payment Information Handling</strong>: Daikoku does not store user payment information. All payment details are collected directly by the payment gateway, ensuring the security of sensitive data.</p></li>
-  <li>
-  <p><strong>Transaction Processing</strong>: th epayment gateway processes the transaction using the payment information provided by the user. Once the transaction is successfully validated, Daikoku receives a payment confirmation notification.</p></li>
-  <li>
-  <p><strong>Subscription Validation</strong>: After payment validation, Daikoku marks the subscription as approved in the system. The user is then redirected to the Daikoku homepage, where they can start using the subscribed API features.</p></li>
-</ol>
-<blockquote>
-  <p>If a user has already subscribed via th epayment gateway, his team and information will be retrieved because they are associated with their Daikoku IDs.</p>
-</blockquote>
-<h2><a href="#fast-mode" name="fast-mode" class="anchor"><span class="anchor-link"></span></a>Fast mode</h2>
-<p>Daikoku offers a fast mode to display, for a selected team, only accessibles APIs (and subscriptions plans with their informations). In this UI, you can subscribe to all plan without switching pages and get subscription credentials.</p>
+<h1><a href="#display-modes" name="display-modes" class="anchor"><span class="anchor-link"></span></a>Display modes</h1>
+<p>Two display modes are avalaible in Daikoku</p>
+<h2><a href="#default-mode" name="default-mode" class="anchor"><span class="anchor-link"></span></a>Default mode</h2>
+<p>this is the basic mode of DAikoku, business oriented. The exposed API is only linked to one service and the associated usage plans have only a commercial interest.</p>
+<p>The API carries its documentation, its test configuration or even its swagger. The client side of Daikoku offers sections in the API page to display it.</p>
+<h2><a href="#environment-mode" name="environment-mode" class="anchor"><span class="anchor-link"></span></a>Environment mode</h2>
+<p>The environment mode introduces an approach focused in work environments. It allows users to manage their consumption plans as working environments, better suited for internal corporate use. Find out how this feature transforms consumption plan management.</p>
+<ul>
+  <li>The usage plans are now working environment</li>
+  <li>The environments contain the tech documentation, the swagger and the test config</li>
+  <li>the number envionment for an API is limited to the existing environment of the tenant</li>
+</ul>
+<p>to create new environment, just add a new one in the liste below the mode selector </p>
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="../consumerusage/2-apikeys.html">Manage APIkeys</a></p>
+<p><strong>Next:</strong> <a href="../tenantusage/6-cms.html">Using Content Management System</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
@@ -244,10 +237,10 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-title">On this page:</div>
 <div class="nav-toc">
 <ul>
-  <li><a href="../consumerusage/1-subscribe.html#subscribe-to-an-api" class="header">Subscribe to an api</a>
+  <li><a href="../tenantusage/5.5-display.html#display-modes" class="header">Display modes</a>
   <ul>
-    <li><a href="../consumerusage/1-subscribe.html#choose-a-plan" class="header">Choose a plan</a></li>
-    <li><a href="../consumerusage/1-subscribe.html#fast-mode" class="header">Fast mode</a></li>
+    <li><a href="../tenantusage/5.5-display.html#default-mode" class="header">Default mode</a></li>
+    <li><a href="../tenantusage/5.5-display.html#environment-mode" class="header">Environment mode</a></li>
   </ul></li>
 </ul>
 </div>
