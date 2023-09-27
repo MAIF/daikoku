@@ -581,7 +581,7 @@ class AdminApiSwaggerController(
       schema(ctrl13) ++
       schema(ctrl14) ++
       schema(ctrl15) ++
-      schema(ctrl16) ++
+      schema(ctrl16)
 
   def paths: JsValue =
     path(ctrl1) ++

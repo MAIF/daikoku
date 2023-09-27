@@ -134,6 +134,8 @@ package object modules {
     lazy val cmsPagesAdminApiController = wire[CmsPagesAdminApiController]
     lazy val translationsAdminApiController =
       wire[TranslationsAdminApiController]
+    lazy val usagePlansAdminApiController = wire[UsagePlansAdminApiController]
+    lazy val subscriptionDemandsAdminApiController = wire[SubscriptionDemandsAdminApiController]
     lazy val graphQLController = wire[GraphQLController]
 
     override lazy val assets: Assets = wire[Assets]
