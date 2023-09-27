@@ -106,6 +106,20 @@ class EntitiesController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def newApiDocumentation() = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent(
+      s"@{user.name} has asked for a template entity of type ApiDocumentationr"))(
+      ctx) {
+      Ok(
+        ApiDocumentation(
+          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+          tenant = ctx.tenant.id,
+          lastModificationAt = DateTime.now(),
+          pages = Seq.empty
+        ).asJson)
+    }
+  }
+
   def newApiGroup() = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has asked for a template entity of type ApiGroup"))(ctx) {
@@ -192,6 +206,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             Ok(
               UsagePlan
                 .Admin(id = UsagePlanId(BSONObjectID.generate().stringify),
+                       tenant = ctx.tenant.id,
                        otoroshiTarget = None)
                 .asJson)
           case "PayPerUse" =>
@@ -199,6 +214,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .PayPerUse(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   costPerRequest = BigDecimal(0),
                   costPerMonth = BigDecimal(0),
                   billingDuration = BillingDuration(1, BillingTimeUnit.Month),
@@ -219,6 +235,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .FreeWithQuotas(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,
                   maxPerMonth = 0,
@@ -238,6 +255,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .FreeWithoutQuotas(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   billingDuration = BillingDuration(1, BillingTimeUnit.Month),
                   currency = Currency("EUR"),
                   customName = None,
@@ -254,6 +272,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .QuotasWithLimits(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,
                   maxPerMonth = 0,
@@ -275,6 +294,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               UsagePlan
                 .QuotasWithoutLimits(
                   id = UsagePlanId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,
                   maxPerMonth = 0,

@@ -1,18 +1,18 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
-import Select, {SingleValue} from "react-select";
-import Pagination from "react-paginate";
+import { getApolloContext } from "@apollo/client";
+import { useQuery } from "@tanstack/react-query";
 import debounce from "lodash/debounce";
+import { useContext, useEffect, useMemo, useState } from "react";
+import Pagination from "react-paginate";
+import Select from "react-select";
 
 import { I18nContext } from "../../../contexts/i18n-context";
-import {IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple, TOption} from "../../../types";
-import {arrayStringToTOps, FilterPreview, Spinner} from "../../utils";
 import * as Services from "../../../services";
-
+import { IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple } from "../../../types";
+import { FilterPreview, Spinner } from "../../utils";
 import { FastApiCard } from "./FastApiCard";
-import { useQuery } from "@tanstack/react-query";
-import { getApolloContext } from "@apollo/client";
-
 import { FastItemView } from "./FastItemView";
+
+
 
 type FastApiListProps = {
   teamList: Array<ITeamSimple>
@@ -27,35 +27,21 @@ export const FastApiList = (props: FastApiListProps) => {
   const { client } = useContext(getApolloContext());
 
   const [subscriptions, setSubscriptions] = useState<Array<IFastApiSubscription>>()
-
   const [planInfo, setPlanInfo] = useState<IFastPlan>();
-
   const [viewMode, setViewMode] = useState<FastItemViewMode>('NONE')
-
   const [nbOfApis, setNbOfApis] = useState<number>(5);
   const [page, setPage] = useState<number>(0);
   const [offset, setOffset] = useState<number>(0);
-
   const [planResearch, setPlanResearch] = useState<string>("")
   const [inputVal, setInputVal] = useState("")
   const [research, setResearch] = useState<string>("");
   const [seeApiSubscribed, setSeeApiSubscribed] = useState<boolean>(false)
-
-  const [reasonSub, setReasonSub] = useState<string>("");
-
-  const [selectedTag, setSelectedTag] = useState<TOption | undefined>(undefined);
-  const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(undefined);
-
-  const [researchTag, setResearchTag] = useState("");
-  const [researchCat, setResearchCat] = useState("");
 
   const dataRequest = useQuery<{ apis: Array<IFastApi>, total: number }>({
 
     queryKey: ["data",
       props.team._id,
       research,
-      selectedTag?.value,
-      selectedCategory?.value,
       seeApiSubscribed,
       nbOfApis,
       offset],
@@ -66,11 +52,10 @@ export const FastApiList = (props: FastApiListProps) => {
         variables: {
           teamId: queryKey[1],
           research: queryKey[2],
-          selectedTag: queryKey[3],
-          selectedCat: queryKey[4],
-          apiSubOnly: queryKey[5],
-          limit: queryKey[6],
-          offset: queryKey[7]}
+          apiSubOnly: queryKey[3],
+          limit: queryKey[4],
+          offset: queryKey[5]
+        }
       }).then(({ data: { accessibleApis } }) => {
         return accessibleApis
       }
@@ -79,28 +64,6 @@ export const FastApiList = (props: FastApiListProps) => {
     enabled: !!props.team && !!client,
     cacheTime: 0
 
-  })
-  const dataTags = useQuery({
-    queryKey: ["dataTags", researchTag],
-    queryFn: ({queryKey}) => {
-      return client!.query<{allTags: Array<string>}>({
-        query: Services.graphql.getAllTags,
-        variables: {research: queryKey[1]}
-      }).then(({data: {allTags}}) => {
-        return arrayStringToTOps(allTags)
-      })
-    }
-  })
-  const dataCategories = useQuery({
-    queryKey: ["dataCategories", researchCat],
-    queryFn: ({queryKey}) => {
-      return client!.query<{allCategories: Array<string>}>({
-        query: Services.graphql.getAllCategories,
-        variables: {research: queryKey[1]}
-      }).then(({data: {allCategories}}) => {
-        return arrayStringToTOps(allCategories)
-      })
-    }
   })
 
   const togglePlan = (plan: IFastPlan) => {
@@ -158,7 +121,7 @@ export const FastApiList = (props: FastApiListProps) => {
     return () => {
       debouncedResults.cancel();
     };
-  },[]);
+  }, []);
 
   const handlePageClick = (data) => {
     setPage(data.selected);
@@ -176,8 +139,6 @@ export const FastApiList = (props: FastApiListProps) => {
   }
 
   const clearFilter = () => {
-    setSelectedTag(undefined)
-    setSelectedCategory(undefined)
     setInputVal('')
     setResearch('')
     setSeeApiSubscribed(false)
@@ -222,44 +183,9 @@ export const FastApiList = (props: FastApiListProps) => {
             </button>
           </div>
           {dataRequest.isLoading && <Spinner />}
-          {dataRequest.data &&  (
-            <div>
-              <div className="d-flex flex-row align-items-center ">
-                <Select
-                  name="tag-selector"
-                  className="tag__selector filter__select reactSelect col-5 col-sm mb-2 me-2"
-                  value={selectedTag ?selectedTag : null}
-                  placeholder={translate('apiList.tag.search')}
-                  isClearable={true}
-                  options={ dataTags.data ? [...dataTags.data] : [] }
-                  onChange={(e: SingleValue<TOption>) => {
-                    setSelectedTag(e || undefined);
-                    setPage(0)
-                    setOffset(0)
-
-                  }}
-                  onInputChange={setResearchTag}
-                  classNamePrefix="reactSelect"
-                />
-                <Select
-                  name="category-selector"
-                  className="category__selector filter__select reactSelect col-5 col-sm mb-2"
-                  value={selectedCategory ? selectedCategory : null}
-                  placeholder={translate('apiList.category.search')}
-                  isClearable={true}
-                  options={ dataCategories.data ?  [...dataCategories.data] : []}
-                  onChange={(e: SingleValue<TOption>) => {
-
-                    setSelectedCategory(e || undefined);
-                    setPage(0)
-                    setOffset(0)
-                  }}
-                  onInputChange={setResearchCat}
-                  classNamePrefix="reactSelect"
-                />
-              </div>
+          {dataRequest.data && (
             <div className="section pb-1">
-              <FilterPreview count={dataRequest.data.total} clearFilter={clearFilter} searched={research} selectedTag={selectedTag} selectedCategory={selectedCategory} filterPlan={planResearch} seeOnlySubs={seeApiSubscribed}/>
+              <FilterPreview count={dataRequest.data.total} clearFilter={clearFilter} searched={research} filterPlan={planResearch} seeOnlySubs={seeApiSubscribed} />
               <div className="apis" style={{ maxHeight: '600px', overflowY: 'scroll', overflowX: 'hidden' }}>
                 {dataRequest.data.apis.map(({ api }) => {
                   if (!api.parent) {
@@ -271,11 +197,9 @@ export const FastApiList = (props: FastApiListProps) => {
                             apisWithAuthorization={allFastApiVersions}
                             team={props.team}
                             subscriptions={allFastApiVersions.map((fastApi) => fastApi.subscriptionsWithPlan)}
-                            input={reasonSub}
                             showPlan={togglePlan}
                             showApiKey={toggleApiKey}
                             planResearch={planResearch}
-                            setReasonSub={setReasonSub}
                           />
                         }
                       </div>
@@ -316,7 +240,6 @@ export const FastApiList = (props: FastApiListProps) => {
                   />
                 </div>
               </div>
-            </div>
             </div>
           )}
         </div>

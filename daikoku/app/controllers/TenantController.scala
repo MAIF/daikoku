@@ -1,7 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
@@ -26,6 +29,7 @@ import scala.util.Try
 
 class TenantController(DaikokuAction: DaikokuAction,
                        DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+                       apiService: ApiService,
                        env: Env,
                        cc: ControllerComponents,
                        translator: Translator)
@@ -200,6 +204,20 @@ class TenantController(DaikokuAction: DaikokuAction,
             authorizedOtoroshiGroups = Set.empty,
             contact = tenant.contact
           )
+          val adminApiPlan = FreeWithoutQuotas(
+            id = UsagePlanId(IdGenerator.token),
+            tenant = tenant.id,
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            currency = Currency("EUR"),
+            customName = Some("admin"),
+            customDescription = None,
+            otoroshiTarget = None,
+            allowMultipleKeys = Some(true),
+            autoRotation = None,
+            subscriptionProcess = Seq.empty,
+            integrationProcess = IntegrationProcess.ApiKey
+          )
+
           val adminApi = Api(
             id = ApiId(s"admin-api-tenant-${tenant.humanReadableId}"),
             tenant = tenant.id,
@@ -217,21 +235,8 @@ class TenantController(DaikokuAction: DaikokuAction,
               pages = Seq.empty[ApiDocumentationDetailPage],
               lastModificationAt = DateTime.now()
             ),
-            swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
-            possibleUsagePlans = Seq(
-              FreeWithoutQuotas(
-                id = UsagePlanId("admin"),
-                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                currency = Currency("EUR"),
-                customName = Some("admin"),
-                customDescription = None,
-                otoroshiTarget = None,
-                allowMultipleKeys = Some(true),
-                autoRotation = None,
-                subscriptionProcess = Seq.empty,
-                integrationProcess = IntegrationProcess.ApiKey
-              )
-            ),
+            swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
+            possibleUsagePlans = Seq(adminApiPlan.id),
             defaultUsagePlan = UsagePlanId("admin"),
             authorizedTeams = Seq.empty
           )
@@ -298,12 +303,34 @@ class TenantController(DaikokuAction: DaikokuAction,
         case JsError(e) =>
           FastFuture.successful(
             BadRequest(Json.obj("error" -> "Error while parsing payload",
-                                "msg" -> e.toString)))
-        case JsSuccess(tenant, _) =>
-          ctx.setCtxValue("tenant.name", tenant.name)
-          ctx.setCtxValue("tenant.id", tenant.id)
+              "msg" -> e.toString)))
+        case JsSuccess(updatedTenant, _) =>
+          ctx.setCtxValue("tenant.name", updatedTenant.name)
+          ctx.setCtxValue("tenant.id", updatedTenant.id)
 
-          tenant.tenantMode match {
+          def deleteUnusedEnvironments(oldTenant: Tenant): EitherT[Future, AppError, Unit] = {
+            updatedTenant.display match {
+              case TenantDisplay.Environment =>
+                val deletedEnvs = oldTenant.environments.diff(updatedTenant.environments)
+                EitherT.liftF(Future.sequence(deletedEnvs.map(name => {
+                  for {
+                    plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant).find(Json.obj(
+                      "customName" -> name
+                    ))
+                    _ <- Future.sequence(plans.map(plan => {
+                      for {
+                        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
+                          .findOne(Json.obj("possibleUsagePlans" -> plan.id.value)), AppError.ApiNotFound)
+                        _ <- apiService.deleteUsagePlan(plan, api, ctx.tenant, ctx.user)
+                      } yield api
+                    }).map(_.value))
+                  } yield ()
+                })).map(_ -> ()))
+              case TenantDisplay.Default => EitherT.pure[Future, AppError](())
+            }
+          }
+
+          updatedTenant.tenantMode match {
             case Some(value) =>
               value match {
                 case TenantMode.Maintenance | TenantMode.Construction =>
@@ -314,21 +341,28 @@ class TenantController(DaikokuAction: DaikokuAction,
             case _ =>
           }
 
-          for {
-            _ <- env.dataStore.tenantRepo.save(tenant)
-            _ <- env.dataStore.teamRepo
-              .forTenant(tenant)
+          (for {
+            oldTenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findByIdNotDeleted(updatedTenant.id), AppError.TenantNotFound)
+            _ <- deleteUnusedEnvironments(oldTenant)
+            _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.tenantRepo.save(updatedTenant))
+            _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.teamRepo
+              .forTenant(updatedTenant)
               .save(
                 adminTeam.copy(
-                  name = s"${tenant.humanReadableId}-admin-team",
-                  contact = tenant.contact,
-                  avatar = tenant.style.map(_.logo)
-                ))
+                  name = s"${updatedTenant.humanReadableId}-admin-team",
+                  contact = updatedTenant.contact,
+                  avatar = updatedTenant.style.map(_.logo)
+                )))
           } yield {
             Ok(
-              Json.obj("tenant" -> tenant.asJsonWithJwt,
-                       "uiPayload" -> tenant.toUiPayload(env)))
-          }
+              Json.obj("tenant" -> updatedTenant.asJsonWithJwt,
+                "uiPayload" -> updatedTenant.toUiPayload(env)))
+          })
+            .leftMap(e => {
+              AppLogger.error(s"[SAVE_TENANT] :: ${e.getErrorMessage()}")
+              e.render()
+            })
+            .merge
       }
     }
   }

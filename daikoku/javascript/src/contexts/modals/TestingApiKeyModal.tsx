@@ -1,17 +1,19 @@
 import React, { useContext, useRef } from 'react';
-import { Form, type, format, constraints } from '@maif/react-forms';
+import { Form, type, format, constraints, FormRef } from '@maif/react-forms';
+import { toastr } from 'react-redux-toastr';
+import { useSelector } from 'react-redux';
 
 import { Spinner } from '../../components/utils';
 import * as Services from '../../services';
 import { I18nContext } from '../../core';
-import { useSelector } from 'react-redux';
 import { IBaseModalProps, TestingApiKeyModalProps } from './types';
+import { IState, ITenant, ITestingConfig, IWithTesting, isApi, isError } from '../../types';
 
 
-export const TestingApiKeyModal = (props: TestingApiKeyModalProps & IBaseModalProps) => {
-  const formRef = useRef<any>();
+export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyModalProps<T> & IBaseModalProps) => {
+  const formRef = useRef<FormRef>();
 
-  const tenant = useSelector(s => (s as any).context.tenant);
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant);
 
   const { translate, Translation } = useContext(I18nContext);
 
@@ -110,27 +112,54 @@ export const TestingApiKeyModal = (props: TestingApiKeyModalProps & IBaseModalPr
     },
   };
 
-  const apiKeyAction = (c: any) => {
+  const apiKeyAction = (c: ITestingConfig) => {
     if (!props.config.otoroshiSettings) {
       generateApiKey(c);
     } else {
-      updateApiKey(constraints);
+      updateApiKey(c);
     }
   };
 
-  const generateApiKey = (updatedConfig: any) => {
-    Services.createTestingApiKey(props.teamId, { ...updatedConfig, ...props.metadata })
+  const generateApiKey = (updatedConfig: ITestingConfig) => {
+    return Services.createTestingApiKey(props.teamId, {
+      ...updatedConfig,
+      ...props.metadata,
+      entity: {
+        type: isApi(props.value) ? 'api' : 'plan',
+        _id: props.value._id,
+        name: props.value.customName || props.value.name
+      }
+    })
       .then((apikey) => {
-        props.close();
-        props.onChange(apikey, { ...updatedConfig, ...props.metadata });
+        if (!isError(apikey)) {
+          props.close();
+          props.onChange(apikey, { ...updatedConfig, ...props.metadata });
+        } else {
+          toastr.error(translate('Error'), apikey.error);
+          props.close();
+        }
       });
   };
 
-  const updateApiKey = (updatedConfig: any) => {
-    Services.updateTestingApiKey(props.teamId, { ...updatedConfig, ...props.metadata })
+  const updateApiKey = (updatedConfig: ITestingConfig) => {
+    Services.updateTestingApiKey(props.teamId,
+      {
+        ...updatedConfig,
+        ...props.metadata,
+        entity: {
+          type: isApi(props.value) ? 'api' : 'plan',
+          _id: props.value._id,
+          name: props.value.customName || props.value.name
+        }
+      })
       .then((apikey) => {
-        props.close();
-        props.onChange(apikey, { ...updatedConfig, ...props.metadata });
+        if (!isError(apikey)) {
+          props.close();
+          props.onChange(apikey, { ...updatedConfig, ...props.metadata });
+        } else {
+          toastr.error(translate('Error'), apikey.error);
+          props.close();
+        }
       });
   };
 

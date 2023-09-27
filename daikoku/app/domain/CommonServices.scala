@@ -8,6 +8,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
 import play.api.libs.json._
 
@@ -43,13 +44,15 @@ object CommonServices {
         adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
           Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ idFilter
         )
+        plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
+          .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray((publicApis ++ almostPublicApis ++ privateApis ++ adminApis).flatMap(_.possibleUsagePlans).map(_.asJson)))))
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] = (publicApis ++ almostPublicApis ++ privateApis)
           .filter(api => api.isPublished || myTeams.exists(api.team == _.id))
           .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-          .map(api => api
-            .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))
           .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
+            val apiPlans = plans.filter(p => api.possibleUsagePlans.contains(p.id))
+
             val authorizations = myTeams
               .filter(t => t.`type` != TeamType.Admin)
               .foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
@@ -62,14 +65,15 @@ object CommonServices {
               }
 
             acc :+ (api.visibility.name match {
-              case "PublicWithAuthorizations" | "Private" => ApiWithAuthorizations(api = api, authorizations = authorizations)
-              case _ => ApiWithAuthorizations(api = api)
+              case "PublicWithAuthorizations" | "Private" => ApiWithAuthorizations(api = api, plans = apiPlans, authorizations = authorizations)
+              case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
             })
           }
 
         val apis: Seq[ApiWithAuthorizations] = (if (user.isDaikokuAdmin)
           adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) => acc :+ ApiWithAuthorizations(
             api = api,
+            plans = plans.filter(p => api.possibleUsagePlans.contains(p.id)),
             authorizations = myTeams.foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
               acc :+ AuthorizationApi(
                 team = team.id.value,
@@ -87,17 +91,9 @@ object CommonServices {
       }
     }
   }
-  def getApisWithSubscriptions(teamId: String, research: String, selectedTag: Option[String] = None, selectedCat: Option[String] = None, limit: Int, offset: Int, apiSubOnly: Boolean)
+  def getApisWithSubscriptions(teamId: String, research: String, limit: Int, offset: Int, apiSubOnly: Boolean)
                               (implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext): Future[Either[AppError, AccessibleApisWithNumberOfApis]] = {
     _UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
-      val tagFilter = selectedTag match {
-        case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
-        case None => Json.obj()
-      }
-      val catFilter = selectedCat match {
-        case Some(_) => Json.obj("categories" -> selectedCat.map(JsString))
-        case None => Json.obj()
-      }
       for {
         subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId))
         subsOnlyFilter = if (apiSubOnly) Json.obj("_id" -> Json.obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))) else Json.obj()
@@ -115,10 +111,12 @@ object CommonServices {
           "state" -> ApiState.publishedJsonFilter)
         allApis <- env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(query = allApisFilter ++ subsOnlyFilter, sort = Some(Json.obj("name" -> 1)))
         teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))))
-        notifs <- env.dataStore.notificationRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("action.team" -> teamId,
-          "action.type" -> "ApiSubscription",
-          "status.status" -> "Pending"
+        demands <- env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> teamId,
+          "api" -> Json.obj("$in" -> Json.arr(allApis.map(_.id.asJson))),
+          "state" -> Json.obj("$in" -> Json.arr("waiting", "inProgress"))
         ))
+        plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
+          .findNotDeleted(Json.obj("_id" -> Json.obj("$in"-> JsArray(allApis.flatMap(_.possibleUsagePlans).map(_.asJson)))))
       } yield {
         AccessibleApisWithNumberOfApis(
           allApis
@@ -127,14 +125,16 @@ object CommonServices {
               def filterUnlinkedPlan(plan: UsagePlan): Boolean = (ctx.user.isDaikokuAdmin || teams.exists(team => team.id == api.team && team.users.exists(u => ctx.user.id == u.userId))) ||
                 (plan.otoroshiTarget.nonEmpty &&
                   plan.otoroshiTarget.exists(target => target.authorizedEntities.exists(entities => entities.groups.nonEmpty || entities.routes.nonEmpty || entities.services.nonEmpty)))
+              val apiPlans =  plans.filter(p => api.possibleUsagePlans.contains(p.id))
               ApiWithSubscriptions(
-                api.copy(possibleUsagePlans = api.possibleUsagePlans.filter(filterUnlinkedPlan).filter(p => filterPrivatePlan(p, api, teamId))),
-                api.possibleUsagePlans
+                api = api,
+                plans = apiPlans.filter(filterUnlinkedPlan).filter(p => filterPrivatePlan(p, api, teamId)),
+                subscriptionsWithPlan = apiPlans
                   .filter(filterUnlinkedPlan)
                   .filter(p => filterPrivatePlan(p, api, teamId))
                   .map(plan => {
                     SubscriptionsWithPlan(plan.id.value,
-                      isPending = notifs.exists(notif => notif.action.asInstanceOf[ApiSubscriptionDemand].team.value == teamId && notif.action.asInstanceOf[ApiSubscriptionDemand].plan.value == plan.id.value && notif.action.asInstanceOf[ApiSubscriptionDemand].api.value == api.id.value),
+                      isPending = demands.exists(demand => demand.team.value == teamId && demand.plan.value == plan.id.value && demand.api.value == api.id.value),
                       subscriptionsCount = subs.count(sub => sub.plan.value == plan.id.value && sub.api == api.id))
                   }))
             }), uniqueApis._2)
@@ -196,13 +196,16 @@ object CommonServices {
             uniqueApisWithVersion <- apiRepo.findNotDeleted(
               Json.obj("_humanReadableId" -> Json.obj("$in" -> JsArray(paginateApis._1.map(a => JsString(a.humanReadableId))))),
               sort = Some(Json.obj("name" -> 1)))
+            plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
+              .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(uniqueApisWithVersion.flatMap(_.possibleUsagePlans).map(_.asJson)))))
           } yield {
             val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
               .filter(api => api.isPublished || myTeams.exists(api.team == _.id))
               .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-              .map(api => api
-                .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))))
               .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
+                val apiPlans = plans
+                  .filter(p => api.possibleUsagePlans.contains(p.id))
+                  .filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team))
                 val authorizations = myTeams
                   .filter(t => t.`type` != TeamType.Admin)
                   .foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
@@ -214,8 +217,8 @@ object CommonServices {
                     )
                   }
                 acc :+ (api.visibility.name match {
-                  case "PublicWithAuthorizations" | "Private" => ApiWithAuthorizations(api = api, authorizations = authorizations)
-                  case _ => ApiWithAuthorizations(api = api)
+                  case "PublicWithAuthorizations" | "Private" => ApiWithAuthorizations(api = api, plans = apiPlans, authorizations = authorizations)
+                  case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
                 })
               }
             ApiWithCount(sortedApis, paginateApis._2)

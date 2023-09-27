@@ -1,19 +1,16 @@
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
-import { ModalContext } from '../../../contexts';
 
+import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
-import { IApi, IState, IStateContext } from '../../../types';
+import { IState, IStateContext } from '../../../types';
 
 type ApiRedocProps = {
-  teamId: string
-  api: IApi
+  swaggerUrl: string
 }
 export function ApiRedoc(props: ApiRedocProps) {
   const [error, setError] = useState<string>();
-  const params = useParams();
 
   const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
 
@@ -21,25 +18,24 @@ export function ApiRedoc(props: ApiRedocProps) {
   const { openLoginOrRegisterModal } = useContext(ModalContext);
 
   useEffect(() => {
-    fetch(
-      `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger.json`
-    ).then((res) => {
-      if (res.status > 300) {
-        setError(translate('api_swagger.failed_to_retrieve_swagger'));
-      } else {
-        drawSwaggerUi();
-      }
-      setTimeout(() => {
-        [...document.querySelectorAll('.scheme-container')].map((i) => ((i as any).style.display = 'none'));
-        [...document.querySelectorAll('.information-container')].map((i) => ((i as any).style.display = 'none'));
-      }, 500);
-    });
+    fetch(props.swaggerUrl)
+      .then((res) => {
+        if (res.status > 300) {
+          setError(translate('api_swagger.failed_to_retrieve_swagger'));
+        } else {
+          drawSwaggerUi();
+        }
+        setTimeout(() => {
+          [...document.querySelectorAll('.scheme-container')].map((i) => ((i as any).style.display = 'none'));
+          [...document.querySelectorAll('.information-container')].map((i) => ((i as any).style.display = 'none'));
+        }, 500);
+      });
   }, []);
 
   const drawSwaggerUi = () => {
-    if (props.api.swagger) {
+    if (props.swaggerUrl) {
       (window as any).ui = SwaggerUIBundle({
-        url: `/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`,
+        url: props.swaggerUrl,
         dom_id: '#swagger-ui',
         deepLinking: true,
         docExpansion: 'list',
@@ -63,10 +59,6 @@ export function ApiRedoc(props: ApiRedocProps) {
         <span className="alert alert-danger text-center">{error}</span>
       </div>
     );
-
-  const api = props.api;
-  if (!api || !api.swagger)
-    return <div>{translate({ key: 'api_data.missing', replacements: ['Api reference'] })}</div>;
 
   return <div id="swagger-ui" />
 }

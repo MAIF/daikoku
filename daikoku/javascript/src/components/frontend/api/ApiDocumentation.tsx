@@ -1,40 +1,38 @@
 /* eslint-disable react/display-name */
-import React, { useContext, useEffect, useState } from 'react';
-import hljs from 'highlight.js';
-import { Link, useMatch, useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import asciidoctor from 'asciidoctor';
+import classNames from 'classnames';
+import hljs from 'highlight.js';
+import { useContext, useEffect, useState } from 'react';
 
-import * as Services from '../../../services';
-import { converter } from '../../../services/showdown';
 import { I18nContext } from '../../../core';
+import { converter } from '../../../services/showdown';
+import { IDocPage, IDocumentation, IDocumentationPages, ResponseError, isError } from '../../../types';
+import { Spinner } from '../../utils';
 
 import 'highlight.js/styles/monokai.css';
-import { IApi, IDocDetail, IDocPage, IDocumentationPages, isError } from '../../../types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, Spinner } from '../../utils';
-import classNames from 'classnames';
+import { ParamKeyValuePair, useSearchParams } from 'react-router-dom';
 
 const asciidoctorConverter = asciidoctor();
 
 type ApiDocumentationCartidgeProps = {
-  api: IApi,
-  currentPageId: string
+  documentation?: IDocumentation
+  currentPageId?: string
+  goTo: (pageId: string) => void
 }
-export const ApiDocumentationCartidge = ({ api, currentPageId }: ApiDocumentationCartidgeProps) => {
-  const params = useParams();
-
-  const renderLinks = (pages: IDocumentationPages, level: number = 0) => {
-    if (!pages.length) {
+export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) => {
+  const renderLinks = (pages?: IDocumentationPages, level: number = 0) => {
+    if (!pages || !pages.length) {
       return null;
     } else {
       return (
         <ul>
           {pages.map((page) => {
             return (
-              <li className="api-doc-cartridge-link" key={page.id} style={{ marginLeft: level * 10 }}>
-                <Link className={classNames({active: page.id === currentPageId})} to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${page.id}`}>
+              <li className="api-doc-cartridge-link cursor-pointer" key={page.id} style={{ marginLeft: level * 10 }}>
+                <a className={classNames({ active: page.id === props.currentPageId })} onClick={() => props.goTo(page.id)}>
                   {page.title}
-                </Link>
+                </a>
                 {renderLinks(page.children, level + 1)}
               </li>
             );
@@ -47,20 +45,20 @@ export const ApiDocumentationCartidge = ({ api, currentPageId }: ApiDocumentatio
 
   return (
     <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
-      {renderLinks(api.documentation.pages)}
+      {renderLinks(props.documentation?.pages)}
     </div>
   );
 }
 
 type ApiDocPageProps = {
-  api: IApi
-  pageId: string
+  pageId?: string,
+  getDocPage: (id: string) => Promise<IDocPage | ResponseError>
 }
 const ApiDocPage = (props: ApiDocPageProps) => {
   const queryClient = useQueryClient();
   const pageRequest = useQuery(['page', { pageId: props.pageId }], ({ queryKey }) => {
     const [_key, keys] = queryKey //@ts-ignore
-    return Services.getDocPage(props.api._id, keys.pageId)
+    return props.getDocPage(keys.pageId)
   });
 
 
@@ -100,54 +98,57 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 }
 
 type ApiDocumentationProps = {
-  api: IApi
+  documentation?: IDocumentation
+  getDocPage: (pageId: string) => Promise<IDocPage | ResponseError>
 }
-export function ApiDocumentation(props: ApiDocumentationProps) {
+export const ApiDocumentation = (props: ApiDocumentationProps) => {
   const { Translation } = useContext(I18nContext);
 
-  const params = useParams();
-  const match = useMatch('/:teamId/:apiId/:version/documentation/:pageId')
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const pageId = match?.params.pageId || props.api.documentation.pages[0].id;
+  const page = searchParams.get('page');
+  const [pageId, setPageId] = useState(page || props.documentation?.pages[0].id);
 
-  const flattenDoc = (pages: IDocumentationPages): Array<string> => {
-    return pages.flatMap(p => [p.id, ...flattenDoc(p.children)])
+  const flattenDoc = (pages?: IDocumentationPages): Array<string> => {
+    if (!pages) {
+      return []
+    } else {
+      return pages.flatMap(p => [p.id, ...flattenDoc(p.children)])
+    }
   }
 
-  const orderedPages = flattenDoc(props.api.documentation.pages)
+  useEffect(() => {
+    if (pageId) {
+      setSearchParams({page: pageId})
+    }
+  }, [pageId])
+
+
+  const orderedPages = flattenDoc(props.documentation?.pages)
 
   const idx = orderedPages.findIndex(p => p === pageId)
   const next = orderedPages[idx + (pageId ? 1 : 2)];
   const prev = orderedPages[idx - 1];
 
-  return (<>
-    <ApiDocumentationCartidge api={props.api} currentPageId={pageId}/>
+  return (<div className='d-flex flex-row'>
+    <ApiDocumentationCartidge documentation={props.documentation} currentPageId={pageId} goTo={setPageId} />
     <div className="col p-3 d-flex flex-column">
       <div className={classNames("d-flex", {
         'justify-content-between': !!prev,
         'justify-content-end': !prev,
       })}>
-        {prev && (<Link to={`/${params.teamId}/${props.api._humanReadableId}/${props.api.currentVersion}/documentation/${prev}`}>
+        {prev && (<button className='btn btn-sm btn-outline-secondary' onClick={() => setPageId(prev)}>
           <i className="fas fa-chevron-left me-1" />
           <Translation i18nkey="Previous page">Previous page</Translation>
-        </Link>)}
-        {next && (<Link to={`/${params.teamId}/${props.api._humanReadableId}/${props.api.currentVersion}/documentation/${next}`}>
+        </button>)}
+        {next && (<button className='btn btn-sm btn-outline-secondary' onClick={() => setPageId(next)}>
           <Translation i18nkey="Next page">Next page</Translation>
           <i className="fas fa-chevron-right ms-1" />
-        </Link>)}
+        </button>)}
       </div>
-      <ApiDocPage api={props.api} pageId={pageId} />
-      {/* <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
-        {prevId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
-          <i className="fas fa-chevron-left me-1" />
-          <Translation i18nkey="Previous page">Previous page</Translation>
-        </Link>)}
-        {nextId && (<Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
-          <Translation i18nkey="Next page">Next page</Translation>
-          <i className="fas fa-chevron-right ms-1" />
-        </Link>)} */}
+      <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} />
     </div >
-  </>);
+  </div>);
 }
 
 const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;

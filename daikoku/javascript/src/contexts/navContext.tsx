@@ -5,7 +5,7 @@ import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { api as API, Can, manage } from '../components/utils';
 import { I18nContext } from '../core';
-import { IState, IStoreState, ITeamSimple, ITenant, IUserSimple } from '../types';
+import { IApi, IState, IStateContext, IStoreState, ITeamSimple, ITenant, IUserSimple } from '../types';
 import { ModalContext } from './modalContext';
 
 
@@ -42,21 +42,21 @@ const initNavContext = {
 type TNavContext = {
   loginAction: string,
   loginProvider: string,
-  menu: any,
-  addMenu: (m: any) => void,
-  setMenu: (m: any) => void,
+  menu: object,
+  addMenu: (m: object) => void,
+  setMenu: (m: object) => void,
   mode?: navMode,
   setMode: (m: navMode) => void,
   office: officeMode,
   setOffice: (o: officeMode) => void,
-  api?: any,
-  setApi: (api?: any) => void,
-  apiGroup?: any,
-  setApiGroup: (apigroup?: any) => any,
-  team?: any,
-  setTeam: (team?: any) => void,
-  tenant?: any,
-  setTenant: (tenant?: any) => void,
+  api?: IApi,
+  setApi: (api?: IApi) => void,
+  apiGroup?: IApi,
+  setApiGroup: (apigroup?: IApi) => void,
+  team?: ITeamSimple,
+  setTeam: (team?: ITeamSimple) => void,
+  tenant?: ITenant,
+  setTenant: (tenant?: ITenant) => void,
 }
 export const NavContext = React.createContext<TNavContext>(initNavContext);
 
@@ -67,12 +67,12 @@ export const NavProvider = ({ children, loginAction, loginProvider }:
 
   const [menu, setMenu] = useState({});
 
-  const [api, setApi] = useState();
-  const [apiGroup, setApiGroup] = useState();
-  const [team, setTeam] = useState();
-  const [tenant, setTenant] = useState();
+  const [api, setApi] = useState<IApi>();
+  const [apiGroup, setApiGroup] = useState<IApi>();
+  const [team, setTeam] = useState<ITeamSimple>();
+  const [tenant, setTenant] = useState<ITenant>();
 
-  const addMenu = (value: any) => {
+  const addMenu = (value: object) => {
     setMenu((menu) => ({ ...merge(menu, value) }));
   };
 
@@ -103,15 +103,15 @@ export const NavProvider = ({ children, loginAction, loginProvider }:
   );
 };
 
-export const useApiFrontOffice = (api: any, team: any) => {
+export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>((state) => state.context);
   const navigate = useNavigate();
   const params = useParams();
 
-  const schema = (currentTab: any) => ({
+  const schema = (currentTab: string) => ({
     title: api?.name,
 
     blocks: {
@@ -124,7 +124,7 @@ export const useApiFrontOffice = (api: any, team: any) => {
             className: { active: currentTab === 'description' },
           },
           pricings: {
-            label: translate({ key: 'Plan', plural: true }),
+            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
@@ -135,7 +135,8 @@ export const useApiFrontOffice = (api: any, team: any) => {
             },
             className: {
               active: currentTab === 'documentation',
-              disabled: !api?.documentation?.pages?.length,
+              disabled: tenant.display === 'environment' && !api?.documentation?.pages?.length,
+              'd-none': tenant.display === 'environment'
             },
           },
           swagger: {
@@ -145,7 +146,8 @@ export const useApiFrontOffice = (api: any, team: any) => {
             },
             className: {
               active: currentTab === 'swagger',
-              disabled: !api?.swagger?.content && !api?.swagger?.url,
+              disabled: tenant.display === 'environment' && !api?.swagger?.content && !api?.swagger?.url,
+              'd-none': tenant.display === 'environment'
             },
           },
           testing: {
@@ -153,7 +155,11 @@ export const useApiFrontOffice = (api: any, team: any) => {
             action: () => {
               if (api?.testing?.enabled) navigateTo('testing');
             },
-            className: { active: currentTab === 'testing', disabled: !api?.testing?.enabled },
+            className: {
+              active: currentTab === 'testing',
+              disabled: tenant.display === 'environment' && !api?.testing?.enabled,
+              'd-none': tenant.display === 'environment'
+            },
           },
           news: {
             label: translate('News'),
@@ -195,12 +201,12 @@ export const useApiFrontOffice = (api: any, team: any) => {
                   openContactModal({
                     name: connectedUser.name,
                     email: connectedUser.email,
-                    team: api.team,
-                    api: api._id
+                    team: api?.team,
+                    api: api?._id
                   })
                 }
               >
-                {translate({ key: `contact.team`, replacements: [team?.name] })}
+                {translate({ key: `contact.team`, replacements: [team?.name || '--'] })}
               </button>
             ),
           },
@@ -209,8 +215,8 @@ export const useApiFrontOffice = (api: any, team: any) => {
     }
   });
 
-  const navigateTo = (navTab: any) => {
-    navigate(`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${navTab}`);
+  const navigateTo = (navTab: string) => {
+    navigate(`/${team?._humanReadableId}/${api?._humanReadableId}/${api?.currentVersion}/${navTab}`);
   };
 
   useEffect(() => {
@@ -241,11 +247,11 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>((state) => state.context);
   const navigate = useNavigate();
   const params = useParams();
 
-  const schema = (currentTab: any) => ({
+  const schema = (currentTab: string) => ({
     title: apigroup?.name,
 
     blocks: {
@@ -263,7 +269,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
             className: { active: currentTab === 'description' },
           },
           pricings: {
-            label: translate({ key: 'Plan', plural: true }),
+            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
@@ -332,7 +338,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
     }
   });
 
-  const navigateTo = (navTab: any) => {
+  const navigateTo = (navTab: string) => {
     navigate(`/${team._humanReadableId}/apigroups/${apigroup._humanReadableId}/${navTab}`);
   };
 
@@ -365,12 +371,12 @@ export const useApiBackOffice = (api: any, creation: any) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
 
   const navigate = useNavigate();
   const params = useParams();
 
-  const schema = (currentTab: any) => ({
+  const schema = (currentTab?: string) => ({
     title: api?.name,
 
     blocks: {
@@ -386,7 +392,7 @@ export const useApiBackOffice = (api: any, creation: any) => {
           plans: {
             order: 3,
             visible: !creation,
-            label: translate('Plans'),
+            label: tenant.display === 'environment' ? translate("navbar.environments.label") : translate('Plans'),
             action: () => navigateTo('plans'),
             className: { active: currentTab === 'plans' },
           },
@@ -395,7 +401,7 @@ export const useApiBackOffice = (api: any, creation: any) => {
             visible: !creation,
             label: translate('Documentation'),
             action: () => navigateTo('documentation'),
-            className: { active: currentTab === 'documentation' },
+            className: { active: currentTab === 'documentation', 'd-none': tenant.display === 'environment' },
           },
           news: {
             order: 5,
@@ -430,7 +436,7 @@ export const useApiBackOffice = (api: any, creation: any) => {
     }
   });
 
-  const navigateTo = (navTab: any) => {
+  const navigateTo = (navTab: string) => {
     navigate(
       `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`
     );
@@ -457,16 +463,16 @@ export const useApiBackOffice = (api: any, creation: any) => {
   return { addMenu, setApi };
 };
 
-export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
+export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector((state) => (state as any).context);
+  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
 
   const navigate = useNavigate();
   const params = useParams();
 
-  const schema = (currentTab: any) => ({
+  const schema = (currentTab?: string) => ({
     title: apiGroup?.name,
 
     blocks: {
@@ -482,7 +488,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
           plans: {
             order: 3,
             visible: !creation,
-            label: translate('Plans'),
+            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('plans'),
             className: { active: currentTab === 'plans' },
           },
@@ -542,7 +548,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: any) => {
     }
   });
 
-  const navigateTo = (navTab: any) => {
+  const navigateTo = (navTab: string) => {
     navigate(
       `/${currentTeam._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`
     );
@@ -735,6 +741,11 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
                 action: () => navigateTo('settings/security'),
                 className: { active: subTab === 'security' },
               },
+              display: {
+                label: translate('DisplayMode'),
+                action: () => navigateTo('settings/display-mode'),
+                className: { active: subTab === 'display-mode' },
+              },
             },
           },
           message: {
@@ -787,7 +798,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
     }
   });
 
-  const navigateTo = (navTab: any) => {
+  const navigateTo = (navTab: string) => {
     navigate(`/settings/${navTab}`);
   };
 
@@ -891,7 +902,7 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
     })
   };
 
-  const navigateTo = (navTab: any) => {
+  const navigateTo = (navTab: string) => {
     navigate(`/settings/${navTab}`);
   };
 
@@ -913,12 +924,12 @@ export const useUserBackOffice = () => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { connectedUser } = useSelector((state) => (state as any).context);
+  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
 
   const navigate = useNavigate();
   const match = useMatch('/:tab');
 
-  const schema = (currentTab: any) => ({
+  const schema = (currentTab?: string) => ({
     title: connectedUser.name,
 
     blocks: {
@@ -940,7 +951,7 @@ export const useUserBackOffice = () => {
     }
   });
 
-  const navigateTo = (navTab: any) => {
+  const navigateTo = (navTab: string) => {
     navigate(`/${navTab}`);
   };
 

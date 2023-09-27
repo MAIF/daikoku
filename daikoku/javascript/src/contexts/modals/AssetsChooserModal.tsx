@@ -95,7 +95,6 @@ export const AssetSelectorModal = (props: IAssetSelectorModalProps & IBaseModalP
 }
 
 type AssetChooserProps = {
-  teamId?: string,
   team?: ITeamSimple,
   tenantMode?: boolean,
   typeFilter?: (value: string) => boolean,
@@ -114,7 +113,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
   const assetsRequest = useQuery(['assets'], () => getAssets(props.team))
 
 
-  const getTenantAssets = () => Services.listTenantAssets(props.teamId)
+  const getTenantAssets = () => Services.listTenantAssets(props.team?._id)
     .then((response) => {
       if (isError(response)) {
         return [];

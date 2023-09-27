@@ -48,15 +48,10 @@ export const TeamApiInfos = ({
     },
     {
       id: 'swagger',
-      label: translate('Swagger'),
+      label: translate('Swagger'),//@ts-ignore
       component: TeamApiSwagger,
       skipTo: 'save',
-    },
-    {
-      id: 'testing',
-      label: translate('Testing'),
-      component: TeamApiTesting,
-      skipTo: 'save',
+      disabled: tenant.display === 'environment'
     },
   ];
 

@@ -1465,7 +1465,8 @@ class TenantControllerSpec()
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam),
         cmsPages = Seq(page),
-        apis = Seq(adminApi, defaultApi)
+        usagePlans = defaultApi.plans :+ adminApiPlan,
+        apis = Seq(adminApi, defaultApi.api)
       )
 
       val session = loginWithBlocking(tenantAdmin, tenant)
@@ -1477,7 +1478,7 @@ class TenantControllerSpec()
 
       resp.status mustBe 200
       assert(
-        resp.body == s"${defaultApi.name}\n${adminApi.name}" || resp.body == s"${adminApi.name}\n${defaultApi.name}")
+        resp.body == s"${defaultApi.api.name}\n${adminApi.name}" || resp.body == s"${adminApi.name}\n${defaultApi.api.name}")
     }
     "validate daikoku-json-apis helper" in {
       val page = defaultCmsPage.copy(
@@ -1490,7 +1491,8 @@ class TenantControllerSpec()
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam),
         cmsPages = Seq(page),
-        apis = Seq(adminApi, defaultApi)
+        usagePlans = defaultApi.plans :+ adminApiPlan,
+        apis = Seq(adminApi, defaultApi.api)
       )
 
       val session = loginWithBlocking(tenantAdmin, tenant)
@@ -1508,14 +1510,15 @@ class TenantControllerSpec()
         id = CmsPageId("daikoku-plans-helper"),
         path = Some("/daikoku-plans"),
         body =
-          s"""{{#daikoku-plans "${defaultApi.id.value}"}}{{plan._id}}{{/daikoku-plans}}"""
+          s"""{{#daikoku-plans "${defaultApi.api.id.value}"}}{{plan._id}}{{/daikoku-plans}}"""
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam),
         cmsPages = Seq(page),
-        apis = Seq(defaultApi)
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api)
       )
 
       val session = loginWithBlocking(tenantAdmin, tenant)
@@ -1526,7 +1529,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe s"${defaultApi.possibleUsagePlans.map(_.id.value).mkString("\n")}"
+      resp.body mustBe s"${defaultApi.plans.map(_.id.value).mkString("\n")}"
     }
     "create, update and restore version of a cms page" in {
       val page = defaultCmsPage.copy(
@@ -1538,7 +1541,8 @@ class TenantControllerSpec()
         tenants = Seq(tenant),
         users = Seq(tenantAdmin),
         teams = Seq(defaultAdminTeam),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
       )
 
       val session = loginWithBlocking(tenantAdmin, tenant)

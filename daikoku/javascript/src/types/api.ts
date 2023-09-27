@@ -1,8 +1,22 @@
+import { Schema } from '@maif/react-forms';
 import { IFastTeam, ITeamSimple, ITeamVisibility } from './team';
 import { ThirdPartyPaymentType } from './tenant';
+import { INotification } from './types';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
-interface IBaseApi {
+
+export interface IWithSwagger {
+  swagger?: ISwagger;
+}
+
+export interface IWithTesting {
+  testing?: ITesting;
+  _id: string;
+  name?: string;
+  customName?: string;
+}
+
+interface IBaseApi extends IWithSwagger, IWithTesting {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
@@ -15,13 +29,11 @@ interface IBaseApi {
   description: string;
   currentVersion: string;
   supportedVersions: Array<string>;
-  testing: ITesting;
   documentation: IDocumentation;
-  swagger?: ISwagger;
   tags: Array<string>;
   categories: Array<string>;
   visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly';
-  possibleUsagePlans: Array<IUsagePlan>;
+  possibleUsagePlans: Array<string>;
   defaultUsagePlan: string;
   authorizedTeams: Array<string>;
   posts: Array<string>;
@@ -44,7 +56,7 @@ export interface IApiWithSimpleTeam extends IBaseApi {
   team: ITeamSimple;
 }
 
-export interface IApi extends IBaseApi {
+export interface IApi extends IBaseApi, IWithSwagger {
   team: string;
 }
 
@@ -65,6 +77,13 @@ export interface IApiWithAuthorization {
   }>;
 }
 
+export interface IApiExtended extends IApi {
+  pendingRequests: INotification;
+  subscriptions: ISafeSubscription;
+  myTeams: Array<ITeamSimple>;
+  authorizations: Array<{ team: string; authorized: boolean; pending: boolean }>;
+}
+
 export interface IApiAuthoWithCount {
   apis: Array<IApiWithAuthorization>;
   total: number;
@@ -81,9 +100,17 @@ export interface ITesting {
   config?: ITestingConfig;
 }
 
+export function isApi(obj: any): obj is IApi {
+  return (<IApi>obj).possibleUsagePlans !== undefined;
+}
+
+export function isUsagePlan(obj: any): obj is IUsagePlan {
+  return (<IUsagePlan>obj).subscriptionProcess !== undefined;
+}
+
 export interface ITestingConfig {
-  otoroshiSettings: string;
-  authorizedEntities: IAuthorizedEntities;
+  otoroshiSettings?: string;
+  authorizedEntities?: IAuthorizedEntities;
   clientName: string;
   api: string;
   tag: string;
@@ -107,21 +134,38 @@ export interface IDocumentation {
   lastModificationAt: string;
 }
 
+export interface IImportingDocumentation {
+  from: string;
+  _id: string;
+  pages: Array<{
+    _id: string;
+    title: string;
+  }>;
+}
+
 export interface ISwagger {
-  url: string;
+  url?: string;
   content?: string;
   headers: { [key: string]: string };
 }
 
+export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest';
+
 export interface IValidationStep {
   id: string;
-  type: 'teamAdmin' | 'email' | 'payment';
+  type: IValidationStepType;
 }
 
 export interface IValidationStepEmail extends IValidationStep {
   emails: Array<string>;
   message: string;
   title: string;
+}
+
+export interface IValidationStepHttpRequest extends IValidationStep {
+  title: string;
+  url: string;
+  headers: object;
 }
 
 export function isValidationStepEmail(item: any): item is IValidationStepEmail {
@@ -131,6 +175,8 @@ export function isValidationStepEmail(item: any): item is IValidationStepEmail {
 export interface IValidationStepTeamAdmin extends IValidationStep {
   team: string;
   title?: string;
+  schema: Schema;
+  formatter: string;
 }
 
 export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {
@@ -141,12 +187,18 @@ export function isValidationStepPayment(item: any): item is IValidationStepPayme
   return (<IValidationStepPayment>item).thirdPartyPaymentSettingsId !== undefined;
 }
 
+export function isValidationStepHttpRequest(item: any): item is IValidationStepHttpRequest {
+  return (<IValidationStepHttpRequest>item).url !== undefined;
+}
+
 export interface IValidationStepPayment extends IValidationStep {
   thirdPartyPaymentSettingsId: string;
   title?: string;
 }
 export interface IBaseUsagePlan {
   _id: string;
+  _tenant: string;
+  _deleted: boolean;
   type: string;
   customDescription?: string;
   customName?: string;
@@ -167,7 +219,7 @@ export interface IStripePaymentSettings extends IPaymentSettings {
   priceIds: Array<string>;
 }
 
-export interface IUsagePlan extends IBaseUsagePlan {
+export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting {
   allowMultipleKeys?: boolean;
   aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
@@ -182,6 +234,7 @@ export interface IUsagePlan extends IBaseUsagePlan {
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
+  documentation?: IDocumentation;
 }
 
 export interface IUsagePlanAdmin extends IUsagePlan {}
@@ -280,13 +333,29 @@ export interface IDocPage {
   remoteContentHeaders: object;
 }
 
+export interface IOtoroshiApiKey {
+  clientId: string;
+  clientSecret: string;
+  clientName: String;
+  authorizedEntities: IAuthorizedEntities;
+  enabled: boolean;
+  allowClientIdOnly: boolean;
+  readOnly: boolean;
+  constrainedServicesOnly: boolean;
+  throttlingQuota: number;
+  dailyQuota: number;
+  monthlyQuota: number;
+  tags: Array<string>;
+  metadata: { [x: string]: string };
+}
+
 export interface IApiKey {
   clientName: string;
   clientId: string;
   clientSecret: string;
 }
 
-interface IRotation {
+export interface IRotation {
   enabled: boolean;
   rotationEvery: number;
   gracePeriod: number;
@@ -312,6 +381,7 @@ export interface IBaseSubscription {
   customMaxPerDay: number | null;
   customReadOnly: boolean | null;
   parent: string | null;
+  parentUp: boolean;
 }
 
 export const isPayPerUse = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanPayPerUse => {
@@ -351,13 +421,22 @@ export interface ISafeSubscription extends IBaseSubscription {
 }
 
 export interface ISubscription extends IBaseSubscription {
-  apiKey?: IApiKey;
+  apiKey: IApiKey;
   integrationToken: string;
+}
+
+export interface ISubscriptionExtended extends ISubscription {
+  parentUp: boolean;
+  planType: string;
+  planName: string;
+  apiName: string;
+  _humanReadableId: string;
 }
 
 export interface ISubscriptionWithApiInfo extends ISubscription {
   apiName: string;
   planType: string;
+  planName: string
 }
 
 export interface IQuotas {

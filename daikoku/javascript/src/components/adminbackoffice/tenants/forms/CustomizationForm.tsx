@@ -165,6 +165,10 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       format: format.markdown,
       label: translate('Footer'),
     },
+    defaultMessage: {
+      type: type.string,
+      format: format.text
+    }
   }
 
   if (queryCMSPages.isLoading) {
@@ -178,6 +182,11 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       label: translate('General'),
       flow: ['title', 'description', 'logo', 'cssUrl', 'css', 'colorTheme', 'jsUrl', 'js', 'faviconUrl', 'fontFamilyUrl'],
       collapsed: false
+    },
+    {
+      label: translate('Message'),
+      flow: ['defaultMessage'],
+      collapsed: true
     },
     {
       label: translate('Pages'),

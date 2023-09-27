@@ -319,15 +319,11 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
           team <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team))
           admins <- OptionT.liftF(env.dataStore.userRepo.find(
             Json.obj("_id" -> Json.obj("$in" -> JsArray(team.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId.asJson).toSeq)))))
-          plan <- OptionT.liftF(api.possibleUsagePlans
-            .find(p => p.id == subscription.plan) match {
-              case Some(p) => FastFuture.successful(p.customName.getOrElse(p.typeName))
-              case None => translator.translate("unknown.plan", tenant)
-            })
+          plan <- OptionT(env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan))
           title <- OptionT.liftF(translator.translate("mail.apikey.rotation.title", tenant))
           body <- OptionT.liftF(translator.translate("mail.apikey.rotation.body", tenant, Map(
           "apiName" -> api.name,
-          "planName" -> plan
+          "planName" -> plan.customName.getOrElse(plan.typeName)
           )))
         } yield {
           tenant.mailer.send(title, admins.map(_.email), body, tenant)

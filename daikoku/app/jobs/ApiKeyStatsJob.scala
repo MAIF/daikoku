@@ -6,6 +6,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
+import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.BillingTimeUnit.{Day, Hour, Month, Year}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
@@ -225,11 +226,14 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       maybeLastConsumption: Option[ApiKeyConsumption],
       completed: Boolean = false): Future[Seq[ApiKeyConsumption]] = {
     (for {
-      api <- maybeApi
-      plan <- api.possibleUsagePlans.find(_.id == subscription.plan)
-      otoroshiTarget <- plan.otoroshiTarget
-      otoSettings <- tenant.otoroshiSettings.find(
-        _.id == otoroshiTarget.otoroshiSettings)
+      api <- OptionT.fromOption[Future](maybeApi)
+      plan <- OptionT(
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findById(subscription.plan))
+      otoroshiTarget <- OptionT.fromOption[Future](plan.otoroshiTarget)
+      otoSettings <- OptionT.fromOption[Future](
+        tenant.otoroshiSettings.find(_.id == otoroshiTarget.otoroshiSettings))
     } yield {
       implicit val otoroshiSettings: OtoroshiSettings = otoSettings
 
@@ -358,7 +362,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       case e =>
         AppLogger.error("[apikey stats job] Error during sync consumptions", e)
         Seq.empty
-    }).getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption]))
+    }).getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption])).flatten
   }
 
   def computeBilling(tenant: TenantId,

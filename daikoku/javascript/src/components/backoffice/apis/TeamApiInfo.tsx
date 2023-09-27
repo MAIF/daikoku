@@ -5,10 +5,7 @@ import { I18nContext } from '../../../core';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 
 const Image = ({
-  setValue,
-  rawValues,
   value,
-  error,
   onChange,
   tenant,
   team
@@ -32,7 +29,6 @@ const Image = ({
             typeFilter={MimeTypeFilter.image}
             onlyPreview
             team={team}
-            teamId={team._id}
             label={translate('Set image from asset')}
             onSelect={(asset: any) => onChange(origin + asset.link)}
           />

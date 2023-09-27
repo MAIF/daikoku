@@ -5,6 +5,7 @@ import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
+import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
@@ -413,6 +414,20 @@ class DaikokuEnv(ws: WSClient,
                   users = Set(UserWithPermission(userId, Administrator)),
                   authorizedOtoroshiGroups = Set.empty
                 )
+                val adminApiDefaultPlan = FreeWithoutQuotas(
+                  id = UsagePlanId(IdGenerator.token),
+                  tenant = Tenant.Default,
+                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                  currency = Currency("EUR"),
+                  customName = Some("admin"),
+                  customDescription = None,
+                  otoroshiTarget = None,
+                  allowMultipleKeys = Some(true),
+                  autoRotation = None,
+                  subscriptionProcess = Seq.empty,
+                  integrationProcess = IntegrationProcess.ApiKey
+                )
+
                 val adminApiDefaultTenant = Api(
                   id = adminApiDefaultTenantId,
                   tenant = Tenant.Default,
@@ -428,24 +443,11 @@ class DaikokuEnv(ws: WSClient,
                     pages = Seq.empty[ApiDocumentationDetailPage],
                     lastModificationAt = DateTime.now()
                   ),
-                  swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
-                  possibleUsagePlans = Seq(
-                    FreeWithoutQuotas(
-                      id = UsagePlanId("1"),
-                      billingDuration =
-                        BillingDuration(1, BillingTimeUnit.Month),
-                      currency = Currency("EUR"),
-                      customName = Some("admin"),
-                      customDescription = None,
-                      otoroshiTarget = None,
-                      allowMultipleKeys = Some(true),
-                      autoRotation = None,
-                      subscriptionProcess = Seq.empty,
-                      integrationProcess = IntegrationProcess.ApiKey
-                    )
-                  ),
+                  swagger =
+                    Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
+                  possibleUsagePlans = Seq(adminApiDefaultPlan.id),
                   visibility = ApiVisibility.AdminOnly,
-                  defaultUsagePlan = UsagePlanId("1"),
+                  defaultUsagePlan = adminApiDefaultPlan.id,
                   authorizedTeams = Seq.empty,
                   state = ApiState.Published
                 )

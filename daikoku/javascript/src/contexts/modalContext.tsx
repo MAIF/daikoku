@@ -35,6 +35,7 @@ import {
   TModalContext
 } from "./modals/types";
 import { CustomModal } from "./modals/CustomModal";
+import { IWithTesting } from "../types";
 
 
 const init: TModalContext = {
@@ -106,10 +107,10 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
     {...props}
     close={close} />)
 
-  const openTestingApikeyModal = (props: TestingApiKeyModalProps) => {
+  const openTestingApikeyModal = <T extends IWithTesting>(props: TestingApiKeyModalProps<T>) => {
     open(<TestingApiKeyModal {...props} close={close} />)
   }
-  const openSubMetadataModal = (props: SubscriptionMetadataModalProps) => open(<SubscriptionMetadataModal {...props} close={close} />)
+  const openSubMetadataModal = <T extends IWithTesting>(props: SubscriptionMetadataModalProps<T>) => open(<SubscriptionMetadataModal {...props} close={close} />)
   const openApiDocumentationSelectModal = (props: IApiDocumentationSelectModalProps) => open(<ApiDocumentationSelectModal {...props} close={close} />)
   const openTeamSelectorModal = (props: TeamSelectorModalProps) => open(<TeamSelectorModal {...props} close={close} />)
   const openInvitationTeamModal = (props: ITeamInvitationModalProps) => open(<TeamInvitationModal {...props} close={close} />)

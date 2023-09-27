@@ -16,10 +16,12 @@ import {
   BeautifulTitle,
   Can,
   Option,
+  Spinner,
   formatDate,
   formatPlanType,
   manage,
 } from '../../utils';
+import { useQuery } from "@tanstack/react-query";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -28,7 +30,7 @@ type SubscriptionsFilter = {
   metadata: Array<{ key: string, value: string }>,
   tags: Array<string>
 }
-type LimitedTeam = {
+type LimitedPlan = {
   _id: string
   customName?: string
   type: string
@@ -41,7 +43,7 @@ type ApiSubscriptionGql = {
     clientId: string
     clientSecret: string
   }
-  plan: LimitedTeam
+  plan: LimitedPlan
   team: {
     _id: string
     name: string
@@ -54,6 +56,10 @@ type ApiSubscriptionGql = {
   customName: string
   enabled: boolean
   customMetadata?: JSON
+  adminCustomName?: string
+  customMaxPerSecond?: number
+  customMaxPerDay?: number
+  customMaxPerMonth?: number
   tags: Array<string>
   metadata?: JSON
 }
@@ -67,6 +73,8 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
 
   const { translate, language, Translation } = useContext(I18nContext);
   const { confirm, openFormModal, openSubMetadataModal, } = useContext(ModalContext);
+
+  const plansQuery = useQuery(['plans'], () => Services.getAllPlanOfApi(api.team, api._id, api.currentVersion))
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
@@ -83,15 +91,11 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   }, [filters])
 
   const columnHelper = createColumnHelper<ApiSubscriptionGql>()
-  const columns = [
-    columnHelper.accessor(row => row.team._id === currentTeam._id ? row.customName || row.apiKey.clientName : row.apiKey.clientName, {
-      id: 'name',
+  const columns = (usagePlans) => [
+    columnHelper.accessor(row => row.adminCustomName || row.apiKey.clientName, {
+      id: 'adminCustomName',
       header: translate('Name'),
       meta: { style: { textAlign: 'left' } },
-      cell: (info) => {
-        const sub = info.row.original
-        return sub.team._id === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
-      },
       filterFn: (row, _, value) => {
         const sub = row.original
         const displayed: string = sub.team._id === currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName
@@ -103,11 +107,11 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     columnHelper.accessor('plan', {
       header: translate('Plan'),
       meta: { style: { textAlign: 'left' } },
-      cell: (info) => Option(api.possibleUsagePlans.find((pp) => pp._id === info.getValue()._id))
+      cell: (info) => Option(usagePlans.find((pp) => pp._id === info.getValue()._id))
         .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
         .getOrNull(),
       filterFn: (row, columnId, value) => {
-        const displayed: string = Option(api.possibleUsagePlans.find((pp) => pp._id === row.original.plan._id))
+        const displayed: string = Option(usagePlans.find((pp) => pp._id === row.original.plan._id))
           .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
           .getOrElse("")
 
@@ -179,7 +183,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     plan: sub.plan._id,
     team: sub.team,
     subscription: sub,
-    creationMode: false
+    creationMode: false,
+    value: (plansQuery.data as Array<IUsagePlan>)
+      .find(p => sub.plan._id === p._id)!
   });
 
   const regenerateSecret = (sub: ApiSubscriptionGql) => {
@@ -226,102 +232,102 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   }
 
 
-  const options = api.possibleUsagePlans.flatMap(plan => {
-    return [
-      ...(plan.otoroshiTarget?.apikeyCustomization.customMetadata.map(({ key }) => key) || []),
-      ...Object.keys(plan.otoroshiTarget?.apikeyCustomization.metadata || {})
-    ]
-  });
+  if (plansQuery.isLoading) {
+    return (<Spinner />)
+  } else if (plansQuery.data && !isError(plansQuery.data)) {
+    const usagePlans = plansQuery.data;
 
+    const options = usagePlans.flatMap(plan => {
+      return [
+        ...(plan.otoroshiTarget?.apikeyCustomization.customMetadata.map(({ key }) => key) || []),
+        ...Object.keys(plan.otoroshiTarget?.apikeyCustomization.metadata || {})
+      ]
+    });
 
-  return (
-    <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
-
-      <div className="px-2">
-        <div className='d-flex flex-row justify-content-start align-items-center mb-2'>
-          <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
-            actionLabel: translate("Filter"),
-            onSubmit: data => {
-              setFilters(data)
-            },
-            schema: {
-              metadata: {
-                type: type.object,
-                format: format.form,
-                label: translate('Filter metadata'),
-                array: true,
-                schema: {
-                  key: {
-                    type: type.string,
-                    format: format.select,
-                    options: Array.from(new Set(options)),
-                    createOption: true
-                  },
-                  value: {
-                    type: type.string,
+    return (
+      <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
+        <div className="px-2">
+          <div className='d-flex flex-row justify-content-start align-items-center mb-2'>
+            <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
+              actionLabel: translate("Filter"),
+              onSubmit: data => {
+                setFilters(data)
+              },
+              schema: {
+                metadata: {
+                  type: type.object,
+                  format: format.form,
+                  label: translate('Filter metadata'),
+                  array: true,
+                  schema: {
+                    key: {
+                      type: type.string,
+                      createOption: true
+                    },
+                    value: {
+                      type: type.string,
+                    }
                   }
+                },
+                tags: {
+                  type: type.string,
+                  label: translate('Filter tags'),
+                  array: true,
                 }
               },
-              tags: {
-                type: type.string,
-                format: format.select,
-                label: translate('Filter tags'),
-                isMulti: true,
-                createOption: true,
-                options: api.possibleUsagePlans.flatMap(pp => pp.otoroshiTarget?.apikeyCustomization.tags || []).filter(t => !t.startsWith('$'))
-              }
-            },
-            title: translate("Filter data"),
-            value: filters
-          })}> {translate('Filter')} </button>
-          {!!filters && (
-            <div className="clear cursor-pointer ms-1" onClick={() => setFilters(undefined)}>
-              <i className="far fa-times-circle me-1" />
-              <Translation i18nkey="clear filter">clear filter</Translation>
-            </div>
-          )}
-        </div>
-        <div className="col-12">
-          <Table
-            defaultSort="name"
-            columns={columns}
-            fetchItems={() => {
-              return client!.query<{ apiApiSubscriptions: Array<ApiSubscriptionGql>; }>({
-                query: Services.graphql.getApiSubscriptions,
-                fetchPolicy: "no-cache",
-                variables: {
-                  apiId: api._id,
-                  teamId: currentTeam._id,
-                  version: api.currentVersion
-                }
-              }).then(({ data: { apiApiSubscriptions } }) => {
-                if (!filters || (!filters.tags.length && !Object.keys(filters.metadata).length)) {
-                  return apiApiSubscriptions
-                } else {
-                  const filterByMetadata = (subscription: ApiSubscriptionGql) => {
-                    const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) };
-
-                    return !Object.keys(meta) || (!filters.metadata.length || filters.metadata.every(item => {
-                      const value = meta[item.key]
-                      return value && value.includes(item.value)
-                    }))
+              title: translate("Filter data"),
+              value: filters
+            })}> {translate('Filter')} </button>
+            {!!filters && (
+              <div className="clear cursor-pointer ms-1" onClick={() => setFilters(undefined)}>
+                <i className="far fa-times-circle me-1" />
+                <Translation i18nkey="clear filter">clear filter</Translation>
+              </div>
+            )}
+          </div>
+          <div className="col-12">
+            <Table
+              defaultSort="name"
+              columns={columns(usagePlans)}
+              fetchItems={() => {
+                return client!.query<{ apiApiSubscriptions: Array<ApiSubscriptionGql>; }>({
+                  query: Services.graphql.getApiSubscriptions,
+                  fetchPolicy: "no-cache",
+                  variables: {
+                    apiId: api._id,
+                    teamId: currentTeam._id,
+                    version: api.currentVersion
                   }
+                }).then(({ data: { apiApiSubscriptions } }) => {
+                  if (!filters || (!filters.tags.length && !Object.keys(filters.metadata).length)) {
+                    return apiApiSubscriptions
+                  } else {
+                    const filterByMetadata = (subscription: ApiSubscriptionGql) => {
+                      const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) };
 
-                  const filterByTags = (subscription: ApiSubscriptionGql) => {
-                    return filters.tags.every(tag => subscription.tags.includes(tag))
+                      return !Object.keys(meta) || (!filters.metadata.length || filters.metadata.every(item => {
+                        const value = meta[item.key]
+                        return value && value.includes(item.value)
+                      }))
+                    }
+
+                    const filterByTags = (subscription: ApiSubscriptionGql) => {
+                      return filters.tags.every(tag => subscription.tags.includes(tag))
+                    }
+
+                    return apiApiSubscriptions
+                      .filter(filterByMetadata)
+                      .filter(filterByTags)
                   }
-
-                  return apiApiSubscriptions
-                  .filter(filterByMetadata)
-                  .filter(filterByTags)
-                }
-              })
-            }}
-            ref={tableRef}
-          />
+                })
+              }}
+              ref={tableRef}
+            />
+          </div>
         </div>
-      </div>
-
-    </Can>
-  );
+      </Can>
+    );
+  } else {
+    return <div>error while fetching usage plan</div>
+  }
 };

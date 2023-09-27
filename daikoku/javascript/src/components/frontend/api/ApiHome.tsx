@@ -1,6 +1,7 @@
 import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
@@ -10,13 +11,12 @@ import { ModalContext, useApiFrontOffice } from '../../../contexts';
 import { I18nContext, setError, updateUser } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { ActionWithTeamSelector, apikey, Can, CanIDoAction, manage, Option } from '../../utils';
+import { IApi, IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, TeamPermission, TeamType, isError } from '../../../types';
+import { ActionWithTeamSelector, Can, CanIDoAction, Option, apikey, manage } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import StarsButton from './StarsButton';
 
 import 'highlight.js/styles/monokai.css';
-import { useDispatch, useSelector } from 'react-redux';
-import { IApi, INotification, isError, IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan } from '../../../types';
 
 (window as any).hljs = hljs;
 
@@ -129,7 +129,7 @@ export const ApiHome = ({
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<ISubscriptionDemand>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
-  const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
+  const [myTeams, setMyTeams] = useState<Array<any>>([]);
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
 
@@ -138,7 +138,7 @@ export const ApiHome = ({
 
   const navigate = useNavigate();
   const defaultParams = useParams();
-  const apiGroupMatch = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab');
+  const apiGroupMatch = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab*');
   const params = Option(apiGroupMatch)
     .map((match: any) => match.params)
     .getOrElse(defaultParams);
@@ -167,14 +167,14 @@ export const ApiHome = ({
   useEffect(() => {
     if (myTeams && subscriptions && !groupView) {
       const subscribingTeams = myTeams
-        .filter((team) => subscriptions.some((sub) => (sub as any).team === (team as any)._id));
+        .filter((team) => subscriptions.some((sub) => sub.team === team._id));
       const viewApiKeyLink = (
         <Can I={manage} a={apikey} teams={subscribingTeams}>
           <ActionWithTeamSelector
             title={translate('teamapi.select.title')}
             teams={subscribingTeams.filter((t) => CanIDoAction(connectedUser, manage, apikey, t))}
             action={(teams) => {
-              const team: any = myTeams.find((t) => teams.includes((t as any)._id));
+              const team = myTeams.find((t) => teams.includes(t._id));
               if (!team) {
                 return;
               }
@@ -200,7 +200,25 @@ export const ApiHome = ({
     }
   }, [subscriptions, myTeams]);
 
-  const updateSubscriptions = (apiId: any) => {
+  // type TTeamGQL = {
+  //   name: string
+  //   _humanReadableId: string
+  //   _id: string
+  //   type: TeamType
+  //   apiKeyVisibility: TeamPermission
+  //   apisCreationPermission: boolean
+  //   verified: boolean
+  //   users: Array<{
+  //     user:  {
+  //       userId: string
+  //     }
+  //     teamPermission: TeamPermission
+  //   }>
+  // }
+  // type TMyTeamsGQL = {
+  //   myTeams: Array<TTeamGQL>
+  // }
+  const updateSubscriptions = (apiId: string) => {
     //FIXME: handle case if appolo client is not setted
     if (!client) {
       return;
@@ -219,31 +237,17 @@ export const ApiHome = ({
           data: { myTeams },
         },
       ]) => {
-        if (api.error) {
-          if (api.visibility && api.visibility === 'PublicWithAuthorizations') {
-            Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId)
-              .then((res) => {
-                if (res.error) {
-                  setGuestModal(true);
-                } else {
-                  setAccessModalError({
-                    error: api.error,
-                    api: res,
-                  });
-                }
-              });
-          } else {
-            dispatch(setError({ error: { status: api.status || 404, message: api.error } }));
-          }
+        if (isError(api)) {
+          dispatch(setError({ error: { status: 404, message: api.error } }));
         } else {
           setApi(api);
           setSubscriptions(subscriptions);
           setPendingSubscriptions(requests);
           setMyTeams(
-            myTeams.map((team: any) => ({
+            myTeams.map((team) => ({
               ...team,
 
-              users: team.users.map((us: any) => ({
+              users: team.users.map((us) => ({
                 ...us,
                 ...us.user
               }))
@@ -255,7 +259,7 @@ export const ApiHome = ({
   };
 
 
-  const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => {
+  const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
     const planName = formatPlanType(plan, translate);
 
     if (api) {
@@ -364,7 +368,7 @@ export const ApiHome = ({
   }
   const teamId = params.teamId;
 
-  document.title = `${tenant.title} - ${api ? (api as any).name : 'API'}`;
+  document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
   return (<main role="main">
     <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />
@@ -373,9 +377,16 @@ export const ApiHome = ({
         <div className="row pt-3">
           {params.tab === 'description' && (<ApiDescription api={api} />)}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
-          {params.tab === 'documentation' && <ApiDocumentation api={api} />}
-          {params.tab === 'testing' && (<ApiSwagger api={api} teamId={teamId} ownerTeam={ownerTeam} testing={(api as any).testing} tenant={tenant} connectedUser={connectedUser} />)}
-          {params.tab === 'swagger' && (<ApiRedoc api={api} teamId={teamId} />)}
+          {params.tab === 'documentation' && <ApiDocumentation documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
+          {params.tab === 'testing' && (<ApiSwagger
+            _id={api._id}
+            testing={api.testing}
+            swagger={api.swagger}
+            swaggerUrl={`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`}
+            callUrl={`/api/teams/${teamId}/testing/${api._id}/call`}
+          />)}
+          {params.tab === 'swagger' && (<ApiRedoc 
+          swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} />)}
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
           {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} onChange={(editedApi: any) => setApi(editedApi)} ownerTeam={ownerTeam} connectedUser={connectedUser} />)}
         </div>

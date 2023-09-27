@@ -1,12 +1,26 @@
-import React, { useState, useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
-import 'swagger-ui-dist/swagger-ui.css';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
+import { IState, IStateContext, ISwagger, ITesting } from '../../../types';
 
-export function ApiSwagger(props: any) {
+import 'swagger-ui-dist/swagger-ui.css';
+
+
+type ApiSwaggerProps = {
+  testing?: ITesting,
+  swagger?: ISwagger,
+  swaggerUrl: string,
+  callUrl: string,
+  _id: string
+}
+export function ApiSwagger(props: ApiSwaggerProps) {
+
+  const { tenant, connectedUser } = useSelector<IState, IStateContext>(s => s.context)
+
   const { translate } = useContext(I18nContext);
   const { alert, openLoginOrRegisterModal } = useContext(ModalContext);
 
@@ -15,32 +29,33 @@ export function ApiSwagger(props: any) {
   const params = useParams();
 
   useEffect(() => {
-    if (props.api.testing.enabled)
-      fetch(
-        `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger.json`
-      ).then((res) => {
-        if (res.status > 300) {
-          setState({
-            ...state,
-            error: translate('api_swagger.failed_to_retrieve_swagger'),
-          });
-        } else {
-          drawSwaggerUi();
-        }
-        setTimeout(() => {
-          [...document.querySelectorAll('.scheme-container')].map((i) => ((i as any).style.display = 'none'));
-          [...document.querySelectorAll('.information-container')].map((i) => ((i as any).style.display = 'none'));
-          handleAuthorize(false);
-        }, 500);
-      });
-    else setState({ ...state, info: translate('api_swagger.try_it_error') });
+    if (!!props.testing?.enabled) {
+      fetch(`${props.swaggerUrl}.json`)
+        .then((res) => {
+          if (res.status > 300) {
+            setState({
+              ...state,
+              error: translate('api_swagger.failed_to_retrieve_swagger'),
+            });
+          } else {
+            drawSwaggerUi();
+          }
+          setTimeout(() => {
+            [...document.querySelectorAll<HTMLElement>('.scheme-container')].map((i) => (i.style.display = 'none'));
+            [...document.querySelectorAll<HTMLElement>('.information-container')].map((i) => (i.style.display = 'none'));
+            handleAuthorize(false);
+          }, 500);
+        });
+    } else {
+      setState({ ...state, info: translate('api_swagger.try_it_error') })
+    };
   }, []);
 
   const drawSwaggerUi = () => {
-    if (props.api.swagger) {
-      (window as any).ui = SwaggerUIBundle({
+    if (props.swagger) {
+      window.ui = SwaggerUIBundle({
         // TODO: this current team is actually needed by the api
-        url: `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`,
+        url: props.swaggerUrl,
         dom_id: '#swagger-ui',
         deepLinking: true,
         docExpansion: 'list',
@@ -57,7 +72,7 @@ export function ApiSwagger(props: any) {
             headers: req.headers,
           });
           const newReq = {
-            url: `/api/teams/${props.teamId}/testing/${props.api._id}/call`,
+            url: props.callUrl,
             method: 'POST',
             body,
             headers: {
@@ -78,26 +93,24 @@ export function ApiSwagger(props: any) {
     //} else if (canCreate && props.testing.auth === "Basic") {
     //  // TODO: create a key dedicated for tests and use it
     //} else
-    if (props.testing.auth === 'ApiKey') {
+    if (props.testing?.auth.name === 'ApiKey') {
       // window.ui.preauthorizeApiKey('api_key', 'hello');
       // console.log('ApiKey', props.testing.name, props.testing.username)
       // window.ui.preauthorizeApiKey(props.testing.name, props.testing.username);
-      (window as any).ui.preauthorizeApiKey(props.testing.name, 'fake-' + props.api._id);
-    } else if (props.testing.auth === 'Basic') {
+      window.ui.preauthorizeApiKey(props.testing.name, 'fake-' + props._id);
+    } else if (props.testing?.auth.name === 'Basic') {
       // window.ui.preauthorizeBasic('api_key', 'user', 'pass');
       // console.log('Baisc', props.testing.name, props.testing.username, props.testing.password)
       // window.ui.preauthorizeBasic(props.testing.name, props.testing.username, props.testing.password);
-      (window as any).ui.preauthorizeBasic(props.testing.name, 'fake-' + props.api._id, 'fake-' + props.api._id);
+      window.ui.preauthorizeBasic(props.testing.name, 'fake-' + props._id, 'fake-' + props._id);
     } else {
       if (canCreate) {
-        alert({message: 'Unknown authentication type'});
+        alert({ message: 'Unknown authentication type' });
       } else {
         console.log('Unknown authentication type');
       }
     }
   };
-
-  const { tenant, connectedUser } = props;
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
     openLoginOrRegisterModal({
@@ -106,8 +119,8 @@ export function ApiSwagger(props: any) {
       message: translate('api_swagger.guest_user')
     })
 
-  const api = props.api;
-  if (!api) return <div>{translate({ key: 'api_data.missing', replacements: ['Swagger'] })}</div>;
+  // const api = props.api;
+  if (!props._id) return <div>{translate({ key: 'api_data.missing', replacements: ['Swagger'] })}</div>;
 
   if (state.error || state.info)
     return (

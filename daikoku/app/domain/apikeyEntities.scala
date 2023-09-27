@@ -63,6 +63,7 @@ case class ApiSubscription(
     api: ApiId,
     by: UserId,
     customName: Option[String],
+    adminCustomName: Option[String] = None,
     enabled: Boolean = true,
     rotation: Option[ApiSubscriptionRotation],
     integrationToken: String,
@@ -282,13 +283,14 @@ case class SubscriptionDemand(
     team: TeamId,
     from: UserId,
     date: DateTime = DateTime.now,
-    motivation: Option[String] = None,
+    motivation: Option[JsObject] = None,
     parentSubscriptionId: Option[ApiSubscriptionId] = None,
     customReadOnly: Option[Boolean] = None,
     customMetadata: Option[JsObject] = None,
     customMaxPerSecond: Option[Long] = None,
     customMaxPerDay: Option[Long] = None,
-    customMaxPerMonth: Option[Long] = None)
+    customMaxPerMonth: Option[Long] = None,
+    adminCustomName: Option[String] = None)
     extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }

@@ -50,7 +50,7 @@ export const TeamBilling = () => {
   }, [date])
 
   const getConsumptionsByApi = (consumptions: Array<IConsumption>) => consumptions.reduce((acc: Array<IConsumptionByApi>, consumption) => {
-    const api = acc.find((item: any) => item.api === consumption.api);
+    const api = acc.find((item) => item.api === consumption.api);
     const { hits, total } = api ? api.billing : { hits: 0, total: 0 };
     const billing = {
       hits: hits + consumption.billing.hits,
@@ -137,28 +137,45 @@ export const TeamBilling = () => {
 
         return (
           <div className="api-plans-consumptions section p-2">
-                <div className="api__plans__consumption__header">
-                  <h3 className="api__name">{selectedApi.name}</h3>
-                  <i className="far fa-times-circle quit" onClick={() => setSelectedApi(undefined)} />
-                </div>
-                {consumptions
-                  .filter((c) => c.api === selectedApi._id)
-                  .sort((c1, c2) => c2.billing.total - c1.billing.total)
-                  .map(({ plan, billing }: any, idx: number) => {
-                    const usagePlan = selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan);
-                    if (usagePlan) {
-                      return (<PriceCartridge
-                        key={idx}
-                        label={usagePlan.customName || formatPlanType(usagePlan, translate)}
-                        total={billing.total}
-                        currency={usagePlan.currency}
-                        fetchInvoices={() => Services.fetchInvoices(currentTeam._id, selectedApi._id, usagePlan._id, window.location.href)
-                          .then(({ url }) => window.location.href = url)} />);
-                    }
-                  })}
-              </div>
+            <div className="api__plans__consumption__header">
+              <h3 className="api__name">{selectedApi.name}</h3>
+              <i className="far fa-times-circle quit" onClick={() => setSelectedApi(undefined)} />
+            </div>
+            {consumptions
+              .filter((c) => c.api === selectedApi._id)
+              .sort((c1, c2) => c2.billing.total - c1.billing.total)
+              .map(({ plan, billing }, idx: number) => {
+                return (
+                  <BillingCartridge
+                    key={idx}
+                    api={selectedApi}
+                    planId={plan}
+                    total={billing.total} />
+                )
+              })}
+          </div>
         )
       }
+    }
+  }
+
+  const BillingCartridge = (props: { api: IApi, planId: string, total: number }) => {
+    const planQuery = useQuery(['plan'], () => Services.planOfApi(props.api.team, props.api._id, props.api.currentVersion, props.planId))
+
+    if (planQuery.isLoading) {
+      return <Spinner />
+    } else if (planQuery.data && !isError(planQuery.data)) {
+      const usagePlan = planQuery.data;
+      return (
+        <PriceCartridge
+          label={usagePlan.customName || formatPlanType(usagePlan, translate)}
+          total={props.total}
+          currency={usagePlan.currency}
+          fetchInvoices={() => Services.fetchInvoices(currentTeam._id, props.api._id, usagePlan._id, window.location.href)
+            .then(({ url }) => window.location.href = url)} />
+      );
+    } else {
+      return (<div>error while fetching usage plan</div>)
     }
   }
 

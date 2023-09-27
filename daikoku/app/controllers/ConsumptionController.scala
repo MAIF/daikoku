@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
@@ -59,14 +60,14 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
               FastFuture.successful(Unauthorized(Json.obj(
                 "error" -> "You're not authorized on this subscription")))
             case Some(subscription) =>
-              env.dataStore.apiRepo
+              env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant.id)
-                .findById(subscription.api)
+                .findById(subscription.plan)
                 .flatMap {
                   case None =>
                     FastFuture.successful(NotFound(Json.obj(
                       "error" -> "Api not found for the given clientId")))
-                  case Some(api) =>
+                  case Some(plan) =>
                     env.dataStore.consumptionRepo
                       .forTenant(ctx.tenant.id)
                       .find(
@@ -79,10 +80,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                         consumptions =>
                           Ok(
                             Json.obj(
-                              "plan" -> api.possibleUsagePlans
-                                .find(pp => pp.id == subscription.plan)
-                                .map(_.asJson)
-                                .get,
+                              "plan" -> plan.asJson,
                               "consumptions" -> JsArray(
                                 consumptions.map(_.asJson))
                             )
@@ -188,41 +186,33 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
               FastFuture.successful(NotFound(Json.obj(
                 "error" -> "subscription not found for the given clientId")))
             case Some(subscription) =>
-              env.dataStore.apiRepo
+              env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant.id)
-                .findById(subscription.api)
+                .findById(subscription.plan)
                 .flatMap {
                   case None =>
                     FastFuture.successful(
                       NotFound(Json.obj("error" -> "Api not found")))
-                  case Some(api) =>
-                    api.possibleUsagePlans
-                      .find(pp => pp.id == subscription.plan)
-                      .map(
-                        plan =>
-                          plan.otoroshiTarget match {
-                            case None =>
-                              FastFuture.successful(NotFound(Json.obj(
-                                "error" -> "Otoroshi target not found")))
-                            case Some(target) =>
-                              ctx.tenant.otoroshiSettings.find(
-                                _.id == target.otoroshiSettings) match {
-                                case None =>
-                                  Future.successful(NotFound(Json.obj(
-                                    "error" -> "Otoroshi settings not found")))
-                                case Some(otoSettings) =>
-                                  implicit val otoroshiSettings
-                                    : OtoroshiSettings = otoSettings
-                                  otoroshiClient
-                                    .getApiKeyQuotas(
-                                      subscription.apiKey.clientId)
-                                    .map(result => Ok(result))
+                  case Some(plan) =>
+                    plan.otoroshiTarget match {
+                      case None =>
+                        FastFuture.successful(NotFound(
+                          Json.obj("error" -> "Otoroshi target not found")))
+                      case Some(target) =>
+                        ctx.tenant.otoroshiSettings
+                          .find(_.id == target.otoroshiSettings) match {
+                          case None =>
+                            Future.successful(NotFound(Json.obj(
+                              "error" -> "Otoroshi settings not found")))
+                          case Some(otoSettings) =>
+                            implicit val otoroshiSettings: OtoroshiSettings =
+                              otoSettings
+                            otoroshiClient
+                              .getApiKeyQuotas(subscription.apiKey.clientId)
+                              .map(result => Ok(result))
 
-                              }
                         }
-                      )
-                      .get
-
+                    }
                 }
           }
       }
@@ -236,7 +226,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed to plan consumption for api @{apiId} and plan @{planId}")
+          s"@{user.name} has accessed to plan consumption for apiGroup @{apiId} and plan @{planId}")
       )(teamId, ctx) { team =>
         ctx.setCtxValue("apiId", apiId)
         ctx.setCtxValue("planId", planId)
@@ -245,35 +235,22 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
           DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
 
-        env.dataStore.apiRepo
+        env.dataStore.usagePlanRepo
           .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(
-            Json.obj("team" -> team.id.value,
-                     "$or" -> Json.arr(Json.obj("_id" -> apiId),
-                                       Json.obj("_humanReadableId" -> apiId)))
-          )
+          .findByIdNotDeleted(planId)
           .flatMap {
-            case None =>
-              FastFuture.successful(
-                NotFound(Json.obj("error" -> "Api not found (13)")))
-            case Some(api) =>
-              api.possibleUsagePlans.find(pp => pp.id.value == planId) match {
-                case None =>
-                  FastFuture.successful(
-                    NotFound(Json.obj("error" -> "Api not found (14)")))
-                case Some(_) =>
-                  env.dataStore.consumptionRepo
-                    .forTenant(ctx.tenant.id)
-                    .find(
-                      Json.obj("api" -> api.id.value,
-                               "plan" -> planId,
-                               "from" -> Json.obj("$gte" -> fromTimestamp),
-                               "to" -> Json.obj("$lte" -> toTimestamp)),
-                      Some(Json.obj("from" -> 1))
-                    )
-                    .map(consumptions =>
-                      Ok(JsArray(consumptions.map(_.asJson))))
-              }
+            case None => AppError.ApiNotFound.renderF()
+            case Some(plan) =>
+              env.dataStore.consumptionRepo
+                .forTenant(ctx.tenant.id)
+                .find(
+                  Json.obj("api" -> apiId, //FIXME: get api from plan
+                           "plan" -> planId,
+                           "from" -> Json.obj("$gte" -> fromTimestamp),
+                           "to" -> Json.obj("$lte" -> toTimestamp)),
+                  Some(Json.obj("from" -> 1))
+                )
+                .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
           }
       }
     }
@@ -343,6 +320,10 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
               Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptions.map(s =>
                 s.api.asJson))))
             )
+          plans <- env.dataStore.usagePlanRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(Json.obj("_id" -> Json.obj(
+              "$in" -> JsArray(subscriptions.map(_.plan.asJson)))))
           consumptions <- env.dataStore.consumptionRepo
             .forTenant(ctx.tenant.id)
             .find(Json.obj("team" -> team.id.value,
@@ -363,10 +344,8 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                     .find(s => s.apiKey.clientId == c.clientId)
                     .map(s => s.apiKey.clientName)
                     .getOrElse(c.clientId)
-                  val plan: String = subscribedApis
-                    .find(a => a.id == c.api)
-                    .flatMap(a =>
-                      a.possibleUsagePlans.find(pp => pp.id == c.plan))
+                  val plan: String = plans
+                    .find(p => p.id == c.plan)
                     .map(plan => plan.customName.getOrElse(plan.typeName))
                     .getOrElse(c.plan.value)
 
@@ -413,13 +392,9 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
           val callback = ctx.request
             .getQueryString("callback")
             .getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis"))
-          env.dataStore.apiRepo
+          env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
-            .findByIdNotDeleted(api)
-            .map {
-              case Some(api) => api.possibleUsagePlans.find(_.id.value == plan)
-              case None      => None
-            }
+            .findByIdNotDeleted(plan)
             .map {
               case Some(plan) =>
                 paymentClient
@@ -427,8 +402,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                   .map(url => Ok(Json.obj("url" -> url)))
                   .leftMap(_.render())
                   .merge
-              case None =>
-                FastFuture.successful(NotFound(Json.obj("error" -> "error"))) //FIXME
+              case None => AppError.PlanNotFound.renderF()
             }
             .flatten
       }

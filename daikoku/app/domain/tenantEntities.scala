@@ -235,6 +235,22 @@ object TenantMode {
     case _              => Some(Default)
   }
 }
+sealed trait TenantDisplay {
+  def name: String
+}
+
+object TenantDisplay {
+  case object Environment extends TenantDisplay {
+    def name: String = "environment"
+  }
+  case object Default extends TenantDisplay {
+    def name: String = "default"
+  }
+  def apply(name: String): TenantDisplay = name.toLowerCase() match {
+    case "environment"  => Environment
+    case _              => Default
+  }
+}
 
 sealed trait ThirdPartyPaymentSettings {
   def id: ThirdPartyPaymentSettingsId
@@ -281,7 +297,10 @@ case class Tenant(
     tenantMode: Option[TenantMode] = None,
     aggregationApiKeysSecurity: Option[Boolean] = None,
     robotTxt: Option[String] = None,
-    thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty
+    thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
+    display: TenantDisplay = TenantDisplay.Default,
+    environments: Set[String] = Set.empty,
+    defaultEnvironment: Option[String] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -343,7 +362,9 @@ case class Tenant(
       "aggregationApiKeysSecurity" -> aggregationApiKeysSecurity
         .map(JsBoolean)
         .getOrElse(JsBoolean(false))
-        .as[JsValue]
+        .as[JsValue],
+      "display" -> display.name,
+      "environments" -> JsArray(environments.map(JsString.apply).toSeq)
     )
   }
   def colorTheme(): Html = {
@@ -391,7 +412,7 @@ case class Tenant(
     } getOrElse Html("")
   }
   def favicon(): String = {
-    style.flatMap(_.faviconUrl).getOrElse("/assets/images/favicon.png")
+    style.flatMap(_.faviconUrl).getOrElse("/assets/images/daikoku.svg")
   }
 }
 
@@ -857,19 +878,20 @@ case class CmsPage(
                                             jsonToCombine: Map[String, JsValue])
                                            (implicit ec: ExecutionContext, messagesApi: MessagesApi, env: Env): Handlebars = {
     handlebars.registerHelper(s" ${name}s-json", (id: String, _: Options) => {
-      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine), 10.seconds)
-        .map(_.possibleUsagePlans).getOrElse(Seq())
+      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine).flatMap {
+        case Some(api) => env.dataStore.usagePlanRepo.findByApi(tenant, api)
+        case None => FastFuture.successful(Seq.empty)
+      }, 10.seconds)
         .map(_.asJson)
     })
 
     handlebars.registerHelper(s"daikoku-${name}s", (id: String, options: Options) => {
-      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine)(env, ec, messagesApi), 10.seconds)
-        .map(api => {
-          api.possibleUsagePlans
-            .map(p => renderString(ctx, parentId, options.fn.text(), fields = fields, jsonToCombine = jsonToCombine ++ Map(name -> p.asJson)))
-            .mkString("\n")
-        })
-        .getOrElse("")
+      Await.result(getApi(ctx, parentId, id, fields, jsonToCombine).flatMap {
+        case Some(api) => env.dataStore.usagePlanRepo.findByApi(tenant, api)
+        case None => FastFuture.successful(Seq.empty)
+      }, 10.seconds)
+        .map(p => renderString(ctx, parentId, options.fn.text(), fields = fields, jsonToCombine = jsonToCombine ++ Map(name -> p.asJson)))
+        .mkString("\n")
     })
   }
 

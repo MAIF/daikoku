@@ -6,11 +6,12 @@ import { useSelector } from 'react-redux';
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
-import { isError, ITeamSimple } from '../../../types';
-import {Moment} from "moment/moment";
-import {getApolloContext} from "@apollo/client";
+import { IApi, isError, IState, ITeamSimple, IUsagePlan } from '../../../types';
+import { Moment } from "moment/moment";
+import { getApolloContext } from "@apollo/client";
+import { useQuery } from '@tanstack/react-query';
 
-type IGlobalInformations= {
+type IGlobalInformations = {
   avgDuration?: number,
   avgOverhead?: number,
   dataIn: number,
@@ -46,21 +47,16 @@ type IgqlConsumption = {
 
 
 }
-export const TeamPlanConsumption = ({
-  apiGroup
-}: any) => {
-  const { currentTeam } = useSelector((state) => (state as any).context);
-
+export const TeamPlanConsumption = (props: {apiGroup?: boolean}) => {
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   const { translate } = useContext(I18nContext);
 
   const { client } = useContext(getApolloContext());
 
-  const urlMatching = !!apiGroup
+  const urlMatching = !!props.apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
     : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
   const match = useMatch(urlMatching);
-
-  const [teams, setTeams] = useState<Array<ITeamSimple>>([]);
 
   const mappers = [
     {
@@ -82,12 +78,12 @@ export const TeamPlanConsumption = ({
       type: 'RoundChart',
       label: translate('Hits by apikey'),
       title: translate('Hits by apikey'),
-      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: Array<{clientId: string, name: string, count: number}> , item: IgqlConsumption) => {
-        const value = acc.find((a: any) => a.name === item.clientId) || { count: 0 };
+      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: Array<{ clientId: string, name: string, count: number }>, item: IgqlConsumption) => {
+        const value = acc.find((a) => a.name === item.clientId) || { count: 0 };
 
 
         return [
-          ...acc.filter((a: any) => a.name !== item.clientId),
+          ...acc.filter((a) => a.name !== item.clientId),
           { clientId: item.clientId, name: item.team.name, count: value.count + item.globalInformations.hits },
         ];
       }, []),
@@ -100,30 +96,16 @@ export const TeamPlanConsumption = ({
     },
   ];
 
-  const getPlanInformation = () => {
-    return Services.teamApi(currentTeam._id, match?.params.apiId!, match?.params.version!).then(
-      (api) => {
-        if (isError(api)) {
-          return null;
-        }
-        return {
-          api,
-          plan: api.possibleUsagePlans.find((pp) => pp._id === match?.params.planId),
-        };
-      }
-    );
-  };
-
   const sumGlobalInformations = (data: Array<IgqlConsumption>) => {
-    const globalInformations = data.map((d: any) => d.globalInformations);
+    const globalInformations = data.map((d) => d.globalInformations);
 
     const value = globalInformations.reduce((acc: any, item: any) => {
       Object.keys(item).forEach((key) => (acc[key] = (acc[key] || 0) + item[key]));
       return acc;
     }, {});
 
-    const howManyDuration = globalInformations.filter((d: any) => !!d.avgDuration).length;
-    const howManyOverhead = globalInformations.filter((d: any) => !!d.avgDuration).length;
+    const howManyDuration = globalInformations.filter((d) => !!d.avgDuration).length;
+    const howManyOverhead = globalInformations.filter((d) => !!d.avgDuration).length;
 
     return {
       ...value,
@@ -141,13 +123,16 @@ export const TeamPlanConsumption = ({
       <div className="row">
         <div className="col">
           <h1>Api Consumption</h1>
-          <PlanInformations fetchData={() => getPlanInformation()} />
+          <PlanInformations  
+          apiId={match?.params.apiId!}
+          version={match?.params.version!}
+          planId={match?.params.planId!}/>
         </div>
       </div>
       <OtoroshiStatsVizualization
         sync={() => Services.syncApiConsumption(match?.params.apiId, currentTeam._id)}
-        fetchData={(from: Moment , to: Moment ) =>
-          client!.query<{ apiConsumptions: Array<IgqlConsumption>}>({
+        fetchData={(from: Moment, to: Moment) =>
+          client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
             query: Services.graphql.getApiConsumptions,
             fetchPolicy: "no-cache",
             variables: {
@@ -157,7 +142,7 @@ export const TeamPlanConsumption = ({
               to: to.from.valueOf(),
               planId: match?.params.planId
             }
-          }).then(({data: {apiConsumptions}}) => {
+          }).then(({ data: { apiConsumptions } }) => {
             return apiConsumptions
           })
         }
@@ -167,24 +152,30 @@ export const TeamPlanConsumption = ({
   );
 };
 
-const PlanInformations = (props: any) => {
-  const [loading, setLoading] = useState(true);
-  const [informations, setInformations] = useState();
+type PlanInformationsProps = {
+  apiId: string
+  version: string
+  planId: string
+}
 
-  useEffect(() => {
-    props.fetchData().then((informations: any) => {
-      setInformations(informations);
-      setLoading(false);
-    });
-  }, []);
+const PlanInformations = (props: PlanInformationsProps) => {
+  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
-  if (loading) return <Spinner width="50" height="50" />;
+  const apiRequest = useQuery(['api'], () => Services.teamApi(currentTeam._id, props.apiId, props.version))
+  const planRequest = useQuery(['plan'], () => Services.planOfApi(currentTeam._id, props.apiId, props.version, props.planId))
 
-  if (!informations) {
-    return null;
+  if (apiRequest.isLoading || planRequest.isLoading) {
+    return <Spinner width="50" height="50" />;
+  } else if (apiRequest.data && !isError(apiRequest.data) && planRequest.data && !isError(planRequest.data)) {
+      const api = apiRequest.data
+      const plan = planRequest.data
+
+      return (<h3>
+        {api.name} - {plan.customName || plan.type}
+      </h3>);
+  } else {
+    return <div>Error while fetching usage plan</div>
   }
 
-  return (<h3>
-    {(informations as any).api.name} - {(informations as any).plan.customName || (informations as any).plan.type}
-  </h3>);
+  
 };

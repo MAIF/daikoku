@@ -9,6 +9,11 @@ enum TenanMode {
   default = 'Default',
 }
 
+enum Display {
+  default = 'default',
+  environment = 'environment',
+}
+
 enum AuthProvider {
   otoroshi = 'Otoroshi',
   LDAP = 'LDAP',
@@ -170,6 +175,8 @@ export interface ITenant {
   homePageVisible: boolean;
   mode: DaikokuMode;
   tenantMode: TenanMode;
+  display: Display;
+  environments: Array<string>;
 }
 
 export interface ITenantFull extends ITenant {

@@ -727,7 +727,7 @@ class TeamControllerSpec()
         plan = subPlanId,
         createdAt = DateTime.now(),
         team = teamOwnerId,
-        api = defaultApi.id,
+        api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = None,
         rotation = None,
@@ -737,7 +737,8 @@ class TeamControllerSpec()
         tenants = Seq(tenant),
         teams = Seq(teamOwner, teamConsumer.copy(users = Set.empty)),
         users = Seq(userAdmin, randomUser),
-        apis = Seq(defaultApi),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
         subscriptions = Seq(sub),
         notifications = Seq(
           Notification(
@@ -747,7 +748,7 @@ class TeamControllerSpec()
             sender = user.asNotificationSender,
             notificationType = AcceptOrReject,
             action = ApiSubscriptionAccept(
-              defaultApi.id,
+              defaultApi.api.id,
               subPlanId,
               teamConsumerId
             )

@@ -4,6 +4,7 @@ import ExternalLink from 'react-feather/dist/icons/external-link'
 
 import { I18nContext } from '../../../core';
 import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
+import { ICurrency } from '../../../types';
 
 export const ApiTotal = (props: any) => {
   return (
@@ -20,30 +21,31 @@ export const ApiTotal = (props: any) => {
   );
 };
 
-export const PriceCartridge = ({
-  label,
-  total,
-  currency,
-  handleClick,
-  ...props
-}: any) => {
+type PriceCartridgeProps = {
+  handleClick?: () => void
+  label: string
+  fetchInvoices?: () => void
+  total: number
+  currency: ICurrency
+}
+export const PriceCartridge = (props: PriceCartridgeProps) => {
   return (
     <div
-      className={classNames('price__cartridge', { clickable: !!handleClick })}
-      onClick={() => (handleClick ? handleClick() : {})}
+      className={classNames('price__cartridge', { clickable: !!props.handleClick })}
+      onClick={() => (props.handleClick ? props.handleClick() : {})}
       {...props}
     >
-      <span className="price__cartridge__label d-flex align-items-center">
-        {label}
+      {!!props.fetchInvoices && <span className="price__cartridge__label d-flex align-items-center">
+        {props.label}
         <ExternalLink
           className="ms-1 cursor-pointer"
           style={{ height: '15px', width: '15px' }}
           onClick={props.fetchInvoices} />
-      </span>
+      </span>}
 
       <span className="price__cartridge__total currency">
-        {formatCurrency(total)}
-        <span className="unit">{getCurrencySymbol(currency.code)}</span>
+        {formatCurrency(props.total)}
+        <span className="unit">{getCurrencySymbol(props.currency.code)}</span>
       </span>
     </div>
   );

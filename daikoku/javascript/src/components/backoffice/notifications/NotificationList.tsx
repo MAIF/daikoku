@@ -8,7 +8,7 @@ import { SimpleNotification } from './SimpleNotification';
 import { updateNotifications, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
-import { isError } from '../../../types';
+import { ITesting, isError } from '../../../types';
 
 type NotificationsGQL = {
   notifications: Array<NotificationGQL>
@@ -28,6 +28,7 @@ type NotificationGQL = {
     api?: {
       _id: string
       name: string
+      testing: ITesting
     }
     apiName?: string
     subscriptionName?: string

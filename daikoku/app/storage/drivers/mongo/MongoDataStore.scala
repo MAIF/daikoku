@@ -322,6 +322,17 @@ case class MongoTenantCapableStepValidatorRepo(
       tenant: TenantId): MongoTenantAwareRepo[StepValidator, DatastoreId] =
     _tenantRepo(tenant)
 }
+case class MongoTenantCapableUsagePlanRepo(
+    _repo: () => MongoRepo[UsagePlan, UsagePlanId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[UsagePlan, UsagePlanId]
+) extends MongoTenantCapableRepo[UsagePlan, UsagePlanId]
+    with UsagePlanRepo {
+  override def repo(): MongoRepo[UsagePlan, UsagePlanId] = _repo()
+
+  override def tenantRepo(
+      tenant: TenantId): MongoTenantAwareRepo[UsagePlan, UsagePlanId] =
+    _tenantRepo(tenant)
+}
 
 class MongoDataStore(context: Context, env: Env)
     extends ReactiveMongoApiFromContext(context)
@@ -432,6 +443,12 @@ class MongoDataStore(context: Context, env: Env)
       t => new MongoTenantStepValidatorRepo(env, reactiveMongoApi, t)
     )
   }
+  private val _usagePlanRepo: UsagePlanRepo = {
+    MongoTenantCapableUsagePlanRepo(
+      () => new MongoUsagePlanRepo(env, reactiveMongoApi),
+      t => new MongoTenantUsagePlanRepo(env, reactiveMongoApi, t)
+    )
+  }
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -480,6 +497,8 @@ class MongoDataStore(context: Context, env: Env)
 
   override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
 
+  override def usagePlanRepo: UsagePlanRepo = _usagePlanRepo
+
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
 
@@ -524,7 +543,8 @@ class MongoDataStore(context: Context, env: Env)
       emailVerificationRepo.forAllTenant(),
       cmsRepo.forAllTenant(),
       stepValidatorRepo.forAllTenant(),
-      subscriptionDemandRepo.forAllTenant()
+      subscriptionDemandRepo.forAllTenant(),
+      usagePlanRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -567,6 +587,8 @@ class MongoDataStore(context: Context, env: Env)
       - <- messageRepo.forAllTenant().deleteAll()
       _ <- operationRepo.forAllTenant().deleteAll()
       _ <- emailVerificationRepo.forAllTenant().deleteAll()
+      _ <- cmsRepo.forAllTenant().deleteAll()
+      _ <- usagePlanRepo.forAllTenant().deleteAll()
       _ <- source
         .via(Framing.delimiter(ByteString("\n"), 1000000000, true))
         .map(_.utf8String)
@@ -646,6 +668,18 @@ class MongoDataStore(context: Context, env: Env)
             subscriptionDemandRepo
               .forAllTenant()
               .save(json.SubscriptionDemandFormat.reads(payload).get)
+          case ("usageplans", payload) =>
+            usagePlanRepo
+              .forAllTenant()
+              .save(json.UsagePlanFormat.reads(payload).get)
+          case ("cmspages", payload) =>
+            cmsRepo
+              .forAllTenant()
+              .save(json.CmsPageFormat.reads(payload).get)
+          case ("emailverifications", payload) =>
+            emailVerificationRepo
+              .forAllTenant()
+              .save(json.EmailVerificationFormat.reads(payload).get)
           case (typ, _) =>
             logger.info(s"Unknown type: $typ")
             FastFuture.successful(false)
@@ -784,6 +818,18 @@ class MongoTenantStepValidatorRepo(env: Env,
   override def format: Format[StepValidator] = json.StepValidatorFormat
 
   override def extractId(value: StepValidator): String = value.id.value
+}
+class MongoTenantUsagePlanRepo(env: Env,
+                               reactiveMongoApi: ReactiveMongoApi,
+                               tenant: TenantId)
+    extends MongoTenantAwareRepo[UsagePlan, UsagePlanId](env,
+                                                         reactiveMongoApi,
+                                                         tenant) {
+  override def collectionName: String = "UsagePlans"
+
+  override def format: Format[UsagePlan] = json.UsagePlanFormat
+
+  override def extractId(value: UsagePlan): String = value.id.value
 }
 
 class MongoTenantEmailVerificationRepo(env: Env,
@@ -992,6 +1038,14 @@ class MongoStepValidatorRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 
   override def extractId(value: StepValidator): String = value.id.value
 }
+class MongoUsagePlanRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[UsagePlan, UsagePlanId](env, reactiveMongoApi) {
+  override def collectionName: String = "UsagePlans"
+
+  override def format: Format[UsagePlan] = json.UsagePlanFormat
+
+  override def extractId(value: UsagePlan): String = value.id.value
+}
 
 class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
     extends MongoRepo[Api, ApiId](env, reactiveMongoApi) {
@@ -1091,6 +1145,27 @@ abstract class MongoRepo[Of, Id <: ValueType](
       implicit ec: ExecutionContext): Future[JSONCollection] =
     reactiveMongoApi.database.map(_.collection(collectionName))
 
+  override def findRaw(query: JsObject, sort: Option[JsObject], maxDocs: Int)(
+      implicit ec: ExecutionContext): Future[Seq[JsValue]] =
+    collection.flatMap { col =>
+      logger.debug(s"$collectionName.findRaw(${Json.prettyPrint(query)})")
+      sort match {
+        case None =>
+          col
+            .find(query, None)
+            .cursor[JsObject](ReadPreference.primaryPreferred)
+            .collect[Seq](maxDocs = maxDocs,
+                          Cursor.FailOnError[Seq[JsObject]]())
+        case Some(s) =>
+          col
+            .find(query, None)
+            .sort(s)
+            .cursor[JsObject](ReadPreference.primaryPreferred)
+            .collect[Seq](maxDocs = maxDocs,
+                          Cursor.FailOnError[Seq[JsObject]]())
+      }
+    }
+
   override def find(
       query: JsObject,
       sort: Option[JsObject] = None,
@@ -1159,6 +1234,28 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   override def deleteAllLogically()(
       implicit ec: ExecutionContext): Future[Boolean] =
     super.deleteAllLogically(Json.obj("_tenant" -> tenant.value))
+
+  override def findRaw(query: JsObject, sort: Option[JsObject], maxDocs: Int)(
+      implicit ec: ExecutionContext): Future[Seq[JsValue]] =
+    collection.flatMap { col =>
+      logger.debug(s"$collectionName.findRaw(${Json.prettyPrint(
+        query ++ Json.obj("_tenant" -> tenant.value))})")
+      sort match {
+        case None =>
+          col
+            .find(query ++ Json.obj("_tenant" -> tenant.value), None)
+            .cursor[JsObject](ReadPreference.primaryPreferred)
+            .collect[Seq](maxDocs = maxDocs,
+                          Cursor.FailOnError[Seq[JsObject]]())
+        case Some(s) =>
+          col
+            .find(query ++ Json.obj("_tenant" -> tenant.value), None)
+            .sort(s)
+            .cursor[JsObject](ReadPreference.primaryPreferred)
+            .collect[Seq](maxDocs = maxDocs,
+                          Cursor.FailOnError[Seq[JsObject]]())
+      }
+    }
 
   override def find(
       query: JsObject,
@@ -1330,13 +1427,13 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
       .flatMapConcat(res =>
         Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
 
-  override def findOneRaw(query: JsObject)(implicit ec: ExecutionContext): Future[Option[JsValue]] =
-    collection.flatMap {
-      col =>
-        logger.debug(s"$collectionName.findOne(${Json.prettyPrint(query)})")
-        col
-          .find(query, None)
-          .one[JsObject](ReadPreference.primaryPreferred)
+  override def findOneRaw(query: JsObject)(
+      implicit ec: ExecutionContext): Future[Option[JsValue]] =
+    collection.flatMap { col =>
+      logger.debug(s"$collectionName.findOne(${Json.prettyPrint(query)})")
+      col
+        .find(query, None)
+        .one[JsObject](ReadPreference.primaryPreferred)
     }
 
   override def findOne(query: JsObject)(

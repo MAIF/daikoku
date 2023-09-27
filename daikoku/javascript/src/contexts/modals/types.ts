@@ -3,12 +3,20 @@ import {
   IApi,
   IApiKey,
   IAsset,
+  IImportingDocumentation,
   INotification,
+  IOtoroshiApiKey,
   ISafeSubscription,
   ISubscription,
+  ISubscriptionDemand,
   ITeamSimple,
   ITenant,
+  ITesting,
+  ITestingConfig,
+  IUsagePlan,
   IUserSimple,
+  IWithTesting,
+  ResponseDone,
   ResponseError,
 } from '../../types';
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
@@ -25,8 +33,8 @@ export type TModalContext = {
   confirm: (p: ConfirmModalProps) => Promise<boolean>;
   prompt: (p: PromptModalProps) => Promise<string | undefined>;
   openFormModal: <T extends TBaseObject>(p: IFormModalProps<T>) => void;
-  openTestingApikeyModal: (p: TestingApiKeyModalProps) => void;
-  openSubMetadataModal: (p: SubscriptionMetadataModalProps) => void;
+  openTestingApikeyModal: <T extends IWithTesting>(p: TestingApiKeyModalProps<T>) => void;
+  openSubMetadataModal: <T extends IWithTesting>(p: SubscriptionMetadataModalProps<T>) => void;
   openApiDocumentationSelectModal: (p: IApiDocumentationSelectModalProps) => void;
   openTeamSelectorModal: (p: TeamSelectorModalProps) => void;
   openInvitationTeamModal: (p: ITeamInvitationModalProps) => void;
@@ -87,13 +95,14 @@ export interface IFormModalProps<T> {
   noClose?: boolean;
 }
 
-export type TestingApiKeyModalProps = {
+export type TestingApiKeyModalProps<T extends IWithTesting> = {
   title: string;
   teamId: string;
   update: boolean;
-  onChange: (apiKey: IApiKey, config: any) => void;
-  config: any;
+  onChange: (apiKey: IOtoroshiApiKey, config: ITestingConfig) => void;
+  config: ITestingConfig;
   metadata: any;
+  value: T;
 };
 type LimitedTeam = {
   _id: string;
@@ -148,23 +157,27 @@ type NotificationGQL = {
     };
   };
 };
-export type SubscriptionMetadataModalProps = {
-  api: string;
+export type SubscriptionMetadataModalProps<T extends IWithTesting> = {
   creationMode?: boolean;
+  api?: string;
   plan?: string;
   save: ((sub: CustomSubscriptionData) => Promise<void>) | ((sub: CustomSubscriptionData) => void);
   team?: ITeamSimple | LimitedTeam;
   notification?: INotification | NotificationGQL;
-  config?: any;
+  config?: ITestingConfig;
   subscription?: ISafeSubscription | ApiSubscriptionGql;
+  subscriptionDemand?: ISubscriptionDemand;
   description?: any;
   noClose?: boolean;
+  value: T;
 };
 
 export interface IApiDocumentationSelectModalProps {
   teamId: string;
   api: IApi;
+  getDocumentationPages: () => Promise<ResponseError | Array<IImportingDocumentation>>;
   onClose: () => void;
+  importPages: (pages: Array<string>) => Promise<ResponseError | ResponseDone>;
 }
 
 export type TeamSelectorModalProps = {

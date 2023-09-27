@@ -31,6 +31,13 @@ import {
   IUsagePlan,
   ISubscriptionDemand,
   IConsumption,
+  ISubscriptionExtended,
+  IApiExtended,
+  IDocumentation,
+  IImportingDocumentation,
+  ITestingConfig,
+  IApiKey,
+  IOtoroshiApiKey,
 } from '../types/api';
 
 const HEADERS = {
@@ -48,11 +55,27 @@ export const me = () => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id: any) => customFetch(`/api/me/teams/${id}`);
 
-export const getVisibleApiWithId = (id: any) => customFetch(`/api/me/visible-apis/${id}`);
-export const getVisibleApi = (id: any, version: any) =>
+export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> =>
+  customFetch(`/api/me/visible-apis/${id}`);
+export const getVisibleApi = (id: string, version: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/visible-apis/${id}/${version}`);
+export const getVisiblePlan = (
+  apiId: string,
+  version: string,
+  planId: string
+): PromiseWithError<IUsagePlan> =>
+  customFetch(`/api/me/visible-apis/${apiId}/${version}/plans/${planId}`);
+export const getVisiblePlans = (
+  apiId: string,
+  version: string
+): PromiseWithError<Array<IUsagePlan>> =>
+  customFetch(`/api/me/visible-apis/${apiId}/${version}/plans`);
 export const getVisibleApiGroup = (id: any) => customFetch(`/api/me/visible-groups/${id}`);
-export const getTeamVisibleApi = (teamId: any, apiId: any, version: any) =>
+export const getTeamVisibleApi = (
+  teamId: string,
+  apiId: string,
+  version: string
+): PromiseWithError<IApi> =>
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> =>
   customFetch('/api/me/teams');
@@ -99,12 +122,21 @@ export const rejectNotificationOfTeam = (
 
 export const subscribedApis = (teamId: string): Promise<ResponseError | Array<IApi>> =>
   customFetch(`/api/teams/${teamId}/subscribed-apis`);
-export const getDocPage = (api: string, id: string): Promise<IDocPage | ResponseError> =>
+export const getApiDocPage = (api: string, id: string): PromiseWithError<IDocPage> =>
   customFetch(`/api/apis/${api}/pages/${id}`);
+export const getUsagePlanDocPage = (
+  apiId: string,
+  planId: string,
+  pageId: string
+): PromiseWithError<IDocPage> => customFetch(`/api/apis/${apiId}/plan/${planId}/pages/${pageId}`);
 export const getDocDetails = (api: string, version: string): Promise<IDocDetail> =>
   customFetch(`/api/apis/${api}/${version}/doc`);
 
-export const getTeamSubscriptions = (api: any, team: any, version: any) =>
+export const getTeamSubscriptions = (
+  api: string,
+  team: string,
+  version: string
+): PromiseWithError<Array<ISubscriptionExtended>> =>
   customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
 
 export const getTeamSubscriptionsWithPlan = (
@@ -143,7 +175,7 @@ export const askForApiKey = (
   apiId: string,
   teamId: string,
   planId: string,
-  motivation?: string
+  motivation?: object
 ): Promise<SubscriptionReturn> => {
   return customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/_subscribe`, {
     method: 'POST',
@@ -179,12 +211,19 @@ export const subscriptionsInit = (subscriptions: any) =>
     body: JSON.stringify(subscriptions),
   });
 
-export const archiveApiKey = (teamId: string, subscriptionId: string, enable: boolean) =>
+export const archiveApiKey = (
+  teamId: string,
+  subscriptionId: string,
+  enable: boolean
+): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_archive?enabled=${enable}`, {
     method: 'PUT',
   });
 
-export const makeUniqueApiKey = (teamId: string, subscriptionId: string) =>
+export const makeUniqueApiKey = (
+  teamId: string,
+  subscriptionId: string
+): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_makeUnique`, {
     method: 'POST',
   });
@@ -195,13 +234,16 @@ export const toggleApiKeyRotation = (
   enabled: boolean,
   rotationEvery: number,
   gracePeriod: number
-) =>
+): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
     method: 'POST',
     body: JSON.stringify({ enabled, rotationEvery, gracePeriod }),
   });
 
-export const regenerateApiKeySecret = (teamId: string, subscriptionId: string) =>
+export const regenerateApiKeySecret = (
+  teamId: string,
+  subscriptionId: string
+): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
     method: 'POST',
   });
@@ -223,6 +265,14 @@ export const teamApi = (
   apiId: string,
   version: string
 ): Promise<ResponseError | IApi> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
+
+export const planOfApi = (
+  teamId: string,
+  apiId: string,
+  version: string,
+  planId: string
+): Promise<ResponseError | IUsagePlan> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans/${planId}`);
 
 export const teamApiGroup = (teamId: string, apiGroupId: string) =>
   customFetch(`/api/teams/${teamId}/apigroups/${apiGroupId}`);
@@ -479,6 +529,8 @@ export const getTenantNames = (ids: any) =>
 export const fetchNewTenant = () => customFetch('/api/entities/tenant');
 export const fetchNewTeam = (): Promise<ITeamSimple> => customFetch('/api/entities/team');
 export const fetchNewApi = () => customFetch('/api/entities/api');
+export const fetchNewApiDoc = (): Promise<IDocumentation> =>
+  customFetch('/api/entities/api-documentation');
 export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
@@ -584,6 +636,12 @@ export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, en
       },
     }
   );
+
+export const getSubscriptionDemand = (
+  teamId: String,
+  demandId: string
+): PromiseWithError<ISubscriptionDemand> =>
+  customFetch(`/api/subscription/team/${teamId}/demands/${demandId}`);
 
 export const getSubscriptionInformations = (
   subscription: string,
@@ -733,13 +791,20 @@ export const uploadExportFile = (file: any) =>
     body: file,
   });
 
-export const updateSubscriptionCustomName = (team: any, subscription: any, customName: any) =>
+export const updateSubscriptionCustomName = (
+  team: ITeamSimple,
+  subscription: ISubscription,
+  customName: string
+): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {
     method: 'POST',
     body: JSON.stringify({ customName }),
   });
 
-export const updateSubscription = (team: ITeamSimple, subscription: ISafeSubscription | any) =>
+export const updateSubscription = (
+  team: ITeamSimple,
+  subscription: ISafeSubscription | any
+): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
     method: 'PUT',
     body: JSON.stringify(subscription),
@@ -756,19 +821,27 @@ export const storeThumbnail = (id: any, formData: any) =>
     body: formData,
   });
 
-export const createTestingApiKey = (teamId: any, body: any) =>
+//todo: add api or plan in body
+export const createTestingApiKey = (
+  teamId: string,
+  body: ITestingConfig
+): PromiseWithError<IOtoroshiApiKey> =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'POST',
     body: JSON.stringify(body),
   });
 
-export const updateTestingApiKey = (teamId: any, body: any) =>
+//todo: add api or plan in body
+export const updateTestingApiKey = (
+  teamId: string,
+  body: ITestingConfig
+): PromiseWithError<IOtoroshiApiKey> =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'PUT',
     body: JSON.stringify(body),
   });
 
-export const deleteTestingApiKey = (teamId: any, body: any) =>
+export const deleteTestingApiKey = (teamId: string, body: any): PromiseWithError<ResponseDone> =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'DELETE',
     body: JSON.stringify(body),
@@ -1051,7 +1124,7 @@ export const extendApiKey = (
   apiKeyId: string,
   teamId: string,
   planId: string,
-  motivation?: string
+  motivation?: object
 ): Promise<SubscriptionReturn> =>
   customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
     method: 'PUT',
@@ -1075,13 +1148,33 @@ export const getAllPlanOfApi = (
   teamId: string,
   apiId: string,
   version: string
-): Promise<Array<IApi>> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
+): Promise<ResponseError | Array<IUsagePlan>> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
 
 export const getRootApi = (apiId: string): PromiseWithError<IApi> =>
   customFetch(`/api/apis/${apiId}/_root`);
 
-export const importApiPages = (teamId: any, apiId: any, pages: any, version: any) =>
+export const importApiPages = (
+  teamId: string,
+  apiId: string,
+  pages: Array<string>,
+  version: string
+): PromiseWithError<ResponseDone> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      pages,
+    }),
+  });
+
+export const importPlanPages = (
+  teamId: string,
+  apiId: string,
+  pages: Array<string>,
+  version: string,
+  planId: string
+): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${planId}/pages`, {
     method: 'PUT',
     body: JSON.stringify({
       pages,
@@ -1092,9 +1185,21 @@ export const getAllApiDocumentation = (
   teamId: string,
   apiId: string,
   version: string
-): Promise<any> => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`);
+): PromiseWithError<Array<IImportingDocumentation>> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages/_versions`);
 
-export const getMyTeamsStatusAccess = (teamId: any, apiId: any, version: any) =>
+export const getAllPlansDocumentation = (
+  teamId: string,
+  apiId: string,
+  version: string
+): PromiseWithError<Array<IImportingDocumentation>> =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages/_plans`);
+
+export const getMyTeamsStatusAccess = (
+  teamId: string,
+  apiId: string,
+  version: string
+): PromiseWithError<IApiExtended> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
 export const createCmsPage = (id: any, cmsPage: any) =>
@@ -1174,7 +1279,7 @@ export const graphql = {
         api (id: $id) {
           _id
           _humanReadableId
-          published
+          state
           currentVersion
           name
           smallDescription
@@ -1206,7 +1311,13 @@ export const graphql = {
               maxPerDay
               maxPerMonth
             }
-            subscriptionProcess
+            subscriptionProcess {
+              name
+                ... on TeamAdmin {
+                  team
+                  schema
+                }
+            }
             allowMultipleKeys
             otoroshiTarget {
               otoroshiSettings
@@ -1432,6 +1543,10 @@ export const graphql = {
         tags
         metadata
         customMetadata
+        customMaxPerSecond
+        customMaxPerDay
+        customMaxPerMonth
+        adminCustomName
       }
     }
     `),
@@ -1502,6 +1617,10 @@ export const graphql = {
                 }
               }
               motivation
+              demand {
+                id
+                motivation
+              }
             }
             ... on NewCommentOnIssue {
               linkTo
@@ -1606,8 +1725,8 @@ export const graphql = {
     }
     `),
   getApisWithSubscription: gql(`
-    query AccessibleApis ($teamId: String!, $research: String, $selectedTag: String, $selectedCategory: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
-      accessibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
+    query AccessibleApis ($teamId: String!, $research: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
+      accessibleApis (teamId: $teamId, research: $research, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
         apis {
           api {
             name
@@ -1637,6 +1756,10 @@ export const graphql = {
               type
               subscriptionProcess {
                 name
+                ... on TeamAdmin {
+                  team
+                  schema
+                }
               }
               allowMultipleKeys
               aggregationApiKeysSecurity
@@ -1754,7 +1877,7 @@ export const setupPayment = (
   apiId: string,
   version: string,
   plan: IUsagePlan
-): Promise<ResponseError | IApi> =>
+): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}/_payment`, {
     method: 'PUT',
     body: JSON.stringify(plan),
@@ -1765,7 +1888,7 @@ export const createPlan = (
   apiId: string,
   version: string,
   plan: IUsagePlan
-): PromiseWithError<IApi> =>
+): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan`, {
     method: 'POST',
     body: JSON.stringify(plan),
@@ -1776,7 +1899,7 @@ export const updatePlan = (
   apiId: string,
   version: string,
   plan: IUsagePlan
-): PromiseWithError<IApi> =>
+): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
     method: 'PUT',
     body: JSON.stringify(plan),

@@ -18,6 +18,7 @@ import scala.concurrent.Future
 class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeyStatsJob, otoroshiClient: OtoroshiClient) {
 
   implicit val ec = env.defaultExecutionContext
+  implicit val ev = env
 
   /**
     * Delete logically a team
@@ -82,7 +83,7 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
 
     for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api), AppError.ApiNotFound)
-      plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscription.plan), AppError.PlanNotFound)
+      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan), AppError.PlanNotFound)
       notif = Notification(
         id = NotificationId(BSONObjectID.generate().stringify),
         tenant = tenant.id,
@@ -136,8 +137,8 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
     * add for each apis an operation in queue to process a complete deletion of each Api
     * (delete doc, issues, posts & notifications)
    *
-   * @param A sequence of Api to delete
-    * @param the tenant where delete those apis
+   * a sequence of Api to delete
+    * the tenant where delete those apis
     * @return an EitherT of AppError or Unit (actually a RightT[Unit])
    */
   private def deleteApis(apis: Seq[Api],
@@ -158,7 +159,8 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
 
 
     val planDeletion = Source(apis)
-      .flatMapConcat(api => Source(api.possibleUsagePlans.map(plan => (api, plan))))
+      .mapAsync(5)(api => env.dataStore.usagePlanRepo.findByApi(tenant.id, api).map(plans => (api, plans)))
+      .flatMapConcat{ case (api, plans) => Source(plans.map(plan => (api, plan))) }
       .mapAsync(5){ case (api, plan) =>
         for {
           _ <- apiService.deleteApiPlansSubscriptions(Seq(plan), api, tenant, user)

@@ -8,6 +8,7 @@ import { I18nContext } from '../../../core';
 import { ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { FeedbackButton } from '../../utils/FeedbackButton';
+import { isError, ITesting } from '../../../types';
 
 type LimitedTeam = {
   _id: string
@@ -22,6 +23,7 @@ type NotificationGQL = {
     api?: {
       _id: string
       name: string
+      testing: ITesting
     }
     apiName?: string
     subscriptionName?: string
@@ -47,7 +49,10 @@ type NotificationGQL = {
         clientSecret: string;
       }
     }
-    demand?: string
+    demand?: {
+      id: string
+      motivation: string
+    }
   }
   date: number
   notificationType: {
@@ -225,11 +230,10 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
 
   const actionFormatter = (notification: NotificationGQL) => {
     const { status, date } = notification.status;
-    const { notificationType } = notification
     if (
       status === 'Pending' &&
       (notification.action.__typename === 'NewIssueOpen' ||
-        notification.action.__typename=== 'NewCommentOnIssue')
+        notification.action.__typename === 'NewCommentOnIssue')
     ) {
       return (
         <div>
@@ -246,7 +250,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             onClick={() => {
               props.accept();
               notification.action.linkTo ?
-              navigate(notification.action.linkTo, {replace: true}) : navigate("/apis", {replace: true})
+                navigate(notification.action.linkTo, { replace: true }) : navigate("/apis", { replace: true })
             }}
           >
             <i className="fas fa-eye" />
@@ -271,14 +275,21 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       href="#"
                       title={translate('Accept')}
                       onClick={() =>
-                        openSubMetadataModal({
-                          save: props.accept,
-                          api: props.notification.action.api!._id,
-                          plan: props.notification.action.plan?._id,
-                          team: props.notification.action.team,
-                          notification: props.notification,
-                          creationMode: true,
-                        })
+                        Services.getSubscriptionDemand(props.notification.team._id, props.notification.action.demand!.id)
+                          .then(demand => {
+                            if (!isError(demand)) {
+                              openSubMetadataModal({
+                                save: props.accept,
+                                value: props.notification.action.api!,
+                                api: props.notification.action.api?._id,
+                                plan: props.notification.action.plan!._id,
+                                team: props.notification.action.team,
+                                notification: props.notification,
+                                subscriptionDemand: demand,
+                                creationMode: true,
+                              })
+                            }
+                          })
                       }
                     >
                       <i className="fas fa-check" />
@@ -340,7 +351,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                     <FeedbackButton
                       type="success"
                       className="ms-1"
-                      onPress={() => Services.rerunProcess(props.notification.action.team?._id!, props.notification.action.demand!)
+                      onPress={() => Services.rerunProcess(props.notification.action.team?._id!, props.notification.action.demand!.id)
                         .then(r => window.location.href = r.checkoutUrl)}
                       onSuccess={() => console.debug("success")}
                       feedbackTimeout={100}
@@ -417,7 +428,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
         return props.notification.action.team!.name;
       case 'ApiSubscriptionDemand':
         return `${sender.name}/${Option(props.notification.action.team!.name)
-            .getOrNull()}`;
+          .getOrNull()}`;
       case 'OtoroshiSyncSubscriptionError':
         return 'Otoroshi verifier job';
       case 'OtoroshiSyncApiError':
@@ -480,10 +491,12 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             </div>)}
             {notification.action.__typename === 'ApiSubscriptionReject' && translate({
               key: 'notif.api.demand.reject',
-              replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]})}
+              replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]
+            })}
             {notification.action.__typename === 'ApiSubscriptionAccept' && translate({
               key: 'notif.api.demand.accept',
-              replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]})}
+              replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]
+            })}
             {notification.action.__typename === 'ApiKeyDeletionInformation' && (<div>
               <Translation i18nkey="notif.apikey.deletion" replacements={[notification.action.clientId, notification.action.apiName]}>
                 Your apiKey with clientId {notification.action.clientId} for api{' '}

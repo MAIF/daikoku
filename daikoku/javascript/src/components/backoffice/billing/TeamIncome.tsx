@@ -44,14 +44,14 @@ export const TeamIncome = () => {
     loading: boolean,
     apis: Array<any>,
   }>
-  ({
-    consumptions: [],
-    consumptionsByApi: [],
-    selectedApi: undefined,
-    selectedPlan: undefined,
-    loading: false,
-    apis: [],
-  });
+    ({
+      consumptions: [],
+      consumptionsByApi: [],
+      selectedApi: undefined,
+      selectedPlan: undefined,
+      loading: false,
+      apis: [],
+    });
 
   const [date, setDate] = useState(dayjs())
 
@@ -68,15 +68,15 @@ export const TeamIncome = () => {
     }
     setState({ ...state, loading: true });
     Promise.all([
-      client!.query<{ teamIncomes: Array<TeamIncomeGql>}>({
+      client!.query<{ teamIncomes: Array<TeamIncomeGql> }>({
         query: Services.graphql.getTeamIncome,
         fetchPolicy: "no-cache",
         variables: {
           teamId: currentTeam._id,
-          from: date.startOf ('month').valueOf(),
-          to: date.endOf ('month').valueOf()
+          from: date.startOf('month').valueOf(),
+          to: date.endOf('month').valueOf()
         }
-      }).then(({data: {teamIncomes}}) => {
+      }).then(({ data: { teamIncomes } }) => {
         return teamIncomes
       })
       ,
@@ -193,7 +193,14 @@ export const TeamIncome = () => {
                 }, []) as any).sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
                 .map(({ plan, billing }: any, idx: any) => {
                   const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan._id);
-                  return (<PriceCartridge key={idx} label={usagePlan.customName || formatPlanType(usagePlan, translate)} total={billing.total} currency={usagePlan.currency} handleClick={() => setState({ ...state, selectedPlan: usagePlan })} />);
+                  return (
+                    <PriceCartridge
+                      key={idx}
+                      label={usagePlan.customName || formatPlanType(usagePlan, translate)}
+                      total={billing.total}
+                      currency={usagePlan.currency}
+                      handleClick={() => setState({ ...state, selectedPlan: usagePlan })} />
+                  );
                 })}
             </div>)}
             {state.selectedPlan && (<div>
@@ -208,7 +215,13 @@ export const TeamIncome = () => {
               {state.consumptions
                 .filter((c: TeamIncomeGql) => c.api._id === state.selectedApi._id && c.plan._id === state.selectedPlan._id)
                 .map((c: any, idx: number) => {
-                  return (<PriceCartridge key={idx} label={c.team.name} total={c.billing.total} currency={state.selectedPlan.currency} />);
+                  return (
+                    <PriceCartridge
+                      key={idx}
+                      label={c.team.name}
+                      total={c.billing.total}
+                      currency={state.selectedPlan.currency} />
+                  );
                 })}
             </div>)}
           </div>

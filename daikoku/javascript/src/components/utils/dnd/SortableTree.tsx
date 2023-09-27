@@ -24,6 +24,8 @@ import {
   arrayMove,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { CSS, usePrevious } from '@dnd-kit/utilities';
+import isEqual from 'lodash/isEqual'
 
 import {
   buildTree,
@@ -37,7 +39,8 @@ import {
 import type { FlattenedItem, SensorContext, TreeItem, TreeItems } from './types';
 import { sortableTreeKeyboardCoordinates } from './keyboardCoordinates';
 import { SortableTreeItem } from './components/sortableTreeItem';
-import { CSS } from '@dnd-kit/utilities';
+
+
 
 const measuring = {
   droppable: {
@@ -101,12 +104,16 @@ export function SortableTree({
     overId: UniqueIdentifier;
   } | null>(null);
 
+
+  const previousItems = usePrevious(items)
+  
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
+    } else if (!isEqual(items, previousItems)) {
+      handleUpdateItems(items)
     }
-    handleUpdateItems(items)
   }, [items])
 
   useEffect(() => {

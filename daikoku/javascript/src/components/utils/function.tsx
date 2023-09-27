@@ -45,8 +45,8 @@ export const stringToTOps = (val: string): TOption => {
 
 interface FilterType {
   count: number
-  selectedCategory: TOption | undefined
-  selectedTag: TOption | undefined
+  selectedCategory?: TOption | undefined
+  selectedTag?: TOption | undefined
   searched: string
   clearFilter: any
   filterPlan?: string
@@ -57,7 +57,7 @@ export const FilterPreview = (props: FilterType) => {
   const { translate, Translation } = useContext(I18nContext);
 
 
-  if (!props.selectedCategory?.value && !props.selectedTag?.value && !props.searched && !props.filterPlan && !props.seeOnlySubs) {
+  if (!props.searched && !props.filterPlan && !props.seeOnlySubs) {
     return null;
   }
 

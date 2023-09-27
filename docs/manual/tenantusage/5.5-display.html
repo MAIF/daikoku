@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>From binaries · Daikoku</title>
+<title>Display modes · Daikoku</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='daikoku-manual'/>
@@ -41,7 +41,7 @@
   <li><a href="../getdaikoku/index.html" class="page">Get Daikoku</a>
   <ul>
     <li><a href="../getdaikoku/fromsources.html" class="page">From sources</a></li>
-    <li><a href="../getdaikoku/frombinaries.html" class="active page">From binaries</a></li>
+    <li><a href="../getdaikoku/frombinaries.html" class="page">From binaries</a></li>
     <li><a href="../getdaikoku/fromdocker.html" class="page">From docker</a></li>
   </ul></li>
   <li><a href="../firstrun/index.html" class="page">First run</a>
@@ -71,7 +71,7 @@
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
     <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
-    <li><a href="../tenantusage/5.5-display.html" class="page">Display modes</a></li>
+    <li><a href="../tenantusage/5.5-display.html" class="active page">Display modes</a></li>
     <li><a href="../tenantusage/6-cms.html" class="page">Using Content Management System</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
@@ -137,7 +137,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li><a href="../getdaikoku/index.html" class="page">Get Daikoku</a>
   <ul>
     <li><a href="../getdaikoku/fromsources.html" class="page">From sources</a></li>
-    <li><a href="../getdaikoku/frombinaries.html" class="active page">From binaries</a></li>
+    <li><a href="../getdaikoku/frombinaries.html" class="page">From binaries</a></li>
     <li><a href="../getdaikoku/fromdocker.html" class="page">From docker</a></li>
   </ul></li>
   <li><a href="../firstrun/index.html" class="page">First run</a>
@@ -167,7 +167,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
     <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
-    <li><a href="../tenantusage/5.5-display.html" class="page">Display modes</a></li>
+    <li><a href="../tenantusage/5.5-display.html" class="active page">Display modes</a></li>
     <li><a href="../tenantusage/6-cms.html" class="page">Using Content Management System</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
@@ -205,8 +205,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-breadcrumbs">
 <ul>
   <li><a href="../index.html">Daikoku</a></li>
-  <li><a href="../getdaikoku/index.html">Get Daikoku</a></li>
-  <li>From binaries</li>
+  <li><a href="../tenantusage/index.html">Using Daikoku as Tenant admin</a></li>
+  <li>Display modes</li>
 </ul>
 </div>
 </div>
@@ -214,14 +214,38 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#from-binaries" name="from-binaries" class="anchor"><span class="anchor-link"></span></a>From binaries</h1>
-<p>If you want to download the last version of Daikoku, you can grab them from the release page of the Daikoku github page :</p>
-<p>Go to <a href="https://github.com/MAIF/daikoku/releases">https://github.com/MAIF/daikoku/releases</a> and get the last version of the <code>daikoku-xxx.zip</code> file or the <code>daikoku.jar</code> file.</p>
+<h1><a href="#display-modes" name="display-modes" class="anchor"><span class="anchor-link"></span></a>Display modes</h1>
+<p>Two display modes are avalaible in Daikoku</p>
+<h2><a href="#default-mode" name="default-mode" class="anchor"><span class="anchor-link"></span></a>Default mode</h2>
+<p>this is the basic mode of DAikoku, business oriented. The exposed API is only linked to one service and the associated usage plans have only a commercial interest.</p>
+<p>The API carries its documentation, its test configuration or even its swagger. The client side of Daikoku offers sections in the API page to display it.</p>
+<h2><a href="#environment-mode" name="environment-mode" class="anchor"><span class="anchor-link"></span></a>Environment mode</h2>
+<p>The environment mode introduces an approach focused in work environments. It allows users to manage their consumption plans as working environments, better suited for internal corporate use. Find out how this feature transforms consumption plan management.</p>
+<ul>
+  <li>The usage plans are now working environment</li>
+  <li>The environments contain the tech documentation, the swagger and the test config</li>
+  <li>the number envionment for an API is limited to the existing environment of the tenant</li>
+</ul>
+<p>to create new environment, just add a new one in the liste below the mode selector </p>
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="../getdaikoku/fromdocker.html">From docker</a></p>
+<p><strong>Next:</strong> <a href="../tenantusage/6-cms.html">Using Content Management System</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../tenantusage/5.5-display.html#display-modes" class="header">Display modes</a>
+  <ul>
+    <li><a href="../tenantusage/5.5-display.html#default-mode" class="header">Default mode</a></li>
+    <li><a href="../tenantusage/5.5-display.html#environment-mode" class="header">Environment mode</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
 </div>
 </div>
 

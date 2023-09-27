@@ -1,28 +1,31 @@
 import { getApolloContext } from '@apollo/client';
-import { constraints, format, type as formType } from '@maif/react-forms';
+import { useQuery } from '@tanstack/react-query';
+import classNames from 'classnames';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { Link, useMatch, useNavigate } from 'react-router-dom';
 
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IApi, IBaseUsagePlan, isMiniFreeWithQuotas, IState, IStateContext, ISubscription, ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan, IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit } from '../../../types';
-import { INotification } from '../../../types';
+import {
+  IApi, IBaseUsagePlan, isError,
+  isMiniFreeWithQuotas, IState, IStateContext, ISubscription,
+  ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin,
+  ITeamSimple, IUsagePlan
+} from '../../../types';
 import {
   access,
-  api,
-  apikey, Can, isPublish, isSubscriptionProcessIsAutomatic, manage,
-  Option, renderPlanInfo, renderPricing
+  apikey, Can, isPublish, isSubscriptionProcessIsAutomatic,
+  Option, queryClient, renderPlanInfo, renderPricing, Spinner
 } from '../../utils';
-import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { formatPlanType } from '../../utils/formatters';
-import classNames from 'classnames';
-import { Link, useNavigate } from 'react-router-dom';
-import { is } from 'cypress/types/bluebird';
-
+import { ApiDocumentation } from './ApiDocumentation';
+import { ApiRedoc } from './ApiRedoc';
+import { ApiSwagger } from './ApiSwagger';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -35,7 +38,7 @@ export const currency = (plan?: IBaseUsagePlan) => {
 type ApiPricingCardProps = {
   plan: IUsagePlan,
   api: IApi,
-  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
+  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => Promise<void>,
   myTeams: Array<ITeamSimple>,
   ownerTeam: ITeamSimple,
   subscriptions: Array<ISubscription>,
@@ -58,20 +61,12 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     }
 
     const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
-      if (plan.subscriptionProcess.some(isValidationStepTeamAdmin)) {
-        openFormModal<{ motivation: string }>({
+      const adminStep = plan.subscriptionProcess.find(s => isValidationStepTeamAdmin(s))
+      if (adminStep && isValidationStepTeamAdmin(adminStep)) {
+        openFormModal<any>({
           title: translate('motivations.modal.title'),
-          schema: {
-            motivation: {
-              type: formType.string,
-              format: format.text,
-              label: null,
-              constraints: [
-                constraints.required()
-              ]
-            }
-          },
-          onSubmit: ({ motivation }) => props.askForApikeys({ team, plan, apiKey, motivation }),
+          schema: adminStep.schema,
+          onSubmit: (motivation: object) => props.askForApikeys({ team, plan, apiKey, motivation }),
           actionLabel: translate('Send')
         })
       } else {
@@ -171,10 +166,25 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         <span>{plan.customName || formatPlanType(plan, translate)}</span>
       </div>
       <div className="card-body plan-body d-flex flex-column">
-        <p className="card-text text-justify">
-          {customDescription && <span>{customDescription}</span>}
-          {!customDescription && renderPlanInfo(plan)}
-        </p>
+        <div className="d-flex flex-row">
+          <p className="card-text text-justify flex-grow-1">
+            {customDescription && <span>{customDescription}</span>}
+            {!customDescription && renderPlanInfo(plan)}
+          </p>
+          {tenant.display === 'environment' && (
+            <div className='flex-shrink-1 d-flex flex-column'>
+              <Link
+                to={`./${props.plan.customName}/swagger`} relative='path'
+                className={classNames("btn btn-sm btn-outline-primary mb-1", { 'link__disabled': !props.plan.swagger?.url && !props.plan.swagger?.content })}>swagger</Link>
+              <Link
+                to={`./${props.plan.customName}/testing`} relative='path'
+                className={classNames("btn btn-sm btn-outline-primary mb-1", { 'link__disabled': !props.plan.testing?.enabled })}>test</Link>
+              <Link
+                to={`./${props.plan.customName}/documentation`} relative='path'
+                className={classNames("btn btn-sm btn-outline-primary", { 'link__disabled': !props.plan.documentation?.pages.length })}>Documentation</Link>
+            </div>
+          )}
+        </div>
         <div className="d-flex flex-column mb-2">
           <span className="plan-quotas">
             {!isMiniFreeWithQuotas(plan) && translate('plan.limits.unlimited')}
@@ -313,39 +323,106 @@ type ApiPricingProps = {
   ownerTeam: ITeamSimple
   subscriptions: Array<ISubscription>,
   inProgressDemands: Array<ISubscriptionDemand>,
-  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: string }) => Promise<void>,
+  askForApikeys: (x: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => Promise<void>,
 }
-export function ApiPricing(props: ApiPricingProps) {
-  if (!props.api) {
-    return null;
+
+export const ApiPricing = (props: ApiPricingProps) => {
+  const usagePlansQuery = useQuery(['plans'], () => Services.getVisiblePlans(props.api._id, props.api.currentVersion))
+
+  const match = useMatch('/:team/:api/:version/pricing/:env/:tab')
+
+  const maybeTab = match?.params.tab
+  const maybeEnv = match?.params.env
+
+  useEffect(() => {
+    queryClient.invalidateQueries(['plans'])
+  }, [props.api])
+
+
+  if (usagePlansQuery.isLoading) {
+    return <Spinner />
+  } else if (usagePlansQuery.data && !isError(usagePlansQuery.data)) {
+    const possibleUsagePlans = (usagePlansQuery.data as Array<IUsagePlan>)
+      .filter((plan) => {
+        return plan.visibility === 'Public' ||
+          props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
+          props.myTeams.some((team) => plan.authorizedTeams.includes(team._id));
+      });
+
+    if (maybeEnv && maybeTab) {
+      const plan = usagePlansQuery.data.find(p => p.customName === maybeEnv)!
+      return (
+        <div>
+          <div className="d-flex flex-row">
+            <Link to="../.." relative='path'>
+              <i className="fa-regular fa-circle-left fa-lg cursor-pointer" />
+            </Link>
+            <h5 className='ms-3'>{plan.customName}</h5>
+          </div>
+          <div className='d-flex flex-row justify-content-around mb-2'>
+            <Link
+              to={`../../${plan.customName}/swagger`} relative='path'
+              className={classNames("btn btn-sm btn-outline-secondary mb-1",
+                {
+                  link__disabled: !plan.swagger?.content && !plan.swagger?.url,
+                  disabled: !plan.swagger?.content && !plan.swagger?.url
+                })}>swagger</Link>
+            <Link
+              to={`../../${plan.customName}/testing`} relative='path'
+              className={classNames("btn btn-sm btn-outline-secondary mb-1",
+                {
+                  link__disabled: !plan.testing || !plan.testing.enabled,
+                  disabled: !plan.testing || !plan.testing.enabled,
+                })}>test</Link>
+            <Link
+              to={`../../${plan.customName}/documentation`} relative='path'
+              className={classNames("btn btn-sm btn-outline-secondary",
+                {
+                  link__disabled: !plan.documentation || !plan.documentation?.pages.length,
+                  disabled: !plan.documentation || !plan.documentation?.pages.length,
+                })}>Documentation</Link>
+          </div>
+          <div>
+            {maybeTab === 'swagger' && <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`} />}
+            {maybeTab === 'documentation' && <ApiDocumentation documentation={plan.documentation} getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)} />}
+            {maybeTab === 'testing' && <ApiSwagger _id={plan._id}
+              testing={plan.testing}
+              swagger={plan.swagger}
+              swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`}
+              callUrl={`/api/teams/${props.api.team}/testing/${props.api._id}/plans/${plan._id}/call`}
+            />}
+          </div>
+        </div>
+      )
+    } else {
+      return (
+        <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
+          {possibleUsagePlans
+            .sort((a, b) => (a.customName || a.type).localeCompare(b.customDescription || b.type))
+            .map((plan) => <React.Fragment key={plan._id}>
+              <ApiPricingCard
+                api={props.api}
+                key={plan._id}
+                plan={plan}
+                myTeams={props.myTeams}
+                ownerTeam={props.ownerTeam}
+                subscriptions={props.subscriptions.filter(
+                  (subs) => subs.api === props.api._id && subs.plan === plan._id
+                )}
+                inProgressDemands={props.inProgressDemands.filter(
+                  (demand) => demand.api === props.api._id && demand.plan === plan._id
+                )}
+                askForApikeys={props.askForApikeys}
+              />
+            </React.Fragment>)}
+        </div>
+      );
+    }
+
+  } else {
+    return <div></div>
   }
 
-  const possibleUsagePlans = props.api.possibleUsagePlans.filter((plan) => {
-    return plan.visibility === 'Public' ||
-      props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
-      props.myTeams.some((team) => plan.authorizedTeams.includes(team._id));
-  });
 
-  return (
-    <div className="d-flex flex-row pricing-content flex-wrap" id="usage-plans__list">
-      {possibleUsagePlans
-        .sort((a, b) => (a.customName || a.type).localeCompare(b.customDescription || b.type))
-        .map((plan) => <React.Fragment key={plan._id}>
-          <ApiPricingCard
-            api={props.api}
-            key={plan._id}
-            plan={plan}
-            myTeams={props.myTeams}
-            ownerTeam={props.ownerTeam}
-            subscriptions={props.subscriptions.filter(
-              (subs) => subs.api === props.api._id && subs.plan === plan._id
-            )}
-            inProgressDemands={props.inProgressDemands.filter(
-              (demand) => demand.api === props.api._id && demand.plan === plan._id
-            )}
-            askForApikeys={props.askForApikeys}
-          />
-        </React.Fragment>)}
-    </div>
-  );
+
 }

@@ -259,11 +259,11 @@ a.navbar-brand, #teamSelector:hover {
             cursor: pointer;
             font-size: 14px;
             color: $aside-text-color;
-            margin-bottom: 5px;
-            line-height: 40px;
+            margin-bottom: 4px;
+            line-height: 35px;
             padding-left: .5rem;
             box-sizing: border-box;
-            height: 40px;
+            height: 35px;
 
             &.active {
               border-bottom: 1px solid $menu-text-hover-bg-color;

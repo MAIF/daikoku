@@ -12,8 +12,9 @@ import { newPossibleUsagePlan, BeautifulTitle, formatPlanType, Option } from '..
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { ModalContext } from '../../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
-import { IApiKey, ISubscription } from '../../../../types/api';
-import { TOption } from '../../../../types';
+import { IApi, IApiKey, ISubscription } from '../../../../types/api';
+import { IState, ITenant, TOption } from '../../../../types';
+import { useSelector } from 'react-redux';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -564,6 +565,7 @@ export const ApiKeyStep = (props: ApiKeyStepProps) => {
 
 const ApiKey = (props: any) => {
   const { translate } = useContext(I18nContext);
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
   const [selectedApi, setSelectedApi] = useState(
     props
       .maybeCreatedSub(props.apikey)
@@ -642,7 +644,7 @@ const ApiKey = (props: any) => {
   useEffect(() => {
     if (newPlan) {
       let plans = cloneDeep(selectedApi.possibleUsagePlans);
-      const newPossiblePlan = newPossibleUsagePlan(newPlan);
+      const newPossiblePlan = newPossibleUsagePlan(newPlan, tenant);
       const plan = {
         ...newPossiblePlan,
         otoroshiTarget: {

@@ -1,36 +1,43 @@
 import { UniqueIdentifier } from '@dnd-kit/core';
-import { constraints, Form, format, Schema, type } from '@maif/react-forms';
-import { useQuery } from '@tanstack/react-query';
+import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-forms';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import AtSign from 'react-feather/dist/icons/at-sign';
+import CreditCard from 'react-feather/dist/icons/credit-card';
+import Plus from 'react-feather/dist/icons/plus';
+import Settings from 'react-feather/dist/icons/settings';
+import Trash from 'react-feather/dist/icons/trash';
+import User from 'react-feather/dist/icons/user';
+import Globe from 'react-feather/dist/icons/globe';
 import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import Settings from 'react-feather/dist/icons/settings'
-import Trash from 'react-feather/dist/icons/trash'
-import Plus from 'react-feather/dist/icons/plus'
-import AtSign from 'react-feather/dist/icons/at-sign'
-import CreditCard from 'react-feather/dist/icons/credit-card'
-import User from 'react-feather/dist/icons/user'
 
+import React from 'react';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { ITeamSimple } from '../../../types';
-import { IApi, isError, isValidationStepEmail, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepTeamAdmin, UsagePlanVisibility } from '../../../types/api';
+import { IState, ITeamSimple } from '../../../types';
+import { IApi, IDocumentation, isError, isValidationStepEmail, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
   BeautifulTitle, formatPlanType, IMultistepsformStep,
   MultiStepForm, Option,
   renderPricing,
-  team
+  Spinner
 } from '../../utils';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
+import { Help } from '../apikeys';
+import { useSelector } from 'react-redux';
+import { TeamApiDocumentation } from './TeamApiDocumentation';
+import { TeamApiSwagger } from './TeamApiSwagger';
+import { TeamApiTesting } from './TeamApiTesting';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -262,7 +269,6 @@ const CustomMetadataInput = (props: {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
       props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
-      //FIXME: add better info to user for the new subscription process
       alert({ message: props.translate('custom.metadata.process.change.to.manual'), title: props.translate('Information') })
     }
   };
@@ -364,6 +370,7 @@ const Card = ({
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant);
 
   const pricing = renderPricing(plan, translate)
 
@@ -424,7 +431,7 @@ const Card = ({
           <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
             {!isDefault && plan.visibility !== PRIVATE && (
               <span className="dropdown-item cursor-pointer" onClick={makeItDefault}>
-                <Translation i18nkey="Make default plan">Make default plan</Translation>
+                {tenant.display === 'environment' ? translate('pricing.default.env.btn.label') : translate('Make default plan')}
               </span>
             )}
             {!isDefault && (
@@ -439,17 +446,17 @@ const Card = ({
             )}
             <div className="dropdown-divider" />
             <span className="dropdown-item cursor-pointer" onClick={duplicatePlan}>
-              <Translation i18nkey="Duplicate plan">duplicate</Translation>
+              {tenant.display === 'environment' ? translate('pricing.clone.env.btn.label') : translate('Duplicate plan')}
             </span>
             <span className="dropdown-item cursor-pointer" onClick={editPlan}>
-              <Translation i18nkey="Edit plan">Edit</Translation>
+              {tenant.display === 'environment' ? translate('pricing.edit.env.btn.label') : translate('Edit plan')}
             </span>
             <div className="dropdown-divider" />
             <span
               className="dropdown-item cursor-pointer btn-danger-negative"
               onClick={deleteWithConfirm}
             >
-              <Translation i18nkey="Delete plan">delete</Translation>
+              {tenant.display === 'environment' ? translate('pricing.delete.env.btn.label') : translate('Delete plan')}
             </span>
           </div>
         </div>
@@ -502,7 +509,7 @@ type Props = {
   injectSubMenu: (x: JSX.Element | null) => void
   openApiSelectModal?: () => void
 }
-type Tab = 'settings' | 'security' | 'payment' | 'subscription-process'
+type Tab = 'settings' | 'security' | 'payment' | 'subscription-process' | 'swagger' | 'documentation' | 'testing'
 
 export const TeamApiPricings = (props: Props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
@@ -513,8 +520,11 @@ export const TeamApiPricings = (props: Props) => {
 
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
+  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
 
+  const queryClient = useQueryClient()
   const queryFullTenant = useQuery(['full-tenant'], () => Services.oneTenant(props.tenant._id))
+  const queryPlans = useQuery(['plans'], () => Services.getAllPlanOfApi(props.api.team, props.api._id, props.api.currentVersion))
 
   useEffect(() => {
     return () => {
@@ -540,12 +550,35 @@ export const TeamApiPricings = (props: Props) => {
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'security' })}
             onClick={() => setSelectedTab('security')}>{translate('Security')}</span>
         )}
+        {mode === possibleMode.edition && tenant.display === 'environment' && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'swagger' })}
+            onClick={() => setSelectedTab('swagger')}>{translate('Swagger')}</span>
+        )}
+        {mode === possibleMode.edition && tenant.display === 'environment' && (
+          <span className={classNames('submenu__entry__link',
+            {
+              active: selectedTab === 'testing',
+              disabled: !planForEdition?.swagger?.content && !planForEdition?.swagger?.url
+            })}
+            onClick={() => {
+              const swaggerExist = !!planForEdition?.swagger?.content || !!planForEdition?.swagger?.url
+              if (swaggerExist) {
+                setSelectedTab('testing')
+              }
+            }}>
+            {translate('Testing')}
+          </span>
+        )}
+        {mode === possibleMode.edition && tenant.display === 'environment' && (
+          <span className={classNames('submenu__entry__link', { active: selectedTab === 'documentation' })}
+            onClick={() => setSelectedTab('documentation')}>{translate('Documentation')}</span>
+        )}
       </div>)
     } else {
       props.injectSubMenu(null)
     }
 
-  }, [mode, selectedTab])
+  }, [mode, selectedTab, planForEdition])
 
   useEffect(() => {
     if (mode === possibleMode.creation) {
@@ -553,6 +586,14 @@ export const TeamApiPricings = (props: Props) => {
       setMode(possibleMode.edition);
     }
   }, [props.api]);
+
+  useEffect(() => {
+    if (queryPlans.data && !isError(queryPlans.data) && mode === possibleMode.edition) {
+      const plan = queryPlans.data.find(p => p._id === planForEdition?._id)
+      setPlanForEdition(plan)
+    }
+
+  }, [queryPlans.data])
 
 
   const pathes = {
@@ -671,7 +712,10 @@ export const TeamApiPricings = (props: Props) => {
   const deletePlan = (plan: IUsagePlan) => {
     Services.deletePlan(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(() => props.reload())
-      .then(() => toastr.success(translate('Success'), translate('plan.deletion.successful')))
+      .then(() => {
+        queryClient.invalidateQueries(['plans'])
+        toastr.success(translate('Success'), translate('plan.deletion.successful'))
+      })
   };
 
   const createNewPlan = () => {
@@ -710,9 +754,10 @@ export const TeamApiPricings = (props: Props) => {
           toastr.error(translate('Error'), translate(response.error))
         } else {
           toastr.success(translate('Success'), creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
-          setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
+          setPlanForEdition(response)
           setCreation(false)
           props.reload()
+          queryClient.invalidateQueries(['plans'])
         }
       })
   };
@@ -725,7 +770,7 @@ export const TeamApiPricings = (props: Props) => {
           toastr.error(translate('Error'), translate(response.error))
         } else {
           toastr.success(translate('Success'), translate('plan.payment.setup.successful'))
-          setPlanForEdition(response.possibleUsagePlans.find(p => p._id === plan._id))
+          setPlanForEdition(response)
           props.reload()
         }
       })
@@ -781,7 +826,35 @@ export const TeamApiPricings = (props: Props) => {
     'PayPerUse',
   ];
 
-  const steps: Array<IMultistepsformStep<IUsagePlan>> = [
+  const customNameSchemaPart = (plans: Array<IUsagePlan>) => {
+    if (tenant.display === 'environment') {
+      const availablePlans = tenant.environments.filter(e => plans.filter(p => p._id !== planForEdition?._id).every(p => p.customName !== e))
+
+      return {
+        customName: {
+          type: type.string,
+          format: format.select,
+          label: translate('Name'),
+          placeholder: translate('Plan name'),
+          options: availablePlans,
+          constraints: [
+            constraints.oneOf(tenant.environments, translate('constraints.plan.custom-name.one-of.environment')),
+            constraints.required(translate('constraints.required.value'))
+          ]
+        }
+      }
+    } else {
+      return {
+        customName: {
+          type: type.string,
+          label: translate('Name'),
+          placeholder: translate('Plan name'),
+        }
+      }
+    }
+  }
+
+  const steps = (plans): Array<IMultistepsformStep<IUsagePlan>> => ([
     {
       id: 'info',
       label: 'Informations',
@@ -817,11 +890,7 @@ export const TeamApiPricings = (props: Props) => {
             constraints.oneOf(planTypes, translate('constraints.oneof.plan.type')),
           ],
         },
-        customName: {
-          type: type.string,
-          label: translate('Name'),
-          placeholder: translate('Plan name'),
-        },
+        ...customNameSchemaPart(plans),
         customDescription: {
           type: type.string,
           format: format.text,
@@ -1034,7 +1103,7 @@ export const TeamApiPricings = (props: Props) => {
         },
       },
     },
-  ];
+  ]);
 
   const billingSchema = {
     paymentSettings: {
@@ -1248,23 +1317,28 @@ export const TeamApiPricings = (props: Props) => {
     },
   }
 
+  const availablePlans = queryPlans.data && !isError(queryPlans.data) && tenant.environments.filter(e => (queryPlans.data as Array<IUsagePlan>).every(p => p.customName !== e))
   return (<div className="d-flex col flex-column pricing-content">
     <div className="album">
       {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left fa-lg cursor-pointer" style={{ marginTop: 0 }} />}
       <div className="container">
         <div className="d-flex mb-3">
-          {!planForEdition && <button onClick={createNewPlan} type="button" className="btn btn-outline-success btn-sm me-1">
-            {translate('add a new plan')}
+          {!planForEdition && <button
+            onClick={createNewPlan}
+            type="button"
+            disabled={tenant.display === 'environment' && (!availablePlans || !availablePlans.length)}
+            className="btn btn-outline-success btn-sm me-1">
+            {tenant.display === 'environment' ? translate('pricing.add.new.env.btn.label') : translate('add a new plan')}
           </button>}
           {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
-            {translate('import a plan')}
+            {tenant.display === 'environment' ? translate('pricing.import.env.btn.label') : translate('import a plan')}
           </button>)}
         </div>
         {planForEdition && mode !== possibleMode.list && (<div className="row">
           <div className="col-md-12">
-            {selectedTab === 'settings' && <MultiStepForm<IUsagePlan>
+            {queryPlans.data && selectedTab === 'settings' && <MultiStepForm<IUsagePlan>
               value={planForEdition}
-              steps={steps}
+              steps={steps(queryPlans.data as Array<IUsagePlan>)}
               initial="info"
               creation={creation}
               save={savePlan}
@@ -1274,7 +1348,7 @@ export const TeamApiPricings = (props: Props) => {
                 next: translate('Next'),
                 save: translate('Save'),
               }} />}
-            {selectedTab === 'payment' && (
+            {queryPlans.data && selectedTab === 'payment' && (
               <Form
                 schema={billingSchema}
                 flow={getRightBillingFlow(planForEdition)}
@@ -1282,32 +1356,64 @@ export const TeamApiPricings = (props: Props) => {
                 value={planForEdition}
               />
             )}
-            {selectedTab === 'security' && (
+            {queryPlans.data && selectedTab === 'security' && (
               <Form
                 schema={securitySchema}
                 onSubmit={savePlan}
                 value={planForEdition}
               />
             )}
-            {selectedTab === 'subscription-process' && (
+            {queryPlans.data && selectedTab === 'subscription-process' && (
               <SubscriptionProcessEditor savePlan={savePlan} value={planForEdition} team={props.team} tenant={queryFullTenant.data as ITenantFull} />
+            )}
+            {queryPlans.data && selectedTab === 'swagger' && (
+              <TeamApiSwagger
+                value={planForEdition}
+                onChange={savePlan}
+              />
+            )}
+            {queryPlans.data && selectedTab === 'testing' && (
+              //FIXME: inaccessible si pas de swagger
+              <TeamApiTesting
+                value={planForEdition}
+                api={props.api}
+                onChange={savePlan}
+                metadata={planForEdition.otoroshiTarget?.apikeyCustomization.metadata || {}} />
+            )}
+            {queryPlans.data && selectedTab === 'documentation' && (
+              <TeamApiPricingDocumentation
+                api={props.api}
+                team={props.team}
+                planForEdition={planForEdition}
+                onSave={documentation => savePlan({ ...planForEdition, documentation })}
+                reloadState={() => queryClient.invalidateQueries(['plans'])}
+                plans={queryPlans.data as Array<IUsagePlan>}
+              />
             )}
           </div>
         </div>)}
-        {mode === possibleMode.list && (<div className="row">
-          {props.api.possibleUsagePlans
-            .sort((a, b) => (a.customName || a.type).localeCompare(b.customName || b.type))
-            .map((plan) => <div key={plan._id} className="col-md-4">
-              <Card
-                plan={plan}
-                isDefault={plan._id === props.api.defaultUsagePlan}
-                makeItDefault={() => makePlanDefault(plan)}
-                toggleVisibility={() => toggleVisibility(plan)}
-                deletePlan={() => deletePlan(plan)}
-                editPlan={() => editPlan(plan)}
-                duplicatePlan={() => clonePlanAndEdit(plan)} />
-            </div>)}
-        </div>)}
+        {mode === possibleMode.list && (
+          <div className="row">
+            {queryPlans.isLoading && <Spinner />}
+            {queryPlans.data && !isError(queryPlans.data) && (
+              queryPlans.data
+                .sort((a, b) => (a.customName || a.type).localeCompare(b.customName || b.type))
+                .map((plan) => <div key={plan._id} className="col-md-4">
+                  <Card
+                    plan={plan}
+                    isDefault={plan._id === props.api.defaultUsagePlan}
+                    makeItDefault={() => makePlanDefault(plan)}
+                    toggleVisibility={() => toggleVisibility(plan)}
+                    deletePlan={() => deletePlan(plan)}
+                    editPlan={() => editPlan(plan)}
+                    duplicatePlan={() => clonePlanAndEdit(plan)} />
+                </div>)
+            )}
+            {queryPlans.isError && (
+              <div>Error while fetching usage plan</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   </div>);
@@ -1326,20 +1432,10 @@ type EmailOption = { option: 'all' | 'oneOf' }
 
 const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
-  const { openFormModal, close } = useContext(ModalContext);
-
-  const addStepToRightPlace = (process: Array<IValidationStep>, step: IValidationStep, index: number): Array<IValidationStep> => {
-    if (step.type === 'teamAdmin') {
-      return insertArrayIndex(step, process, 0)
-    } else if (step.type === 'email') {
-      return insertArrayIndex(step, process, index)
-    } else {
-      return process
-    }
-  }
+  const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
 
-  const editProcess = (name: string, index: number) => {
+  const editProcess = (name: IValidationStepType, index: number) => {
     //todo: use the index !!
     switch (name) {
       case 'email':
@@ -1367,7 +1463,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
               format: format.buttonsSelect,
               options: ["all", 'oneOf'],
               defaultValue: 'oneOf',
-              visible: ({rawValues}) => {
+              visible: ({ rawValues }) => {
                 return rawValues.emails && rawValues.emails.length > 1
               }
             },
@@ -1379,10 +1475,10 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           onSubmit: (data: IValidationStepEmail & EmailOption) => {
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = { type: 'email', emails: data.emails, message: data.message, id: nanoid(32), title: data.title }
-              props.savePlan({ ...props.value, subscriptionProcess: addStepToRightPlace(props.value.subscriptionProcess, { ...step, id: nanoid(32) }, index) })
+              props.savePlan({ ...props.value, subscriptionProcess: insertArrayIndex({ ...step, id: nanoid(32) }, props.value.subscriptionProcess, index) })
             } else {
               const steps: Array<IValidationStepEmail> = data.emails.map(email => ({ type: 'email', emails: [email], message: data.message, id: nanoid(32), title: data.title }))
-              const subscriptionProcess = steps.reduce((process, step) => addStepToRightPlace(process, step, index), props.value.subscriptionProcess)
+              const subscriptionProcess = steps.reduce((process, step) => insertArrayIndex(step, process, index), props.value.subscriptionProcess)
               props.savePlan({ ...props.value, subscriptionProcess })
 
             }
@@ -1390,10 +1486,57 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           actionLabel: translate('Create')
         })
       case 'teamAdmin': {
-        const step: IValidationStepTeamAdmin = { type: 'teamAdmin', team: props.team._id, id: nanoid(32), title: 'Admin' }
+        const step: IValidationStepTeamAdmin = {
+          type: 'teamAdmin',
+          team: props.team._id,
+          id: nanoid(32),
+          title: 'Admin',
+          schema: { motivation: { type: type.string, format: format.text, constraints: [{ type: 'required' }] } },
+          formatter: '[[motivation]]'
+        }
         return props.savePlan({ ...props.value, subscriptionProcess: [step, ...props.value.subscriptionProcess] })
           .then(() => close())
 
+      }
+      case 'httpRequest': {
+        const step: IValidationStepHttpRequest = {
+          type: 'httpRequest',
+          id: nanoid(32),
+          title: 'Admin',
+          url: 'https://changeit.io',
+          headers: {}
+        }
+
+        return openFormModal({
+          title: translate('subscription.process.add.httpRequest.step.title'),
+          schema: {
+            title: {
+              type: type.string,
+              defaultValue: "HttpRequest",
+              constraints: [
+                constraints.required(translate('constraints.required.value'))
+              ]
+            },
+            url: {
+              type: type.string,
+              constraints: [
+                constraints.required(translate('constraints.required.value')),
+                constraints.url(translate('constraints.matches.url'))
+              ]
+            },
+            Headers: {
+              type: type.object,
+              defaultValue: {}
+            },
+          },
+          value: step,
+          onSubmit: (data: IValidationStepHttpRequest) => {
+            const subscriptionProcess = insertArrayIndex(data, props.value.subscriptionProcess, index)
+            props.savePlan({ ...props.value, subscriptionProcess })
+
+          },
+          actionLabel: translate('Create')
+        })
       }
     }
   }
@@ -1427,12 +1570,50 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
     })
   }
 
+  const editHttpRequestStep = (value: IValidationStepHttpRequest) => {
+    return openFormModal({
+      title: translate('subscription.process.update.email.step.title'),
+      schema: {
+        title: {
+          type: type.string,
+          constraints: [
+            constraints.required(translate('constraints.required.value'))
+          ]
+        },
+        url: {
+          type: type.string,
+          constraints: [
+            constraints.required(translate('constraints.required.value')),
+            constraints.url(translate('constraints.matches.url'))
+          ]
+        },
+        Headers: {
+          type: type.object,
+        },
+      },
+      onSubmit: (data: IValidationStepHttpRequest) => {
+        props.savePlan({
+          ...props.value,
+          subscriptionProcess: props.value.subscriptionProcess.map(p => {
+            if (p.id === data.id) {
+              return data
+            }
+            return p
+          })
+        })
+      },
+      actionLabel: translate('Update'),
+      value
+    })
+  }
+
   //todo
   const addProcess = (index: number) => {
     const alreadyStepAdmin = props.value.subscriptionProcess.some(isValidationStepTeamAdmin)
 
     const options = addArrayIf(!alreadyStepAdmin, [
-      { value: 'email', label: translate('subscription.process.email') }
+      { value: 'email', label: translate('subscription.process.email') },
+      { value: 'httpRequest', label: translate('subscription.process.httpRequest') }
     ], { value: 'teamAdmin', label: translate('subscription.process.team.admin') })
 
     openFormModal({
@@ -1475,19 +1656,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
         onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
         className="flex-grow-1"
         renderItem={(item, idx) => {
-          if (isValidationStepTeamAdmin(item) && !!Object.keys(props.value.otoroshiTarget?.apikeyCustomization.customMetadata || {}).length) {
-            return (
-              <>
-                <FixedItem id={item.id}>
-                  <ValidationStep
-                    index={idx + 1}
-                    step={item}
-                    tenant={props.tenant} />
-                </FixedItem>
-                <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
-              </>
-            )
-          } else if (isValidationStepPayment(item)) {
+          if (isValidationStepPayment(item)) {
             return (
               <FixedItem id={item.id}>
                 <ValidationStep
@@ -1503,10 +1672,24 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
                   className="validation-step-container"
                   action={
                     <div className={classNames('d-flex flex-row', {
-                      'justify-content-between': isValidationStepEmail(item),
-                      'justify-content-end': !isValidationStepEmail(item),
+                      'justify-content-between': !isValidationStepPayment(item),
+                      'justify-content-end': isValidationStepPayment(item),
                     })}>
                       {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
+                      {isValidationStepHttpRequest(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editHttpRequestStep(item)}><Settings size={15} /></button> : <></>}
+                      {isValidationStepTeamAdmin(item) ?
+                        <button
+                          className='btn btn-sm btn-outline-primary'
+                          onClick={() => openCustomModal({
+                            title: translate('motivation.form.modal.title'),
+                            content: <MotivationForm value={item} saveMotivation={({ schema, formatter }) => {
+                              const step = { ...item, schema, formatter }
+                              const updatedPlan = { ...props.value, subscriptionProcess: props.value.subscriptionProcess.map(s => s.id === step.id ? step : s) }
+                              props.savePlan(updatedPlan)
+                            }} />
+                          })}>
+                          <Settings size={15} />
+                        </button> : <></>}
                       <button className='btn btn-sm btn-outline-danger' onClick={() => deleteStep(item.id)}><Trash size={15} /></button>
                     </div>}
                   id={item.id}>
@@ -1522,6 +1705,118 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
         }}
       />
     </div>
+  )
+}
+
+type MotivationFormProps = {
+  saveMotivation: (m: { schema: object, formatter: string }) => void
+  value: IValidationStepTeamAdmin
+}
+
+const MotivationForm = (props: MotivationFormProps) => {
+  const [schema, setSchema] = useState<string | object>(props.value.schema || '{}')
+  const [realSchema, setRealSchema] = useState<any>(props.value.schema || {})
+  const [formatter, setFormatter] = useState(props.value.formatter || '')
+  const [value, setValue] = useState<any>({})
+  const [example, setExample] = useState('')
+
+  const { translate } = useContext(I18nContext);
+  const { close } = useContext(ModalContext);
+
+  const childRef = useRef();
+  const codeInputRef = useRef();
+
+  useEffect(() => { //@ts-ignore
+    if (codeInputRef.current.hasFocus) {
+      let maybeFormattedSchema = schema;
+      try {
+        maybeFormattedSchema = typeof schema === 'object' ? schema : JSON.parse(schema);
+      } catch (_) { }
+
+      setRealSchema(maybeFormattedSchema || {})
+    }
+  }, [schema]);
+
+  useEffect(() => {
+    const regexp = /\[\[(.+?)\]\]/g
+    const matches = formatter.match(regexp)
+
+    const result = matches?.reduce((acc, match) => {
+      const key = match.replace('[[', '').replace(']]', '')
+      return acc.replace(match, value[key] || match)
+    }, formatter)
+
+
+    setExample(result || formatter)
+  }, [value, formatter])
+
+
+  return (
+    <>
+      <div className="container">
+        <div className='row'>
+          <div className="col-6">
+            <h6>{translate('motivation.form.setting.title')}</h6>
+            <div className='motivation-form__editor mb-1'>
+              <label>{translate('motivation.form.schema.label')}</label>
+              <Help message={translate('motivation.form.schema.help')} />
+              <CodeInput
+                mode="javascript"
+                onChange={(e) => {
+                  setSchema(e);
+                }}
+                value={
+                  typeof schema === "object"
+                    ? JSON.stringify(schema, null, 2)
+                    : schema
+                }
+                setRef={(ref) => (codeInputRef.current = ref)}
+              />
+            </div>
+            <div className='motivation-form__editor mb-1'>
+              <label>{translate('motivation.form.formatter.label')}</label>
+              <Help message={translate('motivation.form.formatter.help')} />
+              <CodeInput
+                mode="markdown"
+                onChange={(e) => {
+                  setFormatter(e);
+                }}
+                value={formatter}
+              />
+            </div>
+          </div>
+          <div className="col-6 d-flex flex-column">
+            <div className='flex-1'>{/* @ts-ignore */}
+              <WrapperError ref={childRef}>
+                <h6>{translate('motivation.form.preview.title')}</h6>
+                <i>{translate('motivation.form.sample.help')}</i>
+                <Form
+                  schema={realSchema}
+                  onSubmit={setValue}
+                  options={{
+                    actions: {
+                      submit: {
+                        label: translate("motivation.form.sample.button.label")
+                      }
+                    }
+                  }}
+                />
+              </WrapperError>
+            </div>
+            <div className="flex-1">
+              <div>{translate('motivation.form.sample.title')}</div>
+              <div>{example}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-outline-success" onClick={() => {
+          props.saveMotivation({ schema: realSchema, formatter })
+          close()
+        }}>{translate('Save')}</button>
+      </div>
+    </>
   )
 }
 
@@ -1567,7 +1862,85 @@ const ValidationStep = (props: ValidationStepProps) => {
         <span className='validation-step__type'><User /></span>
       </div>
     )
+  } else if (isValidationStepHttpRequest(step)) {
+    return (
+      <div className='d-flex flex-column validation-step'>
+        <span className='validation-step__index'>{String(props.index).padStart(2, '0')}</span>
+        <span className='validation-step__name'>{step.title}</span>
+        <span className='validation-step__type'><Globe /></span>
+      </div>
+    )
   } else {
     return <></>
+  }
+}
+
+type TeamApiPricingDocumentationProps = {
+  planForEdition: IUsagePlan
+  team: ITeamSimple
+  api: IApi
+  reloadState: () => Promise<void>
+  onSave: (d: IDocumentation) => Promise<void>
+  plans: Array<IUsagePlan>
+}
+const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) => {
+  const { openApiDocumentationSelectModal } = useContext(ModalContext);
+  const { translate } = useContext(I18nContext);
+
+
+  const createPlanDoc = () => {
+    Services.fetchNewApiDoc()
+      .then(props.onSave)
+  }
+
+
+  if (!props.planForEdition.documentation) {
+    return (
+      <div>
+        <div>it's seems that this plan has no documentation setted</div>
+        <button type='button' className='btn btn-outline-primary' onClick={createPlanDoc}>{translate('documentation.add.button.label')}</button>
+      </div>
+    )
+  } else {
+    return (
+      <TeamApiDocumentation
+        documentation={props.planForEdition.documentation}
+        team={props.team}
+        api={props.api}
+        creationInProgress={true}
+        reloadState={props.reloadState}
+        onSave={props.onSave}
+        importAuthorized={props.plans.filter(p => p._id !== props.planForEdition._id).some(p => p.documentation?.pages.length)}
+        importPage={() => openApiDocumentationSelectModal({
+          api: props.api,
+          teamId: props.team._id,
+          onClose: () => {
+            toastr.success(translate('Success'), translate('doc.page.import.successfull'));
+            props.reloadState()
+          },
+          getDocumentationPages: () => Services.getAllPlansDocumentation(props.team._id, props.api._humanReadableId, props.api.currentVersion),
+          importPages: (pages) => Services.importPlanPages(props.team._id, props.api._id, pages, props.api.currentVersion, props.planForEdition._id)
+        })} />
+    )
+  }
+}
+
+export default class WrapperError extends React.Component {
+  state = {
+    error: undefined
+  }
+
+  componentDidCatch(error) {
+    this.setState({ error })
+  }
+
+  reset() {
+    this.setState({ error: undefined })
+  }
+
+  render() {
+    if (this.state.error)
+      return <div>Something wrong happened</div> //@ts-ignore
+    return this.props.children
   }
 }

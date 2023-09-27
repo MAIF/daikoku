@@ -134,7 +134,6 @@ object json {
             authorizedEntities =
               (json \ "authorizedEntities").as(AuthorizedEntitiesFormat),
             clientName = (json \ "clientName").as[String],
-            api = (json \ "api").as(ApiIdFormat),
             tag = (json \ "tag").as[String],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
@@ -152,7 +151,6 @@ object json {
       "authorizedEntities" -> AuthorizedEntitiesFormat.writes(
         o.authorizedEntities),
       "clientName" -> o.clientName,
-      "api" -> ApiIdFormat.writes(o.api),
       "tag" -> o.tag,
       "customMetadata" -> o.customMetadata
         .getOrElse(JsNull)
@@ -289,6 +287,17 @@ object json {
       }
 
     override def writes(o: TenantMode): JsValue = JsString(o.name)
+  }
+  val TenantDisplayFormat = new Format[TenantDisplay] {
+    override def reads(json: JsValue): JsResult[TenantDisplay] =
+      json.asOpt[String].map(_.toLowerCase) match {
+        case Some("environment") => JsSuccess(TenantDisplay.Environment)
+        case Some("default")     => JsSuccess(TenantDisplay.Default)
+        case None                => JsSuccess(TenantDisplay.Default)
+        case Some(str)           => JsError(s"Bad value for tenant display : $str")
+      }
+
+    override def writes(o: TenantDisplay): JsValue = JsString(o.name)
   }
   val ApiSubscriptionIdFormat = new Format[ApiSubscriptionId] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionId] =
@@ -561,12 +570,14 @@ object json {
           "title" -> title,
           "message" -> message.map(JsString).getOrElse(JsNull).as[JsValue]
         )
-      case ValidationStep.TeamAdmin(id, team, title) =>
+      case ValidationStep.TeamAdmin(id, team, title, schema, formatter) =>
         Json.obj(
           "type" -> "teamAdmin",
           "id" -> id,
           "team" -> team.asJson,
-          "title" -> title
+          "title" -> title,
+          "schema" -> schema.getOrElse(JsNull).as[JsValue],
+          "formatter" -> formatter.map(JsString).getOrElse(JsNull).as[JsValue]
         )
       case ValidationStep.Payment(id, thirdPartyPaymentSettingsId, title) =>
         Json.obj(
@@ -574,6 +585,14 @@ object json {
           "id" -> id,
           "thirdPartyPaymentSettingsId" -> thirdPartyPaymentSettingsId.asJson,
           "title" -> title
+        )
+      case ValidationStep.HttpRequest(id, title, url, headers) =>
+        Json.obj(
+          "type" -> "httpRequest",
+          "id" -> id,
+          "title" -> title,
+          "url" -> url,
+          "headers" -> headers
         )
     }
 
@@ -593,6 +612,19 @@ object json {
               id = (json \ "id").as[String],
               team = (json \ "team").as(TeamIdFormat),
               title = (json \ "title").as[String],
+              schema = (json \ "schema")
+                .asOpt[JsObject]
+                .orElse(
+                  Json
+                    .obj(
+                      "motivation" -> Json.obj("type" -> "string",
+                                               "format" -> "textarea",
+                                               "constraints" -> Json.arr(Json
+                                                 .obj("type" -> "required"))))
+                    .some),
+              formatter = (json \ "formatter")
+                .asOpt[String]
+                .orElse("[[motivation]]".some)
             ))
         case "payment" =>
           JsSuccess(
@@ -603,6 +635,17 @@ object json {
                   ThirdPartyPaymentSettingsIdFormat),
               title = (json \ "title").as[String]
             ))
+        case "httpRequest" =>
+          JsSuccess(
+            ValidationStep.HttpRequest(
+              id = (json \ "id").as[String],
+              title = (json \ "title").as[String],
+              url = (json \ "url").as[String],
+              headers = (json \ "headers")
+                .asOpt[Map[String, String]]
+                .getOrElse(Map.empty[String, String])
+            )
+          )
         case str => JsError(s"Bad UsagePlanVisibility value: $str")
       }
   }
@@ -884,6 +927,8 @@ object json {
         JsSuccess(
           Admin(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             otoroshiTarget =
               (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
             aggregationApiKeysSecurity =
@@ -899,6 +944,8 @@ object json {
 
     override def writes(o: Admin): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "customDescription" -> o.customDescription,
       "customName" -> o.customName,
       "allowMultipleKeys" -> o.allowMultipleKeys
@@ -912,7 +959,9 @@ object json {
       "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
-        .as[JsValue]
+        .as[JsValue],
+      "subscriptionProcess" -> SeqValidationStepFormat.writes(
+        o.subscriptionProcess)
     )
   }
   val FreeWithoutQuotasFormat = new Format[FreeWithoutQuotas] {
@@ -921,6 +970,8 @@ object json {
         JsSuccess(
           FreeWithoutQuotas(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             currency = (json \ "currency").as(CurrencyFormat),
             customName = (json \ "customName").asOpt[String],
             customDescription = (json \ "customDescription").asOpt[String],
@@ -942,7 +993,11 @@ object json {
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -954,6 +1009,8 @@ object json {
 
     override def writes(o: FreeWithoutQuotas): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "currency" -> o.currency.asJson,
       "billingDuration" -> o.billingDuration.asJson,
       "customName" -> o.customName
@@ -985,6 +1042,18 @@ object json {
       "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
         .map(JsBoolean.apply)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -994,6 +1063,8 @@ object json {
         JsSuccess(
           FreeWithQuotas(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1018,7 +1089,11 @@ object json {
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
             aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1030,6 +1105,8 @@ object json {
 
     override def writes(o: FreeWithQuotas): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "maxPerSecond" -> o.maxPerSecond,
       "maxPerDay" -> o.maxPerDay,
       "maxPerMonth" -> o.maxPerMonth,
@@ -1064,6 +1141,18 @@ object json {
       "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
         .map(JsBoolean.apply)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1073,6 +1162,8 @@ object json {
         JsSuccess(
           QuotasWithLimits(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1101,7 +1192,11 @@ object json {
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1113,6 +1208,8 @@ object json {
 
     override def writes(o: QuotasWithLimits): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "maxPerSecond" -> o.maxPerSecond,
       "maxPerDay" -> o.maxPerDay,
       "maxPerMonth" -> o.maxPerMonth,
@@ -1156,6 +1253,18 @@ object json {
       "paymentSettings" -> o.paymentSettings
         .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1165,6 +1274,8 @@ object json {
         JsSuccess(
           QuotasWithoutLimits(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1195,7 +1306,11 @@ object json {
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1207,6 +1322,8 @@ object json {
 
     override def writes(o: QuotasWithoutLimits): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "maxPerSecond" -> o.maxPerSecond,
       "maxPerDay" -> o.maxPerDay,
       "maxPerMonth" -> o.maxPerMonth,
@@ -1251,6 +1368,18 @@ object json {
       "paymentSettings" -> o.paymentSettings
         .map(PaymentSettingsFormat.writes)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }
@@ -1260,6 +1389,8 @@ object json {
         JsSuccess(
           PayPerUse(
             id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").as[Boolean],
             costPerMonth = (json \ "costPerMonth").as[BigDecimal],
             costPerRequest = (json \ "costPerRequest").as[BigDecimal],
             trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
@@ -1286,7 +1417,11 @@ object json {
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat)
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
           )
         )
       } recover {
@@ -1299,6 +1434,8 @@ object json {
 
     override def writes(o: PayPerUse): JsValue = Json.obj(
       "_id" -> UsagePlanIdFormat.writes(o.id),
+      "_tenant" -> TenantIdFormat.writes(o.tenant),
+      "_deleted" -> o.deleted,
       "costPerMonth" -> o.costPerMonth,
       "costPerRequest" -> o.costPerRequest,
       "trialPeriod" -> o.trialPeriod
@@ -1339,6 +1476,18 @@ object json {
         .as[JsValue],
       "paymentSettings" -> o.paymentSettings
         .map(PaymentSettingsFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "testing" -> o.testing
+        .map(TestingFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "documentation" -> o.documentation
+        .map(ApiDocumentationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "swagger" -> o.swagger
+        .map(SwaggerAccessFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -1559,7 +1708,7 @@ object json {
       Try {
         JsSuccess(
           SwaggerAccess(
-            url = (json \ "url").as[String],
+            url = (json \ "url").asOpt[String],
             content = (json \ "content").asOpt[String],
             headers = (json \ "headers")
               .asOpt[Map[String, String]]
@@ -1567,7 +1716,9 @@ object json {
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: SwaggerAccess): JsValue = Json.obj(
@@ -1924,7 +2075,14 @@ object json {
             robotTxt = (json \ "robotTxt").asOpt[String],
             thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings")
               .asOpt(SeqThirdPartyPaymentSettingsFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            display = (json \ "display")
+              .asOpt(TenantDisplayFormat)
+              .getOrElse(TenantDisplay.Default),
+            environments = (json \ "environments")
+              .asOpt[Set[String]]
+              .getOrElse(Set.empty),
+            defaultEnvironment = (json \ "defaultEnvironment").asOpt[String]
           )
         )
       } recover {
@@ -1992,7 +2150,13 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat.writes(
-        o.thirdPartyPaymentSettings)
+        o.thirdPartyPaymentSettings),
+      "display" -> TenantDisplayFormat.writes(o.display),
+      "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
+      "defaultEnvironment" -> o.defaultEnvironment
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -2247,7 +2411,7 @@ object json {
               .getOrElse(Set.empty),
             visibility = (json \ "visibility").as(ApiVisibilityFormat),
             possibleUsagePlans = (json \ "possibleUsagePlans")
-              .as(SeqUsagePlanFormat),
+              .as(SeqUsagePlanIdFormat),
             defaultUsagePlan = (json \ "defaultUsagePlan").as(UsagePlanIdFormat),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
@@ -2300,8 +2464,7 @@ object json {
       "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
       "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
       "visibility" -> ApiVisibilityFormat.writes(o.visibility),
-      "possibleUsagePlans" -> JsArray(
-        o.possibleUsagePlans.map(UsagePlanFormat.writes)),
+      "possibleUsagePlans" -> SeqUsagePlanIdFormat.writes(o.possibleUsagePlans),
       "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
       "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes)),
       "posts" -> SeqPostIdFormat.writes(o.posts),
@@ -2383,6 +2546,7 @@ object json {
             createdAt = (json \ "createdAt").as(DateTimeFormat),
             by = (json \ "by").as(UserIdFormat),
             customName = (json \ "customName").asOpt[String],
+            adminCustomName = (json \ "adminCustomName").asOpt[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
             integrationToken = (json \ "integrationToken").as[String],
@@ -2427,6 +2591,10 @@ object json {
       "createdAt" -> DateTimeFormat.writes(o.createdAt),
       "by" -> UserIdFormat.writes(o.by),
       "customName" -> o.customName
+        .map(id => JsString(id))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "adminCustomName" -> o.adminCustomName
         .map(id => JsString(id))
         .getOrElse(JsNull)
         .as[JsValue],
@@ -2537,7 +2705,6 @@ object json {
         "from" -> o.from.asJson,
         "date" -> DateTimeFormat.writes(o.date),
         "motivation" -> o.motivation
-          .map(JsString)
           .getOrElse(JsNull)
           .as[JsValue],
         "parentSubscription" -> o.parentSubscriptionId
@@ -2562,6 +2729,10 @@ object json {
         "customReadOnly" -> o.customReadOnly
           .map(JsBoolean.apply)
           .getOrElse(JsNull)
+          .as[JsValue],
+        "adminCustomName" -> o.adminCustomName
+          .map(JsString.apply)
+          .getOrElse(JsNull)
           .as[JsValue]
       )
 
@@ -2579,14 +2750,18 @@ object json {
             team = (json \ "team").as(TeamIdFormat),
             from = (json \ "from").as(UserIdFormat),
             date = (json \ "date").as(DateTimeFormat),
-            motivation = (json \ "motivation").asOpt[String],
+            motivation = (json \ "motivation")
+              .asOpt[String]
+              .map(m => Json.obj("motivation" -> m))
+              .orElse((json \ "motivation").asOpt[JsObject]),
             parentSubscriptionId =
               (json \ "parentSubscription").asOpt(ApiSubscriptionIdFormat),
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
             customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
-            customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
+            customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
+            adminCustomName = (json \ "adminCustomName").asOpt[String]
           )
         )
       } recover {
@@ -3264,7 +3439,9 @@ object json {
           case "Pending"  => NotificationStatusPendingFormat.reads(json)
           case "Accepted" => NotificationStatusAcceptedFormat.reads(json)
           case "Rejected" => NotificationStatusRejectedFormat.reads(json)
-          case str        => JsError(s"Bad notification status value: $str")
+          case str =>
+            AppLogger.error(s"Bad notification status value: $str")
+            JsError(s"Bad notification status value: $str")
         }
 
       override def writes(o: NotificationStatus): JsValue = o match {
@@ -3955,6 +4132,8 @@ object json {
            Writes.seq(ApiDocumentationPageFormat))
   val SeqUsagePlanFormat =
     Format(Reads.seq(UsagePlanFormat), Writes.seq(UsagePlanFormat))
+  val SeqUsagePlanIdFormat =
+    Format(Reads.seq(UsagePlanIdFormat), Writes.seq(UsagePlanIdFormat))
   val SeqTeamFormat =
     Format(Reads.seq(TeamFormat), Writes.seq(TeamFormat))
   val SeqApiFormat =

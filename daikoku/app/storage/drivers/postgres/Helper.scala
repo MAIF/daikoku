@@ -63,7 +63,7 @@ object Helper {
             )
           case _ =>
             out =
-              s"(content->>$$${n + 1} = $$${n + 2} OR content->$$${n + 1} @> $$${n + 3}::jsonb)"
+              s"""(content->>$$${n + 1} = $$${n + 2} OR content->$$${n + 1} @> $$${n + 3}::jsonb OR content->$$${n + 1} @> '"$value"'::jsonb)"""
             outParams ++= Seq(
               key,
               value,
