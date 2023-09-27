@@ -3954,7 +3954,7 @@ class ApiController(
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
           updatedPlan <- addProcess(api, newPlan)
           plans <- EitherT.liftF(env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api))
-          _ <- updatedPlan.checkCustomName(ctx.tenant, plans)
+          _ <- updatedPlan.checkCustomName(ctx.tenant, plans, api.visibility)
           updatedApi = api.copy(possibleUsagePlans = api.possibleUsagePlans :+ updatedPlan.id)
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi))
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan))
@@ -4132,7 +4132,7 @@ class ApiController(
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson, "currentVersion" -> version)), AppError.ApiNotFound)
           plans <- EitherT.liftF(env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api))
-          _ <- updatedPlan.checkCustomName(ctx.tenant, plans)
+          _ <- updatedPlan.checkCustomName(ctx.tenant, plans, api.visibility)
           oldPlan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId), AppError.PlanNotFound)
           _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
             .updateManyByQuery(

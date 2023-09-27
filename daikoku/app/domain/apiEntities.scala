@@ -261,15 +261,16 @@ sealed trait UsagePlan {
                           idx: Option[Int] = None): UsagePlan
   def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan
   def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
-  def checkCustomName(tenant: Tenant, plans: Seq[UsagePlan])(
+  def checkCustomName(tenant: Tenant, plans: Seq[UsagePlan], apiVisibility: ApiVisibility)(
       implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     val existingNames = plans
       .filter(_.id != id)
       .collect(_.customName)
       .collect { case Some(name) => name }
     //FIXME: check conflict with extisting name in case of creation but
-    tenant.display match {
-      case TenantDisplay.Environment =>
+    (apiVisibility, tenant.display) match {
+      case (ApiVisibility.AdminOnly, _) => EitherT.pure[Future, AppError](())
+      case (_, TenantDisplay.Environment) =>
         EitherT.cond[Future](
           customName.exists(
             name =>
@@ -277,7 +278,7 @@ sealed trait UsagePlan {
                 name)),
           (),
           AppError.EntityConflict("Plan custom name"))
-      case TenantDisplay.Default => EitherT.pure[Future, AppError](())
+      case (_, TenantDisplay.Default) => EitherT.pure[Future, AppError](())
     }
   }
 }

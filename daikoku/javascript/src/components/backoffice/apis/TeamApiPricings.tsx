@@ -826,8 +826,8 @@ export const TeamApiPricings = (props: Props) => {
     'PayPerUse',
   ];
 
-  const customNameSchemaPart = (plans: Array<IUsagePlan>) => {
-    if (tenant.display === 'environment') {
+  const customNameSchemaPart = (plans: Array<IUsagePlan>, api: IApi) => {
+    if (tenant.display === 'environment' && api.visibility !== 'AdminOnly') {
       const availablePlans = tenant.environments.filter(e => plans.filter(p => p._id !== planForEdition?._id).every(p => p.customName !== e))
 
       return {
@@ -854,7 +854,7 @@ export const TeamApiPricings = (props: Props) => {
     }
   }
 
-  const steps = (plans): Array<IMultistepsformStep<IUsagePlan>> => ([
+  const steps = (plans: IUsagePlan[], api: IApi): Array<IMultistepsformStep<IUsagePlan>> => ([
     {
       id: 'info',
       label: 'Informations',
@@ -890,7 +890,7 @@ export const TeamApiPricings = (props: Props) => {
             constraints.oneOf(planTypes, translate('constraints.oneof.plan.type')),
           ],
         },
-        ...customNameSchemaPart(plans),
+        ...customNameSchemaPart(plans, props.api),
         customDescription: {
           type: type.string,
           format: format.text,
@@ -1338,7 +1338,7 @@ export const TeamApiPricings = (props: Props) => {
           <div className="col-md-12">
             {queryPlans.data && selectedTab === 'settings' && <MultiStepForm<IUsagePlan>
               value={planForEdition}
-              steps={steps(queryPlans.data as Array<IUsagePlan>)}
+              steps={steps(queryPlans.data as Array<IUsagePlan>, props.api)}
               initial="info"
               creation={creation}
               save={savePlan}

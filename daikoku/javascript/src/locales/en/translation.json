@@ -1361,5 +1361,6 @@
     "pricing.edit.env.btn.label": "Edit environment",
     "pricing.delete.env.btn.label": "Delete environment",
     "documentation.add.button.label": "Create documentation",
-    "team_apikey_aggregatePlans_title": "Aggregated API keys"
+    "team_apikey_aggregatePlans_title": "Aggregated API keys",
+    "constraints.plan.custom-name.one-of.environment": "The plan name must match one of the available environments"
 }

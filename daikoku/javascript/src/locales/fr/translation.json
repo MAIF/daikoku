@@ -1365,5 +1365,6 @@
   "pricing.delete.env.btn.label": "Supprimer l'environnement",
   "Alert": "Alerte",
   "documentation.add.button.label": "Initialiser la documentation",
-  "team_apikey_aggregatePlans_title": "Clés d'API agregées"
+  "team_apikey_aggregatePlans_title": "Clés d'API agregées",
+  "constraints.plan.custom-name.one-of.environment": "Le nom du plan doit correspondre à l'un des environnements disponibles"
 }
