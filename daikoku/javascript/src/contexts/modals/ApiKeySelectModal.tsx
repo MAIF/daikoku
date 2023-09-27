@@ -69,15 +69,20 @@ const ApiKeysView = (props: ApiKeysViewProps) => {
       <h5 className="modal-title">{translate('apikey_select_modal.select_your_api_key')}</h5>
       <div className="team-selection__container">
         {props.apiKeys
-        .sort((a, b) => a.apiName.localeCompare(b.apiName) || (a.customName || a.planType).localeCompare((b.customName || b.planType)))
-        .map((apiKey) => <div
-          key={apiKey._id}
-          className="team-selection team-selection__team selectable mt-1"
-          onClick={() => props.extendApiKey(apiKey)}
-        >
-          <span className="ms-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planType
-            }`}</span>
-        </div>)}
+          .filter(a => !a.parent)
+          .sort((a, b) => a.apiName.localeCompare(b.apiName) || (a.customName || a.planType).localeCompare((b.customName || b.planType)))
+          .map((apiKey) => {
+            return (
+              <div
+                key={apiKey._id}
+                className="team-selection team-selection__team selectable mt-1"
+                onClick={() => props.extendApiKey(apiKey)}
+              >
+                <span className="ms-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planName || apiKey.planType
+                  }`}</span>
+              </div>
+            )
+          })}
       </div>
     </div>
   );

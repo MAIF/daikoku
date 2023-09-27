@@ -1360,5 +1360,6 @@
     "pricing.clone.env.btn.label": "Duplicate environment",
     "pricing.edit.env.btn.label": "Edit environment",
     "pricing.delete.env.btn.label": "Delete environment",
-    "documentation.add.button.label": "Create documentation"
+    "documentation.add.button.label": "Create documentation",
+    "team_apikey_aggregatePlans_title": "Aggregated API keys"
 }

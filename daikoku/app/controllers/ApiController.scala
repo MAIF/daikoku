@@ -1467,12 +1467,14 @@ class ApiController(
             JsArray(subscriptions
               .map(sub => {
                 val api = apis.find(a => a.id == sub.api)
-                val planIntegrationProcess = plans
+                val plan = plans
                   .find(p => p.id == sub.plan)
+                val planIntegrationProcess = plan
                   .map(_.integrationProcess)
                   .getOrElse(IntegrationProcess.Automatic)
 
                 val apiName: String = api.map(_.name).getOrElse("")
+                val planName: String = plan.flatMap(_.customName).getOrElse("")
                 sub
                   .asAuthorizedJson(
                     teamPermission,
@@ -1483,7 +1485,8 @@ class ApiController(
                   plans.find(p => p.id == sub.plan)
                     .map(plan => Json.obj("planType" -> plan.typeName))
                     .getOrElse(Json.obj("planType" -> "")) ++ Json.obj(
-                  "apiName" -> apiName)
+                  "apiName" -> apiName,
+                "planName" -> planName)
               })))
         }
       }

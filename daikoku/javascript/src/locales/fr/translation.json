@@ -1364,5 +1364,6 @@
   "pricing.edit.env.btn.label": "Modifier l'environnement",
   "pricing.delete.env.btn.label": "Supprimer l'environnement",
   "Alert": "Alerte",
-  "documentation.add.button.label": "Initialiser la documentation"
+  "documentation.add.button.label": "Initialiser la documentation",
+  "team_apikey_aggregatePlans_title": "Clés d'API agregées"
 }

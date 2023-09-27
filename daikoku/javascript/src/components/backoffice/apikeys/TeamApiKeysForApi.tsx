@@ -5,7 +5,7 @@ import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
 import sortBy from 'lodash/sortBy';
 import { getApolloContext } from '@apollo/client';
-import { Form, constraints, format, type } from '@maif/react-forms';
+import { Form, constraints, type } from '@maif/react-forms';
 
 import * as Services from '../../../services';
 import {
@@ -14,7 +14,6 @@ import {
   read,
   apikey,
   stat,
-  CanIDoAction,
   PaginatedComponent,
   BeautifulTitle,
   Option,
@@ -25,12 +24,11 @@ import { I18nContext } from '../../../core';
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import { IApi, IRotation, ISafeSubscription, isError, IState, IStateContext, ISubscription, ISubscriptionExtended, ITeamSimple, IUsagePlan, ResponseError } from '../../../types';
 import { useQuery } from '@tanstack/react-query';
-import { result } from 'lodash';
 
-type ISubscriptionWithChildren = ISubscriptionExtended & { children: Array<ISubscription> }
+type ISubscriptionWithChildren = ISubscriptionExtended & { children: Array<ISubscriptionExtended> }
 
 export const TeamApiKeysForApi = () => {
-  const { currentTeam, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
+  const { currentTeam } = useSelector<IState, IStateContext>((state) => state.context);
   useTeamBackOffice(currentTeam);
 
   const [searched, setSearched] = useState('');
@@ -51,11 +49,13 @@ export const TeamApiKeysForApi = () => {
   })
 
   const subApisQuery = useQuery({
-    queryKey: ['data', 'team'],
-    queryFn: () => client?.query({
-      query: Services.graphql.apisByIds,
-      variables: { ids: [...new Set((subsQuery.data as Array<ISubscription>).map((s) => s.api))] },
-    }),
+    queryKey: ['data', 'subscriptions', "apis"],
+    queryFn: () => {
+      return client?.query<{apis: IApi[]}>({
+        query: Services.graphql.apisByIds,
+        variables: { ids: [...new Set((subsQuery.data as Array<ISubscription>).map((s) => s.api))] },
+      })
+    },
     enabled: !!subsQuery.data && !isError(subsQuery.data)
   })
 
@@ -125,9 +125,8 @@ export const TeamApiKeysForApi = () => {
   } else if (apiQuery.data && subsQuery.data && teamQuery.data && subApisQuery.data && !isError(apiQuery.data) && !isError(subsQuery.data) && !isError(teamQuery.data) && !isError(subApisQuery.data)) {
     const api = apiQuery.data;
     const apiTeam = teamQuery.data;
-    const subscriptions = subsQuery.data; //@ts-ignore
-    const subscribedApis = subApisQuery.data.apis;
-
+    const subscriptions = subsQuery.data;
+    const subscribedApis = subApisQuery.data.data.apis;
 
     const search = searched.trim().toLowerCase();
     const filteredApiKeys =
@@ -328,6 +327,8 @@ const ApiKeyCard = ({
     };
 
     const disableRotation = api.visibility === 'AdminOnly' || !!plan.autoRotation;
+
+    console.debug({subscription})
 
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
@@ -577,17 +578,17 @@ const ApiKeyCard = ({
                   <>
                     {showAggregatePlan && (
                       <div className="text-center">
-                        <h5 className="modal-title">Aggregate plans</h5>
+                        <h5 className="modal-title">{translate('team_apikey_aggregatePlans_title')}</h5>
                         <div>
-                          {subscription.children.map((aggregate: any) => {
+                          {subscription.children.map((aggregate) => {
                             const api = subscribedApis.find((a) => a._id === aggregate.api);
+                            console.debug(aggregate)
                             return (
                               <div key={aggregate._id}>
                                 <Link
                                   to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api!.currentVersion}`}
                                 >
-                                  {`${aggregate.apiName}/${aggregate.customName || aggregate.planType
-                                    }`}
+                                  {`${aggregate.apiName}/${aggregate.planName || aggregate.planType}`}
                                 </Link>
                               </div>
                             );
