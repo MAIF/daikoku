@@ -450,6 +450,20 @@ PUT     /admin-api/translations/:id                     fr.maif.otoroshi.daikoku
 GET     /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findById(id)
 POST    /admin-api/translations                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.createEntity()
 GET     /admin-api/translations                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findAll()
+
+DELETE  /admin-api/usage-plans/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.deleteEntity(id)
+PATCH   /admin-api/usage-plans/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.patchEntity(id)
+PUT     /admin-api/usage-plans/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.updateEntity(id)
+GET     /admin-api/usage-plans/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findById(id)
+POST    /admin-api/usage-plans                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.createEntity()
+GET     /admin-api/usage-plans                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findAll()
+
+DELETE  /admin-api/subscription-demands/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.deleteEntity(id)
+PATCH   /admin-api/subscription-demands/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.patchEntity(id)
+PUT     /admin-api/subscription-demands/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.updateEntity(id)
+GET     /admin-api/subscription-demands/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findById(id)
+POST    /admin-api/subscription-demands                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.createEntity()
+GET     /admin-api/subscription-demands                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findAll()
 ###
 #  summary: get apikey from integration token
 #  tags:

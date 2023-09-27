@@ -502,6 +502,42 @@ class TranslationsAdminApiController(daa: DaikokuApiAction,
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 }
 
+class UsagePlansAdminApiController(daa: DaikokuApiAction,
+                                     env: Env,
+                                     cc: ControllerComponents)
+    extends AdminApiController[UsagePlan, UsagePlanId](daa, env, cc) {
+  override def entityClass = classOf[UsagePlan]
+  override def entityName: String = "usage-plan"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant,
+                           ds: DataStore): Repo[UsagePlan, UsagePlanId] =
+    ds.usagePlanRepo.forTenant(tenant)
+  override def toJson(entity: UsagePlan): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, UsagePlan] =
+    UsagePlanFormat
+      .reads(entity)
+      .asEither
+      .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class SubscriptionDemandsAdminApiController(daa: DaikokuApiAction,
+                                     env: Env,
+                                     cc: ControllerComponents)
+    extends AdminApiController[SubscriptionDemand, SubscriptionDemandId](daa, env, cc) {
+  override def entityClass = classOf[SubscriptionDemand]
+  override def entityName: String = "subscription-demand"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant,
+                           ds: DataStore): Repo[SubscriptionDemand, SubscriptionDemandId] =
+    ds.subscriptionDemandRepo.forTenant(tenant)
+  override def toJson(entity: SubscriptionDemand): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, SubscriptionDemand] =
+    SubscriptionDemandFormat
+      .reads(entity)
+      .asEither
+      .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
 class AdminApiSwaggerController(
     env: Env,
     cc: ControllerComponents,
@@ -518,7 +554,9 @@ class AdminApiSwaggerController(
     ctrl11: MessagesAdminApiController,
     ctrl12: IssuesAdminApiController,
     ctrl13: PostsAdminApiController,
-    ctrl14: TranslationsAdminApiController
+    ctrl14: TranslationsAdminApiController,
+    ctrl15: UsagePlansAdminApiController,
+    ctrl16: SubscriptionDemandsAdminApiController
 ) extends AbstractController(cc) {
 
   def schema[A, B <: ValueType](
@@ -541,7 +579,9 @@ class AdminApiSwaggerController(
       schema(ctrl11) ++
       schema(ctrl12) ++
       schema(ctrl13) ++
-      schema(ctrl14)
+      schema(ctrl14) ++
+      schema(ctrl15) ++
+      schema(ctrl16) ++
 
   def paths: JsValue =
     path(ctrl1) ++
@@ -558,6 +598,8 @@ class AdminApiSwaggerController(
       path(ctrl12) ++
       path(ctrl13) ++
       path(ctrl14) ++
+      path(ctrl15) ++
+      path(ctrl16) ++
       ctrl1.pathForIntegrationApi()
 
   def swagger() = Action {
