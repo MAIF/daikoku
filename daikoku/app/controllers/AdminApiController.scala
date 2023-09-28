@@ -503,8 +503,8 @@ class TranslationsAdminApiController(daa: DaikokuApiAction,
 }
 
 class UsagePlansAdminApiController(daa: DaikokuApiAction,
-                                     env: Env,
-                                     cc: ControllerComponents)
+                                   env: Env,
+                                   cc: ControllerComponents)
     extends AdminApiController[UsagePlan, UsagePlanId](daa, env, cc) {
   override def entityClass = classOf[UsagePlan]
   override def entityName: String = "usage-plan"
@@ -521,14 +521,17 @@ class UsagePlansAdminApiController(daa: DaikokuApiAction,
 }
 
 class SubscriptionDemandsAdminApiController(daa: DaikokuApiAction,
-                                     env: Env,
-                                     cc: ControllerComponents)
-    extends AdminApiController[SubscriptionDemand, SubscriptionDemandId](daa, env, cc) {
+                                            env: Env,
+                                            cc: ControllerComponents)
+    extends AdminApiController[SubscriptionDemand, SubscriptionDemandId](daa,
+                                                                         env,
+                                                                         cc) {
   override def entityClass = classOf[SubscriptionDemand]
   override def entityName: String = "subscription-demand"
   override def pathRoot: String = s"/admin-api/${entityName}s"
-  override def entityStore(tenant: Tenant,
-                           ds: DataStore): Repo[SubscriptionDemand, SubscriptionDemandId] =
+  override def entityStore(
+      tenant: Tenant,
+      ds: DataStore): Repo[SubscriptionDemand, SubscriptionDemandId] =
     ds.subscriptionDemandRepo.forTenant(tenant)
   override def toJson(entity: SubscriptionDemand): JsValue = entity.asJson
   override def fromJson(entity: JsValue): Either[String, SubscriptionDemand] =

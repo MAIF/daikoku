@@ -261,7 +261,9 @@ sealed trait UsagePlan {
                           idx: Option[Int] = None): UsagePlan
   def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan
   def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
-  def checkCustomName(tenant: Tenant, plans: Seq[UsagePlan], apiVisibility: ApiVisibility)(
+  def checkCustomName(tenant: Tenant,
+                      plans: Seq[UsagePlan],
+                      apiVisibility: ApiVisibility)(
       implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     val existingNames = plans
       .filter(_.id != id)

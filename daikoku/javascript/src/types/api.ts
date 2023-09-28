@@ -436,7 +436,7 @@ export interface ISubscriptionExtended extends ISubscription {
 export interface ISubscriptionWithApiInfo extends ISubscription {
   apiName: string;
   planType: string;
-  planName: string
+  planName: string;
 }
 
 export interface IQuotas {
