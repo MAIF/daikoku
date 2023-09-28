@@ -1249,6 +1249,7 @@
     "Filter data": "Filter data",
     "Filter metadata": "Filter metadata",
     "Filter tags": "Filter tags",
+    "Filter Client Ids": "Filter Client-Ids",
     "Don't save": "Don't save",
     "set.from.assets": "Set %s from asset",
     "set.logo": "logo",
@@ -1362,5 +1363,7 @@
     "pricing.delete.env.btn.label": "Delete environment",
     "documentation.add.button.label": "Create documentation",
     "team_apikey_aggregatePlans_title": "Aggregated API keys",
-    "constraints.plan.custom-name.one-of.environment": "The plan name must match one of the available environments"
+    "constraints.plan.custom-name.one-of.environment": "The plan name must match one of the available environments",
+    "aggregated.apikey.badge.title": "Aggregated API key",
+    "aggregated.apikey.badge.apikey.name": "API key custom name"
 }

@@ -195,7 +195,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
       </button>
     );
   } else {
-    return (<BeautifulTitle title={assetsRequest.error}>
+    return (<BeautifulTitle title={assetsRequest.error as string}>
       <button type="button" className="btn btn-outline-primary ms-1 cursor-help" disabled>
         <i className={classNames('fas', {
           'fa-user-circle me-1': !!props.onlyPreview,

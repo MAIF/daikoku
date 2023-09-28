@@ -28,7 +28,8 @@ type TeamApiSubscriptionsProps = {
 }
 type SubscriptionsFilter = {
   metadata: Array<{ key: string, value: string }>,
-  tags: Array<string>
+  tags: Array<string>,
+  clientIds: Array<string>
 }
 type LimitedPlan = {
   _id: string
@@ -62,6 +63,19 @@ type ApiSubscriptionGql = {
   customMaxPerMonth?: number
   tags: Array<string>
   metadata?: JSON
+  parent: {
+    _id: string
+    adminCustomName: string
+    api: {
+      _id: string
+      name: string
+    }
+    plan: {
+      _id: string
+      customName: string
+      type: string
+    }
+  }
 }
 export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
@@ -103,6 +117,29 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         return displayed.toLocaleLowerCase().includes(value.toLocaleLowerCase())
       },
       sortingFn: 'basic',
+      cell: (info) => {
+        const sub = info.row.original;
+        if (sub.parent) {
+          const title = `<div>
+            <strong>${translate('aggregated.apikey.badge.title')}</strong>
+            <ul>
+              <li>${translate('Api')}: ${sub.parent.api.name}</li>
+              <li>${translate('Plan')}: ${sub.parent.plan.customName}</li>
+              <li>${translate('aggregated.apikey.badge.apikey.name')}: ${sub.parent.adminCustomName}</li>
+            </ul>
+          </div>`
+          return (
+            <div className="d-flex flex-row justify-content-between">
+              <span>{info.getValue()}</span> 
+              <BeautifulTitle title={title} html>
+
+                <div className="badge iconized">A</div>
+              </BeautifulTitle>
+            </div>
+          );
+        }
+        return <div>{info.getValue()}</div>;
+      }
     }),
     columnHelper.accessor('plan', {
       header: translate('Plan'),
@@ -273,6 +310,11 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                   type: type.string,
                   label: translate('Filter tags'),
                   array: true,
+                },
+                clientIds: {
+                  type: type.string,
+                  array: true,
+                  label: translate('Filter Client Ids')
                 }
               },
               title: translate("Filter data"),
@@ -299,7 +341,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                     version: api.currentVersion
                   }
                 }).then(({ data: { apiApiSubscriptions } }) => {
-                  if (!filters || (!filters.tags.length && !Object.keys(filters.metadata).length)) {
+                  if (!filters || (!filters.tags.length && !Object.keys(filters.metadata).length && !filters.clientIds.length)) {
                     return apiApiSubscriptions
                   } else {
                     const filterByMetadata = (subscription: ApiSubscriptionGql) => {
@@ -315,9 +357,14 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
                       return filters.tags.every(tag => subscription.tags.includes(tag))
                     }
 
+                    const filterByClientIds = (subscription: ApiSubscriptionGql) => {
+                      return filters.clientIds.includes(subscription.apiKey.clientId)
+                    }
+
                     return apiApiSubscriptions
                       .filter(filterByMetadata)
                       .filter(filterByTags)
+                      .filter(filterByClientIds)
                   }
                 })
               }}

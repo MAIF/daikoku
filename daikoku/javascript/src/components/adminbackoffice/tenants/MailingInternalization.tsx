@@ -111,7 +111,7 @@ const EditMailtemplate = ({
         actions: (insert: any) => {
           return (
             <BeautifulTitle
-              placement="bottom"
+              place="bottom"
               title={translate('image url from asset')}
             >
               <AssetChooserByModal

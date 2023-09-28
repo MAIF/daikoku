@@ -68,7 +68,7 @@ export const SelectOtoStep = (props: any) => {
       />
       {!!previousState && previousState.tenant === props.tenant._id && (
         <div className="d-flex flex-column">
-          <BeautifulTitle placement="bottom" title={translate('Load a work in progress')}>
+          <BeautifulTitle place="bottom" title={translate('Load a work in progress')}>
             <button className="btn btn-access" onClick={props.loadPreviousState}>
               <i className="fa fa-download" />
             </button>

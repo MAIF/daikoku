@@ -174,7 +174,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                 <i className={`fas fa-feather`} />
               </button>
               <BeautifulTitle
-                placement="bottom"
+                place="bottom"
                 title={translate('image url from asset')}
               >
                 <AssetChooserByModal

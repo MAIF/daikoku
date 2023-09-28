@@ -1251,6 +1251,7 @@
   "Filter data": "Filtrer les données",
   "Filter metadata": "Filtrer les métadonnées",
   "Filter tags": "Filtrer les tags",
+  "Filter Client Ids": "Filtre les Client-Ids",
   "Don't save": "Ne pas enregistrer",
   "set.from.assets": "définir %s depuis un asset",
   "set.logo": "le logo",
@@ -1366,5 +1367,7 @@
   "Alert": "Alerte",
   "documentation.add.button.label": "Initialiser la documentation",
   "team_apikey_aggregatePlans_title": "Clés d'API agregées",
-  "constraints.plan.custom-name.one-of.environment": "Le nom du plan doit correspondre à l'un des environnements disponibles"
+  "constraints.plan.custom-name.one-of.environment": "Le nom du plan doit correspondre à l'un des environnements disponibles",
+  "aggregated.apikey.badge.title": "Clé d'API aggrégée",
+  "aggregated.apikey.badge.apikey.name": "Nom personnalisée de la clé"
 }

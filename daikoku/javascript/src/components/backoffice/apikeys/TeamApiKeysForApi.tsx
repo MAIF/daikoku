@@ -339,7 +339,7 @@ const ApiKeyCard = ({
                 (!editMode ? (
                   <>
                     <BeautifulTitle
-                      title={customName}
+                      title={customName || ''}
                       style={{
                         wordBreak: 'break-all',
                         marginBlockEnd: '0',
@@ -655,7 +655,7 @@ export const Help = ({
   message
 }: HelpProps) => {
   return (
-    <BeautifulTitle placement="bottom" title={message}>
+    <BeautifulTitle place="bottom" title={message}>
       <i className="ms-4 far fa-question-circle" />
     </BeautifulTitle>
   );

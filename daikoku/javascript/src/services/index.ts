@@ -1547,6 +1547,19 @@ export const graphql = {
         customMaxPerDay
         customMaxPerMonth
         adminCustomName
+        parent {
+          _id
+          adminCustomName
+          api {
+            _id
+            name
+          }
+          plan {
+            _id
+            type
+            customName
+          }
+        }
       }
     }
     `),

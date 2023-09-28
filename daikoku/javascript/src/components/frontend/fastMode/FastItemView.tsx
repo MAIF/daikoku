@@ -70,7 +70,7 @@ export const FastItemView = (props: FastItemViewProps) => {
           <div className="card-header" style={{ position: 'relative' }}>
             <div className="d-flex align-items-center justify-content-between">
               <BeautifulTitle
-                title={props.planInfo.customName}
+                title={props.planInfo.customName || ''}
                 style={{
                   wordBreak: 'break-all',
                   marginBlockEnd: '0',
