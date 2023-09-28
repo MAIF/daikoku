@@ -1872,7 +1872,7 @@ class ApiController(
           .flatMap {
             case None =>
               apiRepo
-                .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId))
+                .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId, "_delete" -> false))
             case Some(api) =>
               val v = api.parent match {
                 case Some(parent) => parent.value
