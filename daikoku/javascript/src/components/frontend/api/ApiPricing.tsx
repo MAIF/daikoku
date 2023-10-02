@@ -327,7 +327,7 @@ type ApiPricingProps = {
 }
 
 export const ApiPricing = (props: ApiPricingProps) => {
-  const usagePlansQuery = useQuery(['plans'], () => Services.getVisiblePlans(props.api._id, props.api.currentVersion))
+  const usagePlansQuery = useQuery(['plans', props.api.currentVersion], () => Services.getVisiblePlans(props.api._id, props.api.currentVersion))
 
   const match = useMatch('/:team/:api/:version/pricing/:env/:tab')
 
