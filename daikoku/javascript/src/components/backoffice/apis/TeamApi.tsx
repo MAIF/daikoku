@@ -91,6 +91,8 @@ type TeamApiParams = {
 export const TeamApi = (props: { creation: boolean }) => {
   const params = useParams<TeamApiParams>();
 
+  const [additionalHeader, setAdditionalHeader] = useState<string>()
+
   const location = useLocation();
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId');
@@ -294,7 +296,7 @@ export const TeamApi = (props: { creation: boolean }) => {
       <Can I={manage} a={API} team={currentTeam} dispatchError>
         <div className="d-flex flex-row justify-content-between align-items-center">
           {props.creation ? (<h2>{api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-            <h2 className="me-2">{api.name}</h2>
+            <h2 className="me-2">{api.name} {additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
           </div>)}
           <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
             {expertMode && translate('Standard mode')}
@@ -337,7 +339,8 @@ export const TeamApi = (props: { creation: boolean }) => {
                     blocks: {
                       links: { links: { plans: { childs: { menu: { component } } } } },
                     },
-                  })} />)}
+                  })}
+                  setHeader={(planName) => setAdditionalHeader(planName)} />)}
               {tab === 'infos' && (
                 <TeamApiInfos
                   value={api}

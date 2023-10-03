@@ -35,6 +35,8 @@ export const TeamApiGroup = () => {
   const state: LocationState = location.state as LocationState
   const creation = state?.newApiGroup;
 
+  const [additionalHeader, setAdditionalHeader] = useState<string>()
+
   const queryClient = useQueryClient();
   const apiGroupRequest = useQuery({
     queryKey: ['apiGroup', params.apiGroupId!],
@@ -248,7 +250,7 @@ export const TeamApiGroup = () => {
       <Can I={manage} a={API} team={currentTeam} dispatchError>
           <div className="d-flex flex-row justify-content-between align-items-center">
             {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-              <h2 className="me-2">{apiGroup.name}</h2>
+              <h2 className="me-2">{apiGroup.name}{additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
             </div>)}
             <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
               {expertMode && translate('Standard mode')}
@@ -279,7 +281,9 @@ export const TeamApiGroup = () => {
                         links: { links: { plans: { childs: { menu: { component } } } } },
                       },
                     })}
-                    openApiSelectModal={() => alert({ message: 'oops' })} />
+                    openApiSelectModal={() => alert({ message: 'oops' })}
+                    setHeader={(planName) => setAdditionalHeader(planName)} />
+                    
                 </div>)}
                 {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
                 {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}

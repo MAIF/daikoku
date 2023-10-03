@@ -508,6 +508,7 @@ type Props = {
   expertMode: boolean
   injectSubMenu: (x: JSX.Element | null) => void
   openApiSelectModal?: () => void
+  setHeader: (t?: string) => void
 }
 type Tab = 'settings' | 'security' | 'payment' | 'subscription-process' | 'swagger' | 'documentation' | 'testing'
 
@@ -529,6 +530,7 @@ export const TeamApiPricings = (props: Props) => {
   useEffect(() => {
     return () => {
       props.injectSubMenu(null);
+      props.setHeader(undefined)
     };
   }, []);
 
@@ -731,6 +733,7 @@ export const TeamApiPricings = (props: Props) => {
     setCreation(false);
     setPlanForEdition(plan);
     setMode(possibleMode.edition);
+    props.setHeader(plan.customName || plan.type)
   };
 
   const makePlanDefault = (plan: IUsagePlan) => {
@@ -809,6 +812,7 @@ export const TeamApiPricings = (props: Props) => {
     setPlanForEdition(undefined);
     setMode(possibleMode.list);
     props.injectSubMenu(null);
+    props.setHeader(undefined)
     setCreation(false);
   };
 
