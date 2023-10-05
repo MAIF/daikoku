@@ -2152,7 +2152,6 @@ object json {
         o.thirdPartyPaymentSettings),
       "display" -> TenantDisplayFormat.writes(o.display),
       "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
-
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {

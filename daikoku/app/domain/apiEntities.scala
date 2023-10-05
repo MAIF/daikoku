@@ -4,7 +4,13 @@ import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, UsagePlanFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  SeqIssueIdFormat,
+  SeqPostIdFormat,
+  SeqTeamIdFormat,
+  SetApiTagFormat,
+  UsagePlanFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.ReplaceAllWith
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString

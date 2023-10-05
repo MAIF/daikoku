@@ -610,7 +610,8 @@ class AdminApiSwaggerController(
 
   def swagger() = Action {
     Using(scala.io.Source.fromFile("./public/swaggers/admin-api-openapi.json")) {
-      source => source.mkString
+      source =>
+        source.mkString
     } match {
       case Failure(e) =>
         AppLogger.error(e.getMessage, e)
