@@ -1891,7 +1891,6 @@ class ApiController(
                 )
           }
       case None =>
-        AppLogger.warn("here")
         apiRepo
           .exists(
             Json.obj(
