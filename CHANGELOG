@@ -463,3 +463,18 @@ We'd like to thank all the contributors who worked on this release!
 
 - Add some explanation for user rights in documentation [#567](https://github.com/MAIF/daikoku/issues/567)
 
+## [v16.3.0] - 2023-10-05
+
+## :star: New Features
+
+- Better admin-api generation [#599](https://github.com/MAIF/daikoku/issues/599)
+- Add a ApiAdmin custom name to subscription [#542](https://github.com/MAIF/daikoku/issues/542)
+- plan can be filter by js script [#539](https://github.com/MAIF/daikoku/issues/539)
+- Environment mode [#538](https://github.com/MAIF/daikoku/issues/538)
+- Better subscription demand  [#537](https://github.com/MAIF/daikoku/issues/537)
+
+## :beetle: Bug Fixes
+
+- impossible to create an api with an api name deleted [#598](https://github.com/MAIF/daikoku/issues/598)
+- ApiGroups main page is broken [#589](https://github.com/MAIF/daikoku/issues/589)
+
