@@ -299,7 +299,6 @@ GET     /fakeotoroshi/api/apikeys/:clientId/quotas   fr.maif.otoroshi.daikoku.ct
 GET     /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKey(clientId)
 PUT     /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(clientId)
 DELETE  /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.deleteFakeOtoroshiApiKey(clientId)
-PUT		  /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(clientId)
 POST    /fakeotoroshi/api/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.createFakeOtoroshiApiKey()
 GET     /fakeotoroshi/api/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKeys()
 GET     /fakeotoroshi/api/groups/:groupId            fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroup(groupId)

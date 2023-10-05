@@ -928,7 +928,7 @@ object json {
           Admin(
             id = (json \ "_id").as(UsagePlanIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             otoroshiTarget =
               (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
             aggregationApiKeysSecurity =
@@ -971,7 +971,7 @@ object json {
           FreeWithoutQuotas(
             id = (json \ "_id").as(UsagePlanIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             currency = (json \ "currency").as(CurrencyFormat),
             customName = (json \ "customName").asOpt[String],
             customDescription = (json \ "customDescription").asOpt[String],
@@ -1064,7 +1064,7 @@ object json {
           FreeWithQuotas(
             id = (json \ "_id").as(UsagePlanIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1163,7 +1163,7 @@ object json {
           QuotasWithLimits(
             id = (json \ "_id").as(UsagePlanIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1275,7 +1275,7 @@ object json {
           QuotasWithoutLimits(
             id = (json \ "_id").as(UsagePlanIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
             maxPerDay = (json \ "maxPerDay").as(LongFormat),
             maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
@@ -1390,7 +1390,7 @@ object json {
           PayPerUse(
             id = (json \ "_id").as(UsagePlanIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             costPerMonth = (json \ "costPerMonth").as[BigDecimal],
             costPerRequest = (json \ "costPerRequest").as[BigDecimal],
             trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
@@ -2081,8 +2081,7 @@ object json {
               .getOrElse(TenantDisplay.Default),
             environments = (json \ "environments")
               .asOpt[Set[String]]
-              .getOrElse(Set.empty),
-            defaultEnvironment = (json \ "defaultEnvironment").asOpt[String]
+              .getOrElse(Set.empty)
           )
         )
       } recover {
@@ -2153,10 +2152,7 @@ object json {
         o.thirdPartyPaymentSettings),
       "display" -> TenantDisplayFormat.writes(o.display),
       "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
-      "defaultEnvironment" -> o.defaultEnvironment
-        .map(JsString.apply)
-        .getOrElse(JsNull)
-        .as[JsValue]
+
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -2742,7 +2738,7 @@ object json {
           SubscriptionDemand(
             id = (json \ "_id").as(SubscriptionDemandIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             api = (json \ "api").as(ApiIdFormat),
             plan = (json \ "plan").as(UsagePlanIdFormat),
             steps = (json \ "steps").as(SeqSubscriptionDemanStepFormat),
@@ -3668,7 +3664,7 @@ object json {
           JsSuccess(
             ApiKeyConsumption(
               id = (json \ "_id").as(DatastoreIdFormat),
-              deleted = (json \ "_deleted").as[Boolean],
+              deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
               tenant = (json \ "_tenant").as(TenantIdFormat),
               team = (json \ "team").as(TeamIdFormat),
               api = (json \ "api").as(ApiIdFormat),

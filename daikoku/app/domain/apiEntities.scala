@@ -4,18 +4,9 @@ import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.json.{
-  SeqIssueIdFormat,
-  SeqPostIdFormat,
-  SeqTeamIdFormat,
-  SetApiTagFormat,
-  TeamFormat,
-  TeamIdFormat,
-  UsagePlanFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, UsagePlanFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
+import fr.maif.otoroshi.daikoku.utils.ReplaceAllWith
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import org.joda.time.{DateTime, Days}
 import play.api.libs.json._

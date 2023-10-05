@@ -9,6 +9,7 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.DaikokuAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import fr.maif.otoroshi.daikoku.utils.admin._
 import io.vertx.pgclient.PgPool
@@ -18,6 +19,8 @@ import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import storage.drivers.postgres.PostgresDataStore
 import storage.{DataStore, Repo}
+
+import scala.util.{Failure, Success, Using}
 
 class StateController(DaikokuAction: DaikokuAction,
                       env: Env,
@@ -606,6 +609,20 @@ class AdminApiSwaggerController(
       ctrl1.pathForIntegrationApi()
 
   def swagger() = Action {
+    Using(scala.io.Source.fromFile("./public/swaggers/admin-api-openapi.json")) {
+      source => source.mkString
+    } match {
+      case Failure(e) =>
+        AppLogger.error(e.getMessage, e)
+        BadRequest(Json.obj("error" -> e.getMessage))
+      case Success(value) =>
+        Ok(Json.parse(value)).withHeaders(
+          "Access-Control-Allow-Origin" -> "*"
+        )
+    }
+  }
+
+  def _swagger() = Action {
     Ok(
       Json.obj(
         "openapi" -> "3.0.1",
