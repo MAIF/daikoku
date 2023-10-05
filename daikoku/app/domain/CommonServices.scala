@@ -187,10 +187,11 @@ object CommonServices {
                 Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))),
                 teamFilter
               )).some
+            parentFilter = if (groupOpt.isDefined) Json.obj() else Json.obj("parent" -> JsNull)
             adminApi = if (!userIsAdmin) None else Json.obj("visibility" -> ApiVisibility.AdminOnly.name).some
             visibilityFilter = Json.obj("$or" -> JsArray(Seq(publicApi, pwaApi, privateApi, adminApi).filter(_.isDefined).map(_.get)))
             paginateApis <- apiRepo.findWithPagination(visibilityFilter ++ Json.obj("name" -> Json.obj("$regex" -> research)
-              , "parent" -> JsNull, "_deleted" -> false) ++ tagFilter ++ catFilter ++ groupFilter
+              , "_deleted" -> false) ++ tagFilter ++ catFilter ++ groupFilter ++ parentFilter
               , offset, limit, Some(Json.obj("name" -> 1))
             )
             uniqueApisWithVersion <- apiRepo.findNotDeleted(

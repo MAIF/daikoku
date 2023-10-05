@@ -20,7 +20,7 @@ import {
   ApiPricing,
 } from './';
 
-export const ApiGroupHome = ({ }) => {
+export const ApiGroupHome = () => {
   const [apiGroup, setApiGroup] = useState<any>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<ISubscriptionDemand>>([]);
