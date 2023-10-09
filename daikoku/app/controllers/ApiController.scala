@@ -3900,13 +3900,13 @@ class ApiController(
           s"@{user.name} has transfer ownership of api @{api.name} to @{newTeam.name}"
         )
       )(teamId, ctx) { _ =>
-        val newTeamName: String = (ctx.request.body \ "team").as[String]
+        val newTeamId: String = (ctx.request.body \ "team").as[String]
 
         (for {
           newTeam <- EitherT.fromOptionF(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
-              .findOneNotDeleted(Json.obj("name" -> newTeamName)),
+              .findOneNotDeleted(Json.obj("_id" -> newTeamId)),
             AppError.render(TeamNotFound)
           )
           api <- EitherT.fromOptionF(
