@@ -1610,6 +1610,7 @@ export const graphql = {
               api {
                 _id
                 name
+                currentVersion
               }
               team {
                 _id
@@ -1672,6 +1673,7 @@ export const graphql = {
               api {
                 _id
                 name
+                currentVersion
               }
               plan {
                 _id
@@ -1687,6 +1689,7 @@ export const graphql = {
               api {
                 _id
                 name
+                currentVersion
               }
               plan {
                 _id

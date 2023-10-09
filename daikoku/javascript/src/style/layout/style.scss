@@ -308,7 +308,7 @@ img:hover + .changePicture,
   z-index: -1;
 }
 
-.wrapper {
+.wrapper:not(.information-container) {
   height: 100vh;
   overflow: scroll;
   padding-top: 10px;

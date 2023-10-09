@@ -484,18 +484,25 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             {notification.action.__typename === 'ApiSubscriptionDemand' && (<div>
               <Translation i18nkey="notif.api.subscription" replacements={[
                 (infos as any).api.name,
+                (infos as any).api.currentVersion,
                 Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate)),
               ]}>
-                Request subscription to {(infos as any).api.name} for plan {(infos as any).plan}
+                Request subscription to {(infos as any).api.name}-{(infos as any).api.currentVersion} for plan {(infos as any).plan}
               </Translation>
             </div>)}
             {notification.action.__typename === 'ApiSubscriptionReject' && translate({
               key: 'notif.api.demand.reject',
-              replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]
+              replacements: [
+                (infos as any).api.name, 
+                (infos as any).api.currentVersion, 
+                Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]
             })}
             {notification.action.__typename === 'ApiSubscriptionAccept' && translate({
               key: 'notif.api.demand.accept',
-              replacements: [(infos as any).api.name, Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]
+              replacements: [
+                (infos as any).api.name, 
+                (infos as any).api.currentVersion, 
+                Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]
             })}
             {notification.action.__typename === 'ApiKeyDeletionInformation' && (<div>
               <Translation i18nkey="notif.apikey.deletion" replacements={[notification.action.clientId, notification.action.apiName]}>
