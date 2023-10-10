@@ -204,7 +204,7 @@ export const TeamApiGroup = () => {
       label: translate({ key: 'API', plural: true }),
       format: format.select,
       isMulti: true,
-      optionsFrom: Services.teamApis(currentTeam._id)
+      optionsFrom: () => Services.teamApis(currentTeam._id)
         .then((apis) => {
           if (!isError(apis)) {
             return apis.filter((api) => api._id !== apiGroup?._id && !api.apis)
