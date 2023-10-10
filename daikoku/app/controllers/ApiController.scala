@@ -1872,10 +1872,6 @@ class ApiController(
           .flatMap {
             case None =>
               apiRepo.exists(Json.obj("_humanReadableId" -> maybeHumanReadableId, "_deleted" -> false))
-                .map(ex => {
-                  AppLogger.warn(s"$ex")
-                  ex
-                } )
             case Some(api) =>
               val v = api.parent match {
                 case Some(parent) => parent.value

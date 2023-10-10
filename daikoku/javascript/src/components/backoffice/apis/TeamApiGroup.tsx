@@ -140,9 +140,16 @@ export const TeamApiGroup = () => {
       format: format.markdown,
       label: translate('Description'),
     },
-    published: {
-      type: type.bool,
-      label: translate('Published'),
+    state: {
+      type: type.string,
+      format: format.buttonsSelect,
+      label: translate('State'),
+      options: [
+        {label: translate('Created'), value: 'created'}, 
+        {label: translate('Published'), value: 'published'}, 
+        {label: translate('Deprecated'), value: 'deprecated'}, 
+        {label: translate('Blocked'), value: 'blocked'}],
+      defaultValue: 'created',
     },
     tags: {
       type: type.string,
@@ -216,7 +223,7 @@ export const TeamApiGroup = () => {
   const flow = [
     {
       label: translate('Basic.informations'),
-      flow: ['published', 'name', 'smallDescription', 'apis'].filter((entry) =>
+      flow: ['name', 'state', 'smallDescription', 'apis'].filter((entry) =>
         simpleOrExpertMode(entry, expertMode)
       ),
       collapsed: false,

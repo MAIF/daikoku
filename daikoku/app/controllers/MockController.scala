@@ -592,12 +592,6 @@ class MockController(DaikokuAction: DaikokuAction,
       teamRepo2 <- env.dataStore.teamRepo.forTenantF(tenant2Id)
       apiRepo <- env.dataStore.apiRepo.forTenantF(tenantId)
       apiRepo2 <- env.dataStore.apiRepo.forTenantF(tenant2Id)
-      apiSubscriptionRepo <- env.dataStore.apiSubscriptionRepo
-        .forTenantF(tenantId)
-      apiDocumentationPageRepo <- env.dataStore.apiDocumentationPageRepo
-        .forTenantF(tenantId)
-      notificationRepo <- env.dataStore.notificationRepo.forTenantF(tenantId)
-      consumptionRepo <- env.dataStore.consumptionRepo.forTenantF(tenantId)
       _ <- env.dataStore.tenantRepo.deleteAll()
       _ <- env.dataStore.userRepo.deleteAll()
       _ <- env.dataStore.auditTrailRepo.forAllTenant().deleteAll()
@@ -611,11 +605,13 @@ class MockController(DaikokuAction: DaikokuAction,
       _ <- env.dataStore.apiPostRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.apiIssueRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.cmsRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.usagePlanRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.subscriptionDemandRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.messageRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.emailVerificationRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.tenantRepo.save(
         Tenant(
           id = Tenant.Default,
-          deleted = false,
-          enabled = true,
           name = "Evil Corp.",
           domain = "localhost",
           defaultLanguage = Some("En"),
@@ -645,8 +641,6 @@ class MockController(DaikokuAction: DaikokuAction,
       _ <- env.dataStore.tenantRepo.save(
         Tenant(
           id = tenant2Id,
-          deleted = false,
-          enabled = true,
           name = "Johnny be good",
           domain = "localhost",
           defaultLanguage = Some("fr"),
