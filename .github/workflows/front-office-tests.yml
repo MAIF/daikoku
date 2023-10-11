@@ -38,7 +38,7 @@ jobs:
     - name: setup node
       uses: actions/setup-node@v3
       with:
-        node-version: lts
+        node-version: latest
     - uses: coursier/cache-action@v5
     - name: initialize backend build
       run: |
