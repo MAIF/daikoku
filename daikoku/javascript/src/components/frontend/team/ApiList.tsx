@@ -245,6 +245,7 @@ export const ApiList = (props: TApiList) => {
       }
     });
   };
+
   return (
     <section className="container">
       <div className="row mb-2">
@@ -342,7 +343,7 @@ export const ApiList = (props: TApiList) => {
 
                 {apisWithAuth.map((apiWithAuth) => {
                   const sameApis = apisWithAuth.filter(((apiWithAuth2) => apiWithAuth2.api._humanReadableId === apiWithAuth.api._humanReadableId))
-                  if (apiWithAuth.api.isDefault) {
+                  if (props.groupView || apiWithAuth.api.isDefault) {
                     return (
                       <ApiCard
                         user={user}
@@ -360,6 +361,7 @@ export const ApiList = (props: TApiList) => {
                         connectedUser={connectedUser}
                         groupView={props.groupView}
                         key={apiWithAuth.api._id}
+                        apiId={apiWithAuth.api._id}
                       />
                     );
                   }

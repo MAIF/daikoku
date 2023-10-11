@@ -1,11 +1,11 @@
 import React, { useContext } from 'react';
 import classNames from 'classnames';
 
-import { Can, manage, api as API,ActionWithTeamSelector } from '../../utils';
+import { Can, manage, api as API, ActionWithTeamSelector } from '../../utils';
 import StarsButton from './StarsButton';
 import { I18nContext } from '../../../core';
-import {IApiWithAuthorization, ITeamSimple, ITeamVisibility, IUserSimple} from '../../../types';
-import {useNavigate} from "react-router-dom";
+import { IApiWithAuthorization, ITeamSimple, ITeamVisibility, IUserSimple } from '../../../types';
+import { useNavigate } from "react-router-dom";
 
 export const ApiCard = (props: {
   user: IUserSimple
@@ -22,9 +22,9 @@ export const ApiCard = (props: {
   view: 'LIST' | 'GRID'
   connectedUser: IUserSimple
   groupView?: boolean
+  apiId?: string
 }) => {
-
-  const apiWithAutho = props.apiWithAutho.find((apiWithAuthorization) => apiWithAuthorization.api.isDefault) || props.apiWithAutho.sort((a,b) => a.api.lastUpdate.localeCompare(b.api.lastUpdate))[0]
+  const apiWithAutho = props.apiWithAutho.find((apiWithAuthorization) => props.groupView ? apiWithAuthorization.api._id === props.apiId : apiWithAuthorization.api.isDefault) || props.apiWithAutho.sort((a, b) => a.api.lastUpdate.localeCompare(b.api.lastUpdate))[0]
   const api = apiWithAutho.api
   const authorizations = apiWithAutho.authorizations
   const allTeamsAreAuthorized =
@@ -125,7 +125,7 @@ export const ApiCard = (props: {
     <div className="row border-bottom py-4">
       <div className="col-12 d-flex justify-content-between">
         <div className="cursor-pointer underline-on-hover a-fake" onClick={props.redirectToApiPage}>
-          <h3>{api.name}</h3>
+          <h3>{`${api.name}${props.groupView && props.apiWithAutho.length > 1 ? ` - ${api.currentVersion}` : ''}`}</h3>
         </div>
         <div className="ms-2">
           <div className="btn_group d-flex align-items-start">
