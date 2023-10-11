@@ -40,6 +40,7 @@ jobs:
       with:
         node-version: latest
         cache: 'npm'
+        cache-dependency-path: daikoku/javascript/package-lock.json
     - uses: coursier/cache-action@v5
     - name: initialize backend build
       run: |
