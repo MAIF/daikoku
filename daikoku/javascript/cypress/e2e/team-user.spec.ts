@@ -12,7 +12,7 @@ describe('API page', { scrollBehavior: false }, () => {
       .get('.block__entry__link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
       .get('.block__entry__link').contains('Swagger').click()
-      .get('#swagger-ui .swagger-ui').should('be.visible')
+      .get('.redoc-wrap').should('be.visible')
       .get('.block__entry__link').contains('Testing').click()
       .get('#swagger-ui .swagger-ui').should('be.visible');
   });

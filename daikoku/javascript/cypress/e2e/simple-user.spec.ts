@@ -12,7 +12,7 @@ describe('API page', () => {
       .get('.block__entry__link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
       .get('.block__entry__link').contains('Swagger').click()
-      .get('#swagger-ui .swagger-ui').should('be.visible')
+      .get('.redoc-wrap').should('be.visible')
       // .get('#redoc-container h1').should(($title) => {
       //   const text = $title.text();
       //   expect(text).to.include('Swagger Petstore (1.0.0)');
