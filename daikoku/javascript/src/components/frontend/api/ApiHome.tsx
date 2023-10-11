@@ -17,6 +17,7 @@ import { formatPlanType } from '../../utils/formatters';
 import StarsButton from './StarsButton';
 
 import 'highlight.js/styles/monokai.css';
+import classNames from 'classnames';
 
 (window as any).hljs = hljs;
 
@@ -373,7 +374,10 @@ export const ApiHome = ({
   return (<main role="main">
     <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />
     <div className="album py-2 col-12 min-vh-100">
-      <div className="container">
+      <div className={classNames({
+        'container-fluid': params.tab === 'swagger',
+        container: params.tab !== 'swagger'
+      })}>
         <div className="row pt-3">
           {params.tab === 'description' && (<ApiDescription api={api} />)}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
@@ -385,8 +389,8 @@ export const ApiHome = ({
             swaggerUrl={`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`}
             callUrl={`/api/teams/${teamId}/testing/${api._id}/call`}
           />)}
-          {params.tab === 'swagger' && (<ApiRedoc 
-          swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} />)}
+          {params.tab === 'swagger' && (<ApiRedoc
+            swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} />)}
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
           {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} onChange={(editedApi: any) => setApi(editedApi)} ownerTeam={ownerTeam} connectedUser={connectedUser} />)}
         </div>
