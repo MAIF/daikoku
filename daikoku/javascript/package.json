@@ -99,7 +99,7 @@
     "crypto-browserify": "^3.12.0",
     "css-loader": "6.7.3",
     "css-minimizer-webpack-plugin": "4.2.2",
-    "cypress": "^12.2.0",
+    "cypress": "^13.3.0",
     "cypress-waitfor": "1.1.0",
     "eslint": "8.29.0",
     "eslint-plugin-import": "^2.26.0",
