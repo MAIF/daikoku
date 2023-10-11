@@ -34,11 +34,11 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
-        # install node 16
+        # install node lts
     - name: setup node
       uses: actions/setup-node@v1
       with:
-        node-version: '16'
+        node-version: 'lts'
     - uses: coursier/cache-action@v5
     - name: initialize backend build
       run: |
