@@ -39,43 +39,21 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: latest
+        cache: 'npm'
     - uses: coursier/cache-action@v5
     - name: initialize backend build
       run: |
         cd daikoku
         sbt  ';clean;compile'
-
-
-    - name: Get yarn cache directory path
-      id: yarn-cache-dir-path
-      run: |
-          echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
-    - name: CACHE ACTION
-      uses: actions/cache@v2
-      env:
-          cache-version: v1
-      id: yarn-cache
-      with:
-        path: |
-            ${{ steps.yarn-cache-dir-path.outputs.dir }}
-            **/node_modules
-            ~/.cache/Cypress
-        key: ${{ runner.os }}-yarn-${{ env.cache-version }}-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-            ${{ runner.os }}-yarn-${{ env.cache-version }}-
-            ${{ runner.os }}-yarn-
-            ${{ runner.os }}-
     - name: Installing dependencies
-      if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: |
         cd daikoku/javascript
-        echo "YARN CACHE CHANGED"
         rm -rf node_modules/
-        yarn install
+        npm install
     - name: build javascript
       run: |
         cd daikoku/javascript
-        yarn build
+        npm run build
       env:
         NODE_OPTIONS: --max_old_space_size=4096
     - name: Cypress run and publish report
@@ -85,7 +63,7 @@ jobs:
       with:
         browser: chrome
         headless: true   
-        start: yarn cypress:start:backend
+        start: npm run cypress:start:backend
         wait-on: 'http://localhost:9000'
-        command: yarn test:cypress
+        command: npm run test:cypress
         working-directory: daikoku/javascript
