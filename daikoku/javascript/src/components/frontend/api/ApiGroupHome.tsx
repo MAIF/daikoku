@@ -7,7 +7,7 @@ import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { useApiGroupFrontOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { IState, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, IUserSimple, isError } from '../../../types';
+import { IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, IUserSimple, isError } from '../../../types';
 import { formatPlanType } from '../../utils/formatters';
 import {
   ApiDescription,
@@ -19,6 +19,7 @@ import {
   ApiPost,
   ApiPricing,
 } from './';
+import classNames from 'classnames';
 
 export const ApiGroupHome = () => {
   const [apiGroup, setApiGroup] = useState<any>();
@@ -31,7 +32,7 @@ export const ApiGroupHome = () => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab');
 
-  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
+  const { connectedUser, tenant } = useSelector<IState, IStateContext>((s) => s.context);
 
   const { addMenu } = useApiGroupFrontOffice(apiGroup, ownerTeam);
 
@@ -78,11 +79,11 @@ export const ApiGroupHome = () => {
                   testing: {
                     label: translate('Testing'),
                     action: () => {
-                      if (api.testing.enabled) navigateTo('testing');
+                      if (api.testing.enabled && tenant.display !== 'environment') navigateTo('testing');
                     },
                     className: {
                       active: match.params.tab === 'testing',
-                      disabled: !api.testing.enabled,
+                      disabled: tenant.display === 'environment' || !api.testing.enabled,
                     },
                   },
                   news: {
@@ -210,7 +211,10 @@ export const ApiGroupHome = () => {
         />
       )}
       <div className="album py-2 col-12 min-vh-100">
-        <div className="container">
+        <div className={classNames({
+          container: params.tab !== 'apis',
+          'container-fluid': params.tab === 'apis'
+        })}>
           <div className="row pt-3"></div>
           {params.tab === 'apis' && !match && (
             <ApiGroupApis apiGroup={apiGroup} ownerTeam={ownerTeam} subscriptions={subscriptions} />
@@ -228,7 +232,7 @@ export const ApiGroupHome = () => {
             />
           )}
           {params.tab === 'documentation' && (
-            <ApiDocumentation documentation={apiGroup.documentation} getDocPage={(pageId) => Services.getApiDocPage(apiGroup._id, pageId)}/>
+            <ApiDocumentation documentation={apiGroup.documentation} getDocPage={(pageId) => Services.getApiDocPage(apiGroup._id, pageId)} />
           )}
           {params.tab === 'issues' && (
             <ApiIssue

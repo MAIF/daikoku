@@ -53,6 +53,13 @@ export const TeamApiInfos = ({
       skipTo: 'save',
       disabled: tenant.display === 'environment'
     },
+    {
+      id: 'testing',
+      label: translate('Testing'), //@ts-ignore
+      component: TeamApiTesting,
+      skipTo: 'save',
+      disabled: tenant.display === 'environment'
+    },
   ];
 
   if (value.visibility === 'AdminOnly') {

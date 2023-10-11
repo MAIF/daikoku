@@ -157,7 +157,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'testing',
-              disabled: tenant.display === 'environment' && !api?.testing?.enabled,
+              disabled: tenant.display === 'environment' || !api?.testing?.enabled,
               'd-none': tenant.display === 'environment'
             },
           },
