@@ -540,7 +540,7 @@ export const TeamApiPricings = (props: Props) => {
         <span
           className={classNames('submenu__entry__link', { active: selectedTab === 'settings' })}
           onClick={() => setSelectedTab('settings')}>{translate('Settings')}</span>
-        {mode === possibleMode.edition && paidPlans.includes(planForEdition!.type) && (
+        {mode === possibleMode.edition && planForEdition && paidPlans.includes(planForEdition.type) && (
           <span className={classNames('submenu__entry__link', { active: selectedTab === 'payment' })}
             onClick={() => setSelectedTab('payment')}>{translate('Payment')}</span>
         )}
