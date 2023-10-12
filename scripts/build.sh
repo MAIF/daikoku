@@ -32,8 +32,8 @@ build_dev_manual () {
 
 build_ui () {
   cd $LOCATION/daikoku/javascript
-  yarn install
-  yarn build
+  npm install
+  npm run build
 }
 
 build_daikoku () {
@@ -43,8 +43,8 @@ build_daikoku () {
 
 fmt_ui () {
   cd $LOCATION/daikoku/javascript
-  yarn install
-  yarn prettier
+  npm install
+  npm run prettier
 }
 
 fmt_server () {
@@ -91,7 +91,7 @@ release_daikoku ()  {
             zip -r $LOCATION/daikoku-manual.zip $LOCATION/docs/manual -x '*.DS_Store'
 
             cd $LOCATION/scripts
-            yarn install
+            yarnpmn install
             $LOCATION
 
             node $LOCATION/scripts/publish.js $BINARIES_VERSION
