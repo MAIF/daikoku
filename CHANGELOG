@@ -478,3 +478,14 @@ We'd like to thank all the contributors who worked on this release!
 - impossible to create an api with an api name deleted [#598](https://github.com/MAIF/daikoku/issues/598)
 - ApiGroups main page is broken [#589](https://github.com/MAIF/daikoku/issues/589)
 
+## [v16.3.1] - 2023-10-12
+
+## :star: New Features
+
+- add the current version with api name in notification description [#602](https://github.com/MAIF/daikoku/issues/602)
+
+## :beetle: Bug Fixes
+
+- ownership transfer is broken ? [#604](https://github.com/MAIF/daikoku/issues/604)
+- [FastMode] with 2 versions, API is displayed 2 times in the list [#603](https://github.com/MAIF/daikoku/issues/603)
+
