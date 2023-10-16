@@ -51,14 +51,16 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
       <div className="modal-body">
         {pagesQuery.isLoading && <Spinner />}
         {pagesQuery.data && !isError(pagesQuery.data) && (
-          <Select
-            isMulti
-            placeholder={translate('api.documentation.clone.page.placeholder')}
-            options={getOptions(pagesQuery.data)}
-            //@ts-ignore
-            onChange={setPages}
-            classNamePrefix="reactSelect"
-          />
+          <>
+            <Select
+              isMulti
+              placeholder={translate('api.documentation.clone.page.placeholder')}
+              options={getOptions(pagesQuery.data)}
+              //@ts-ignore
+              onChange={setPages}
+              classNamePrefix="reactSelect"
+            />
+          </>
         )}
         {pagesQuery.data && isError(pagesQuery.data) && (
           <div>Error while fetching pages</div>

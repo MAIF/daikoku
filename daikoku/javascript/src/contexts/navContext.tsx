@@ -135,7 +135,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'documentation',
-              disabled: tenant.display === 'environment' && !api?.documentation?.pages?.length,
+              disabled: tenant.display === 'environment' || !api?.documentation?.pages?.length,
               'd-none': tenant.display === 'environment'
             },
           },
@@ -146,7 +146,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'swagger',
-              disabled: tenant.display === 'environment' && !api?.swagger?.content && !api?.swagger?.url,
+              disabled: tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url,
               'd-none': tenant.display === 'environment'
             },
           },

@@ -2007,7 +2007,7 @@ class ApiController(
           val pages = (ctx.request.body \ "pages").as[Seq[String]]
 
           (for {
-            fromPages <- env.dataStore.apiDocumentationPageRepo
+            documentationPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationPage]](env.dataStore.apiDocumentationPageRepo
               .forTenant(ctx.tenant.id)
               .find(
                 Json.obj(
@@ -2015,8 +2015,8 @@ class ApiController(
                     "$in" -> pages
                   )
                 )
-              )
-            createdPages <- Future.sequence(fromPages.map(page => {
+              ))
+            createdPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationDetailPage]](Future.sequence(documentationPages.map(page => {
               val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
               env.dataStore.apiDocumentationPageRepo
                 .forTenant(ctx.tenant.id)
@@ -2024,24 +2024,21 @@ class ApiController(
                 .flatMap(_ =>
                   FastFuture.successful(
                     ApiDocumentationDetailPage(generatedId, page.title, Seq.empty)
-                ))
-            }))
-            api <- env.dataStore.apiRepo.findByVersion(ctx.tenant,
-                                                       apiId,
-                                                       version)
-          } yield {
-            api match {
-              case None => FastFuture.successful(AppError.render(ApiNotFound))
-              case Some(api) =>
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant.id)
-                  .save(
-                    api.copy(documentation = api.documentation
-                      .copy(pages = api.documentation.pages ++ createdPages))
-                  )
-                  .map(_ => Ok(Json.obj("done" -> true)))
-            }
-          }).flatten
+                  ))
+            })))
+            api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.findByVersion(ctx.tenant,
+              apiId,
+              version), AppError.ApiNotFound)
+            done <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
+              .forTenant(ctx.tenant.id)
+              .save(
+                api.copy(documentation = api.documentation
+                  .copy(pages = api.documentation.pages ++ createdPages))
+              ))
+
+          } yield Ok(Json.obj("done" -> done)))
+            .leftMap(_.render())
+            .merge
         }
       }
     }
