@@ -857,7 +857,7 @@ object evolution_1630 extends EvolutionScript {
           AppLogger.debug(s"$oldPlans")
 
           val updatedOldPlans = oldPlans
-            .map(plan => plan.as[JsObject] ++ Json.obj("_tenant" -> (api \ "_tenant").as[String], "_deleted" -> false))
+            .map(plan => plan.as[JsObject] ++ Json.obj("_id" -> IdGenerator.token(32), "_oldId" -> (plan \ "_id").as[String],  "_tenant" -> (api \ "_tenant").as[String], "_deleted" -> false))
 
           val plans = json.SeqUsagePlanFormat.reads(JsArray(updatedOldPlans))
             .getOrElse(Seq.empty)
@@ -867,8 +867,17 @@ object evolution_1630 extends EvolutionScript {
           AppLogger.debug(Json.stringify(updatedRawApi))
           json.ApiFormat.reads(updatedRawApi) match {
             case JsSuccess(updatedApi, _) =>
-              dataStore.usagePlanRepo.forTenant(updatedApi.tenant).insertMany(plans)
-                .flatMap(_ => dataStore.apiRepo.forTenant(updatedApi.tenant).save(updatedApi))
+              for {
+                _ <- dataStore.usagePlanRepo.forTenant(updatedApi.tenant).insertMany(plans)
+                _ <- Future.sequence(updatedOldPlans.map(p => {
+                  val _id = (p \ "_id").as[String]
+                  val oldId = (p \ "_oldId").as[String]
+                  val apiId = (api \ "_id").as[String]
+
+                  dataStore.apiSubscriptionRepo.forAllTenant().updateManyByQuery(Json.obj("plan" -> oldId, "api" -> apiId), Json.obj("$set" -> Json.obj("plan" -> _id)))
+                }))
+                _ <- dataStore.apiRepo.forTenant(updatedApi.tenant).save(updatedApi)
+              } yield FastFuture.successful(true)
             case JsError(errors) => FastFuture.successful(AppLogger.error(s"error during evolution $version - wrong api format ${Json.stringify(updatedRawApi)} -- $errors"))
           }
         })
