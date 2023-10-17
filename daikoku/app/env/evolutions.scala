@@ -559,7 +559,7 @@ object evolution_1612_a extends EvolutionScript {
       val future: Future[Long] = for {
         apiWithParents <- dataStore.apiRepo.forAllTenant().findRaw(Json.obj(
           "_deleted" -> false,
-          "parent" -> Json.obj("$exists" -> true),
+          "parent" -> Json.obj("$exists" -> true, "$ne" -> null),
           "isDefault" -> true
         ))
         parents = apiWithParents.map(api => (api \ "parent").as[String]).distinct
