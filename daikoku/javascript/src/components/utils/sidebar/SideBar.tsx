@@ -75,10 +75,7 @@ export const SideBar = () => {
           <Link
             to="/apis"
             title="Daikoku home"
-            className="mb-3"
-            style={{
-              width: '39px',
-            }}
+            className="mb-3 brand"
           >
             <img
               src={tenant.logo}

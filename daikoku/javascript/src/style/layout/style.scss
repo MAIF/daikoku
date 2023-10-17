@@ -324,3 +324,12 @@ a {
   cursor: not-allowed;
   pointer-events: none;
 }
+
+.navbar_top .brand {
+  height: 39px;
+  width: 39px;
+
+  img {
+    width: 100%;
+  }
+}

@@ -59,14 +59,17 @@
 
   .widget-title {
     padding: 0.5rem 1rem;
-    border-bottom: 0.5rem solid $body-bg-color;
-    background-color: $btn-border-color;
+    border: O.1rem solid;
+    border-bottom: 0.5rem solid;
+    border-color: $btn-border-color;
+    background-color: $btn-bg-color;
     color: $btn-text-color;
+    text-align: center;
   }
 
   .widget-list-default-item,
   .widget-list-item {
-    background-color: $btn-border-color;
+    background-color: $btn-bg-color;
     color: $btn-text-color;
     margin: 10px;
     border-left: 2px solid #fff;
