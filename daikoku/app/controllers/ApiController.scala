@@ -81,9 +81,9 @@ class ApiController(
 
         def fetchSwagger(api: Api): EitherT[Future, AppError, Result] = {
           api.swagger match {
-            case Some(SwaggerAccess(_, Some(content), _)) =>
+            case Some(SwaggerAccess(_, Some(content), _, _)) =>
               EitherT.pure[Future, AppError](Ok(content).as("application/json"))
-            case Some(SwaggerAccess(Some(url), None, headers)) =>
+            case Some(SwaggerAccess(Some(url), None, headers, _)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
                 else url
@@ -132,9 +132,9 @@ class ApiController(
 
         def fetchSwagger(plan: UsagePlan): EitherT[Future, AppError, Result] = {
           plan.swagger match {
-            case Some(SwaggerAccess(_, Some(content), _)) =>
+            case Some(SwaggerAccess(_, Some(content), _, _)) =>
               EitherT.pure[Future, AppError](Ok(content).as("application/json"))
-            case Some(SwaggerAccess(Some(url), None, headers)) =>
+            case Some(SwaggerAccess(Some(url), None, headers, _)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
                 else url

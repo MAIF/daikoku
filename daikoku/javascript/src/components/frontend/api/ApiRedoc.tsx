@@ -4,10 +4,11 @@ import { RedocStandalone } from 'redoc';
 
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
-import { IState, IStateContext } from '../../../types';
+import { IState, IStateContext, ISwagger } from '../../../types';
 
 type ApiRedocProps = {
-  swaggerUrl: string
+  swaggerUrl: string,
+  swaggerConf?: ISwagger
 }
 export function ApiRedoc(props: ApiRedocProps) {
 
@@ -25,6 +26,6 @@ export function ApiRedoc(props: ApiRedocProps) {
     })
     return <></>
   } else {
-    return <RedocStandalone specUrl={props.swaggerUrl} />
+    return <RedocStandalone specUrl={props.swaggerUrl} options={props.swaggerConf?.additionalConf || {}}/>
   }
 }

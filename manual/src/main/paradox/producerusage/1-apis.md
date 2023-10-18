@@ -149,14 +149,15 @@ Depending on chosen plan type, certain custom properties may be accessibles.
 As Otoroshi does, it's possible to add metadata on API keys. __Automatic metadata__ will be calculated and added after subscription validation. __Asked metadata__ will switch the plan subscription mode to manual then, on susbcription acceptation, a team admin will have to add the metadata manually. 
 @@@
 
-### Swagger
-The swagger can be provided as a url or just some content paste on the UI.
+### OpenAPI definition
+The OpenAPI definition can be provided as a url or just some content paste on the UI.
+an additional configuration allow to 
 
 ### Testing
 
 You can enable the testing for your API.
 
-> The testing is based on the swagger of your API. Beware of set up the right host of your testing service.
+> The testing is based on the openAPI definition of your API. Beware of set up the right host of your testing service.
 
 Click on the `Generate a dedicated testing key in Otoroshi` to choose an otoroshi instance and and service group or service which is used to receive the testing APIkey. Then, just follow the instruction display on UI?
 

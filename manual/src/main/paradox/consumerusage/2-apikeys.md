@@ -15,7 +15,7 @@ You can see a graph to see usage or some global informations likes hits count, a
  - To copy credentials, click on the `copy` button at the bottom right of the component.
  - APIkey Rotation can be enabled and setup (by choosing rotation period and grace period)
  - APIkey can be enabled or disabled
- - The subscription provide integration token in addition to the APIkey. This token could be used to avoid to display APIKey and must be considered as a reference to the APIKey. Daikoku provide an api to get credentials from integration token, please read the swagger for more information.
+ - The subscription provide integration token in addition to the APIkey. This token could be used to avoid to display APIKey and must be considered as a reference to the APIKey. Daikoku provide an api to get credentials from integration token, please read the OpenAPI definition for more information.
  
 Every subscription have an integration token, which make credentials accessible by admin api. This token is visible in integration token tab.
 

@@ -104,6 +104,11 @@ export const TeamApiSwagger = <T extends IWithSwagger>({
   const swagger = value.swagger;
 
   const schema = {
+    useContent: {
+      type: type.bool,
+      label: translate('Use swagger content'),
+      defaultValue: !!swagger?.content,
+    },
     url: {
       type: type.string,
       label: translate('URL'),
@@ -122,11 +127,7 @@ export const TeamApiSwagger = <T extends IWithSwagger>({
       deps: ['useContent'],
       visible: ({ rawValues }: any) => !rawValues.useContent,
     },
-    useContent: {
-      type: type.bool,
-      label: translate('Use swagger content'),
-      defaultValue: !!swagger?.content,
-    },
+    
     content: {
       type: type.string,
       format: format.code,
@@ -134,6 +135,12 @@ export const TeamApiSwagger = <T extends IWithSwagger>({
       deps: ['useContent'],
       visible: ({ rawValues }: any) => rawValues.useContent,
       render: (v: any) => SwaggerEditorInput(v),
+    },
+    additionalConf: {
+      type: type.object,
+      format: format.code,
+      label: translate("swagger.additional.conf.label"),
+      help: translate('swagger.additional.conf.help')
     },
   };
 

@@ -1712,7 +1712,8 @@ object json {
             content = (json \ "content").asOpt[String],
             headers = (json \ "headers")
               .asOpt[Map[String, String]]
-              .getOrElse(Map.empty[String, String])
+              .getOrElse(Map.empty[String, String]),
+            additionalConf = (json \ "additionalConf").asOpt[JsObject]
           )
         )
       } recover {
@@ -1724,7 +1725,8 @@ object json {
     override def writes(o: SwaggerAccess): JsValue = Json.obj(
       "url" -> o.url,
       "content" -> o.content,
-      "headers" -> o.headers
+      "headers" -> o.headers,
+      "additionalConf" -> o.additionalConf.getOrElse(JsNull).as[JsValue]
     )
   }
   val ApiDocumentationPageFormat = new Format[ApiDocumentationPage] {

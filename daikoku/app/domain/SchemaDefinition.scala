@@ -604,7 +604,9 @@ object SchemaDefinition {
     lazy val  SwaggerAccessType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SwaggerAccess](
       ObjectTypeDescription("A configuration to display content of a swagger"),
       ReplaceField("headers",
-        Field("headers", MapType, resolve = _.value.headers))
+        Field("headers", MapType, resolve = _.value.headers)),
+      ReplaceField("additionalConf",
+        Field("additionalConf", OptionType(JsonType), resolve = _.value.additionalConf))
     )
     lazy val ApiDocumentationPageType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiDocumentationPage](
       ObjectTypeDescription("A page of documentation"),
