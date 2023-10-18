@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.3.0
+16.3.1
 </div>
 </div>
 <div class="nav-toc">
@@ -126,7 +126,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-16.3.0
+16.3.1
 </div>
 </div>
 <div class="nav-toc">
@@ -329,12 +329,12 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li>Automatic: Subscribers have just access to a token, which link to a real apikey, accessible by admin api. It&rsquo;s a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.</li>
 </ul><div class="callout note "><div class="callout-title">API key Metadata</div>
 <p>As Otoroshi does, it&rsquo;s possible to add metadata on API keys. <strong>Automatic metadata</strong> will be calculated and added after subscription validation. <strong>Asked metadata</strong> will switch the plan subscription mode to manual then, on susbcription acceptation, a team admin will have to add the metadata manually. </p></div>
-<h3><a href="#swagger" name="swagger" class="anchor"><span class="anchor-link"></span></a>Swagger</h3>
-<p>The swagger can be provided as a url or just some content paste on the UI.</p>
+<h3><a href="#openapi-definition" name="openapi-definition" class="anchor"><span class="anchor-link"></span></a>OpenAPI definition</h3>
+<p>The OpenAPI definition can be provided as a url or just some content paste on the UI. an additional configuration allow to </p>
 <h3><a href="#testing" name="testing" class="anchor"><span class="anchor-link"></span></a>Testing</h3>
 <p>You can enable the testing for your API.</p>
 <blockquote>
-  <p>The testing is based on the swagger of your API. Beware of set up the right host of your testing service.</p>
+  <p>The testing is based on the openAPI definition of your API. Beware of set up the right host of your testing service.</p>
 </blockquote>
 <p>Click on the <code>Generate a dedicated testing key in Otoroshi</code> to choose an otoroshi instance and and service group or service which is used to receive the testing APIkey. Then, just follow the instruction display on UI?</p>
 <h4><a href="#configure-your-openapi" name="configure-your-openapi" class="anchor"><span class="anchor-link"></span></a>Configure your openAPI</h4>
@@ -455,7 +455,7 @@ components:
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.3.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '16.3.1', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>
