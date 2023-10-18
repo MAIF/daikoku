@@ -36,7 +36,7 @@ jobs:
         java-version: 11
         # install node lts
     - name: setup node
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v3.3.0
       with:
         node-version: latest
         cache: 'npm'
@@ -50,7 +50,7 @@ jobs:
       run: |
         cd daikoku/javascript
         rm -rf node_modules/
-        npm install
+        npm install --force
     - name: build javascript
       run: |
         cd daikoku/javascript
