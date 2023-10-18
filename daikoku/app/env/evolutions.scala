@@ -734,7 +734,7 @@ object evolution_1613 extends EvolutionScript {
             "possibleUsagePlans" -> JsArray(updatedPlans)
           )
 
-          dataStore.apiRepo.forAllTenant().save(Json.obj(), updatedApi)
+          dataStore.apiRepo.forAllTenant().save(Json.obj({"_id" -> (updatedApi \ "_id").as[String]}), updatedApi)
           //FIXME can't get errors ?
         }
 

@@ -1480,6 +1480,8 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
   def insertMany(values: Seq[Of], addToPayload: JsObject)(
       implicit ec: ExecutionContext): Future[Long] =
     collection.flatMap { col =>
+      logger.debug(
+        s"$collectionName.insertMany(${Json.prettyPrint(addToPayload)})")
       val payloads =
         values.map(v => format.writes(v).as[JsObject] ++ addToPayload)
       col
