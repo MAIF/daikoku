@@ -2078,8 +2078,9 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/_transfer",
         method = "POST",
-        body = Some(Json.obj("team" -> teamConsumer.name))
+        body = Some(Json.obj("team" -> teamConsumer.id.value))
       )(tenant, session)
+      AppLogger.info(Json.stringify(transfer.json))
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true
 
@@ -2135,7 +2136,7 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/_transfer",
         method = "POST",
-        body = Some(Json.obj("team" -> teamConsumer.name))
+        body = Some(Json.obj("team" -> teamConsumer.id.value))
       )(tenant, session)
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true
