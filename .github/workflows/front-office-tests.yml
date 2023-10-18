@@ -38,7 +38,7 @@ jobs:
     - name: setup node
       uses: actions/setup-node@v3
       with:
-        node-version: latest
+        node-version: '18.x'
         cache: 'npm'
         cache-dependency-path: daikoku/javascript/package-lock.json
     - uses: coursier/cache-action@v5
@@ -50,7 +50,7 @@ jobs:
       run: |
         cd daikoku/javascript
         rm -rf node_modules/
-        npm install --force
+        npm ci
     - name: build javascript
       run: |
         cd daikoku/javascript

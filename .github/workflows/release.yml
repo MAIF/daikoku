@@ -28,7 +28,7 @@ jobs:
     - name: setup node
       uses: actions/setup-node@v3
       with:
-        node-version: latest
+        node-version: '18.x'
         cache: 'npm'
         cache-dependency-path: daikoku/javascript/package-lock.json
     #format sources
