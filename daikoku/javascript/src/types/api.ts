@@ -147,7 +147,7 @@ export interface ISwagger {
   url?: string;
   content?: string;
   headers: { [key: string]: string };
-  additionalConf?: object
+  additionalConf?: object;
 }
 
 export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest';

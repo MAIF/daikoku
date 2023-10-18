@@ -672,7 +672,8 @@ case class OtoroshiApiKey(
 
 case class SwaggerAccess(url: Option[String],
                          content: Option[String] = None,
-                         headers: Map[String, String] = Map.empty[String, String],
+                         headers: Map[String, String] =
+                           Map.empty[String, String],
                          additionalConf: Option[JsObject] = None) {
   def swaggerContent()(implicit ec: ExecutionContext,
                        env: Env): Future[JsValue] = {
