@@ -489,3 +489,13 @@ We'd like to thank all the contributors who worked on this release!
 - ownership transfer is broken ? [#604](https://github.com/MAIF/daikoku/issues/604)
 - [FastMode] with 2 versions, API is displayed 2 times in the list [#603](https://github.com/MAIF/daikoku/issues/603)
 
+## [v16.3.2] - 2023-10-18
+
+## :star: New Features
+
+- add more configuration to redoc component [#606](https://github.com/MAIF/daikoku/issues/606)
+
+## :beetle: Bug Fixes
+
+- evolutions are broken with mongoDB [#607](https://github.com/MAIF/daikoku/issues/607)
+
