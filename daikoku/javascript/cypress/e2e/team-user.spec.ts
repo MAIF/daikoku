@@ -11,7 +11,7 @@ describe('API page', { scrollBehavior: false }, () => {
       .get('.card').should('have.length', 2)
       .get('.block__entry__link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
-      .get('.block__entry__link').contains('Swagger').click()
+      .get('.block__entry__link').contains('OpenAPI').click()
       .get('.redoc-wrap').should('be.visible')
       .get('.block__entry__link').contains('Testing').click()
       .get('#swagger-ui .swagger-ui').should('be.visible');
