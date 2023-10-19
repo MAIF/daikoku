@@ -336,62 +336,71 @@ object evolution_157 extends EvolutionScript {
 
       val source = dataStore.apiSubscriptionRepo
         .forAllTenant()
-        .streamAllRaw()
+        .streamAllRaw(Json.obj("_deleted" -> false))
         .mapAsync(10) { value =>
           ApiSubscriptionFormat.reads(value) match {
             case JsSuccess(sub, _) =>
               AppLogger.info(
                 s"begin sync of ${sub.id} with api ${sub.api.asJson}"
               )
-              (for {
-                api <- OptionT(
-                  dataStore.apiRepo
-                    .forTenant(sub.tenant)
-                    .findOneRaw(Json.obj("_id" -> sub.api.asJson))
-                )
-                otoSettingsId <- OptionT.fromOption[Future](
-                  (api \ "possibleUsagePlans").as[JsArray]
-                    .value
-                    .find(pp => (pp \ "id").as[String] == sub.plan.value)
-                    .map(pp => (pp \ "otoroshiTarget").as(json.OtoroshiTargetFormat))
-                    .map(_.otoroshiSettings)
-                )
-                tenant <- OptionT(
-                  dataStore.tenantRepo
-                    .findOne(Json.obj("_id" -> (api \ "tenant").as[String]))
-                )
-                otoSettings <- OptionT.fromOption[Future](
-                  tenant.otoroshiSettings.find(o => o.id == otoSettingsId)
-                )
 
-                realApk <- OptionT.liftF(
-                  otoroshiClient.getApikey(sub.apiKey.clientId)(otoSettings)
-                )
-
-                metadata =
-                  realApk
-                    .leftMap(_ => Json.obj())
-                    .map(apk =>
-                      JsObject(
-                        (apk.metadata.filterNot(i =>
-                          i._1.startsWith("daikoku_")
-                        ) -- sub.customMetadata
-                          .flatMap(_.asOpt[Map[String, String]])
-                          .getOrElse(Map.empty[String, String])
-                          .keys).view.mapValues(i => JsString(i)).toSeq
+              dataStore.apiRepo
+                .forTenant(sub.tenant)
+                .findOneRaw(Json.obj("_id" -> sub.api.asJson))
+                .map {
+                  case Some(api) => (api \ "possibleUsagePlans").asOpt[JsArray]
+                      .map(_.value)
+                      .flatMap(_.find(pp => (pp \ "_id").as[String] == sub.plan.value))
+                      .flatMap(pp => (pp \ "otoroshiTarget" \ "otoroshiSettings").asOpt[String])
+                  case None => None
+                }.flatMap {
+                  case Some(otoSettingsId) =>
+                    (for {
+                      api <- OptionT(dataStore.apiRepo
+                        .forTenant(sub.tenant)
+                        .findOneRaw(Json.obj("_id" -> sub.api.asJson)))
+                      tenant <- OptionT(
+                        dataStore.tenantRepo
+                          .findOne(Json.obj("_id" -> (api \ "_tenant").as[String]))
                       )
-                    )
-                    .merge
+                      otoSettings <- OptionT.fromOption[Future](
+                        tenant.otoroshiSettings.find(o => o.id.value == otoSettingsId)
+                      )
 
-                _ = AppLogger.info(
-                  s"${sub.id} :: api ${(api \ "id").as[String]} with metadata ${Json.stringify(metadata)}"
-                )
-                _ <- OptionT.liftF(
-                  dataStore.apiSubscriptionRepo
-                    .forTenant(sub.tenant)
-                    .save(sub.copy(metadata = Some(metadata)))
-                )
-              } yield ()).value
+                      realApk <- OptionT.liftF(
+                        otoroshiClient.getApikey(sub.apiKey.clientId)(otoSettings)
+                      )
+
+                      metadata =
+                        realApk
+                          .leftMap(_ => Json.obj())
+                          .map(apk =>
+                            JsObject(
+                              (apk.metadata.filterNot(i =>
+                                i._1.startsWith("daikoku_")
+                              ) -- sub.customMetadata
+                                .flatMap(_.asOpt[Map[String, String]])
+                                .getOrElse(Map.empty[String, String])
+                                .keys).view.mapValues(i => JsString(i)).toSeq
+                            )
+                          )
+                          .merge
+                      _ = AppLogger.info(
+                        s"${sub.id} :: api ${(api \ "_id").as[String]} with metadata ${metadata}"
+                      )
+                      _ <- OptionT.liftF(
+                        dataStore.apiSubscriptionRepo
+                          .forTenant(sub.tenant)
+                          .save(sub.copy(metadata = Some(metadata)))
+                      )
+                    } yield ()).value
+                  case _ =>
+                    AppLogger.info(s"[${sub.id}] :: no possible usage plans")
+                    FastFuture.successful(())
+                }
+
+
+
             case JsError(errors) =>
               FastFuture.successful(
                 AppLogger.error(s"Evolution $version : $errors")
@@ -429,13 +438,12 @@ object evolution_157_b extends EvolutionScript {
 
       val rewriteApiDocSource = dataStore.apiRepo
         .forAllTenant()
-        .streamAllRaw()
+        .streamAllRaw(Json.obj("_deleted" -> false))
         .mapAsync(10) { value =>
           val apiId = ApiId((value \ "_id").as[String])
           val doc = (value \ "documentation").as[JsObject]
           val oldPages = (doc \ "pages").as[Seq[String]]
           val tenantId = TenantId((value \ "_tenant").as[String])
-
           val newPages: Future[Seq[ApiDocumentationDetailPage]] =
             Future.sequence(
               oldPages.map(page =>
