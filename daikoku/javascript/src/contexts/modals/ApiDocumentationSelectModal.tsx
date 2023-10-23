@@ -16,9 +16,9 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
 
   const pagesQuery = useQuery(['pages'], () => props.getDocumentationPages())
 
-  const importPages = () => {
+  const importPages = (linked?: boolean) => {
     // Services.importApiPages(props.teamId, props.api._id, pages.map((p) => p.value), props.api.currentVersion)
-    props.importPages(pages.flatMap(p => p.value.pageId))
+    props.importPages(pages.flatMap(p => p.value.pageId), linked)
       .then(() => props.onClose())
       .then(() => props.close());
   }
@@ -70,8 +70,11 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
         <button type="button" className="btn btn-outline-danger" onClick={props.close}>
           {translate('Cancel')}
         </button>
-        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={importPages}>
-          {translate('Select')}
+        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={() => importPages(true)}>
+          {translate('Use same')}
+        </button>
+        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={() => importPages(false)}>
+          {translate('Clone')}
         </button>
 
       </div>

@@ -512,10 +512,29 @@ class ApiController(
           s"@{user.name} has accessed documentation page for @{api.name} - @{api.id} - $pageId"
         )
       )(ctx) {
+
+        def verifyLink(api: Api, pageId: ApiDocumentationPageId): EitherT[Future, AppError, Boolean] = {
+          ctx.tenant.display match {
+            case TenantDisplay.Environment =>
+              for{
+                plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
+                  .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.possibleUsagePlans.map(_.asJson))))))
+                pages <- EitherT.pure[Future, AppError](plans.flatMap(_.documentation.map(_.pages).getOrElse(Seq.empty)))
+              } yield pages.exists(_.id == pageId)
+            case TenantDisplay.Default =>
+              EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo.findAllVersions(ctx.tenant, api.id.value)
+                .map(apis => {
+                  apis.filter(_.id != api.id).flatMap(api => api.documentation.docIds())
+                })
+              .map(_.exists(_ == pageId.value)))
+          }
+        }
+
+
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId), AppError.ApiNotFound)
           page <- EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(pageId), AppError.PageNotFound)
-//          _ <- EitherT.fromOption[Future](api.documentation.docIds().find(s => s == page.id.value), AppError.PageNotFound)
+          isLinked <- verifyLink(api, page.id)
         } yield {
           ctx.setCtxValue("api.id", api.id.value)
           ctx.setCtxValue("api.name", api.name)
@@ -525,10 +544,10 @@ class ApiController(
               s"/api/apis/$apiId/pages/$pageId/content"
             )
             Ok(
-              page.asWebUiJson.as[JsObject] ++ Json.obj("contentUrl" -> url)
+              page.asWebUiJson.as[JsObject] ++ Json.obj("contentUrl" -> url) ++ Json.obj("linked" -> isLinked)
             )
           } else {
-            Ok(page.asWebUiJson)
+            Ok(page.asWebUiJson.as[JsObject] ++ Json.obj("linked" -> isLinked))
           }
         })
           .leftMap(_.render())
@@ -2005,6 +2024,7 @@ class ApiController(
       )(teamId, ctx) { _ =>
         {
           val pages = (ctx.request.body \ "pages").as[Seq[String]]
+          val linked = (ctx.request.body \ "linked").asOpt[Boolean]
 
           (for {
             documentationPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationPage]](env.dataStore.apiDocumentationPageRepo
@@ -2016,16 +2036,20 @@ class ApiController(
                   )
                 )
               ))
-            createdPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationDetailPage]](Future.sequence(documentationPages.map(page => {
-              val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-              env.dataStore.apiDocumentationPageRepo
-                .forTenant(ctx.tenant.id)
-                .save(page.copy(id = generatedId))
-                .flatMap(_ =>
-                  FastFuture.successful(
-                    ApiDocumentationDetailPage(generatedId, page.title, Seq.empty)
-                  ))
-            })))
+            createdPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationDetailPage]](
+              linked match {
+                case Some(true) => FastFuture.successful(documentationPages.map(page => ApiDocumentationDetailPage(page.id, page.title, Seq.empty)))
+                case _ => Future.sequence(documentationPages.map(page => {
+                  val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+                  env.dataStore.apiDocumentationPageRepo
+                    .forTenant(ctx.tenant.id)
+                    .save(page.copy(id = generatedId))
+                    .flatMap(_ =>
+                      FastFuture.successful(
+                        ApiDocumentationDetailPage(generatedId, page.title, Seq.empty)
+                      ))
+                }))
+              })
             api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.findByVersion(ctx.tenant,
               apiId,
               version), AppError.ApiNotFound)
@@ -2051,6 +2075,7 @@ class ApiController(
       )(teamId, ctx) { _ =>
         {
           val pages = (ctx.request.body \ "pages").as[Seq[String]]
+          val linked = (ctx.request.body \ "linked").asOpt[Boolean]
 
           (for {
             fromPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationPage]](env.dataStore.apiDocumentationPageRepo
@@ -2062,16 +2087,20 @@ class ApiController(
                   )
                 )
               ))
-            createdPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationDetailPage]](Future.sequence(fromPages.map(page => {
-              val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-              env.dataStore.apiDocumentationPageRepo
-                .forTenant(ctx.tenant.id)
-                .save(page.copy(id = generatedId))
-                .flatMap(_ =>
-                  FastFuture.successful(
-                    ApiDocumentationDetailPage(generatedId, page.title, Seq.empty)
-                ))
-            })))
+            createdPages <- EitherT.liftF[Future, AppError, Seq[ApiDocumentationDetailPage]](
+              linked match {
+                case Some(true) => FastFuture.successful(fromPages.map(page => ApiDocumentationDetailPage(page.id, page.title, Seq.empty)))
+                case _ => Future.sequence(fromPages.map(page => {
+                  val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+                  env.dataStore.apiDocumentationPageRepo
+                    .forTenant(ctx.tenant.id)
+                    .save(page.copy(id = generatedId))
+                    .flatMap(_ =>
+                      FastFuture.successful(
+                        ApiDocumentationDetailPage(generatedId, page.title, Seq.empty)
+                      ))
+                }))
+              })
             plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(planId), AppError.PlanNotFound)
             _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant.id)

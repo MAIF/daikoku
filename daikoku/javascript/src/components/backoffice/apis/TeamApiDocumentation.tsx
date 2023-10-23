@@ -127,14 +127,6 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     'content',
   ];
 
-  /*useEffect(() => {
-    Services.getAllApiVersions(props.team._id, params.apiId!)
-      .then((versions) =>
-        setApiVersions(versions
-        )
-      );
-  }, []); */
-
   const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
     return {
       title: {
@@ -252,7 +244,20 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
             flow: flow,
             schema: schema(updatedPage => savePage(updatedPage, page)),
             value: page,
-            onSubmit: updatedPage => savePage(updatedPage, page),
+            noClose: page.linked,
+            onSubmit: updatedPage => {
+              if (page.linked) {
+                confirm({ message: translate('doc.page.linked.confirm') })
+                  .then(ok => {
+                    if (ok) {
+                      savePage(updatedPage, page)
+                    }
+                  })
+              } else {
+                savePage(updatedPage, page)
+              }
+              
+            },
             actionLabel: translate('Save')
           })
         }
@@ -362,13 +367,13 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                   {translate('documentation.add.page.btn.label')}
                 </button>
                 {props.importAuthorized &&
-                    <button
-                      onClick={props.importPage}
-                      type="button"
-                      className="btn btn-sm btn-outline-primary">
-                      <i className="fas fa-download" />
-                    </button>
-                  }
+                  <button
+                    onClick={props.importPage}
+                    type="button"
+                    className="btn btn-sm btn-outline-primary">
+                    <i className="fas fa-download" />
+                  </button>
+                }
               </div>
             </div>
           </div>
