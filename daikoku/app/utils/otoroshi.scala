@@ -6,6 +6,7 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError.OtoroshiError
+import fr.maif.otoroshi.daikoku.audit.{ElasticReadsAnalytics, ElasticWritesAnalytics}
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.domain.json.ActualOtoroshiApiKeyFormat
 import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, ApiSubscription, OtoroshiSettings, Tenant, json}
@@ -292,16 +293,61 @@ class OtoroshiClient(env: Env) {
 
   def getSubscriptionLastUsage(subscriptions: Seq[ApiSubscription])(implicit otoroshiSettings: OtoroshiSettings, tenant: Tenant): EitherT[Future, JsArray, JsArray] = {
     otoroshiSettings.elasticConfig match {
-      case Some(value) => EitherT.pure[Future, JsArray](Json.arr())
+      case Some(config) =>
+        new ElasticReadsAnalytics(config, env)
+          .query(Json.obj(
+            "query" -> Json.obj(
+              "bool" -> Json.obj(
+                "filter" -> Json.arr(
+                  Json.obj("terms" -> Json.obj(
+                    "identity.identity" -> JsArray(subscriptions.map(_.apiKey.clientId).map(JsString))
+                  ))
+                )
+              )
+            ),
+            "aggs" -> Json.obj(
+              "lastUsages" -> Json.obj(
+                "terms" -> Json.obj(
+                  "field" -> "identity.identity"
+                ),
+                "aggs" -> Json.obj(
+                  "latest" -> Json.obj(
+                    "top_hits" -> Json.obj(
+                      "size" -> 1,
+                      "sort" -> Json.arr(Json.obj(
+                        "@timestamp" -> Json.obj(
+                          "order" -> "desc"
+                        )
+                      ))
+                    )
+                  )
+                )
+              )),
+            "size" -> 0
+          ))
+          .map(resp => {
+            val buckets = (resp \ "aggregations" \ "lastUsages" \ "buckets").as[JsArray]
+            JsArray(buckets.value.map(agg => {
+              val key = (agg \ "key").as[String]
+              val lastUsage = (agg \ "latest" \ "hits" \ "hits").as[JsArray].value.head
+              val date = (lastUsage \ "_source" \ "@timestamp").as[JsValue]
+
+              Json.obj(
+                "clientName" -> key,
+                "date" -> date,
+                "subscription" -> subscriptions.find(_.apiKey.clientId == key).map(_.id.asJson).getOrElse(JsNull).as[JsValue]
+              )
+            }))
+          })
+          .leftMap(e => {
+            AppLogger.error(e.getErrorMessage())
+            Json.arr()
+          })
       case None => for {
         elasticConfig <- EitherT.fromOptionF(getElasticConfig(), Json.arr())
-        log = AppLogger.warn(s"$elasticConfig")
         updatedSettings = otoroshiSettings.copy(elasticConfig = elasticConfig.some)
         updatedTenant = tenant.copy(otoroshiSettings = tenant.otoroshiSettings.filter(_.id != otoroshiSettings.id) + updatedSettings)
-        log2 = AppLogger.warn(s"$updatedSettings")
-        log3 = AppLogger.warn(s"${Json.prettyPrint(updatedTenant.asJson)}")
-        done <- EitherT.liftF(env.dataStore.tenantRepo.save(updatedTenant))
-        log4 = AppLogger.warn(s"$done")
+        _ <- EitherT.liftF(env.dataStore.tenantRepo.save(updatedTenant))
         r <- getSubscriptionLastUsage(subscriptions)(updatedSettings, updatedTenant)
       } yield r
     }

@@ -1943,7 +1943,12 @@ export const cancelProcess = (teamId: string, demandId: string) =>
 export const fetchInvoices = (teamId: string, apiId: string, planId: string, callback: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/plan/${planId}/invoices?callback=${callback}`);
 
-export const getSubscriptionsLastUsages = (teamId: string, subscriptions: Array<string>): PromiseWithError<any> =>
+export type ILastUsage = {
+  clientName: string
+  date: number
+  subscription: string
+}
+export const getSubscriptionsLastUsages = (teamId: string, subscriptions: Array<string>): PromiseWithError<Array<ILastUsage>> =>
   customFetch(`/api/teams/${teamId}/subscriptions/_lastUsage`, {
     method: 'POST',
     body: JSON.stringify({subscriptions})

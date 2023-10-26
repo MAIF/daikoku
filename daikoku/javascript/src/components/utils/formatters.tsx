@@ -182,7 +182,7 @@ export const teamPermissions = {
   user: 'User',
 };
 
-export const formatDate = (date: any, language: any, format = 'l LT') => {
+export const formatDate = (date: number|string, language: string, format = 'l LT') => {
   moment.locale(language);
   return moment(date).format(format);
 };

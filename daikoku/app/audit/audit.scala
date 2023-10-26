@@ -9,6 +9,9 @@ import akka.kafka.ProducerSettings
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{OverflowStrategy, QueueOfferResult}
 import akka.{Done, NotUsed}
+import cats.data.EitherT
+import controllers.AppError
+import diffson.DiffOps
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -663,6 +666,7 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
   private def urlFromPath(path: String): String = s"${config.clusterUri}$path"
   private val index: String = config.index.getOrElse("otoroshi-events")
   private val `type`: String = config.`type`.getOrElse("event")
+  private val searchUri = urlFromPath(s"/$index*/_search")
   private implicit val mat = env.defaultMaterializer
 
   private def url(url: String): WSRequest = {
@@ -787,6 +791,66 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
       }
       .runWith(Sink.ignore)
       .map(_ => ())
+  }
+
+  def query(query: JsObject)(implicit ec: ExecutionContext): EitherT[Future, AppError, JsValue] = {
+    if (logger.isDebugEnabled) logger.debug(s"Query to Elasticsearch: $searchUri")
+    if (logger.isDebugEnabled) logger.debug(s"Query to Elasticsearch: ${Json.prettyPrint(query)}")
+
+    EitherT(url(searchUri)
+      .addHttpHeaders(config.headers.toSeq: _*)
+      .post(query)
+      .map { resp =>
+        resp.status match {
+          case 200 => Right[AppError, JsValue](resp.json)
+          case _ =>
+            Left[AppError, JsValue](AppError.InternalServerError(s"Error during es request: \n * ${resp.body}, \nquery was \n * $query"))
+        }
+      })
+  }
+}
+
+class ElasticReadsAnalytics(config: ElasticAnalyticsConfig, env: Env) {
+
+  lazy val logger = Logger("audit-reads-elastic")
+
+  private def urlFromPath(path: String): String = s"${config.clusterUri}$path"
+  private val index: String = config.index.getOrElse("otoroshi-events")
+  private val `type`: String = config.`type`.getOrElse("event")
+  private val searchUri = urlFromPath(s"/$index*/_search")
+  private implicit val mat = env.defaultMaterializer
+
+  private def url(url: String): WSRequest = {
+    val builder = env.wsClient.url(url)
+    authHeader()
+      .fold(builder) { h =>
+        builder.withHttpHeaders("Authorization" -> h)
+      }
+      .addHttpHeaders(config.headers.toSeq: _*)
+  }
+
+  private def authHeader(): Option[String] = {
+    for {
+      user <- config.user
+      password <- config.password
+    } yield
+      s"Basic ${Base64.getEncoder.encodeToString(s"$user:$password".getBytes())}"
+  }
+
+  def query(query: JsObject)(implicit ec: ExecutionContext): EitherT[Future, AppError, JsValue] = {
+    if (logger.isDebugEnabled) logger.debug(s"Query to Elasticsearch: $searchUri")
+    if (logger.isDebugEnabled) logger.debug(s"Query to Elasticsearch: ${Json.prettyPrint(query)}")
+
+    EitherT(url(searchUri)
+      .addHttpHeaders(config.headers.toSeq: _*)
+      .post(query)
+      .map { resp =>
+        resp.status match {
+          case 200 => Right[AppError, JsValue](resp.json)
+          case _ =>
+            Left[AppError, JsValue](AppError.InternalServerError(s"Error during es request: \n * ${resp.body}, \nquery was \n * $query"))
+        }
+      })
   }
 }
 
