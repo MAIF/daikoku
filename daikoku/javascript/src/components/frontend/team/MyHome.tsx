@@ -7,7 +7,7 @@ import { useNavigate} from 'react-router-dom';
 import { I18nContext, updateTeam } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApiWithAuthorization, isError, IState, ITenant, IUserSimple } from '../../../types';
+import { IApiWithAuthorization, isError, IState, ITenant, IUsagePlan, IUserSimple } from '../../../types';
 import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
 

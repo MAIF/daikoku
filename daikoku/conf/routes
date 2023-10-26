@@ -114,6 +114,7 @@ DELETE  /api/teams/:teamId/subscriptions/_clean			        fr.maif.otoroshi.daiko
 POST    /api/teams/:teamId/subscriptions/:id/_rotation          fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiKeyRotation(teamId, id)
 POST    /api/teams/:teamId/subscriptions/:id/_refresh           fr.maif.otoroshi.daikoku.ctrls.ApiController.regenerateApiKeySecret(teamId, id)
 POST    /api/subscriptions/_init                                fr.maif.otoroshi.daikoku.ctrls.ApiController.initSubscriptions()
+POST     /api/teams/:teamId/subscriptions/_lastUsage            fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsUsage(teamId)
 POST    /api/apis/_init                                         fr.maif.otoroshi.daikoku.ctrls.ApiController.initApis()
 GET     /api/teams/:teamId/subscription/:id/informations        fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionInformations(teamId, id)
 GET     /api/teams/:teamId/apis/:apiId/:version/subscriptions   fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(teamId, apiId, version)

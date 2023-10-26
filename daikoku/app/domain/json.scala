@@ -108,7 +108,8 @@ object json {
               .getOrElse("admin-api-apikey-id"),
             clientSecret = (json \ "clientSecret")
               .asOpt[String]
-              .getOrElse("admin-api-apikey-sectet")
+              .getOrElse("admin-api-apikey-secret"),
+            elasticConfig = (json \ "elasticConfig").asOpt(ElasticAnalyticsConfig.format)
           )
         )
       } recover {
@@ -120,7 +121,8 @@ object json {
       "url" -> o.url,
       "host" -> o.host,
       "clientId" -> o.clientId,
-      "clientSecret" -> o.clientSecret
+      "clientSecret" -> o.clientSecret,
+      "elasticConfig" -> o.elasticConfig.map(ElasticAnalyticsConfig.format.writes).getOrElse(JsNull).as[JsValue]
     )
   }
 
@@ -480,7 +482,9 @@ object json {
       Try {
         JsSuccess(OtoroshiSettingsId(json.as[String]))
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiSettingsId): JsValue = JsString(o.value)

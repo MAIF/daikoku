@@ -89,6 +89,47 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const { confirm, openFormModal, openSubMetadataModal, } = useContext(ModalContext);
 
   const plansQuery = useQuery(['plans'], () => Services.getAllPlanOfApi(api.team, api._id, api.currentVersion))
+  const subscriptionsQuery = useQuery(['subscriptions'], () => client!.query<{ apiApiSubscriptions: Array<ApiSubscriptionGql>; }>({
+      query: Services.graphql.getApiSubscriptions,
+      fetchPolicy: "no-cache",
+      variables: {
+        apiId: api._id,
+        teamId: currentTeam._id,
+        version: api.currentVersion
+      }
+    }).then(({ data: { apiApiSubscriptions } }) => {
+      if (!filters || (!filters.tags.length && !Object.keys(filters.metadata).length && !filters.clientIds.length)) {
+        return apiApiSubscriptions
+      } else {
+        const filterByMetadata = (subscription: ApiSubscriptionGql) => {
+          const meta = { ...(subscription.metadata || {}), ...(subscription.customMetadata || {}) };
+
+          return !Object.keys(meta) || (!filters.metadata.length || filters.metadata.every(item => {
+            const value = meta[item.key]
+            return value && value.includes(item.value)
+          }))
+        }
+
+        const filterByTags = (subscription: ApiSubscriptionGql) => {
+          return filters.tags.every(tag => subscription.tags.includes(tag))
+        }
+
+        const filterByClientIds = (subscription: ApiSubscriptionGql) => {
+          return filters.clientIds.includes(subscription.apiKey.clientId)
+        }
+
+        return apiApiSubscriptions
+          .filter(filterByMetadata)
+          .filter(filterByTags)
+          .filter(filterByClientIds)
+      }
+    })
+  )
+  const lastUsagesQuery = useQuery({
+    queryKey: ['usages'],
+    queryFn: () => Services.getSubscriptionsLastUsages(api.team, subscriptionsQuery.data?.map(s => s._id) || []),
+    enabled: !!subscriptionsQuery.data && !isError(subscriptionsQuery.data)
+  })
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;

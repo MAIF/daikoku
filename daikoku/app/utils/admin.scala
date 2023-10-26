@@ -223,6 +223,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
   }
 
   def findById(id: String) = DaikokuApiAction.async { ctx =>
+    println("hi")
     val notDeleted: Boolean =
       ctx.request.queryString.get("notDeleted").exists(_ == "true")
     notDeleted match {

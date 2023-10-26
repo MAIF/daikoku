@@ -5,12 +5,14 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
 import akka.util.ByteString
+import cats.Id
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
+import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
@@ -4252,4 +4254,33 @@ class ApiController(
         value.merge
       }
     }
+
+  def getApiSubscriptionsUsage(teamId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(AuditTrailEvent(s"@{user.name} has accessed to subscription usage for his team @{team.id}"))(teamId, ctx) { team =>
+
+        val subsIds = (ctx.request.body \ "subscriptions").as[JsArray]
+
+        for {
+          subscriptions <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).find(Json.obj("_id" -> Json.obj("$in" -> subsIds)))
+          planIds = subscriptions.map(_.plan.asJson).distinct
+          plans <- env.dataStore.usagePlanRepo.forTenant(ctx.tenant).find(Json.obj("_id" -> Json.obj("$in" -> JsArray(planIds))))
+          test = subscriptions.groupBy(sub => sub.plan).toSeq
+          r <- Future.sequence(test.map { case (planId, subs) => getOtoroshiUsage(subs, plans.find(_.id == planId))(ctx.tenant)})
+        } yield Ok(JsArray(r.flatMap(_.value)))
+
+      }
+    }
+
+  private def getOtoroshiUsage(subscriptions: Seq[ApiSubscription], plan: Option[UsagePlan])(implicit tenant: Tenant): Future[JsArray] = {
+
+    val value1: EitherT[Future, JsArray, JsArray] = plan match {
+      case Some(value) => for {
+        otoroshi <- EitherT.fromOption[Future](tenant.otoroshiSettings.find(oto => value.otoroshiTarget.exists(_.otoroshiSettings == oto.id)), Json.arr())
+        usages <- otoroshiClient.getSubscriptionLastUsage(subscriptions)(otoroshi, tenant)
+      } yield usages
+      case None => EitherT.pure[Future, JsArray](Json.arr())
+    }
+    value1.merge
+  }
 }

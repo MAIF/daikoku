@@ -502,7 +502,8 @@ case class OtoroshiSettings(id: OtoroshiSettingsId,
                             url: String,
                             host: String,
                             clientId: String = "admin-api-apikey-id",
-                            clientSecret: String = "admin-api-apikey-secret")
+                            clientSecret: String = "admin-api-apikey-secret",
+                            elasticConfig: Option[ElasticAnalyticsConfig] = None)
   extends CanJson[OtoroshiSettings] {
   def asJson: JsValue = json.OtoroshiSettingsFormat.writes(this)
   def toUiPayload(): JsValue = {
