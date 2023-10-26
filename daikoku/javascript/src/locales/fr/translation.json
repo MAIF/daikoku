@@ -1371,5 +1371,7 @@
   "team_apikey_aggregatePlans_title": "Clés d'API agregées",
   "constraints.plan.custom-name.one-of.environment": "Le nom du plan doit correspondre à l'un des environnements disponibles",
   "aggregated.apikey.badge.title": "Clé d'API aggrégée",
-  "aggregated.apikey.badge.apikey.name": "Nom personnalisée de la clé"
+  "aggregated.apikey.badge.apikey.name": "Nom personnalisée de la clé",
+  "apisubscription.lastUsage.label": "Last usage",
+  "N/A": "N/A"
 }

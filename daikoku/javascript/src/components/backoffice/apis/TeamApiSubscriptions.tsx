@@ -240,19 +240,19 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         if (!!date) {
           return formatDate(date, language)
         }
-        return ' -- '  
+        return translate('N/A')  
       },
     }),
     columnHelper.accessor('lastUsage', {
       enableColumnFilter: false,
-      header: translate('last usage'),
+      header: translate('apisubscription.lastUsage.label'),
       meta: { style: { textAlign: 'left' } },
       cell: (info) => {
         const date = info.getValue()
         if (!!date) {
           return formatDate(date, language)
         }
-        return 'N/A'  
+        return translate('N/A')
       },
     }),
     columnHelper.display({
