@@ -14,7 +14,7 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
 
   const { translate } = useContext(I18nContext);
 
-  const pagesQuery = useQuery(['pages'], () => props.getDocumentationPages())
+  const pagesQuery = useQuery({ queryKey: ['pages'], queryFn: () => props.getDocumentationPages() })
 
   const importPages = (linked?: boolean) => {
     // Services.importApiPages(props.teamId, props.api._id, pages.map((p) => p.value), props.api.currentVersion)

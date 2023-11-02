@@ -56,9 +56,12 @@ type ApiDocPageProps = {
 }
 const ApiDocPage = (props: ApiDocPageProps) => {
   const queryClient = useQueryClient();
-  const pageRequest = useQuery(['page', { pageId: props.pageId }], ({ queryKey }) => {
-    const [_key, keys] = queryKey //@ts-ignore
-    return props.getDocPage(keys.pageId)
+  const pageRequest = useQuery({
+    queryKey: ['page', { pageId: props.pageId }],
+    queryFn: ({ queryKey }) => {
+      const [_key, keys] = queryKey //@ts-ignore
+      return props.getDocPage(keys.pageId)
+    }
   });
 
 
@@ -72,7 +75,7 @@ const ApiDocPage = (props: ApiDocPageProps) => {
   }, [pageRequest.data]);
 
   useEffect(() => {
-    queryClient.invalidateQueries(['page'])
+    queryClient.invalidateQueries({ queryKey: ['page'] })
   }, [props.pageId])
 
 
@@ -119,7 +122,7 @@ export const ApiDocumentation = (props: ApiDocumentationProps) => {
 
   useEffect(() => {
     if (pageId) {
-      setSearchParams({page: pageId})
+      setSearchParams({ page: pageId })
     }
   }, [pageId])
 

@@ -23,8 +23,10 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
   const dispatch = useDispatch()
   const navigate = useNavigate();
 
-  const queryCMSPages = useQuery(['CMS pages'], () => client?.query({
-    query: gql`
+  const queryCMSPages = useQuery({
+    queryKey: ['CMS pages'],
+    queryFn: () => client?.query({
+      query: gql`
       query CmsPages {
         pages {
           id
@@ -34,8 +36,9 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
         }
       }
     `,
+    })
+      .then((r) => r.data.pages)
   })
-    .then((r) => r.data.pages))
 
 
   const urlWithAssetButton = (label: string, buttonLabel: string, filter?: any): SchemaEntry => ({
@@ -121,8 +124,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
         help: translate('tenant_edit.cms_history_length.help'),
       },
     },
-    logo: urlWithAssetButton(translate('Logo'), translate({key: 'set.from.assets', replacements: [translate('set.logo')]}), MimeTypeFilter.image),
-    cssUrl: urlWithAssetButton(translate('CSS URL'), translate({key: 'set.from.assets', replacements: [translate('set.css')]}), MimeTypeFilter.css),
+    logo: urlWithAssetButton(translate('Logo'), translate({ key: 'set.from.assets', replacements: [translate('set.logo')] }), MimeTypeFilter.image),
+    cssUrl: urlWithAssetButton(translate('CSS URL'), translate({ key: 'set.from.assets', replacements: [translate('set.css')] }), MimeTypeFilter.css),
     css: {
       type: type.string,
       format: format.code,
@@ -144,7 +147,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
               },
               title: translate('unsaved.modifications.title'),
               message: translate('unsaved.modifications.message'),
-              
+
             });
           } else {
             RedirectToUI();
@@ -152,14 +155,14 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
         }}><Settings /></button>
       </div>,
     },
-    jsUrl: urlWithAssetButton(translate('Js URL'), translate({key: 'set.from.assets', replacements: [translate('set.js')]}), MimeTypeFilter.javascript),
+    jsUrl: urlWithAssetButton(translate('Js URL'), translate({ key: 'set.from.assets', replacements: [translate('set.js')] }), MimeTypeFilter.javascript),
     js: {
       type: type.string,
       format: format.code,
       label: translate('Javascript')
     },
-    faviconUrl: urlWithAssetButton(translate('Favicon URL'), translate({key: 'set.from.assets', replacements: [translate('set.favicon')]}), MimeTypeFilter.image),
-    fontFamilyUrl: urlWithAssetButton(translate('Font family'), translate({key: 'set.from.assets', replacements: [translate('set.font.family')]}), MimeTypeFilter.font),
+    faviconUrl: urlWithAssetButton(translate('Favicon URL'), translate({ key: 'set.from.assets', replacements: [translate('set.favicon')] }), MimeTypeFilter.image),
+    fontFamilyUrl: urlWithAssetButton(translate('Font family'), translate({ key: 'set.from.assets', replacements: [translate('set.font.family')] }), MimeTypeFilter.font),
     footer: {
       type: type.string,
       format: format.markdown,

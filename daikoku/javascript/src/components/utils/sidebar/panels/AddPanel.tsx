@@ -20,7 +20,7 @@ export const AddPanel = () => {
   const match = useMatch('/:teamId/settings/*');
   const queryClient = useQueryClient();
 
-  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
+  const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
   const createTeam = () => {
     Services.fetchNewTeam()
@@ -32,8 +32,8 @@ export const AddPanel = () => {
             if (r.error) {
               toastr.error(translate('Error'), r.error)
             } else {
-              queryClient.invalidateQueries({queryKey: ['teams']})
-              queryClient.invalidateQueries(['myTeams'])
+              queryClient.invalidateQueries({ queryKey: ['teams'] })
+              queryClient.invalidateQueries({ queryKey: ['myTeams'] })
               toastr.info(
                 translate("mailValidation.sent.title"),
                 translate("mailValidation.sent.body"))
@@ -127,7 +127,7 @@ export const AddPanel = () => {
       .filter((t: ITeamSimple) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
       .map((t: ITeamSimple) => t._id)
       .getOrNull();
-  
+
     return (
       <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
         {/* todo: add a title if API page or tenant or Team */}

@@ -22,23 +22,25 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
 
   const queryClient = useQueryClient()
   const { isLoading, data } = useQuery({
-    queryKey: ['full-tenant'], 
+    queryKey: ['full-tenant'],
     queryFn: () => Services.oneTenant(tenantId),
     enabled: !state
   })
-  const updateTenant = useMutation((tenant: ITenantFull) => Services.saveTenant(tenant).then(r => isError(r) ? Promise.reject(r) : r), {
+  const updateTenant = useMutation({
+    mutationFn: (tenant: ITenantFull) => Services.saveTenant(tenant).then(r => isError(r) ? Promise.reject(r) : r),
     onSuccess: () => {
       toastr.success(translate('Success'), translate('Tenant updated successfully'))
     },
-    onError: (e: ResponseError) => { 
+    onError: (e: ResponseError) => {
       toastr.error(translate('Error'), translate(e.error))
       //todo: reset forms
     }
   });
-  const createTenant = useMutation((tenant: ITenantFull) => Services.createTenant(tenant), {
+  const createTenant = useMutation({
+    mutationFn: (tenant: ITenantFull) => Services.createTenant(tenant),
     onSuccess: (createdTenant) => {
       navigate(`/settings/tenants/${createdTenant._humanReadableId}/general`)
-      queryClient.invalidateQueries(['tenant'])
+      queryClient.invalidateQueries({ queryKey: ['tenant'] })
       toastr.success(translate('Success'), translate('Tenant created successfully'))
     },
     onError: () => { toastr.error(translate('Error'), translate('Error')) }

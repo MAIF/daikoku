@@ -176,7 +176,10 @@ export const UserEdit = () => {
   const params = useParams();
 
   const queryClient = useQueryClient();
-  const queryUser = useQuery(['user-infos'], () => Services.findUserById(params.userId!));
+  const queryUser = useQuery({
+    queryKey: ['user-infos'],
+    queryFn: () => Services.findUserById(params.userId!)
+  });
 
   const schema: Schema = {
     name: {
@@ -254,7 +257,7 @@ export const UserEdit = () => {
         if (u.email !== queryUser.data?.email) {
           navigate(`/settings/users/${updatedUser._humanReadableId}`)
         } else {
-          queryClient.invalidateQueries(['user-infos'])
+          queryClient.invalidateQueries({queryKey: ['user-infos']})
 
         }
       });

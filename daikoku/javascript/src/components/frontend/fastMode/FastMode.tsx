@@ -18,7 +18,7 @@ export const FastMode = () => {
 
   const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(maybeTeam ? JSON.parse(maybeTeam) : undefined);
 
-  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
+  const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
   if (myTeamsRequest.isLoading) {
     return <Spinner />

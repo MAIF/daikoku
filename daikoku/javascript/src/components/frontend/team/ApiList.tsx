@@ -108,7 +108,7 @@ export const ApiList = (props: TApiList) => {
       )
     },
     enabled: !!client,
-    cacheTime: 0
+    gcTime: 0
   })
 
 
@@ -165,7 +165,7 @@ export const ApiList = (props: TApiList) => {
       .then(() => {
         toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [apiWithAuth.api.name] }));
         if (dataRequest.data) {
-          queryClient.invalidateQueries(['data'])
+          queryClient.invalidateQueries({ queryKey: ['data'] })
         }
       });
 

@@ -327,7 +327,7 @@ type ApiPricingProps = {
 }
 
 export const ApiPricing = (props: ApiPricingProps) => {
-  const usagePlansQuery = useQuery(['plans', props.api.currentVersion], () => Services.getVisiblePlans(props.api._id, props.api.currentVersion))
+  const usagePlansQuery = useQuery({ queryKey: ['plans', props.api.currentVersion], queryFn: () => Services.getVisiblePlans(props.api._id, props.api.currentVersion) })
 
   const match = useMatch('/:team/:api/:version/pricing/:env/:tab')
 
@@ -335,7 +335,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const maybeEnv = match?.params.env
 
   useEffect(() => {
-    queryClient.invalidateQueries(['plans'])
+    queryClient.invalidateQueries({ queryKey: ['plans'] })
   }, [props.api])
 
 
@@ -383,7 +383,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 })}>Documentation</Link>
           </div>
           <div>
-            {maybeTab === 'swagger' && <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`} swaggerConf={plan.swagger}/>}
+            {maybeTab === 'swagger' && <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`} swaggerConf={plan.swagger} />}
             {maybeTab === 'documentation' && <ApiDocumentation documentation={plan.documentation} getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)} />}
             {maybeTab === 'testing' && <ApiSwagger _id={plan._id}
               testing={plan.testing}

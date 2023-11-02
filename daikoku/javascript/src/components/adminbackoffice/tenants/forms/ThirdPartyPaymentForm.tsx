@@ -145,7 +145,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
     }).then((ok) => {
       if (ok) {
         props.updateTenant.mutateAsync({ ...props.tenant, thirdPartyPaymentSettings })
-          .then(() => queryClient.invalidateQueries(['full-tenant']))
+          .then(() => queryClient.invalidateQueries({ queryKey: ['full-tenant'] }))
           .then(() => table.current?.update())
       }
     })
@@ -173,7 +173,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
           ...props.tenant,
           thirdPartyPaymentSettings
         })
-          .then(() => queryClient.invalidateQueries(['full-tenant']))
+          .then(() => queryClient.invalidateQueries({ queryKey: ['full-tenant'] }))
           .then(() => table.current?.update())
       },
       actionLabel: !!paymentSetttings ? translate('Update') : translate('Create')

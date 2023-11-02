@@ -47,7 +47,7 @@ type IgqlConsumption = {
 
 
 }
-export const TeamPlanConsumption = (props: {apiGroup?: boolean}) => {
+export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
   const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   const { translate } = useContext(I18nContext);
 
@@ -123,10 +123,10 @@ export const TeamPlanConsumption = (props: {apiGroup?: boolean}) => {
       <div className="row">
         <div className="col">
           <h1>Api Consumption</h1>
-          <PlanInformations  
-          apiId={match?.params.apiId!}
-          version={match?.params.version!}
-          planId={match?.params.planId!}/>
+          <PlanInformations
+            apiId={match?.params.apiId!}
+            version={match?.params.version!}
+            planId={match?.params.planId!} />
         </div>
       </div>
       <OtoroshiStatsVizualization
@@ -161,21 +161,21 @@ type PlanInformationsProps = {
 const PlanInformations = (props: PlanInformationsProps) => {
   const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
-  const apiRequest = useQuery(['api'], () => Services.teamApi(currentTeam._id, props.apiId, props.version))
-  const planRequest = useQuery(['plan'], () => Services.planOfApi(currentTeam._id, props.apiId, props.version, props.planId))
+  const apiRequest = useQuery({ queryKey: ['api'], queryFn: () => Services.teamApi(currentTeam._id, props.apiId, props.version) })
+  const planRequest = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(currentTeam._id, props.apiId, props.version, props.planId) })
 
   if (apiRequest.isLoading || planRequest.isLoading) {
     return <Spinner width="50" height="50" />;
   } else if (apiRequest.data && !isError(apiRequest.data) && planRequest.data && !isError(planRequest.data)) {
-      const api = apiRequest.data
-      const plan = planRequest.data
+    const api = apiRequest.data
+    const plan = planRequest.data
 
-      return (<h3>
-        {api.name} - {plan.customName || plan.type}
-      </h3>);
+    return (<h3>
+      {api.name} - {plan.customName || plan.type}
+    </h3>);
   } else {
     return <div>Error while fetching usage plan</div>
   }
 
-  
+
 };

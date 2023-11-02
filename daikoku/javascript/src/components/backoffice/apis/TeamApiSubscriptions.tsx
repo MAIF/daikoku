@@ -93,8 +93,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const { translate, language, Translation } = useContext(I18nContext);
   const { confirm, openFormModal, openSubMetadataModal, } = useContext(ModalContext);
 
-  const plansQuery = useQuery(['plans'], () => Services.getAllPlanOfApi(api.team, api._id, api.currentVersion))
-  const subscriptionsQuery = useQuery(['subscriptions'], () => client!.query<{ apiApiSubscriptions: Array<IApiSubscriptionGql>; }>({
+  const plansQuery = useQuery({ queryKey: ['plans'], queryFn: () => Services.getAllPlanOfApi(api.team, api._id, api.currentVersion) })
+  const subscriptionsQuery = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: () => client!.query<{ apiApiSubscriptions: Array<IApiSubscriptionGql>; }>({
       query: Services.graphql.getApiSubscriptions,
       fetchPolicy: "no-cache",
       variables: {
@@ -129,6 +131,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
           .filter(filterByClientIds)
       }
     })
+  }
   )
   const lastUsagesQuery = useQuery({
     queryKey: ['usages'],
@@ -137,8 +140,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         if (isError(lastUsages)) {
           return subscriptionsQuery.data as IApiSubscriptionGqlWithUsage[]
         } else {
-          return (subscriptionsQuery.data ?? []).map(s => ({...s, lastUsage: lastUsages.find(u => u.subscription === s._id)?.date} as IApiSubscriptionGqlWithUsage))
-        }}),
+          return (subscriptionsQuery.data ?? []).map(s => ({ ...s, lastUsage: lastUsages.find(u => u.subscription === s._id)?.date } as IApiSubscriptionGqlWithUsage))
+        }
+      }),
     enabled: !!subscriptionsQuery.data && !isError(subscriptionsQuery.data)
   })
 
@@ -182,7 +186,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
           </div>`
           return (
             <div className="d-flex flex-row justify-content-between">
-              <span>{info.getValue()}</span> 
+              <span>{info.getValue()}</span>
               <BeautifulTitle title={title} html>
 
                 <div className="badge iconized">A</div>
@@ -240,7 +244,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         if (!!date) {
           return formatDate(date, language)
         }
-        return translate('N/A')  
+        return translate('N/A')
       },
     }),
     columnHelper.accessor('lastUsage', {

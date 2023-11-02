@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import {useContext} from 'react';
+import { useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 
 import { I18nContext, updateTeam } from '../../../core';
@@ -19,7 +19,7 @@ export const MyHome = () => {
   const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
   const apiCreationPermitted = useSelector<IState, boolean>(s => s.context.apiCreationPermitted)
 
-  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
+  const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
   const navigate = useNavigate();
 
@@ -58,7 +58,7 @@ export const MyHome = () => {
     }
   };
 
-  if (myTeamsRequest.isLoading ) {
+  if (myTeamsRequest.isLoading) {
     return (
       <Spinner />
     )

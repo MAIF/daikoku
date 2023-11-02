@@ -15,7 +15,10 @@ export const TeamMembersForAdmin = () => {
 
   const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
 
-  const queryTeam = useQuery(['team-infos'], () => Services.teamFull(params.teamSettingId!));
+  const queryTeam = useQuery({
+    queryKey: ['team-infos'], 
+    queryFn: () => Services.teamFull(params.teamSettingId!)
+  });
   const params = useParams();
 
   const dispatch = useDispatch();

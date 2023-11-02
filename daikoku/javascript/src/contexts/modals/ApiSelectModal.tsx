@@ -31,7 +31,7 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
   const [selectedPlan, setSelectedPlan] = useState<IUsagePlan>()
   const { translate } = useContext(I18nContext);
 
-  const plansRequest = useQuery(['plans'], () => Services.getAllPlanOfApi(props.teamId, props.api._humanReadableId, props.api.currentVersion))
+  const plansRequest = useQuery({ queryKey: ['plans'], queryFn: () => Services.getAllPlanOfApi(props.teamId, props.api._humanReadableId, props.api.currentVersion) })
 
 
 
@@ -40,7 +40,7 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
     return plans.reduce<Array<plans>>((a, plan) => {
       const groupName = `${props.api._humanReadableId}/${props.api.currentVersion}`;
       const optGroup = a.find((grp) => grp.label === groupName);
-      if (!optGroup) 
+      if (!optGroup)
         return [
           ...a,
           {
@@ -93,7 +93,7 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
       </div>
     )
   } else {
-    return <div>Error while fetching usage plans</div> 
+    return <div>Error while fetching usage plans</div>
   }
 
   ;

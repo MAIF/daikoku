@@ -256,7 +256,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
               } else {
                 savePage(updatedPage, page)
               }
-              
+
             },
             actionLabel: translate('Save')
           })
@@ -352,7 +352,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
       apiDocPageToList(page, []).map((apiDoc => Services.deleteDocPage(props.team._id, apiDoc.id)))
     ]).then(() => {
       toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
-      queryClient.invalidateQueries(['details'])
+      queryClient.invalidateQueries({ queryKey: ['details'] })
     })
   }
 
