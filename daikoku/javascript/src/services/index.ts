@@ -39,6 +39,7 @@ import {
   IApiKey,
   IOtoroshiApiKey,
 } from '../types/api';
+import { base64 } from 'js-md5';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -1945,3 +1946,14 @@ export const cancelProcess = (teamId: string, demandId: string) =>
 
 export const fetchInvoices = (teamId: string, apiId: string, planId: string, callback: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/plan/${planId}/invoices?callback=${callback}`);
+
+export type ILastUsage = {
+  clientName: string
+  date: number
+  subscription: string
+}
+export const getSubscriptionsLastUsages = (teamId: string, subscriptions: Array<string>): PromiseWithError<Array<ILastUsage>> =>
+  customFetch(`/api/teams/${teamId}/subscriptions/_lastUsage`, {
+    method: 'POST',
+    body: JSON.stringify({subscriptions})
+  })

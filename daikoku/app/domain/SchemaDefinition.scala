@@ -174,7 +174,8 @@ object SchemaDefinition {
 
     lazy val OtoroshiSettingsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSettings](
       ObjectTypeDescription("Settings to communicate with an instance of Otoroshi"),
-      ReplaceField("id", Field("id", StringType, resolve = _.value.id.value))
+      ReplaceField("id", Field("id", StringType, resolve = _.value.id.value)),
+      ReplaceField("elasticConfig", Field("elasticConfig", OptionType(ElasticAnalyticsConfigType), resolve = _.value.elasticConfig))
     )
     lazy val MailerSettingsType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), MailerSettings] = InterfaceType(
       "MailerSettings",

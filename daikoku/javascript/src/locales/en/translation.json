@@ -1368,5 +1368,7 @@
     "team_apikey_aggregatePlans_title": "Aggregated API keys",
     "constraints.plan.custom-name.one-of.environment": "The plan name must match one of the available environments",
     "aggregated.apikey.badge.title": "Aggregated API key",
-    "aggregated.apikey.badge.apikey.name": "API key custom name"
+    "aggregated.apikey.badge.apikey.name": "API key custom name",
+    "apisubscription.lastUsage.label": "Last usage",
+    "N/A": "N/A"
 }
