@@ -1158,12 +1158,14 @@ export const importApiPages = (
   teamId: string,
   apiId: string,
   pages: Array<string>,
-  version: string
+  version: string,
+  linked?: boolean
 ): PromiseWithError<ResponseDone> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`, {
     method: 'PUT',
     body: JSON.stringify({
       pages,
+      linked
     }),
   });
 
@@ -1172,12 +1174,14 @@ export const importPlanPages = (
   apiId: string,
   pages: Array<string>,
   version: string,
-  planId: string
+  planId: string,
+  linked?: boolean
 ): PromiseWithError<ResponseDone> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${planId}/pages`, {
     method: 'PUT',
     body: JSON.stringify({
       pages,
+      linked
     }),
   });
 

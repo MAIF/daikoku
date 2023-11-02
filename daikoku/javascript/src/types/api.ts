@@ -332,6 +332,7 @@ export interface IDocPage {
   remoteContentEnabled: boolean;
   remoteContentUrl: string | null;
   remoteContentHeaders: object;
+  linked?: boolean
 }
 
 export interface IOtoroshiApiKey {

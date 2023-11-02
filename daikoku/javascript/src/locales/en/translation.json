@@ -1206,6 +1206,7 @@
     "doc.page.update.successfull": "page updated successfully",
     "doc.page.move.error": "You can't move this documentation",
     "doc.page.error.unknown": "unknown error",
+    "doc.page.linked.confirm": "This documentation page is used elsewhere. Your change will be visible for all other uses. Are you sure you want to apply those ?",
     "otoroshi.list.add.label": "Add an Otoroshi instance",
     "Global stats": "Global stats",
     "apikeys visibility": "API keys visibility",

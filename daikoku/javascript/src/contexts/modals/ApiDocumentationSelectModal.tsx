@@ -16,9 +16,9 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
 
   const pagesQuery = useQuery(['pages'], () => props.getDocumentationPages())
 
-  const importPages = () => {
+  const importPages = (linked?: boolean) => {
     // Services.importApiPages(props.teamId, props.api._id, pages.map((p) => p.value), props.api.currentVersion)
-    props.importPages(pages.flatMap(p => p.value.pageId))
+    props.importPages(pages.flatMap(p => p.value.pageId), linked)
       .then(() => props.onClose())
       .then(() => props.close());
   }
@@ -51,14 +51,16 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
       <div className="modal-body">
         {pagesQuery.isLoading && <Spinner />}
         {pagesQuery.data && !isError(pagesQuery.data) && (
-          <Select
-            isMulti
-            placeholder={translate('api.documentation.clone.page.placeholder')}
-            options={getOptions(pagesQuery.data)}
-            //@ts-ignore
-            onChange={setPages}
-            classNamePrefix="reactSelect"
-          />
+          <>
+            <Select
+              isMulti
+              placeholder={translate('api.documentation.clone.page.placeholder')}
+              options={getOptions(pagesQuery.data)}
+              //@ts-ignore
+              onChange={setPages}
+              classNamePrefix="reactSelect"
+            />
+          </>
         )}
         {pagesQuery.data && isError(pagesQuery.data) && (
           <div>Error while fetching pages</div>
@@ -68,8 +70,11 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
         <button type="button" className="btn btn-outline-danger" onClick={props.close}>
           {translate('Cancel')}
         </button>
-        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={importPages}>
-          {translate('Select')}
+        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={() => importPages(true)}>
+          {translate('Use same')}
+        </button>
+        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={() => importPages(false)}>
+          {translate('Clone')}
         </button>
 
       </div>

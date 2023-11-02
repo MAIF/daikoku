@@ -1,32 +1,32 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
-import { useNavigate, useLocation, useParams, useMatch, Link } from 'react-router-dom';
-import { toastr } from 'react-redux-toastr';
-import Select from 'react-select';
+import { useContext, useEffect, useState } from 'react';
 import Plus from 'react-feather/dist/icons/plus';
 import { useDispatch, useSelector } from 'react-redux';
+import { toastr } from 'react-redux-toastr';
+import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import Select from 'react-select';
 
-import * as Services from '../../../services';
-import { Can, manage, api as API, Spinner, api, queryClient } from '../../utils';
 import {
+  TeamApiConsumption,
+  TeamApiDocumentation,
   TeamApiInfos,
   TeamApiPost,
-  TeamApiDocumentation,
   TeamApiPricings,
   TeamApiSettings,
-  TeamPlanConsumption,
-  TeamApiConsumption,
-  TeamApiSubscriptions
+  TeamApiSubscriptions,
+  TeamPlanConsumption
 } from '.';
 import { ModalContext, useApiBackOffice } from '../../../contexts';
+import * as Services from '../../../services';
+import { api as API, Can, Spinner, api, manage } from '../../utils';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  setError,
   I18nContext,
+  setError,
   toggleExpertMode,
 } from '../../../core';
-import { IApi, IImportingDocumentation, isError, IUsagePlan, ResponseError } from '../../../types/api';
 import { IState, IStateContext, ITeamSimple } from '../../../types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { IApi, IUsagePlan, isError } from '../../../types/api';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 type ButtonProps = {
@@ -323,7 +323,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                       queryClient.invalidateQueries(['api']);
                     },
                     getDocumentationPages: () => Services.getAllApiDocumentation(currentTeam._id, api._id, api.currentVersion),
-                    importPages: (pages: Array<string>) => Services.importApiPages(currentTeam._id, api._id, pages, api.currentVersion)
+                    importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(currentTeam._id, api._id, pages, api.currentVersion, linked)
                   })} 
                   importAuthorized={!!versionsRequest.data && !!versionsRequest.data.length} />)}
               {tab === 'plans' && (

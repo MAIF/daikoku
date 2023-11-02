@@ -1208,6 +1208,7 @@
   "doc.page.update.successfull": "La page a été modifiée avec succès",
   "doc.page.move.error": "Cette page ne peut être déplacée",
   "doc.page.error.unknown": "Erreur inconnue",
+  "doc.page.linked.confirm": "Cette page de documentation est utilisée ailleurs. Votre modification sera visible pout tous les autres usages. Êtes-vous sûr de vouloir les appliquer ?",
   "otoroshi.list.add.label": "Ajouter une instance Otoroshi",
   "Global stats": "Statistiques",
   "apikeys visibility": "Visibilité des clés d'API",

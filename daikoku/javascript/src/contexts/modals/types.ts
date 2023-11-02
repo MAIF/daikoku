@@ -177,7 +177,7 @@ export interface IApiDocumentationSelectModalProps {
   api: IApi;
   getDocumentationPages: () => Promise<ResponseError | Array<IImportingDocumentation>>;
   onClose: () => void;
-  importPages: (pages: Array<string>) => Promise<ResponseError | ResponseDone>;
+  importPages: (pages: Array<string>, linked?: boolean) => Promise<ResponseError | ResponseDone>;
 }
 
 export type TeamSelectorModalProps = {

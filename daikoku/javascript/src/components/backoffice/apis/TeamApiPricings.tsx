@@ -1923,7 +1923,7 @@ const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) =>
             props.reloadState()
           },
           getDocumentationPages: () => Services.getAllPlansDocumentation(props.team._id, props.api._humanReadableId, props.api.currentVersion),
-          importPages: (pages) => Services.importPlanPages(props.team._id, props.api._id, pages, props.api.currentVersion, props.planForEdition._id)
+          importPages: (pages, linked) => Services.importPlanPages(props.team._id, props.api._id, pages, props.api.currentVersion, props.planForEdition._id, linked)
         })} />
     )
   }
