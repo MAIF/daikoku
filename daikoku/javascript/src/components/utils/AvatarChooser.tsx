@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import md5 from 'js-md5';
+import { md5 } from 'js-md5';
+import { useContext } from 'react';
 import { I18nContext } from '../../contexts/i18n-context';
 import { AssetChooserByModal, MimeTypeFilter } from '../../contexts/modals/AssetsChooserModal';
 
