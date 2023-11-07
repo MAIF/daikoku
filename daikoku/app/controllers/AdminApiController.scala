@@ -95,6 +95,7 @@ class StateController(DaikokuAction: DaikokuAction,
                     tenant.copy(tenantMode = TenantMode.Maintenance.some)))
               }
               _ <- removeAllUserSessions(ctx)
+              _ <- env.dataStore.notificationRepo.forAllTenant().delete(Json.obj("status.status" -> Json.obj("$ne" -> "Pending")))
               _ <- postgresStore.checkDatabase()
               source = env.dataStore.exportAsStream(pretty = false)
               _ <- postgresStore.importFromStream(source)
