@@ -41,7 +41,7 @@ class EnvironmentDisplayMode()
     autoRotation = Some(false)
   )
 
-  "a usage plan" must {
+  "a usage  plan" must {
     "have a custom name as an avalaible environment" in {
 
       val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty).api
