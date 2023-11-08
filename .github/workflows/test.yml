@@ -34,7 +34,7 @@ jobs:
         distribution: 'temurin'
         java-version: '11'
     #test DK
-    - uses: coursier/cache-action@v5
+    - uses: coursier/cache-action@v6
     - name: test
       id: test
       run: |

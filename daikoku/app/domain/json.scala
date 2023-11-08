@@ -109,7 +109,8 @@ object json {
             clientSecret = (json \ "clientSecret")
               .asOpt[String]
               .getOrElse("admin-api-apikey-secret"),
-            elasticConfig = (json \ "elasticConfig").asOpt(ElasticAnalyticsConfig.format)
+            elasticConfig =
+              (json \ "elasticConfig").asOpt(ElasticAnalyticsConfig.format)
           )
         )
       } recover {
@@ -122,7 +123,10 @@ object json {
       "host" -> o.host,
       "clientId" -> o.clientId,
       "clientSecret" -> o.clientSecret,
-      "elasticConfig" -> o.elasticConfig.map(ElasticAnalyticsConfig.format.writes).getOrElse(JsNull).as[JsValue]
+      "elasticConfig" -> o.elasticConfig
+        .map(ElasticAnalyticsConfig.format.writes)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 

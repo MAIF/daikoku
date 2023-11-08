@@ -893,6 +893,51 @@ object evolution_1630 extends EvolutionScript {
     }
 }
 
+
+object evolution_1634 extends EvolutionScript {
+  override def version: String = "16.3.4"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(s"Begin evolution $version - update all consumptions to set state")
+
+      implicit val executionContext: ExecutionContext = ec
+      implicit val materializer: Materializer = mat
+
+      dataStore.consumptionRepo.forAllTenant().streamAllRaw()
+        .mapAsync(10)(consumption => {
+          (consumption \ "state").asOpt(json.ApiKeyConsumptionStateFormat) match {
+            case Some(_) => FastFuture.successful(())
+            case None =>
+              val from = (consumption \ "from").as(json.DateTimeFormat)
+              val to = (consumption \ "to").as(json.DateTimeFormat)
+              val id = (consumption \ "_id").as[String]
+
+              val state = if (from.plusDays(1).equals(to))
+                ApiKeyConsumptionState.Completed
+              else
+                ApiKeyConsumptionState.InProgress
+
+              dataStore.consumptionRepo.forAllTenant()
+                .save(Json.obj("_id" -> id), consumption.as[JsObject] + ("state" -> json.ApiKeyConsumptionStateFormat.writes(state)))
+          }
+        })
+        .runWith(Sink.ignore)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -908,7 +953,8 @@ object evolutions {
       evolution_1612_c,
       evolution_1613,
       evolution_1613_b,
-      evolution_1630
+      evolution_1630,
+      evolution_1634
     )
   def run(
       dataStore: DataStore,

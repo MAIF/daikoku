@@ -1165,7 +1165,7 @@ export const importApiPages = (
     method: 'PUT',
     body: JSON.stringify({
       pages,
-      linked
+      linked,
     }),
   });
 
@@ -1181,7 +1181,7 @@ export const importPlanPages = (
     method: 'PUT',
     body: JSON.stringify({
       pages,
-      linked
+      linked,
     }),
   });
 
@@ -1947,12 +1947,15 @@ export const fetchInvoices = (teamId: string, apiId: string, planId: string, cal
   customFetch(`/api/teams/${teamId}/apis/${apiId}/plan/${planId}/invoices?callback=${callback}`);
 
 export type ILastUsage = {
-  clientName: string
-  date: number
-  subscription: string
-}
-export const getSubscriptionsLastUsages = (teamId: string, subscriptions: Array<string>): PromiseWithError<Array<ILastUsage>> =>
+  clientName: string;
+  date: number;
+  subscription: string;
+};
+export const getSubscriptionsLastUsages = (
+  teamId: string,
+  subscriptions: Array<string>
+): PromiseWithError<Array<ILastUsage>> =>
   customFetch(`/api/teams/${teamId}/subscriptions/_lastUsage`, {
     method: 'POST',
-    body: JSON.stringify({subscriptions})
-  })
+    body: JSON.stringify({ subscriptions }),
+  });
