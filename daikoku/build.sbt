@@ -7,14 +7,15 @@ organization := "fr.maif.otoroshi"
 maintainer := "oss@maif.fr"
 Universal / packageName := "daikoku"
 
-scalaVersion := "2.13.1"
+scalaVersion := "2.13.12"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-val reactiveMongoVersion = "0.20.10"
-val wiremockVersion = "3.0.1"
-val playJsonVersion = "2.10.3"
-val awsJavaSdkVersion = "1.12.582"
+lazy val reactiveMongoVersion = "0.20.10"
+lazy val wiremockVersion = "3.0.1"
+lazy val playJsonVersion = "2.10.3"
+lazy val awsJavaSdkVersion = "1.12.582"
+lazy val akkaHttp2Version        = "10.2.10"
 
 lazy val root = (project in file("."))
   .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin, PlayAkkaHttp2Support)
@@ -45,6 +46,11 @@ assembly / assemblyMergeStrategy := {
     val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(x)
 }
+
+ThisBuild / evictionErrorLevel := Level.Info
+ThisBuild / libraryDependencySchemes ++= Seq(
+  "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
+)
 
 libraryDependencies ++= Seq(
   jdbc,
@@ -77,11 +83,12 @@ libraryDependencies ++= Seq(
   "org.gnieh" %% "diffson-play-json" % "4.4.0" excludeAll ExclusionRule(
     organization = "com.typesafe.akka"
   ),
-  "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.2",
-  "com.typesafe.akka" %% "akka-http-xml" % "10.1.15",
+  "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.7",
+  "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.2",
+  "com.typesafe.akka" %% "akka-http2-support" % akkaHttp2Version,
+  "com.typesafe.akka" %% "akka-http-xml" % akkaHttp2Version,
   "org.typelevel" %% "cats-core" % "2.10.0",
   "de.svenkubiak" % "jBCrypt" % "0.4.3",
-  "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.0",
   "com.amazonaws" % "aws-java-sdk-core" % awsJavaSdkVersion,
   "com.amazonaws" % "aws-java-sdk-s3" % awsJavaSdkVersion,
   "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20220608.1",
