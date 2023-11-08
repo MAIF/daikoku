@@ -23,7 +23,7 @@ import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class TenantController(DaikokuAction: DaikokuAction,
@@ -35,9 +35,9 @@ class TenantController(DaikokuAction: DaikokuAction,
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
-  implicit val tr = translator
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val tr: Translator = translator
 
   def namesOfTenants() = DaikokuAction.async(parse.json) { ctx =>
     val tenantIdsJs: JsArray = ctx.request.body.as[JsArray]

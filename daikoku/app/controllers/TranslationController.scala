@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.Materializer
 import controllers.AppError
 import controllers.AppError.TranslationNotFound
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
@@ -15,9 +16,10 @@ import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
 
+import scala.concurrent.ExecutionContext
+
 class TranslationController(
     DaikokuAction: DaikokuAction,
-    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     env: Env,
     cc: ControllerComponents,
@@ -25,11 +27,11 @@ class TranslationController(
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
-  implicit val mat = env.defaultMaterializer
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val mat: Materializer = env.defaultMaterializer
 
-  val languages = supportedLangs.availables.map(_.language)
+  val languages: Seq[String] = supportedLangs.availables.map(_.language)
 
   def getLanguages() = DaikokuAction.async { ctx =>
     TenantAdminOnly(

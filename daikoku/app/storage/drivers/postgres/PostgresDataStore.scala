@@ -253,9 +253,6 @@ case class PostgresTenantCapableConsumptionRepo(
 ) extends PostgresTenantCapableRepo[ApiKeyConsumption, DatastoreId]
     with ConsumptionRepo {
 
-  private implicit val logger = Logger(
-    "daikoku-reactive-pg-PostgresTenantCapableConsumptionRepo")
-
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
       json.validate[JsObject](Reads.JsObjectReads)
@@ -1630,7 +1627,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     extends Repo[Of, Id] {
 
-  private implicit val logger = Logger("CommonPostgresRepo")
+  private implicit val logger: Logger = Logger("CommonPostgresRepo")
 
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 

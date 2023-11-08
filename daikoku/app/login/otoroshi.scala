@@ -324,7 +324,6 @@ object OtoroshiIdentityFilter {
                 }
 
                 maybeSession.flatMap {
-                  case None => createSessionFromOtoroshi()
                   case Some(session)
                       if session.expires.isBefore(DateTime.now()) =>
                     for {
@@ -345,6 +344,7 @@ object OtoroshiIdentityFilter {
                             maybeUser = Some(user),
                             maybeSession = Some(session))
                       }
+                  case _ => createSessionFromOtoroshi()
                 }
             }
         }

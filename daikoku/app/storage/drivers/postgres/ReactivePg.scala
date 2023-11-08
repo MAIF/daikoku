@@ -12,7 +12,7 @@ object pgimplicits {
   implicit class VertxFutureEnhancer[A](val future: io.vertx.core.Future[A])
       extends AnyVal {
     def scala: Future[A] = {
-      val promise = Promise.apply[A]
+      val promise = Promise.apply[A]()
       future.onSuccess(a => promise.trySuccess(a))
       future.onFailure(e => promise.tryFailure(e))
       promise.future
@@ -55,7 +55,7 @@ object pgimplicits {
   implicit class VertxQueryEnhancer[A](val query: io.vertx.sqlclient.Query[A])
       extends AnyVal {
     def executeAsync(): Future[A] = {
-      val promise = Promise.apply[A]
+      val promise = Promise.apply[A]()
       val future = query.execute()
       future.onSuccess(a => promise.trySuccess(a))
       future.onFailure(e => promise.tryFailure(e))
@@ -71,7 +71,7 @@ class ReactivePg(pool: Pool, configuration: Configuration)(
 
   import scala.jdk.CollectionConverters._
 
-  private implicit val logger = Logger("otoroshi-reactive-pg-kv")
+  private implicit val logger: Logger = Logger("otoroshi-reactive-pg-kv")
 
   private val debugQueries = configuration
     .getOptional[Boolean]("daikoku.postgres.logQueries")

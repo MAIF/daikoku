@@ -15,13 +15,15 @@ import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.Json
 import play.api.mvc._
 
+import scala.concurrent.ExecutionContext
+
 class EntitiesController(DaikokuAction: DaikokuAction,
                          env: Env,
                          cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def newTenant() = DaikokuAction.async { ctx =>
     PublicUserAccess(

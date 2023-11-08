@@ -18,7 +18,7 @@ import sangria.renderer.SchemaRenderer
 import storage.DataStore
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
@@ -31,12 +31,12 @@ class GraphQLController(
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   lazy val (schema, resolver) = SchemaDefinition.getSchema(env)
 
-  val logger = Logger("GraphQLController")
+  val logger: Logger = Logger("GraphQLController")
 
   def adminApiSearch() = DaikokuApiAction.async(parse.json) { ctx =>
     val query = (ctx.request.body \ "query").as[String]

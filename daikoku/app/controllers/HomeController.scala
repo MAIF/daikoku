@@ -12,7 +12,7 @@ import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, diff_match_patch}
 import org.joda.time.DateTime
-import play.api.i18n.I18nSupport
+import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
 import play.api.mvc._
 
@@ -20,7 +20,7 @@ import java.io.{ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
 import java.util
 import java.util.concurrent.TimeUnit
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
 class HomeController(
@@ -32,9 +32,9 @@ class HomeController(
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val e = env
-  implicit val m = messagesApi
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val e: Env = env
+  implicit val m: MessagesApi = messagesApi
 
   case class CmsPageCache(contentType: String, content: String)
 
@@ -288,7 +288,7 @@ class HomeController(
     val cacheId =
       s"${ctx.user.map(_.id.value).getOrElse("")}-${r.path.getOrElse("")}"
 
-    cache.policy
+    cache.policy()
       .expireAfterWrite()
       .ifPresent(eviction => {
         val ttl: Long = ctx.tenant.style

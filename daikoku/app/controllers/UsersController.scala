@@ -21,6 +21,7 @@ import java.util.Base64
 import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 class UsersController(DaikokuAction: DaikokuAction,
@@ -30,8 +31,8 @@ class UsersController(DaikokuAction: DaikokuAction,
                       deletionService: DeletionService)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def allTenantUsers() = DaikokuAction.async { ctx =>
     TenantAdminOnly(
@@ -325,7 +326,7 @@ class UsersController(DaikokuAction: DaikokuAction,
                 FastFuture.successful(
                   BadRequest(Json.obj("error" -> "Can't updated user")))
             }
-        case Some(_) =>
+        case _ =>
           FastFuture.successful(BadRequest(Json.obj(
             "error" -> "Unable to retrieve generated qrcode when 2fa enabled")))
       }
@@ -427,7 +428,7 @@ class UsersController(DaikokuAction: DaikokuAction,
                       BadRequest(
                         Json.obj("error" -> "Missing invitation information"))
                     )
-                case None =>
+                case _ =>
                   BadRequest(Json.obj(
                     "error" -> "You're token is invalid, expired or you are already in the team"))
               }

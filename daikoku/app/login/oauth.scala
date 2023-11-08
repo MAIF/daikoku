@@ -285,7 +285,7 @@ object OAuth2Support {
                                   if picture.isDefined && u.pictureFromProvider =>
                                 picture.get
                               case true if picture.isEmpty => User.DEFAULT_IMAGE
-                              case false                   => u.picture
+                              case _                   => u.picture
                             },
                         isDaikokuAdmin =
                           if (u.isDaikokuAdmin) true else isDaikokuAdmin

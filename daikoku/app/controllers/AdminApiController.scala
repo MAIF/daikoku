@@ -1,6 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.implicits._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
@@ -20,6 +22,7 @@ import play.api.mvc._
 import storage.drivers.postgres.PostgresDataStore
 import storage.{DataStore, Repo}
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Using}
 
 class StateController(DaikokuAction: DaikokuAction,
@@ -29,11 +32,11 @@ class StateController(DaikokuAction: DaikokuAction,
                       pgPool: PgPool)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val mat = env.defaultMaterializer
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val mat: Materializer = env.defaultMaterializer
+  implicit val ev: Env = env
 
-  val bodyParser = BodyParser("Import parser") { _ =>
+  val bodyParser: BodyParser[Source[ByteString, _]] = BodyParser("Import parser") { _ =>
     Accumulator.source[ByteString].map(Right.apply)
   }
 
@@ -184,11 +187,11 @@ class StateAdminApiController(
     cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val mat = env.defaultMaterializer
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val mat: Materializer = env.defaultMaterializer
+  implicit val ev: Env = env
 
-  val bodyParser = BodyParser("Import parser") { _ =>
+  val bodyParser: BodyParser[Source[ByteString, _]] = BodyParser("Import parser") { _ =>
     Accumulator.source[ByteString].map(Right.apply)
   }
 
@@ -405,8 +408,8 @@ class CredentialsAdminApiController(DaikokuApiAction: DaikokuApiAction,
                                     env: Env,
                                     cc: ControllerComponents)
     extends AbstractController(cc) {
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def getCredentials(token: String) = DaikokuApiAction.async { ctx =>
     env.dataStore.apiSubscriptionRepo

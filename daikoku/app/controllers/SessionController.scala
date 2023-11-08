@@ -8,13 +8,15 @@ import org.joda.time.DateTime
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc._
 
+import scala.concurrent.ExecutionContext
+
 class SessionController(DaikokuAction: DaikokuAction,
                         env: Env,
                         cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def allSessions() = DaikokuAction.async { ctx =>
     DaikokuAdminOnly(AuditTrailEvent("@{user.name} has accessed all sessions"))(

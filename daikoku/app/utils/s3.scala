@@ -163,7 +163,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
                 byteString
               case Some(v) if !v =>
                 throw new BadFileContentFromContentType()
-              case None =>
+              case _ =>
                 validated.set(true)
                 byteString
             }

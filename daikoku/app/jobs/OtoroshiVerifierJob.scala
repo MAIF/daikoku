@@ -68,8 +68,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val me = messagesApi
-  implicit val tr = translator
+  implicit val me: MessagesApi = messagesApi
+  implicit val tr: Translator = translator
 
   private val jobUser = User(
     id = UserId("otoroshi-verifier-job"),

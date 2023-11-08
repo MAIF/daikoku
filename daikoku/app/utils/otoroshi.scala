@@ -47,7 +47,7 @@ class OtoroshiExpositionFilter(stateHeaderName: String,
 
 class OtoroshiClient(env: Env) {
 
-  implicit val ec = env.defaultExecutionContext
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
   val ws = env.wsClient
 
   def client(path: String)(

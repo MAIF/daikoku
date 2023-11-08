@@ -23,6 +23,7 @@ import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
 
 import java.util.UUID.randomUUID
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class MessageController(DaikokuAction: DaikokuAction,
@@ -32,10 +33,10 @@ class MessageController(DaikokuAction: DaikokuAction,
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
   implicit val timeout: Timeout = Timeout(5.seconds)
-  implicit val tr = translator
+  implicit val tr: Translator = translator
 
   val messageActor: ActorRef =
     env.defaultActorSystem.actorOf(Props(new MessageActor()), "messages")

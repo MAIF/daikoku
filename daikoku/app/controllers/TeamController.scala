@@ -35,7 +35,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val mat: Materializer = env.defaultMaterializer
-  implicit val tr = translator
+  implicit val tr: Translator = translator
 
   def team(teamId: String) =
     DaikokuActionMaybeWithGuest.async { ctx =>

@@ -30,7 +30,7 @@ class NotificationController(
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val tr = translator
+  implicit val tr: Translator = translator
 
   def unreadNotificationsCountOfTeam(teamId: String) = DaikokuAction.async {
     ctx =>

@@ -12,12 +12,12 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import jobs.ApiKeyStatsJob
 import play.api.libs.json.{JsArray, JsNull, JsValue, Json}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeyStatsJob, otoroshiClient: OtoroshiClient) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   /**
     * Delete logically a team

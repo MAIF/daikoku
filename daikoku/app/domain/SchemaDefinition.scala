@@ -32,7 +32,7 @@ object SchemaDefinition {
   case object DateCoercionViolation extends ValueCoercionViolation("Date value expected")
   case object MapCoercionViolation extends ValueCoercionViolation("Map value can't be parsed")
 
-  implicit val TimeUnitType = ScalarType[TimeUnit]("TimeUnit",
+  implicit val TimeUnitType: ScalarType[TimeUnit] = ScalarType[TimeUnit]("TimeUnit",
     description = Some("TimeUnit type"),
     coerceOutput = (value, _) => value,
     coerceUserInput = {
@@ -44,7 +44,7 @@ object SchemaDefinition {
       case _ => Left(JsArrayCoercionViolation)
     })
 
-  implicit val JsArrayType = ScalarType[JsArray]("JsArray",
+  implicit val JsArrayType: ScalarType[JsArray] = ScalarType[JsArray]("JsArray",
     description = Some("JsArray type"),
     coerceOutput = (value, _) => value,
     coerceUserInput = {
@@ -56,7 +56,7 @@ object SchemaDefinition {
       case _ => Left(JsArrayCoercionViolation)
     })
 
-  implicit val JsonType = ScalarType[JsValue]("Json",
+  implicit val JsonType: ScalarType[JsValue] = ScalarType[JsValue]("Json",
     description = Some("Raw JSON value"),
     coerceOutput = (value, _) => value,
     coerceUserInput = {

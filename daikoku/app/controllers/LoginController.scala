@@ -37,7 +37,7 @@ class LoginController(DaikokuAction: DaikokuAction,
     extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val tr = translator
+  implicit val tr: Translator = translator
 
   def loginPage(provider: String) = DaikokuTenantAction.async { ctx =>
     AuthProvider(provider) match {
@@ -706,7 +706,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                 else
                   FastFuture.successful(
                     BadRequest(Json.obj("error" -> "Invalid code")))
-              case None =>
+              case _ =>
                 FastFuture.successful(
                   BadRequest(Json.obj("error" -> "Invalid token")))
             }

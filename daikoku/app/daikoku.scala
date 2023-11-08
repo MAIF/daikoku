@@ -248,7 +248,7 @@ package object modules {
 
   private class ErrorHandler(env: Env) extends HttpErrorHandler {
 
-    implicit val ec = env.defaultExecutionContext
+    implicit val ec: ExecutionContext = env.defaultExecutionContext
 
     lazy val logger = Logger("daikoku-error-handler")
 

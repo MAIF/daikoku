@@ -16,16 +16,16 @@ import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json._
 import play.api.mvc._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class MockController(DaikokuAction: DaikokuAction,
                      env: Env,
                      cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-  val scalaCode =
+  val scalaCode: String =
     """```scala
       |import zio.App
       |import zio.console._

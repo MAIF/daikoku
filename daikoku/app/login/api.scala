@@ -40,19 +40,20 @@ object AuthProvider {
   }
   val values: Seq[AuthProvider] =
     Seq(Local, Otoroshi, LDAP, OAuth2)
-  def apply(name: String): Option[AuthProvider] = name.toLowerCase() match {
-    case "Local" => Local.some
-    case "local" => Local.some
-    // case "LocalWithFIDOU2F" => LocalWithFIDOU2F.some
-    // case "localwithfidou2f" => LocalWithFIDOU2F.some
-    case "Otoroshi" => Otoroshi.some
-    case "otoroshi" => Otoroshi.some
-    case "LDAP"     => LDAP.some
-    case "ldap"     => LDAP.some
-    case "OAuth2"   => OAuth2.some
-    case "oauth2"   => OAuth2.some
-    case _          => None
-  }
+  def apply(name: String): Option[AuthProvider] =
+    name.toLowerCase() match {
+      case "Local" => Local.some
+      case "local" => Local.some
+      // case "LocalWithFIDOU2F" => LocalWithFIDOU2F.some
+      // case "localwithfidou2f" => LocalWithFIDOU2F.some
+      case "Otoroshi" => Otoroshi.some
+      case "otoroshi" => Otoroshi.some
+      case "LDAP"     => LDAP.some
+      case "ldap"     => LDAP.some
+      case "OAuth2"   => OAuth2.some
+      case "oauth2"   => OAuth2.some
+      case _          => None
+    }
 }
 
 object IdentityAttrs {
@@ -73,31 +74,38 @@ object TenantHelper {
       .get("Daikoku-Tenant")
       .flatMap(t =>
         Option(
-          env.config.tenantJwtVerifier.verify(t).getClaim("value").asString()))
+          env.config.tenantJwtVerifier.verify(t).getClaim("value").asString()
+        )
+      )
       .map(TenantId.apply)
       .getOrElse(Tenant.Default)
   }
 
-  def withTenant(request: RequestHeader, env: Env)(f: Tenant => Future[Result])(
-      implicit ec: ExecutionContext): Future[Result] = {
+  def withTenant(request: RequestHeader, env: Env)(
+      f: Tenant => Future[Result]
+  )(implicit ec: ExecutionContext): Future[Result] = {
 
     env.config.tenantProvider match {
       case TenantProvider.Header => {
         val tenantId = TenantHelper.extractTenantId(request)(env)
         env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
           case None =>
-            Errors.craftResponseResult("Tenant does not exists (1)",
-                                       Results.NotFound,
-                                       request,
-                                       None,
-                                       env)
+            Errors.craftResponseResult(
+              "Tenant does not exists (1)",
+              Results.NotFound,
+              request,
+              None,
+              env
+            )
           case Some(tenant) if !tenant.enabled =>
-            Errors.craftResponseResult("Tenant does not exists (2)",
-                                       Results.NotFound,
-                                       request,
-                                       None,
-                                       env,
-                                       tenant)
+            Errors.craftResponseResult(
+              "Tenant does not exists (2)",
+              Results.NotFound,
+              request,
+              None,
+              env,
+              tenant
+            )
           case Some(tenant) => f(tenant)
         }
       }
@@ -112,25 +120,32 @@ object TenantHelper {
             Json.obj(
               "_deleted" -> false,
               "domain" -> domain
-            ))
+            )
+          )
           .flatMap {
             case None =>
               AppLogger.info(
-                s"Tenant does not exists - host $host - domain $domain - None")
-              Errors.craftResponseResult(s"Tenant does not exists (3)",
-                                         Results.NotFound,
-                                         request,
-                                         None,
-                                         env)
+                s"Tenant does not exists - host $host - domain $domain - None"
+              )
+              Errors.craftResponseResult(
+                s"Tenant does not exists (3)",
+                Results.NotFound,
+                request,
+                None,
+                env
+              )
             case Some(tenant) if !tenant.enabled =>
               AppLogger.info(
-                s"Tenant does not exists - host $host - domain $domain - tenant disabled")
-              Errors.craftResponseResult("Tenant does not exists (4)",
-                                         Results.NotFound,
-                                         request,
-                                         None,
-                                         env,
-                                         tenant)
+                s"Tenant does not exists - host $host - domain $domain - tenant disabled"
+              )
+              Errors.craftResponseResult(
+                "Tenant does not exists (4)",
+                Results.NotFound,
+                request,
+                None,
+                env,
+                tenant
+              )
             case Some(tenant) => f(tenant)
           }
       case TenantProvider.Local =>
@@ -143,8 +158,6 @@ object TenantHelper {
               env.dataStore.userSessionRepo
                 .findOne(Json.obj("sessionId" -> sessionId))
                 .flatMap {
-                  case None =>
-                    FastFuture.successful(Tenant.Default)
                   case Some(session) if !session.expires.isAfterNow =>
                     FastFuture.successful(Tenant.Default)
                   case Some(session) if session.expires.isAfterNow =>
@@ -161,24 +174,31 @@ object TenantHelper {
                               FastFuture.successful(tenantId)
                           }
                       }
+                  case _ =>
+                    FastFuture.successful(Tenant.Default)
+
                 }
           }
         tenantIdF
           .flatMap(env.dataStore.tenantRepo.findByIdNotDeleted(_))
           .flatMap {
             case None =>
-              Errors.craftResponseResult("Tenant does not exists (5)",
-                                         Results.NotFound,
-                                         request,
-                                         None,
-                                         env)
+              Errors.craftResponseResult(
+                "Tenant does not exists (5)",
+                Results.NotFound,
+                request,
+                None,
+                env
+              )
             case Some(tenant) if !tenant.enabled =>
-              Errors.craftResponseResult("Tenant does not exists (6)",
-                                         Results.NotFound,
-                                         request,
-                                         None,
-                                         env,
-                                         tenant)
+              Errors.craftResponseResult(
+                "Tenant does not exists (6)",
+                Results.NotFound,
+                request,
+                None,
+                env,
+                tenant
+              )
             case Some(tenant) => f(tenant)
           }
           .recoverWith {
@@ -189,15 +209,17 @@ object TenantHelper {
                 Results.NotFound,
                 request,
                 None,
-                env)
+                env
+              )
           }
     }
   }
 }
 
-class LoginFilter(env: Env)(implicit val mat: Materializer,
-                            ec: ExecutionContext)
-    extends Filter {
+class LoginFilter(env: Env)(implicit
+    val mat: Materializer,
+    ec: ExecutionContext
+) extends Filter {
 
   import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
   implicit class RegexOps(sc: StringContext) {
@@ -216,9 +238,12 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
     for {
       teamRepo <- env.dataStore.teamRepo.forTenantF(tenantId)
       maybePersonnalTeam: Option[Team] <- teamRepo.findOne(
-        Json.obj("type" -> TeamType.Personal.name,
-                 "users.userId" -> user.id.value,
-                 "_deleted" -> false))
+        Json.obj(
+          "type" -> TeamType.Personal.name,
+          "users.userId" -> user.id.value,
+          "_deleted" -> false
+        )
+      )
       backupTeam = Team(
         id = TeamId(IdGenerator.token(32)),
         tenant = tenantId,
@@ -230,9 +255,10 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
         contact = user.email,
         avatar = Some(user.picture)
       )
-      theMaybeTeam: Option[Team] <- if (maybePersonnalTeam.isDefined)
-        FastFuture.successful(maybePersonnalTeam)
-      else teamRepo.save(backupTeam).map(_ => Some(backupTeam))
+      theMaybeTeam: Option[Team] <-
+        if (maybePersonnalTeam.isDefined)
+          FastFuture.successful(maybePersonnalTeam)
+        else teamRepo.save(backupTeam).map(_ => Some(backupTeam))
       // maybePersonnalTeamId = maybePersonnalTeam.map(_.id).getOrElse(Team.Default)
       // maybeLastTeam <- teamRepo.findByIdNotDeleted(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
     } yield {
@@ -258,11 +284,13 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
     }
   }
 
-  def apply(nextFilter: RequestHeader => Future[Result])(
-      request: RequestHeader): Future[Result] = {
+  def apply(
+      nextFilter: RequestHeader => Future[Result]
+  )(request: RequestHeader): Future[Result] = {
 
     AppLogger.debug(
-      s"Filtering on ${request.method.toLowerCase()} => ${request.relativeUri}")
+      s"Filtering on ${request.method.toLowerCase()} => ${request.relativeUri}"
+    )
 
     (request.method.toLowerCase(), request.relativeUri) match {
       case (_, r"/fakeotoroshi/.*")               => nextFilter(request)
@@ -326,7 +354,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         AppLogger.info("No personal token found")
                         FastFuture.successful(
                           Results.Unauthorized(
-                            Json.obj("error" -> "not authorized"))
+                            Json.obj("error" -> "not authorized")
+                          )
                         )
                       case Some(token) =>
                         env.dataStore.userRepo
@@ -336,14 +365,14 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                               AppLogger.info("No user found")
                               FastFuture.successful(
                                 Results.Unauthorized(
-                                  Json.obj("error" -> "not authorized"))
+                                  Json.obj("error" -> "not authorized")
+                                )
                               )
                             case Some(_user) =>
                               val user =
                                 _user.copy(tenants = _user.tenants + tenant.id)
                               val session = UserSession(
-                                id = DatastoreId(
-                                  IdGenerator.token(32)),
+                                id = DatastoreId(IdGenerator.token(32)),
                                 userId = user.id,
                                 userName = user.name,
                                 userEmail = user.email,
@@ -363,11 +392,13 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                     Results
                                       .Redirect(
                                         fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-                                          .loginPage(provider.name))
+                                          .loginPage(provider.name)
+                                      )
                                       .removingFromSession("sessionId")(request)
                                       .withSession(
                                         "redirect" -> cleanupRedirect(
-                                          request.relativeUri)
+                                          request.relativeUri
+                                        )
                                       )
                                   )
                                 case Some(team) =>
@@ -375,26 +406,39 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                     _ =>
                                       env.dataStore.teamRepo
                                         .forTenant(tenant)
-                                        .exists(Json.obj(
-                                          "type" -> "Admin",
-                                          "users.userId" -> user.id.asJson))
+                                        .exists(
+                                          Json.obj(
+                                            "type" -> "Admin",
+                                            "users.userId" -> user.id.asJson
+                                          )
+                                        )
                                         .flatMap(isTenantAdmin => {
                                           nextFilter(
                                             request
-                                              .addAttr(IdentityAttrs.TeamKey,
-                                                       team)
-                                              .addAttr(IdentityAttrs.UserKey,
-                                                       user)
+                                              .addAttr(
+                                                IdentityAttrs.TeamKey,
+                                                team
+                                              )
+                                              .addAttr(
+                                                IdentityAttrs.UserKey,
+                                                user
+                                              )
                                               .addAttr(
                                                 IdentityAttrs.TenantAdminKey,
-                                                isTenantAdmin)
+                                                isTenantAdmin
+                                              )
                                               .addAttr(
                                                 IdentityAttrs.ImpersonatorKey,
-                                                None)
-                                              .addAttr(IdentityAttrs.TenantKey,
-                                                       tenant)
-                                              .addAttr(IdentityAttrs.SessionKey,
-                                                       session)
+                                                None
+                                              )
+                                              .addAttr(
+                                                IdentityAttrs.TenantKey,
+                                                tenant
+                                              )
+                                              .addAttr(
+                                                IdentityAttrs.SessionKey,
+                                                session
+                                              )
                                           )
                                         })
                                   }
@@ -406,7 +450,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                       Results
                         .Redirect(
                           fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-                            .loginPage(provider.name))
+                            .loginPage(provider.name)
+                        )
                         .removingFromSession("sessionId")(request)
                         .withSession(
                           "redirect" -> cleanupRedirect(request.relativeUri)
@@ -425,7 +470,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         Results
                           .Redirect(
                             fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-                              .loginPage(provider.name))
+                              .loginPage(provider.name)
+                          )
                           .removingFromSession("sessionId")(request)
                           .withSession(
                             "redirect" -> cleanupRedirect(request.relativeUri)
@@ -433,14 +479,16 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                       )
                     case None =>
                       nextFilter(
-                        request.addAttr(IdentityAttrs.TenantKey, tenant))
+                        request.addAttr(IdentityAttrs.TenantKey, tenant)
+                      )
                     case Some(session) if session.expires.isBeforeNow =>
                       AppLogger.info("Session expired")
                       FastFuture.successful(
                         Results
                           .Redirect(
                             fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-                              .loginPage(provider.name))
+                              .loginPage(provider.name)
+                          )
                           .removingFromSession("sessionId")(request)
                           .withSession(
                             "redirect" -> cleanupRedirect(request.relativeUri)
@@ -451,16 +499,21 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         .findByIdNotDeleted(session.userId)
                         .flatMap {
                           case None =>
-                            AppLogger.info("" +
-                              "No user found")
+                            AppLogger.info(
+                              "" +
+                                "No user found"
+                            )
                             FastFuture.successful(
                               Results
-                                .Redirect(fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-                                  .loginPage(provider.name))
+                                .Redirect(
+                                  fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
+                                    .loginPage(provider.name)
+                                )
                                 .removingFromSession("sessionId")(request)
                                 .withSession(
                                   "redirect" -> cleanupRedirect(
-                                    request.relativeUri)
+                                    request.relativeUri
+                                  )
                                 )
                             )
                           case Some(_user) =>
@@ -473,42 +526,63 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                   Results
                                     .Redirect(
                                       fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-                                        .loginPage(provider.name))
+                                        .loginPage(provider.name)
+                                    )
                                     .removingFromSession("sessionId")(request)
                                     .withSession(
                                       "redirect" -> cleanupRedirect(
-                                        request.relativeUri)
+                                        request.relativeUri
+                                      )
                                     )
                                 )
                               case Some(team) =>
                                 for {
                                   _ <- env.dataStore.userRepo.save(user)
-                                  isTenantAdmin <- env.dataStore.teamRepo
-                                    .forTenant(tenant)
-                                    .exists(Json.obj(
-                                      "type" -> "Admin",
-                                      "users.userId" -> user.id.asJson))
-                                  result <- session.impersonatorId
-                                    .map(id =>
-                                      env.dataStore.userRepo.findByIdNotDeleted(
-                                        id))
-                                    .getOrElse(FastFuture.successful(None))
-                                    .flatMap { maybeImpersonator =>
-                                      nextFilter(
-                                        request
-                                          .addAttr(IdentityAttrs.TeamKey, team)
-                                          .addAttr(IdentityAttrs.UserKey, user)
-                                          .addAttr(IdentityAttrs.TenantAdminKey,
-                                                   isTenantAdmin)
-                                          .addAttr(
-                                            IdentityAttrs.ImpersonatorKey,
-                                            maybeImpersonator)
-                                          .addAttr(IdentityAttrs.TenantKey,
-                                                   tenant)
-                                          .addAttr(IdentityAttrs.SessionKey,
-                                                   session)
+                                  isTenantAdmin <-
+                                    env.dataStore.teamRepo
+                                      .forTenant(tenant)
+                                      .exists(
+                                        Json.obj(
+                                          "type" -> "Admin",
+                                          "users.userId" -> user.id.asJson
+                                        )
                                       )
-                                    }
+                                  result <-
+                                    session.impersonatorId
+                                      .map(id =>
+                                        env.dataStore.userRepo
+                                          .findByIdNotDeleted(id)
+                                      )
+                                      .getOrElse(FastFuture.successful(None))
+                                      .flatMap { maybeImpersonator =>
+                                        nextFilter(
+                                          request
+                                            .addAttr(
+                                              IdentityAttrs.TeamKey,
+                                              team
+                                            )
+                                            .addAttr(
+                                              IdentityAttrs.UserKey,
+                                              user
+                                            )
+                                            .addAttr(
+                                              IdentityAttrs.TenantAdminKey,
+                                              isTenantAdmin
+                                            )
+                                            .addAttr(
+                                              IdentityAttrs.ImpersonatorKey,
+                                              maybeImpersonator
+                                            )
+                                            .addAttr(
+                                              IdentityAttrs.TenantKey,
+                                              tenant
+                                            )
+                                            .addAttr(
+                                              IdentityAttrs.SessionKey,
+                                              session
+                                            )
+                                        )
+                                      }
                                 } yield {
                                   result
                                 }
@@ -519,7 +593,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         Results
                           .Redirect(
                             fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-                              .loginPage(provider.name))
+                              .loginPage(provider.name)
+                          )
                           .removingFromSession("sessionId")(request)
                           .withSession(
                             "redirect" -> cleanupRedirect(request.relativeUri)

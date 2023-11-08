@@ -25,7 +25,7 @@ import play.api.libs.json._
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class ApiService(env: Env,
@@ -36,10 +36,10 @@ class ApiService(env: Env,
                  otoroshiSynchronisator: OtoroshiVerifierJob,
                  paymentClient: PaymentClient) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
-  implicit val me = messagesApi
-  implicit val tr = translator
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val me: MessagesApi = messagesApi
+  implicit val tr: Translator = translator
 
   def getListFromStringMap(key: String,
                       metadata: Map[String, String]): Set[String] = {

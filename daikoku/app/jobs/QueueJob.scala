@@ -159,7 +159,7 @@ class QueueJob(
               ),
               Json.obj("closed" -> JsNumber(DateTime.now().toDate.getTime))
             )
-        case None => FastFuture.successful(0L)
+        case _ => FastFuture.successful(0L)
       }
   }
 
@@ -342,7 +342,7 @@ class QueueJob(
               paymentClient.syncWithThirdParty(consumption,
                                                settings,
                                                informations)
-          }.toIterable)
+          }.toList)
           .map(_.headOption))
       _ <- OptionT.liftF(
         env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
@@ -449,7 +449,7 @@ class QueueJob(
   private def awaitF(duration: FiniteDuration)(
       implicit actorSystem: ActorSystem,
       ec: ExecutionContext): Future[Unit] = {
-    val p = Promise[Unit]
+    val p = Promise[Unit]()
     actorSystem.scheduler.scheduleOnce(duration) {
       p.trySuccess(())
     }

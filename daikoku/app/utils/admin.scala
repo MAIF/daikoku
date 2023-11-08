@@ -32,7 +32,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
     extends ActionBuilder[DaikokuApiActionContext, AnyContent]
     with ActionFunction[Request, DaikokuApiActionContext] {
 
-  implicit lazy val ec = env.defaultExecutionContext
+  implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   def decodeBase64(encoded: String): String =
     new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
@@ -74,12 +74,6 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
           }
         case LocalAdminApiConfig(_) =>
           request.headers.get("Authorization") match {
-            case None =>
-              Errors.craftResponseResult("No api key provided",
-                                         Results.Unauthorized,
-                                         request,
-                                         None,
-                                         env)
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
                 case None =>
@@ -106,6 +100,12 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                                                    env)
                     })
               }
+            case _ =>
+              Errors.craftResponseResult("No api key provided",
+                Results.Unauthorized,
+                request,
+                None,
+                env)
           }
       }
     }
@@ -119,7 +119,7 @@ class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent],
     extends ActionBuilder[Request, AnyContent]
     with ActionFunction[Request, Request] {
 
-  implicit lazy val ec = env.defaultExecutionContext
+  implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   override def invokeBlock[A](
       request: Request[A],
@@ -171,10 +171,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
     cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
-  val logger = Logger(s"admin-controller-$entityName")
+  val logger: Logger = Logger(s"admin-controller-$entityName")
 
   def description: String = entityClass.getName
   def pathRoot: String
